@@ -1,0 +1,177 @@
+{
+  "name": "Idealista Scraper Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "87a19ecf-e99a-4a3e-8482-7ff79f2aac18",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "webhookId": "87a19ecf-e99a-4a3e-8482-7ff79f2aac18"
+    },
+    {
+      "parameters": {
+        "actorId": "pocesar/idealista-scraper",
+        "input": {
+          "location": "={{$json.body.location}}",
+          "country": "={{$json.body.country}}",
+          "operation": "={{$json.body.operation}}",
+          "propertyType": "={{$json.body.propertyType}}",
+          "minPrice": "={{$json.body.minPrice}}",
+          "maxPrice": "={{$json.body.maxPrice}}",
+          "minSize": "={{$json.body.minSize}}",
+          "maxSize": "={{$json.body.maxSize}}",
+          "publicationDate": "={{$json.body.publicationDate}}",
+          "maxItems": 100
+        },
+        "options": {
+          "waitForFinish": true
+        }
+      },
+      "name": "Run Idealista Scraper",
+      "type": "n8n-nodes-base.apify",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ],
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_APIFY_CREDENTIALS_ID",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "responseCode": 200,
+        "responseData": "={\n    \"status\": \"pending\",\n    \"message\": \"Scraper initiated successfully. You will receive an email upon completion.\"\n}",
+        "options": {}
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        680,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Properties",
+        "operation": "append",
+        "options": {}
+      },
+      "name": "Save to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_CREDENTIALS_ID",
+          "name": "Google account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "to": "={{$node[\"Webhook Trigger\"].json.body.clientEmail}}",
+        "subject": "✅ Your Idealista Scrape is Complete!",
+        "text": "Hello,\n\nYour requested scrape from Idealista has been successfully completed and the data has been added to your Google Sheet.\n\nBest regards,\nYour Scraper Bot",
+        "options": {}
+      },
+      "name": "Send Confirmation Email",
+      "type": "n8n-nodes-base.sendEmail",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIALS_ID",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "YOUR_WORDPRESS_WEBHOOK_URL",
+        "authentication": "none",
+        "sendBody": true,
+        "body": "={{$node[\"Run Idealista Scraper\"].json}}",
+        "options": {}
+      },
+      "name": "Send Data to WordPress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Run Idealista Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Idealista Scraper": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Confirmation Email": {
+      "main": [
+        [
+          {
+            "node": "Send Data to WordPress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

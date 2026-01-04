@@ -1,0 +1,6 @@
+- youtube nanobanana pro thumbnail creator
+- social media video generator focussed on real estate niche (https://www.youtube.com/watch?v=mnFnu6tGClU)
+	- listings
+	- open house
+	- etc.
+- make a training program like: https://build-loop.ai/

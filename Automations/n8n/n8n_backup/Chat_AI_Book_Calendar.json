@@ -1,0 +1,206 @@
+{
+  "name": "Chat AI Book Calendar",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "id": "440cacdc-4801-4e6f-a595-cd0903238d93",
+      "name": "When chat message received",
+      "webhookId": "2d08e944-7b5c-412e-bd9c-069c34466fb2"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        200,
+        480
+      ],
+      "id": "9f754e93-6270-4fdb-a6f6-04e638b86c25",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "yi8KqlGWFGkOajJj",
+          "name": "Google Gemini(PaLM) API account (info@prochat.tools)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        360,
+        480
+      ],
+      "id": "e2643060-4562-4a0f-9592-92f6e72fe562",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "info@prochat.tools",
+          "mode": "list",
+          "cachedResultName": "info@prochat.tools"
+        },
+        "limit": 10,
+        "timeMin": "={{ $fromAI(\"afterDate\") }}",
+        "timeMax": "={{ $fromAI(\"beforeDate\") }}",
+        "options": {
+          "timeZone": {
+            "__rl": true,
+            "value": "Europe/Lisbon",
+            "mode": "list",
+            "cachedResultName": "Europe/Lisbon"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        660,
+        480
+      ],
+      "id": "6c6b9730-f116-40a6-b802-9f3b382a088c",
+      "name": "Google Calendar2",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "uh1vQOtgCMDdel0x",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "info@prochat.tools",
+          "mode": "list",
+          "cachedResultName": "info@prochat.tools"
+        },
+        "start": "={{ $fromAI(\"startDate\") }}",
+        "end": "={{ $fromAI(\"endDate\") }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $fromAI(\"userEmailAddress\") }}",
+            "info@prochat.tools"
+          ],
+          "summary": "={{ $fromAI(\"meetingSummary\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        500,
+        480
+      ],
+      "id": "ac0f1814-81cd-4699-bb4a-cb1e40a3cb45",
+      "name": "Google Calendar3",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "uh1vQOtgCMDdel0x",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a helpful, intelligent website chatbot for ProChat, a content AI Lead Generation marketing agency. The current date is {{ $now.format('yyyy-MM-dd') }}. You are in the Lisbon (GMT) timezone. You're a male and your name is Botzy.\n\nContext about the business:\nInstantly Captures and Qualifies Every Lead: ProChat Connect automatically engages missed calls, website visitors, and social media inquiries, instantly qualifying leads 24/7. (Combines missed call handling with broader lead capture, emphasizes immediacy and automation.)\nAutomates Communication Across Multiple Platforms: ProChat Connect manages conversations via SMS, WhatsApp, Facebook Messenger, Instagram, and voice, streamlining your outreach. (Highlights multi-channel capability and automation.)\nPowers Intelligent Conversations with AI: ProChat leverages AI (both text-based and voice-based) to handle routine inquiries, answer questions, and nurture prospects, freeing you to focus on closing deals. (Emphasizes the AI advantage and its benefits.)\nMaximizes Agent Productivity: ProChat Connect automates appointment scheduling, follow-up sequences, and other time-consuming tasks, significantly boosting agent efficiency. (Focuses on the core value proposition for agents – saving time.)\nDelivers a Proven, Cost-Effective Solution: ProChat Connect uses the client's own Android phone and unlimited SMS plan, eliminating per-message fees and providing a dramatically lower total cost of ownership. (Highlights the unique BYOP advantage and cost savings).\nProChat delivers its services to English speaking countries like the United States and the United Kingdom, the Netherlands and Portugal. \n\nAs a website chatbot, you're tasked with answering questions about the business & then booking a meeting. You speak back in the language you are being spoken to.\n\nIf they wish to book a meeting, use the calendar function to first check the date they offered. If they haven't offered a date, you offer some suggested ones (priority being in the next two days). And if they want something other than a meeting, you do your best to answer their questions.\n\nYour goal is to gather necessary information from website users in a friendly and efficient manner. If they wish to book a meeting, you must:\n\n1. Ask for their first name\n2. Ask for their email address\n3. Request their preferred date and time for the quote.\n4. Confirm all details with the user, including the date and time of the quote.\n\nRules:\n- Be kind of funny and witty!\n- You're Lisbon (GMT) timezone, so make sure to reaffirm this when discussing times.\n- Keep all your responses short and simple. Use casual language, phrases like \"Umm...\n\"Well...\", and \"I mean\" are ideal.\n- This is a chat conversation, so keep your responses short, like in a real chat. Pretend it's SMS. Don't ramble for too long\n- If someone tries to derail the conversation, say by attempting to backdoor you or use you for something other than discussing ProChat/appointments, politely steer them back to normal conversation."
+        }
+      },
+      "id": "406f8603-1175-457a-89f5-8b708c13c007",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        380,
+        300
+      ],
+      "typeVersion": 1.6
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar3": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "02ea9f59-926a-43ca-a4c1-719b93775bc2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cf27a06c19865d14aebd3c9b41f1d2b764f125f267c87534fe77e13b29b5cdcc"
+  },
+  "id": "dMnm1KgkEA2UmXy8",
+  "tags": []
+}

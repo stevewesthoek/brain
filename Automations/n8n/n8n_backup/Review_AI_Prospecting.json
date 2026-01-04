@@ -1,0 +1,1148 @@
+{
+  "name": "Review AI Prospecting",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        -160
+      ],
+      "id": "226661a5-65b9-441d-908e-7edccbb55a68",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "url": "=https://overpass-api.de/api/interpreter",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "data",
+              "value": "=[out:json][maxsize:1073741824];  \n\narea[name=\"{{ $json.inarea }}\"]->.small;\narea[name=\"{{ $json.outarea }}\"]->.big;\n(   \nnwr[\"name\"~\"{{ $json.keyword }}\", i](area.small)(area.big);   nwr[\"description\"~\"{{ $json.keyword }}\", i](area.small)(area.big);   nwr[\"shop\"=\"{{ $json.formatted_keyword }}\"](area.small)(area.big);   nwr[\"amenity\"=\"{{ $json.formatted_keyword }}\"](area.small)(area.big);   nwr[\"office\"=\"{{ $json.formatted_keyword }}\"](area.small)(area.big); \n); \n\nout tags;"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        -140
+      ],
+      "id": "3b82ab85-9de0-4dea-bc0b-79b1947a9b63",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c2aa3a06-9814-4e5d-b225-e8220fa5b02b",
+              "name": "outarea",
+              "value": "={{$json.outarea}}",
+              "type": "string"
+            },
+            {
+              "id": "0397398f-ab00-4102-9144-f10412923311",
+              "name": "inarea",
+              "value": "={{$json.inarea}}",
+              "type": "string"
+            },
+            {
+              "id": "45337dea-6483-4336-9425-112174f77edc",
+              "name": "keyword",
+              "value": "={{$json.keyword}}",
+              "type": "string"
+            },
+            {
+              "id": "d8248adb-9afe-4648-b5c3-e1d874608f01",
+              "name": "formatted_keyword",
+              "value": "={{$json.keyword.toLowerCase().split(/\\s+/).join('_')}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        40,
+        -140
+      ],
+      "id": "38d4efc5-79f3-40c9-acdb-90624d0e9815",
+      "name": "Format Keyword"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "00ffd6b1-553b-4266-aa12-dc46dd04b773",
+              "name": "items",
+              "value": "={{ $json.elements }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        -140
+      ],
+      "id": "e51b26cb-04ba-4276-81ce-f105b76f370a",
+      "name": "Extract List"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -140
+      ],
+      "id": "2558a119-7233-4431-9983-243805943a59",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7ea9fbbe-b02e-460b-8612-bdea1634e083",
+              "name": "name",
+              "value": "={{ $json.tags.name }}",
+              "type": "string"
+            },
+            {
+              "id": "bc674edc-8bbc-47ee-84d3-8f552b9edff8",
+              "name": "website",
+              "value": "={{ $json.tags.website }}",
+              "type": "string"
+            },
+            {
+              "id": "db6b289a-348a-4649-9b84-77a798074fc4",
+              "name": "city",
+              "value": "={{ $json.tags[\"addr:city\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "b2a71db4-90cb-427e-b4b8-68a359d1a41e",
+              "name": "postcode",
+              "value": "={{ $json.tags[\"addr:postcode\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "399d86ea-aa49-40a1-9e8c-7d86b18140c3",
+              "name": "street",
+              "value": "={{ $json.tags[\"addr:street\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "5739eb61-f9c8-4d5e-a57c-6b1b4e02b6fb",
+              "name": "openinghours",
+              "value": "={{ $json.tags['opening_hours'] }}",
+              "type": "string"
+            },
+            {
+              "id": "dbc9c6f3-b12e-4ac5-b1d9-170c25da71ea",
+              "name": "phone",
+              "value": "={{ $json.tags.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "93019593-cd23-4590-a034-d66dfa0dccf3",
+              "name": "email",
+              "value": "={{ $json.tags.email }}",
+              "type": "string"
+            },
+            {
+              "id": "2aba47a2-78fb-452e-a30a-d7e75290f845",
+              "name": "facebook",
+              "value": "={{ $json.tags.facebook }}",
+              "type": "string"
+            },
+            {
+              "id": "54ad9b49-b0e3-491b-911a-400b20b3950e",
+              "name": "contact:facebook",
+              "value": "={{ $json.tags['contact:facebook'] }}",
+              "type": "string"
+            },
+            {
+              "id": "bc4e4a4a-e81a-491e-a730-4b009b7ddf9f",
+              "name": "instgram",
+              "value": "={{ $json.tags.instagram }}",
+              "type": "string"
+            },
+            {
+              "id": "a3e677fe-4f4e-448a-b162-a47102786d5f",
+              "name": "contact:instagram",
+              "value": "={{ $json.tags['contact:instagram'] }}",
+              "type": "string"
+            },
+            {
+              "id": "58773057-e1c1-4d59-aa01-283c2acdca12",
+              "name": "twitter",
+              "value": "={{ $json.tags.twitter }}",
+              "type": "string"
+            },
+            {
+              "id": "f93fb8d7-c1c8-4be6-a7ba-dd86b23388e9",
+              "name": "contact:twitter",
+              "value": "={{ $json.tags['contact:twitter'] }}",
+              "type": "string"
+            },
+            {
+              "id": "c7fd4145-ec8f-457d-b485-64605fac01a1",
+              "name": "contact:email",
+              "value": "={{ $json.tags['contact:email'] }}",
+              "type": "string"
+            },
+            {
+              "id": "7dfcdf46-2dca-401c-99af-d070cca6fbd6",
+              "name": "contact:phone",
+              "value": "={{ $json.tags['contact:phone'] }}",
+              "type": "string"
+            },
+            {
+              "id": "32d1f436-0353-437f-ba0a-e6baf2b88583",
+              "name": "contact:website",
+              "value": "={{ $json.tags['contact:website'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        860,
+        -140
+      ],
+      "id": "6918fe85-d7b9-4a5c-bdd1-f1c1cf1b4374",
+      "name": "Set Output Fields"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1220,
+        160
+      ],
+      "id": "56e34d28-e65d-4765-a24c-1167a8e171c3",
+      "name": "Append Items (no website & no email)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1220,
+        420
+      ],
+      "id": "689ecafb-97df-4bf0-9ed9-ad08265d3c3b",
+      "name": "Merge items with HTML",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        920,
+        620
+      ],
+      "id": "9bff1106-2fb9-4391-b3de-c0a820c07111",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "No operation, do nothing",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ],
+      "id": "4c23025a-ddfb-46aa-b7d2-8c0f054862f5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all()\nconst fields = ['email', 'phone', 'website', 'facebook', 'instagram', 'twitter'];\n\nreturn items.map(item => {\n  let data = item. json;\n  let result = {\n    \"name\": data. name,\n    \"city\": data.city,\n    \"postcode\": data.postcode,\n    \"street\": data.street,\n    \"openinghours\": data.openinghours\n};\n\n  fields. forEach(field => {\n    if (data[field]) {\n      result[field] = data[field];\n    } else if (data[`contact:${field}`]) {\n      result[field] = data[`contact:${field}`];\n    } else {\n      result[field] = null;\n    }\n  });\n  return { json: result };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        140
+      ],
+      "id": "be98b1bc-5903-4f8f-b06a-ff0d4666a5ec",
+      "name": "Organise data"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.website }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1180,
+        700
+      ],
+      "id": "2e058077-23d0-48cc-909c-67aa4fd6d607",
+      "name": "Get Website HTML"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const pageHTML = $json.data;\n\nlet uniqueEmails = null;\n\ntry {\n  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.(?!png|jpg|gif|jpeg)[a-zA-Z]{2,}/g;  \n  const emails = pageHTML.match(emailRegex);\n\n  if (emails && emails. length > 0) {\n    uniqueEmails = [...new Set(emails)];\n  } \n} catch (error) {\n  uniqueEmails = null;\n}\n\nreturn {\n  json: {\n    name: $json.name,\n    city: $json.city,\n    postcode: $json.postcode,\n    street: $json.street,\n    openinghours: $json.openinghours,\n    email: uniqueEmails,\n    phone: $json.phone,\n    website: $json.website,\n    facebook: $json.facebook,\n    instagram: $json.instagram,\n    twitter: $json.twitter\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        420
+      ],
+      "id": "234f6563-2f15-4f69-a34d-218ea9bc6f10",
+      "name": "Scrape homepage"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Regex for emails/domains to exclude\nconst excludeRegex = /(google|gstatic|ggpht|schema\\.org|example\\.com|sentry\\.wixpress\\.com|sentry-next\\.wixpress\\.com|ingest\\.sentry\\.1o|sentry\\.io|iml1\\.com|test@|example@|\\.webp|\\.svg)/i;\n\n// Access emails from input\nconst emails = $input.item.json.email || [];\n\n// Filter out unwanted emails\nconst cleanedEmails = emails.filter(email => !excludeRegex.test(email));\n\n// Convert to newline-separated string\nconst cleanedEmailsString = cleanedEmails.join('\\n');\nconsole.log(cleanedEmails);\n\n// Clone original data and replace only the emails field\nconst output = {\n  ...$input.item.json,\nemail: cleanedEmailsString\n};\n\n// **ADD THIS LINE**\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        420
+      ],
+      "id": "f03e36f5-8691-4a9a-98f5-3e154c9c191d",
+      "name": "Clean emails"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1920,
+        180
+      ],
+      "id": "a570007c-a2a4-4cbd-9f34-07bfe15eda8c",
+      "name": "Append Items",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e3ff78b4-2f34-42ec-a7dc-b7163f90bb53",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        2140,
+        180
+      ],
+      "id": "a0612006-6f06-4a50-ba01-63e6b5d22a42",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1TfOHUXAamKv2ATxwtgz_t8dC5n5y1OGEjfoz9vyIbXY",
+          "mode": "list",
+          "cachedResultName": "Review AI Prospecting",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TfOHUXAamKv2ATxwtgz_t8dC5n5y1OGEjfoz9vyIbXY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TfOHUXAamKv2ATxwtgz_t8dC5n5y1OGEjfoz9vyIbXY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $json.name }}",
+            "city": "={{ $json.city }}",
+            "postcode": "={{ $json.postcode }}",
+            "street": "={{ $json.street }}",
+            "openinghours": "={{ $json.openinghours }}",
+            "email": "={{ $json.email }}",
+            "phone": "={{ $json.phone }}",
+            "website": "={{ $json.website }}",
+            "facebook": "={{ $json.facebook }}",
+            "instagram": "={{ $json.instagram }}",
+            "twitter": "={{ $json.twitter }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "postcode",
+              "displayName": "postcode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "street",
+              "displayName": "street",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "openinghours",
+              "displayName": "openinghours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "facebook",
+              "displayName": "facebook",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "instagram",
+              "displayName": "instagram",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "twitter",
+              "displayName": "twitter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2360,
+        180
+      ],
+      "id": "b89e1f06-fadb-4df5-97be-30bda44e0e40",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MwuWtMwZJq2kcSq3",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -200,
+        -140
+      ],
+      "id": "6d1e7701-91ae-44d2-bf49-7115c9c2038f",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -980,
+        -160
+      ],
+      "id": "b4ac3bca-8700-4fc5-afec-71976d226e14",
+      "name": "Loop Over Items1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "=aeKrMUWd454lAMUp",
+          "cachedResultName": "=aeKrMUWd454lAMUp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "outarea",
+              "displayName": "outarea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "inarea",
+              "displayName": "inarea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -760,
+        -60
+      ],
+      "id": "64299abb-eaa6-4ad8-9faa-1cc03c20dabd",
+      "name": "Execute Workflow"
+    },
+    {
+      "parameters": {
+        "content": "## Add your queries\nSet your Gemini generated list of queries in this node. You can combine regions and business for specific prospecting.\n",
+        "height": 220,
+        "width": 180
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1240,
+        -420
+      ],
+      "id": "5139fea9-9f07-4fc3-9cd8-fd72f8b6edef",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Important\nSet wait time between each query workflow execution.\n\nThe longer the delay the less risk for rate-limits and similar issues.",
+        "height": 220,
+        "width": 180
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -580,
+        -220
+      ],
+      "id": "1c652a5c-6c23-481b-9a84-c337c577ba36",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -540,
+        60
+      ],
+      "id": "5c65b72b-c217-4cc4-bb52-6aecaa48780c",
+      "name": "Wait",
+      "webhookId": "0531720a-2103-422b-8949-887cbc2cfb9e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c637fa6f-45d7-4523-a313-a87f28135026",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "={{ $json.website }}",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "13207168-4a46-4aed-b7c6-7f585a50a691",
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        140
+      ],
+      "id": "36dabb0b-1abc-4913-a838-3d9baadc063f",
+      "name": "True = no website, no email. False = website"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c637fa6f-45d7-4523-a313-a87f28135026",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "39a18172-ccec-4652-b3d2-b74d8fc4b59a",
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "null",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        260
+      ],
+      "id": "2c2a8801-b3a0-4b36-8dd3-6814efd53ccd",
+      "name": "True = Has Email, has website. False = No email, has webite"
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Test workflow’": [
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Groningen",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Friesland",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Drenthe",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Overijssel",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Gelderland",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Utrecht",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Flevoland",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Noord-Holland",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Zuid-Holland",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Zeeland",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Noord-Brabant",
+          "keyword": "Makelaar"
+        }
+      },
+      {
+        "json": {
+          "outarea": "Nederland",
+          "inarea": "Limburg",
+          "keyword": "Makelaar"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Extract List",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "No operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Keyword": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract List": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Set Output Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Output Fields": {
+      "main": [
+        [
+          {
+            "node": "Organise data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge items with HTML": {
+      "main": [
+        [
+          {
+            "node": "Scrape homepage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Merge items with HTML",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Get Website HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No operation, do nothing": {
+      "main": [
+        []
+      ]
+    },
+    "Organise data": {
+      "main": [
+        [
+          {
+            "node": "True = no website, no email. False = website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Website HTML": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape homepage": {
+      "main": [
+        [
+          {
+            "node": "Clean emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Items (no website & no email)": {
+      "main": [
+        [
+          {
+            "node": "Append Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean emails": {
+      "main": [
+        [
+          {
+            "node": "Append Items",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Append Items": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Format Keyword",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "True = no website, no email. False = website": {
+      "main": [
+        [
+          {
+            "node": "Append Items (no website & no email)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "True = Has Email, has website. False = No email, has webite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "True = Has Email, has website. False = No email, has webite": {
+      "main": [
+        [
+          {
+            "node": "Append Items (no website & no email)",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge items with HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "d2e7ba81-cc20-4405-999c-1ed3062bdeb1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cf27a06c19865d14aebd3c9b41f1d2b764f125f267c87534fe77e13b29b5cdcc"
+  },
+  "id": "aeKrMUWd454lAMUp",
+  "tags": []
+}

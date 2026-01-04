@@ -1,0 +1,1624 @@
+{
+  "name": "Demo Voice AI",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "147ec933-119a-4bdd-b627-7896409b37a1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -100
+      ],
+      "id": "8f9e2329-9989-4727-9f5d-b283f48f4950",
+      "name": "Webhook",
+      "webhookId": "147ec933-119a-4bdd-b627-7896409b37a1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash-002",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        460,
+        180
+      ],
+      "id": "dd92317e-f7d9-4e9f-8a5c-dca36276ae5d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "yi8KqlGWFGkOajJj",
+          "name": "Google Gemini(PaLM) API account (info@prochat.tools)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.text }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        620,
+        180
+      ],
+      "id": "77a0f352-e0bb-4eca-a4ba-c602167a69aa",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "content": "## Voice AI Demo (NL) account\n**Login email** 54.car-culler@icloud.com\n**username** voice_ai_demo_nl",
+        "height": 320,
+        "width": 340
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -220
+      ],
+      "id": "c8f2c95c-8bf2-45ef-828d-f57ab4c585e8",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Direct to Awaz\nHave not got it to work for now.",
+        "height": 280,
+        "width": 260
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        -1140
+      ],
+      "id": "27cfdc5d-1495-4fd1-9143-561eb93913d9",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Call w/ VAPI Agent US",
+        "height": 280,
+        "width": 280
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        -520
+      ],
+      "id": "e09afc4c-2434-4b65-8c6a-62da0d7a99eb",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.query.source }}",
+                    "rightValue": "demo voice ai (us)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b5ee5e49-b48a-472e-b044-b7ad5a701b04"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "27170b7b-19df-4dd3-a9ee-e5da1371ab71",
+                    "leftValue": "={{ $json.query.source }}",
+                    "rightValue": "=demo voice ai (nl)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "525f1c33-e01e-4cdf-ac67-644574622760",
+                    "leftValue": "={{ $json.query.source }}",
+                    "rightValue": "demo voice ai (pt)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -560,
+        -100
+      ],
+      "id": "c4f6a6ed-163f-45e6-8a42-a85c4cd61cc1",
+      "name": "Switch",
+      "alwaysOutputData": false,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "content": "## Voice AI Demo (US) account\n**Login email** smiths.fights-5v@icloud.com\n**username** voice_ai_demo_us",
+        "height": 320,
+        "width": 340
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -580
+      ],
+      "id": "13440a32-cc95-42a4-b067-353e60facd34",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Voice AI Demo (PT) account\n**Login email** parties.clank-0w@icloud.com\n**username** voice_ai_demo_pt",
+        "height": 320,
+        "width": 340
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        140
+      ],
+      "id": "eac5c652-8c7b-4632-9c01-b32aea787827",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.awaz.ai/v1/hooks/calls",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 7d2c4ba7-338c-4d52-9279-bc427d4c141e"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "agent",
+              "value": "={{ $json.items[2].id }}"
+            },
+            {
+              "name": "name",
+              "value": "={{ $('Webhook').item.json.query.name }}"
+            },
+            {
+              "name": "phone",
+              "value": "={{ $('Webhook').item.json.query.phone }}"
+            },
+            {
+              "name": "from",
+              "value": "+31613715493"
+            },
+            {
+              "name": "datetime",
+              "value": "2025-04-13T17:29:23+01:00"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2280,
+        -1040
+      ],
+      "id": "5d8e3d6c-a73e-4cc1-a08a-43caf61b8b27",
+      "name": "Awaz Calls",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write me a custom instruction for a Vapi AI calling agent for my client based off of their website.\n\nMake a sales agent that answers questions, handles objections, does discovery and identifies if its a good fit and books the client in on an appointment.\n\nMake the Vapi AI prompt 200 words.\n\nMake sure to include critical and relevant information from the page text in the training base and knowledge base of the bot of the website.\n\nMake one output prompt with any special characters but letter from a to z and spaces.\n\nThe entire website text is down below:\n{{ $json.text }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        660,
+        -100
+      ],
+      "id": "da135b2f-d135-4df6-8292-8967ff93b03f",
+      "name": "AI Agent (NL)",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/apify~website-content-crawler/run-sync-get-dataset-items?token=apify_api_eARdhx8ngIZntuFWDbe4xH9JVEV0y20AMLwZ",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"aggressivePrune\": false,\n    \"clickElementsCssSelector\": \"[aria-expanded=\\\"false\\\"]\",\n    \"clientSideMinChangePercentage\": 15,\n    \"crawlerType\": \"playwright:adaptive\",\n    \"debugLog\": false,\n    \"debugMode\": false,\n    \"expandIframes\": true,\n    \"ignoreCanonicalUrl\": false,\n    \"keepUrlFragments\": false,\n    \"proxyConfiguration\": {\n        \"useApifyProxy\": true\n    },\n    \"readableTextCharThreshold\": 100,\n    \"removeCookieWarnings\": true,\n    \"removeElementsCssSelector\": \"nav, footer, script, style, noscript, svg, img[src^='data:'],\\n[role=\\\"alert\\\"],\\n[role=\\\"banner\\\"],\\n[role=\\\"dialog\\\"],\\n[role=\\\"alertdialog\\\"],\\n[role=\\\"region\\\"][aria-label*=\\\"skip\\\" i],\\n[aria-modal=\\\"true\\\"]\",\n    \"renderingTypeDetectionPercentage\": 10,\n    \"saveFiles\": false,\n    \"saveHtml\": false,\n    \"saveHtmlAsFile\": false,\n    \"saveMarkdown\": true,\n    \"saveScreenshots\": false,\n    \"startUrls\": [\n        {\n            \"url\": \"{{ $('Webhook').item.json.query.website }}\",\n            \"method\": \"GET\"\n        }\n    ],\n    \"useSitemaps\": false\n}",
+        "options": {}
+      },
+      "id": "506f15b8-604a-4417-9e93-08f9f5107787",
+      "name": "Scrape Lead Website (US)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -40,
+        -440
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/apify~website-content-crawler/run-sync-get-dataset-items?token=apify_api_rpbqb3xgsBeyac4iMiAmZeHfigIhpV16yKQw",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"aggressivePrune\": false,\n    \"clickElementsCssSelector\": \"[aria-expanded=\\\"false\\\"]\",\n    \"clientSideMinChangePercentage\": 15,\n    \"crawlerType\": \"playwright:adaptive\",\n    \"debugLog\": false,\n    \"debugMode\": false,\n    \"expandIframes\": true,\n    \"ignoreCanonicalUrl\": false,\n    \"keepUrlFragments\": false,\n    \"proxyConfiguration\": {\n        \"useApifyProxy\": true\n    },\n    \"readableTextCharThreshold\": 100,\n    \"removeCookieWarnings\": true,\n    \"removeElementsCssSelector\": \"nav, footer, script, style, noscript, svg, img[src^='data:'],\\n[role=\\\"alert\\\"],\\n[role=\\\"banner\\\"],\\n[role=\\\"dialog\\\"],\\n[role=\\\"alertdialog\\\"],\\n[role=\\\"region\\\"][aria-label*=\\\"skip\\\" i],\\n[aria-modal=\\\"true\\\"]\",\n    \"renderingTypeDetectionPercentage\": 10,\n    \"saveFiles\": false,\n    \"saveHtml\": false,\n    \"saveHtmlAsFile\": false,\n    \"saveMarkdown\": true,\n    \"saveScreenshots\": false,\n    \"startUrls\": [\n        {\n            \"url\": \"{{ $('Webhook').item.json.query.website }}\",\n            \"method\": \"GET\"\n        }\n    ],\n    \"useSitemaps\": false\n}",
+        "options": {}
+      },
+      "id": "543ae0ea-d3e7-4549-a934-dcd8a55f2950",
+      "name": "Scrape Lead Website (NL)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -40,
+        -100
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~website-content-crawler/run-sync-get-dataset-items?token=apify_api_WmbtPdpWbWkpWKAMz9HuHWWDLFHcnA3pvoGw",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"aggressivePrune\": false,\n    \"clickElementsCssSelector\": \"[aria-expanded=\\\"false\\\"]\",\n    \"clientSideMinChangePercentage\": 15,\n    \"crawlerType\": \"playwright:adaptive\",\n    \"debugLog\": false,\n    \"debugMode\": false,\n    \"expandIframes\": true,\n    \"ignoreCanonicalUrl\": false,\n    \"keepUrlFragments\": false,\n    \"proxyConfiguration\": {\n        \"useApifyProxy\": true\n    },\n    \"readableTextCharThreshold\": 100,\n    \"removeCookieWarnings\": true,\n    \"removeElementsCssSelector\": \"nav, footer, script, style, noscript, svg, img[src^='data:'],\\n[role=\\\"alert\\\"],\\n[role=\\\"banner\\\"],\\n[role=\\\"dialog\\\"],\\n[role=\\\"alertdialog\\\"],\\n[role=\\\"region\\\"][aria-label*=\\\"skip\\\" i],\\n[aria-modal=\\\"true\\\"]\",\n    \"renderingTypeDetectionPercentage\": 10,\n    \"saveFiles\": false,\n    \"saveHtml\": false,\n    \"saveHtmlAsFile\": false,\n    \"saveMarkdown\": true,\n    \"saveScreenshots\": false,\n    \"startUrls\": [\n        {\n            \"url\": \"{{ $('Webhook').item.json.query.website }}\",\n            \"method\": \"GET\"\n        }\n    ],\n    \"useSitemaps\": false\n}",
+        "options": {}
+      },
+      "id": "edd0db57-98db-4478-bc0e-bc6f0a5edf4a",
+      "name": "Scrape Lead Website (PT)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -40,
+        260
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "content": "## Call w/ VAPI Agent NL",
+        "height": 280,
+        "width": 280
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        -200
+      ],
+      "id": "91059d28-5cc0-40d0-85be-ca05b0ed6843",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Call w/ VAPI Agent PT",
+        "height": 280,
+        "width": 280
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        120
+      ],
+      "id": "718f46c6-890a-4b19-b4c9-b504796e24d3",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.awaz.ai/v1/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 7d2c4ba7-338c-4d52-9279-bc427d4c141e"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "extras.scraped_website_info",
+              "value": "={{ $('AI Agent (NL)').item.json.output }}"
+            },
+            {
+              "name": "=phone",
+              "value": "={{ $('Webhook').item.json.query.phone }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        -1840
+      ],
+      "id": "ea7fcf46-5b2d-4596-ac41-066210c4ec0d",
+      "name": "Add Awaz Contact"
+    },
+    {
+      "parameters": {
+        "url": "https://api.awaz.ai/v1/agents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 7d2c4ba7-338c-4d52-9279-bc427d4c141e"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        420,
+        -1840
+      ],
+      "id": "8bd7e69b-bc2e-4915-8387-80b30806e35d",
+      "name": "Retrieve Awaz Agents"
+    },
+    {
+      "parameters": {
+        "url": "https://api.awaz.ai/v1/contact_lists",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 7d2c4ba7-338c-4d52-9279-bc427d4c141e"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -100,
+        -1840
+      ],
+      "id": "da0439ac-ded4-4066-8fe7-09eff4c027f6",
+      "name": "Retrieve Awaz Lists",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.awaz.ai/v1/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 7d2c4ba7-338c-4d52-9279-bc427d4c141e"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "extras.scraped_website_info",
+              "value": "={{ $('AI Agent (NL)').item.json.output }}"
+            },
+            {
+              "name": "=phone",
+              "value": "={{ $('Webhook').item.json.query.phone }}"
+            },
+            {
+              "name": "list",
+              "value": "={{ $json.items[2].id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1720,
+        -1040
+      ],
+      "id": "afa30753-2708-490e-b0c0-740f09091b37",
+      "name": "Add Awaz Contact1"
+    },
+    {
+      "parameters": {
+        "url": "https://api.awaz.ai/v1/agents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 7d2c4ba7-338c-4d52-9279-bc427d4c141e"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        -1040
+      ],
+      "id": "797c75ab-cdda-4933-8b25-207d66cbe116",
+      "name": "Retrieve Awaz Agents1"
+    },
+    {
+      "parameters": {
+        "url": "https://api.awaz.ai/v1/contact_lists",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 7d2c4ba7-338c-4d52-9279-bc427d4c141e"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1480,
+        -1040
+      ],
+      "id": "d3c9090b-960f-48b5-b9c8-d50b6e62a361",
+      "name": "Retrieve Awaz Lists1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Webhook').item.json.query.source }}",
+                    "rightValue": "demo voice ai (us)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b5ee5e49-b48a-472e-b044-b7ad5a701b04"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "27170b7b-19df-4dd3-a9ee-e5da1371ab71",
+                    "leftValue": "={{ $('Webhook').item.json.query.source }}",
+                    "rightValue": "=demo voice ai (nl)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "525f1c33-e01e-4cdf-ac67-644574622760",
+                    "leftValue": "={{ $('Webhook').item.json.query.source }}",
+                    "rightValue": "demo voice ai (pt)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1220,
+        -100
+      ],
+      "id": "1805e585-b537-4a1c-b4cd-d02f2eb5309f",
+      "name": "Switch1",
+      "alwaysOutputData": false,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "options": {
+          "numberOfItems": -1,
+          "separator": "\\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserItemList",
+      "typeVersion": 1,
+      "position": [
+        800,
+        160
+      ],
+      "id": "e08bce97-9b1e-4091-a445-8360a48fe0a0",
+      "name": "Item List Output Parser"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "text"
+            },
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        420,
+        -100
+      ],
+      "id": "f014fb05-b071-4806-8ca8-f142742d78dd",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "content": "## Call US Agent (Zapier)\nNeeds to be renewed every 14 days.",
+        "height": 280,
+        "width": 260
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2540,
+        -720
+      ],
+      "id": "4ac78424-d97e-411a-b49f-91b375765726",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## Call NL Agent (Zapier)\nNeeds to be renewed every 14 days.",
+        "height": 280,
+        "width": 260
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2540,
+        -200
+      ],
+      "id": "fd58daf1-9643-4aae-b61e-a4a037406054",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## Call PT Agent (Zapier)\nNeeds to be renewed every 14 days.",
+        "height": 280,
+        "width": 260
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2540,
+        340
+      ],
+      "id": "947e9ac5-0ea1-4943-b633-a153e4474602",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.zapier.com/hooks/catch/22654626/2py5kh2/",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Webhook').item.json.query.name }}"
+            },
+            {
+              "name": "phone",
+              "value": "={{ $('Webhook').item.json.query.phone }}"
+            },
+            {
+              "name": "extras.scraped_website_info",
+              "value": "={{ $json.output }}"
+            },
+            {
+              "name": "extras.company",
+              "value": "={{ $('Webhook').item.json.query.company }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2620,
+        -600
+      ],
+      "id": "1a2f6c83-ea21-49bb-9269-6cc53f9cae60",
+      "name": "Zapier: Call Awaz US1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.zapier.com/hooks/catch/22654626/2py9de4/",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Webhook').item.json.query.name }}"
+            },
+            {
+              "name": "phone",
+              "value": "={{ $('Webhook').item.json.query.phone }}"
+            },
+            {
+              "name": "extras.scraped_website_info",
+              "value": "={{ $json.output }}"
+            },
+            {
+              "name": "extras.company",
+              "value": "={{ $('Webhook').item.json.query.company }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2620,
+        -100
+      ],
+      "id": "e5bbdafc-a2a4-4ae9-85b9-16fb0534b848",
+      "name": "Zapier: Call Awaz NL1",
+      "alwaysOutputData": false,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.zapier.com/hooks/catch/22654626/2py5gxz/",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Webhook').item.json.query.name }}"
+            },
+            {
+              "name": "phone",
+              "value": "={{ $('Webhook').item.json.query.phone }}"
+            },
+            {
+              "name": "extras.scraped_website_info",
+              "value": "={{ $json.output }}"
+            },
+            {
+              "name": "extras.company",
+              "value": "={{ $('Webhook').item.json.query.company }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2620,
+        440
+      ],
+      "id": "6f1afebe-b7db-4afb-80c8-80c6e5534149",
+      "name": "Zapier: Call Awaz PT1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ap.vapi.ai/call/phone",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 06bb0544-c7c5-4267-9ae7-d4f7a0fb44fa"
+            },
+            {
+              "name": "Content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Webhook').item.json.query.name }}"
+            },
+            {
+              "name": "phone",
+              "value": "={{ $('Webhook').item.json.query.phone }}"
+            },
+            {
+              "name": "extras.scraped_website_info",
+              "value": "={{ $json.output }}"
+            },
+            {
+              "name": "extras.company",
+              "value": "={{ $('Webhook').item.json.query.company }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        -100
+      ],
+      "id": "7c4190f8-d1be-4531-b0b1-0aecad3da9a4",
+      "name": "Call w/ VAPI Agent NL",
+      "alwaysOutputData": false,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ap.vapi.ai/call/phone",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 06bb0544-c7c5-4267-9ae7-d4f7a0fb44fa"
+            },
+            {
+              "name": "Content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Webhook').item.json.query.name }}"
+            },
+            {
+              "name": "phone",
+              "value": "={{ $('Webhook').item.json.query.phone }}"
+            },
+            {
+              "name": "extras.scraped_website_info",
+              "value": "={{ $json.output }}"
+            },
+            {
+              "name": "extras.company",
+              "value": "={{ $('Webhook').item.json.query.company }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        200
+      ],
+      "id": "67e800b0-422e-42ee-8900-cc2fc9d50a26",
+      "name": "Call w/ VAPI Agent PT"
+    },
+    {
+      "parameters": {
+        "path": "7f6c05e1-bd17-424f-a566-18a4a28335a1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        -420
+      ],
+      "id": "1f55d939-378b-4970-b1e0-2090b7c67101",
+      "name": "Webhook1",
+      "webhookId": "7f6c05e1-bd17-424f-a566-18a4a28335a1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.vapi.ai/call/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 06bb0544-c7c5-4267-9ae7-d4f7a0fb44fa"
+            },
+            {
+              "name": "Content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"customer\": {\n    \"numberE164CheckEnabled\": true,\n    \"number\": \"+19497762428\"\n  },\n  \"assistantId\": \"c020f049-49d2-4d68-844a-4a375c72ba60\",\n  \"phoneNumberId\": \"5bf9285e-da65-43d1-a5fd-040fbbb96813\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        -420
+      ],
+      "id": "2263f218-b156-41c8-8169-e767db7c8a8e",
+      "name": "VAPI Make Call"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://api.vapi.ai/assistant/929ea293-4296-4e3d-9c77-a3e6677e31af",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 06bb0544-c7c5-4267-9ae7-d4f7a0fb44fa"
+            },
+            {
+              "name": "Content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"model\": {\n    \"systemPrompt\": \"Your new dynamic system prompt generated from website data.\",\n    \"provider\": \"openai\",\n    \"model\": \"gpt-4.1-mini\"\n  },\n  \"firstMessage\": \"this is a test4\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2060,
+        -720
+      ],
+      "id": "9d87fff2-4a49-4d7e-9459-2bb627533172",
+      "name": "VAPI Patch Assistant1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.vapi.ai/assistant",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 06bb0544-c7c5-4267-9ae7-d4f7a0fb44fa"
+            },
+            {
+              "name": "Content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": {\n    \"systemPrompt\": \"{{ $json.output }}\",\n    \"provider\": \"openai\",\n    \"model\": \"gpt-4.1-mini\"\n  },\n  \"firstMessage\": \"this is a test5\",\n  \"name\": \"Hello My name is\",\n  \"firstMessage\": \"Hello\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        -420
+      ],
+      "id": "3640df18-7df8-4d5e-adb3-9878260c6116",
+      "name": "VAPI Create Assistant"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.prochat.tools",
+            "user-agent": "axios/1.7.7",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "x-forwarded-for": "34.31.155.47",
+            "x-forwarded-host": "n8n.prochat.tools",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "3062e3053fbe",
+            "x-real-ip": "34.31.155.47"
+          },
+          "params": {},
+          "query": {
+            "phone": "+31655554222",
+            "website": "https://focushypotheken.nl",
+            "name": "Jasper Akkers US",
+            "source": "demo voice ai (us)",
+            "company": "Focus Hypotheken"
+          },
+          "body": {},
+          "webhookUrl": "https://n8n.prochat.tools/webhook-test/147ec933-119a-4bdd-b627-7896409b37a1",
+          "executionMode": "test"
+        }
+      }
+    ],
+    "Scrape Lead Website (US)": [
+      {
+        "json": {
+          "url": "https://focushypotheken.nl/",
+          "crawl": {
+            "loadedUrl": "https://www.focushypotheken.nl/",
+            "loadedTime": "2025-04-28T11:33:29.784Z",
+            "referrerUrl": "https://focushypotheken.nl/",
+            "depth": 0,
+            "httpStatusCode": 200
+          },
+          "metadata": {
+            "canonicalUrl": "https://www.focushypotheken.nl/",
+            "title": "Home | Focus Hypotheken",
+            "description": "Focus hypotheken heeft als doel duurzaam woongeluk te realiseren aan al onze relaties door het sluiten van een hypotheek op maat. ",
+            "author": null,
+            "keywords": null,
+            "languageCode": "nl",
+            "openGraph": [
+              {
+                "property": "og:title",
+                "content": "Home | Focus Hypotheken"
+              },
+              {
+                "property": "og:description",
+                "content": "Focus hypotheken heeft als doel duurzaam woongeluk te realiseren aan al onze relaties door het sluiten van een hypotheek op maat. "
+              },
+              {
+                "property": "og:url",
+                "content": "https://www.focushypotheken.nl"
+              },
+              {
+                "property": "og:site_name",
+                "content": "Focus Hypotheken"
+              },
+              {
+                "property": "og:type",
+                "content": "website"
+              }
+            ],
+            "jsonLd": [
+              {
+                "@context": "https://schema.org/",
+                "@type": "WebSite",
+                "url": "https://www.focushypotheken.nl/",
+                "potentialAction": {
+                  "@type": "SearchAction",
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "https://www.focushypotheken.nl/search?q={search_term}"
+                  },
+                  "query-input": "required name=search_term"
+                }
+              },
+              {
+                "@context": "https://schema.org/",
+                "@type": "LocalBusiness",
+                "name": "Focus Hypotheken",
+                "url": "https://www.focushypotheken.nl",
+                "image": "https://static.wixstatic.com/media/9b5f4c_24617a1dce1941e780d096ebe40abe6e.svg",
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressCountry": "NL",
+                  "addressLocality": "Weurt",
+                  "addressRegion": "GE",
+                  "postalCode": "6551 AV",
+                  "streetAddress": "6D Scheidingsweg"
+                },
+                "telephone": "085-0049754"
+              },
+              {
+                "@context": "https://schema.org/",
+                "@type": "WebSite",
+                "name": "Focus Hypotheken",
+                "url": "https://www.focushypotheken.nl"
+              }
+            ],
+            "headers": {
+              "content-type": "text/html; charset=UTF-8",
+              "link": "<https://static.parastorage.com/>; rel=preconnect; crossorigin;, <https://static.parastorage.com/>; rel=preconnect;, <https://static.wixstatic.com/>; rel=preconnect; crossorigin;, <https://static.wixstatic.com/>; rel=preconnect;, <https://siteassets.parastorage.com>; rel=preconnect; crossorigin;, ",
+              "html-cacheable": "true",
+              "etag": "W/\"387ee0f1715f660d6192b7252e6a506b\"",
+              "content-language": "en-US",
+              "strict-transport-security": "max-age=86400",
+              "cache-control": "public, max-age=0, must-revalidate",
+              "server": "Pepyaka",
+              "x-content-type-options": "nosniff",
+              "content-encoding": "br",
+              "accept-ranges": "bytes",
+              "age": "78716",
+              "date": "Mon, 28 Apr 2025 11:33:26 GMT",
+              "x-served-by": "cache-bur-kbur8200067-BUR",
+              "x-cache": "HIT",
+              "vary": "Accept-Encoding",
+              "server-timing": "cache;desc=hit, varnish;desc=hit_hit, dc;desc=fastly_g",
+              "set-cookie": "ssr-caching=cache#desc=hit#varnish=hit_hit#dc#desc=fastly_g; max-age=20\nclient-session-bind=15a14dd9-cc6c-400c-902c-991b7b2a1d9f; Path=/; Secure; SameSite=Lax;\nserver-session-bind=15a14dd9-cc6c-400c-902c-991b7b2a1d9f; Path=/; Secure; SameSite=Lax; HttpOnly;",
+              "x-wix-request-id": "1745840006.350177285737997439",
+              "x-seen-by": "yvSunuo/8ld62ehjr5B7kA==, ui2Pjuc3zC1HEw7V2qXeyh9slopJdhD+WySraMrpIY8=, dwc60INy8NFddnU/0WdlOB9slopJdhD+WySraMrpIY8=, m0j2EEknGIVUW/liY8BLLqPXpcX6IEGf7sG3D7kVVb612dp6dh43RoI517EOkRKF, 2d58ifebGbosy5xc+FRalqNpaqLX7FnUEvriDQxmeG3rcObObIkKnMvLxWSFwpPOU4t18k5eBa6iHq/Q5KOe6A==, 2UNV7KOq4oGjA5+PKsX47ECQPVwlNvMJ3BpySO/DZXM=",
+              "content-length": "158282",
+              "via": "1.1 google",
+              "glb-x-seen-by": "bS8wRlGzu0Hc+WrYuHB8QIg44yfcdCMJRkBoQ1h6Vjc=",
+              "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000",
+              "x-firefox-spdy": "h2"
+            }
+          },
+          "screenshotUrl": null,
+          "text": "Home | Focus Hypotheken\nOns verhaal\nFocus hypotheken heeft als doel duurzaam woongeluk te realiseren aan al onze relaties door het sluiten van een hypotheek op maat. \nOnze visie\nOnze visie is zorgen voor volledige transparantie. We ontzorgen onze klanten door proactief en oplossingsgericht mee te denken.\nOnafhankelijk\nWij geven onafhankelijk en onpartijdig hypotheekadvies. Dit betekent dat wij alle geldverstrekkers kunnen aanbieden.\nHoe wij werken\nSnelheid\nWij werken volgens een strak en duidelijk schema, waardoor we snel kunnen schakelen. \nBinnen enkele dagen een bindende offerte? Geen probleem. Zolang we maar de aandacht leggen op de juiste volgorde. \nSlim\nDoor gebruik te maken van een concept waarbij klanten volledig worden meegenomen in het proces ondersteund met de nieuwste technologie kunnen wij slim werken. \nDoelgericht\nWij focussen ons enkel op maatwerk hypotheekadvies. Dit maakt efficiënt \nwerken mogelijk en draagt bij aan een grote mate van klanttevredenheid. Voor andere expertises werken wij nauw samen met partners. \nMeer weten?\nOnafhankelijk\nHieronder een greep uit de maatschappijen waar wij mee samenwerken\nOplossingsgericht\nDit vinden anderen van onze dienstverlening\nPraise Testimonials for Wix \nJasper Akkers heeft tweemaal zeer succesvol onze hypotheek geregeld. Zijn advies is goed en duidelijk. Hij is geduldig.Loodst je door de enorme papierwinkel heen. Hij gaat alleen voor het allerbeste en is enorm gedreven Een echte aanrader\nWij raden Jasper zeker aan! We hebben een tijdje gezocht naar een woning. Al die tijd heeft Jasper met ons meegedacht. Toen ons bod eindelijk geaccepteerd was, stond Jasper ook direct voor ons klaar. Hij kwam naar ons toe en maakte alle tijd om dingen uit te leggen en vragen te beantwoorden. Hierdoor kregen wij een goed beeld van onze financiële situatie. Jasper is duidelijk, goed bereikbaar en pakt enorm door. Toen het ons zelf even niet lukte om de juiste documentatie rond te krijgen, heeft Jasper zelf gebeld met de betreffende personen. Erg prettig! Binnen zeer korte tijd was de hypotheek rond. Dankjewel voor de zeer prettige samenwerking! Groet, Niels en Floor\nJasper heeft ons ontzettend goed geholpen!! We hadden wat haast nadat we nageloot waren voor een nieuwbouwproject. Nadat we het telefoontje kregen dat we ingeloot waren heeft Jasper diezelfde dag nog alles in gang gezet. Er kwam van alles op ons af en we wisten maar weinig van een huis kopen, laat staan een hypotheek en alles wat erbij komt kijken. Jasper nam de tijd voor ons en legde alles haarfijn uit. Hierdoor werden we echt aan de hand meegenomen en konden we overzichtelijk en weloverwogen keuzes maken. Het was een erg fijne samenwerking en Jasper stond altijd voor ons klaar als we vragen hadden. Heel erg bedankt Jasper! We waarderen het zeer wat je allemaal voor ons gedaan hebt!! 😃\nEn dan komt het moment, dat er een nieuwe hypotheek afgesloten moet worden. Omdat het aanbod van onze eigen bank achter bleef, bij onze verwachtingen, tòch maar eens bij anderen geïnformeerd. Onze oudste zoon adviseerde, om het dan maar eens bij Focus Hypotheken te proberen, die hadden hem ook zeer goed geholpen. Dus contact opgenomen en zo kwam Jasper Akkers voor een gesprek naar Grave èn dat resulteerde in een plan, om bij diverse aanbieders een offerte aan te vragen. Na een paar dagen kwam Jasper met een prima aanbod van een degelijke financier en verzekeraar. Dankzij Jasper was de deal snel gemaakt en afgerond. Het was alleszins de moeite waard, bedankt Jasper, voor je advies.\nInnovatief\nSamenwerkende partners\nDe Beste Koper\n\nHet concept van \"debestekoper\" zorgt ervoor dat wij onze klanten door een goede samenwerking met verschillende partijen en grondige voorbereiding klaarstomen om de beste kandidaat te maken bij het kopen van een woning. \nErfplanner\n\n​Vaak denkt u pas aan deze vraag bij de aankoop van een woning, als u gaat samenwonen of in geval van het overlijden van een naaste. U staat namelijk volop in het leven en bent niet bezig met de kans op overlijden.\nHeezen & Jansen Makelaardij\nJouw makelaar in Elst en omstreken. Wij zijn uitsluitend woningmakelaar. Omdat wij alleen door klein en specialistisch te zijn jou het vakkundige en realistische woningadvies kunnen geven dat je van een goede makelaar verlangt.\nHW Makelaardij\nBij HW Makelaardij bent u verzekerd van een enthousiaste aanpak, open communicatie en duidelijke afspraken. Wij geven u persoonlijke aandacht en begeleiden u op een actieve en deskundige wijze.\nLeenattent\n\nLeenattent is opgericht in 1983 en is gespecialiseerd in consumptieve kredieten. Wij richten ons volledig op de bemiddeling in consumptief krediet. Daarbij gaat het om persoonlijke leningen en doorlopende kredieten.\nPositief Wonen\n\nPositief Wonen ontzorgt jou bij het verduurzamen van de woning. We geven onafhankelijk advies, zijn het centrale aanspreekpunt voor de installatie en zorgen voor een nieuw energielabel. Zo verlagen we je maandlasten. Gegarandeerd!\nUw Huismakelaar\n\nUW HUISMAKELAAR is uw specialist voor de regio Beuningen en Nijmegen alsook het land van Cuijk. Deze organisatie staat voor deskundigheid, kwaliteit en betrouwbaarheid",
+          "markdown": "# Home | Focus Hypotheken\n\n## Ons verhaal\n\nFocus hypotheken heeft als doel duurzaam woongeluk te realiseren aan al onze relaties door het sluiten van een hypotheek op maat. \n\n## Onze visie\n\nOnze visie is zorgen voor volledige transparantie. We ontzorgen onze klanten door proactief en oplossingsgericht mee te denken.\n\n### Onafhankelijk\n\nWij geven onafhankelijk en onpartijdig hypotheekadvies. Dit betekent dat wij alle geldverstrekkers kunnen aanbieden.\n\n### Hoe wij werken\n\n### Snelheid\n\nWij werken volgens een strak en duidelijk schema, waardoor we snel kunnen schakelen.   \nBinnen enkele dagen een bindende offerte? Geen probleem. Zolang we maar de aandacht leggen op de juiste volgorde. \n\n### Slim\n\nDoor gebruik te maken van een concept waarbij klanten volledig worden meegenomen in het proces ondersteund met de nieuwste technologie kunnen wij slim werken. \n\n![Beurs](https://static.wixstatic.com/media/fe3f4399e9924e20b4ecd51c3be56161.png/v1/fill/w_446,h_373,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Beurs.png)\n\n![Beurs](https://static.wixstatic.com/media/a3959f50d03f42cbafdb8ee0f21c5ca4.png/v1/fill/w_414,h_346,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Beurs.png)\n\n![Financiële grafiek](https://static.wixstatic.com/media/9debbf9f310949b5882d0b5937be94dc.png/v1/fill/w_478,h_478,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Financi%C3%ABle%20grafiek.png)\n\n### Doelgericht\n\nWij focussen ons enkel op maatwerk hypotheekadvies. Dit maakt efficiënt \n\nwerken mogelijk en draagt bij aan een grote mate van klanttevredenheid. Voor andere expertises werken wij nauw samen met partners. \n\n### Meer weten?\n\n#### Onafhankelijk\n\n##### Hieronder een greep uit de maatschappijen waar wij mee samenwerken\n\n![](https://static.wixstatic.com/media/9b5f4c_0509ee7174d844a6b0132f10f3af7915~mv2.jpg/v1/fill/w_929,h_728,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/9b5f4c_0509ee7174d844a6b0132f10f3af7915~mv2.jpg)\n\n### Oplossingsgericht\n\n### Dit vinden anderen van onze dienstverlening\n\nPraise Testimonials for Wix  \n\nJasper Akkers heeft tweemaal zeer succesvol onze hypotheek geregeld. Zijn advies is goed en duidelijk. Hij is geduldig.Loodst je door de enorme papierwinkel heen. Hij gaat alleen voor het allerbeste en is enorm gedreven Een echte aanrader\n\nWij raden Jasper zeker aan! We hebben een tijdje gezocht naar een woning. Al die tijd heeft Jasper met ons meegedacht. Toen ons bod eindelijk geaccepteerd was, stond Jasper ook direct voor ons klaar. Hij kwam naar ons toe en maakte alle tijd om dingen uit te leggen en vragen te beantwoorden. Hierdoor kregen wij een goed beeld van onze financiële situatie. Jasper is duidelijk, goed bereikbaar en pakt enorm door. Toen het ons zelf even niet lukte om de juiste documentatie rond te krijgen, heeft Jasper zelf gebeld met de betreffende personen. Erg prettig! Binnen zeer korte tijd was de hypotheek rond. Dankjewel voor de zeer prettige samenwerking! Groet, Niels en Floor\n\nJasper heeft ons ontzettend goed geholpen!! We hadden wat haast nadat we nageloot waren voor een nieuwbouwproject. Nadat we het telefoontje kregen dat we ingeloot waren heeft Jasper diezelfde dag nog alles in gang gezet. Er kwam van alles op ons af en we wisten maar weinig van een huis kopen, laat staan een hypotheek en alles wat erbij komt kijken. Jasper nam de tijd voor ons en legde alles haarfijn uit. Hierdoor werden we echt aan de hand meegenomen en konden we overzichtelijk en weloverwogen keuzes maken. Het was een erg fijne samenwerking en Jasper stond altijd voor ons klaar als we vragen hadden. Heel erg bedankt Jasper! We waarderen het zeer wat je allemaal voor ons gedaan hebt!! 😃\n\nEn dan komt het moment, dat er een nieuwe hypotheek afgesloten moet worden. Omdat het aanbod van onze eigen bank achter bleef, bij onze verwachtingen, tòch maar eens bij anderen geïnformeerd. Onze oudste zoon adviseerde, om het dan maar eens bij Focus Hypotheken te proberen, die hadden hem ook zeer goed geholpen. Dus contact opgenomen en zo kwam Jasper Akkers voor een gesprek naar Grave èn dat resulteerde in een plan, om bij diverse aanbieders een offerte aan te vragen. Na een paar dagen kwam Jasper met een prima aanbod van een degelijke financier en verzekeraar. Dankzij Jasper was de deal snel gemaakt en afgerond. Het was alleszins de moeite waard, bedankt Jasper, voor je advies.\n\n### Innovatief\n\n### Samenwerkende partners\n\n![](https://static.wixstatic.com/media/9b5f4c_368b0ad9d1dc4e48b3ee7c0fd0d770dd~mv2.jpg/v1/fill/w_245,h_84,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Beaufort.jpg)\n\n![](https://static.wixstatic.com/media/9b5f4c_71e124b944194f7699746a74e51c5ce3~mv2.jpg/v1/fill/w_201,h_114,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Bolck.jpg)\n\n![](https://static.wixstatic.com/media/9b5f4c_0e8578415ed84195b8d60ceb12b57f1e~mv2.jpg/v1/fill/w_223,h_59,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Schermafbeelding%202023-01-24%20162841_edited.jpg)\n\n### De Beste Koper  \n Het concept van \"debestekoper\" zorgt ervoor dat wij onze klanten door een goede samenwerking met verschillende partijen en grondige voorbereiding klaarstomen om de beste kandidaat te maken bij het kopen van een woning. \n\n![](https://static.wixstatic.com/media/9b5f4c_af87470de24e428184fef596ebfbc841~mv2.png/v1/fill/w_231,h_121,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/De%20Lorijn%20logo.png)\n\n![](https://static.wixstatic.com/media/9b5f4c_4f547b7032a74a42a897114c2d3e6db3~mv2.jpg/v1/fill/w_155,h_141,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/erfplanner.jpg)\n\n### [Erfplanner](https://www.erfplanner.nl/)  \n ​Vaak denkt u pas aan deze vraag bij de aankoop van een woning, als u gaat samenwonen of in geval van het overlijden van een naaste. U staat namelijk volop in het leven en bent niet bezig met de kans op overlijden.\n\n![](https://static.wixstatic.com/media/9b5f4c_b6013750d2a444a0aedac9733192d77d~mv2.jpg/v1/fill/w_237,h_83,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/heezen%26jansen.jpg)\n\n### [Heezen & Jansen Makelaardij](https://www.heezenjansen.nl/)\n\n### Jouw makelaar in Elst en omstreken. Wij zijn uitsluitend woningmakelaar. Omdat wij alleen door klein en specialistisch te zijn jou het vakkundige en realistische woningadvies kunnen geven dat je van een goede makelaar verlangt.\n\n![](https://static.wixstatic.com/media/9b5f4c_34cc445ee85c4d0ab7e443e55ed0b01d~mv2.png/v1/fill/w_130,h_177,al_c,lg_1,q_85,enc_avif,quality_auto/Houwen.png)\n\n![](https://static.wixstatic.com/media/9b5f4c_1d05b4142507441dbbbaa3c94305bc9b~mv2.jpg/v1/fill/w_152,h_149,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/HW.jpg)\n\n### [HW Makelaardij](https://www.hwmakelaardij.nl/)  \n \n\n### Bij HW Makelaardij bent u verzekerd van een enthousiaste aanpak, open communicatie en duidelijke afspraken. Wij geven u persoonlijke aandacht en begeleiden u op een actieve en deskundige wijze.\n\n![](https://static.wixstatic.com/media/9b5f4c_c033f3c2fcad48ba9e106b01f9194150~mv2.jpg/v1/fill/w_213,h_65,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/leenattent.jpg)\n\n### [Leenattent](https://leenattent.nl/)  \n Leenattent is opgericht in 1983 en is gespecialiseerd in consumptieve kredieten. Wij richten ons volledig op de bemiddeling in consumptief krediet. Daarbij gaat het om persoonlijke leningen en doorlopende kredieten.\n\n![](https://static.wixstatic.com/media/9b5f4c_dde1bf4d4e304b37a7870d9170600dd4~mv2.png/v1/fill/w_193,h_114,al_c,lg_1,q_85,enc_avif,quality_auto/Ankie.png)\n\n![](https://static.wixstatic.com/media/9b5f4c_1eb8a3e8537d485dae38d07c568b3b74~mv2.png/v1/fill/w_220,h_72,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Leygraaf.png)\n\n![](https://static.wixstatic.com/media/9b5f4c_b2cf4f8707614a05b6f79ff06e9179a7~mv2.jpg/v1/fill/w_200,h_94,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/positief%20wonen.jpg)\n\n### [Positief Wonen](https://positiefwonen.nl/)  \n Positief Wonen ontzorgt jou bij het verduurzamen van de woning. We geven onafhankelijk advies, zijn het centrale aanspreekpunt voor de installatie en zorgen voor een nieuw energielabel. Zo verlagen we je maandlasten. Gegarandeerd!\n\n![](https://static.wixstatic.com/media/9b5f4c_88f73dbf91c146e9840c682f1d7c7cee~mv2.png/v1/fill/w_248,h_119,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/uwhuismakelaar.png)\n\n### [Uw Huismakelaar](https://www.uwhuismakelaar.info/)  \n UW HUISMAKELAAR is uw specialist voor de regio Beuningen en Nijmegen alsook het land van Cuijk. Deze organisatie staat voor deskundigheid, kwaliteit en betrouwbaarheid",
+          "debug": {
+            "requestHandlerMode": "browser"
+          }
+        }
+      },
+      {
+        "json": {
+          "url": "https://www.focushypotheken.nl/achterdeschermen",
+          "crawl": {
+            "loadedUrl": "https://www.focushypotheken.nl/achterdeschermen",
+            "loadedTime": "2025-04-28T11:33:51.487Z",
+            "referrerUrl": "https://focushypotheken.nl/",
+            "depth": 1,
+            "httpStatusCode": 200
+          },
+          "metadata": {
+            "canonicalUrl": "https://www.focushypotheken.nl/achterdeschermen",
+            "title": "Achter de schermen | Focus Hypotheken",
+            "description": null,
+            "author": null,
+            "keywords": null,
+            "languageCode": "nl",
+            "openGraph": [
+              {
+                "property": "og:title",
+                "content": "Achter de schermen | Focus Hypotheken"
+              },
+              {
+                "property": "og:url",
+                "content": "https://www.focushypotheken.nl/achterdeschermen"
+              },
+              {
+                "property": "og:site_name",
+                "content": "Focus Hypotheken"
+              },
+              {
+                "property": "og:type",
+                "content": "website"
+              }
+            ],
+            "jsonLd": null,
+            "headers": {
+              "content-type": "text/html; charset=UTF-8",
+              "link": "<https://static.parastorage.com/>; rel=preconnect; crossorigin;, <https://static.parastorage.com/>; rel=preconnect;, <https://static.wixstatic.com/>; rel=preconnect; crossorigin;, <https://static.wixstatic.com/>; rel=preconnect;, <https://siteassets.parastorage.com>; rel=preconnect; crossorigin;, ",
+              "x-envoy-upstream-service-time": "1109",
+              "x-wix-request-id": "1745840022.94623105736621644723",
+              "html-cacheable": "true",
+              "etag": "W/\"df68366a95303bd1f474fa92925a1e04\"",
+              "content-language": "en-US",
+              "strict-transport-security": "max-age=86400",
+              "cache-control": "public, max-age=0, must-revalidate",
+              "server": "Pepyaka",
+              "x-content-type-options": "nosniff",
+              "content-encoding": "br",
+              "accept-ranges": "bytes",
+              "age": "0",
+              "date": "Mon, 28 Apr 2025 11:33:44 GMT",
+              "x-served-by": "cache-bur-kbur8200082-BUR",
+              "x-cache": "MISS",
+              "vary": "Accept-Encoding",
+              "server-timing": "cache;desc=miss, varnish;desc=miss_miss, dc;desc=fastly_sea1_g",
+              "set-cookie": "client-session-bind=15a14dd9-cc6c-400c-902c-991b7b2a1d9f; Path=/; Secure; SameSite=Lax;\nserver-session-bind=15a14dd9-cc6c-400c-902c-991b7b2a1d9f; Path=/; Secure; SameSite=Lax; HttpOnly;\nssr-caching=cache#desc=miss#varnish=miss_miss#dc#desc=fastly_sea1_g; max-age=20",
+              "x-seen-by": "yvSunuo/8ld62ehjr5B7kA==, T7xPrjRFKDMHVv938PYVfx9slopJdhD+WySraMrpIY8=, 1ev8u3tblITHmgXkyGXE9h9slopJdhD+WySraMrpIY8=, m0j2EEknGIVUW/liY8BLLqPXpcX6IEGf7sG3D7kVVb5oPgwuwRhTrzeWemEC6UKw, 2d58ifebGbosy5xc+FRalnxBMpYqMdnIqU5edwS4THNAX/+TG0NsdZGq4xY8qbpZvPSDDmvP3Y8RAyfxABX9xA==, 2UNV7KOq4oGjA5+PKsX47EcNVZxMrnxWFErTxnFN3IM=, /B3VgDtICCNDWQOEWfZmMrzmSnM7E7s+xBGB3V0EJJg=, /j+AjfLiOiE0Vc9NsP8sK/Q/yGeUUlru5NAamir4uvsj6r0AZAMucqm4C7kwBEyawK0T2R83TlnbU++qwYaUdw==, /B3VgDtICCNDWQOEWfZmMtCianeMn/a8sqeg3Ocvplg=, LoUK8/saGAmOxZWtpubo2jHUlK1mnIcaqRjYhCjFXYjA9E4BTt48zn0nCaeK1o7e7XQNHsxmCSC/8z5E9tTZwVokiE8vYc3hq/F04NQmGHg=, /B3VgDtICCNDWQOEWfZmMq1Avv4eVvassbiMzbek4Dw=, /a5ccLSK1HEmwPNg/x6OuhzG6Jnxn8NqVidZpt2fSWsxjG9VtTLd5DUR1F0ArqhmlcT7HVKLqghdwVccyC7oiyOxhMXggo8d27PkAPhqksk=",
+              "via": "1.1 google",
+              "glb-x-seen-by": "bS8wRlGzu0Hc+WrYuHB8QIg44yfcdCMJRkBoQ1h6Vjc=",
+              "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000",
+              "x-firefox-spdy": "h2"
+            }
+          },
+          "screenshotUrl": null,
+          "text": "Achter de schermen | Focus Hypotheken\nAchter de schermen\nBij Focus Hypotheken streven we ernaar om je door het gehele hypotheekproces te begeleiden en te ondersteunen, zodat je zorgeloos jouw droomhuis kunt kopen.\nWe willen graag transparant werken en openheid van zaken geven. Omdat klanten vaak geen besef hebben wat er allemaal komt kijken bij een hypotheekaanvraag van A t/m Z, geven we je graag een kijkje in onze keuken. We houden je per fase op de hoogte om ervoor te zorgen dat verwachtingen goed worden gemanaged en jij precies weet waar je aan toe bent. Dat geeft rust en vertrouwen. Een prettig gevoel.\nEen gemiddeld hypotheekdossier neemt ongeveer 30 uur in beslag. Afhankelijk van de complexiteit of verschillende vormen van dienstverlening die worden afgenomen, kan het aantal uren afwijken. Zie hiervoor onze dienstverleningsovereenkomst.\nWij werken met de volgende fases:\n1. Oriëntatiefase:\n- Eerste kennismakingsgesprek plannen\n- Klantgegevens verzamelen\n- Informatie geven over het hypotheekproces\n- Behoeften en wensen van de klant inventariseren\n- Financiële situatie van de klant analyseren\n- Informatie verzamelen over huidige financiële verplichtingen\n- Bepalen van het beschikbare budget\n- Uitvoeren van kredietwaardigheidschecks\n- Bespreken van verschillende hypotheekvormen\n- Bespreken concept “De Beste Koper” en samenwerkende partners\n- Bespreken hypotheekcertificaat\n- Bespreken mogelijkheid risicoloos kopen zonder voorbehoud van financiering\n- Voorlopige berekening van maandlasten maken\n- Voorlopige berekening van maximale hypotheek maken\n- Uitleg geven over het belang van een goedgekeurde hypotheek en grondige voorbereiding\n- Bespreken en activeren klantportaal\n- Bespreken kosten dienstverlening\n- Documentenlijst voor klant opstellen voor klaarzetten hypotheekaanvraag\n- Vervolgafspraken maken en verwachtingen managen\n2. Adviesfase:\n- Marktanalyse uitvoeren\n- Hypotheekrente tarieven vergelijken\n- Hypotheekaanbieders vergelijken\n- Bespreken verbouwingen en/of verduurzaming\n- Adviesrapport opstellen\n- Adviesgesprek met klant plannen\n- Adviesgesprek voeren\n- Klant informeren over risico's en voorwaarden bij langleven, overlijden, arbeidsongeschiktheid, werkloosheid en relatie beëindiging\n- Bespreken van verzekeringsopties\n- Bespreken van Nationale Hypotheek Garantie (NHG)\n- Bespreken van mogelijke subsidies en/of regelingen\n- Beantwoorden van klantvragen\n- Doorrekenen van verschillende scenario's\n- Aanpassingen maken op basis van klantfeedback\n- Vervolgafspraken maken en verwachtingen managen\n3. Aanvraagfase:\n- Verzamelen van aanvullende benodigde documenten\n- Aanvraagformulier(en) invullen\n- Klantdocumenten controleren op juistheid\n- Aanvraag indienen en voortang monitoren bij hypotheekverstrekker\n- Bevestiging van ontvangst van aanvraag door hypotheekverstrekker\n- Communicatie met hypotheekverstrekker over voortgang\n- Klant op de hoogte houden van status\n- Aanvullende documenten aanleveren indien nodig\n- Wachten op hypotheekofferte\n- Vervolgafspraken maken en verwachtingen managen\n4. Offertefase:\n- Hypotheekofferte ontvangen en controleren\n- Offerte bespreken met klant\n- Beantwoorden van klantvragen over de offerte\n- Klant helpen bij het ondertekenen van de offerte\n- Offerte retourneren aan hypotheekverstrekker\n- Eventuele aanpassingen bespreken met hypotheekverstrekker\n- Bevestiging van geaccepteerde offerte ontvangen\n- Vervolgafspraken maken en verwachtingen managen\n5. Aktefase:\n- Contact opnemen met notaris\n- Afspraken maken voor het passeren van de akte\n- Klant informeren over notarisafspraak\n- Controle van concept akte\n- Beantwoorden van klantvragen over de akte\n- Overleg met notaris over eventuele wijzigingen\n- Organiseren van ondertekening van de hypotheekakte\n- Hypotheekakte ondertekenen bij notaris\n- Betalingsverzoek sturen naar hypotheekverstrekker\n- Vervolgafspraken maken en verwachtingen managen\n6. Nazorg:\n- Informatie geven over de eerste betaling\n- Uitleg geven over jaarlijkse hypotheekoverzichten\n- Advies over toekomstige renteherzieningen\n- Klant informeren over mogelijke belastingvoordelen\n- Evaluatiegesprek plannen\n- Evaluatiegesprek voeren\n- Klant adviseren bij mogelijke financiële veranderingen\n- Bieden van ondersteuning bij vragen of problemen\n- Periodiek klantcontact onderhouden\n- Klant informeren over relevante wijzigingen in wet- en regelgeving\n- Controle van klanttevredenheid\n- Klant informeren over mogelijkheden tot hypotheekoversluiting\n- Bijhouden van klantdossier\n- Overhandigen “Verhuisplan Focus Hypotheken”\n- Herzien van overlijdensrisicoverzekering indien nodig\n- (3) Jaarlijkse check-up plannen\n7. Algemene administratieve taken:\n- Bijhouden van klantdossiers\n- Up-to-date blijven met hypotheekregelgeving\n- Netwerken met hypotheekverstrekkers\n- Opleidingen en trainingen volgen\n- Updaten van kennis over marktontwikkelingen\n- Beheren van CRM-systeem\n- Rapportages maken voor interne evaluatie\n- Werken aan klantacquisitie\n- Opstellen van marketingmateriaal\n- Bijwerken van de bedrijfswebsite\nWe zijn er trots op dat we je volledig kunnen begeleiden bij een van de belangrijkste financiële beslissingen in jouw leven en staan klaar om je tijdens elke fase van het proces te ondersteunen. Heb je vragen of wil je meer informatie? Neem gerust contact met ons op. Wij helpen je graag verder!",
+          "markdown": "# Achter de schermen | Focus Hypotheken\n\n#### Achter de schermen\n\nBij Focus Hypotheken streven we ernaar om je door het gehele hypotheekproces te begeleiden en te ondersteunen, zodat je zorgeloos jouw droomhuis kunt kopen.  \n \n\nWe willen graag transparant werken en openheid van zaken geven. Omdat klanten vaak geen besef hebben wat er allemaal komt kijken bij een hypotheekaanvraag van A t/m Z, geven we je graag een kijkje in onze keuken. We houden je per fase op de hoogte om ervoor te zorgen dat verwachtingen goed worden gemanaged en jij precies weet waar je aan toe bent. Dat geeft rust en vertrouwen. Een prettig gevoel.  \n \n\nEen gemiddeld hypotheekdossier neemt ongeveer 30 uur in beslag. Afhankelijk van de complexiteit of verschillende vormen van dienstverlening die worden afgenomen, kan het aantal uren afwijken. Zie hiervoor onze dienstverleningsovereenkomst.  \n \n\n##### Wij werken met de volgende fases:  \n \n\n##### 1\\. Oriëntatiefase:  \n \n\n\\- Eerste kennismakingsgesprek plannen\n\n\\- Klantgegevens verzamelen\n\n\\- Informatie geven over het hypotheekproces\n\n\\- Behoeften en wensen van de klant inventariseren\n\n\\- Financiële situatie van de klant analyseren\n\n\\- Informatie verzamelen over huidige financiële verplichtingen\n\n\\- Bepalen van het beschikbare budget\n\n\\- Uitvoeren van kredietwaardigheidschecks\n\n\\- Bespreken van verschillende hypotheekvormen\n\n\\- Bespreken concept “De Beste Koper” en samenwerkende partners\n\n\\- Bespreken hypotheekcertificaat\n\n\\- Bespreken mogelijkheid risicoloos kopen zonder voorbehoud van financiering\n\n\\- Voorlopige berekening van maandlasten maken\n\n\\- Voorlopige berekening van maximale hypotheek maken\n\n\\- Uitleg geven over het belang van een goedgekeurde hypotheek en grondige voorbereiding\n\n\\- Bespreken en activeren klantportaal\n\n\\- Bespreken kosten dienstverlening\n\n\\- Documentenlijst voor klant opstellen voor klaarzetten hypotheekaanvraag\n\n\\- Vervolgafspraken maken en verwachtingen managen\n\n##### 2\\. Adviesfase:  \n \n\n\\- Marktanalyse uitvoeren\n\n\\- Hypotheekrente tarieven vergelijken\n\n\\- Hypotheekaanbieders vergelijken\n\n\\- Bespreken verbouwingen en/of verduurzaming\n\n\\- Adviesrapport opstellen\n\n\\- Adviesgesprek met klant plannen\n\n\\- Adviesgesprek voeren\n\n\\- Klant informeren over risico's en voorwaarden bij langleven, overlijden, arbeidsongeschiktheid, werkloosheid en relatie beëindiging\n\n\\- Bespreken van verzekeringsopties\n\n\\- Bespreken van Nationale Hypotheek Garantie (NHG)\n\n\\- Bespreken van mogelijke subsidies en/of regelingen\n\n\\- Beantwoorden van klantvragen\n\n\\- Doorrekenen van verschillende scenario's\n\n\\- Aanpassingen maken op basis van klantfeedback\n\n\\- Vervolgafspraken maken en verwachtingen managen\n\n##### 3\\. Aanvraagfase:  \n \n\n\\- Verzamelen van aanvullende benodigde documenten\n\n\\- Aanvraagformulier(en) invullen\n\n\\- Klantdocumenten controleren op juistheid\n\n\\- Aanvraag indienen en voortang monitoren bij hypotheekverstrekker\n\n\\- Bevestiging van ontvangst van aanvraag door hypotheekverstrekker\n\n\\- Communicatie met hypotheekverstrekker over voortgang\n\n\\- Klant op de hoogte houden van status\n\n\\- Aanvullende documenten aanleveren indien nodig\n\n\\- Wachten op hypotheekofferte\n\n\\- Vervolgafspraken maken en verwachtingen managen  \n \n\n##### 4\\. Offertefase:  \n \n\n\\- Hypotheekofferte ontvangen en controleren\n\n\\- Offerte bespreken met klant\n\n\\- Beantwoorden van klantvragen over de offerte\n\n\\- Klant helpen bij het ondertekenen van de offerte\n\n\\- Offerte retourneren aan hypotheekverstrekker\n\n\\- Eventuele aanpassingen bespreken met hypotheekverstrekker\n\n\\- Bevestiging van geaccepteerde offerte ontvangen\n\n\\- Vervolgafspraken maken en verwachtingen managen\n\n##### 5\\. Aktefase:  \n \n\n\\- Contact opnemen met notaris\n\n\\- Afspraken maken voor het passeren van de akte\n\n\\- Klant informeren over notarisafspraak\n\n\\- Controle van concept akte\n\n\\- Beantwoorden van klantvragen over de akte\n\n\\- Overleg met notaris over eventuele wijzigingen\n\n\\- Organiseren van ondertekening van de hypotheekakte\n\n\\- Hypotheekakte ondertekenen bij notaris\n\n\\- Betalingsverzoek sturen naar hypotheekverstrekker\n\n\\- Vervolgafspraken maken en verwachtingen managen\n\n##### 6\\. Nazorg:  \n \n\n\\- Informatie geven over de eerste betaling\n\n\\- Uitleg geven over jaarlijkse hypotheekoverzichten\n\n\\- Advies over toekomstige renteherzieningen\n\n\\- Klant informeren over mogelijke belastingvoordelen\n\n\\- Evaluatiegesprek plannen\n\n\\- Evaluatiegesprek voeren\n\n\\- Klant adviseren bij mogelijke financiële veranderingen\n\n\\- Bieden van ondersteuning bij vragen of problemen\n\n\\- Periodiek klantcontact onderhouden\n\n\\- Klant informeren over relevante wijzigingen in wet- en regelgeving\n\n\\- Controle van klanttevredenheid\n\n\\- Klant informeren over mogelijkheden tot hypotheekoversluiting\n\n\\- Bijhouden van klantdossier\n\n\\- Overhandigen “Verhuisplan Focus Hypotheken”\n\n\\- Herzien van overlijdensrisicoverzekering indien nodig\n\n\\- (3) Jaarlijkse check-up plannen\n\n##### 7\\. Algemene administratieve taken:  \n \n\n\\- Bijhouden van klantdossiers\n\n\\- Up-to-date blijven met hypotheekregelgeving\n\n\\- Netwerken met hypotheekverstrekkers\n\n\\- Opleidingen en trainingen volgen\n\n\\- Updaten van kennis over marktontwikkelingen\n\n\\- Beheren van CRM-systeem\n\n\\- Rapportages maken voor interne evaluatie\n\n\\- Werken aan klantacquisitie\n\n\\- Opstellen van marketingmateriaal\n\n\\- Bijwerken van de bedrijfswebsite\n\nWe zijn er trots op dat we je volledig kunnen begeleiden bij een van de belangrijkste financiële beslissingen in jouw leven en staan klaar om je tijdens elke fase van het proces te ondersteunen. Heb je vragen of wil je meer informatie? Neem gerust contact met ons op. Wij helpen je graag verder!",
+          "debug": {
+            "requestHandlerMode": "browser"
+          }
+        }
+      },
+      {
+        "json": {
+          "url": "https://www.focushypotheken.nl/team-1",
+          "crawl": {
+            "loadedUrl": "https://www.focushypotheken.nl/team-1",
+            "loadedTime": "2025-04-28T11:33:51.495Z",
+            "referrerUrl": "https://focushypotheken.nl/",
+            "depth": 1,
+            "httpStatusCode": 200
+          },
+          "metadata": {
+            "canonicalUrl": "https://www.focushypotheken.nl/team-1",
+            "title": "Het Team | Focus Hypotheken",
+            "description": null,
+            "author": null,
+            "keywords": null,
+            "languageCode": "nl",
+            "openGraph": [
+              {
+                "property": "og:title",
+                "content": "Het Team | Focus Hypotheken"
+              },
+              {
+                "property": "og:url",
+                "content": "https://www.focushypotheken.nl/team-1"
+              },
+              {
+                "property": "og:site_name",
+                "content": "Focus Hypotheken"
+              },
+              {
+                "property": "og:type",
+                "content": "website"
+              }
+            ],
+            "jsonLd": null,
+            "headers": {
+              "content-type": "text/html; charset=UTF-8",
+              "link": "<https://static.parastorage.com/>; rel=preconnect; crossorigin;, <https://static.parastorage.com/>; rel=preconnect;, <https://static.wixstatic.com/>; rel=preconnect; crossorigin;, <https://static.wixstatic.com/>; rel=preconnect;, <https://siteassets.parastorage.com>; rel=preconnect; crossorigin;, ",
+              "x-wix-request-id": "1745840023.47723106272311458371",
+              "html-cacheable": "true",
+              "etag": "W/\"10aba62d025e937b46f894593e029971\"",
+              "content-language": "en-US",
+              "strict-transport-security": "max-age=86400",
+              "cache-control": "public, max-age=0, must-revalidate",
+              "server": "Pepyaka",
+              "x-content-type-options": "nosniff",
+              "content-encoding": "br",
+              "accept-ranges": "bytes",
+              "age": "0",
+              "date": "Mon, 28 Apr 2025 11:33:44 GMT",
+              "x-served-by": "cache-bur-kbur8200117-BUR",
+              "x-cache": "MISS",
+              "vary": "Accept-Encoding",
+              "server-timing": "cache;desc=miss, varnish;desc=miss_miss, dc;desc=fastly_sea1_g",
+              "set-cookie": "client-session-bind=15a14dd9-cc6c-400c-902c-991b7b2a1d9f; Path=/; Secure; SameSite=Lax;\nserver-session-bind=15a14dd9-cc6c-400c-902c-991b7b2a1d9f; Path=/; Secure; SameSite=Lax; HttpOnly;\nssr-caching=cache#desc=miss#varnish=miss_miss#dc#desc=fastly_sea1_g; max-age=20",
+              "x-seen-by": "yvSunuo/8ld62ehjr5B7kA==, 1ev8u3tblITHmgXkyGXE9h9slopJdhD+WySraMrpIY8=, 1ev8u3tblITHmgXkyGXE9h9slopJdhD+WySraMrpIY8=, m0j2EEknGIVUW/liY8BLLqPXpcX6IEGf7sG3D7kVVb55yQL6UlEFpG1U0PzWIj/H, 2d58ifebGbosy5xc+FRalnxBMpYqMdnIqU5edwS4THPbrP0EkcK+nBEXD5GHLpzElS3vr1H5BiMwC6t8F2R0Kw==, 2UNV7KOq4oGjA5+PKsX47ECQPVwlNvMJ3BpySO/DZXM=, /B3VgDtICCNDWQOEWfZmMjWcnCLx3kiasbBhrmT8Iqk=, /j+AjfLiOiE0Vc9NsP8sKzheDzSDc4s2vjXEs/FY3wAj6r0AZAMucqm4C7kwBEyas024gm6V+hh3lE/yMs+WDw==, /B3VgDtICCNDWQOEWfZmMgSfMNXah3KdWnUhyW4J+KE=, LoUK8/saGAmOxZWtpubo2jHUlK1mnIcaqRjYhCjFXYg7BffsS+zwEzLSg1TXwwCJNzYyElYj7B5J1ADsr7Uqm/klBpiIp+7Us/QsXsoJBN8=, /B3VgDtICCNDWQOEWfZmMuj4Dw2aVjxvps/PtDX8M64=, /a5ccLSK1HEmwPNg/x6OuhzG6Jnxn8NqVidZpt2fSWuo2X5Rp/X69bpN3c0nWqkmlcT7HVKLqghdwVccyC7oi+zRh4pndZb6jUKT0lzw8+k=",
+              "via": "1.1 google",
+              "glb-x-seen-by": "bS8wRlGzu0Hc+WrYuHB8QIg44yfcdCMJRkBoQ1h6Vjc=",
+              "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000",
+              "x-firefox-spdy": "h2"
+            }
+          },
+          "screenshotUrl": null,
+          "text": "Het Team | Focus Hypotheken\nJouw gids in Hypotheekland\nStel je voor dat je droomhuis eindelijk op de markt komt, maar het financiële plaatje lijkt een ingewikkelde puzzel. Geen zorgen, want bij Focus Hypotheken staat een team klaar om je te helpen. Dit is niet zomaar een adviesbureau; hier werken mensen die echt om jou geven en je persoonlijke situatie begrijpen. Maak kennis met Jasper Akkers, Sander Schiks en Erik Hendriks – de drijvende krachten achter Focus Hypotheken.\nJasper Akkers: de innovator die altijd een stap vooruit denkt\nJasper is de technologische wervelwind binnen Focus Hypotheken. Hij is altijd op zoek naar nieuwe manieren om het hypotheekadviesproces beter en efficiënter te maken. Misschien ben je niet zo thuis in de wereld van hypotheken, maar Jasper zorgt ervoor dat je altijd de nieuwste en beste oplossingen krijgt.\nMet zijn analytische geest en oog voor detail, zorgt Jasper ervoor dat je hypotheek perfect aansluit bij jouw situatie. Zijn aanpak is persoonlijk en betrokken; hij neemt de tijd om je echt te leren kennen en te begrijpen wat je nodig hebt. Jasper zorgt ervoor dat je niet alleen een hypotheek krijgt, maar dat je ook begrijpt waarom deze het beste voor je is.\n​\n​​\n​\n​\n​\n​​\n​\n​\n​\n​\n​\n​\n​\n​\n​\nSander Schiks: de netwerk specialist die altijd voor je klaarstaat\nAls je met Sander praat, merk je meteen dat hij iemand is die echt luistert. Hij is niet alleen een van de oprichters van Focus Hypotheken, maar ook een geboren netwerker. Sander begrijpt dat het kopen van een huis een grote stap is en dat het soms overweldigend kan zijn. Daarom zorgt hij ervoor dat je altijd op de hoogte bent van wat er gebeurt en dat je precies weet waar je aan toe bent.\nSander heeft een schat aan ervaring en kennis als Erkend Financieel Adviseur (EFA) en Registered Life Planner (RLP). Maar wat hem echt bijzonder maakt, is zijn vermogen om complexe financiële informatie op een begrijpelijke manier uit te leggen. Bij hem voel je je meteen op je gemak, en weet je dat je in goede handen bent.\nErik Hendriks: de manager die altijd een oplossing heeft\nErik is de man die alles soepel laat verlopen. Als er iemand is die ervoor zorgt dat alle puzzelstukjes op hun plek vallen, dan is het Erik wel. Hij is verantwoordelijk voor het strategische en operationele management van Focus Hypotheken, en zijn pragmatische aanpak maakt hem onmisbaar.\nErik heeft een talent voor het vinden van groeimogelijkheden en het implementeren van strategieën die de dienstverlening verbeteren. Zijn leiderschap zorgt ervoor dat jij altijd kunt rekenen op een team dat klaarstaat om je te helpen. Hij begrijpt dat elke situatie uniek is en biedt oplossingen die perfect passen bij jouw behoeften.\nWaarom kiezen voor Focus Hypotheken?\n\nBij Focus Hypotheken draait alles om onafhankelijkheid en maatwerk. Dit betekent dat ze samenwerken met een breed scala aan hypotheekverstrekkers, zodat ze jou echt onafhankelijk advies kunnen geven. Geen verborgen agenda’s, alleen transparante en eerlijke communicatie.\nDuurzaamheid is ook een belangrijke pijler voor hen. Ze streven ernaar om niet alleen financiële zekerheid te bieden, maar ook bij te dragen aan een duurzame toekomst. Dit betekent dat ze je helpen met oplossingen die zowel financieel voordelig als milieuvriendelijk zijn.\nWat klanten zeggen\nDe ervaringen van andere klanten spreken boekdelen. Op platforms zoals Advieskeuze.nl scoort Focus Hypotheken hoog dankzij de persoonlijke aandacht en deskundigheid van het team. Klanten prijzen Jasper, Sander en Erik om hun geduld, betrokkenheid en vermogen om hen door het complexe hypotheeklandschap te gidsen.\nKlaar voor de toekomst\nFocus Hypotheken blijft zich ontwikkelen en innoveren. Met de voortdurende veranderingen in de financiële markt en de toenemende vraag naar duurzame oplossingen, blijft het team proactief in het aanpassen van hun strategieën en het introduceren van nieuwe technologieën en methoden om jou beter van dienst te zijn.\nDankzij de sterke fundamenten gelegd door Sander, Jasper en Erik, ziet de toekomst er rooskleurig uit voor Focus Hypotheken. Hun gezamenlijke visie en inzet zorgen ervoor dat het bedrijf blijft groeien en bloeien, met een blijvende focus op jouw tevredenheid en duurzaamheid.\nConclusie\nAls je op zoek bent naar hypotheekadvies dat niet alleen deskundig maar ook persoonlijk en betrokken is, dan zit je goed bij Focus Hypotheken. Met Jasper Akkers, Sander Schiks en Erik Hendriks aan je zijde, weet je zeker dat je in goede handen bent. Kom eens langs voor een bak koffie en ontdek hoe zij je kunnen helpen met jouw hypotheekavontuur.\nBij Focus Hypotheken staan ze altijd voor je klaar, zodat jij je droomhuis kunt realiseren!",
+          "markdown": "# Het Team | Focus Hypotheken\n\nJouw gids in Hypotheekland  \n \n\nStel je voor dat je droomhuis eindelijk op de markt komt, maar het financiële plaatje lijkt een ingewikkelde puzzel. Geen zorgen, want bij Focus Hypotheken staat een team klaar om je te helpen. Dit is niet zomaar een adviesbureau; hier werken mensen die echt om jou geven en je persoonlijke situatie begrijpen. Maak kennis met Jasper Akkers, Sander Schiks en Erik Hendriks – de drijvende krachten achter Focus Hypotheken.\n\nJasper Akkers: de innovator die altijd een stap vooruit denkt\n\nJasper is de technologische wervelwind binnen Focus Hypotheken. Hij is altijd op zoek naar nieuwe manieren om het hypotheekadviesproces beter en efficiënter te maken. Misschien ben je niet zo thuis in de wereld van hypotheken, maar Jasper zorgt ervoor dat je altijd de nieuwste en beste oplossingen krijgt.\n\nMet zijn analytische geest en oog voor detail, zorgt Jasper ervoor dat je hypotheek perfect aansluit bij jouw situatie. Zijn aanpak is persoonlijk en betrokken; hij neemt de tijd om je echt te leren kennen en te begrijpen wat je nodig hebt. Jasper zorgt ervoor dat je niet alleen een hypotheek krijgt, maar dat je ook begrijpt waarom deze het beste voor je is.\n\n​\n\n​​\n\n​\n\n​\n\n​\n\n​​\n\n​\n\n​\n\n​\n\n​\n\n​\n\n​\n\n​\n\n​\n\n​\n\nSander Schiks: de netwerk specialist die altijd voor je klaarstaat  \n \n\nAls je met Sander praat, merk je meteen dat hij iemand is die echt luistert. Hij is niet alleen een van de oprichters van Focus Hypotheken, maar ook een geboren netwerker. Sander begrijpt dat het kopen van een huis een grote stap is en dat het soms overweldigend kan zijn. Daarom zorgt hij ervoor dat je altijd op de hoogte bent van wat er gebeurt en dat je precies weet waar je aan toe bent.\n\nSander heeft een schat aan ervaring en kennis als Erkend Financieel Adviseur (EFA) en Registered Life Planner (RLP). Maar wat hem echt bijzonder maakt, is zijn vermogen om complexe financiële informatie op een begrijpelijke manier uit te leggen. Bij hem voel je je meteen op je gemak, en weet je dat je in goede handen bent.\n\nErik Hendriks: de manager die altijd een oplossing heeft\n\nErik is de man die alles soepel laat verlopen. Als er iemand is die ervoor zorgt dat alle puzzelstukjes op hun plek vallen, dan is het Erik wel. Hij is verantwoordelijk voor het strategische en operationele management van Focus Hypotheken, en zijn pragmatische aanpak maakt hem onmisbaar.\n\nErik heeft een talent voor het vinden van groeimogelijkheden en het implementeren van strategieën die de dienstverlening verbeteren. Zijn leiderschap zorgt ervoor dat jij altijd kunt rekenen op een team dat klaarstaat om je te helpen. Hij begrijpt dat elke situatie uniek is en biedt oplossingen die perfect passen bij jouw behoeften.\n\nWaarom kiezen voor Focus Hypotheken?\n\n  \nBij Focus Hypotheken draait alles om onafhankelijkheid en maatwerk. Dit betekent dat ze samenwerken met een breed scala aan hypotheekverstrekkers, zodat ze jou echt onafhankelijk advies kunnen geven. Geen verborgen agenda’s, alleen transparante en eerlijke communicatie.  \n \n\nDuurzaamheid is ook een belangrijke pijler voor hen. Ze streven ernaar om niet alleen financiële zekerheid te bieden, maar ook bij te dragen aan een duurzame toekomst. Dit betekent dat ze je helpen met oplossingen die zowel financieel voordelig als milieuvriendelijk zijn.\n\nWat klanten zeggen  \n \n\nDe ervaringen van andere klanten spreken boekdelen. Op platforms zoals Advieskeuze.nl scoort Focus Hypotheken hoog dankzij de persoonlijke aandacht en deskundigheid van het team. Klanten prijzen Jasper, Sander en Erik om hun geduld, betrokkenheid en vermogen om hen door het complexe hypotheeklandschap te gidsen.\n\nKlaar voor de toekomst  \n \n\nFocus Hypotheken blijft zich ontwikkelen en innoveren. Met de voortdurende veranderingen in de financiële markt en de toenemende vraag naar duurzame oplossingen, blijft het team proactief in het aanpassen van hun strategieën en het introduceren van nieuwe technologieën en methoden om jou beter van dienst te zijn.  \n \n\nDankzij de sterke fundamenten gelegd door Sander, Jasper en Erik, ziet de toekomst er rooskleurig uit voor Focus Hypotheken. Hun gezamenlijke visie en inzet zorgen ervoor dat het bedrijf blijft groeien en bloeien, met een blijvende focus op jouw tevredenheid en duurzaamheid.\n\nConclusie  \n \n\nAls je op zoek bent naar hypotheekadvies dat niet alleen deskundig maar ook persoonlijk en betrokken is, dan zit je goed bij Focus Hypotheken. Met Jasper Akkers, Sander Schiks en Erik Hendriks aan je zijde, weet je zeker dat je in goede handen bent. Kom eens langs voor een bak koffie en ontdek hoe zij je kunnen helpen met jouw hypotheekavontuur.  \n \n\nBij Focus Hypotheken staan ze altijd voor je klaar, zodat jij je droomhuis kunt realiseren!",
+          "debug": {
+            "requestHandlerMode": "browser"
+          }
+        }
+      },
+      {
+        "json": {
+          "url": "https://www.focushypotheken.nl/file-share",
+          "crawl": {
+            "loadedUrl": "https://www.focushypotheken.nl/file-share",
+            "loadedTime": "2025-04-28T11:33:57.805Z",
+            "referrerUrl": "https://focushypotheken.nl/",
+            "depth": 1,
+            "httpStatusCode": 200
+          },
+          "metadata": {
+            "canonicalUrl": "https://www.focushypotheken.nl/file-share",
+            "title": "Downloads | Focus Hypotheken",
+            "description": null,
+            "author": null,
+            "keywords": null,
+            "languageCode": "nl",
+            "openGraph": [
+              {
+                "property": "og:title",
+                "content": "Downloads | Focus Hypotheken"
+              },
+              {
+                "property": "og:url",
+                "content": "https://www.focushypotheken.nl/file-share"
+              },
+              {
+                "property": "og:site_name",
+                "content": "Focus Hypotheken"
+              },
+              {
+                "property": "og:type",
+                "content": "website"
+              }
+            ],
+            "jsonLd": null,
+            "headers": {
+              "content-type": "text/html; charset=UTF-8",
+              "link": "<https://static.parastorage.com/>; rel=preconnect; crossorigin;, <https://static.parastorage.com/>; rel=preconnect;, <https://static.wixstatic.com/>; rel=preconnect; crossorigin;, <https://static.wixstatic.com/>; rel=preconnect;, <https://siteassets.parastorage.com>; rel=preconnect; crossorigin;, ",
+              "x-wix-request-id": "1745840033.83823105182831754042",
+              "set-cookie": "hs=-1347208927; Max-Age=-1; Expires=Mon, 28 Apr 2025 11:33:54 GMT; Path=/; Domain=www.focushypotheken.nl; Secure; HTTPOnly\nsvSession=e0056f221454f1610758beea664c0da2cb514b54058fee4145ecb822bea98ee8706941a48f202f6a843e3d4cc19f50d01e60994d53964e647acf431e4f798bcd5da8094d04937779d6b846ad83624eac9e838db134ed37646fbc71f1ba631c4d0e4bad8f28aa8bbdae6fe8a2482fd43a4113b2a33799f8291eeac3fa0939de3b970296b050766a0fef9c8f93743f1652; Max-Age=63071975; Expires=Wed, 28 Apr 2027 11:33:30 GMT; Path=/; Domain=www.focushypotheken.nl; Secure; HTTPOnly; SameSite=None\n_wixAB3|77185e80-58b0-4288-8962-c81317cf27ae=; Max-Age=0; Expires=Mon, 28 Apr 2025 11:33:55 GMT; Path=/file-share; Domain=.wix.com\nclient-session-bind=15a14dd9-cc6c-400c-902c-991b7b2a1d9f; Path=/; Secure; SameSite=Lax\nserver-session-bind=15a14dd9-cc6c-400c-902c-991b7b2a1d9f; Path=/; Secure; HTTPOnly; SameSite=Lax\nssr-caching=cache#desc=none; Max-Age=20; Expires=Mon, 28 Apr 2025 11:34:15 GMT",
+              "cache-control": "no-cache",
+              "content-language": "en-US",
+              "strict-transport-security": "max-age=86400",
+              "age": "0",
+              "server": "Pepyaka",
+              "x-content-type-options": "nosniff",
+              "content-encoding": "br",
+              "accept-ranges": "bytes",
+              "date": "Mon, 28 Apr 2025 11:33:55 GMT",
+              "x-served-by": "cache-bur-kbur8200116-BUR",
+              "x-cache": "MISS",
+              "vary": "Accept-Encoding",
+              "server-timing": "cache;desc=none",
+              "x-seen-by": "yvSunuo/8ld62ehjr5B7kA==, ui2Pjuc3zC1HEw7V2qXeyh9slopJdhD+WySraMrpIY8=, 1ev8u3tblITHmgXkyGXE9h9slopJdhD+WySraMrpIY8=, m0j2EEknGIVUW/liY8BLLqPXpcX6IEGf7sG3D7kVVb7YIHqi/QJQ19icwuscpsv7, 2d58ifebGbosy5xc+FRalnxBMpYqMdnIqU5edwS4THNAX/+TG0NsdZGq4xY8qbpZvPSDDmvP3Y8RAyfxABX9xA==, 2UNV7KOq4oGjA5+PKsX47ECQPVwlNvMJ3BpySO/DZXM=, /B3VgDtICCNDWQOEWfZmMrzmSnM7E7s+xBGB3V0EJJg=, /j+AjfLiOiE0Vc9NsP8sK73A1MENqdgcisCQLUYQ1Rgj6r0AZAMucqm4C7kwBEyajuQW07f0eBXtOhGKgIGoQg==, /B3VgDtICCNDWQOEWfZmMgSfMNXah3KdWnUhyW4J+KE=, LoUK8/saGAmOxZWtpubo2jHUlK1mnIcaqRjYhCjFXYgtVJcNwP7ChEbTvRwH5SmhbDBkKHg8pZK5rTN+uE6PEvC22IppHEG7Q3X0Hk89N+E=, /B3VgDtICCNDWQOEWfZmMgSfMNXah3KdWnUhyW4J+KE=, /a5ccLSK1HEmwPNg/x6OuhzG6Jnxn8NqVidZpt2fSWtAFcwy6JJzGZ6UdFgHhKqXlcT7HVKLqghdwVccyC7oi5CNWWAKYhhTu6fW50BHXLA=",
+              "via": "1.1 google",
+              "glb-x-seen-by": "bS8wRlGzu0Hc+WrYuHB8QIg44yfcdCMJRkBoQ1h6Vjc=",
+              "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000",
+              "x-firefox-spdy": "h2"
+            }
+          },
+          "screenshotUrl": null,
+          "text": "Downloads | Focus Hypotheken\ntop of page\nDienstenwijzer Focus Hypotheken 2023.pdf\nPrivacy- en Cookie verklaring.pdf\nVergelijkingskaart Hypotheek.pdf\nVergelijkingskaart Risicos afdekken (1).pdf\nVergelijkingskaart Vermogen opbouwen.pdf\nbottom of page",
+          "markdown": "# Downloads | Focus Hypotheken\n\ntop of page\n\nDienstenwijzer Focus Hypotheken 2023.pdf\n\nPrivacy- en Cookie verklaring.pdf\n\nVergelijkingskaart Hypotheek.pdf\n\nVergelijkingskaart Risicos afdekken (1).pdf\n\nVergelijkingskaart Vermogen opbouwen.pdf\n\nbottom of page",
+          "debug": {
+            "requestHandlerMode": "browser"
+          }
+        }
+      }
+    ],
+    "AI Agent (NL)": [
+      {
+        "json": {
+          "output": "Vapi AI Prompt: Focus Hypotheken Sales Agent\n\nThis prompt instructs the Vapi AI agent to act as a sales representative for Focus Hypotheken. The agent should answer questions, handle objections, perform needs discovery, assess suitability, and schedule appointments.\n\nAgent persona: Friendly, efficient, knowledgeable mortgage advisor representing Focus Hypotheken.\n\nKnowledge Base: Focus Hypotheken provides independent, impartial mortgage advice, aiming for sustainable housing solutions through tailored mortgages.  They offer fast service (binding offers within days), utilize smart technology, and prioritize client satisfaction.  They collaborate with partners for additional services. Client testimonials highlight their expertise, patience, and proactive support.  The team comprises Jasper Akkers, Sander Schiks, and Erik Hendriks, each bringing unique skills to the company.\n\nSales Process:\n\n1.  Greeting and introduction:  Start with a friendly greeting, introducing yourself and Focus Hypotheken.\n2.  Needs discovery:  Ask open-ended questions to understand the caller's needs, financial situation, and timeline.\n3.  Address objections: Handle objections proactively, referencing client testimonials and Focus Hypotheken's strengths (speed, transparency, personalized service).\n4.  Determine fit:  Assess if Focus Hypotheken is suitable based on the gathered information.\n5.  Present solutions:  If suitable, briefly explain the process and how Focus Hypotheken can assist.\n6.  Appointment scheduling:  Guide the conversation to schedule a consultation with a Focus Hypotheken advisor.  Confirm appointment details.\n7.  Closing:  Reiterate Focus Hypotheken's commitment and thank the caller.\n\nExample interaction:  \"Goedemorgen!  Dit is [Agent Name] van Focus Hypotheken. We helpen mensen zoals u hun droomhuis te realiseren.  Vertelt u eens over uw plannen?\"\n\n\nRemember to avoid any characters outside of the standard alphabet and spaces.\n"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent (NL)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent (NL)",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Scrape Lead Website (US)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Scrape Lead Website (NL)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Scrape Lead Website (PT)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent (NL)": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Lead Website (US)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Lead Website (NL)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Lead Website (PT)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Awaz Contact": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Awaz Agents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Awaz Lists": {
+      "main": [
+        [
+          {
+            "node": "Add Awaz Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Awaz Contact1": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Awaz Agents1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Awaz Lists1": {
+      "main": [
+        [
+          {
+            "node": "Add Awaz Contact1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Awaz Agents1": {
+      "main": [
+        [
+          {
+            "node": "Awaz Calls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "VAPI Create Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call w/ VAPI Agent NL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call w/ VAPI Agent PT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item List Output Parser": {
+      "ai_outputParser": [
+        []
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent (NL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "VAPI Create Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VAPI Create Assistant": {
+      "main": [
+        [
+          {
+            "node": "VAPI Make Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7221de40-896d-496e-b750-fb7954924093",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cf27a06c19865d14aebd3c9b41f1d2b764f125f267c87534fe77e13b29b5cdcc"
+  },
+  "id": "r631OSFFIWVOPonw",
+  "tags": []
+}

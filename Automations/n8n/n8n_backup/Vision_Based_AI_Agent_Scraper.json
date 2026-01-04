@@ -1,0 +1,743 @@
+{
+  "name": "Vision Based AI Agent Scraper",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "20bd1028-e41e-4e75-9d71-2f469584266d",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -1520,
+        500
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://app.scrapingbee.com/api/v1",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "<your_scrapingbee_apikey>"
+            },
+            {
+              "name": "url",
+              "value": "={{$json.url}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fdc98430-4afa-45e3-9d51-2089f7f7a264",
+      "name": "ScrapingBee- Get page HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        600,
+        1400
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[{\n  \"product_title\":\"The title of the product\",\n  \"product_price\":\"The price of the product\",\n  \"product_brand\": \"The brand of the product\",\n  \"promo\":\"true or false\",\n  \"promo_percentage\":\"NUM %\"\n}]"
+      },
+      "id": "57a00e63-57e1-425b-9708-d425c464953f",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        800,
+        920
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-pro-latest",
+        "options": {}
+      },
+      "id": "82357c4a-d288-4a17-a846-9482c525a679",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        120,
+        940
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "id": "fca6d74e-38dc-40d0-aa97-5d8a9841ad88",
+      "name": "Split Out",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        1200,
+        500
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1FDnW2OK-REh4qbMDjOJLQKjIJyTeTI9jf3clNbR4RZw",
+          "mode": "list",
+          "cachedResultName": "Workflow Vision-Based Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FDnW2OK-REh4qbMDjOJLQKjIJyTeTI9jf3clNbR4RZw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "List of URLS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FDnW2OK-REh4qbMDjOJLQKjIJyTeTI9jf3clNbR4RZw/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "893bbab5-0c34-40ea-9961-e784a0916869",
+      "name": "Google Sheets - Get list of URLs",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -1060,
+        500
+      ],
+      "typeVersion": 4.5
+    },
+    {
+      "parameters": {
+        "content": "## Trigger\nThe default trigger is **When clicking ‘Test workflow’**, meaning the workflow will **need to be triggered manually**. \n\nYou can replace this by selecting a **trigger of your choice**.\n",
+        "height": 652.6453488372096,
+        "width": 364.53488372093034,
+        "color": 7
+      },
+      "id": "7c786b32-71d2-4400-a272-0ddbab6063d6",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1620,
+        20
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Google Sheets - List of URLs\n\nThe Google Sheet will contain two sheets:  \n- **List of URLs to** scrape  \n- **Results** page, populated with the scraping results and AI-extracted data.\n\nHere is an **[example Google Sheet](https://docs.google.com/spreadsheets/d/10Gc7ooUeTBbOOE6bgdNe5vSKRkkcAamonsFSjFevkOE/)** you can use. The \"Results\" sheet is pre-configured for e-commerce website scraping. You can adapt it to your specific needs, but remember to adjust the `Structured Output Parser` node accordingly.\n",
+        "height": 664.2441860465121,
+        "width": 364.53488372093034,
+        "color": 7
+      },
+      "id": "1daa4105-4125-4fa5-a49a-79291d446356",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1200,
+        20
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Set Fields\n\nThis node allows you to **define the fields** that will be sent to the **ScrapingBee HTTP Node** and the AI Agent. \n\nIn this template, **only one field** is pre-configured: **url**. You can customize it by adding additional fields as needed.\n",
+        "height": 667.2965116279074,
+        "width": 364.53488372093034,
+        "color": 7
+      },
+      "id": "6a198ba1-7841-444c-9f8e-c44688138609",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        20
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c53c5ed2-9c7b-4365-9953-790264c722ab",
+              "name": "url",
+              "type": "string",
+              "value": "={{ $json.url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e46280b9-08d4-4650-bb77-23df1bc89cd1",
+      "name": "Set fields",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -640,
+        500
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "content": "## ScrapingBee - Get Page Screenshot\n\nThis node uses ScrapingBee, a powerful scraping tool, to capture a screenshot of the desired URL.  \nYou can [try ScrapingBee](https://www.scrapingbee.com/) and enjoy 1,000 free requests (non-affiliate link).  \n\nEnsure the `screenshot_full_page` parameter is set to *`true`* for a full-page screenshot. This is crucial for vision-based scraping with the AI Agent.  \n\nAlternatively, you can **choose to screenshot only a specific part of the page**. However, keep in mind that the **AI Agent will extract data only from the visible section—it has vision**, but not a crystal ball 🔮!\n",
+        "height": 671.8750000000002,
+        "width": 364.53488372093034,
+        "color": 7
+      },
+      "id": "d2dd25ec-25fe-4de7-997c-daedbe95089b",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -400,
+        20
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://app.scrapingbee.com/api/v1",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "<your_scrapingbee_apikey>"
+            },
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "screenshot_full_page",
+              "value": "true"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2b76adb9-258c-4a29-9d19-ac8dbbc7cfcc",
+      "name": "ScrapingBee - Get page screenshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -240,
+        500
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "content": "## Vision-Based Scraping AI Agent\n\nThis is the central node of the workflow, powered by an AI Agent with two key prompts:\n\n- **System Prompt**: Instructs the AI on how and what data to extract from the screenshot. You can customize this to suit your needs. It also includes fallback instructions to call a tool for retrieving the HTML page if data extraction from the screenshot fails.  \n- **User Message**: Provides the page URL for context.\n\n### Sub-Nodes\n\n1. **Google Gemini Chat Model**  \n   Chosen because tests show that **Gemini-1.5-Pro** outperforms GPT-4 and GPT-4-Vision in visual tasks. *Either my prompt wasn’t optimized for GPT models, or GPT might need glasses 👓*. \n**Other multimodal LLMs haven’t been tested yet**.\n\n2. **HTML-Based Scraping Tool**  \n   A **fallback tool** the agent **uses if it cannot extract data directly from the screenshot**.\n\n3. **Structured Output Parser**  \n   Formats the **extracted data into an easy-to-use structure**, ready to be added to the **results page in Google Sheets**.",
+        "height": 679.5058139534889,
+        "width": 1000.334302325581,
+        "color": 7
+      },
+      "id": "72ffc8e3-4022-4249-8406-5f37e32d198b",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "name": "HTMLScrapingTool",
+        "description": "=Call this tool ONLY when you need to retrieve the HTML content of a webpage.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "PpFVCrTiYoa35q1m",
+          "cachedResultName": "vb-scraping"
+        },
+        "responsePropertyName": "data"
+      },
+      "id": "871ce6bb-acf1-4526-99cd-6640311b1046",
+      "name": "HTML-based Scraping Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        480,
+        940
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "content": "### Google Gemini Chat Model\n\nThe **default model is gemini-1.5-pro**. It offers excellent performance for this use case, but **it’s not the most cost-effective option—use it judiciously**.\n\n",
+        "height": 337.03488372093034,
+        "width": 305.625,
+        "color": 6
+      },
+      "id": "65b63348-2f26-48a3-9e06-326e7339e585",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        760
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "### HTML-Based Scraping Tool\n\nThis tool is **invoked when the AI Agent requires the HTML** (*converted to Markdown*) to extract data because the **screenshot alone wasn’t sufficient**.\n",
+        "height": 337.03488372093034,
+        "width": 305.625,
+        "color": 6
+      },
+      "id": "9ef2915c-1f02-479e-a022-c9e753c874c6",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        340,
+        760
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "### Structured Output Parser\n\nThis node **organizes the extracted data into an easy-to-use JSON format**.  \n\nIn this template, the JSON is **designed for an e-commerce webpage**. Customize it to fit your specific needs.\n",
+        "height": 337.03488372093034,
+        "width": 305.625,
+        "color": 6
+      },
+      "id": "1b9d3090-ca91-4e79-9543-b1d050e2afb8",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        680,
+        760
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Split Out\n\nThis node **splits the array** created by the `Structured Output Parser` into **individual rows**, making them easy to append to the **subsequent Google Sheets node**.\n",
+        "height": 671.8750000000002,
+        "width": 364.53488372093034,
+        "color": 7
+      },
+      "id": "bcb99fc9-233b-46f1-ab2f-ab929400430d",
+      "name": "Sticky Note8",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1060,
+        20
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Google Sheets - Create Rows\n\nThis node **creates rows** in the **Results** sheet using the extracted data.  \n\nYou can use the **[example Google Sheet](https://docs.google.com/spreadsheets/d/10Gc7ooUeTBbOOE6bgdNe5vSKRkkcAamonsFSjFevkOE/)** as a template. However, ensure that the **columns in the Results sheet are aligned with the structure of the output** from the `Structured Output Parser node`.\n",
+        "height": 671.8750000000002,
+        "width": 364.53488372093034,
+        "color": 7
+      },
+      "id": "8c378a6c-64a0-4bf5-9cae-cdb0c7840f83",
+      "name": "Sticky Note9",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1520,
+        20
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1g81_39MJUlwnInX30ZuBtHUb-Y80WrYyF5lccaRtcu0",
+          "cachedResultUrl": "",
+          "cachedResultName": "Google Sheets - Workflow Vision-Based Scraping"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 648398171,
+          "cachedResultUrl": "",
+          "cachedResultName": "Results"
+        },
+        "columns": {
+          "value": {
+            "promo": "={{ $json.promo }}",
+            "category": "={{ $('Set fields').item.json.url }}",
+            "product_url": "={{ $json.product_title }}",
+            "product_brand": "={{ $json.product_brand }}",
+            "product_price": "={{ $json.product_price }}",
+            "promo_percent": "={{ $json.promo_percentage }}"
+          },
+          "schema": [
+            {
+              "id": "category",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "category",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_url",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "product_url",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_price",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "product_price",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_brand",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "product_brand",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "promo",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "promo",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "promo_percent",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "promo_percent",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "id": "b828f9b3-90d9-4be2-ae4b-75b1b0a1cec8",
+      "name": "Google Sheets - Create Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1660,
+        500
+      ],
+      "typeVersion": 4.5
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the screenshot you need to use to extract data about the page:\n\n{{ $json.url }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Extract the following details from the input screenshot:\n\n- Product Titles\n- Product Prices\n- Brands\n- Promotional Information (e.g., if the product is on promo)\n\nStep 1: Image-Based Extraction\nAnalyze the provided screenshot to identify and extract all the required details: product titles, prices, brands, and promotional information.\nEnsure the extraction is thorough and validate the completeness of the information.\nCross-check all products for missing or unclear details.\nHighlight any limitations (e.g., text is unclear, partially cropped, or missing) in the extraction process.\n\nStep 2: HTML-Based Extraction (If Needed)\nIf you determine that any required information is:\n\nIncomplete or missing (e.g., not all titles, prices, or brands could be retrieved).\nAmbiguous or uncertain (e.g., unclear text or potential errors in OCR).\nUnavailable due to the limitations of image processing (e.g., product links).\n\nThen:\n\nCall the HTML-based tool with the input URL to access the page content.\nExtract the required details from the HTML to supplement or replace the image-based results.\nCombine data from both sources (if applicable) to ensure the final result is comprehensive and accurate.\n\nAdditional Notes\nAvoid redundant HTML tool usage—confirm deficiencies in image-based extraction before proceeding.\nFor products on promotion, explicitly label this status in the output.\nReport extraction errors or potential ambiguities (e.g., text illegibility).\n\nIn your output, include all these fields as shown in the example below. If there is no promotion, set \"promo\" to false and \"promo_percent\" to 0.\n\njson\nCopy code\n[{\n  \"product_title\": \"The title of the product\",\n  \"product_price\": \"The price of the product\",\n  \"product_brand\": \"The brand of the product\",\n  \"promo\": true,\n  \"promo_percent\": 25\n}]",
+          "passthroughBinaryImages": true
+        }
+      },
+      "id": "1ee76e28-8bf6-478e-a7cf-be58a2124ba8",
+      "name": "Vision-based Scraping Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        360,
+        500
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "content": "## HTML-Scraping Tool Trigger\n\nThis **node serves as the entry point for the HTML scraping tool.  \n\nIt is triggered by the **AI Agent only when it fails to extract data** from the screenshot. The **URL** is sent as a **parameter for the query**.",
+        "height": 357.10392441860495,
+        "width": 364.53488372093034,
+        "color": 7
+      },
+      "id": "1b4310c3-7154-45ba-be2e-2d98872e05fc",
+      "name": "Sticky Note10",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -320,
+        1200
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "a5bc4613-5b5b-49a1-9223-56acadddb87f",
+      "name": "HTML-Scraping Tool",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -200,
+        1400
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Set Fields - From AI Agent Query\n\nThis node sets the fields from the AI Agent’s query.  \n\nIn this template, the only field configured is **url**.\n",
+        "height": 357.10392441860495,
+        "width": 364.53488372093034,
+        "color": 7
+      },
+      "id": "17fb34fd-00f8-4f27-932c-c630c24b12de",
+      "name": "Sticky Note11",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        80,
+        1200
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c53c5ed2-9c7b-4365-9953-790264c722ab",
+              "name": "url",
+              "type": "string",
+              "value": "={{ $json.query }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b891c93b-b186-488d-96c7-e234daaae4ff",
+      "name": "Set fields - from AI agent query",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        200,
+        1400
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "content": "## ScrapingBee - Get Page HTML\n\nThis node utilizes the ScrapingBee API to **retrieve the HTML of the webpage**.\n",
+        "height": 357.10392441860495,
+        "width": 364.53488372093034,
+        "color": 7
+      },
+      "id": "6ef8f6f0-5ffa-481f-bf57-0ed42c82ea0a",
+      "name": "Sticky Note12",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        500,
+        1200
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## HTML to Markdown\n\nThis node **converts the HTML from the previous node** into Markdown format, **helping to save tokens**.  \n\nThe converted **Markdown is then automatically sent to the AI Agent** through this node.\n",
+        "height": 357.10392441860495,
+        "width": 364.53488372093034,
+        "color": 7
+      },
+      "id": "33438272-7619-484e-860a-8e47d192a90a",
+      "name": "Sticky Note13",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        920,
+        1200
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "html": "={{ $json.data }}",
+        "options": {}
+      },
+      "id": "f337e01c-1bd7-4e21-bf04-ed97c0f51c2a",
+      "name": "HTML to Markdown",
+      "type": "n8n-nodes-base.markdown",
+      "position": [
+        1060,
+        1400
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# ✨ Vision-Based AI Agent Scraper - with Google Sheets, ScrapingBee, and Gemini\n\n## Important notes :\n### Check legal regulations: \nThis workflow involves scraping, so make sure to check the legal regulations around scraping in your country before getting started. Better safe than sorry!\n\n## Workflow description\nThis workflow leverages a **vision-based AI Agent**, integrated with Google Sheets, ScrapingBee, and the Gemini-1.5-Pro model, to **extract structured data from webpages**. The AI Agent primarily **uses screenshots for data extraction** but switches to HTML scraping when necessary, ensuring high accuracy. \n\nKey features include:  \n- **Google Sheets Integration**: Manage URLs to scrape and store structured results.  \n- **ScrapingBee**: Capture full-page screenshots and retrieve HTML data for fallback extraction.  \n- **AI-Powered Data Parsing**: Use Gemini-1.5-Pro for vision-based scraping and a Structured Output Parser to format extracted data into JSON.  \n- **Token Efficiency**: HTML is converted to Markdown to optimize processing costs.\n\nThis template is designed for e-commerce scraping but can be customized for various use cases.  \n",
+        "height": 646.0101744186061,
+        "width": 829.9937466197946
+      },
+      "id": "33cc1c22-592e-4643-86c5-8de7f47c21e7",
+      "name": "Sticky Note14",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2580,
+        40
+      ],
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Create Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set fields": {
+      "main": [
+        [
+          {
+            "node": "ScrapingBee - Get page screenshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML-Scraping Tool": {
+      "main": [
+        [
+          {
+            "node": "Set fields - from AI agent query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Vision-based Scraping Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML-based Scraping Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Vision-based Scraping Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Vision-based Scraping Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ScrapingBee- Get page HTML": {
+      "main": [
+        [
+          {
+            "node": "HTML to Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vision-based Scraping Agent": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Get list of URLs": {
+      "main": [
+        [
+          {
+            "node": "Set fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set fields - from AI agent query": {
+      "main": [
+        [
+          {
+            "node": "ScrapingBee- Get page HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ScrapingBee - Get page screenshot": {
+      "main": [
+        [
+          {
+            "node": "Vision-based Scraping Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Get list of URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5ecee72e-b606-46c3-87af-a9d887b63dbe",
+  "meta": {
+    "instanceId": "cf27a06c19865d14aebd3c9b41f1d2b764f125f267c87534fe77e13b29b5cdcc"
+  },
+  "id": "vaLKqfcCboQdz9G3",
+  "tags": []
+}

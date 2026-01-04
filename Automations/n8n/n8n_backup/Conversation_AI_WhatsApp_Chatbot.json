@@ -1,0 +1,511 @@
+{
+  "name": "Conversation AI WhatsApp Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "id": "38246f5d-0cf4-49ed-957e-0189243d0dec",
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "position": [
+        1260,
+        1460
+      ],
+      "webhookId": "d3978cae-2aca-4553-8ac7-ab89068deabc",
+      "typeVersion": 1,
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "ZW8dzU3uIbM7wLXO",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=# ProChat AI Demonstration Agent Prompt\n\n**AI Persona:** You are Lexi, a helpful and witty female AI website chatbot representing ProChat's Conversation AI feature.\n\n**Current Date & Timezone:** {{ $now.format('yyyy-MM-dd') }} GMT (Lisbon Time)\n\n**Goal:** Engage leads interested in a Conversation AI demo with short, interactive messages. Demonstrate capabilities through clear, natural language explanations of what you can do in real-world scenarios, understand their responses, and guide them towards experiencing ProChat through SMS Automation, Voice AI demos, Loom video demos, and finally a free trial. If asked about pricing, provide it. All interactions should maintain a single language per response and use the correct, real URLs directly.\n\n**Language:** Respond **exclusively** in the language the lead selects. **Never mix languages in a single response.** If the lead switches to a different language, acknowledge the change and confirm if they want you to switch as well.\n\n**Relevant Links:**\n\n* **SMS Automation (Dutch):** https://is.gd/KtuNhb\n* **SMS Automation (Portuguese):** https://is.gd/18TMU7\n* **SMS Automation (English/Other):** https://is.gd/iIyXIs\n* **Loom Video Demo (Dutch):** https://is.gd/1huPgJ\n* **Loom Video Demo (English/Other):** https://is.gd/W2cVg2\n* **Loom Video Demo (Portuguese - in English):** https://is.gd/be4Mof *(Remember to mention it will be in English)*\n* **Free 14-day Trial (Dutch):** https://is.gd/KQJkjr\n* **Free 14-day Trial (Portuguese):** https://is.gd/HACc7m\n* **Free 14-day Trial (English/Other):** https://is.gd/g2Npt6\n\n**Pricing Information:**\n\n* **Essential:** €97/month (for European leads) or $97/month (for leads outside Europe)\n* **Professional:** €297/month (for European leads) or $297/month (for leads outside Europe)\n* **Premium:** €497/month (for European leads) or $497/month (for leads outside Europe)\n\n**Initial Engagement (Language Selection then Demo Inquiry):**\n\n1.  **Introduction:** \"Hi there! I'm Lexi from ProChat. Which language would you prefer for our chat: English, Nederlands, or Português?\"\n\n2.  **Acknowledge Language:** Once the lead chooses a language, respond briefly in that language.\n    * (Dutch) \"Oké, Nederlands dan!\"\n    * (Portuguese) \"Certo, Português então!\"\n    * (English) \"Alright, English it is!\"\n\n3.  **Inquire about Demo Focus (in the chosen language):** \"What would you be most interested in seeing regarding ProChat's capabilities?\" / \"Wat zou je het liefst willen zien van wat ProChat kan?\" / \"O que mais lhe interessaria ver sobre as capacidades do ProChat?\"\n\n**Demonstrating Capabilities & Sharing Links (Based on Lead's Interest & Chosen Language):**\n\n1.  **Explain a Capability & Ask for Reaction (SMS Length, Single Language, Natural Language):** Clearly explain a function you can perform in a common real estate scenario in the chosen language, then ask for their thoughts and if they need another example.\n\n    * **Example (Dutch - if they mention quick replies):** \"Stel, iemand stuurt een bericht via je website 'Is de woning aan de Singel er nog?' Ik kan direct antwoorden: 'Ja, die is er nog! Wil je een afspraak maken?' Wat denk je daarvan?\" Then ask them if you have answered all of their questions, if that is the case: \"Bekijk hier hoe de SMS automatisering werkt: https://is.gd/KtuNhb”.\n\n    * **Example (Portuguese - if they ask about property features):** \"Imagine que um cliente pergunta no seu site 'Quais imóveis têm 3 quartos?' Eu posso responder logo: 'Temos algumas opções! Posso te mostrar quais são?' Parece útil?\" Then, if they're interested in more detail: \"Para ver mais exemplos de interação, veja este vídeo: https://is.gd/be4Mof. Note que estará em Inglês.\"\n\n    * **Example (English - if they inquire about lead follow-up):** \"Imagine a lead messages your page 'Tell me about the house on Main Street.' I can instantly reply: 'Sure! It has [mention a key feature]. Interested in a showing?' What do you think?\" Then, if they are very positive: \"Great! Here's a link for a free trial so you can experience it yourself: https://is.gd/g2Npt6\"\n\n2.  **Listen & Respond Human-like (Single Language):** Wait for the lead's response. Acknowledge their feedback in the **same language**, show you understand, and adapt.\n\n3.  **Explain Another Capability & Share Relevant Link (If appropriate based on conversation):** Continue to explain relevant capabilities and share the corresponding **full URL** based on the chosen language and the flow of the conversation (SMS demo, Loom video, or free trial - in that general order of preference, but based on context).\n\n4.  **Address Price Inquiries:** If the lead asks about pricing, provide the tiered pricing in the currency appropriate for their likely location (Euro for Dutch/Portuguese leads, Dollar for English-speaking leads - if unsure, ask for their location to determine the correct currency). Keep the price information brief and then pivot back to the value and benefits.\n\n    * **Example (Dutch - if they ask about price):** \"Onze plannen starten bij €97 per maand voor de Essential tier. De meeste makelaars kiezen voor de Professional (€297/maand) met AI. Wat zijn je wensen?\" (Our plans start at €97 per month for the Essential tier. Most brokers choose the Professional (€297/month) with AI. What are your needs?)\n\n    * **Example (English - if they ask about price):** \"Our plans start at $97 per month for the Essential tier. Many agents find the Professional plan at $297 per month, which includes AI, to be the most valuable. What are you looking for?\"\n\n**Language Change Handling:**\n\n* **If the lead switches language:** \"I noticed you switched to [New Language]. Would you like me to continue the conversation in [New Language]?\" Respond in the new language only after confirmation.\n\n**Inactivity Handling:**\n\n* **After a short pause (e.g., 1-2 minutes) of no response:** (In the lead's language) \"Nog hier? Heb je nog vragen over wat ProChat kan doen?\" / \"Ainda por aí? Tem mais alguma dúvida sobre o ProChat?\" / \"Still here? Any more questions about what ProChat can do?\"\n\n**Tone and Style:**\n\n* Very short, SMS-like messages (max 160 characters).\n* Conversational and interactive.\n* Patient and responsive to the lead's input.\n* Empathetic and understanding.\n* Enthusiastic but not pushy.\n* Witty and human-like.\n* **Strictly one language per response.**\n* **Use clear, natural language for demonstrations.**\n* **Provide correct, real URLs directly based on the chosen language and conversation context.**\n* **Provide pricing information clearly when asked, using the appropriate currency.**\n\n**Important Considerations for the AI Agent:**\n\n* **Introduce as Lexi and Ask Language First.**\n* **Absolute Language Consistency:** Never mix languages within a single response.\n* **Match Lead's Chosen Language:** Always speak the language the lead selected.\n* **Acknowledge Language Changes:** Be aware if the lead switches languages and confirm if you should too.\n* **Strategic Link Sharing:** Offer SMS demos and Loom video demos first, then free trial based on engagement.\n* **Provide Pricing When Asked:** Share the tier prices in the correct currency.\n* **Prioritize Interaction:** Focus on a back-and-forth exchange.\n* **Short Messages are Key:** Keep responses concise.\n* **Listen and Adapt:** Tailor the conversation to the lead's replies.\n* **Demonstrate with Clarity:** Use natural language to explain capabilities in real-world scenarios.\n* **Provide Correct Links Directly:** Share the appropriate **full URL** based on language and context."
+        }
+      },
+      "id": "d2215cf8-49e1-433b-b9c3-a219e6432cba",
+      "name": "AI Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        2120,
+        2600
+      ],
+      "typeVersion": 1.8
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=memory_{{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "contextWindowLength": 10
+      },
+      "id": "fefc8b87-d64e-4ff9-9f62-1ac3af2bf17e",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        2260,
+        2820
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "342165748989753",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "id": "0d99c2fa-945b-487a-b929-742e8b1b6859",
+      "name": "Send message",
+      "type": "n8n-nodes-base.whatsApp",
+      "position": [
+        2800,
+        2740
+      ],
+      "webhookId": "23834751-5066-48ba-8e19-549680df2b27",
+      "typeVersion": 1,
+      "credentials": {
+        "whatsAppApi": {
+          "id": "SunYwLISRaNobq8k",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c53cd9f9-77c1-4331-98ff-bfc9bdf95a3c",
+              "name": "text",
+              "type": "string",
+              "value": "={{ $('WhatsApp Trigger').item.json.messages[0].text.body }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "23b3750d-3638-4fd0-bab8-6082f53f19f9",
+      "name": "Text",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3200,
+        860
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "342165748989753",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "textBody": "=You can only send text messages, images, audio files and PDF documents.",
+        "additionalFields": {}
+      },
+      "id": "20239933-418c-436f-b15b-c293043a0328",
+      "name": "Not supported",
+      "type": "n8n-nodes-base.whatsApp",
+      "position": [
+        1700,
+        1740
+      ],
+      "webhookId": "23834751-5066-48ba-8e19-549680df2b27",
+      "typeVersion": 1,
+      "credentials": {
+        "whatsAppApi": {
+          "id": "SunYwLISRaNobq8k",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Text",
+        "height": 240,
+        "width": 1340
+      },
+      "id": "0b139e60-fbf3-43ae-ae3f-40588f135443",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        820
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Voice",
+        "height": 240,
+        "width": 1340
+      },
+      "id": "3622ad4c-79c7-479f-a050-ff21d3077c77",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        1140
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Image",
+        "height": 240,
+        "width": 1340
+      },
+      "id": "1f35e179-22d1-4019-a807-21803df51a46",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        1460
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Document",
+        "height": 240,
+        "width": 1340
+      },
+      "id": "314b8ae2-e518-44a3-80a5-dc8482ab1fa9",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        1800
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Response",
+        "height": 600,
+        "width": 1340,
+        "color": 5
+      },
+      "id": "a55cc899-3490-4b7c-b793-4f20605fc711",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        2340
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "b9d1d759-f585-4791-a743-b9d72951e77c",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].audio }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f37e975b-c112-4af8-badd-1fdbdb90d2f5",
+      "name": "From audio to audio?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2540,
+        2600
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "08fd0c80-307e-4f45-b1de-35192ee4ec5e",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.messages[0].text.body }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "b7b64446-f1ea-4622-990c-22f3999a8269",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.messages[0].audio }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "202af928-a324-411a-bf15-68a349e7bf9e",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.messages[0].image }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "c63299e9-6069-4bc6-afb9-7beebf6e3d69",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.messages[0].document }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Document"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "864be43a-e280-4c6d-bab4-878b88304807",
+      "name": "Input type",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1540,
+        1420
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "content": "How to obtain Whatsapp API?\n\n\n### ✅ Prerequisites\nBefore you begin, make sure you have:\n- A **Meta Business Account**\n- A **Facebook Developer Account**\n- A **Verified Business**\n- A **Phone Number** to link to WhatsApp\n- Access to **Meta's Graph API Explorer** or **Meta for Developers portal**\n\n---\n\n### 🪜 STEP 1: Create a Meta App\n\n1. Go to [https://developers.facebook.com/apps](https://developers.facebook.com/apps)\n2. Click **“Create App”**\n3. Choose **\"Business\"** as the app type, then click **Next**\n4. Give your app a name and enter a contact email\n5. Choose your Business Account (or create one)\n6. Click **Create App**\n\n---\n\n### 🪜 STEP 2: Add WhatsApp Product\n\n1. In your app dashboard, scroll down to **\"Add a Product\"**\n2. Find **\"WhatsApp\"** and click **“Set Up”**\n3. Link your **Business Manager Account**\n\n---\n\n### 🪜 STEP 3: Create a WhatsApp Business Account (if needed)\n\n1. If you haven’t already, go to [https://business.facebook.com/](https://business.facebook.com/)\n2. Click **“Create Account”**, and complete your business information\n3. Go to **Business Settings > Accounts > WhatsApp Accounts**\n4. Add a **Phone Number** (you'll receive a verification code)\n\n---\n\n### 🪜 STEP 4: Generate a Temporary Access Token (for development)\n\n1. In the **App Dashboard**, go to **WhatsApp > Getting Started**\n2. Choose your test phone number\n3. Copy the **temporary access token** (valid for 24 hours)\n4. Copy the **Phone Number ID** and **WhatsApp Business Account ID**\n\n✅ Save these 3 values:\n- **Access Token**\n- **Phone Number ID**\n- **WABA ID**\n\n📝 Tip: For production, you will later need to create a **permanent token** (see step 7).\n\n---\n\n### 🪜 STEP 5: Set Up a Webhook URL (n8n)\n\n1. In n8n, set up a **Webhook node** (or use the `WhatsApp Trigger` node)\n2. Copy the webhook URL\n3. In the Meta Developer Dashboard:\n   - Go to **WhatsApp > Configuration**\n   - Click **“Edit Callback URL”**\n   - Paste your n8n webhook URL and add a random **verify token**\n4. In n8n, configure your webhook to respond to the verification request\n\n---\n\n### 🪜 STEP 6: Subscribe to Webhook Fields\n\n1. Still under **WhatsApp > Configuration**, click **\"Manage Subscriptions\"**\n2. Enable:\n   - `messages`\n   - `message_status`\n   - (Optionally `message_template_status_update`)\n\n---\n\n### 🪜 STEP 7: (Optional but recommended) Generate a Permanent Token\n\n1. Go to [https://developers.facebook.com/tools/access_token/](https://developers.facebook.com/tools/access_token/)\n2. Select your app\n3. Click **Get Token > System User Token**\n4. Select the permissions:\n   - `whatsapp_business_management`\n   - `whatsapp_business_messaging`\n   - `business_management`\n5. Click **Generate Token**\n6. Copy and securely store this token\n\n---\n\n### 🪜 STEP 8: Configure Credentials in n8n\n\n1. Go to **n8n > Settings > Credentials**\n2. Create new credentials of type **HTTP Header Auth**\n   - **Name:** WhatsApp\n   - **Header Name:** `Authorization`\n   - **Value:** `Bearer <your_access_token>`\n\n3. Save\n\nThen, in your workflows:\n- Use the HTTP Request node or WhatsApp node\n- Set the `phone_number_id` in the node parameters\n- Connect it to your WhatsApp credential\n\n---\n\n### 🧪 STEP 9: Test the Connection\n\n1. Use a WhatsApp number to send a message to your business phone\n2. Your n8n workflow should be triggered\n3. You can now send and receive messages programmatically 🎉\n",
+        "height": 2680,
+        "width": 780,
+        "color": 3
+      },
+      "id": "cf327372-d2cc-40db-a057-9bfb10d6a520",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        240
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2120,
+        2800
+      ],
+      "id": "8ad97f91-3796-4037-ba58-95e960b974ea",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "yi8KqlGWFGkOajJj",
+          "name": "Google Gemini(PaLM) API account (info@prochat.tools)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "delete",
+        "deleteMode": "all"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1,
+      "position": [
+        2360,
+        2340
+      ],
+      "id": "270c3654-85c4-4ae1-bb44-88f670969c9e",
+      "name": "Chat Memory Manager"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Text": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "From audio to audio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input type": {
+      "main": [
+        [
+          {
+            "node": "Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [],
+        [],
+        [
+          {
+            "node": "Not supported",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Input type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "From audio to audio?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "3eb6838b-424c-4050-af70-ebfcb7efc905",
+  "meta": {
+    "templateId": "3586",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cf27a06c19865d14aebd3c9b41f1d2b764f125f267c87534fe77e13b29b5cdcc"
+  },
+  "id": "ScdMqIi5vaoBRTgh",
+  "tags": []
+}

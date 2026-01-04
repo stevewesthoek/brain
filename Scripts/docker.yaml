@@ -1,0 +1,82 @@
+services:
+  traefik:
+    image: "traefik"  # Use a specific, stable Traefik version
+    restart: always
+    command:
+      - "--api.insecure=true"   # ONLY for local development/testing. REMOVE in production.
+      - "--api.dashboard=true"  # Enable the Traefik dashboard (very helpful)
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
+      - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
+      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Expose the Traefik dashboard
+    volumes:
+      - traefik_data:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - web
+
+  n8n:
+    image: n8nio/n8n:latest  # Or a specific version, e.g., n8nio/n8n:1.8.2
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure" # Only use websecure
+      - "traefik.http.routers.n8n.tls=true"
+      - "traefik.http.routers.n8n.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+      - "traefik.http.middlewares.n8n-headers.headers.stsseconds=315360000"
+      - "traefik.http.middlewares.n8n-headers.headers.stsincludesubdomains=true"
+      - "traefik.http.middlewares.n8n-headers.headers.stspreload=true"
+      - "traefik.http.middlewares.n8n-headers.headers.browserxssfilter=true"
+      - "traefik.http.middlewares.n8n-headers.headers.contenttypenosniff=true"
+      - "traefik.http.middlewares.n8n-headers.headers.forcestsheader=true"
+      - "traefik.http.routers.n8n.middlewares=n8n-headers@docker"
+    environment:
+      - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      # PostgreSQL connection settings:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres  # The service name of the PostgreSQL container
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - web
+    depends_on:
+      - postgres # Ensure PostgreSQL starts before n8n
+
+  postgres:
+    image: postgres:15  # Use a specific PostgreSQL version
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persist PostgreSQL data
+    networks:
+      - web
+
+volumes:
+  traefik_data:
+  n8n_data:
+  postgres_data:
+
+networks:
+  web:
+    external: false

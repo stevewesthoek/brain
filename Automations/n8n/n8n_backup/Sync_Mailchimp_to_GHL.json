@@ -1,0 +1,79 @@
+{
+  "name": "Sync Mailchimp to GHL",
+  "nodes": [
+    {
+      "parameters": {
+        "email": "={{ $json['data[merges][EMAIL]'] }}",
+        "additionalFields": {
+          "tags": "release notes"
+        },
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.highLevel",
+      "typeVersion": 2,
+      "position": [
+        360,
+        0
+      ],
+      "id": "28d7ad0c-274e-47ca-8318-62a66b3a6f06",
+      "name": "HighLevel",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "67TI5Cl6OW9YWniD",
+          "name": "HighLevel OAuth2 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "list": "8a130a45d1",
+        "events": [
+          "subscribe"
+        ],
+        "sources": [
+          "api"
+        ]
+      },
+      "type": "n8n-nodes-base.mailchimpTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c56260c3-91a8-484b-84a1-5e72711ac889",
+      "name": "Mailchimp Trigger",
+      "webhookId": "bc2c92d9-f269-4fa3-a1c4-cb7ddc359de6",
+      "credentials": {
+        "mailchimpApi": {
+          "id": "8Nf3V0bwgiDZv3Ez",
+          "name": "Mailchimp account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Mailchimp Trigger": {
+      "main": [
+        [
+          {
+            "node": "HighLevel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cbed1ffb-d957-4adf-9597-8205293150d5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cf27a06c19865d14aebd3c9b41f1d2b764f125f267c87534fe77e13b29b5cdcc"
+  },
+  "id": "FeAM9uXbWqm6o8N8",
+  "tags": []
+}
