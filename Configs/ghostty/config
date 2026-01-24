@@ -54,3 +54,9 @@ confirm-close-surface = false
 clipboard-paste-protection = false
 
 cursor-style = block
+
+selection-foreground = cell-foreground
+selection-background = #36424C
+
+scroll-to-bottom = keystroke,no-output
+grapheme-width-method = legacy

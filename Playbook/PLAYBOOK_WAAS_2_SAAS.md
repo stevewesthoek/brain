@@ -52,9 +52,9 @@ They represent different starting points, not different end goals.
 3. Kit Overview (Internal + External Names)
 
 Internal name	External name (marketing)	Who it’s for	Primary outcome	Price
-ProKit	Developer Core Boilerplate	Developers	Ship SaaS fast	€199 one-time
-SaaSKit	SaaS Launch Kit (Non-Dev)	Founders with an idea, audience, or clients	Launch a real SaaS	€399 one-time
-WaaSKit	Client-First SaaS System	Founders with no idea yet	Get paid first, then build SaaS	€799 one-time
+ProKit	Developer Core Boilerplate	Developers	Ship SaaS fast	€97 one-time
+SaaSKit	SaaS Launch Kit (Non-Dev)	Founders with an idea, audience, or clients	Launch a real SaaS	€179-197 one-time
+WaaSKit	Client-First SaaS System	Founders with no idea yet	Get paid first, then build SaaS	€397 one-time
 
 Note: WaaSKit uses a W (Website-as-a-Service). There is no “Fast kit with a V”.
 
@@ -87,7 +87,7 @@ What the buyer gets
 	•	Unlimited projects
 	•	No royalties
 
-Price: €199 one-time
+Price: €97 one-time
 
 ProKit is the engine. Nothing more, nothing less.
 

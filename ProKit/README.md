@@ -230,7 +230,10 @@ Optional MCP tools (replaceable):
 
 - Trustless / passwordless patterns: see `README_TRUSTLESS.md` (optional).
 - AI SaaS Idea Factory: see `SAAS_REFERENCE.md` (optional ideation).
-
+- Stripe
+   - events: checkout.session.completed checkout.session.expired customer.subscription.deleted customer.subscription.updated invoice.paid invoice.payment_failed
+   - https://your-app-name-domain/api/webhook/stripe
+   
 ---
 
 ## 📚 Related Docs
