@@ -1,9 +1,9 @@
-COLLABORATIEDOCUMENT v0.1
+COLLABORATIEDOCUMENT v0.2
 
 Project: Paraguay Residency Onboarding
 Status: Concept / werkdocument
-Datum: 18 januari 2025
-Bron: Gesprekken & transcript 14, 16 en 18 januari  ￼
+Datum: 26 januari 2026
+Bron: Gesprekken & transcript 14, 16, 18 en 26 januari  ￼
 
 ⸻
 
@@ -62,7 +62,7 @@ Dit document is niet juridisch bindend, maar dient als gezamenlijk referentiekad
 
 5. Proefperiode & evaluatie
 	1.	De samenwerking start met een proefperiode van 6 maanden.
-	2.	Doel van de proefperiode:
+	2.	Doel van de proefperiode: 1 juli 2026
 	•	testen van werkrelatie
 	•	testen van product
 	•	testen van marktacceptatie
@@ -78,10 +78,10 @@ Dit document is niet juridisch bindend, maar dient als gezamenlijk referentiekad
 	1.	Bij beëindiging door overmacht:
 	•	geen compensatieplicht
 	2.	Bij vrijwillig uitstappen zonder zwaarwegende reden:
-	•	intentie tot een vooraf te bepalen exitvergoeding
+	•	intentie tot een vooraf te bepalen exitvergoeding (+/- 1000 euro) 
 	•	doel: compensatie van tijd, infrastructuur en opgebouwde waarde
 	3.	Exacte exitmechaniek wordt later uitgewerkt, maar principe wordt erkend.
-
+	4.  infra is 50/50 ownership. is verhuisbaar.
 ⸻
 
 7. Productafbakening (fase 1)
@@ -119,6 +119,7 @@ Prijs per persoon (excl. vliegticket):
 	•	3–4 personen → €2.500 p.p.
 	•	5–7 personen → €2.300 p.p.
 	•	8–10 personen → €2.200 p.p.
+	we moeten deze prijs goed berekenen, moeten we omzetbelasting betalen? Zoja, hoeveel?
 
 Motivatie:
 	•	hogere prijs = betere selectie
