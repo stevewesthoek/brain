@@ -1,3 +1,38 @@
 .DS_Store
 node_modules/
 .env
+
+# --- Config repo hygiene ---
+
+# Never commit secrets / creds
+Configs/**/auth.json
+Configs/**/auth*.json
+Configs/**/*token*
+Configs/**/*secret*
+Configs/**/*.pem
+Configs/**/*.p12
+Configs/**/*.key
+Configs/**/keychain*
+Configs/**/.env
+Configs/**/.env.*
+
+# Cursor: keep curated config only, ignore state + extensions
+Configs/cursor/extensions/
+Configs/cursor/projects/
+Configs/cursor/ai-tracking/
+Configs/cursor/ide_state.json
+Configs/cursor/**/workspaceStorage/
+Configs/cursor/**/User/globalStorage/
+Configs/cursor/**/logs/
+Configs/cursor/**/tmp/
+Configs/cursor/**/Cache/
+Configs/cursor/**/Caches/
+
+# Codex: keep only config.toml (ignore everything else)
+Configs/codex/**
+!Configs/codex/config.toml
+!Configs/codex/README.md
+
+# Claude: keep only README (ignore everything else)
+Configs/claude/**
+!Configs/claude/README.md
