@@ -36,3 +36,7 @@ Configs/codex/**
 # Claude: keep only README (ignore everything else)
 Configs/claude/**
 !Configs/claude/README.md
+
+# Cursor: ignore everything by default
+Configs/cursor/**
+!Configs/cursor/README.md
