@@ -1,42 +1,40 @@
+# Root ignores (general repo hygiene)
 .DS_Store
 node_modules/
 .env
 
 # --- Config repo hygiene ---
 
-# Never commit secrets / creds
+# Never commit secrets / creds (anywhere under Configs/)
 Configs/**/auth.json
 Configs/**/auth*.json
 Configs/**/*token*
 Configs/**/*secret*
-Configs/**/*.pem
-Configs/**/*.p12
-Configs/**/*.key
 Configs/**/keychain*
 Configs/**/.env
 Configs/**/.env.*
+Configs/**/*.pem
+Configs/**/*.p12
+Configs/**/*.key
 
-# Cursor: keep curated config only, ignore state + extensions
-Configs/cursor/extensions/
-Configs/cursor/projects/
-Configs/cursor/ai-tracking/
-Configs/cursor/ide_state.json
-Configs/cursor/**/workspaceStorage/
-Configs/cursor/**/User/globalStorage/
-Configs/cursor/**/logs/
-Configs/cursor/**/tmp/
-Configs/cursor/**/Cache/
-Configs/cursor/**/Caches/
+# --- Curated tool configs ---
 
-# Codex: keep only config.toml (ignore everything else)
+# Codex: keep only curated files
 Configs/codex/**
+!Configs/codex/
 !Configs/codex/config.toml
 !Configs/codex/README.md
 
-# Claude: keep only README (ignore everything else)
+# Claude: keep only curated docs (everything else is volatile/sensitive)
 Configs/claude/**
+!Configs/claude/
 !Configs/claude/README.md
 
-# Cursor: ignore everything by default
+# Cursor: ignore everything (machine state), keep only curated docs
 Configs/cursor/**
+!Configs/cursor/
 !Configs/cursor/README.md
+
+# (Optional) If you later decide to version specific Cursor settings, add exceptions like:
+# !Configs/cursor/User/settings.json
+# !Configs/cursor/User/keybindings.json
