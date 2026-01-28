@@ -9,6 +9,13 @@ Single source of truth for database behavior in ProKit. Use this doc for provisi
 - Registry table `public.tenants` is infra-only (provision/cleanup). Runtime must not read it.
 - Prisma schema is managed in `prisma/system.prisma`.
 
+## Naming and slug contract
+
+- The project name is the app slug.
+- The app slug is the tenant schema name suffix.
+- Example: project `myapp` -> `APP_SLUG=myapp` -> schema `tenant_myapp`.
+- Slug must be DB-safe (`[a-z0-9_]+`).
+
 ## Environments
 
 ### Development (local)
@@ -35,7 +42,7 @@ Scripts only (provision/migrate/cleanup):
 
 Other required vars:
 - `APP_SLUG` (tenant slug)
-- `TENANT_DB_PASSWORD` (required in production to set tenant user password)
+- `TENANT_DB_PASSWORD` (optional override; if not set, provisioning generates one)
 
 Examples:
 
@@ -80,7 +87,33 @@ npm run db:cleanup -- --slug <slug> [--force]
 3. Create or update user `tenant_<slug>_user` with password.
 4. Grant privileges and set `search_path` to the tenant schema.
 5. Upsert registry row in `public.tenants` (type `prod` or `preview`).
-6. Output `DATABASE_URL`. In development, write `APP_SLUG` and `DATABASE_URL` to `.env`.
+6. Generate a tenant password if one is not provided.
+7. Output connection values and write files:
+   - `.env` (local development)
+   - `.env.production` (production reference)
+
+## Password rules
+
+- Provisioning generates the tenant password automatically.
+- Passwords must be alphanumeric only (no special characters).
+- If you override `TENANT_DB_PASSWORD`, it must follow the same rule.
+
+## Provisioning outputs
+
+The provisioning script must write:
+
+- `.env` with local/dev values
+- `.env.production` with production values
+
+These files should include at minimum:
+
+```bash
+APP_SLUG=<project-name>
+DATABASE_URL=postgresql://tenant_<slug>_user:<password>@<host>:<port>/postgres?schema=tenant_<slug>
+SYSTEM_DATABASE_URL=postgresql://postgres:<admin-password>@<host>:<port>/postgres?schema=public
+```
+
+Use `.env.production` as the source of truth when copying variables into Dokploy.
 
 ## Cleanup flow (summary)
 

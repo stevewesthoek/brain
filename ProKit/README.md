@@ -25,3 +25,18 @@ npm run db:init -- --slug $APP_SLUG
 NODE_ENV=production npm run db:migrate:prod
 npm start
 ```
+
+## New app checklist
+
+1. Create repo and choose a project name (this becomes `APP_SLUG`).
+2. Run local provisioning:
+   ```bash
+   npm run db:init -- --slug <project-name>
+   ```
+3. Run local migrations:
+   ```bash
+   npm run db:migrate:dev
+   ```
+4. Commit code and `prisma/migrations`.
+5. Use the generated `.env.production` values for Dokploy env vars.
+6. Deploy with the Dokploy command template above.

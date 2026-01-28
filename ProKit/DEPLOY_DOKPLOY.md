@@ -21,6 +21,8 @@ NEXT_PUBLIC_APP_URL=https://myapp.example.com
 PORT=3000
 ```
 
+Tip: use the values written to `.env.production` by the provisioning script as the source for Dokploy env vars.
+
 ## Production flow (recommended)
 
 Run inside Dokploy (pre-deploy hook or job):
