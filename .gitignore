@@ -5,36 +5,36 @@ node_modules/
 
 # --- Config repo hygiene ---
 
-# Never commit secrets / creds (anywhere under Configs/)
-Configs/**/auth.json
-Configs/**/auth*.json
-Configs/**/*token*
-Configs/**/*secret*
-Configs/**/keychain*
-Configs/**/.env
-Configs/**/.env.*
-Configs/**/*.pem
-Configs/**/*.p12
-Configs/**/*.key
+# Never commit secrets / creds (anywhere under System-Configs/)
+04-Operations/System-Configs/**/auth.json
+04-Operations/System-Configs/**/auth*.json
+04-Operations/System-Configs/**/*token*
+04-Operations/System-Configs/**/*secret*
+04-Operations/System-Configs/**/keychain*
+04-Operations/System-Configs/**/.env
+04-Operations/System-Configs/**/.env.*
+04-Operations/System-Configs/**/*.pem
+04-Operations/System-Configs/**/*.p12
+04-Operations/System-Configs/**/*.key
 
 # --- Curated tool configs ---
 
 # Codex: keep only curated files
-Configs/codex/**
-!Configs/codex/
-!Configs/codex/config.toml
-!Configs/codex/README.md
+04-Operations/System-Configs/codex/**
+!04-Operations/System-Configs/codex/
+!04-Operations/System-Configs/codex/config.toml
+!04-Operations/System-Configs/codex/README.md
 
 # Claude: keep only curated docs (everything else is volatile/sensitive)
-Configs/claude/**
-!Configs/claude/
-!Configs/claude/README.md
+04-Operations/System-Configs/claude/**
+!04-Operations/System-Configs/claude/
+!04-Operations/System-Configs/claude/README.md
 
 # Cursor: ignore everything (machine state), keep only curated docs
-Configs/cursor/**
-!Configs/cursor/
-!Configs/cursor/README.md
+04-Operations/System-Configs/cursor/**
+!04-Operations/System-Configs/cursor/
+!04-Operations/System-Configs/cursor/README.md
 
 # (Optional) If you later decide to version specific Cursor settings, add exceptions like:
-# !Configs/cursor/User/settings.json
-# !Configs/cursor/User/keybindings.json
+# !04-Operations/System-Configs/cursor/User/settings.json
+# !04-Operations/System-Configs/cursor/User/keybindings.json

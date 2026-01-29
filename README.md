@@ -15,7 +15,7 @@ Single source of truth for:
 - `05-Projects/` — project-specific docs
 - `06-Ideas/` — idea backlog
 - `99-Archive/` — deprecated or duplicate docs
-- `Configs/` — curated config files (symlinked)
+- `04-Operations/System-Configs/` — curated config files (symlinked)
 
 ## Configs philosophy (important)
 We **symlink** important config locations into this repo, but we **do not** commit machine state.
@@ -24,8 +24,8 @@ We **symlink** important config locations into this repo, but we **do not** comm
 - ❌ Never commit: tokens, auth, caches, logs, extensions, workspace state, etc.
 
 For example:
-- `~/.cursor` is symlinked into `Configs/cursor/`
-  - Git tracks only `Configs/cursor/README.md`
+- `~/.cursor` is symlinked into `04-Operations/System-Configs/cursor/`
+  - Git tracks only `04-Operations/System-Configs/cursor/README.md`
   - Everything else under Cursor is ignored (extensions, projects, caches, state)
 
 ## Bootstrap (new machine)
@@ -34,7 +34,7 @@ This repo expects your configs to be linked via:
 - `04-Operations/Scripts/brain-configs-link.sh`
 
 Run it once after cloning to:
-- move existing local files into `Configs/…`
+- move existing local files into `04-Operations/System-Configs/…`
 - create symlinks back to the standard locations
 - create backups under `~/.brain-configs-backups/…`
 

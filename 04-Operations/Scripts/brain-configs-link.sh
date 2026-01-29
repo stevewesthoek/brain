@@ -3,7 +3,7 @@ set -euo pipefail
 
 # =========================
 # brain-configs-link.sh
-# Moves selected dotfiles/folders into Brain/Configs and symlinks them back.
+# Moves selected dotfiles/folders into the Brain configs folder and symlinks them back.
 # Excludes: Gemini, Starship (already managed elsewhere).
 # =========================
 
@@ -14,7 +14,8 @@ HOME_DIR="${HOME}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Resolve repo root even if this script is moved into subfolders.
 BRAIN_REPO="$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel 2>/dev/null || (cd "${SCRIPT_DIR}/../.." && pwd))"
-CONFIGS_DIR="${BRAIN_REPO}/Configs"
+CONFIGS_DIR_DEFAULT="${BRAIN_REPO}/04-Operations/System-Configs"
+CONFIGS_DIR="${CONFIGS_DIR:-${CONFIGS_DIR_DEFAULT}}"
 
 TS="$(date +%Y%m%d-%H%M%S)"
 BACKUP_BASE="${HOME_DIR}/.brain-configs-backups"
@@ -36,6 +37,50 @@ ensure_dir() { run "mkdir -p \"$1\""; }
 is_symlink() { [[ -L "$1" ]]; }
 exists_any() { [[ -e "$1" || -L "$1" ]]; }
 
+abs_path() {
+  python3 - "$1" <<'PY'
+import os, sys
+path = sys.argv[1]
+print(os.path.realpath(os.path.expanduser(path)))
+PY
+}
+
+rel_path() {
+  python3 - "$1" "$2" <<'PY'
+import os, sys
+start, target = sys.argv[1], sys.argv[2]
+start = os.path.realpath(os.path.expanduser(start))
+target = os.path.realpath(os.path.expanduser(target))
+print(os.path.relpath(target, start))
+PY
+}
+
+symlink_points_to() {
+  local src="$1"
+  local dst="$2"
+  if ! is_symlink "$src"; then
+    return 1
+  fi
+  local link_target
+  link_target="$(readlink "$src" || true)"
+  if [[ -z "$link_target" ]]; then
+    return 1
+  fi
+  local src_dir target_abs desired_abs
+  src_dir="$(dirname "$src")"
+  target_abs="$(abs_path "${src_dir}/${link_target}")"
+  desired_abs="$(abs_path "$dst")"
+  [[ "$target_abs" == "$desired_abs" ]]
+}
+
+link_relative() {
+  local src="$1"
+  local dst="$2"
+  local rel
+  rel="$(rel_path "$(dirname "$src")" "$dst")"
+  run "ln -sfn \"$rel\" \"$src\""
+}
+
 backup_path() {
   local src="$1"
   local rel="${src#${HOME_DIR}/}"   # strip $HOME prefix
@@ -45,29 +90,38 @@ backup_path() {
   say "$dst"
 }
 
-# Move file into Brain path, then link back
+# Move file into Brain path, then link back (relative symlink)
 move_file_and_link() {
   local src="$1"    # e.g. ~/.gitconfig
   local dst="$2"    # e.g. $CONFIGS_DIR/git/gitconfig
 
-  if ! exists_any "$src"; then
-    warn "Missing: $src (skipping)"
-    return 0
-  fi
-
   if is_symlink "$src"; then
-    say "==> Already a symlink: $src (skipping)"
-    return 0
+    if symlink_points_to "$src" "$dst"; then
+      say "==> Symlink OK: $src"
+      return 0
+    fi
+    warn "Broken or outdated symlink: $src (relinking)"
+    run "rm -f \"$src\""
   fi
 
   ensure_dir "$(dirname "$dst")"
+
+  if ! exists_any "$src"; then
+    if exists_any "$dst"; then
+      ensure_dir "$(dirname "$src")"
+      link_relative "$src" "$dst"
+    else
+      warn "Missing: $src and $dst (skipping)"
+    fi
+    return 0
+  fi
 
   # If destination exists already, backup source and just link to destination
   if exists_any "$dst"; then
     warn "Brain already has $dst; backing up local $src and linking to Brain."
     warn "Backed up to: $(backup_path "$src")"
     ensure_dir "$(dirname "$src")"
-    run "ln -sfn \"$dst\" \"$src\""
+    link_relative "$src" "$dst"
     return 0
   fi
 
@@ -75,25 +129,34 @@ move_file_and_link() {
   say "==> Moving $(basename "$src") -> Brain and linking back"
   run "mv \"$src\" \"$dst\""
   ensure_dir "$(dirname "$src")"
-  run "ln -sfn \"$dst\" \"$src\""
+  link_relative "$src" "$dst"
 }
 
-# Move folder into Brain path, then link back
+# Move folder into Brain path, then link back (relative symlink)
 move_dir_and_link() {
   local src="$1"   # e.g. ~/.codex
   local dst="$2"   # e.g. $CONFIGS_DIR/codex
 
-  if ! exists_any "$src"; then
-    warn "Missing: $src (skipping)"
-    return 0
-  fi
-
   if is_symlink "$src"; then
-    say "==> Already a symlink: $src (skipping)"
-    return 0
+    if symlink_points_to "$src" "$dst"; then
+      say "==> Symlink OK: $src"
+      return 0
+    fi
+    warn "Broken or outdated symlink: $src (relinking)"
+    run "rm -f \"$src\""
   fi
 
   ensure_dir "$(dirname "$dst")"
+
+  if ! exists_any "$src"; then
+    if exists_any "$dst"; then
+      ensure_dir "$(dirname "$src")"
+      link_relative "$src" "$dst"
+    else
+      warn "Missing: $src and $dst (skipping)"
+    fi
+    return 0
+  fi
 
   # If destination exists (even empty), we want to move INTO it only if it's empty.
   if exists_any "$dst"; then
@@ -114,21 +177,21 @@ move_dir_and_link() {
         mv "${BACKUP_DIR}/${src#${HOME_DIR}/}"/* "$dst/" || true
         shopt -u dotglob nullglob
       fi
-      run "ln -sfn \"$dst\" \"$src\""
+      link_relative "$src" "$dst"
       return 0
     fi
 
     # Non-empty destination: backup source and link
     warn "Brain already has (and is not empty): $dst; backing up local $src and linking to Brain."
     warn "Backed up to: $(backup_path "$src")"
-    run "ln -sfn \"$dst\" \"$src\""
+    link_relative "$src" "$dst"
     return 0
   fi
 
   say ""
   say "==> Moving $(basename "$src") -> Brain and linking back"
   run "mv \"$src\" \"$dst\""
-  run "ln -sfn \"$dst\" \"$src\""
+  link_relative "$src" "$dst"
 }
 
 say ""
@@ -212,7 +275,7 @@ if [[ "${INCLUDE_DOCKER}" == "1" ]]; then
   say "==> Docker: managing ~/.docker (WARNING: may contain auth tokens)."
   ensure_dir "${CONFIGS_DIR}/docker"
   move_dir_and_link "${HOME_DIR}/.docker" "${CONFIGS_DIR}/docker"
-  warn "Strongly consider adding Configs/docker to .gitignore or auditing before committing."
+  warn "Strongly consider adding ${CONFIGS_DIR}/docker to .gitignore or auditing before committing."
 else
   warn "Docker skipped (set INCLUDE_DOCKER=1 to manage ~/.docker)."
 fi
@@ -221,6 +284,49 @@ say ""
 say "==> Done."
 say "Backups (if any) are here:"
 say "  ${BACKUP_DIR}"
+say ""
+say "==> Verifying symlinks..."
+verify_failed=0
+
+verify_link() {
+  local src="$1"
+  local dst="$2"
+  if ! exists_any "$dst"; then
+    warn "VERIFY missing destination: $dst"
+    verify_failed=1
+    return 0
+  fi
+  if ! is_symlink "$src"; then
+    warn "VERIFY not a symlink: $src"
+    verify_failed=1
+    return 0
+  fi
+  if ! symlink_points_to "$src" "$dst"; then
+    warn "VERIFY wrong target: $src"
+    verify_failed=1
+    return 0
+  fi
+  say "OK: $src"
+}
+
+verify_link "${HOME_DIR}/.ssh/config" "${CONFIGS_DIR}/ssh/config"
+verify_link "${HOME_DIR}/.gitconfig" "${CONFIGS_DIR}/git/gitconfig"
+verify_link "${HOME_DIR}/.zshrc" "${CONFIGS_DIR}/shell/.zshrc"
+verify_link "${HOME_DIR}/.zprofile" "${CONFIGS_DIR}/shell/.zprofile"
+verify_link "${HOME_DIR}/.config/ghostty/config" "${CONFIGS_DIR}/ghostty/config"
+verify_link "${HOME_DIR}/.cursor" "${CONFIGS_DIR}/cursor"
+verify_link "${HOME_DIR}/.codex" "${CONFIGS_DIR}/codex"
+verify_link "${HOME_DIR}/.claude" "${CONFIGS_DIR}/claude"
+
+if [[ "${INCLUDE_DOCKER}" == "1" ]]; then
+  verify_link "${HOME_DIR}/.docker" "${CONFIGS_DIR}/docker"
+fi
+
+if [[ "${verify_failed}" == "1" ]]; then
+  warn "One or more symlinks failed verification."
+  exit 1
+fi
+
 say ""
 say "Next step:"
 say "  cd \"${BRAIN_REPO}\" && git status"

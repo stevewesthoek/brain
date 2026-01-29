@@ -5,3 +5,4 @@ Infrastructure, automations, scripts, and snippets.
 - Automations/
 - Scripts/
 - Snippets/
+- System-Configs/
