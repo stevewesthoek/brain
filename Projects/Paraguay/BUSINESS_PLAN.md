@@ -1,17 +1,18 @@
-BUSINESSPLAN v0.3
+BUSINESSPLAN v1.0
 
 Project: Paraguay Residency Onboarding
-Status: Conceptueel (geüpdatet)
-Versie: 0.3
-Datum: 26 januari 2025
+Status: Definitief – fase 1
+Versie: 1.0
+Datum: 28 januari 2025
 
 ⸻
 
 0. Doel en kader (ongewijzigd)
 
-Dit businessplan beschrijft de huidige, vastgestelde opzet van het project Paraguay Residency Onboarding. Het document dient als intern referentiekader en weerspiegelt uitsluitend genomen besluiten en bevestigde afspraken.
+Dit businessplan beschrijft de vastgestelde opzet van het project Paraguay Residency Onboarding.
+Het document is een intern referentiekader en bevat uitsluitend bevestigde besluiten en gemaakte afspraken.
 
-Het doel van dit project is:
+Doel van fase 1:
 	•	Validatie van vraag en omzet
 	•	Validatie van samenwerking (proefperiode)
 	•	Levering van één duidelijk afgebakende dienst
@@ -20,189 +21,239 @@ Model:
 	•	B2C
 	•	Hoge selectie
 	•	Beperkte capaciteit
-	•	Geen schaalambitie in fase 1 (wat is de max aantal personen voor Stanley?)
+	•	Geen schaalambitie in fase 1
 
 Parallel kanaal:
-	•	Yeshua Academy uitsluitend voor awareness en educatie (geen verkoop, geen selectie)
+	•	Yeshua Academy uitsluitend voor awareness en educatie
+	•	Geen verkoop
+	•	Geen selectie
+	•	Volledig gescheiden van commerciële entiteit
 
 ⸻
 
 1. Kernpropositie (bevestigd)
 
-Dienst
+Dienst:
+Paraguay Residency Onboarding – Paraguayaanse ID-kaart (Cédula)
 
-Paraguay Residency Onboarding – ID-kaart (Cédula)
+Duur:
+	•	± 7–10 dagen fysiek aanwezig in Paraguay
+	•	ID-kaart wordt na afronding van het proces binnen ± 3–5 maanden per post geleverd
 
-Duur
-	•	± 8 werkdagen fysiek in Paraguay 
-	•	ID-kaart wordt binnen ± 90 dagen tot maximaal 5 maanden per post geleverd
-
-Levervorm
-	•	Individuele begeleiding 
+Levervorm:
+	•	Individuele begeleiding
 	•	Mogelijkheid tot groepsbatches
-	•	Contractueel altijd individuele klantrelatie
+	•	Contractueel altijd een individuele klantrelatie
 
 ⸻
 
-2. Productafbakening (bevestigd)
+2. Juridisch en procedureel kader (bevestigd)
+	•	Het traject start altijd met tijdelijke residency.
+	•	Tijdelijke residency geeft praktisch dezelfde rechten als permanente residency.
+	•	Tijdelijke residency verloopt na 2 jaar.
+	•	Na ± 21 maanden kan permanente residency worden aangevraagd.
+	•	Burgerschap vereist een separaat juridisch traject via advocaat en Hooggerechtshof en valt buiten scope.
+	•	De meeste klanten blijven bij permanente residency.
 
-Inbegrepen
-	•	Begeleiding bij aanvraag Paraguayaanse ID-kaart
-	•	Gemeentebezoeken (exact noemen)
+Onderhoud residency:
+	•	Minimaal één bezoek aan Paraguay per 3 jaar.
+	•	Bij afwezigheid langer dan één jaar tijdens tijdelijke residency is vooraf overleg vereist.
+
+⸻
+
+3. Documentatievereisten klant (bevestigd)
+
+Voor start van het traject levert de klant aan:
+	•	Geldig paspoort
+	•	Geboorteakte met apostille
+	•	Huwelijksakte met apostille (indien van toepassing)
+	•	Politierapport / verklaring van goed gedrag (14+), met apostille
+	•	Digitale kopieën vooraf voor beëdigde vertaling
+
+Onvolledige of foutieve documentatie kan leiden tot vertraging of uitsluiting.
+
+⸻
+
+4. Productafbakening (bevestigd)
+
+Inbegrepen:
+	•	Begeleiding bij aanvraag tijdelijke residency en ID-kaart
+	•	Bezoeken aan overheidsinstanties (o.a. Interpol, migratie)
+	•	Interpol-registratie en vingerafdrukken
 	•	Airport pickup
-	•	Lokaal vervoer
+	•	Lokaal vervoer tijdens procedures
 	•	SIM / basiscommunicatie
-	•	Lokale contactpersoon
-	•	Volledige contractorcoördinatie (wij coordineren het gehele proces met Stanley)
+	•	Lokale contactpersoon (onderaannemer)
+	•	Volledige coördinatie van het traject
+	•	Afronding via volmacht na vertrek klant
 
-Niet inbegrepen / expliciet out of scope
-	•	Vastgoed / grond / huizen
+Niet inbegrepen / expliciet out of scope:
+	•	Vastgoed, grond of huizen
 	•	Investeringen
-	•	Community / kerk / compound
-	•	Werk / onderwijs / schooling
+	•	Community, kerk, compound
+	•	Werk, onderwijs of schooling
+	•	Juridische trajecten richting burgerschap
+	•	Garantie op goedkeuring door overheid
+	•	Vliegtickets
+	•	Hotel (tenzij expliciet later besloten)
 
 ⸻
 
-3. Prijsstructuur (vastgesteld)
+5. Procesoverzicht (bevestigd)
+
+Globaal proces:
+	•	Documentvoorbereiding in thuisland
+	•	Aankomst Paraguay
+	•	Start lokale procedures
+	•	Interpol-registratie (meerdere dagen)
+	•	Aanvraag tijdelijke residency
+	•	Start aanvraag Paraguayaanse ID-kaart
+	•	Afronding ter plaatse
+	•	Vervolgafhandeling via volmacht
+	•	Ontvangst ID-kaart per post na ± 3–5 maanden
+
+Het proces is afhankelijk van overheidsinstanties en niet te versnellen door de onderneming.
+
+⸻
+
+6. Prijsstructuur (vastgesteld, herziening open)
 
 Prijs per persoon, exclusief vliegticket:
+	•	1 persoon: €3.000
+	•	2 personen: €2.750
+	•	3–4 personen: €2.500
+	•	5–7 personen: €2.300
+	•	8–10 personen: €2.200
 
-Groepsgrootte	Prijs p.p.
-1 persoon	€3.000 (beide gaan we de prijzen van Stanley berekenen en bepalen of we de prijsstructuur moeten aanpassen)
-2 personen	€2.750
-3–4 personen	€2.500
-5–7 personen	€2.300
-8–10 personen	€2.200
-
-Toelichting: 
-	•	Individuele trajecten dragen hoger persoonlijk en logistiek risico
-	•	Groepstrajecten zijn sociaal stabieler
+Toelichting:
 	•	Prijs is risico-gebaseerd, geen marketingkorting
+	•	Individuele trajecten dragen hoger logistiek en persoonlijk risico
+	•	Groepstrajecten zijn efficiënter en stabieler
+	•	Prijs is all-in voor het beschreven traject
+	•	Onderneming betaalt hieruit alle contractors en lokale kosten
 
-Maximale batchgrootte: 10 personen (Yosef dit informeert bij Stanley)
-Boven deze grens wordt geweigerd of opgesplitst. (stanley moet aangeven hoeveel personen in welk tijdsbestek,bijvoorbeeld per dag, per week, per maand)
-
-Afwijkingen alleen na gezamenlijk besluit.
+Maximale batchgrootte:
+	•	Voorlopig: 10 personen
+	•	Definitieve capaciteit wordt bepaald door hoofdcontractor
 
 ⸻
 
-4. Doelgroep & selectie (bevestigd)
+7. Doelgroep & selectie (bevestigd)
 
-Geschikt
+Geschikt:
 	•	Financieel stabiel
 	•	Zelfstandig
 	•	Aanpasbaar
 	•	Realistische verwachtingen
+	•	Affiniteit met christelijke waarden
 
-Ongeschikt (harde uitsluiting)
-	1.	Lage aanpassingscapaciteit
-	2.	Financiële kwetsbaarheid
-	3.	Juridisch of crimineel risico
+Ongeschikt (harde uitsluiting):
+	•	Lage aanpassingscapaciteit
+	•	Financiële kwetsbaarheid
+	•	Juridisch of crimineel risico
 
-Selectie is verplicht en leidend boven omzet.
+Selectie is leidend boven omzet.
 
 ⸻
 
-5. Funnel & proces (bevestigd en aangescherpt)
+8. Funnel & marketingproces (bevestigd)
 
 Proces:
-	1.	Funnel-website (uitleg, geruststelling, filtering)
-	2.	Geschiktheidsformulier (harde uitsluitlogica)
-	3.	Kwalificatiecall (geen salescall)
-	4.	Acceptatie → aanbetaling van ±25%
-	5.	Planning en levering
+	•	Informatieve funnel-website
+	•	Geschiktheidsformulier met harde uitsluitlogica
+	•	Kwalificatiecall (geen salescall)
+	•	Acceptatie
+	•	Aanbetaling van ±25%
+	•	Planning en uitvoering
 
 Geen directe koop zonder acceptatie.
 
-De website is leidend in verwachtingsmanagement; persoonlijke toelichting vult aan maar vervangt de funnel niet.
-
-⸻
-
-6. Marketingstrategie (bevestigd)
-	•	Focus op kwalificatie-marketing en schaarste door capaciteit, niet op prijs (focus op christenen)
+Marketingprincipes:
+	•	Kwalificatie boven volume
+	•	Focus op vertrouwen, rust en duidelijkheid
+	•	Geen prijsvechten
 	•	Geen massa-advertenties
-	•	Vertrouwen, rust en duidelijkheid centraal (de taal van de christenen)
-	•	Geen garanties, geen urgentie-tactieken
-
-Yeshua Academy kan parallel worden ingezet voor:
-	•	Awareness
-	•	Educatie
-	•	Brede oriëntatie op emigratie
-
-Geen commerciële CTA’s of betalingen via Yeshua Academy. (Steve pakt dit op)
+	•	Christelijke taal en waarden leidend
+	•	Geen garanties
+	•	Geen urgentie-tactieken
 
 ⸻
 
-7. Batching & capaciteit (bevestigd)
-	•	Ideaal: 3–5 personen per batch (yosef bevestigd met Stanley)
+9. Batching & capaciteit (bevestigd, specificatie open)
+	•	Ideaal: 3–5 personen per batch
 	•	Maximaal: 10 personen per batch
-	•	Capaciteit wordt primair bepaald door lokale contractor
-	•	Kwaliteit en reputatie gaan boven volume
+	•	Capaciteit primair bepaald door lokale contractor
+	•	Kwaliteit en reputatie boven volume
+	•	Overschrijding leidt tot weigering of opsplitsing
 
 ⸻
 
-8. Rollen & verantwoordelijkheden (bevestigd)
+10. Rollen & verantwoordelijkheden (bevestigd)
 
-Partij A (Jozef)
+Partij A – Jozef:
 	•	Initiatiefnemer en visionaire drager
 	•	Klantvoorlichting vóór betaling
 	•	Relatiebeheer met contractors
 	•	Bewaken van operationele capaciteit
 
-Partij B (Steve)
+Partij B – Steve:
 	•	Technische infrastructuur
 	•	Funnel, website en selectieproces
 	•	Marketingimplementatie
 	•	Reputatie- en risicobewaking
 
-Besluitvorming
+Besluitvorming:
 	•	Visie & richting: gezamenlijk, zwaarwegende stem Partij A
 	•	Techniek & infrastructuur: eindverantwoordelijkheid Partij B
-	•	Risico’s voor imago, continuïteit of inkomsten: vetorecht Partij B
+	•	Imago-, continuïteits- en inkomensrisico’s: vetorecht Partij B
 
 ⸻
 
-9. Samenwerkingsmodel & financiën (bevestigd)
+11. Samenwerkingsmodel & financiën (bevestigd)
 	•	Winstverdeling: 50/50
 	•	Geen startsalaris
 	•	Beide partijen investeren tijd, kennis en middelen
-
-Proefperiode
-	•	Duur: 6 maanden
+	•	Proefperiode: 6 maanden
 	•	Einddatum proefperiode: 1 juli 2026
-	•	Doel: validatie samenwerking, product en markt
 
-Exitprincipes
+Exitprincipes:
 	•	Overmacht: geen compensatie
-	•	Nalatigheid of voortijdig uitstappen zonder reden:
+	•	Voortijdig uitstappen zonder zwaarwegende reden:
 	•	Exitvergoeding van toepassing
-	•	Indicatieve max: €1.000 (conceptueel plafond)
+	•	Indicatief plafond: €1.000
+	•	Bedrag is symbolisch en borgt serieuze inzet
 
-Indien samenwerking eindigt en Partij A wil doorgaan:
-	•	Infrastructuur van Partij B is overdraagbaar aan andere technische partij
+Infrastructuur:
+	•	Technische infrastructuur is overdraagbaar
+	•	Geen gijzeling van netwerk of systemen
 
 ⸻
 
-10. Financiële en operationele afspraken (nieuw toegevoegd) (contract maken met Stanley, Yosef pakt)
-	•	Klant betaalt het volledige bedrag aan de onderneming
-	•	Onderneming betaalt de contractor(s)
+12. Financiële & operationele afspraken met contractor (bevestigd)
+	•	Klant betaalt volledig aan de onderneming
+	•	Onderneming betaalt contractor(s)
+	•	Contractor is onderaannemer, geen contractpartij voor klant
+	•	Alle verantwoordelijkheid richting klant ligt bij de onderneming
+	•	Klachten en aansprakelijkheid lopen via de onderneming
 	•	Doel: volledige ontzorging van de klant
-	•	Er wordt gestreefd naar een vaste prijsafspraak met de hoofdcontractor voor minimaal één jaar (yosef pakt dit op, we kunnen elk jaar op 1 januari prijsafspraak met Stanley herzien)
-	•	Kostprijsopbouw wordt transparant intern vastgelegd (wellicht houden we dit op een vaste prijs)
-	•	Fiscale implicaties worden onderzocht voor startfase en latere fase
+	•	Streven naar vaste prijsafspraak met hoofdcontractor (minimaal 6–12 maanden)
+	•	Jaarlijkse herziening rond 1 januari
+	•	Kostprijsopbouw wordt intern transparant vastgelegd
+	•	Valutarisico en overmacht worden contractueel afgedekt
 
 ⸻
 
-11. Netwerk & toekomst (ongewijzigd)
-	•	Het Paraguay-netwerk wordt erkend als strategische waarde
-	•	Wordt niet commercieel uitgespeeld in fase 1
+13. Netwerk & toekomst (bevestigd)
+	•	Paraguay-netwerk erkend als strategische waarde
+	•	Niet commercieel uitgespeeld in fase 1
 	•	Uitbreidingen (vastgoed, community, aanvullende diensten):
-	•	pas na validatie
-	•	nooit vooraf beloofd (chistelijke taal spreken, communicatie heamstead concepten.)
+	•	Pas na validatie
+	•	Nooit vooraf beloofd
+	•	Communicatie blijft christelijk en visionair, zonder concrete toezeggingen
 
 ⸻
 
-12. Samenvattende kernafspraken (ongewijzigd)
+14. Samenvattende kernafspraken (ongewijzigd)
 	•	Klein starten
 	•	Hard selecteren
 	•	Eerlijk communiceren
@@ -211,6 +262,22 @@ Indien samenwerking eindigt en Partij A wil doorgaan:
 
 ⸻
 
-Status:
-Dit document is BUSINESSPLAN v0.3 en overschrijft volledig v0.2.
-Het document weerspiegelt de huidige besluiten en dient als basis voor verdere iteratie richting een latere v1.0.
+15. Openstaande punten & actielijst (nieuw)
+	1.	Definitieve capaciteitsgrenzen contractor
+	•	Actiehouder: Jozef
+	•	Taak: Vaststellen maximaal aantal personen per dag/week/maand en logistieke randvoorwaarden.
+	2.	Herberekening prijsstructuur
+	•	Actiehouder: Jozef & Steve
+	•	Taak: Kostprijs, marge, risico-opslag en eindprijzen herijken op basis van contractorprijzen.
+	3.	Contract met hoofdcontractor
+	•	Actiehouder: Jozef
+	•	Taak: Opstellen en afronden contract incl. prijs, scope, exclusiviteit en klantbescherming.
+	4.	Besluit hotel wel/niet inbegrepen
+	•	Actiehouder: Jozef & Steve
+	•	Taak: Afweging klantwaarde vs. complexiteit en prijsimpact.
+	5.	Funnel- en websitecopy in lijn brengen met v1.0
+	•	Actiehouder: Steve
+	•	Taak: Funnel herschrijven op basis van dit definitieve businessplan.
+	6.	Juridische en fiscale check startfase
+	•	Actiehouder: Steve
+	•	Taak: Verifiëren betaalstructuur, aansprakelijkheid en fiscale implicaties.
