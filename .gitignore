@@ -35,6 +35,11 @@ node_modules/
 !04-Operations/System-Configs/cursor/
 !04-Operations/System-Configs/cursor/README.md
 
+# Gemini: keep only curated doc
+04-Operations/System-Configs/gemini/**
+!04-Operations/System-Configs/gemini/
+!04-Operations/System-Configs/gemini/GEMINI.md
+
 # Docker: ignore everything by default (may include auth tokens)
 04-Operations/System-Configs/docker/**
 

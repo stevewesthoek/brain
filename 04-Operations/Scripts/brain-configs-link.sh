@@ -4,7 +4,7 @@ set -euo pipefail
 # =========================
 # brain-configs-link.sh
 # Moves selected dotfiles/folders into the Brain configs folder and symlinks them back.
-# Excludes: Gemini, Starship (already managed elsewhere).
+# Excludes: none (Gemini, Starship, Docker included when available).
 # =========================
 
 DRY_RUN="${DRY_RUN:-0}"
@@ -246,6 +246,15 @@ ensure_dir "${HOME_DIR}/.config/ghostty"
 move_file_and_link "${HOME_DIR}/.config/ghostty/config" "${CONFIGS_DIR}/ghostty/config"
 
 # -------------------------
+# Gemini (file only)
+# -------------------------
+say ""
+say "==> Gemini: ~/.gemini/GEMINI.md"
+ensure_dir "${CONFIGS_DIR}/gemini"
+ensure_dir "${HOME_DIR}/.gemini"
+move_file_and_link "${HOME_DIR}/.gemini/GEMINI.md" "${CONFIGS_DIR}/gemini/GEMINI.md"
+
+# -------------------------
 # Starship
 # -------------------------
 say ""
@@ -324,6 +333,7 @@ verify_link "${HOME_DIR}/.gitconfig" "${CONFIGS_DIR}/git/gitconfig"
 verify_link "${HOME_DIR}/.zshrc" "${CONFIGS_DIR}/shell/.zshrc"
 verify_link "${HOME_DIR}/.zprofile" "${CONFIGS_DIR}/shell/.zprofile"
 verify_link "${HOME_DIR}/.config/ghostty/config" "${CONFIGS_DIR}/ghostty/config"
+verify_link "${HOME_DIR}/.gemini/GEMINI.md" "${CONFIGS_DIR}/gemini/GEMINI.md"
 verify_link "${HOME_DIR}/.config/starship.toml" "${CONFIGS_DIR}/starship/starship.toml"
 verify_link "${HOME_DIR}/.cursor" "${CONFIGS_DIR}/cursor"
 verify_link "${HOME_DIR}/.codex" "${CONFIGS_DIR}/codex"
