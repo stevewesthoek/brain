@@ -8,7 +8,8 @@ set -euo pipefail
 # =========================
 
 DRY_RUN="${DRY_RUN:-0}"
-INCLUDE_DOCKER="${INCLUDE_DOCKER:-0}"
+# Default to managing Docker configs unless explicitly disabled.
+INCLUDE_DOCKER="${INCLUDE_DOCKER:-1}"
 
 HOME_DIR="${HOME}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -245,6 +246,15 @@ ensure_dir "${HOME_DIR}/.config/ghostty"
 move_file_and_link "${HOME_DIR}/.config/ghostty/config" "${CONFIGS_DIR}/ghostty/config"
 
 # -------------------------
+# Starship
+# -------------------------
+say ""
+say "==> Starship: ~/.config/starship.toml"
+ensure_dir "${CONFIGS_DIR}/starship"
+ensure_dir "${HOME_DIR}/.config"
+move_file_and_link "${HOME_DIR}/.config/starship.toml" "${CONFIGS_DIR}/starship/starship.toml"
+
+# -------------------------
 # Cursor (skip cursor-server)
 # -------------------------
 say ""
@@ -314,6 +324,7 @@ verify_link "${HOME_DIR}/.gitconfig" "${CONFIGS_DIR}/git/gitconfig"
 verify_link "${HOME_DIR}/.zshrc" "${CONFIGS_DIR}/shell/.zshrc"
 verify_link "${HOME_DIR}/.zprofile" "${CONFIGS_DIR}/shell/.zprofile"
 verify_link "${HOME_DIR}/.config/ghostty/config" "${CONFIGS_DIR}/ghostty/config"
+verify_link "${HOME_DIR}/.config/starship.toml" "${CONFIGS_DIR}/starship/starship.toml"
 verify_link "${HOME_DIR}/.cursor" "${CONFIGS_DIR}/cursor"
 verify_link "${HOME_DIR}/.codex" "${CONFIGS_DIR}/codex"
 verify_link "${HOME_DIR}/.claude" "${CONFIGS_DIR}/claude"

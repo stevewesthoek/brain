@@ -35,6 +35,9 @@ node_modules/
 !04-Operations/System-Configs/cursor/
 !04-Operations/System-Configs/cursor/README.md
 
+# Docker: ignore everything by default (may include auth tokens)
+04-Operations/System-Configs/docker/**
+
 # (Optional) If you later decide to version specific Cursor settings, add exceptions like:
 # !04-Operations/System-Configs/cursor/User/settings.json
 # !04-Operations/System-Configs/cursor/User/keybindings.json
