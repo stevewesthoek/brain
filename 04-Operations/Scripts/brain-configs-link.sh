@@ -250,13 +250,31 @@ ensure_dir "${HOME_DIR}/Library/Application Support/com.mitchellh.ghostty"
 move_file_and_link "${HOME_DIR}/Library/Application Support/com.mitchellh.ghostty/config" "${CONFIGS_DIR}/ghostty/config"
 
 # -------------------------
-# Gemini (file only)
+# Gemini (folder)
 # -------------------------
 say ""
-say "==> Gemini: ~/.gemini/GEMINI.md"
+say "==> Gemini: ~/.gemini (folder)"
 ensure_dir "${CONFIGS_DIR}/gemini"
-ensure_dir "${HOME_DIR}/.gemini"
-move_file_and_link "${HOME_DIR}/.gemini/GEMINI.md" "${CONFIGS_DIR}/gemini/GEMINI.md"
+if is_symlink "${HOME_DIR}/.gemini"; then
+  if symlink_points_to "${HOME_DIR}/.gemini" "${CONFIGS_DIR}/gemini"; then
+    say "==> Symlink OK: ${HOME_DIR}/.gemini"
+  else
+    warn "Broken or outdated symlink: ${HOME_DIR}/.gemini (relinking)"
+    run "rm -f \"${HOME_DIR}/.gemini\""
+    link_relative "${HOME_DIR}/.gemini" "${CONFIGS_DIR}/gemini"
+  fi
+elif [[ -d "${HOME_DIR}/.gemini" ]]; then
+  if [[ -d "${CONFIGS_DIR}/gemini" ]] && [[ -n "$(ls -A "${CONFIGS_DIR}/gemini" 2>/dev/null || true)" ]]; then
+    say "==> Existing repo gemini contents detected; backing up to ${CONFIGS_DIR}/gemini.backup-${TS}"
+    run "mv \"${CONFIGS_DIR}/gemini\" \"${CONFIGS_DIR}/gemini.backup-${TS}\""
+    ensure_dir "${CONFIGS_DIR}/gemini"
+  fi
+  say "==> Moving ~/.gemini -> ${CONFIGS_DIR}/gemini and linking back"
+  run "mv \"${HOME_DIR}/.gemini\" \"${CONFIGS_DIR}/gemini\""
+  link_relative "${HOME_DIR}/.gemini" "${CONFIGS_DIR}/gemini"
+else
+  warn "Missing: ${HOME_DIR}/.gemini (skipping)"
+fi
 
 # -------------------------
 # Starship
@@ -338,7 +356,7 @@ verify_link "${HOME_DIR}/.zshrc" "${CONFIGS_DIR}/shell/.zshrc"
 verify_link "${HOME_DIR}/.zprofile" "${CONFIGS_DIR}/shell/.zprofile"
 verify_link "${HOME_DIR}/.config/ghostty/config" "${CONFIGS_DIR}/ghostty/config"
 verify_link "${HOME_DIR}/Library/Application Support/com.mitchellh.ghostty/config" "${CONFIGS_DIR}/ghostty/config"
-verify_link "${HOME_DIR}/.gemini/GEMINI.md" "${CONFIGS_DIR}/gemini/GEMINI.md"
+verify_link "${HOME_DIR}/.gemini" "${CONFIGS_DIR}/gemini"
 verify_link "${HOME_DIR}/.config/starship.toml" "${CONFIGS_DIR}/starship/starship.toml"
 verify_link "${HOME_DIR}/.cursor" "${CONFIGS_DIR}/cursor"
 verify_link "${HOME_DIR}/.codex" "${CONFIGS_DIR}/codex"
