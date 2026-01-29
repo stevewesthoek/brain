@@ -1,8 +1,21 @@
-# Brain (Configs + Playbooks)
+# Brain
 
-This repo is the single source of truth for:
+Single source of truth for:
 - Curated dotfiles/configs I actually want versioned (safe + stable)
-- AI rules / playbooks / operating docs
+- AI rules, prompts, and playbooks
+- Infrastructure and operations docs
+- Product boilerplates and project material
+
+## Top-level map
+- `00-Identity/` — profile, style, theology
+- `01-AI/` — agents, prompts, providers
+- `02-Business/` — brand + playbooks
+- `03-Products/` — boilerplates (ProKit)
+- `04-Operations/` — infrastructure, automations, scripts, snippets
+- `05-Projects/` — project-specific docs
+- `06-Ideas/` — idea backlog
+- `99-Archive/` — deprecated or duplicate docs
+- `Configs/` — curated config files (symlinked)
 
 ## Configs philosophy (important)
 We **symlink** important config locations into this repo, but we **do not** commit machine state.
@@ -18,7 +31,7 @@ For example:
 ## Bootstrap (new machine)
 This repo expects your configs to be linked via:
 
-- `brain-configs-link.sh`
+- `04-Operations/Scripts/brain-configs-link.sh`
 
 Run it once after cloning to:
 - move existing local files into `Configs/…`
@@ -28,4 +41,10 @@ Run it once after cloning to:
 ### Safety first
 Dry run:
 ```bash
-DRY_RUN=1 bash brain-configs-link.sh
+DRY_RUN=1 bash 04-Operations/Scripts/brain-configs-link.sh
+```
+
+Run:
+```bash
+bash 04-Operations/Scripts/brain-configs-link.sh
+```

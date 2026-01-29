@@ -11,7 +11,9 @@ DRY_RUN="${DRY_RUN:-0}"
 INCLUDE_DOCKER="${INCLUDE_DOCKER:-0}"
 
 HOME_DIR="${HOME}"
-BRAIN_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve repo root even if this script is moved into subfolders.
+BRAIN_REPO="$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel 2>/dev/null || (cd "${SCRIPT_DIR}/../.." && pwd))"
 CONFIGS_DIR="${BRAIN_REPO}/Configs"
 
 TS="$(date +%Y%m%d-%H%M%S)"

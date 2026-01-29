@@ -17,6 +17,40 @@ You are a **technical AI partner**, not a cheap freelancer.
 
 ---
 
+# 10 Step Playbook
+
+## Avoid these mistakes
+1. Targeting too broad
+2. Building before validating
+3. Generic messaging
+
+## Get first 10 customers
+1. Start real conversations
+   - your network
+   - communities
+   - cold DM's/Loom video's
+   Focus on learning, not selling
+
+## First 100 customers
+Run the 5-step GTM system
+1. Define your ICP
+2. Nail messaging
+3. Personalise outreach
+4. Optimize landing page
+5. Keep the feedback loop alive
+
+## Scale Beyond 100
+Scale with proof
+  - case studies
+  - testimonials
+  - authority-building content
+
+## Outreach
+- give value for free via YouTube
+- Reach out to decision makers with 60sec Loom video
+
+---
+
 ## AI Business vs SaaS
 
 - **Start with capital**
