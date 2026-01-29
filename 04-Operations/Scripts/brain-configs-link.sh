@@ -245,6 +245,10 @@ ensure_dir "${CONFIGS_DIR}/ghostty"
 ensure_dir "${HOME_DIR}/.config/ghostty"
 move_file_and_link "${HOME_DIR}/.config/ghostty/config" "${CONFIGS_DIR}/ghostty/config"
 
+say "==> Ghostty (macOS app support): ~/Library/Application Support/com.mitchellh.ghostty/config"
+ensure_dir "${HOME_DIR}/Library/Application Support/com.mitchellh.ghostty"
+move_file_and_link "${HOME_DIR}/Library/Application Support/com.mitchellh.ghostty/config" "${CONFIGS_DIR}/ghostty/config"
+
 # -------------------------
 # Gemini (file only)
 # -------------------------
@@ -333,6 +337,7 @@ verify_link "${HOME_DIR}/.gitconfig" "${CONFIGS_DIR}/git/gitconfig"
 verify_link "${HOME_DIR}/.zshrc" "${CONFIGS_DIR}/shell/.zshrc"
 verify_link "${HOME_DIR}/.zprofile" "${CONFIGS_DIR}/shell/.zprofile"
 verify_link "${HOME_DIR}/.config/ghostty/config" "${CONFIGS_DIR}/ghostty/config"
+verify_link "${HOME_DIR}/Library/Application Support/com.mitchellh.ghostty/config" "${CONFIGS_DIR}/ghostty/config"
 verify_link "${HOME_DIR}/.gemini/GEMINI.md" "${CONFIGS_DIR}/gemini/GEMINI.md"
 verify_link "${HOME_DIR}/.config/starship.toml" "${CONFIGS_DIR}/starship/starship.toml"
 verify_link "${HOME_DIR}/.cursor" "${CONFIGS_DIR}/cursor"
