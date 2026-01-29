@@ -33,6 +33,10 @@ This repo expects your configs to be linked via:
 
 - `04-Operations/Scripts/brain-configs-link.sh`
 
+Ghostty config is managed in two locations on macOS:
+- `~/.config/ghostty/config`
+- `~/Library/Application Support/com.mitchellh.ghostty/config`
+
 Run it once after cloning to:
 - move existing local files into `04-Operations/System-Configs/…`
 - create symlinks back to the standard locations
