@@ -27,6 +27,8 @@ For example:
 - `~/.cursor` is symlinked into `04-operations/system-configs/cursor/`
   - Git tracks only `04-operations/system-configs/cursor/README.md`
   - Everything else under Cursor is ignored (extensions, projects, caches, state)
+- Docker configs are symlinked but **ignored** by default because they can contain auth tokens.
+  - If you ever want to version specific Docker files, add explicit allowlist entries in `.gitignore`.
 
 ## Bootstrap (new machine)
 This repo expects your configs to be linked via:
