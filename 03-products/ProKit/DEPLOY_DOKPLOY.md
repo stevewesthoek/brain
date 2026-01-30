@@ -25,29 +25,47 @@ Tip: use the values written to `.env.production` by the provisioning script as t
 
 ## Production flow (recommended)
 
-Run inside Dokploy (pre-deploy hook or job):
+No custom Dokploy commands are required. ProKit routes `npm start` through a runtime gate:
+
+1. `scripts/runtime/start-prod.sh` runs on container start.
+2. It calls `scripts/db/deploy-prod.sh` (migration detect → backup → migrate → smoke → auto-restore).
+3. If the gate succeeds, it `exec`s the real app start command.
+4. If the gate fails, the container exits non-zero and Dokploy marks the deploy as failed.
+5. Backups are handled by ProKit scripts; do not use Dokploy Volume Backups for this flow.
+
+The actual app start command should live in `scripts.start:app` inside `package.json`.
+If your app uses a custom production start, put it in `scripts.start:app`.
+
+### Swarm service mount (required)
+
+Because Dokploy runs in Swarm, add a service-level bind mount so backups persist:
+
+- Host path: `/var/backups/pgdump`
+- Container path: `/var/backups/pgdump`
+
+If this is missing, the deploy script will fail with a writable-path error.
+This is a one-time manual requirement per app. All apps share the same host path.
+No other per-app Dokploy configuration is required.
+
+### Postgres client tools (required)
+
+The deploy script uses `psql`, `pg_dump`, and `pg_restore`. Ensure your Dokploy build/runtime image includes the Postgres 15 client tools (same major as Supabase).
+
+Options:
+- Nixpacks: include `nixpacks.toml` with `postgresql_15` (recommended, repo-driven).
+- Use a sidecar or one-off `postgres:15` client container to run the script.
+
+ProKit includes `nixpacks.toml` with Postgres 15 client tools by default. If your Dokploy app already uses Nixpacks, no UI changes are needed.
+
+### Verify last deploy
 
 ```bash
-npm run db:init -- --slug $APP_SLUG
-NODE_ENV=production npm run db:migrate:prod
-npm start
+APP_SLUG=myapp npm run verify:deploy
 ```
-
-Notes:
-- `db:init` is idempotent and safe to rerun.
-- `db:migrate:prod` must be executed in Dokploy so it can reach the private DB.
 
 ## Make migrations explicit (required)
 
-Migrations are not automatic unless your Dokploy workflow runs them.
-Ensure your Dokploy deployment command or pre-deploy hook includes:
-
-```bash
-npm run db:init -- --slug $APP_SLUG
-NODE_ENV=production npm run db:migrate:prod
-```
-
-If these commands are missing, production will not be updated when you add or change tables in development.
+Migrations are automatic because `npm start` runs the runtime gate before the app starts.
 
 ## Preview tenants (optional)
 

@@ -9,6 +9,10 @@ ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes auth
 - `DEPLOY_DOKPLOY.md` - primary production environment (private DB access)
 - `DEPLOY_VERCEL.md` - limited production environment
 - `MODULES/` - optional patterns and templates
+- `scripts/db/` - automated deploy + verification scripts
+- `scripts/runtime/` - runtime gate that runs before app start
+- `nixpacks.toml` - ensures Postgres 15 client tools are available
+- `AGENTS.md` - AI reminders for provisioning
 
 ## Environments (summary)
 
@@ -16,15 +20,18 @@ ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes auth
 - Production (Dokploy): private Supabase Postgres at `10.0.2.4:5433` reachable only from Dokploy.
 - Production (Vercel): only if DB is publicly reachable or via secure proxy/tunnel.
 
-## Dokploy command template
+## Dokploy Setup (Required)
 
-Use this as your Dokploy deploy command or pre-deploy hook:
+The only per-app manual step:
 
-```bash
-npm run db:init -- --slug $APP_SLUG
-NODE_ENV=production npm run db:migrate:prod
-npm start
-```
+**Bind mount required (or the container will refuse to start)**
+- Dokploy UI path: **App -> General -> Volumes/Mounts -> Bind Mount**
+- Host Path: `/var/backups/pgdump`
+- Mount Path: `/var/backups/pgdump` (read/write)
+
+ProKit routes `npm start` through `scripts/runtime/start-prod.sh`. The actual app start command should live in `scripts.start:app` inside `package.json` (default is `next start -p $PORT`).
+No other per-app Dokploy configuration is required.
+If your app uses a custom production start, put it in `scripts.start:app`.
 
 ## New app checklist
 
@@ -39,4 +46,21 @@ npm start
    ```
 4. Commit code and `prisma/migrations`.
 5. Use the generated `.env.production` values for Dokploy env vars.
-6. Deploy with the Dokploy command template above.
+6. Confirm Dokploy bind mount exists and `nixpacks.toml` is present.
+7. Deploy (no custom start/deploy commands required).
+
+## First deploy checklist
+
+- `APP_SLUG`, `SYSTEM_DATABASE_URL`, `DATABASE_URL` set in Dokploy env.
+- Bind mount present: `/var/backups/pgdump` -> `/var/backups/pgdump`.
+- `nixpacks.toml` present in the repo (installs Postgres 15 client tools).
+
+## Verify last deploy
+
+```bash
+APP_SLUG=myapp npm run verify:deploy
+```
+
+## AI reminder
+
+When provisioning a new Dokploy app, always show the reminder in `AGENTS.md`.

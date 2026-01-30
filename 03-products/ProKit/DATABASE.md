@@ -9,6 +9,13 @@ Single source of truth for database behavior in ProKit. Use this doc for provisi
 - Registry table `public.tenants` is infra-only (provision/cleanup). Runtime must not read it.
 - Prisma schema is managed in `prisma/system.prisma`.
 
+## Isolation rules (required)
+
+- Tenant schemas must be isolated. No cross-schema foreign keys, views, or functions.
+- Tenant users must not have `USAGE` or `CREATE` on `public`.
+- Tenant user `search_path` must be `tenant_<slug>, pg_catalog` (no `public`).
+- Runtime must never depend on `public` objects (except `pg_catalog`).
+
 ## Naming and slug contract
 
 - The project name is the app slug.
@@ -128,6 +135,42 @@ Use `.env.production` as the source of truth when copying variables into Dokploy
 - Production: `db:migrate:prod` uses `prisma migrate deploy --schema=prisma/system.prisma` and must run inside Dokploy.
 - Runtime must not start without successful migrations.
 
+## Automated migration-safe deploy (Dokploy)
+
+ProKit includes a fully automatic deploy script that:
+1. Detects pending migrations (no manual flags).
+2. Creates a schema-scoped backup.
+3. Runs provisioning + migrations.
+4. Runs a smoke check.
+5. Auto-restores on smoke failure.
+6. Writes a status file for quick verification.
+
+Scripts:
+- `scripts/db/deploy-prod.sh`
+- `scripts/db/verify.sh`
+- `scripts/runtime/start-prod.sh` (runs the deploy gate before app start)
+
+Runtime behavior:
+- `npm start` runs `scripts/runtime/start-prod.sh`, which calls the deploy gate and then starts the app.
+
+Backup rules:
+- Backup root is fixed: `/var/backups/pgdump`.
+- Backups are stored under `/var/backups/pgdump/$APP_SLUG`.
+- Retention: keep last 3 backups and delete any older than 14 days.
+This path is a shared bind mount on the Dokploy host (no per-app volume names).
+
+Compatibility:
+- `pg_dump`/`pg_restore` must match the Postgres major version.
+- Supabase is Postgres `15.x`, so install `postgresql-client-15` or use a `postgres:15` client container.
+- `scripts/db/deploy-prod.sh` checks client vs server major and fails fast if the client is older.
+
+Smoke check:
+- The script uses `psql` to validate the tenant schema and `_prisma_migrations` table.
+- `_prisma_migrations` must live inside the tenant schema (not `public`).
+
+Verify:
+- `APP_SLUG=<slug> ./scripts/db/verify.sh` prints the last deploy status (migrations, backup, smoke, restore).
+
 ## Schema change checklist (dev -> prod)
 
 When you add or change tables locally:
@@ -140,13 +183,9 @@ When you add or change tables locally:
 3. Verify locally (run the app or tests).
 4. Commit the migration files under `prisma/migrations`.
 5. Deploy the code to production.
-6. In Dokploy, run:
-   ```bash
-   npm run db:init -- --slug $APP_SLUG
-   NODE_ENV=production npm run db:migrate:prod
-   ```
+6. On container start, the runtime gate runs `db:init` + `db:migrate:prod` automatically.
 
-If step 6 is not executed inside Dokploy, production will not receive your schema changes.
+If the runtime gate does not run (misconfigured start command), production will not receive schema changes.
 
 ## Safety rules
 

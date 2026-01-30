@@ -53,7 +53,7 @@ Audience: humans and AI agents that need to understand what exists, where it run
 - **Supabase Server (Azure)**
   - Runs Supabase stack (PostgreSQL + backend services).
   - Database is **private-only** on internal IP.
-  - **Supabase Studio frontend** exposed via Cloudflare + domain `prochat.tools`.
+  - **Supabase Studio frontend** exposed via Cloudflare + domain `studio.prochat.tools`.
     - Only the Studio web UI is reachable from the internet.
     - The underlying PostgreSQL port is **not** exposed via Cloudflare or public IP.
 
@@ -102,7 +102,7 @@ Audience: humans and AI agents that need to understand what exists, where it run
     - Dokploy VM (`10.0.1.5`) over the Azure VNet.
     - Localhost / internal processes on the Supabase VM.
 - **Supabase Studio:**
-  - Frontend exposed on `https://prochat.tools`.
+  - Frontend exposed on `https://studio.prochat.tools`.
   - Only the **Studio UI** goes through Cloudflare.
   - Database remains private; Studio uses internal connection from within the Supabase VM.
 
@@ -173,8 +173,11 @@ Audience: humans and AI agents that need to understand what exists, where it run
   - Accessible from Dokploy VM (`10.0.1.5`) over private network.
   - Accessible from internal Supabase processes and Supabase Studio (running on the Supabase VM).
   - **Not** directly reachable via public IP or Cloudflare tunnel.
+- **Backups (tenant schema):**
+  - Stored on the Dokploy host at `/var/backups/pgdump/<app-slug>`.
+  - Retained per app with strict limits (see ProKit `DATABASE.md`).
 
-- **Supabase Studio (`prochat.tools`):**
+- **Supabase Studio (`studio.prochat.tools`):**
   - Client (browser) connects to Studio frontend via Cloudflare → Supabase VM.
   - Studio backend on the Supabase VM talks to PostgreSQL over `localhost` / `10.0.2.4`.
   - Database credentials and ports are never exposed to the public network.
