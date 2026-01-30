@@ -11,6 +11,7 @@ ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes auth
 - `MODULES/` - optional patterns and templates
 - `scripts/db/` - automated deploy + verification scripts
 - `scripts/runtime/` - runtime gate that runs before app start
+- `scripts/project/` - project bootstrap + migration helpers
 - `nixpacks.toml` - ensures Postgres 15 client tools are available
 - `AGENTS.md` - AI reminders for provisioning
 
@@ -49,6 +50,14 @@ If your app uses a custom production start, put it in `scripts.start:app`.
 6. Confirm Dokploy bind mount exists and `nixpacks.toml` is present.
 7. Deploy (no custom start/deploy commands required).
 
+## One-command project bootstrap
+
+```bash
+npm run prokit:bootstrap -- <app-slug>
+```
+
+This provisions the tenant, writes `.env` + `.env.production`, and prints next steps.
+
 ## First deploy checklist
 
 - `APP_SLUG`, `SYSTEM_DATABASE_URL`, `DATABASE_URL` set in Dokploy env.
@@ -60,6 +69,14 @@ If your app uses a custom production start, put it in `scripts.start:app`.
 ```bash
 APP_SLUG=myapp npm run verify:deploy
 ```
+
+## Migrate existing projects to ProKit
+
+```bash
+npm run prokit:migrate -- --apply
+```
+
+This aligns `package.json` to the runtime gate, ensures `verify:deploy` exists, and checks for `nixpacks.toml` and required scripts.
 
 ## AI reminder
 

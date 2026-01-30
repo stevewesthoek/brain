@@ -35,6 +35,7 @@ No custom Dokploy commands are required. ProKit routes `npm start` through a run
 
 The actual app start command should live in `scripts.start:app` inside `package.json`.
 If your app uses a custom production start, put it in `scripts.start:app`.
+For new apps, run `npm run prokit:bootstrap -- <slug>` to provision and generate env files.
 
 ### Swarm service mount (required)
 

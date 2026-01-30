@@ -149,6 +149,8 @@ Scripts:
 - `scripts/db/deploy-prod.sh`
 - `scripts/db/verify.sh`
 - `scripts/runtime/start-prod.sh` (runs the deploy gate before app start)
+- `scripts/project/bootstrap.sh` (one-command provisioning)
+- `scripts/project/migrate.sh` (align existing repos to ProKit)
 
 Runtime behavior:
 - `npm start` runs `scripts/runtime/start-prod.sh`, which calls the deploy gate and then starts the app.
@@ -170,6 +172,12 @@ Smoke check:
 
 Verify:
 - `APP_SLUG=<slug> ./scripts/db/verify.sh` prints the last deploy status (migrations, backup, smoke, restore).
+
+Project bootstrap:
+- `npm run prokit:bootstrap -- <slug>` provisions the tenant and writes `.env` + `.env.production`.
+
+Project migration:
+- `npm run prokit:migrate -- --apply` aligns `package.json` with the runtime gate and checks required files.
 
 ## Schema change checklist (dev -> prod)
 
