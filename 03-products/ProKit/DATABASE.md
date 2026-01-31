@@ -57,14 +57,26 @@ Examples:
 # .env (development)
 APP_SLUG=dev
 DATABASE_URL=postgresql://tenant_dev_user:<password>@localhost:5433/postgres?schema=tenant_dev
-SYSTEM_DATABASE_URL=postgresql://postgres:<admin-password>@localhost:5433/postgres?schema=public
+SYSTEM_DATABASE_URL=postgresql://supabase_admin:<admin-password>@localhost:5433/postgres?schema=public
 
 # Production (Dokploy env)
 APP_SLUG=myapp
 TENANT_DB_PASSWORD=<strong-password>
 DATABASE_URL=postgresql://tenant_myapp_user:<TENANT_DB_PASSWORD>@10.0.2.4:5433/postgres?schema=tenant_myapp
-SYSTEM_DATABASE_URL=postgresql://postgres:<admin-password>@10.0.2.4:5433/postgres?schema=public
+SYSTEM_DATABASE_URL=postgresql://supabase_admin:<admin-password>@10.0.2.4:5433/postgres?schema=public
 ```
+
+## Admin role contract (required)
+
+- `SYSTEM_DATABASE_URL` always uses the Supabase admin role (`supabase_admin`).
+- The admin role owns tenant schemas and can create roles, schemas, types, tables, and set role defaults.
+- This is the only supported admin role for provisioning, cleanup, backups, and deploy gates.
+
+## Tenant user contract (required)
+
+- `DATABASE_URL` always uses `tenant_<slug>_user` with `schema=tenant_<slug>`.
+- Tenant users have full DDL/DML inside their schema only.
+- Tenant users have no `USAGE` or `CREATE` on `public`.
 
 ## Supported commands (only entry points)
 
@@ -92,7 +104,7 @@ npm run db:cleanup -- --slug <slug> [--force]
 1. Resolve slug from `--slug` or `APP_SLUG`.
 2. Create schema `tenant_<slug>` if missing.
 3. Create or update user `tenant_<slug>_user` with password.
-4. Grant privileges and set `search_path` to the tenant schema.
+4. Grant privileges, revoke `public`, and set `search_path` to the tenant schema.
 5. Upsert registry row in `public.tenants` (type `prod` or `preview`).
 6. Generate a tenant password if one is not provided.
 7. Output connection values and write files:

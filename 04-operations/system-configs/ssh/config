@@ -73,3 +73,11 @@ Host office
 Match host office exec "/usr/bin/nc -G 1 -z 192.168.2.1 22"
   HostName 192.168.2.1
   ConnectTimeout 2
+
+Host dokploy-new
+  HostName 100.83.38.48
+  User master
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  ServerAliveInterval 30
+  ServerAliveCountMax 3

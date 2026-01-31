@@ -16,6 +16,8 @@ Single source of truth for:
 - `06-ideas/` — idea backlog
 - `99-archive/` — deprecated or duplicate docs
 - `04-operations/system-configs/` — curated config files (symlinked)
+- `.codex/` — Codex project config (symlink to `04-operations/system-configs/codex/config.toml`)
+- `01-ai/skills/` — canonical skill library (symlinked into AI tools)
 
 ## Configs philosophy (important)
 We **symlink** important config locations into this repo, but we **do not** commit machine state.
@@ -54,3 +56,11 @@ Run:
 ```bash
 bash 04-operations/scripts/brain-configs-link.sh
 ```
+
+## Skills (centralized)
+Canonical skills live in `01-ai/skills/` and are symlinked to tool-specific locations:
+- Codex: `04-operations/system-configs/codex/skills/user` -> `01-ai/skills` (keeps `.system/` intact)
+- Cursor: `04-operations/system-configs/cursor/skills` -> `01-ai/skills`
+- Claude: `04-operations/system-configs/claude/skills` -> `01-ai/skills`
+- Antigravity (global): `~/.gemini/antigravity/skills` -> `01-ai/skills`
+- Gemini CLI (global): `~/.gemini/skills` -> `01-ai/skills`

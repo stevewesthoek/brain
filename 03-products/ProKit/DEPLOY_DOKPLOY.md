@@ -16,7 +16,7 @@ NODE_ENV=production
 APP_SLUG=myapp
 TENANT_DB_PASSWORD=<strong-password>
 DATABASE_URL=postgresql://tenant_myapp_user:<TENANT_DB_PASSWORD>@10.0.2.4:5433/postgres?schema=tenant_myapp
-SYSTEM_DATABASE_URL=postgresql://postgres:<admin-password>@10.0.2.4:5433/postgres?schema=public
+SYSTEM_DATABASE_URL=postgresql://supabase_admin:<admin-password>@10.0.2.4:5433/postgres?schema=public
 NEXT_PUBLIC_APP_URL=https://myapp.example.com
 PORT=3000
 ```
@@ -36,6 +36,10 @@ No custom Dokploy commands are required. ProKit routes `npm start` through a run
 The actual app start command should live in `scripts.start:app` inside `package.json`.
 If your app uses a custom production start, put it in `scripts.start:app`.
 For new apps, run `npm run prokit:bootstrap -- <slug>` to provision and generate env files.
+
+## Admin role requirement (required)
+
+Use `supabase_admin` for `SYSTEM_DATABASE_URL`. This role owns tenant schemas and can run provisioning, cleanup, backups, and migrations for every app.
 
 ### Swarm service mount (required)
 
