@@ -64,3 +64,20 @@ Canonical skills live in `01-ai/skills/` and are symlinked to tool-specific loca
 - Claude: `04-operations/system-configs/claude/skills` -> `01-ai/skills`
 - Antigravity (global): `~/.gemini/antigravity/skills` -> `01-ai/skills`
 - Gemini CLI (global): `~/.gemini/skills` -> `01-ai/skills`
+
+### UI/UX Pro Max (manual)
+UI-UX Pro Max is installed as an AI-agnostic skill in:
+- `01-ai/skills/ui-ux-pro-max/`
+
+Quick start:
+```bash
+python3 01-ai/skills/ui-ux-pro-max/scripts/search.py "<product + industry + style>" --design-system -p "<Project Name>"
+```
+
+Persist a design system:
+```bash
+python3 01-ai/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "<Project Name>" --page "<page name>"
+```
+
+Use with the web-design skill:
+- Run the design-system command first, then apply its output to the web-design spec.
