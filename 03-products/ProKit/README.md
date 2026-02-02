@@ -8,12 +8,13 @@ ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes auth
 - `DATABASE.md` - provisioning, migrations, cleanup, env contracts
 - `DEPLOY_DOKPLOY.md` - primary production environment (private DB access)
 - `DEPLOY_VERCEL.md` - limited production environment
-- `MODULES/` - optional patterns and templates
+- `modules/` - optional patterns and templates
 - `scripts/db/` - automated deploy + verification scripts
 - `scripts/runtime/` - runtime gate that runs before app start
 - `scripts/project/` - project bootstrap + migration helpers
 - `nixpacks.toml` - ensures Postgres 15 client tools are available
-- `AGENTS.md` - AI reminders for provisioning
+- `agents.md` - AI reminders for provisioning
+- `instructions/` - app-agnostic guidance (Clerk, Stripe, troubleshooting, git workflow)
 
 ## Environments (summary)
 
@@ -80,4 +81,4 @@ This aligns `package.json` to the runtime gate, ensures `verify:deploy` exists, 
 
 ## AI reminder
 
-When provisioning a new Dokploy app, always show the reminder in `AGENTS.md`.
+When provisioning a new Dokploy app, always show the reminder in `agents.md`.

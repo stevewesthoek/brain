@@ -15,7 +15,7 @@ HOME_DIR="${HOME}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Resolve repo root even if this script is moved into subfolders.
 BRAIN_REPO="$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel 2>/dev/null || (cd "${SCRIPT_DIR}/../.." && pwd))"
-CONFIGS_DIR_DEFAULT="${BRAIN_REPO}/04-operations/system-configs"
+CONFIGS_DIR_DEFAULT="${BRAIN_REPO}/04-OPERATIONS/system-configs"
 CONFIGS_DIR="${CONFIGS_DIR:-${CONFIGS_DIR_DEFAULT}}"
 
 TS="$(date +%Y%m%d-%H%M%S)"

@@ -1,6 +1,6 @@
 # Identity
 
 Core personal context and boundaries for AI and work:
-- PROFILE.md
-- STYLE.md
-- THEOLOGY.md
+- profile.md
+- style.md
+- theology.md

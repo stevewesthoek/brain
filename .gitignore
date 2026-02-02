@@ -8,43 +8,43 @@ __pycache__/
 # --- Config repo hygiene ---
 
 # Never commit secrets / creds (anywhere under system-configs/)
-04-operations/system-configs/**/auth.json
-04-operations/system-configs/**/auth*.json
-04-operations/system-configs/**/*token*
-04-operations/system-configs/**/*secret*
-04-operations/system-configs/**/keychain*
-04-operations/system-configs/**/.env
-04-operations/system-configs/**/.env.*
-04-operations/system-configs/**/*.pem
-04-operations/system-configs/**/*.p12
-04-operations/system-configs/**/*.key
+04-OPERATIONS/system-configs/**/auth.json
+04-OPERATIONS/system-configs/**/auth*.json
+04-OPERATIONS/system-configs/**/*token*
+04-OPERATIONS/system-configs/**/*secret*
+04-OPERATIONS/system-configs/**/keychain*
+04-OPERATIONS/system-configs/**/.env
+04-OPERATIONS/system-configs/**/.env.*
+04-OPERATIONS/system-configs/**/*.pem
+04-OPERATIONS/system-configs/**/*.p12
+04-OPERATIONS/system-configs/**/*.key
 
 # --- Curated tool configs ---
 
 # Codex: keep only curated files
-04-operations/system-configs/codex/**
-!04-operations/system-configs/codex/
-!04-operations/system-configs/codex/config.toml
-!04-operations/system-configs/codex/README.md
+04-OPERATIONS/system-configs/codex/**
+!04-OPERATIONS/system-configs/codex/
+!04-OPERATIONS/system-configs/codex/config.toml
+!04-OPERATIONS/system-configs/codex/README.md
 
 # Claude: keep only curated docs (everything else is volatile/sensitive)
-04-operations/system-configs/claude/**
-!04-operations/system-configs/claude/
-!04-operations/system-configs/claude/README.md
+04-OPERATIONS/system-configs/claude/**
+!04-OPERATIONS/system-configs/claude/
+!04-OPERATIONS/system-configs/claude/README.md
 
 # Cursor: ignore everything (machine state), keep only curated docs
-04-operations/system-configs/cursor/**
-!04-operations/system-configs/cursor/
-!04-operations/system-configs/cursor/README.md
+04-OPERATIONS/system-configs/cursor/**
+!04-OPERATIONS/system-configs/cursor/
+!04-OPERATIONS/system-configs/cursor/README.md
 
 # Gemini: keep only curated doc
-04-operations/system-configs/gemini/**
-!04-operations/system-configs/gemini/
-!04-operations/system-configs/gemini/GEMINI.md
+04-OPERATIONS/system-configs/gemini/**
+!04-OPERATIONS/system-configs/gemini/
+!04-OPERATIONS/system-configs/gemini/GEMINI.md
 
 # Docker: ignore everything by default (may include auth tokens)
-04-operations/system-configs/docker/**
+04-OPERATIONS/system-configs/docker/**
 
 # (Optional) If you later decide to version specific Cursor settings, add exceptions like:
-# !04-operations/system-configs/cursor/User/settings.json
-# !04-operations/system-configs/cursor/User/keybindings.json
+# !04-OPERATIONS/system-configs/cursor/User/settings.json
+# !04-OPERATIONS/system-configs/cursor/User/keybindings.json

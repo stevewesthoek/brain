@@ -41,7 +41,7 @@ Ask for:
 ## UI-UX Pro Max integration
 Design-system command:
 ```
-python3 01-ai/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system -p "<Project Name>"
+python3 01-AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system -p "<Project Name>"
 ```
 Then apply its style + palette + typography outputs to this spec.
 

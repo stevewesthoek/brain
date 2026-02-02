@@ -10,7 +10,7 @@ set -euo pipefail
 #   bash 04-OPERATIONS/scripts/design-web.sh "brutalism landing page for fintech" "Fintech SaaS" landing
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SKILL_ROOT="$ROOT_DIR/01-ai/skills/ui-ux-pro-max"
+SKILL_ROOT="$ROOT_DIR/01-AI/skills/ui-ux-pro-max"
 QUERY="${1:-}"
 PROJECT="${2:-Default}"
 PAGE="${3:-}"  # optional

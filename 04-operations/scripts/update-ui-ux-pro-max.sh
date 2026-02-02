@@ -5,7 +5,7 @@ set -euo pipefail
 # This syncs only the upstream catalog (data/) and helper scripts (scripts/).
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SKILL_DIR="$ROOT_DIR/01-ai/skills/ui-ux-pro-max"
+SKILL_DIR="$ROOT_DIR/01-AI/skills/ui-ux-pro-max"
 
 if ! command -v uipro >/dev/null 2>&1; then
   echo "uipro CLI not found. Install with: npm install -g uipro-cli" >&2
