@@ -91,3 +91,8 @@ Update UI/UX Pro Max safely (does not touch your web-design skill):
 ```bash
 bash 04-OPERATIONS/scripts/update-ui-ux-pro-max.sh
 ```
+
+One-liner wrapper (design system + persist):
+```bash
+bash 04-OPERATIONS/scripts/design-web.sh "<query>" "<Project Name>" [page]
+```
