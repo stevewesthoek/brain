@@ -10,12 +10,18 @@ description: Use when the user asks for web design work (landing pages, SaaS app
 - Component map: `references/components.md`
 - Stack + constraints: `00-IDENTITY/style.md`, `00-IDENTITY/profile.md`, `02-BUSINESS/playbooks/SaaS-Reference.md`
 - Existing prompt (AI analytics landing): `01-AI/prompts/WebDesign.md`
-- If UI-UX Pro Max is installed, also load: `../ui-ux-pro-max/references/overview.md`
+- UI-UX Pro Max overview: `../ui-ux-pro-max/references/overview.md`
 
 ## Core behavior
 - Design for B2B micro-SaaS, marketing funnels, and web apps.
 - Align output to the fixed stack: Next.js, TypeScript, TailwindCSS, shadcn/ui.
 - Avoid dark patterns or manipulative UX.
+
+## Default workflow (out-of-the-box)
+If UI-UX Pro Max data is available, always:
+1) Generate a design system with UI-UX Pro Max.
+2) Apply its style + palette + typography to the output spec.
+If the catalog is missing, fall back to the local style catalog.
 
 ## Intake (ask only what is missing)
 Ask for:
@@ -32,8 +38,8 @@ Ask for:
 - If user wants "modern" and "premium": suggest Glassmorphism or Liquid Glass.
 - If user wants "playful": suggest Claymorphism or Vibrant + Block-Based.
 
-## Optional: UI-UX Pro Max integration
-If the catalog is installed, generate a design system first:
+## UI-UX Pro Max integration
+Design-system command:
 ```
 python3 01-ai/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system -p "<Project Name>"
 ```

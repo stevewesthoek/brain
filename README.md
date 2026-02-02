@@ -69,7 +69,12 @@ Canonical skills live in `01-ai/skills/` and are symlinked to tool-specific loca
 UI-UX Pro Max is installed as an AI-agnostic skill in:
 - `01-ai/skills/ui-ux-pro-max/`
 
-Quick start:
+Standard workflow (for you + AI):
+1) You ask for a design (e.g. “Brutalism landing page”).
+2) AI uses **web-design** skill and auto-consults **ui-ux-pro-max** to select style/palette/typography.
+3) AI returns a build-ready spec for Next.js + Tailwind + shadcn.
+
+Quick start (manual):
 ```bash
 python3 01-ai/skills/ui-ux-pro-max/scripts/search.py "<product + industry + style>" --design-system -p "<Project Name>"
 ```
@@ -81,3 +86,8 @@ python3 01-ai/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system -
 
 Use with the web-design skill:
 - Run the design-system command first, then apply its output to the web-design spec.
+
+Update UI/UX Pro Max safely (does not touch your web-design skill):
+```bash
+bash 04-OPERATIONS/scripts/update-ui-ux-pro-max.sh
+```

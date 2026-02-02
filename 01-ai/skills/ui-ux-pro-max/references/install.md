@@ -1,17 +1,24 @@
 # UI-UX Pro Max Install (Canonical Skills Layout)
 
-This repo centralizes skills under `01-ai/skills/`. The UI-UX Pro Max data lives at:
+Canonical location:
+  01-ai/skills/ui-ux-pro-max/
 
-  01-ai/skills/ui-ux-pro-max/data/
+## Install or update (preferred)
+Use the helper script:
+```
+bash 04-OPERATIONS/scripts/update-ui-ux-pro-max.sh
+```
 
-## Install using the upstream CLI
+## Manual install (if needed)
 ```
 npm install -g uipro-cli
 mkdir -p /tmp/uipro && cd /tmp/uipro
 uipro init --ai all
 cp -R .codex/skills/ui-ux-pro-max/data/* /Users/Office/Repos/Brain/01-ai/skills/ui-ux-pro-max/data/
+cp -R .codex/skills/ui-ux-pro-max/scripts/* /Users/Office/Repos/Brain/01-ai/skills/ui-ux-pro-max/scripts/
 ```
 
-## Notes
-- The installer generates skills for many AI tools. We only need the **data** folder here.
+Notes:
+- The installer generates skills for many AI tools. We only need `data/` and `scripts/` here.
 - Python 3.x is required to run the search scripts.
+- This never overwrites `01-ai/skills/web-design/`.
