@@ -209,25 +209,20 @@ backup_schema() {
 }
 
 smoke_check() {
-  psql "$DATABASE_URL_PSQL" -v ON_ERROR_STOP=1 -v app_schema="$APP_SCHEMA" <<'SQL'
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.schemata
-    WHERE schema_name = :'app_schema'
-  ) THEN
-    RAISE EXCEPTION 'missing tenant schema';
-  END IF;
+  local schema_exists table_exists
+  schema_exists=$(psql "$DATABASE_URL_PSQL" -v ON_ERROR_STOP=1 -tA \
+    -c "SELECT 1 FROM information_schema.schemata WHERE schema_name='${APP_SCHEMA}';")
+  if [[ "$schema_exists" != "1" ]]; then
+    echo "missing tenant schema: ${APP_SCHEMA}" >&2
+    return 1
+  fi
 
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = :'app_schema'
-      AND table_name = '_prisma_migrations'
-  ) THEN
-    RAISE EXCEPTION 'missing _prisma_migrations table';
-  END IF;
-END $$;
-SQL
+  table_exists=$(psql "$DATABASE_URL_PSQL" -v ON_ERROR_STOP=1 -tA \
+    -c "SELECT 1 FROM information_schema.tables WHERE table_schema='${APP_SCHEMA}' AND table_name='_prisma_migrations';")
+  if [[ "$table_exists" != "1" ]]; then
+    echo "missing _prisma_migrations table in ${APP_SCHEMA}" >&2
+    return 1
+  fi
 }
 
 restore_schema() {
