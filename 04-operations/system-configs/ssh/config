@@ -12,12 +12,12 @@ Host cloudpanel
   User master
 
 # SSH to Dokploy over Tailscale
-Host dokploy
-  HostName 100.108.85.31
-  User master
-  Port 22
-  IdentitiesOnly yes
-  IdentityFile ~/.ssh/dokploy_master_key.pem
+#Host dokploy
+#  HostName 100.108.85.31
+#  User master
+#  Port 22
+#  IdentitiesOnly yes
+#  IdentityFile ~/.ssh/dokploy_master_key.pem
 
 # SSH to Dokploy server via Cloudflare Tunnel
 #Host dokploy
@@ -50,11 +50,11 @@ Host supabase
 #    IdentityFile ~/.ssh/id_ed25519
 #    IdentitiesOnly yes
 
-Host Dokploy
-    HostName dokploy.prochat.tools
-    User master
-    IdentityFile ~/.ssh/dokploy_master_key.pem
-    IdentitiesOnly yes # Optional: Ensures only this identity file is tried
+#Host Dokploy
+#    HostName dokploy.prochat.tools
+#    User master
+#    IdentityFile ~/.ssh/dokploy_master_key.pem
+#    IdentitiesOnly yes # Optional: Ensures only this identity file is tried
 
 Host *
   AddKeysToAgent yes
@@ -74,7 +74,7 @@ Match host office exec "/usr/bin/nc -G 1 -z 192.168.2.1 22"
   HostName 192.168.2.1
   ConnectTimeout 2
 
-Host dokploy-new
+Host dokploy
   HostName 100.83.38.48
   User master
   IdentityFile ~/.ssh/id_ed25519
