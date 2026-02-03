@@ -2,7 +2,7 @@
 
 ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes auth, billing, database lifecycle, and deployment.
 
-Boilerplate version (date): 2026.2.3
+Boilerplate version: 1.0.0
 
 Versioning rules:
 - Canonical version lives in this file.
