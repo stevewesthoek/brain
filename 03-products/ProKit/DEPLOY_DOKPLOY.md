@@ -37,6 +37,12 @@ The actual app start command should live in `scripts.start:app` inside `package.
 If your app uses a custom production start, put it in `scripts.start:app`.
 For new apps, run `npm run prokit:bootstrap -- <slug>` to provision and generate env files.
 
+## Deploy triggers (tag-gated)
+
+- Deploys are triggered **only by tags** (e.g., `v1.0.0`).
+- Push to `main` as usual, then create a release tag to deploy.
+- This keeps `main` fast while production remains controlled and rollbackable.
+
 ## Admin role requirement (required)
 
 Use `supabase_admin` for `SYSTEM_DATABASE_URL`. This role owns tenant schemas and can run provisioning, cleanup, backups, and migrations for every app.
@@ -71,13 +77,6 @@ APP_SLUG=myapp npm run verify:deploy
 ## Make migrations explicit (required)
 
 Migrations are automatic because `npm start` runs the runtime gate before the app starts.
-
-## Preview tenants (optional)
-
-```bash
-NODE_ENV=production npm run db:init -- --slug pr_42 --preview
-NODE_ENV=production npm run db:cleanup -- --slug pr_42
-```
 
 ## Troubleshooting
 

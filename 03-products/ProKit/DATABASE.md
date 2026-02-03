@@ -86,7 +86,7 @@ SYSTEM_DATABASE_URL=postgresql://supabase_admin:<admin-password>@10.0.2.4:5433/p
 
 Provision:
 ```bash
-npm run db:init -- --slug <slug> [--preview] [--external-id <id>]
+npm run db:init -- --slug <slug> [--external-id <id>]
 ```
 
 Migrations:
@@ -144,6 +144,8 @@ Use `.env.production` as the source of truth when copying variables into Dokploy
 2. Refuse to delete `type != preview` unless `--force` is provided.
 3. Drop schema and user.
 4. Delete registry row.
+
+Note: Preview tenants are not part of the standard production flow. Keep the safety guard intact.
 
 ## Migrations
 

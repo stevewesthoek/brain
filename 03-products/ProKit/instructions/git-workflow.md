@@ -1,36 +1,36 @@
 # Git + Dokploy Workflow Guide
 
 ## Rules
-- Never push directly to `main`.
-- Always create a feature branch for new work.
-- Dokploy Preview Deployments are enabled: each branch auto-deploys to its own preview domain.
-- Merge to `main` only after testing preview.
+- Push directly to `main`.
+- Production deploys are **tag-gated**. Only tags deploy.
+- Every production release must be a semver tag (e.g., `v1.0.0`).
+- No PR/branch preview deployments.
+- Roll back by redeploying a previous tag (or tagging a known-good commit).
 
 ## Steps
 1. git checkout main && git pull origin main
-2. git checkout -b feature/branch-name
-3. git add . && git commit -m "Message"
-4. git push origin feature/branch-name
-5. Test preview deployment in Dokploy
-6. Merge into main -> deploys to production
-7. git branch -d feature/branch-name && git push origin --delete feature/branch-name
+2. git add . && git commit -m "Message"
+3. git push origin main
+4. git tag vX.Y.Z
+5. git push origin vX.Y.Z
+6. Verify deploy in Dokploy
 
 ## Automation Tasks
 
-### Start Feature Branch
+### Release Tag (Deploy to Production)
 ```bash
-# Create and push a new feature branch
 git checkout main
 git pull origin main
-git checkout -b feature/${FEATURE_NAME}
-git push origin feature/${FEATURE_NAME}
+git add .
+git commit -m "Message"
+git push origin main
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
-### Merge to Main
+### Rollback (Tag Known-Good Commit)
 ```bash
-# Merge a feature branch into main and push
-git checkout main
-git pull origin main
-git merge feature/${FEATURE_NAME}
-git push origin main
+# Create a new tag that points to the last known-good commit
+git tag vX.Y.Z <good-commit-sha>
+git push origin vX.Y.Z
 ```

@@ -57,7 +57,7 @@ If your app uses a custom production start, put it in `scripts.start:app`.
 4. Commit code and `prisma/migrations`.
 5. Use the generated `.env.production` values for Dokploy env vars.
 6. Confirm Dokploy bind mount exists and `nixpacks.toml` is present.
-7. Deploy (no custom start/deploy commands required).
+7. Tag a release (e.g., `v1.0.0`) to deploy.
 
 ## One-command project bootstrap
 
