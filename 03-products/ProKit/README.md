@@ -2,6 +2,12 @@
 
 ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes auth, billing, database lifecycle, and deployment.
 
+Boilerplate version (date): 2026.2.3
+
+Versioning rules:
+- Canonical version lives in this file.
+- `PROCHAT_VERSION` in `.env` / `.env.production` must match this value for UI display.
+
 ## Docs
 
 - `DEVELOPMENT.md` - local setup and workflow
@@ -21,6 +27,8 @@ ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes auth
 - Development: local Docker Postgres on `localhost:5433`.
 - Production (Dokploy): private Supabase Postgres at `10.0.2.4:5433` reachable only from Dokploy.
 - Production (Vercel): only if DB is publicly reachable or via secure proxy/tunnel.
+
+Note: local development requires `SHADOW_DATABASE_URL` (admin connection) for `prisma migrate dev`.
 
 ## Dokploy Setup (Required)
 

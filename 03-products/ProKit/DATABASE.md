@@ -47,6 +47,9 @@ Runtime (app):
 Scripts only (provision/migrate/cleanup):
 - `SYSTEM_DATABASE_URL` (admin user, public schema)
 
+Dev-only (Prisma migrate dev):
+- `SHADOW_DATABASE_URL` (admin user, public schema). Required because tenant users cannot create shadow databases.
+
 Other required vars:
 - `APP_SLUG` (tenant slug)
 - `TENANT_DB_PASSWORD` (optional override; if not set, provisioning generates one)
@@ -58,6 +61,7 @@ Examples:
 APP_SLUG=dev
 DATABASE_URL=postgresql://tenant_dev_user:<password>@localhost:5433/postgres?schema=tenant_dev
 SYSTEM_DATABASE_URL=postgresql://supabase_admin:<admin-password>@localhost:5433/postgres?schema=public
+SHADOW_DATABASE_URL=postgresql://supabase_admin:<admin-password>@localhost:5433/postgres?schema=public
 
 # Production (Dokploy env)
 APP_SLUG=myapp
@@ -146,6 +150,7 @@ Use `.env.production` as the source of truth when copying variables into Dokploy
 - Local: `db:migrate:dev` uses `prisma migrate dev --schema=prisma/system.prisma`.
 - Production: `db:migrate:prod` uses `prisma migrate deploy --schema=prisma/system.prisma` and must run inside Dokploy.
 - Runtime must not start without successful migrations.
+Note: `prisma migrate dev` requires `SHADOW_DATABASE_URL` because tenant users cannot create shadow databases. Do not grant `CREATEDB` to tenant users.
 
 ## Automated migration-safe deploy (Dokploy)
 
