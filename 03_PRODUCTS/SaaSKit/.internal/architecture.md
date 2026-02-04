@@ -67,9 +67,10 @@ Within `03_PRODUCTS/SaaSKit/`:
 
 SaaSKit is a single Next.js App Router repo:
 
-- Routes: `src/app/**`
-- UI components: `src/components/**` and `src/components/ui/**`
-- Marketing landing system: `src/app/marketing-ai-studio/**`
+- Routes (App Router): `src/app/**`
+- Shared UI components: `src/components/**` and `src/components/ui/**`
+- SaaSKit layer (marketing + site chrome): `src/saaskit/**`
+  - Landing system: `src/saaskit/marketing/landing/**`
 - DB schema + migrations: `prisma/system.prisma`, `prisma/migrations/**`
 - DB/runtime/deploy scripts: `scripts/**`
 - Build/runtime environment: `nixpacks.toml`, `.env.example`
@@ -84,11 +85,13 @@ Enablement instructions for optional routes and integrations live in `.internal/
 
 - `/` (home/landing)
   - `src/app/page.tsx`
-  - Renders the marketing landing system: `src/app/marketing-ai-studio/App.tsx`
+  - Renders the marketing landing system: `src/saaskit/marketing/landing/App.tsx`
 - `/privacy-policy`
   - `src/app/privacy-policy/page.tsx`
+  - Layout wrapper (adds site footer): `src/app/privacy-policy/layout.tsx`
 - `/tos`
   - `src/app/tos/page.tsx`
+  - Layout wrapper (adds site footer): `src/app/tos/layout.tsx`
 
 ### Funnel routes (optional)
 
@@ -96,7 +99,7 @@ These are part of the launch system. Keep them if you want lead capture and simp
 
 - `/waiting-list`
   - `src/app/waiting-list/page.tsx`
-  - `src/app/waiting-list/layout.tsx`
+  - Layout wrapper (adds site footer): `src/app/waiting-list/layout.tsx`
   - API handler: `src/app/api/waiting-list/route.ts`
 - `/success`
   - `src/app/success/page.tsx`
@@ -107,49 +110,50 @@ These are part of the launch system. Keep them if you want lead capture and simp
 
 - `/blog`
   - `src/app/blog/page.tsx`
-  - `src/app/blog/layout.tsx`
+  - Layout wrapper (adds site footer): `src/app/blog/layout.tsx`
 - `/blog/[articleId]`
   - `src/app/blog/[articleId]/page.tsx`
 
 ### Marketing landing system (required for SaaSKit home page)
 
 Primary folder:
-- `src/app/marketing-ai-studio/`
+- `src/saaskit/marketing/landing/`
 
 Key files:
-- `src/app/marketing-ai-studio/App.tsx` (page composition)
-- `src/app/marketing-ai-studio/metadata.json` (marketing copy/config input)
-- `src/app/marketing-ai-studio/landing.module.css` (landing-only styling)
+- `src/saaskit/marketing/landing/App.tsx` (page composition)
+- `src/saaskit/marketing/landing/metadata.json` (marketing copy/config input)
+- `src/saaskit/marketing/landing/landing.module.css` (landing-only styling)
 
-Layout components:
-- `src/app/marketing-ai-studio/components/layout/Navbar.tsx`
-- `src/app/marketing-ai-studio/components/layout/Footer.tsx`
+Layout components (single source of truth for the marketing site's chrome):
+- `src/saaskit/marketing/landing/components/layout/Navbar.tsx`
+- `src/saaskit/marketing/landing/components/layout/Footer.tsx`
 
 Sections (all optional individually; required only insofar as the home page imports them):
-- `src/app/marketing-ai-studio/components/sections/Hero.tsx`
-- `src/app/marketing-ai-studio/components/sections/ProblemSolution.tsx`
-- `src/app/marketing-ai-studio/components/sections/Features.tsx`
-- `src/app/marketing-ai-studio/components/sections/Pricing.tsx`
-- `src/app/marketing-ai-studio/components/sections/FAQ.tsx`
-- `src/app/marketing-ai-studio/components/sections/FinalCTA.tsx`
-- `src/app/marketing-ai-studio/components/sections/Banner.tsx`
-- `src/app/marketing-ai-studio/components/sections/AudienceFilter.tsx`
-- `src/app/marketing-ai-studio/components/sections/Newsletter.tsx`
-- `src/app/marketing-ai-studio/components/sections/Expansions.tsx`
-- `src/app/marketing-ai-studio/components/sections/ShipFast.tsx`
-- `src/app/marketing-ai-studio/components/sections/License.tsx`
+- `src/saaskit/marketing/landing/components/sections/Hero.tsx`
+- `src/saaskit/marketing/landing/components/sections/ProblemSolution.tsx`
+- `src/saaskit/marketing/landing/components/sections/Features.tsx`
+- `src/saaskit/marketing/landing/components/sections/Pricing.tsx`
+- `src/saaskit/marketing/landing/components/sections/FAQ.tsx`
+- `src/saaskit/marketing/landing/components/sections/FinalCTA.tsx`
+- `src/saaskit/marketing/landing/components/sections/Banner.tsx`
+- `src/saaskit/marketing/landing/components/sections/AudienceFilter.tsx`
+- `src/saaskit/marketing/landing/components/sections/Newsletter.tsx`
+- `src/saaskit/marketing/landing/components/sections/Expansions.tsx`
+- `src/saaskit/marketing/landing/components/sections/ShipFast.tsx`
+- `src/saaskit/marketing/landing/components/sections/License.tsx`
 
 UI helpers:
-- `src/app/marketing-ai-studio/components/ui/Button.tsx`
-- `src/app/marketing-ai-studio/components/ui/ThemeToggle.tsx`
-- `src/app/marketing-ai-studio/components/ui/Scaffolding.tsx`
-- `src/app/marketing-ai-studio/components/ui/Visuals.tsx`
+- `src/saaskit/marketing/landing/components/ui/Button.tsx`
+- `src/saaskit/marketing/landing/components/ui/ThemeToggle.tsx`
+- `src/saaskit/marketing/landing/components/ui/Scaffolding.tsx`
+- `src/saaskit/marketing/landing/components/ui/Visuals.tsx`
 
 ### Shared marketing components (optional)
 
-These live outside the marketing-ai-studio folder and are used across marketing pages:
+These live outside the landing folder and are used across marketing pages:
 
 - `src/components/Header.tsx`, `src/components/Footer.tsx`
+  - Thin wrappers that render the landing system's `Navbar`/`Footer` for visual consistency.
 - `src/components/Marketing.tsx` (high-level marketing composition)
 - `src/components/PricingSection.tsx`, `src/components/PriceItem.tsx`
 - `src/components/FAQ.tsx`
@@ -162,6 +166,7 @@ These live outside the marketing-ai-studio folder and are used across marketing 
   - `src/components/BlogCard.tsx`
   - `src/components/BlogDetails.tsx`
 - Waiting list hero: `src/components/WaitingListHero.tsx`
+
 
 ## ProKit engine layer (SaaSKit depends on this)
 
@@ -200,5 +205,5 @@ See `.internal/database.md` for the env var and schema/user contracts.
 When creating the ProKit-only repo from SaaSKit, remove the SaaSKit layer:
 
 - Remove marketing/funnel/blog routes under `src/app/` (keep only minimal landing + legal if desired).
-- Remove `src/app/marketing-ai-studio/**` and marketing-only components in `src/components/**`.
+- Remove `src/saaskit/**` (SaaSKit-only marketing layer) and marketing-only components in `src/components/**`.
 - Keep ProKit engine routes, DB scripts, and billing/auth primitives unchanged.

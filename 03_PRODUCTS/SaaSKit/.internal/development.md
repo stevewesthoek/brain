@@ -91,13 +91,13 @@ npm run prokit:bootstrap -- <app-slug>
 SaaSKit's home page (`/`) is composed by:
 
 - `src/app/page.tsx`
-- `src/app/marketing-ai-studio/App.tsx`
+- `src/saaskit/marketing/landing/App.tsx`
 
 Marketing copy/config is primarily stored in:
 
-- `src/app/marketing-ai-studio/metadata.json`
+- `src/saaskit/marketing/landing/metadata.json`
 
-You can remove/reorder sections by editing `src/app/marketing-ai-studio/App.tsx`.
+You can remove/reorder sections by editing `src/saaskit/marketing/landing/App.tsx`.
 
 ## Troubleshooting
 
