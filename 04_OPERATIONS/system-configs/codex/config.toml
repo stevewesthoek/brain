@@ -1,7 +1,6 @@
-model = "gpt-5.2-codex"
+model = "gpt-5.2"
 model_reasoning_effort = "xhigh"
 personality = "pragmatic"
 
 [mcp_servers.notebooklm]
 command = "/Users/Office/.local/bin/notebooklm-mcp"
-args = ["--config", "/Users/Office/.notebooklm-mcp/notebooklm-config.json"]

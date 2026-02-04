@@ -20,3 +20,12 @@ alias dokploy='ssh dokploy'
 alias dokploy="ssh dokploy"
 alias supabase="ssh supabase"
 setopt interactivecomments
+
+# Added by Antigravity
+export PATH="/Users/Office/.antigravity/antigravity/bin:$PATH"
+
+# Added by Antigravity
+export PATH="/Users/Office/.antigravity/antigravity/bin:$PATH"
+
+# Added by Antigravity
+export PATH="/Users/Office/.antigravity/antigravity/bin:$PATH"

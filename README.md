@@ -8,7 +8,7 @@ Single source of truth for:
 
 # Start Here
 
-This Brain is the source of truth for every ProChat/ProKit repo.
+This Brain is the source of truth for every ProChat repo.
 
 Read in this order:
 1) README.md (map + config philosophy)
@@ -21,11 +21,9 @@ Read in this order:
 - `00_IDENTITY/` - profile, style, theology
 - `01_AI/` - agents, prompts, providers, skills
 - `02_BUSINESS/` - brand + playbooks
-- `03_PRODUCTS/` - boilerplates (ProKit)
+- `03_PRODUCTS/` - boilerplates (ProKit, SaaSKit, WaaSKit)
 - `04_OPERATIONS/` - infrastructure, automations, scripts, snippets, runbooks
-- `05_PROJECTS/` - project-specific docs (use `_template/` when starting)
-- `06_IDEAS/` - idea backlog (`saas-backlog.md`)
-- `99_ARCHIVE/` - deprecated or duplicate docs
+- `05_PROJECTS/` - project-specific docs
 - `04_OPERATIONS/system-configs/` - curated config files (symlinked, includes Codex config)
 - `01_AI/skills/` - canonical skill library (symlinked into AI tools)
 

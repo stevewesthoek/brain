@@ -7,13 +7,13 @@ ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes:
 - Database lifecycle (provisioning, migrations, cleanup)
 - Deployment (local, Dokploy, Vercel)
 
-Boilerplate version: **1.0.0**
 
 ## Versioning rules
 
-- The canonical ProKit version lives here in the architecture docs.  [oai_citation:0‡README.md](sediment://file_00000000257c71f48a793a180edfd35c)  
-- `PROCHAT_VERSION` in `.env` / `.env.production` **must** match this value for the UI to display the correct boilerplate version.
-- Tag-based releases (e.g. `v1.0.0`) should align with this version.
+- Canonical version is the git tag on the boilerplate repo (e.g. `v1.2.3`).
+- `PROCHAT_VERSION` in `.env.example` (and your production env) must match the tag version (`1.2.3`) so the UI can display the correct boilerplate version.
+- Do not treat this document as a version source; keep it version-agnostic.
+
 
 ## Documentation map
 

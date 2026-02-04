@@ -10,8 +10,10 @@
 
 ## Naming and casing
 - Top-level folders are numbered and uppercase (00_IDENTITY, 01_AI, ...).
-- File names are usually lowercase; keep existing casing and update references to match exactly.
-- Avoid renaming unless necessary; stability > aesthetics.
+- File names are lowercase (required).
+- Exceptions: `README.md`, `SKILL.md`, `AGENTS.md` (standard entry points).
+- If you rename a file, update every reference to match exactly.
+- Prefer stability over aesthetics, but enforce the casing rule above to avoid drift.
 
 ## Data classification
 - Public: safe to share (marketing copy, patterns).

@@ -3,11 +3,11 @@
 Short snapshot of the current status and key docs for this project.
 
 ## Core docs
-- BUSINESS_PLAN.md
-- FUNNEL.md
-- FORMULIER.md
-- COLLABORATIE.md
-- SCRIPT.md
+- business_plan.md
+- funnel.md
+- formulier.md
+- collaboratie.md
+- script.md
 
 ## Meetings
 - meetings/summaries/
