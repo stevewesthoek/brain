@@ -1,12 +1,21 @@
-# ProKit Roadmap
+# SaaSKit Roadmap
 
 Lightweight list of next improvements and experiments.
 
+Rule:
+- SaaSKit is the full product (engine + marketing + launch system).
+- ProKit is the internal engine we will later derive from SaaSKit.
+
 ## Now
-- (add immediate fixes or docs gaps)
+
+- (fill: docs completeness for SaaSKit internal)
+- (fill: marketing layer audit - remove unused deps, remove dead routes)
 
 ## Next
-- (add near-term features)
+
+- (fill: public docs export from `.internal/` to `.public/`)
+- (fill: derive ProKit-only repo by removing SaaSKit layer)
 
 ## Later
-- (add longer-term ideas)
+
+- (fill: WaaSKit)

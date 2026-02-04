@@ -1,89 +1,202 @@
-# ProKit Architecture
+# SaaSKit Architecture
 
-ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes:
+SaaSKit is ProChat Tools' SaaS launch kit: a full product starter built on the ProKit engine.
 
-- Authentication
-- Billing
-- Database lifecycle (provisioning, migrations, cleanup)
-- Deployment (local, Dokploy, Vercel)
+This document defines the boundary between:
 
+- ProKit: the internal SaaS engine (dev-focused)
+- SaaSKit: ProKit + marketing + launch system (non-dev friendly)
 
-## Versioning rules
+It also inventories the marketing layer so we can later derive a clean ProKit-only repo.
 
-- Canonical version is the git tag on the boilerplate repo (e.g. `v1.2.3`).
-- `PROCHAT_VERSION` in `.env.example` (and your production env) must match the tag version (`1.2.3`) so the UI can display the correct boilerplate version.
-- Do not treat this document as a version source; keep it version-agnostic.
+## ProKit vs SaaSKit (final definitions)
 
+### ProKit (engine; dev-focused)
 
-## Documentation map
+Purpose:
+- A lean SaaS engine: everything you need to build SaaS, without marketing/SEO/content systems.
 
-High-level ProKit documentation is split as follows:
+Includes (engine primitives):
+- Next.js + TypeScript + Tailwind + shadcn/ui.
+- Clerk auth (users, organizations/workspaces).
+- Postgres + Prisma (multi-tenant schema-per-tenant).
+- Stripe subscriptions (checkout + portal).
+- Email wiring (Resend) and templates.
+- n8n/webhook hooks.
+- Minimal dashboard shell (settings/billing/layout).
+- Automated DB lifecycle scripts (provision, migrate, verify, cleanup).
 
-- `DEVELOPMENT.md` – local setup, workflows, commands, and checklists.
-- `DATABASE.md` – provisioning rules, migrations strategy, cleanup, and env contracts.
-- `DEPLOY_DOKPLOY.md` – primary production environment on Dokploy (private DB access).
-- `DEPLOY_VERCEL.md` – limited production environment (public DB / proxy).
-- `modules/` – optional patterns and templates that can be reused across apps.
-- `scripts/db/` – automated deploy + verification scripts (backups, migrations, smoke tests).
-- `scripts/runtime/` – runtime gate that runs before the app starts in production.
-- `scripts/project/` – project bootstrap + migration helpers (e.g. `prokit:bootstrap`).
-- `nixpacks.toml` – ensures Postgres 15 client tools are available in the image.
-- `instructions/` – app-agnostic guidance (Clerk, Stripe, troubleshooting, Git workflow).
+Explicitly excludes:
+- Marketing site and funnels.
+- Blog/SEO/content system.
+- Non-dev onboarding docs and launch playbooks.
 
-The Brain/ProKit docs (`.internal/` and `.public/`) are canonical; repo-level `docs/` and README files are exports derived from them.
+### SaaSKit (product; non-dev friendly)
 
-## Environment model
+Purpose:
+- ProKit engine + a marketing site + a launch system that helps non-dev founders ship fast.
 
-ProKit assumes three main environments:
+Includes:
+- Everything in ProKit (engine).
+- Plus:
+  - Marketing site (hero, features, pricing, FAQ, CTAs, newsletter).
+  - Blog/SEO routes and components.
+  - Funnel pages (waiting list / success / processing pages).
+  - Docs skeleton and prompt packs (internal first; exported later to repo docs).
+  - Weekend launch guidance (planned; internal first).
 
-### Development
+## Versioning + release gate (required)
 
-- Local Docker Postgres exposed on `localhost:5433`.
-- Separate **system** schema and **tenant** schema(s).
-- Dev tenant DB user has limited privileges; migrations are run using an admin connection.
+- Canonical version is the git tag on the SaaSKit repo (example: `v1.2.3`).
+- `PROCHAT_VERSION` must match the tag version without the `v` prefix (`1.2.3`).
+- Production deploys are tag-gated (no PR preview deploys).
 
-Key point:
+## Documentation map (Brain)
 
-- `SHADOW_DATABASE_URL` **must** be an admin connection string for `prisma migrate dev` to work:
-  - Tenant users cannot create shadow databases.
-  - Use the same admin role as `SYSTEM_DATABASE_URL`.
+Within `03_PRODUCTS/SaaSKit/`:
 
-See `DEVELOPMENT.md` and `DATABASE.md` for concrete env var examples.
+- `.internal/architecture.md` - this document.
+- `.internal/development.md` - local dev workflow.
+- `.internal/database.md` - multi-tenant DB rules + env contracts.
+- `.internal/deploy_dokploy.md` - Dokploy production deploy (primary path).
+- `.internal/deploy_vercel.md` - optional/limited deployments.
+- `.internal/scripts.md` - what the ProKit engine scripts do and how SaaSKit uses them.
+- `modules/` - optional patterns/templates.
 
-### Production (Dokploy – primary)
+## Repo structure (code)
 
-- Private Supabase Postgres VM at `10.0.2.4:5433`.
-- VM is in the same VNet/subnet as Dokploy.
-- Only Dokploy containers can reach the database.
-- All provisioning and migrations run **inside** the Dokploy containers (`scripts/db/*`).
+SaaSKit is a single Next.js App Router repo:
 
-Dokploy is the **canonical** production environment for ProKit apps. See `DEPLOY_DOKPLOY.md` for full details.
+- Routes: `src/app/**`
+- UI components: `src/components/**` and `src/components/ui/**`
+- Marketing landing system: `src/app/marketing-ai-studio/**`
+- DB schema + migrations: `prisma/system.prisma`, `prisma/migrations/**`
+- DB/runtime/deploy scripts: `scripts/**`
+- Build/runtime environment: `nixpacks.toml`, `.env.example`
 
-### Production (Vercel – limited)
+## SaaSKit layer (marketing + launch system)
 
-- Used only if the database is:
-  - Publicly reachable, **or**
-  - Exposed via a secure proxy/tunnel.
-- No private subnet assumptions; you are responsible for network access.
+SaaSKit adds a marketing and launch layer on top of the ProKit engine. This layer is user-facing.
 
-This is considered an optional path; Dokploy is the default.
+### Marketing routes (required for SaaSKit)
 
-## Runtime gate and start command
+- `/` (home/landing)
+  - `src/app/page.tsx`
+  - Renders the marketing landing system: `src/app/marketing-ai-studio/App.tsx`
+- `/privacy-policy`
+  - `src/app/privacy-policy/page.tsx`
+- `/tos`
+  - `src/app/tos/page.tsx`
 
-ProKit wraps the production start process with a runtime gate:
+### Funnel routes (optional)
 
-- `npm start` is routed through `scripts/runtime/start-prod.sh`.
-- The script:
-  - Runs migration detection.
-  - Takes a `pg_dump` backup.
-  - Applies migrations.
-  - Runs smoke checks.
-  - Restores from backup on failure.
-- Only if the gate succeeds does it `exec` the real app start command.
+These are part of the launch system. Keep them if you want lead capture and simple conversion flows.
 
-The actual app start command must live in `scripts.start:app` in `package.json`:
+- `/waiting-list`
+  - `src/app/waiting-list/page.tsx`
+  - `src/app/waiting-list/layout.tsx`
+  - API handler: `src/app/api/waiting-list/route.ts`
+- `/success`
+  - `src/app/success/page.tsx`
+- `/processing-page/*`
+  - `src/app/processing-page/[[...processing-page]]/page.tsx`
 
-- Default: `next start -p $PORT`.
-- If your app needs a custom start, modify `scripts.start:app`; do **not** bypass the runtime gate.
+### Blog/SEO routes (optional)
 
-The Dokploy docs describe how this integrates with the Swarm service and bind mounts.
+- `/blog`
+  - `src/app/blog/page.tsx`
+  - `src/app/blog/layout.tsx`
+- `/blog/[articleId]`
+  - `src/app/blog/[articleId]/page.tsx`
+
+### Marketing landing system (required for SaaSKit home page)
+
+Primary folder:
+- `src/app/marketing-ai-studio/`
+
+Key files:
+- `src/app/marketing-ai-studio/App.tsx` (page composition)
+- `src/app/marketing-ai-studio/metadata.json` (marketing copy/config input)
+- `src/app/marketing-ai-studio/landing.module.css` (landing-only styling)
+
+Layout components:
+- `src/app/marketing-ai-studio/components/layout/Navbar.tsx`
+- `src/app/marketing-ai-studio/components/layout/Footer.tsx`
+
+Sections (all optional individually; required only insofar as the home page imports them):
+- `src/app/marketing-ai-studio/components/sections/Hero.tsx`
+- `src/app/marketing-ai-studio/components/sections/ProblemSolution.tsx`
+- `src/app/marketing-ai-studio/components/sections/Features.tsx`
+- `src/app/marketing-ai-studio/components/sections/Pricing.tsx`
+- `src/app/marketing-ai-studio/components/sections/FAQ.tsx`
+- `src/app/marketing-ai-studio/components/sections/FinalCTA.tsx`
+- `src/app/marketing-ai-studio/components/sections/Banner.tsx`
+- `src/app/marketing-ai-studio/components/sections/AudienceFilter.tsx`
+- `src/app/marketing-ai-studio/components/sections/Newsletter.tsx`
+- `src/app/marketing-ai-studio/components/sections/Expansions.tsx`
+- `src/app/marketing-ai-studio/components/sections/ShipFast.tsx`
+- `src/app/marketing-ai-studio/components/sections/License.tsx`
+
+UI helpers:
+- `src/app/marketing-ai-studio/components/ui/Button.tsx`
+- `src/app/marketing-ai-studio/components/ui/ThemeToggle.tsx`
+- `src/app/marketing-ai-studio/components/ui/Scaffolding.tsx`
+- `src/app/marketing-ai-studio/components/ui/Visuals.tsx`
+
+### Shared marketing components (optional)
+
+These live outside the marketing-ai-studio folder and are used across marketing pages:
+
+- `src/components/Header.tsx`, `src/components/Footer.tsx`
+- `src/components/Marketing.tsx` (high-level marketing composition)
+- `src/components/PricingSection.tsx`, `src/components/PriceItem.tsx`
+- `src/components/FAQ.tsx`
+- Testimonials UI:
+  - `src/components/Testimonials1.tsx`
+  - `src/components/TestimonialsAvatars.tsx`
+  - `src/components/TestimonialRating.tsx`
+- Blog UI:
+  - `src/components/BlogsListing.tsx`
+  - `src/components/BlogCard.tsx`
+  - `src/components/BlogDetails.tsx`
+- Waiting list hero: `src/components/WaitingListHero.tsx`
+
+## ProKit engine layer (SaaSKit depends on this)
+
+The ProKit engine provides the SaaS primitives that the marketing layer sells.
+
+### App routes (engine)
+
+- Auth routes (Clerk):
+  - `src/app/sign-in/[[...sign-in]]/page.tsx`
+  - `src/app/sign-up/[[...sign-up]]/page.tsx`
+- App shell:
+  - `src/app/layout.tsx`
+  - `src/components/AppShell.tsx`
+- Core app pages:
+  - `src/app/dashboard/page.tsx`
+  - `src/app/chat/[projectID]/page.tsx`
+
+### Billing + webhooks (engine)
+
+- Checkout: `src/app/api/stripe/create-checkout/route.ts`
+- Portal: `src/app/api/stripe/create-portal/route.ts`
+- Stripe webhook: `src/app/api/webhook/stripe/route.ts`
+
+### Multi-tenancy + database lifecycle (engine; required)
+
+- Prisma schema: `prisma/system.prisma`
+- Migrations: `prisma/migrations/**`
+- Provision tenant: `npm run db:init` (script: `scripts/db/init-tenant.js`)
+- Prod migration: `npm run db:migrate:prod` (Prisma deploy)
+- Runtime gate (prod): `npm start` -> `scripts/runtime/start-prod.sh` -> `scripts/db/deploy-prod.sh`
+
+See `.internal/database.md` for the env var and schema/user contracts.
+
+## Deriving ProKit from SaaSKit (future step)
+
+When creating the ProKit-only repo from SaaSKit, remove the SaaSKit layer:
+
+- Remove marketing/funnel/blog routes under `src/app/` (keep only minimal landing + legal if desired).
+- Remove `src/app/marketing-ai-studio/**` and marketing-only components in `src/components/**`.
+- Keep ProKit engine routes, DB scripts, and billing/auth primitives unchanged.

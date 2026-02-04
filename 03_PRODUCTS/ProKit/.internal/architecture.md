@@ -19,10 +19,10 @@ ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes:
 
 High-level ProKit documentation is split as follows:
 
-- `DEVELOPMENT.md` – local setup, workflows, commands, and checklists.
-- `DATABASE.md` – provisioning rules, migrations strategy, cleanup, and env contracts.
-- `DEPLOY_DOKPLOY.md` – primary production environment on Dokploy (private DB access).
-- `DEPLOY_VERCEL.md` – limited production environment (public DB / proxy).
+- `development.md` – local setup, workflows, commands, and checklists.
+- `database.md` – provisioning rules, migrations strategy, cleanup, and env contracts.
+- `deploy_dokploy.md` – primary production environment on Dokploy (private DB access).
+- `deploy_vercel.md` – limited production environment (public DB / proxy).
 - `modules/` – optional patterns and templates that can be reused across apps.
 - `scripts/db/` – automated deploy + verification scripts (backups, migrations, smoke tests).
 - `scripts/runtime/` – runtime gate that runs before the app starts in production.
@@ -57,7 +57,7 @@ See `DEVELOPMENT.md` and `DATABASE.md` for concrete env var examples.
 - Only Dokploy containers can reach the database.
 - All provisioning and migrations run **inside** the Dokploy containers (`scripts/db/*`).
 
-Dokploy is the **canonical** production environment for ProKit apps. See `DEPLOY_DOKPLOY.md` for full details.
+Dokploy is the **canonical** production environment for ProKit apps. See `deploy_dokploy.md` for full details.
 
 ### Production (Vercel – limited)
 
