@@ -78,6 +78,8 @@ SaaSKit is a single Next.js App Router repo:
 
 SaaSKit adds a marketing and launch layer on top of the ProKit engine. This layer is user-facing.
 
+Enablement instructions for optional routes and integrations live in `.internal/optional_features.md`.
+
 ### Marketing routes (required for SaaSKit)
 
 - `/` (home/landing)

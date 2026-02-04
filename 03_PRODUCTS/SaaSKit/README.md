@@ -9,3 +9,4 @@ Start here:
 - `.internal/architecture.md`
 - `.internal/development.md`
 - `.internal/deploy_dokploy.md`
+- `.internal/optional_features.md`
