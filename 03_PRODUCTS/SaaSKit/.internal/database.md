@@ -86,7 +86,7 @@ APP_SLUG=saaskit
 PROCHAT_VERSION=1.2.3
 
 DATABASE_URL=postgresql://tenant_saaskit_user:<password>@<db-host>:<db-port>/postgres?schema=tenant_saaskit
-SYSTEM_DATABASE_URL=postgresql://<admin-user>:<admin-password>@<db-host>:<db-port>/postgres?schema=public
+SYSTEM_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres?schema=public
 TENANT_DB_PASSWORD=<password>
 NODE_ENV=production
 ```
@@ -134,13 +134,13 @@ Recommended (production, no manual commands):
 Manual (development / break-glass):
 Dry-run:
 ```bash
-SYSTEM_DATABASE_URL=postgresql://<admin-user>:<admin-password>@<db-host>:<db-port>/postgres?schema=public \
+SYSTEM_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres?schema=public \
   npm run db:rename -- --from prokit --to saaskit
 ```
 
 Apply:
 ```bash
-SYSTEM_DATABASE_URL=postgresql://<admin-user>:<admin-password>@<db-host>:<db-port>/postgres?schema=public \
+SYSTEM_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres?schema=public \
   npm run db:rename -- --from prokit --to saaskit --apply
 ```
 

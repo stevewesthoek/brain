@@ -68,11 +68,7 @@ Migrate (dev):
 npm run db:migrate:dev
 ```
 
-Migrate (prod - do not run locally):
-
-```bash
-NODE_ENV=production npm run db:migrate:prod
-```
+Production migrations are executed automatically by the runtime gate on deploy (Dokploy). Do not run migrations manually in production.
 
 Cleanup (drops schema + user; has safety guards):
 

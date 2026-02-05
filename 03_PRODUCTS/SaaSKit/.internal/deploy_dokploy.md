@@ -13,22 +13,22 @@ This doc is written to be vendor-neutral about your infrastructure details (no h
   - Only create/push a git tag (example: `v1.2.3`) when you want production to deploy.
   - Rollback is redeploying a previous tag.
 - No PR preview deploys.
+- Production is hands-off: do not exec into containers to run provisioning/migrations manually.
 
 ## Network model
 
-- Postgres is expected to be reachable from Dokploy containers (often via private network).
-- Provisioning and migrations must run inside Dokploy.
-- If you deploy to other hosts (Vercel, etc), you are responsible for secure DB access.
+- Postgres must be reachable from Dokploy containers (often via private network).
+- Provisioning and migrations run automatically inside Dokploy on container start (runtime gate).
 
 ## Required environment variables
 
-Generate a baseline `.env.production` using the ProKit engine bootstrap:
+Generate a baseline `.env.production` locally using the ProKit engine bootstrap:
 
 ```bash
 npm run prokit:bootstrap -- <app-slug>
 ```
 
-This will (via `db:init`) write `.env` and `.env.production` including:
+This writes `.env` and `.env.production` including:
 
 - `APP_SLUG`
 - `DATABASE_URL`
@@ -56,6 +56,13 @@ Notes:
 - `APP_SLUG` must match the repo/project name (`[a-z0-9_]+`).
 - `DATABASE_URL` must use the tenant user created during provisioning.
 - `SYSTEM_DATABASE_URL` must be an admin role that can create schemas/users and apply migrations.
+
+If you renamed the app slug and want to keep an existing tenant:
+
+- Set `APP_SLUG=<new-slug>`.
+- Set `LEGACY_APP_SLUG=<old-slug>` for a single deployment.
+- Deploy a new release tag.
+- Remove `LEGACY_APP_SLUG` after the deploy succeeds.
 
 ## Dokploy configuration (per app)
 
@@ -109,7 +116,6 @@ Before creating the first production tag:
 - The repo contains:
   - `scripts/runtime/start-prod.sh`
   - `scripts/db/deploy-prod.sh`
-  - `scripts/db/verify.sh`
   - `nixpacks.toml`
 
 Then:
@@ -120,50 +126,43 @@ Then:
 4. Dokploy builds the image and runs `npm start`.
 5. The runtime gate decides whether the deploy is healthy.
 
-## Verify last deploy
+## How to verify a deploy
 
-```bash
-APP_SLUG=<slug> npm run verify:deploy
-```
+Use the Dokploy logs. A healthy deploy includes:
 
-This reads the status file written under `/var/backups/pgdump/$APP_SLUG/last_run.status`.
+- `[deploy] smoke check passed`
+- `[deploy] done`
+- `next start` shows `Ready in ...`
+
+The runtime gate also writes a status file for diagnostics:
+
+- `/var/backups/pgdump/$APP_SLUG/last_run.status`
 
 ## Rollback strategy
 
 - Code rollback: redeploy a previous git tag.
 - Database rollback:
   - The runtime gate can auto-restore only within a failing deploy when it created a backup for that run.
-  - If you need to roll back schema changes across releases, restore a previous dump manually.
+  - If you need to roll back schema changes across releases, restore a previous dump manually (advanced).
 
 Best practice:
+
 - Prefer backwards-compatible migrations.
 - When in doubt, do multi-step migrations (add columns first, deploy code, then remove later).
 
-## Troubleshooting
+## Troubleshooting (hands-off)
 
-### Connection refused
+- Connection refused:
+  - Check Dokploy networking to the DB host/port.
+  - Check `DATABASE_URL` / `SYSTEM_DATABASE_URL` values in Dokploy.
+  - The deploy gate logs will show where it fails.
 
-- Exec into the running container and test:
+- Migration failures:
+  - Check Dokploy logs for the output of:
+    - `scripts/runtime/start-prod.sh`
+    - `scripts/db/deploy-prod.sh`
+  - Fix the migration/code and deploy a new tag.
 
-```bash
-psql "$SYSTEM_DATABASE_URL" -c "select 1;"
-```
-
-- If this fails, validate network access from Dokploy to the DB host.
-
-### Migration failures
-
-- Check logs for the output of:
-  - `scripts/runtime/start-prod.sh`
-  - `scripts/db/deploy-prod.sh`
-
-- Re-run inside a one-off Dokploy container if needed:
-
-```bash
-NODE_ENV=production npm run db:migrate:prod
-```
-
-### Backup mount errors
-
-- Confirm the bind mount exists and is writable.
-- Confirm `nixpacks.toml` includes `postgresql_15` so `pg_dump` exists.
+- Backup mount errors:
+  - Confirm the bind mount exists and is writable.
+  - Confirm `nixpacks.toml` includes the correct Postgres client tools so `pg_dump` exists.

@@ -5,6 +5,7 @@ SaaSKit uses the ProKit engine runtime/deploy scripts.
 Rule:
 - Do not bypass the runtime gate in production.
 - In Dokploy, the container must start with `npm start`.
+- Production is hands-off: do not run scripts manually in production. Deploy by tag and read Dokploy logs.
 
 ## Runtime gate (production)
 
@@ -20,13 +21,13 @@ Rule:
   - Detects pending migrations.
   - Takes a schema-scoped `pg_dump` backup.
   - Runs provisioning (`npm run db:init`).
-  - Applies migrations (`NODE_ENV=production npm run db:migrate:prod`).
+  - Applies migrations (Prisma migrate deploy).
   - Runs a smoke check.
   - Auto-restores from backup on smoke failure.
   - Writes a status file under `/var/backups/pgdump/$APP_SLUG/last_run.status`.
 
 - `scripts/db/verify.sh`
-  - Prints the last deploy status from the status file.
+  - Prints the last deploy status from the status file (optional; logs are usually enough).
 
 ## Provisioning + cleanup
 
