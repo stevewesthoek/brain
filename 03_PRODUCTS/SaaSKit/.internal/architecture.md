@@ -83,36 +83,39 @@ Enablement instructions for optional routes and integrations live in `.internal/
 
 ### Marketing routes (required for SaaSKit)
 
+Marketing route group:
+- `src/app/(marketing)/**`
+
+Shared marketing layout (header/footer/background):
+- `src/app/(marketing)/layout.tsx`
+
+
 - `/` (home/landing)
-  - `src/app/page.tsx`
+  - `src/app/(marketing)/page.tsx`
   - Renders the marketing landing system: `src/saaskit/marketing/landing/App.tsx`
 - `/privacy-policy`
-  - `src/app/privacy-policy/page.tsx`
-  - Layout wrapper (adds site footer): `src/app/privacy-policy/layout.tsx`
+  - `src/app/(marketing)/privacy-policy/page.tsx`
 - `/tos`
-  - `src/app/tos/page.tsx`
-  - Layout wrapper (adds site footer): `src/app/tos/layout.tsx`
+  - `src/app/(marketing)/tos/page.tsx`
 
 ### Funnel routes (optional)
 
 These are part of the launch system. Keep them if you want lead capture and simple conversion flows.
 
 - `/waiting-list`
-  - `src/app/waiting-list/page.tsx`
-  - Layout wrapper (adds site footer): `src/app/waiting-list/layout.tsx`
+  - `src/app/(marketing)/waiting-list/page.tsx`
   - API handler: `src/app/api/waiting-list/route.ts`
 - `/success`
-  - `src/app/success/page.tsx`
+  - `src/app/(app)/success/page.tsx`
 - `/processing-page/*`
-  - `src/app/processing-page/[[...processing-page]]/page.tsx`
+  - `src/app/(app)/processing-page/[[...processing-page]]/page.tsx`
 
 ### Blog/SEO routes (optional)
 
 - `/blog`
-  - `src/app/blog/page.tsx`
-  - Layout wrapper (adds site footer): `src/app/blog/layout.tsx`
+  - `src/app/(marketing)/blog/page.tsx`
 - `/blog/[articleId]`
-  - `src/app/blog/[articleId]/page.tsx`
+  - `src/app/(marketing)/blog/[articleId]/page.tsx`
 
 ### Marketing landing system (required for SaaSKit home page)
 
@@ -122,7 +125,7 @@ Primary folder:
 Key files:
 - `src/saaskit/marketing/landing/App.tsx` (page composition)
 - `src/saaskit/marketing/landing/metadata.json` (marketing copy/config input)
-- `src/saaskit/marketing/landing/landing.module.css` (landing-only styling)
+- `src/saaskit/marketing/MarketingBackground.tsx` (shared background for marketing pages)
 
 Layout components (single source of truth for the marketing site's chrome):
 - `src/saaskit/marketing/landing/components/layout/Navbar.tsx`
@@ -175,14 +178,15 @@ The ProKit engine provides the SaaS primitives that the marketing layer sells.
 ### App routes (engine)
 
 - Auth routes (Clerk):
-  - `src/app/sign-in/[[...sign-in]]/page.tsx`
-  - `src/app/sign-up/[[...sign-up]]/page.tsx`
-- App shell:
-  - `src/app/layout.tsx`
-  - `src/components/AppShell.tsx`
+  - `src/app/(app)/sign-in/[[...sign-in]]/page.tsx`
+  - `src/app/(app)/sign-up/[[...sign-up]]/page.tsx`
+- Route group layouts:
+  - Root providers: `src/app/layout.tsx`
+  - App routes: `src/app/(app)/layout.tsx`
+  - Marketing routes: `src/app/(marketing)/layout.tsx`
 - Core app pages:
-  - `src/app/dashboard/page.tsx`
-  - `src/app/chat/[projectID]/page.tsx`
+  - `src/app/(app)/dashboard/page.tsx`
+  - `src/app/(app)/chat/[projectID]/page.tsx`
 
 ### Billing + webhooks (engine)
 
@@ -204,6 +208,8 @@ See `.internal/database.md` for the env var and schema/user contracts.
 
 When creating the ProKit-only repo from SaaSKit, remove the SaaSKit layer:
 
-- Remove marketing/funnel/blog routes under `src/app/` (keep only minimal landing + legal if desired).
+- Remove marketing routes: `src/app/(marketing)/**`
 - Remove `src/saaskit/**` (SaaSKit-only marketing layer) and marketing-only components in `src/components/**`.
-- Keep ProKit engine routes, DB scripts, and billing/auth primitives unchanged.
+- Keep ProKit engine routes: `src/app/(app)/**`
+- Keep DB scripts and runtime gate: `scripts/**`
+- Keep Prisma schema + migrations: `prisma/**`

@@ -25,8 +25,8 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
 - Route protection middleware: `src/middleware.ts`
 - Root layout: `src/app/layout.tsx`
 - Auth routes:
-  - `src/app/sign-in/[[...sign-in]]/page.tsx`
-  - `src/app/sign-up/[[...sign-up]]/page.tsx`
+  - `src/app/(app)/sign-in/[[...sign-in]]/page.tsx`
+  - `src/app/(app)/sign-up/[[...sign-up]]/page.tsx`
 
 ## SafeClerk design (important)
 
@@ -43,8 +43,8 @@ In production, keys must be set.
 
 Expected shape:
 
-- `SafeClerkProvider` wraps the app shell.
-- Providers wrap everything.
+- `SafeClerkProvider` wraps the app router tree (all route groups).
+- Providers wrap everything. Route group layouts apply app/marketing chrome.
 
 ## Middleware (route protection)
 
