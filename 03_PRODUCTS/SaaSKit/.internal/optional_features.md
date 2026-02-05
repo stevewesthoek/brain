@@ -37,6 +37,27 @@ Enablement:
 - Set `RESEND_API_KEY`.
 - Ensure the DB has the `Audiences` table (Prisma migrations).
 
+
+## Optional: n8n (automation workflows)
+
+What you get:
+- A simple dashboard UI to clone an n8n workflow template.
+- A per-project webhook URL that the in-app chat can call.
+
+Routes:
+- Clone template workflow: `POST /api/workflows/openAIAssistant`
+- Toggle workflow active/inactive: `POST /api/active`
+- Get a project's webhook URL: `GET /api/link?projectID=...`
+
+Enablement:
+- Set:
+  - `N8N_API_KEY`
+  - `N8N_API_URL`
+  - `N8N_WEBHOOK_URL`
+
+Notes:
+- If n8n env vars are missing, `/api/active` returns `501` with a clear message.
+
 ## Optional: Checkout funnel (`/processing-page/*`)
 
 What you get:
