@@ -1,6 +1,8 @@
 # Deploying ProKit on Vercel (limited)
 
-Vercel is supported only when the database is publicly reachable or accessed via a secure proxy/tunnel. The default ProKit production database (Supabase VM at `10.0.2.4`) is private and not reachable from Vercel.
+Vercel is supported only when the database is publicly reachable or accessed via a secure proxy/tunnel.
+
+ProKit's primary production model is Dokploy + a runtime deploy gate. Vercel is not the default.
 
 ## When to use Vercel
 
@@ -17,5 +19,5 @@ NEXT_PUBLIC_APP_URL=https://myapp.vercel.app
 ```
 
 Notes:
-- Do not run `db:init` or `db:migrate:prod` inside Vercel. Run them in Dokploy or a VNet-connected CI runner.
+- Do not attempt to provision/migrate from Vercel. ProKit's production DB lifecycle is designed to run from Dokploy (or an equivalent VNet-connected runtime).
 - If Vercel cannot reach the DB host, the app will fail at runtime.

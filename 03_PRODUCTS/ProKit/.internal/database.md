@@ -1,13 +1,15 @@
 # ProKit Database
 
-Single source of truth for database behavior in ProKit. Use this doc for provisioning, migrations, cleanup, and environment rules.
+Single source of truth for database behavior in ProKit.
+
+This doc defines provisioning, migrations, cleanup, and the environment contracts used by the runtime deploy gate.
 
 ## Model summary
 
-- One app -> one schema: `tenant_<slug>`
-- One app -> one database user: `tenant_<slug>_user`
-- Registry table `public.tenants` is infra-only (provision/cleanup). Runtime must not read it.
-- Prisma schema is managed in `prisma/system.prisma`.
+- One app -> one tenant schema: `tenant_<slug>`
+- One app -> one tenant DB user: `tenant_<slug>_user`
+- Registry table `public.tenants` is **scripts-only** (provision/cleanup). The runtime app must not depend on it.
+- Prisma schema is managed in `prisma/system.prisma` (single schema file).
 
 ## Isolation rules (required)
 
@@ -18,26 +20,26 @@ Single source of truth for database behavior in ProKit. Use this doc for provisi
 
 ## Naming and slug contract
 
-- The project name is the app slug.
-- The app slug is the tenant schema name suffix.
-- Example: project `myapp` -> `APP_SLUG=myapp` -> schema `tenant_myapp`.
-- Slug must be DB-safe (`[a-z0-9_]+`).
+- The repo/project name is the app slug.
+- `APP_SLUG` must match the repo folder name (required).
+- Example: repo `myapp` -> `APP_SLUG=myapp` -> schema `tenant_myapp`.
+- Slug must be DB-safe: `[a-z0-9_]+`.
+
+If you rename a repo that already has data, use the rename flow (`db:rename`), or set `LEGACY_APP_SLUG` for a one-time automated rename on the next production deploy (see below).
 
 ## Environments
 
 ### Development (local)
-- Postgres runs in Docker on `localhost:5433`.
-- Scripts and runtime connect directly from your machine.
+- Default dev Postgres runs in Docker on `localhost:5433`.
+- Provisioning/migrations run locally as part of `npm run dev` (via `predev`) or explicitly via `npm run db:*`.
 
 ### Production (Dokploy - primary)
-- Supabase Postgres runs on a private VM at `10.0.2.4:5433`.
-- Only Dokploy containers inside the VNet can reach it.
-- All provisioning and migrations must run inside Dokploy (or a Dokploy-triggered job).
+- Postgres is reachable from the Dokploy app container (often via a private network).
+- Provisioning, migrations, backup, and verification are executed automatically by the runtime deploy gate at container start.
 
 ### Production (Vercel - limited)
-- Vercel cannot reach the private Supabase VM.
-- Use Vercel only if the database is publicly reachable or accessed via a secure proxy/tunnel inside the VNet.
-- See `DEPLOY_VERCEL.md` for constraints.
+- Vercel is supported only when your database is publicly reachable or accessed via a secure proxy/tunnel.
+- ProKit's primary production path is Dokploy.
 
 ## Connection variables
 
@@ -45,36 +47,39 @@ Runtime (app):
 - `DATABASE_URL` (tenant user, tenant schema)
 
 Scripts only (provision/migrate/cleanup):
-- `SYSTEM_DATABASE_URL` (admin user, public schema)
+- `SYSTEM_DATABASE_URL` (admin connection; used for provisioning, backups, cleanup)
 
 Dev-only (Prisma migrate dev):
-- `SHADOW_DATABASE_URL` (admin user, public schema). Required because tenant users cannot create shadow databases.
+- `SHADOW_DATABASE_URL` (admin connection). Required because tenant users cannot create Prisma shadow databases.
 
 Other required vars:
 - `APP_SLUG` (tenant slug)
 - `TENANT_DB_PASSWORD` (optional override; if not set, provisioning generates one)
 
-Examples:
+Notes:
+
+- ProKit uses Prisma's `?schema=` connection parameter in `DATABASE_URL`. `psql` tools do not understand `schema=...`; ProKit scripts automatically strip it when calling `psql`/`pg_dump`/`pg_restore`.
+
+Example `.env` (development):
 
 ```bash
-# .env (development)
-APP_SLUG=dev
-DATABASE_URL=postgresql://tenant_dev_user:<password>@localhost:5433/postgres?schema=tenant_dev
-SYSTEM_DATABASE_URL=postgresql://supabase_admin:<admin-password>@localhost:5433/postgres?schema=public
-SHADOW_DATABASE_URL=postgresql://supabase_admin:<admin-password>@localhost:5433/postgres?schema=public
-
-# Production (Dokploy env)
 APP_SLUG=myapp
-TENANT_DB_PASSWORD=<strong-password>
-DATABASE_URL=postgresql://tenant_myapp_user:<TENANT_DB_PASSWORD>@10.0.2.4:5433/postgres?schema=tenant_myapp
-SYSTEM_DATABASE_URL=postgresql://supabase_admin:<admin-password>@10.0.2.4:5433/postgres?schema=public
+NODE_ENV=development
+
+SYSTEM_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
+SHADOW_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
+
+DATABASE_URL=postgresql://tenant_myapp_user:<password>@localhost:5433/postgres?schema=tenant_myapp
 ```
 
-## Admin role contract (required)
+## Admin connection contract (required)
 
-- `SYSTEM_DATABASE_URL` always uses the Supabase admin role (`supabase_admin`).
-- The admin role owns tenant schemas and can create roles, schemas, types, tables, and set role defaults.
-- This is the only supported admin role for provisioning, cleanup, backups, and deploy gates.
+`SYSTEM_DATABASE_URL` must be an admin connection that can:
+
+- create schemas
+- create/alter roles
+- grant/revoke privileges
+- run backups (`pg_dump`) and restores (`pg_restore`)
 
 ## Tenant user contract (required)
 
@@ -82,25 +87,15 @@ SYSTEM_DATABASE_URL=postgresql://supabase_admin:<admin-password>@10.0.2.4:5433/p
 - Tenant users have full DDL/DML inside their schema only.
 - Tenant users have no `USAGE` or `CREATE` on `public`.
 
-## Supported commands (only entry points)
+## Entry points (supported commands)
 
-Provision:
+These are the only supported entry points for DB lifecycle management in ProKit:
+
 ```bash
 npm run db:init -- --slug <slug> [--external-id <id>]
-```
-
-Migrations:
-```bash
-# local development
 npm run db:migrate:dev
-
-# production (run inside Dokploy)
-NODE_ENV=production npm run db:migrate:prod
-```
-
-Cleanup:
-```bash
 npm run db:cleanup -- --slug <slug> [--force]
+npm run db:rename -- --from <old> --to <new> [--apply]
 ```
 
 ## Provisioning flow (summary)
@@ -126,14 +121,14 @@ npm run db:cleanup -- --slug <slug> [--force]
 The provisioning script must write:
 
 - `.env` with local/dev values
-- `.env.production` with production values
+- `.env.production` as a reference output for copying values into your production secret manager (for example Dokploy)
 
 These files should include at minimum:
 
 ```bash
 APP_SLUG=<project-name>
 DATABASE_URL=postgresql://tenant_<slug>_user:<password>@<host>:<port>/postgres?schema=tenant_<slug>
-SYSTEM_DATABASE_URL=postgresql://postgres:<admin-password>@<host>:<port>/postgres?schema=public
+SYSTEM_DATABASE_URL=postgresql://<admin-user>:<admin-password>@<host>:<port>/postgres
 ```
 
 Use `.env.production` as the source of truth when copying variables into Dokploy.
@@ -150,8 +145,8 @@ Note: Preview tenants are not part of the standard production flow. Keep the saf
 ## Migrations
 
 - Local: `db:migrate:dev` uses `prisma migrate dev --schema=prisma/system.prisma`.
-- Production: `db:migrate:prod` uses `prisma migrate deploy --schema=prisma/system.prisma` and must run inside Dokploy.
-- Runtime must not start without successful migrations.
+- Production: `db:migrate:prod` uses `prisma migrate deploy --schema=prisma/system.prisma` and is invoked automatically by the runtime deploy gate.
+- The runtime must not start without successful migrations.
 Note: `prisma migrate dev` requires `SHADOW_DATABASE_URL` because tenant users cannot create shadow databases. Do not grant `CREATEDB` to tenant users.
 
 ## Automated migration-safe deploy (Dokploy)
@@ -168,7 +163,7 @@ Scripts:
 - `scripts/db/deploy-prod.sh`
 - `scripts/db/verify.sh`
 - `scripts/runtime/start-prod.sh` (runs the deploy gate before app start)
-- `scripts/project/bootstrap.sh` (one-command provisioning)
+- `scripts/project/bootstrap.sh` (one-command local bootstrap)
 - `scripts/project/migrate.sh` (align existing repos to ProKit)
 
 Runtime behavior:
@@ -220,3 +215,12 @@ If the runtime gate does not run (misconfigured start command), production will 
 - Do not connect to production from a developer laptop.
 - Runtime uses only `DATABASE_URL`; scripts use only `SYSTEM_DATABASE_URL`.
 - Do not change the schema/user naming contract.
+
+## Legacy rename (repo slug changes)
+
+If you renamed the repo/app slug and want to keep the existing data:
+
+- Preferred (dev): run `npm run db:rename ...` against the target database.
+- Production hands-off path: set `LEGACY_APP_SLUG=<old_slug>` in Dokploy env for the next deploy.
+  - The deploy gate will detect the old tenant schema (`tenant_<old_slug>`) and rename it to the new slug if the target schema does not already exist.
+  - Remove `LEGACY_APP_SLUG` after a successful deploy.

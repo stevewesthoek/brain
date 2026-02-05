@@ -1,167 +1,116 @@
 # ProKit Development
 
-Local development workflow for the ProKit boilerplate.
+Local development workflow for ProKit-based apps.
 
-ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes auth, billing, database lifecycle, and deployment. This document focuses only on **local development** and developer workflows.
-
----
+This document is intentionally developer-focused (local only). Production behavior is covered in `deploy_dokploy.md` and `database.md`.
 
 ## Prerequisites
 
-- Node.js + npm
+- Node.js 20+
 - Docker Desktop (or equivalent)
-- Postgres container mapped to `localhost:5433`
+- PostgreSQL 15 reachable at `localhost:5433` (default dev setup)
 
-You should have a local Postgres instance running on:
+## Slug rule (required)
 
-- Host: `localhost`
-- Port: `5433`
+ProKit derives tenancy from the repo name:
 
----
+- Repo folder name must match `[a-z0-9_]+`.
+- `APP_SLUG` must match the repo folder name.
+
+If you want an app slug like `my_app`, the repo folder must also be named `my_app`.
 
 ## Quick start
 
-Fresh clone, standard path:
+1. Start Postgres (default dev path):
+
+```bash
+docker compose up -d postgres
+```
+
+2. Install and run:
 
 ```bash
 npm install
 npm run dev
+```
 
-npm run dev is expected to:
-	1.	Ensure .env exists (or complain if it doesn’t).
-	2.	Make sure the local tenant is provisioned.
-	3.	Run dev migrations.
-	4.	Start Next.js.
+### What `npm run dev` is expected to do
 
-If your app doesn’t bootstrap automatically, use the explicit commands in the sections below.
+By convention ProKit wires `predev` to bootstrap the local environment:
 
-⸻
+- Create `.env` if missing (`scripts/dev/bootstrap-env.js`)
+- Provision the tenant schema/user (`npm run db:init`)
+- Run dev migrations (`npm run db:migrate:dev`)
+- Start Next.js (`next dev`)
 
-Local environment
+If your project removed `predev`, you can always run the steps explicitly:
 
-Typical local env values:
+```bash
+npm run db:init
+npm run db:migrate:dev
+npm run dev
+```
 
-APP_SLUG=dev
+## Local environment model
 
-DATABASE_URL=postgresql://tenant_dev_user:<password>@localhost:5433/postgres?schema=tenant_dev
-SYSTEM_DATABASE_URL=postgresql://postgres:<admin-password>@localhost:5433/postgres?schema=public
-SHADOW_DATABASE_URL=postgresql://postgres:<admin-password>@localhost:5433/postgres?schema=public
+- `DATABASE_URL` is the tenant connection (tenant user, tenant schema).
+- `SYSTEM_DATABASE_URL` is an admin connection used by provisioning/cleanup/backups.
+- `SHADOW_DATABASE_URL` is an admin connection used by `prisma migrate dev`.
+
+Example `.env` (development):
+
+```bash
+APP_SLUG=myapp
+NODE_ENV=development
+
+SYSTEM_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres?schema=public
+SHADOW_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres?schema=public
+
+# Populated by the first db:init run:
+DATABASE_URL=postgresql://tenant_myapp_user:<password>@localhost:5433/postgres?schema=tenant_myapp
+```
 
 Notes:
-	•	SYSTEM_DATABASE_URL and SHADOW_DATABASE_URL must use an admin role that can:
-	•	create databases/schemas
-	•	run Prisma migrations
-	•	DATABASE_URL should point to the tenant user/schema for your local app slug.
-	•	Tenant users cannot be used as a SHADOW_DATABASE_URL; Prisma will fail with shadow DB errors.
 
-⸻
+- `SYSTEM_DATABASE_URL` / `SHADOW_DATABASE_URL` must use a role that can create schemas/roles (and create shadow databases for Prisma).
+- Tenant users must never be used for `SHADOW_DATABASE_URL`.
 
-New app checklist (local)
+## One-command project bootstrap
 
-Use this when creating a new ProKit-based app:
-	1.	Create a new repo and choose a project name (this becomes APP_SLUG).
-	2.	Install dependencies:
+For a brand new app you can run:
 
-npm install
-
-
-	3.	Run local provisioning:
-
-npm run db:init -- --slug <project-name>
-
-
-	4.	Run local migrations:
-
-npm run db:migrate:dev
-
-
-	5.	Start the app:
-
-npm run dev
-
-
-	6.	Commit prisma/migrations and any bootstrap changes.
-	7.	Once you’re happy with the local setup, generate .env.production (via the bootstrap command below) so production can use the same contracts.
-
-⸻
-
-One-command project bootstrap
-
-For new apps you can use the bootstrap helper to wire envs and DB in one go:
-
+```bash
 npm run prokit:bootstrap -- <app-slug>
+```
 
-This will:
-	•	Provision the tenant (DB user + schema) for <app-slug>.
-	•	Generate .env and .env.production with the correct URLs and passwords.
-	•	Print next steps (migrations + deploy).
+This wires the app slug, provisions the tenant, and generates:
 
-You should review the generated env files before committing anything.
+- `.env` for local development
+- `.env.production` as a **reference** for copying values into your production secret manager (for example Dokploy)
 
-⸻
+Do not commit `.env` or `.env.production`.
 
-First deploy checklist (developer side)
+## Common local commands
 
-Even though deploy details live in the Dokploy docs, developers should ensure these are true before the first production deploy:
-	•	Local dev runs clean via:
-
-npm run db:migrate:dev
-npm run dev
-
-
-	•	.env.production exists and is committed or stored in your secret manager.
-	•	APP_SLUG, SYSTEM_DATABASE_URL, and DATABASE_URL are consistent between .env, .env.production, and what you plan to set in production.
-	•	nixpacks.toml is present in the repo so production has Postgres 15 client tools.
-	•	package.json contains the ProKit runtime scripts (including verify:deploy and the runtime gate).
-
-Actual Dokploy wiring (bind mounts, network) is covered in DEPLOY_DOKPLOY.md.
-
-⸻
-
-Common local commands
-
-# initialize tenant schema + user for a given slug
+```bash
+# provision schema + user + env outputs
 npm run db:init -- --slug <slug>
 
-# run dev migrations for both system + tenant schemas
+# apply dev migrations (uses SHADOW_DATABASE_URL)
 npm run db:migrate:dev
 
-# cleanup tenant for a given slug
+# delete a tenant (preview by default; use --force to delete prod tenants)
 npm run db:cleanup -- --slug <slug>
 
-Additional helpers (if present in your repo):
+# rename a tenant schema/user/registry (dry-run by default)
+npm run db:rename -- --from <old> --to <new> [--apply]
+```
 
-# run the ProKit runtime verification locally
-APP_SLUG=<slug> npm run verify:deploy
+## Troubleshooting quick hits (dev)
 
-# retrofit an existing repo to ProKit's runtime + scripts
-npm run prokit:migrate -- --apply
-
-
-⸻
-
-Quick troubleshooting
-	•	Connection refused
-	•	Verify Docker is running and port 5433 is mapped.
-	•	Check that your Postgres container is healthy and listening.
-	•	Auth errors
-	•	Confirm .env is loaded.
-	•	Check DATABASE_URL, SYSTEM_DATABASE_URL, and SHADOW_DATABASE_URL for typos.
-	•	Ensure the tenant user actually exists and has the expected password.
-	•	Prisma drift
-	•	Run:
-
-npm run db:migrate:dev
-# or, if things are badly out of sync:
-npx prisma migrate reset --schema=prisma/system.prisma
-
-
-	•	Make sure you are not editing Prisma schemas without generating migrations.
-
-	•	Shadow DB error
-	•	Set SHADOW_DATABASE_URL to an admin connection (matching SYSTEM_DATABASE_URL).
-	•	Tenant users cannot create shadow databases; Prisma will fail if you use them.
-	•	Bootstrap failures
-	•	Check Docker/Postgres are running.
-	•	Inspect the logs of npm run prokit:bootstrap for the exact failing step
-(user creation, schema creation, env file write).
+- Port `5433` already allocated:
+  - Stop the existing container using `5433`, or change the port mapping in `docker-compose.yml`.
+- Prisma shadow DB errors:
+  - Ensure `SHADOW_DATABASE_URL` is set to an admin connection (same as `SYSTEM_DATABASE_URL`).
+- APP_SLUG mismatch:
+  - Rename the repo folder to the slug you want, then rerun `npm run dev`.

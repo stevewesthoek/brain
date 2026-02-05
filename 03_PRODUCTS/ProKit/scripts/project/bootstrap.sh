@@ -2,6 +2,7 @@
 set -euo pipefail
 
 slug="${1:-${APP_SLUG:-}}"
+repo_slug="$(basename "$(pwd)")"
 
 if [[ -z "$slug" ]]; then
   echo "usage: ./scripts/project/bootstrap.sh <app-slug>" >&2
@@ -14,10 +15,20 @@ if [[ ! "$slug" =~ ^[a-z0-9_]+$ ]]; then
   exit 1
 fi
 
+if [[ ! "$repo_slug" =~ ^[a-z0-9_]+$ ]]; then
+  echo "invalid repo folder name: $repo_slug (allowed: [a-z0-9_]+)" >&2
+  exit 1
+fi
+
+if [[ "$slug" != "$repo_slug" ]]; then
+  echo "APP_SLUG mismatch. Expected \"$repo_slug\" (repo name), got \"$slug\"." >&2
+  exit 1
+fi
+
 export APP_SLUG="$slug"
 
 if ! npm run -s db:init -- --slug "$APP_SLUG"; then
-  echo "db:init failed; ensure the ProKit db scripts are installed" >&2
+  echo "db:init failed; ensure the ProKit engine db scripts are installed" >&2
   exit 1
 fi
 

@@ -42,11 +42,11 @@ if ! rg -q "postgresql_15" nixpacks.toml 2>/dev/null; then
 fi
 
 if [[ ! -x ./scripts/runtime/start-prod.sh ]]; then
-  fail "missing scripts/runtime/start-prod.sh (sync ProKit scripts)"
+  fail "missing scripts/runtime/start-prod.sh (sync ProKit engine scripts)"
 fi
 
 if [[ ! -x ./scripts/db/deploy-prod.sh ]]; then
-  fail "missing scripts/db/deploy-prod.sh (sync ProKit scripts)"
+  fail "missing scripts/db/deploy-prod.sh (sync ProKit engine scripts)"
 fi
 
 node <<'NODE'

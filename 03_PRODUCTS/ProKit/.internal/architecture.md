@@ -1,11 +1,15 @@
 # ProKit Architecture
 
-ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes:
+ProKit is the ProChat **engine boilerplate**: a lean SaaS app core for technical founders.
 
-- Authentication
-- Billing
-- Database lifecycle (provisioning, migrations, cleanup)
-- Deployment (local, Dokploy, Vercel)
+It standardizes:
+- Next.js (App Router) + TypeScript
+- UI foundation (Tailwind + shadcn)
+- Authentication (Clerk) with a safe **mock mode** when keys are missing
+- Billing (Stripe) + subscription state
+- PostgreSQL schema isolation per app (`tenant_<slug>`) with Prisma migrations
+- Hands-off production deploys on Dokploy via a **runtime deploy gate** (backup + migrate + smoke check)
+- Optional automation hooks via n8n webhooks
 
 
 ## Versioning rules
@@ -13,6 +17,14 @@ ProKit is ProChat's boilerplate for building B2B SaaS apps. It standardizes:
 - Canonical version is the git tag on the boilerplate repo (e.g. `v1.2.3`).
 - `PROCHAT_VERSION` in `.env.example` (and your production env) must match the tag version (`1.2.3`) so the UI can display the correct boilerplate version.
 - Do not treat this document as a version source; keep it version-agnostic.
+
+## What ProKit intentionally does not include
+
+ProKit is the engine only. It does **not** ship with:
+- A marketing site, funnels, landing pages, or SEO/blog/content systems
+- Waiting lists, newsletters, or lead capture flows
+- Help center/docs site pages, public changelog pages
+- Anything that only exists to sell the product (copy/CTA systems, content pipelines)
 
 
 ## Documentation map
@@ -32,6 +44,14 @@ High-level ProKit documentation is split as follows:
 
 The Brain/ProKit docs (`.internal/` and `.public/`) are canonical; repo-level `docs/` and README files are exports derived from them.
 
+## Slug contract (required)
+
+- `APP_SLUG` is the app/tenant identifier and must match the repo folder name.
+- Allowed characters: `[a-z0-9_]+` (lowercase letters, numbers, underscores).
+- Database objects are derived from the slug:
+  - schema: `tenant_<slug>`
+  - role: `tenant_<slug>_user`
+
 ## Environment model
 
 ProKit assumes three main environments:
@@ -48,14 +68,12 @@ Key point:
   - Tenant users cannot create shadow databases.
   - Use the same admin role as `SYSTEM_DATABASE_URL`.
 
-See `DEVELOPMENT.md` and `DATABASE.md` for concrete env var examples.
+See `development.md` and `database.md` for concrete env var examples.
 
 ### Production (Dokploy – primary)
 
-- Private Supabase Postgres VM at `10.0.2.4:5433`.
-- VM is in the same VNet/subnet as Dokploy.
-- Only Dokploy containers can reach the database.
-- All provisioning and migrations run **inside** the Dokploy containers (`scripts/db/*`).
+- Postgres is reachable from the Dokploy app container (often via a private network).
+- All provisioning and migrations run automatically as part of the **runtime deploy gate** (`scripts/runtime/*` + `scripts/db/*`).
 
 Dokploy is the **canonical** production environment for ProKit apps. See `deploy_dokploy.md` for full details.
 
@@ -74,11 +92,11 @@ ProKit wraps the production start process with a runtime gate:
 
 - `npm start` is routed through `scripts/runtime/start-prod.sh`.
 - The script:
-  - Runs migration detection.
-  - Takes a `pg_dump` backup.
+  - Detects pending migrations.
+  - Takes a `pg_dump` backup (when migrations are pending).
   - Applies migrations.
   - Runs smoke checks.
-  - Restores from backup on failure.
+  - Restores from backup on failure (when a backup exists).
 - Only if the gate succeeds does it `exec` the real app start command.
 
 The actual app start command must live in `scripts.start:app` in `package.json`:
