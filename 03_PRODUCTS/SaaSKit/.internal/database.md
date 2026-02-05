@@ -123,6 +123,33 @@ Cleanup:
 npm run db:cleanup -- --slug <slug> [--force]
 ```
 
+## Renaming A Tenant (APP_SLUG Change)
+If you previously deployed this app under a different slug (for example `prokit`) and you want to keep the data, rename the existing tenant schema/user instead of provisioning a fresh tenant.
+
+Important:
+- Stop the running app first (no active DB connections), especially in production.
+- This requires admin credentials via `SYSTEM_DATABASE_URL`.
+
+Dry-run:
+```bash
+SYSTEM_DATABASE_URL=postgresql://<admin-user>:<admin-password>@<db-host>:<db-port>/postgres?schema=public \
+  npm run db:rename -- --from prokit --to saaskit
+```
+
+Apply:
+```bash
+SYSTEM_DATABASE_URL=postgresql://<admin-user>:<admin-password>@<db-host>:<db-port>/postgres?schema=public \
+  npm run db:rename -- --from prokit --to saaskit --apply
+```
+
+After renaming:
+- Set `APP_SLUG=saaskit` in Dokploy.
+- Re-run provisioning to rewrite `.env`/`.env.production`:
+  - `npm run db:init`
+- Run migrations:
+  - local: `npm run db:migrate:dev`
+  - production (inside Dokploy): `NODE_ENV=production npm run db:migrate:prod`
+
 ## Provisioning flow (summary)
 
 `scripts/db/init-tenant.js`:
