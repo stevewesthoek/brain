@@ -18,7 +18,7 @@ Purpose:
 
 Includes (engine primitives):
 - Next.js + TypeScript + Tailwind + shadcn/ui.
-- Clerk auth (users, organizations/workspaces).
+- Clerk auth (users; organizations/workspaces are optional and not part of the core starter UI).
 - Postgres + Prisma (multi-tenant schema-per-tenant).
 - Stripe subscriptions (checkout + portal).
 - Email wiring (Resend) and templates.
@@ -39,7 +39,7 @@ Purpose:
 Includes:
 - Everything in ProKit (engine).
 - Plus:
-  - Marketing site (hero, features, pricing, FAQ, CTAs, newsletter).
+  - Marketing site (hero, features, pricing, FAQ, CTAs).
   - Blog/SEO routes and components.
   - Funnel pages (waiting list / success / processing pages).
   - Docs skeleton and prompt packs (internal first; exported later to repo docs).
@@ -138,9 +138,6 @@ Sections (all optional individually; required only insofar as the home page impo
 - `src/saaskit/marketing/landing/components/sections/Pricing.tsx`
 - `src/saaskit/marketing/landing/components/sections/FAQ.tsx`
 - `src/saaskit/marketing/landing/components/sections/FinalCTA.tsx`
-- `src/saaskit/marketing/landing/components/sections/Banner.tsx`
-- `src/saaskit/marketing/landing/components/sections/AudienceFilter.tsx`
-- `src/saaskit/marketing/landing/components/sections/Newsletter.tsx`
 - `src/saaskit/marketing/landing/components/sections/Expansions.tsx`
 - `src/saaskit/marketing/landing/components/sections/ShipFast.tsx`
 - `src/saaskit/marketing/landing/components/sections/License.tsx`
@@ -157,16 +154,13 @@ These live outside the landing folder and are used across marketing pages:
 
 - `src/components/Header.tsx`, `src/components/Footer.tsx`
   - Thin wrappers that render the landing system's `Navbar`/`Footer` for visual consistency.
-- `src/components/Marketing.tsx` (high-level marketing composition)
-- `src/components/PricingSection.tsx`, `src/components/PriceItem.tsx`
-- `src/components/FAQ.tsx`
-- Testimonials UI:
-  - `src/components/Testimonials1.tsx`
-  - `src/components/TestimonialsAvatars.tsx`
-  - `src/components/TestimonialRating.tsx`
-- Blog UI:
-  - `src/components/BlogsListing.tsx`
-  - `src/components/BlogCard.tsx`
+- Pricing UI helpers:
+  - `src/components/PricingSection.tsx`
+  - `src/components/PriceItem.tsx`
+  - `src/components/CheckoutButton.tsx`
+- Blog UI helpers:
+  - `src/components/BlogSpotlight.tsx`
+  - `src/components/BlogMoreArticles.tsx`
   - `src/components/BlogDetails.tsx`
 - Waiting list hero: `src/components/WaitingListHero.tsx`
 

@@ -86,7 +86,7 @@ npm run prokit:bootstrap -- <app-slug>
 
 SaaSKit's home page (`/`) is composed by:
 
-- `src/app/page.tsx`
+- `src/app/(marketing)/page.tsx`
 - `src/saaskit/marketing/landing/App.tsx`
 
 Marketing copy/config is primarily stored in:
