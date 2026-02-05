@@ -51,6 +51,10 @@ Het is gebouwd voor mensen die begrijpen dat emigratie een proces is — geen pr
 Wij werken met een beperkt aantal mensen tegelijk.
 Niet omdat er schaarste gecreëerd moet worden, maar omdat dit traject persoonlijke aandacht, verantwoordelijkheid en rust vraagt.
 
+Wij werken met een beperkt aantal mensen tegelijk. Wij richten ons niet op kwantiteit, maar op kwaliteit. Emigreren is een grote stap en dat nemen wij uiterst serieus. 
+
+Daarom voeren wij dit traject zorgvuldig en met aandacht uit. Wij hebben heel bewust voor deze specifieke doelgroep gekozen, zodat wij jou kunnen verbinden binnen dit netwerk en daarbij wordt gesteven om christelijke normen en waarden te gehanteerd.
+
 Wie bij ons instapt, merkt vanaf het begin:
 dit is geen verkoopproces, maar een toetsing aan beide kanten.
 
