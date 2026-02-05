@@ -114,8 +114,8 @@ Migrations:
 # local development
 npm run db:migrate:dev
 
-# production (run inside Dokploy)
-NODE_ENV=production npm run db:migrate:prod
+# production
+# handled automatically by the runtime gate on deploy (Dokploy)
 ```
 
 Cleanup:
@@ -126,10 +126,12 @@ npm run db:cleanup -- --slug <slug> [--force]
 ## Renaming A Tenant (APP_SLUG Change)
 If you previously deployed this app under a different slug (for example `prokit`) and you want to keep the data, rename the existing tenant schema/user instead of provisioning a fresh tenant.
 
-Important:
-- Stop the running app first (no active DB connections), especially in production.
-- This requires admin credentials via `SYSTEM_DATABASE_URL`.
+Recommended (production, no manual commands):
+- Set `APP_SLUG=saaskit` in Dokploy.
+- Set `LEGACY_APP_SLUG=prokit` for a single deployment.
+- Deploy a new release tag. The runtime gate will rename the tenant before provisioning/migrations run.
 
+Manual (development / break-glass):
 Dry-run:
 ```bash
 SYSTEM_DATABASE_URL=postgresql://<admin-user>:<admin-password>@<db-host>:<db-port>/postgres?schema=public \
@@ -143,12 +145,9 @@ SYSTEM_DATABASE_URL=postgresql://<admin-user>:<admin-password>@<db-host>:<db-por
 ```
 
 After renaming:
-- Set `APP_SLUG=saaskit` in Dokploy.
-- Re-run provisioning to rewrite `.env`/`.env.production`:
-  - `npm run db:init`
-- Run migrations:
-  - local: `npm run db:migrate:dev`
-  - production (inside Dokploy): `NODE_ENV=production npm run db:migrate:prod`
+- Re-run provisioning to rewrite `.env`/`.env.production`: `npm run db:init`
+- Local migrations: `npm run db:migrate:dev`
+- Production migrations are applied automatically by the runtime gate on deploy.
 
 ## Provisioning flow (summary)
 
@@ -178,7 +177,7 @@ Written values include:
 ## Migrations
 
 - Local: `db:migrate:dev` uses `prisma migrate dev --schema=prisma/system.prisma`.
-- Production: `db:migrate:prod` uses `prisma migrate deploy --schema=prisma/system.prisma`.
+- Production: `prisma migrate deploy --schema=prisma/system.prisma` is executed automatically by the runtime gate on deploy.
 
 Important:
 - `prisma migrate dev` requires `SHADOW_DATABASE_URL` because tenant users cannot create shadow databases.

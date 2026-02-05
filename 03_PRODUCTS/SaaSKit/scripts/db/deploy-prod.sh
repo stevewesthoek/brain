@@ -9,6 +9,7 @@ MIGRATIONS_DIR="${MIGRATIONS_DIR:-prisma/migrations}"
 : "${DATABASE_URL:?set DATABASE_URL}"
 
 APP_SCHEMA="tenant_${APP_SLUG}"
+LEGACY_APP_SLUG="${LEGACY_APP_SLUG:-}"
 BACKUP_DIR="${BACKUP_ROOT}/${APP_SLUG}"
 TS="$(date -u +%Y%m%dT%H%M%SZ)"
 LOG_FILE="${BACKUP_DIR}/deploy_${TS}.log"
@@ -77,6 +78,14 @@ require_cmd psql
 require_cmd pg_dump
 require_cmd pg_restore
 
+validate_slug() {
+  local slug="$1"
+  if [[ -z "$slug" || ! "$slug" =~ ^[a-z0-9_]+$ ]]; then
+    echo "invalid slug: $slug (allowed: [a-z0-9_]+)" >&2
+    exit 1
+  fi
+}
+
 get_pg_major() {
   local version_num
   version_num=$(psql "$SYSTEM_DATABASE_URL_PSQL" -v ON_ERROR_STOP=1 -tA -c "SHOW server_version_num;")
@@ -122,6 +131,44 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 write_status
 
 echo "[deploy] app schema: $APP_SCHEMA"
+
+maybe_rename_legacy_tenant() {
+  local legacy_slug="$1"
+
+  if [[ -z "$legacy_slug" ]]; then
+    return 0
+  fi
+
+  if [[ "$legacy_slug" == "$APP_SLUG" ]]; then
+    return 0
+  fi
+
+  validate_slug "$legacy_slug"
+  validate_slug "$APP_SLUG"
+
+  local legacy_schema="tenant_${legacy_slug}"
+  local target_schema="$APP_SCHEMA"
+  local target_exists legacy_exists
+
+  target_exists=$(psql "$SYSTEM_DATABASE_URL_PSQL" -v ON_ERROR_STOP=1 -tA     -c "SELECT 1 FROM information_schema.schemata WHERE schema_name='${target_schema}';")
+
+  if [[ "$target_exists" == "1" ]]; then
+    echo "[deploy] legacy rename skipped: target schema already exists (${target_schema})"
+    return 0
+  fi
+
+  legacy_exists=$(psql "$SYSTEM_DATABASE_URL_PSQL" -v ON_ERROR_STOP=1 -tA     -c "SELECT 1 FROM information_schema.schemata WHERE schema_name='${legacy_schema}';")
+
+  if [[ "$legacy_exists" != "1" ]]; then
+    echo "[deploy] legacy rename skipped: legacy schema not found (${legacy_schema})"
+    return 0
+  fi
+
+  echo "[deploy] renaming legacy tenant: ${legacy_slug} -> ${APP_SLUG}"
+  NODE_ENV=production npm run db:rename -- --from "$legacy_slug" --to "$APP_SLUG" --apply
+}
+
+maybe_rename_legacy_tenant "$LEGACY_APP_SLUG"
 
 detect_migrations() {
   if [[ ! -d "$MIGRATIONS_DIR" ]]; then
