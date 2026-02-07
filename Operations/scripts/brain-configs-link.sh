@@ -85,6 +85,19 @@ backup_path() {
   run mv "$src" "$dst"
 }
 
+resolve_link_target_abs() {
+  local link="$1"
+  local target
+  target="$(readlink "$link")" || return 1
+
+  local dir
+  dir="$(cd "$(dirname "$link")" 2>/dev/null \
+        && cd "$(dirname "$target")" 2>/dev/null \
+        && pwd)" || return 1
+
+  printf '%s/%s\n' "$dir" "$(basename "$target")"
+}
+
 link_symlink() {
   local link_path="$1"
   local target_abs="$2"
@@ -97,10 +110,6 @@ link_symlink() {
 
   # Existing link?
   if [ -L "$link_path" ]; then
-    local cur_target
-    cur_target="$(readlink "$link_path")"
-
-    # Resolve current symlink to absolute
     local resolved
     resolved="$(resolve_link_target_abs "$link_path")" || resolved=""
 
@@ -124,20 +133,6 @@ link_symlink() {
 
   # Create symlink (absolute target)
   run ln -sfn "$target_abs" "$link_path"
-}
-
-resolve_link_target_abs() {
-  local link="$1"
-  local target
-  target="$(readlink "$link")" || return 1
-
-  # Compute directory containing the resolved target
-  local dir
-  dir="$(cd "$(dirname "$link")" 2>/dev/null \
-        && cd "$(dirname "$target")" 2>/dev/null \
-        && pwd)" || return 1
-
-  printf '%s/%s\n' "$dir" "$(basename "$target")"
 }
 
 verify_link() {
@@ -189,7 +184,6 @@ say "==> SSH: only ~/.ssh/config (no keys, no known_hosts)"
 ensure_dir "$CONFIGS_DIR/ssh"
 ensure_dir "$HOME_DIR/.ssh"
 link_symlink "$HOME_DIR/.ssh/config" "$CONFIGS_DIR/ssh/config" "ssh/config"
-# Permissions
 run chmod 700 "$HOME_DIR/.ssh" || true
 run chmod 600 "$CONFIGS_DIR/ssh/config" || true
 
@@ -273,7 +267,7 @@ say
 say "==> Docker: managing ~/.docker (WARNING: may contain auth tokens)."
 ensure_dir "$CONFIGS_DIR/docker"
 link_symlink "$HOME_DIR/.docker" "$CONFIGS_DIR/docker" "docker"
-say "[WARN] Strongly consider adding $CONFIGS_DIR/docker to .gitignore or auditing before committing."
+say "[WARN] ~/.docker is now centralized at $CONFIGS_DIR/docker; this path should be ignored in .gitignore (which it currently is)."
 
 ###############################################################################
 # Done + verify
