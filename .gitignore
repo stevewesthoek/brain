@@ -17,3 +17,4 @@ Business/playbooks/youtube/Assets/
 Projects/paraguay/assets/
 # Cursor extension local binaries (not source, just downloaded tools)
 Operations/system-configs/cursor/extensions/openai.chatgpt-0.4.68-universal/bin/
+Operations/system-configs/codex/tmp/
