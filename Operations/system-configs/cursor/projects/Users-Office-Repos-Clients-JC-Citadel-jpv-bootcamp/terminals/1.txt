@@ -1,0 +1,120 @@
+---
+pid: 53556
+cwd: /Users/Office/Repos/Clients/JC Citadel/jpv-bootcamp
+---
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schemas "public, tenant_jpvbootcamp" at "localhost:5433"
+
+Migration 20260125174500_sponsored_application_updates marked as applied.
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schemas "public, tenant_jpvbootcamp" at "localhost:5433"
+
+Migration 20260125183000_sponsored_anonymous_apply marked as applied.
+
+
+> boilerplate-landing-page@0.1.0 db:migrate:dev
+> npx prisma migrate deploy --schema=prisma/schema.prisma
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schemas "public, tenant_jpvbootcamp" at "localhost:5433"
+
+15 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+
+> boilerplate-landing-page@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.31
+  - Local:        http://localhost:3000
+  - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 1156ms
+ ✓ Compiled /src/middleware in 141ms (74 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 2.4s (601 modules)
+ ✓ Compiled in 155ms (287 modules)
+ GET / 200 in 2612ms
+ ○ Compiling /api/sponsored-seats/available ...
+ ✓ Compiled /api/sponsored-seats/available in 594ms (338 modules)
+ GET /api/sponsored-seats/available 200 in 706ms
+ GET /api/sponsored-seats/available 200 in 6ms
+ GET / 200 in 47ms
+ GET /api/sponsored-seats/available 200 in 11ms
+ ✓ Compiled /favicon.ico in 52ms (367 modules)
+ GET /favicon.ico 200 in 114ms
+ GET /api/sponsored-seats/available 200 in 134ms
+ ✓ Compiled /_not-found in 141ms (643 modules)
+ GET /sw.js 404 in 183ms
+ GET / 200 in 35ms
+ GET /favicon.ico 200 in 10ms
+ GET /api/sponsored-seats/available 200 in 39ms
+ GET /api/sponsored-seats/available 200 in 5ms
+ GET /sw.js 404 in 15ms
+ ✓ Compiled in 448ms (593 modules)
+ ✓ Compiled /favicon.ico in 33ms (337 modules)
+ GET /favicon.ico 200 in 75ms
+ GET /favicon.ico 200 in 6ms
+ ✓ Compiled in 295ms (288 modules)
+ ✓ Compiled in 158ms (288 modules)
+ ✓ Compiled in 233ms (288 modules)
+ GET / 200 in 122ms
+ ✓ Compiled /api/sponsored-seats/available in 248ms (338 modules)
+ GET /api/sponsored-seats/available 200 in 449ms
+ GET /api/sponsored-seats/available 200 in 5ms
+ ✓ Compiled /_not-found in 33ms (340 modules)
+ GET /sw.js 404 in 91ms
+ ✓ Compiled in 337ms (593 modules)
+ ✓ Compiled in 518ms (593 modules)
+ ✓ Compiled in 227ms (593 modules)
+ ✓ Compiled in 191ms (593 modules)
+
+ *  History restored 
+
+
+󰀵 …/jpv-bootcamp   main   v24.12.0   09:58  
+ 
+ *  History restored 
+
+
+󰀵 …/jpv-bootcamp   main   v24.12.0   18:01  
+ 
+ *  History restored 
+
+
+󰀵 …/jpv-bootcamp   main   v24.12.0   10:05  
+ 
+ *  History restored 
+
+
+󰀵 …/jpv-bootcamp   main   v24.12.0   10:36  
+ 
+ *  History restored 
+
+
+󰀵 …/jpv-bootcamp   feature/prokit-docs-sync !?   v24.12.0   15:02  
+ 
+ *  History restored 
+
+
+󰀵 …/jpv-bootcamp   feature/prokit-docs-sync !?   v24.12.0   17:27  
+ 
+ *  History restored 
+
+
+󰀵 …/jpv-bootcamp   feature/prokit-docs-sync !?   v24.12.0   17:30  
+ which php
+php not found
+
+󰀵 …/jpv-bootcamp   feature/prokit-docs-sync !?   v24.12.0   17:32  
+ 
+ *  History restored 
+
+
+󰀵 …/jpv-bootcamp   feature/prokit-docs-sync !?   v24.12.0   17:33  
+

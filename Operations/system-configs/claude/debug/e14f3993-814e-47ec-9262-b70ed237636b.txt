@@ -1,0 +1,58 @@
+2026-01-11T09:59:47.342Z [DEBUG] [init] configureGlobalMTLS starting
+2026-01-11T09:59:47.342Z [DEBUG] [init] configureGlobalMTLS complete
+2026-01-11T09:59:47.342Z [DEBUG] [init] configureGlobalAgents starting
+2026-01-11T09:59:47.342Z [DEBUG] [init] configureGlobalAgents complete
+2026-01-11T09:59:47.349Z [DEBUG] [LSP MANAGER] initializeLspServerManager() called
+2026-01-11T09:59:47.349Z [DEBUG] [LSP MANAGER] Created manager instance, state=pending
+2026-01-11T09:59:47.349Z [DEBUG] [LSP MANAGER] Starting async initialization (generation 1)
+2026-01-11T09:59:47.350Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-01-11T09:59:47.350Z [DEBUG] Found 0 plugins (0 enabled, 0 disabled)
+2026-01-11T09:59:47.350Z [DEBUG] Total LSP servers loaded: 0
+2026-01-11T09:59:47.350Z [DEBUG] [LSP SERVER MANAGER] getAllLspServers returned 0 server(s)
+2026-01-11T09:59:47.350Z [DEBUG] LSP manager initialized with 0 servers
+2026-01-11T09:59:47.350Z [DEBUG] LSP server manager initialized successfully
+2026-01-11T09:59:47.350Z [DEBUG] LSP notification handlers registered successfully for all 0 server(s)
+2026-01-11T09:59:47.350Z [DEBUG] [STARTUP] MCP configs loaded in 0ms
+2026-01-11T09:59:47.351Z [DEBUG] [STARTUP] Running setup()...
+2026-01-11T09:59:47.351Z [DEBUG] Stats cache does not exist, returning empty cache
+2026-01-11T09:59:47.352Z [DEBUG] Stats cache empty, processing all historical data in background
+2026-01-11T09:59:47.354Z [DEBUG] Loading skills from: managed=/Library/Application Support/ClaudeCode/.claude/skills, user=/Users/Office/.claude/skills, project=[]
+2026-01-11T09:59:47.415Z [DEBUG] installed_plugins.json doesn't exist, returning empty V2 object
+2026-01-11T09:59:47.416Z [DEBUG] Writing to temp file: /Users/Office/.claude/todos/e14f3993-814e-47ec-9262-b70ed237636b-agent-e14f3993-814e-47ec-9262-b70ed237636b.json.tmp.12837.1768125587416
+2026-01-11T09:59:47.416Z [DEBUG] Temp file written successfully, size: 2 bytes
+2026-01-11T09:59:47.416Z [DEBUG] Renaming /Users/Office/.claude/todos/e14f3993-814e-47ec-9262-b70ed237636b-agent-e14f3993-814e-47ec-9262-b70ed237636b.json.tmp.12837.1768125587416 to /Users/Office/.claude/todos/e14f3993-814e-47ec-9262-b70ed237636b-agent-e14f3993-814e-47ec-9262-b70ed237636b.json
+2026-01-11T09:59:47.417Z [DEBUG] File /Users/Office/.claude/todos/e14f3993-814e-47ec-9262-b70ed237636b-agent-e14f3993-814e-47ec-9262-b70ed237636b.json written atomically
+2026-01-11T09:59:47.419Z [DEBUG] getPluginSkills: Processing 0 enabled plugins
+2026-01-11T09:59:47.419Z [DEBUG] Total plugin skills loaded: 0
+2026-01-11T09:59:47.419Z [DEBUG] Total plugin commands loaded: 0
+2026-01-11T09:59:47.419Z [DEBUG] Registered 0 hooks from 0 plugins
+2026-01-11T09:59:47.421Z [DEBUG] [STARTUP] setup() completed in 70ms
+2026-01-11T09:59:47.421Z [DEBUG] [STARTUP] Loading commands and agents...
+2026-01-11T09:59:47.422Z [DEBUG] Total plugin agents loaded: 0
+2026-01-11T09:59:47.422Z [DEBUG] Loaded 0 unique skills (managed: 0, user: 0, project: 0, legacy commands: 0)
+2026-01-11T09:59:47.423Z [DEBUG] getSkills returning: 0 skill dir commands, 0 plugin skills
+2026-01-11T09:59:47.423Z [DEBUG] [STARTUP] Commands and agents loaded in 2ms
+2026-01-11T09:59:47.426Z [DEBUG] Initialized versioned plugins system with 0 plugins
+2026-01-11T09:59:47.429Z [DEBUG] Getting matching hook commands for SessionStart with query: startup
+2026-01-11T09:59:47.429Z [DEBUG] Found 0 hook matchers in settings
+2026-01-11T09:59:47.429Z [DEBUG] Matched 0 unique hooks for query "startup" (0 before deduplication)
+2026-01-11T09:59:47.446Z [DEBUG] Git remote URL: git@github.com:prochattools/brain.git
+2026-01-11T09:59:47.446Z [DEBUG] Parsed repository: prochattools/brain from git@github.com:prochattools/brain.git
+2026-01-11T09:59:47.446Z [DEBUG] Parsed repository: prochattools/brain from URL: git@github.com:prochattools/brain.git
+2026-01-11T09:59:47.447Z [DEBUG] Writing to temp file: /Users/Office/.claude.json.tmp.12837.1768125587447
+2026-01-11T09:59:47.447Z [DEBUG] Preserving file permissions: 100600
+2026-01-11T09:59:47.447Z [DEBUG] Temp file written successfully, size: 1078 bytes
+2026-01-11T09:59:47.447Z [DEBUG] Applied original permissions to temp file
+2026-01-11T09:59:47.447Z [DEBUG] Renaming /Users/Office/.claude.json.tmp.12837.1768125587447 to /Users/Office/.claude.json
+2026-01-11T09:59:47.448Z [DEBUG] File /Users/Office/.claude.json written atomically
+2026-01-11T09:59:47.448Z [DEBUG] Added /Users/Office/conductor/workspaces/prochat-tools/hat-yai to tracked paths for repo prochattools/brain
+2026-01-11T09:59:47.449Z [DEBUG] Creating shell snapshot for zsh (/bin/zsh)
+2026-01-11T09:59:47.449Z [DEBUG] Looking for shell config file: /Users/Office/.zshrc
+2026-01-11T09:59:47.449Z [DEBUG] Snapshots directory: /Users/Office/.claude/shell-snapshots
+2026-01-11T09:59:47.449Z [DEBUG] Creating snapshot at: /Users/Office/.claude/shell-snapshots/snapshot-zsh-1768125587449-vlyahl.sh
+2026-01-11T09:59:47.449Z [DEBUG] Shell binary exists: true
+2026-01-11T09:59:47.449Z [DEBUG] Execution timeout: 10000ms
+2026-01-11T09:59:47.456Z [DEBUG] Total plugin output styles loaded: 0
+2026-01-11T09:59:47.457Z [DEBUG] Getting matching hook commands for SessionEnd with query: other
+2026-01-11T09:59:47.457Z [DEBUG] Found 0 hook matchers in settings
+2026-01-11T09:59:47.457Z [DEBUG] Matched 0 unique hooks for query "other" (0 before deduplication)

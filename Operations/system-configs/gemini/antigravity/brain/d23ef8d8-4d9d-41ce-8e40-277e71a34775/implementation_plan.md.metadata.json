@@ -1,0 +1,6 @@
+{
+  "artifactType": "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary": "I've outlined a plan to reduce vertical spacing on the Builders Bootcamp page by 25%. This involves standardizing section padding to `py-24 sm:py-36` to ensure a consistent and compact layout.",
+  "updatedAt": "2026-01-28T19:38:45.049502Z",
+  "version": "2"
+}

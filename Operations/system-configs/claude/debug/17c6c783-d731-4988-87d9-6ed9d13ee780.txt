@@ -1,0 +1,50 @@
+2026-01-11T09:58:48.571Z [DEBUG] [init] configureGlobalMTLS starting
+2026-01-11T09:58:48.571Z [DEBUG] [init] configureGlobalMTLS complete
+2026-01-11T09:58:48.571Z [DEBUG] [init] configureGlobalAgents starting
+2026-01-11T09:58:48.571Z [DEBUG] [init] configureGlobalAgents complete
+2026-01-11T09:58:48.575Z [DEBUG] [LSP MANAGER] initializeLspServerManager() called
+2026-01-11T09:58:48.575Z [DEBUG] [LSP MANAGER] Created manager instance, state=pending
+2026-01-11T09:58:48.575Z [DEBUG] [LSP MANAGER] Starting async initialization (generation 1)
+2026-01-11T09:58:48.575Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-01-11T09:58:48.575Z [DEBUG] Found 0 plugins (0 enabled, 0 disabled)
+2026-01-11T09:58:48.575Z [DEBUG] Total LSP servers loaded: 0
+2026-01-11T09:58:48.575Z [DEBUG] [LSP SERVER MANAGER] getAllLspServers returned 0 server(s)
+2026-01-11T09:58:48.575Z [DEBUG] LSP manager initialized with 0 servers
+2026-01-11T09:58:48.575Z [DEBUG] LSP server manager initialized successfully
+2026-01-11T09:58:48.575Z [DEBUG] LSP notification handlers registered successfully for all 0 server(s)
+2026-01-11T09:58:48.575Z [DEBUG] [STARTUP] MCP configs loaded in 0ms
+2026-01-11T09:58:48.575Z [DEBUG] [STARTUP] Running setup()...
+2026-01-11T09:58:48.577Z [DEBUG] Loading skills from: managed=/Library/Application Support/ClaudeCode/.claude/skills, user=/Users/Office/.claude/skills, project=[]
+2026-01-11T09:58:48.631Z [DEBUG] installed_plugins.json doesn't exist, returning empty V2 object
+2026-01-11T09:58:48.633Z [DEBUG] Writing to temp file: /Users/Office/.claude/todos/17c6c783-d731-4988-87d9-6ed9d13ee780-agent-17c6c783-d731-4988-87d9-6ed9d13ee780.json.tmp.11069.1768125528633
+2026-01-11T09:58:48.633Z [DEBUG] Temp file written successfully, size: 2 bytes
+2026-01-11T09:58:48.633Z [DEBUG] Renaming /Users/Office/.claude/todos/17c6c783-d731-4988-87d9-6ed9d13ee780-agent-17c6c783-d731-4988-87d9-6ed9d13ee780.json.tmp.11069.1768125528633 to /Users/Office/.claude/todos/17c6c783-d731-4988-87d9-6ed9d13ee780-agent-17c6c783-d731-4988-87d9-6ed9d13ee780.json
+2026-01-11T09:58:48.633Z [DEBUG] File /Users/Office/.claude/todos/17c6c783-d731-4988-87d9-6ed9d13ee780-agent-17c6c783-d731-4988-87d9-6ed9d13ee780.json written atomically
+2026-01-11T09:58:48.635Z [DEBUG] getPluginSkills: Processing 0 enabled plugins
+2026-01-11T09:58:48.635Z [DEBUG] Total plugin skills loaded: 0
+2026-01-11T09:58:48.635Z [DEBUG] Total plugin commands loaded: 0
+2026-01-11T09:58:48.635Z [DEBUG] Registered 0 hooks from 0 plugins
+2026-01-11T09:58:48.636Z [DEBUG] [STARTUP] setup() completed in 61ms
+2026-01-11T09:58:48.636Z [DEBUG] [STARTUP] Loading commands and agents...
+2026-01-11T09:58:48.637Z [DEBUG] Total plugin agents loaded: 0
+2026-01-11T09:58:48.637Z [DEBUG] Loaded 0 unique skills (managed: 0, user: 0, project: 0, legacy commands: 0)
+2026-01-11T09:58:48.637Z [DEBUG] getSkills returning: 0 skill dir commands, 0 plugin skills
+2026-01-11T09:58:48.637Z [DEBUG] [STARTUP] Commands and agents loaded in 1ms
+2026-01-11T09:58:48.640Z [DEBUG] Initialized versioned plugins system with 0 plugins
+2026-01-11T09:58:48.642Z [DEBUG] Getting matching hook commands for SessionStart with query: startup
+2026-01-11T09:58:48.642Z [DEBUG] Found 0 hook matchers in settings
+2026-01-11T09:58:48.642Z [DEBUG] Matched 0 unique hooks for query "startup" (0 before deduplication)
+2026-01-11T09:58:48.657Z [DEBUG] Git remote URL: git@github.com:prochattools/brain.git
+2026-01-11T09:58:48.657Z [DEBUG] Parsed repository: prochattools/brain from git@github.com:prochattools/brain.git
+2026-01-11T09:58:48.657Z [DEBUG] Parsed repository: prochattools/brain from URL: git@github.com:prochattools/brain.git
+2026-01-11T09:58:48.657Z [DEBUG] Path /Users/Office/Library/Application Support/com.conductor.app/bin already tracked for repo prochattools/brain
+2026-01-11T09:58:48.657Z [DEBUG] Creating shell snapshot for zsh (/bin/zsh)
+2026-01-11T09:58:48.657Z [DEBUG] Looking for shell config file: /Users/Office/.zshrc
+2026-01-11T09:58:48.657Z [DEBUG] Snapshots directory: /Users/Office/.claude/shell-snapshots
+2026-01-11T09:58:48.657Z [DEBUG] Creating snapshot at: /Users/Office/.claude/shell-snapshots/snapshot-zsh-1768125528657-66no4z.sh
+2026-01-11T09:58:48.657Z [DEBUG] Shell binary exists: true
+2026-01-11T09:58:48.657Z [DEBUG] Execution timeout: 10000ms
+2026-01-11T09:58:48.659Z [DEBUG] Total plugin output styles loaded: 0
+2026-01-11T09:58:48.659Z [DEBUG] Getting matching hook commands for SessionEnd with query: other
+2026-01-11T09:58:48.660Z [DEBUG] Found 0 hook matchers in settings
+2026-01-11T09:58:48.660Z [DEBUG] Matched 0 unique hooks for query "other" (0 before deduplication)

@@ -1,0 +1,58 @@
+# Builders Bootcamp Page Redesign Plan
+
+The goal is to transform the `builders-bootcamp` subfolder page into a clearer, more premium event one-pager. The current layout is cluttered, and the call-to-actions (CTAs) are not prominent enough. We will align the design with the main page while ensuring the hero section captures all essential information without scrolling.
+
+## Proposed Changes
+
+### [Component Name] Builders Bootcamp Page
+
+#### [MODIFY] [page.tsx](file:///Users/Office/Repos/Clients/JC%20Citadel/jpv-bootcamp/src/app/builders-bootcamp/page.tsx)
+
+- **Hero Section (100vh)**:
+    - Implement a full-viewport hero section (`h-screen`).
+    - Use a flex or grid layout to center the content.
+    - Display key information clearly: **Title**, **Date**, **Time**, **Venue**, and **Primary CTA (Register)**.
+    - Use a background treatment (like a subtle gradient or blurred image) to make text pop.
+    - Include the event poster in a more integrated way, possibly as a secondary visual or a high-quality preview.
+- **Header & Footer**:
+    - Ensure they are consistent with the main page ([src/app/page.tsx](file:///Users/Office/Repos/Clients/JC%20Citadel/jpv-bootcamp/src/app/page.tsx)).
+    - Keep the "Main site" link in the header.
+- **De-cluttering & Spacing**:
+    - Increase vertical spacing between sections (e.g., `py-32` instead of `py-24`).
+    - Use cleaner card designs for highlights and lists.
+    - Group related information better to reduce visual noise.
+- **Images**:
+    - Use broader, more professional-looking image layouts.
+    - Ensure proper aspect ratios and framing.
+- **CTAs**:
+    - Make "Register now" and "Exhibit" buttons more distinct and prominent.
+    - Ensure they are easily accessible and don't get lost in lists.
+
+## Verification Plan
+
+### Manual Verification
+- View the page in the browser (if available or via screenshot/recording tools if they show enough).
+- Verify the hero section is exactly `100vh` and looks good on desktop/mobile.
+- Confirm all links (tickets, exhibits, downloads) work correctly.
+- Check that the "Main site" link goes back to the home page.
+- Evaluate the overall "cleanliness" and "wow factor" of the design.
+
+# Implement Exhibitor Checkout
+
+Update the bootcamp page to enable direct exhibitor registration via Stripe.
+
+## Proposed Changes
+
+### Stripe Configuration
+- **Modify** [src/lib/stripe-config.ts](file:///Users/Office/Repos/Clients/JC%20Citadel/jpv-bootcamp/src/lib/stripe-config.ts): Add `priceExhibitor` to the Stripe configuration, loading it from `STRIPE_PRICE_TABLE_TEST` or `STRIPE_PRICE_TABLE_LIVE`.
+- **Modify** [src/app/api/stripe/checkout/route.ts](file:///Users/Office/Repos/Clients/JC%20Citadel/jpv-bootcamp/src/app/api/stripe/checkout/route.ts): Update the checkout endpoint to handle the `exhibitor` plan type and use the correct price ID.
+
+### Bootcamp Page
+- **Modify** [src/app/builders-bootcamp/page.tsx](file:///Users/Office/Repos/Clients/JC%20Citadel/jpv-bootcamp/src/app/builders-bootcamp/page.tsx): Change the **Exhibitors** button from a PDF download to a link that triggers the Stripe checkout flow.
+
+## Verification Plan
+
+### Manual Verification
+- Click the **Exhibitors** button on the bootcamp page.
+- Verify it redirects to a Stripe Checkout session.
+- Confirm the price ID matches the one configured in the environment variables.

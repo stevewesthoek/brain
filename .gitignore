@@ -1,0 +1,17 @@
+# --- Infra & tools caches we do NOT want in Git ---
+
+# Docker client state and credentials (tokens, context caches, etc.)
+Operations/system-configs/docker/
+
+# External skills repo cloned by Codex / Anti-Gravity
+Operations/system-configs/codex/vendor_imports/skills/
+
+# Anti-Gravity / Gemini local browser profile (HUGE, mostly cache)
+Operations/system-configs/gemini/antigravity-browser-profile/
+
+# n8n workflow backup dumps (can always be re-exported from n8n)
+Operations/automations/n8n/n8n_backup/
+
+# Big marketing assets & PDFs that blow up pack size
+Business/playbooks/youtube/Assets/
+Projects/paraguay/assets/
