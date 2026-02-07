@@ -57,9 +57,11 @@ ProKit assumes three main environments:
 
 ### Development
 
-- Local Docker Postgres exposed on `localhost:5433` by default (configurable via `POSTGRES_PORT`).
+- Local shared Supabase/Postgres exposed on `localhost:5433` by default (configurable via `POSTGRES_PORT`).
+- One shared database per environment; apps are isolated by schema/role only.
 - Separate **system** schema and **tenant** schema(s).
 - Dev tenant DB user has limited privileges; migrations are run using an admin connection.
+- Never create a dedicated database per app.
 
 Key point:
 

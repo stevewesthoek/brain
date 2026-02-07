@@ -11,6 +11,13 @@ This doc defines provisioning, migrations, cleanup, and the environment contract
 - Registry table `public.tenants` is **scripts-only** (provision/cleanup). The runtime app must not depend on it.
 - Prisma schema is managed in `prisma/system.prisma` (single schema file).
 
+## Shared database rule (required)
+
+- Exactly one Supabase/Postgres database is used per environment (dev and prod).
+- All apps in that environment use that same database.
+- App isolation is schema/role only: `tenant_<slug>` + `tenant_<slug>_user`.
+- Never create a dedicated database per app.
+
 ## Isolation rules (required)
 
 - Tenant schemas must be isolated. No cross-schema foreign keys, views, or functions.

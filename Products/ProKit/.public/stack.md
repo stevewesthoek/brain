@@ -8,7 +8,7 @@ ProKit is opinionated. The goal is a boring, reliable engine for shipping SaaS a
 - Language: TypeScript
 - UI: Tailwind CSS + shadcn components
 - Auth: Clerk (with a safe mock mode for local dev when keys are missing)
-- Database: PostgreSQL
+- Database: PostgreSQL (single shared database per environment; schema-per-app isolation)
 - ORM/migrations: Prisma
 - Billing: Stripe (checkout + webhooks + customer portal)
 

@@ -7,6 +7,7 @@ Dokploy is the canonical production target for ProKit apps.
 - **Tag-gated deploys**: production deploys are triggered by git tags (no PR previews).
 - **Hands-off production**: provisioning, migrations, backups, and smoke checks are executed automatically by the runtime deploy gate during container start.
 - **Never bypass the gate**: Dokploy must start the app with `npm start` (which runs `scripts/runtime/start-prod.sh`).
+- **Shared database only**: one Supabase/Postgres database per environment; apps are isolated by schema/role only; never create per-app databases.
 
 ## Required Dokploy setup (per app)
 

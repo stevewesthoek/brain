@@ -3,16 +3,17 @@
 ## Prerequisites
 
 - Node.js 20+
-- Docker Desktop (or equivalent)
-- PostgreSQL 15 (dev default is Docker on `localhost:5433`; configurable via `POSTGRES_PORT`)
+- Shared Supabase/Postgres instance reachable at `localhost:5433` (configurable via `POSTGRES_PORT`)
+
+## Shared Database Rule
+
+- Use one shared Supabase/Postgres database per environment.
+- ProKit creates only a tenant schema and tenant role in that database.
+- Do not create a dedicated database per app.
 
 ## Local setup (default path)
 
-1. Start Postgres:
-
-```bash
-docker compose up -d postgres
-```
+1. Ensure your shared Supabase/Postgres service is running and reachable on `localhost:5433` (or your configured `POSTGRES_PORT`).
 
 2. Install dependencies and run:
 
