@@ -5,19 +5,19 @@ set -euo pipefail
 # and persist it for use by the web-design skill.
 #
 # Usage:
-#   bash 04_OPERATIONS/scripts/design-web.sh "<query>" "<Project Name>" [page]
+#   bash Operations/scripts/design-web.sh "<query>" "<Project Name>" [page]
 # Example:
-#   bash 04_OPERATIONS/scripts/design-web.sh "brutalism landing page for fintech" "Fintech SaaS" landing
+#   bash Operations/scripts/design-web.sh "brutalism landing page for fintech" "Fintech SaaS" landing
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SKILL_ROOT="$ROOT_DIR/01_AI/skills/ui-ux-pro-max"
+SKILL_ROOT="$ROOT_DIR/AI/skills/ui-ux-pro-max"
 QUERY="${1:-}"
 PROJECT="${2:-Default}"
 PAGE="${3:-}"  # optional
 
 if [ -z "$QUERY" ]; then
   echo "Missing query. Example:" >&2
-  echo "  bash 04_OPERATIONS/scripts/design-web.sh \"brutalism landing page for fintech\" \"Fintech SaaS\" landing" >&2
+  echo "  bash Operations/scripts/design-web.sh \"brutalism landing page for fintech\" \"Fintech SaaS\" landing" >&2
   exit 1
 fi
 
@@ -28,7 +28,7 @@ fi
 
 if [ ! -d "$SKILL_ROOT/data" ] || [ ! -d "$SKILL_ROOT/scripts" ]; then
   echo "UI/UX Pro Max data/scripts not found. Run:" >&2
-  echo "  bash 04_OPERATIONS/scripts/update-ui-ux-pro-max.sh" >&2
+  echo "  bash Operations/scripts/update-ui-ux-pro-max.sh" >&2
   exit 1
 fi
 

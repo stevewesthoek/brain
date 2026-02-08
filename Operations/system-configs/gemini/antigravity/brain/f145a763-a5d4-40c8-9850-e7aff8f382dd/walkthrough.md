@@ -33,4 +33,4 @@ I verified your access in the browser session. I successfully saw the following 
 > To see the NotebookLM tools in your active chat session, you **must RESTART Antigravity**. 
 > After restarting, you can simply ask: *"List my notebooks"* or *"Deep dive into Antigravity use cases"* and the agent will use the newly configured MCP tools.
 
-You can now delete [my_cookies.txt](file:///Users/Office/Repos/Brain/my_cookies.txt) as it is no longer needed.
+You can now delete [my_cookies.txt](file:///Users/Office/Repos/Personal/Brain/my_cookies.txt) as it is no longer needed.

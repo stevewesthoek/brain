@@ -18,7 +18,7 @@ Upload your entire `Brain` repository documentation to a NotebookLM notebook. Wh
 
 ### 2. High-Fidelity Prompt Engineering
 Use NotebookLM to generate the complex System Prompts required for your agents (like *Idea Miner* or *Automation Architect*).
-- **Workflow**: Provide your raw business goals to NotebookLM → Ask it to "Generate a detailed system prompt for an Antigravity agent in the specified markdown format" → Copy and paste into `01_AI/agents.md`.
+- **Workflow**: Provide your raw business goals to NotebookLM → Ask it to "Generate a detailed system prompt for an Antigravity agent in the specified markdown format" → Copy and paste into `AI/agents.md`.
 
 ### 3. Cross-Project "Connecting the Dots"
 If you have multiple SaaS projects (e.g., ProKit, Citadel), upload their `README.md` and `DATABASE.md` files to one notebook. Ask Antigravity via MCP: *"Based on my ProKit architecture, what's variables should I reuse for the Citadel deployment?"*
@@ -34,7 +34,7 @@ Point NotebookLM at your `Library/Application Support/Antigravity/logs/` or your
 ## 🛠️ Workflow Optimizations
 
 ### 🧩 Optimizing the MCP Link
-- **Source Auto-Sync**: Maintain a script in `Brain/04_OPERATIONS/scripts` that takes your most important `.md` files and prepares them for easy upload to NotebookLM.
+- **Source Auto-Sync**: Maintain a script in `Brain/Operations/scripts` that takes your most important `.md` files and prepares them for easy upload to NotebookLM.
 - **Notebook Selection**: Organize your notebooks by **Domain** (e.g., "Operations", "Product Strategy", "Tech Stack"). Use the `-n` (notebook_id) flag in Antigravity to narrow down the context for faster responses.
 
 ### 🚀 Speeding Up Development

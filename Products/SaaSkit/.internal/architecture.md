@@ -53,7 +53,7 @@ Includes:
 
 ## Documentation map (Brain)
 
-Within `03_PRODUCTS/SaaSKit/`:
+Within `Products/SaaSkit/`:
 
 - `.internal/architecture.md` - this document.
 - `.internal/development.md` - local dev workflow.

@@ -8,8 +8,8 @@ description: Use when the user asks for web design work (landing pages, SaaS app
 ## References to load when needed
 - Style catalog: `references/styles.md`
 - Component map: `references/components.md`
-- Stack + constraints: `00_IDENTITY/style.md`, `00_IDENTITY/profile.md`, `02_BUSINESS/playbooks/saas-reference.md`
-- Existing prompt (AI analytics landing): `01_AI/prompts/webdesign.md`
+- Stack + constraints: `Identity/style.md`, `Identity/profile.md`, `Business/playbooks/saas-reference.md`
+- Existing prompt (AI analytics landing): `AI/prompts/webdesign.md`
 - UI-UX Pro Max overview: `../ui-ux-pro-max/references/overview.md`
 
 ## Core behavior
@@ -41,7 +41,7 @@ Ask for:
 ## UI-UX Pro Max integration
 Design-system command:
 ```
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system -p "<Project Name>"
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system -p "<Project Name>"
 ```
 Then apply its style + palette + typography outputs to this spec.
 

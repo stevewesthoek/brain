@@ -15,12 +15,12 @@ description: UI/UX design intelligence with a searchable database (styles, palet
 ## Quick start (recommended)
 From repo root:
 ```
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<product type + industry + style keywords>" --design-system -p "<Project Name>"
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<product type + industry + style keywords>" --design-system -p "<Project Name>"
 ```
 
 Optional: persist the system to project files
 ```
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "<Project Name>" --page "<page name>"
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "<Project Name>" --page "<page name>"
 ```
 This creates:
 - `design-system/<project>/MASTER.md`
@@ -28,24 +28,24 @@ This creates:
 
 ## Domain search (targeted)
 ```
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain style
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain color
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain typography
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain landing
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain product
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain chart
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain icons
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain ux
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain web
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain react
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain style
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain color
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain typography
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain landing
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain product
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain chart
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain icons
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain ux
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain web
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain react
 ```
 
 ## Stack search (stack-specific UI rules)
 Stacks: html-tailwind, react, nextjs, astro, vue, nuxtjs, nuxt-ui, svelte, swiftui, react-native, flutter, shadcn, jetpack-compose
 
 ```
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack nextjs
-python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack shadcn
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack nextjs
+python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack shadcn
 ```
 
 ## How to use with the web-design skill
@@ -55,7 +55,7 @@ python3 01_AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack shadcn
 
 ## Data location
 All data lives in:
-- `01_AI/skills/ui-ux-pro-max/data/`
+- `AI/skills/ui-ux-pro-max/data/`
 
 If the data folder is missing, re-run:
 ```

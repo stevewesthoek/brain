@@ -9,7 +9,7 @@
 - system-configs/ - symlinked, machine-specific configs; keep repo-safe docs only
 
 ## Naming and casing
-- Top-level folders are numbered and uppercase (00_IDENTITY, 01_AI, ...).
+- Top-level folders use PascalCase (for example: `Identity`, `AI`, `Business`, `Products`, `Operations`, `Projects`).
 - File names are lowercase (required).
 - Exceptions: `README.md`, `SKILL.md`, `AGENTS.md` (standard entry points).
 - If you rename a file, update every reference to match exactly.

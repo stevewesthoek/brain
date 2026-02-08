@@ -15,7 +15,7 @@ must not be committed to this repo.
 - ~/.notebooklm-mcp/chrome_profile_notebooklm
 
 ## Codex project config
-Canonical config lives at `04_OPERATIONS/system-configs/codex/config.toml`.
+Canonical config lives at `Operations/system-configs/codex/config.toml`.
 Copy/sync this block into each repo's `.codex/config.toml` (project-scoped) so the MCP entry is present:
 
 [mcp_servers.notebooklm]
