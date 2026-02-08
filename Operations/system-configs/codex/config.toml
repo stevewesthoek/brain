@@ -7,4 +7,7 @@ command = "/Users/Office/.local/bin/notebooklm-mcp"
 
 [mcp_servers.stitch]
 command = "npx"
-args = ["-y", "@_davideast/stitch-mcp", "proxy"]
+args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
+
+[mcp_servers.stitch.env]
+DOTENV_CONFIG_QUIET = "true"

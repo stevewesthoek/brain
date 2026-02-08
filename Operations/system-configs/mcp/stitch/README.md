@@ -28,7 +28,10 @@ the `.codex -> ~/.codex` symlink pattern.
 
 [mcp_servers.stitch]
 command = "npx"
-args = ["-y", "@_davideast/stitch-mcp", "proxy"]
+args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
+
+[mcp_servers.stitch.env]
+DOTENV_CONFIG_QUIET = "true"
 
 ## Setup flow
 Recommended helper:
@@ -46,6 +49,8 @@ Manual OAuth/project setup:
 
 ## Notes
 - The proxy mode avoids storing API keys in repo config and uses gcloud auth.
+- Set `DOTENV_CONFIG_QUIET = "true"` for this server in Codex config. This prevents
+  dotenv startup banners on stdout, which can break MCP JSON-RPC handshakes.
 - `init` can install/manage gcloud in `~/.stitch-mcp` if system gcloud is absent.
 - Optional system gcloud mode:
   - Add `STITCH_USE_SYSTEM_GCLOUD = "1"` under `[mcp_servers.stitch.env]`.
