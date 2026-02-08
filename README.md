@@ -25,6 +25,7 @@ Read in this order:
 - `Operations/` - infrastructure, automations, scripts, snippets, runbooks
 - `Projects/` - project-specific docs
 - `Operations/system-configs/` - curated config files (symlinked, includes Codex config)
+- `Operations/system-configs/mcp/` - canonical MCP server docs/templates and install standards
 - `AI/skills/` - canonical skill library (symlinked into AI tools)
 
 ## Ops boundaries (quick)
@@ -46,6 +47,10 @@ For example:
   - Git tracks only `Operations/system-configs/cursor/README.md`
 - Docker configs are symlinked but **ignored** by default because they can contain auth tokens.
   - If you ever want to version specific Docker files, add explicit allowlist entries in `.gitignore`.
+- MCP server configs are centralized in Brain:
+  - Codex registry: `Operations/system-configs/codex/config.toml`
+  - Server docs/templates: `Operations/system-configs/mcp/<server>/`
+  - Token-bearing Antigravity runtime config: `Operations/system-configs/antigravity/User/mcp.json` (ignored)
 
 ## Bootstrap (new machine)
 This repo expects your configs to be linked via:

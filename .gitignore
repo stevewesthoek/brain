@@ -19,3 +19,6 @@ Projects/paraguay/assets/
 Operations/system-configs/cursor/extensions/openai.chatgpt-0.4.68-universal/bin/
 Operations/system-configs/codex/tmp/
 Operations/system-configs/gemini/antigravity/implicit/
+
+# Antigravity runtime MCP config with access tokens (local-only, never commit)
+Operations/system-configs/antigravity/User/

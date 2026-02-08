@@ -1,0 +1,15 @@
+{
+  "servers": {
+    "notebooklm-mcp": {
+      "command": "/Users/Office/.local/bin/notebooklm-mcp"
+    },
+    "stitch": {
+      "serverUrl": "https://stitch.googleapis.com/mcp",
+      "headers": {
+        "Authorization": "Bearer <YOUR_ACCESS_TOKEN>",
+        "X-Goog-User-Project": "<YOUR_GCP_PROJECT_ID>"
+      }
+    }
+  },
+  "inputs": []
+}

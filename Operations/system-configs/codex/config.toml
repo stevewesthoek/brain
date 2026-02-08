@@ -4,3 +4,7 @@ personality = "pragmatic"
 
 [mcp_servers.notebooklm]
 command = "/Users/Office/.local/bin/notebooklm-mcp"
+
+[mcp_servers.stitch]
+command = "npx"
+args = ["-y", "@_davideast/stitch-mcp", "proxy"]

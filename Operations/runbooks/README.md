@@ -6,3 +6,4 @@ Short, repeatable procedures for operational tasks.
 - dokploy.md
 - supabase.md
 - cloudflare.md
+- mcp-centralization.md

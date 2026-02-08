@@ -4,6 +4,9 @@ This folder holds repo-safe documentation and templates for the NotebookLM MCP s
 Runtime state (cookies, session, Chrome profile) should stay in your home directory and
 must not be committed to this repo.
 
+For the global MCP installation standard, see:
+`Operations/system-configs/mcp/README.md`
+
 ## Repo contents
 - notebooklm-config.template.json
   Template config for the NotebookLM MCP server. Copy to
@@ -16,11 +19,11 @@ must not be committed to this repo.
 
 ## Codex project config
 Canonical config lives at `Operations/system-configs/codex/config.toml`.
-Copy/sync this block into each repo's `.codex/config.toml` (project-scoped) so the MCP entry is present:
+Do not duplicate MCP definitions per repo. Repos should consume central config via
+the `.codex -> ~/.codex` symlink pattern.
 
 [mcp_servers.notebooklm]
 command = "/Users/Office/.local/bin/notebooklm-mcp"
-args = ["--config", "/Users/Office/.notebooklm-mcp/notebooklm-config.json"]
 
 ## Auth flow
 Run:
