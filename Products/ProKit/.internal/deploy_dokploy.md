@@ -89,9 +89,26 @@ This is intentionally hands-off: operators should not be running ad-hoc producti
 ## Release flow (tag-gated)
 
 1. Push changes to `main`.
-2. Create a semver tag `vX.Y.Z`.
+2. Create an annotated semver tag `vX.Y.Z`.
 3. Push the tag to origin (Dokploy listens to tags).
 4. Dokploy builds and starts the container.
+
+Recommended command:
+
+```bash
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+If Dokploy does not start a deploy after pushing the tag, re-emit the tag-create event for the same commit:
+
+```bash
+commit=$(git rev-parse vX.Y.Z^{})
+git push origin :refs/tags/vX.Y.Z
+git tag -d vX.Y.Z
+git tag -a vX.Y.Z "$commit" -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
 
 ## Rollback
 

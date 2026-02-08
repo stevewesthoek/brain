@@ -60,6 +60,27 @@ Fix:
 
 - Keep `nixpacks.toml` in the repo so the image installs the correct `postgresql-client-*`.
 
+### Tag pushed but Dokploy did not start a deploy (production)
+
+Symptom:
+
+- Tag exists on `origin` but no new Dokploy deployment appears.
+
+Fix:
+
+- Re-emit the tag-create event on the same commit:
+
+```bash
+commit=$(git rev-parse vX.Y.Z^{})
+git push origin :refs/tags/vX.Y.Z
+git tag -d vX.Y.Z
+git tag -a vX.Y.Z "$commit" -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+- Verify a new deployment starts in Dokploy for `vX.Y.Z`.
+- If tag deletion is blocked by repo policy, create and push the next patch tag instead.
+
 ### Stripe/Clerk not configured
 
 Symptoms:

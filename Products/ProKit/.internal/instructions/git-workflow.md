@@ -4,6 +4,7 @@
 - Push directly to `main`.
 - Production deploys are **tag-gated**. Only tags deploy.
 - Every production release must be a semver tag (e.g., `v1.0.0`).
+- Use annotated tags for releases (`git tag -a ...`).
 - No PR/branch preview deployments.
 - Roll back by redeploying a previous tag (or tagging a known-good commit).
 
@@ -11,9 +12,17 @@
 1. git checkout main && git pull origin main
 2. git add . && git commit -m "Message"
 3. git push origin main
-4. git tag vX.Y.Z
+4. git tag -a vX.Y.Z -m "vX.Y.Z"
 5. git push origin vX.Y.Z
 6. Verify deploy in Dokploy
+7. If Dokploy does not start a deploy, re-emit the same tag on the same commit:
+   ```bash
+   commit=$(git rev-parse vX.Y.Z^{})
+   git push origin :refs/tags/vX.Y.Z
+   git tag -d vX.Y.Z
+   git tag -a vX.Y.Z "$commit" -m "vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
 
 ## Automation Tasks
 
@@ -24,13 +33,23 @@ git pull origin main
 git add .
 git commit -m "Message"
 git push origin main
-git tag vX.Y.Z
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+If Dokploy does not trigger, re-emit the tag-create event:
+
+```bash
+commit=$(git rev-parse vX.Y.Z^{})
+git push origin :refs/tags/vX.Y.Z
+git tag -d vX.Y.Z
+git tag -a vX.Y.Z "$commit" -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
 ### Rollback (Tag Known-Good Commit)
 ```bash
 # Create a new tag that points to the last known-good commit
-git tag vX.Y.Z <good-commit-sha>
+git tag -a vX.Y.Z <good-commit-sha> -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
