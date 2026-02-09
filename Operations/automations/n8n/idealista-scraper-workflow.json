@@ -3,42 +3,33 @@
   "nodes": [
     {
       "parameters": {
+        "httpMethod": "POST",
         "path": "87a19ecf-e99a-4a3e-8482-7ff79f2aac18",
+        "responseMode": "onReceived",
         "options": {}
       },
-      "name": "Webhook Trigger",
+      "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        450,
+        250,
         300
       ],
       "webhookId": "87a19ecf-e99a-4a3e-8482-7ff79f2aac18"
     },
     {
       "parameters": {
-        "actorId": "pocesar/idealista-scraper",
-        "input": {
-          "location": "={{$json.body.location}}",
-          "country": "={{$json.body.country}}",
-          "operation": "={{$json.body.operation}}",
-          "propertyType": "={{$json.body.propertyType}}",
-          "minPrice": "={{$json.body.minPrice}}",
-          "maxPrice": "={{$json.body.maxPrice}}",
-          "minSize": "={{$json.body.minSize}}",
-          "maxSize": "={{$json.body.maxSize}}",
-          "publicationDate": "={{$json.body.publicationDate}}",
-          "maxItems": 100
-        },
+        "actorId": "apify/idealista-scraper",
         "options": {
-          "waitForFinish": true
+          "body": "={{$json.body}}",
+          "token": "YOUR_APIFY_TOKEN"
         }
       },
-      "name": "Run Idealista Scraper",
+      "name": "Apify Idealista Scraper",
       "type": "n8n-nodes-base.apify",
       "typeVersion": 1,
       "position": [
-        900,
+        500,
         300
       ],
       "credentials": {
@@ -50,30 +41,20 @@
     },
     {
       "parameters": {
-        "responseCode": 200,
-        "responseData": "={\n    \"status\": \"pending\",\n    \"message\": \"Scraper initiated successfully. You will receive an email upon completion.\"\n}",
+        "authentication": "oAuth2",
+        "operation": "append",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Sheet1",
+        "fields": {
+          "values": "={{$node[\"Apify Idealista Scraper\"].json.defaultDatasetId}}"
+        },
         "options": {}
       },
-      "name": "Respond to Webhook",
-      "type": "n8n-nodes-base.respondToWebhook",
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 1,
       "position": [
-        680,
-        100
-      ]
-    },
-    {
-      "parameters": {
-        "documentId": "YOUR_GOOGLE_SHEET_ID",
-        "sheetName": "Properties",
-        "operation": "append",
-        "options": {}
-      },
-      "name": "Save to Google Sheet",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
-      "position": [
-        1120,
+        750,
         300
       ],
       "credentials": {
@@ -85,16 +66,17 @@
     },
     {
       "parameters": {
-        "to": "={{$node[\"Webhook Trigger\"].json.body.clientEmail}}",
-        "subject": "✅ Your Idealista Scrape is Complete!",
-        "text": "Hello,\n\nYour requested scrape from Idealista has been successfully completed and the data has been added to your Google Sheet.\n\nBest regards,\nYour Scraper Bot",
+        "fromEmail": "sender@example.com",
+        "toEmail": "={{$json.body.clientEmail}}",
+        "subject": "Idealista Scraper Results",
+        "text": "Your Idealista scrape is complete. The data has been added to your Google Sheet.",
         "options": {}
       },
-      "name": "Send Confirmation Email",
-      "type": "n8n-nodes-base.sendEmail",
-      "typeVersion": 2,
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
       "position": [
-        1340,
+        1000,
         300
       ],
       "credentials": {
@@ -106,23 +88,53 @@
     },
     {
       "parameters": {
-        "url": "YOUR_WORDPRESS_WEBHOOK_URL",
-        "authentication": "none",
-        "sendBody": true,
-        "body": "={{$node[\"Run Idealista Scraper\"].json}}",
+        "body": "={{$node[\"Apify Idealista Scraper\"].json}}",
         "options": {}
       },
-      "name": "Send Data to WordPress",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
       "position": [
-        1560,
+        1250,
         300
       ]
     }
   ],
   "connections": {
-    "Webhook Trigger": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Apify Idealista Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify Idealista Scraper": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
       "main": [
         [
           {
@@ -130,48 +142,11 @@
             "type": "main",
             "index": 0
           }
-        ],
-        [
-          {
-            "node": "Run Idealista Scraper",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Run Idealista Scraper": {
-      "main": [
-        [
-          {
-            "node": "Save to Google Sheet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save to Google Sheet": {
-      "main": [
-        [
-          {
-            "node": "Send Confirmation Email",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send Confirmation Email": {
-      "main": [
-        [
-          {
-            "node": "Send Data to WordPress",
-            "type": "main",
-            "index": 0
-          }
         ]
       ]
     }
-  }
+  },
+  "active": true,
+  "settings": {},
+  "id": "1"
 }

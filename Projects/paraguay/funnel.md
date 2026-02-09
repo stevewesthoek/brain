@@ -1,225 +1,229 @@
-FUNNEL v0.2.1
+FUNNEL v0.3 — uitgebreid, geruststellend, impliciet selecterend
 
-Paraguay Residency Onboarding – ID-kaart
+Datum: 08-02-2026
+
+(zelfde kern, meer context, meer rust, meer zekerheid)
 
 ⸻
 
-HERO SECTIE
+Paraguay Residency Onboarding
+
+Een zorgvuldig begeleide eerste stap
+
+⸻
+
+HERO
 
 H1
-Een tweede basis opbouwen, zonder je geloof, waarden en gemeenschap te verliezen
+Een tweede basis opbouwen, met rust, zorgvuldigheid en verantwoordelijkheid
 
-Subkop (H2)
-Voor christenen die vooruitdenken — en hun gezin, toekomst en verantwoordelijkheid serieus nemen
+H2
+Voor mensen die emigratie niet zien als vlucht — maar als weloverwogen proces
 
 Ondertekst
-Niet iedereen is geroepen om deze stap te zetten.
-Maar voor wie het wél overweegt, is zorgvuldige begeleiding geen luxe — het is noodzakelijk.
+Dit traject is bedoeld voor wie verder kijkt dan vandaag,
+en begrijpt dat grote beslissingen tijd, helderheid en begeleiding vragen.
 
-CTA (primary button)
+CTA (zacht)
 Bekijk of dit traject bij je past →
 
-⸻
-
-SOCIALE EN MENTALE HERKENNING
-
-Kop (H2)
-Als je dit leest, weet je dat dit geen kleine beslissing is
-
-Body copy
-Wie serieus nadenkt over emigratie, doet dat niet lichtzinnig.
-Je denkt na over veiligheid. Over toekomst. Over stabiliteit.
-Voor jezelf — en vaak nog meer voor je gezin.
-
-Tegelijk weet je dat een verhuizing naar een ander continent geen experiment is.
-Alles verandert: cultuur, structuur, ritme, omgeving.
-
-De juiste vraag is daarom niet “kan ik dit?”
-maar “doe ik dit zorgvuldig, met de juiste mensen?”
+Niet iedereen stroomt door naar een gesprek.
 
 ⸻
 
-POSITIONERING: PROFESSIONALITEIT & RUST
+ERKENNING VAN DE INNERLIJKE SPANNING
 
-Kop (H2)
-Waarom dit traject anders wordt aangepakt
+Titel
+Als je dit leest, ben je waarschijnlijk al langer aan het nadenken
 
-Body copy
-Dit traject is niet gebouwd voor snelheid of volume.
-Het is gebouwd voor mensen die begrijpen dat emigratie een proces is — geen product.
+Copy
+Mensen die hier terechtkomen, doen dat zelden uit nieuwsgierigheid.
+Vaak speelt deze vraag al maanden — soms jaren.
 
-Wij werken met een beperkt aantal mensen tegelijk.
-Niet omdat er schaarste gecreëerd moet worden, maar omdat dit traject persoonlijke aandacht, verantwoordelijkheid en rust vraagt.
+Je voelt dat de wereld verandert.
+Je denkt na over stabiliteit, veiligheid en toekomst.
+Niet alleen praktisch, maar ook moreel en geestelijk.
 
-Wij werken met een beperkt aantal mensen tegelijk. Wij richten ons niet op kwantiteit, maar op kwaliteit. Emigreren is een grote stap en dat nemen wij uiterst serieus. 
+Tegelijk weet je: emigratie is geen eenvoudige oplossing.
+Het brengt nieuwe verantwoordelijkheden met zich mee.
 
-Daarom voeren wij dit traject zorgvuldig en met aandacht uit. Wij hebben heel bewust voor deze specifieke doelgroep gekozen, zodat wij jou kunnen verbinden binnen dit netwerk en daarbij wordt gesteven om christelijke normen en waarden te gehanteerd.
-
-Wie bij ons instapt, merkt vanaf het begin:
-dit is geen verkoopproces, maar een toetsing aan beide kanten.
-
-⸻
-
-WAT DE DIENST IS (HELDER & CONCREET)
-
-Kop (H2)
-Wat wij concreet voor je doen
-
-Body copy
-Wij begeleiden je bij het verkrijgen van een officiële Paraguayaanse identiteitskaart (Cédula).
-
-Dit is een juridisch en administratief traject dat fysieke aanwezigheid, lokale kennis en nauwkeurige afhandeling vereist.
-
-Je wordt hierbij persoonlijk begeleid, stap voor stap, door mensen die dit proces kennen en beheersen.
-
-Inbegrepen in dit traject:
-	•	begeleiding bij tijdelijke residency en ID-kaart
-	•	begeleiding bij overheidsinstanties en registraties
-	•	airport pickup en lokaal vervoer
-	•	basiscommunicatie (SIM / bereikbaarheid)
-	•	lokaal aanspreekpunt gedurende het traject
-	•	afhandeling van vervolgstappen via volmacht na vertrek
-
-De ID-kaart is geen eindpunt.
-Het is de fundamentele eerste stap die verdere opbouw mogelijk maakt.
+Juist daarom vraagt deze stap om meer dan informatie.
+Ze vraagt om zorgvuldigheid.
 
 ⸻
 
-WAT DIT NIET IS (IMPLICIET AFSCHERMEND)
+WAT DIT TRAJECT IS (HELDERE AFBAKENING)
 
-Kop (H2)
-Wat dit traject bewust niet probeert te zijn
+Titel
+Wat dit traject concreet is
 
-Body copy
-Dit is geen vastgoedprogramma.
-Geen investeringsconstructie.
-Geen community-abonnement.
+Copy
+Dit traject richt zich op één duidelijke, juridische eerste stap:
 
-Wij verkopen geen levensstijl, geen beloften en geen toekomstbeelden.
-
-Wat wij wél bieden, is een solide basis — zodat verdere stappen verantwoord en in de juiste volgorde genomen kunnen worden.
-
-⸻
-
-ONTZORGING VIA CONTEXT & NETWERK (ZONDER SCOPE CREEP)
-
-Kop (H2)
-Je staat er niet alleen voor — en dat doet ertoe
-
-Body copy
-Voor veel mensen is de grootste onzekerheid niet het papierwerk,
-maar de vraag: “Waar kom ik terecht?”
-
-Hoewel dit traject zich uitsluitend richt op de ID-kaart, werken wij vanuit een bredere context.
-
-Er is:
-	•	een bestaand netwerk in Paraguay
-	•	christelijke fellowship en geloofsgemeenschap
-	•	lokale kennis van wonen, bouwen en vestigen
-	•	ervaring met mensen die deze stap eerder hebben gezet
-
-Deze zaken maken geen onderdeel uit van de dienst.
-Maar ze zijn wél aanwezig — en geven rust.
-
-Voor christenen is dit vaak doorslaggevend:
-je laat niet alles achter, je zet iets voort.
-
-⸻
-
-KWALIFICATIE & SELECTIE (IMPLICIET, MAAR VOELBAAR)
-
-Kop (H2)
-Waarom niet iedereen door kan
-
-Body copy
-Dit traject vraagt volwassenheid.
-Financiële stabiliteit.
-Aanpassingsvermogen.
-
-Niet omdat wij streng willen zijn, maar omdat half-voorbereide stappen schade veroorzaken — voor mensen én voor het netwerk.
-
-Daarom werken wij met een zorgvuldig selectieproces.
-
-Wie verdergaat, begrijpt:
-	•	dat dit geen garantie-product is
-	•	dat overheidsbeslissingen niet te sturen zijn
-	•	dat verantwoordelijkheid bij de aanvrager blijft liggen
-
-Deze helderheid beschermt iedereen.
-
-⸻
-
-FINANCIËLE REALITEIT (ZONDER PRIJZEN)
-
-Kop (H2)
-Een serieuze stap vraagt een serieuze investering
-
-Body copy
-Dit traject is geen lage-instap dienst.
-Het vraagt een investering die past bij de omvang en verantwoordelijkheid van de stap.
-
-Tijdens het persoonlijke gesprek is volledige transparantie over kosten, structuur en betaling.
-
-Wie hier verdergaat, doet dat bewust — niet uit emotie of druk.
-
-⸻
-
-CAPACITEIT & TEMPO
-
-Kop (H2)
-Kwaliteit boven tempo
-
-Body copy
-Wij werken met kleine batches.
-Niet iedereen kan tegelijk instromen.
+Het verkrijgen van een Paraguayaanse identiteitskaart (Cédula).
 
 Dat betekent:
-	•	geen haast
-	•	geen massale instroom
-	•	geen concessies aan kwaliteit
+	•	fysieke aanwezigheid in Paraguay
+	•	correcte voorbereiding
+	•	begeleiding bij lokale instanties
+	•	afhandeling van het proces in de juiste volgorde
 
-Wie rust zoekt in het proces, herkent hierin de juiste aanpak.
+Je krijgt geen “totaalpakket”,
+maar een helder afgebakende dienst die een basis legt voor verdere keuzes.
 
 ⸻
 
-OVERGANG NAAR SELECTIEFORMULIER
+CTA (subtiel, voor beslissers)
 
-Kop (H2)
+→ Start de geschiktheidscheck
+Kies dit alleen als je deze stap serieus overweegt.
+
+⸻
+
+WAT JE KRIJGT (ZEKERHEID DOOR DETAIL)
+
+Titel
+Wat er tijdens dit traject voor je wordt geregeld
+
+Copy
+Tijdens het traject word je persoonlijk begeleid door mensen die het proces kennen.
+
+Inbegrepen:
+	•	begeleiding bij residency-aanvraag en ID-kaart
+	•	ondersteuning bij overheidsbezoeken
+	•	airport pickup en lokaal vervoer
+	•	basiscommunicatie (SIM / bereikbaarheid)
+	•	lokaal aanspreekpunt tijdens je verblijf
+	•	afhandeling van vervolgstappen via volmacht
+
+Dit voorkomt improvisatie, misverstanden en onnodige stress
+in een context die voor de meeste mensen onbekend is.
+
+⸻
+
+WAT DIT NIET IS (ZORGEN WEGNEMEN)
+
+Titel
+Wat dit traject bewust niet belooft
+
+Copy
+Dit traject belooft geen:
+	•	snelle emigratie
+	•	gegarandeerde goedkeuring
+	•	investering of vastgoed
+	•	community-lidmaatschap
+	•	oplossing voor persoonlijke problemen
+
+Niet omdat deze zaken onbelangrijk zijn,
+maar omdat ze niet eerlijk vooraf te beloven zijn.
+
+Wij beginnen liever met wat wél betrouwbaar geregeld kan worden.
+
+⸻
+
+RISICO & VERANTWOORDELIJKHEID
+
+Titel
+Een realistische noot over risico’s
+
+Copy
+Overheidsbeslissingen vallen buiten onze controle.
+Geen enkele partij kan daar garanties op geven.
+
+Bij afwijzing door de overheid is restitutie niet mogelijk,
+behalve bij aantoonbare nalatigheid van onze kant.
+
+We benoemen dit vooraf, zodat je niet later voor verrassingen komt te staan.
+
+⸻
+
+CTA (na risicosectie — belangrijk moment)
+
+→ Start de geschiktheidscheck
+Je bent vrij om hier nu of later op terug te komen.
+
+⸻
+
+VOOR WIE DIT PAST
+
+Titel
+Voor wie dit traject doorgaans goed werkt
+
+Copy
+Dit traject past bij mensen die:
+	•	financieel stabiel zijn
+	•	verantwoordelijkheid nemen voor hun keuzes
+	•	kunnen omgaan met onzekerheid
+	•	geen garanties nodig hebben om een beslissing te nemen
+	•	begrijpen dat emigratie een proces is
+
+Het werkt minder goed voor mensen die nog sterk twijfelen,
+of hopen dat deze stap alles zal oplossen.
+
+⸻
+
+SELECTIE & SCHAASTE (IMPLICIET)
+
+Titel
+Waarom we werken met selectie
+
+Copy
+We werken met een beperkt aantal mensen tegelijk.
+Niet uit marketingoverwegingen, maar omdat zorgvuldige begeleiding dat vraagt.
+
+Dat betekent:
+	•	niet iedereen kan instromen
+	•	niet elk moment is geschikt
+	•	soms is “nu nog niet” het juiste antwoord
+
+Deze selectie beschermt de kwaliteit van het traject —
+en voorkomt verkeerde verwachtingen.
+
+⸻
+
+HET PROCES
+
+Titel
+Hoe het traject verloopt
+
+Copy
+	1.	Je leest deze pagina zorgvuldig
+	2.	Je vult het geschiktheidsformulier in
+	3.	We beoordelen of dit traject nu past
+	4.	Bij geschiktheid volgt een persoonlijk gesprek
+	5.	Na acceptatie plannen we het traject in
+	6.	Je reist af naar Paraguay (± 7–10 dagen)
+
+Geen druk.
+Geen automatische toelating.
+
+⸻
+
+FINANCIEEL (RUST, GEEN PUSH)
+
+Titel
+Over de investering
+
+Copy
+Dit traject vraagt een serieuze investering.
+Die weerspiegelt de begeleiding, verantwoordelijkheid en lokale uitvoering.
+
+Alle details worden transparant besproken in het gesprek.
+Je bent daarna volledig vrij om wel of niet door te gaan.
+
+⸻
+
+SLOT & DEFINITIEVE CTA
+
+Titel
 De volgende stap
 
-Body copy
-Als je na het lezen van deze pagina:
-	•	helderheid voelt
-	•	rust ervaart
-	•	begrijpt wat dit traject wel en niet is
+Copy
+Als je na het lezen van deze pagina rust voelt —
+en helderheid in plaats van haast —
+dan is het mogelijk tijd voor de volgende stap.
 
-dan kun je doorgaan naar het geschiktheidsformulier.
+CTA
+→ Start de geschiktheidscheck
 
-Dit formulier is geen formaliteit.
-Het is de tweede stap in onze selectie.
-
-Na beoordeling kan — indien passend — een persoonlijk gesprek worden ingepland.
-
-⸻
-
-CTA SECTIE
-
-CTA-tekst boven knop
-Ga alleen verder als je deze stap serieus overweegt.
-
-CTA Button (primary)
-Start de geschiktheidscheck →
-
-Ondertekst (klein)
-Niet iedereen wordt toegelaten. Dat is bewust zo.
-
-⸻
-
-SLOTSECTIE
-
-Body copy (afsluitend)
-Wij bouwen liever langzaam en zorgvuldig,
-dan snel en vrijblijvend.
-
-Voor wie dit pad herkent,
-is de eerste stap helder.
+Kies dit alleen als je dit traject serieus overweegt.

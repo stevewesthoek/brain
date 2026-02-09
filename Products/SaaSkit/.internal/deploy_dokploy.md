@@ -56,6 +56,8 @@ Notes:
 - `APP_SLUG` must match the repo/project name (`[a-z0-9_]+`).
 - `DATABASE_URL` must use the tenant user created during provisioning.
 - `SYSTEM_DATABASE_URL` must be an admin role that can create schemas/users and apply migrations.
+- `NEXT_PUBLIC_APP_URL` must be present in Dokploy env during build/runtime so generated public links use your real domain.
+- `next start` will still log `Local: http://localhost:3000` inside the container; this is expected and does not indicate the app is using localhost as public URL.
 
 If you renamed the app slug and want to keep an existing tenant:
 

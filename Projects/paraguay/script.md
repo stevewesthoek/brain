@@ -1,227 +1,257 @@
-KWALIFICATIECALL-SCRIPT v1.0
+GESCHIKTHEIDSFORMULIER v0.3.
 
-Duur: ±30–45 minuten
-Doel: Geschiktheid toetsen, verwachtingen kalibreren, beslissing nemen
-Uitkomst:
-	•	❌ Afwijzing (netjes, definitief)
-	•	✅ Acceptatie → uitleg vervolgstappen + aanbetaling
+Dit is geen salescall.
+Dit is een toetsingsgesprek dat de selectiviteit uit de funnel consequent doorzet.
+
+Ik heb bewust:
+	•	geen push-taal gebruikt
+	•	geen overtuiging
+	•	geen uitlegdrang
+	•	wel rust, richting en impliciete autoriteit
 
 ⸻
 
-0. OPENING – KADER ZETTEN (3 MIN)
+QUALIFICATION CALL SCRIPT v0.3
 
-Jij / Jozef zegt:
+Paraguay Residency Onboarding – Cédula
+
+Duur: ± 30–40 minuten
+Doel:
+	•	bevestigen of dit traject nu past
+	•	verwachtingen verder kalibreren
+	•	beslissen: wel / niet door
+
+Uitkomst:
+	•	❌ Geen vervolg (definitief, rustig)
+	•	✅ Voorwaardelijke acceptatie → vervolgstappen
+
+⸻
+
+0. OPENING — KADER ZETTEN (± 2–3 MIN)
+
+Jij zegt:
 
 Dank je dat je de tijd hebt genomen voor dit gesprek.
 
-Ik wil dit gesprek goed kaderen voordat we beginnen.
+Ik wil vooraf iets helder maken.
 Dit is geen verkoopgesprek.
 
-Het doel van dit gesprek is om samen te toetsen of dit traject past bij jouw situatie én of wij de juiste partij zijn om jou hierin te begeleiden.
+Het doel van dit gesprek is om samen te toetsen
+of dit traject past bij jouw situatie
+en of wij de juiste partij zijn om dit te begeleiden.
 
-Het is dus mogelijk dat we aan het einde besluiten om niet samen verder te gaan.
-Dat is geen oordeel, maar een beschermingsmechanisme – voor jou en voor ons.
+Het is dus goed mogelijk dat we aan het einde besluiten
+om niet samen verder te gaan.
+Dat is geen oordeel — maar een manier om zorgvuldigheid te bewaken.
 
-Check:
+Is dat voor jou helder?
 
-Is dat voor jou helder en oké?
-
-❌ Als hier weerstand of spanning ontstaat → rode vlag.
+Let op (intern):
+	•	Onrust / weerstand hier = signaal
+	•	Rustig “ja, begrijp ik” = groen
 
 ⸻
 
-1. CONTEXT & MOTIVATIE (5–7 MIN)
+1. CONTEXT & MOTIVATIE (± 5–7 MIN)
 
 Vraag 1
 
-Kun je in je eigen woorden vertellen waarom je over emigratie nadenkt en waarom Paraguay nu in beeld is?
+Kun je in je eigen woorden vertellen
+wat je heeft gebracht tot het invullen van het formulier
+en waarom deze stap nu in beeld is?
 
-Luisteren. Niet onderbreken.
+(Laat uitspreken. Niet onderbreken.)
 
 Let op:
 	•	Realisme
-	•	Reflectie
-	•	Verantwoordelijkheid
-	•	Geen “reddingsfantasie”
+	•	Eigen verantwoordelijkheid
+	•	Geen haast / druk / reddingsverhaal
 
 ⸻
 
 Vraag 2
 
-Wat maakt dat je juist nu deze stap overweegt, en niet over een paar jaar?
+Wat maakt dat je dit niet ziet als iets
+wat je “ooit misschien” wilt doen,
+maar nu serieus onderzoekt?
 
 ❌ Rode vlaggen:
-	•	Paniek
-	•	Druk
 	•	“Ik moet hier weg”
 	•	Externe dwang
+	•	Paniek
 
 ⸻
 
 2. VERWACHTINGEN KALIBREREN (CRUCIAAL)
 
-Jij zegt (expliciet):
+Jij zegt:
 
-Ik wil iets heel duidelijk maken voordat we verdergaan.
+Ik wil iets expliciet benoemen.
 
-Dit traject is bedoeld om je te begeleiden bij de aanvraag van een Paraguayaanse identiteitskaart.
+Dit traject richt zich op één duidelijke eerste stap:
+het verkrijgen van een Paraguayaanse identiteitskaart.
 
-Het is géén totaaloplossing voor wonen, werk, gemeenschap of levensinvulling.
-Die zaken komen later, stap voor stap.
+Het is geen totaaloplossing
+en het lost geen persoonlijke of financiële problemen op.
 
-Vraag 3
+Hoe voelt dat voor jou als uitgangspunt?
 
-Als dit traject “alleen” de ID-kaart regelt en begeleiding tijdens die week, voelt dat voor jou voldoende als eerste stap?
-
-❌ Afwijzen als:
-	•	Ze meer verwachten
-	•	Ze zekerheid eisen
-	•	Ze zeggen “maar daarna…?”
+Let op:
+	•	Acceptatie = goed
+	•	“Maar daarna…?” = signaal
 
 ⸻
 
-3. AANPASSINGSVERMOGEN & REALITEIT (5–7 MIN)
+3. OMGAAN MET ONZEKERHEID (± 5 MIN)
 
-Vraag 4
+Vraag 3
 
-Hoe ga je normaal gesproken om met situaties die onzeker zijn of anders lopen dan gepland?
+Hoe ga je normaal gesproken om
+met situaties die onzeker zijn of langer duren dan verwacht?
 
-Doorvraag indien nodig
+Doorvraag (indien nodig):
 
-Kun je een concreet voorbeeld geven?
+Kun je daar een concreet voorbeeld van geven?
 
 ❌ Rode vlag:
-	•	Externe schuld
+	•	Schuld buiten zichzelf
 	•	Lage veerkracht
 	•	Emotionele afhankelijkheid
 
 ⸻
 
-Vraag 5
+4. EMOTIONELE REALITEIT (± 5 MIN)
 
-Wat verwacht je emotioneel van emigratie?
-Wat denk je dat het met je gaat doen in de eerste maanden?
+Vraag 4
+
+Wat verwacht je dat deze stap
+emotioneel met je gaat doen
+in de eerste maanden?
 
 ❌ Afwijzen bij:
-	•	“Het zal vooral opluchting zijn”
-	•	“Dan vallen mijn problemen weg”
+	•	“Dan valt alles weg”
+	•	“Dan komt er rust” (zonder nuance)
 
 ⸻
 
-4. FINANCIËLE REALITEIT (HARD, MAAR RUSTIG)
+5. FINANCIËLE TOETS (± 3–5 MIN)
 
-Jij zegt:
+Jij zegt (rustig):
 
-We stellen deze vraag altijd, omdat financiële druk één van de grootste oorzaken is van teleurstelling en stress bij emigratie.
+We stellen deze vraag altijd,
+omdat financiële druk één van de grootste stressfactoren is bij emigratie.
 
-Vraag 6
+Vraag 5
 
-Kun je bevestigen dat je naast de kosten van dit traject voldoende financiële ruimte hebt om onverwachte kosten en levensonderhoud op te vangen?
+Kun je bevestigen
+dat je naast de kosten van dit traject
+voldoende ruimte hebt
+om onverwachte kosten op te vangen?
 
-❌ Geen discussie.
-❌ Twijfel = afwijzing.
+❌ Twijfel = afwijzing
+❌ Discussie = afwijzing
 
 ⸻
 
-5. RISICO & GEEN GARANTIES (VERPLICHT HERHALEN)
+6. RISICO & GEEN GARANTIES (VERPLICHT HERHALEN)
 
 Jij zegt langzaam en duidelijk:
 
-Ik wil dit nogmaals expliciet benoemen:
+Ik wil dit nogmaals benoemen.
 
-Wij kunnen geen garantie geven op goedkeuring door de overheid.
-Als een aanvraag wordt afgewezen, is restitutie niet mogelijk, behalve bij aantoonbare nalatigheid van onze kant.
+Wij kunnen geen garantie geven
+op goedkeuring door de overheid.
+
+En bij afwijzing is restitutie niet mogelijk,
+behalve bij aantoonbare nalatigheid van onze kant.
+
+Kun je bevestigen
+dat je dit begrijpt en accepteert?
+
+❌ Aarzeling = afwijzing
+
+⸻
+
+7. PRAKTISCHE CONTEXT (± 3 MIN)
+
+Vraag 6
+
+Ga je dit traject alleen volgen
+of samen met anderen?
 
 Vraag 7
 
-Kun je bevestigen dat je dit begrijpt en accepteert?
+Met hoeveel personen verwacht je te reizen?
 
-❌ Bij aarzeling → afwijzen.
+(Geen prijsdiscussie. Alleen context.)
 
 ⸻
 
-6. GROEP OF INDIVIDUEEL (PLANNING)
+8. LAATSTE TOETS — AUTONOMIE (ZEER BELANGRIJK)
 
 Vraag 8
 
-Ga je dit traject alleen volgen, of samen met anderen?
+Stel dat we vandaag besluiten
+om dit traject niet samen te doen.
 
-Vraag 9
-
-Met hoeveel personen verwacht je te reizen?
-
-Geen discussie over prijs hier. Alleen context.
-
-⸻
-
-7. LAATSTE TOETS (INTUÏTIEF MAAR BELANGRIJK)
-
-Vraag 10
-
-Stel dat we vandaag besluiten om niet samen te werken.
 Wat zou dat met je doen?
 
 ❌ Rode vlag:
 	•	Druk
 	•	Manipulatie
-	•	Emotionele chantage
 	•	“Maar ik heb dit nodig”
 
 ⸻
 
-8. AFSLUITING – BESLISSING (NIET TER PLEKKE VERKOPEN)
+9. BESLISSING (NIET TER PLEKKE VERKOPEN)
 
-OPTIE A — AFWIJZING
+OPTIE A — GEEN VERVOLG
 
 Jij zegt:
 
 Dank je voor je openheid.
 
-Op basis van dit gesprek denk ik dat dit traject op dit moment niet goed aansluit bij jouw situatie.
+Op basis van dit gesprek denk ik
+dat dit traject op dit moment
+niet goed aansluit bij jouw situatie.
 
-Dat betekent niet dat je plannen verkeerd zijn, maar wel dat wij niet de juiste partij zijn om je hierin te begeleiden.
+Dat zegt niets over jouw intenties,
+maar wel over de timing en passendheid.
 
-Niet:
-	•	verdedigen
-	•	uitleggen
-	•	doorverwijzen
-	•	verzachten
+Daarom gaan we dit niet verder oppakken.
 
-Rustig. Respectvol. Definitief.
+(Niet uitleggen. Niet verzachten. Rustig afsluiten.)
 
 ⸻
 
-OPTIE B — VOORLOPIGE ACCEPTATIE
+OPTIE B — VOORWAARDELIJKE ACCEPTATIE
 
 Jij zegt:
 
 Dank je.
 
-Op basis van dit gesprek denk ik dat dit traject bij jouw situatie zou kunnen passen.
+Op basis van dit gesprek
+denk ik dat dit traject
+bij jouw situatie zou kunnen passen.
 
-De volgende stap is dat we intern bevestigen of we capaciteit hebben en of we dit traject kunnen inplannen.
-Daarna ontvang je van ons de praktische vervolgstappen.
+De volgende stap is
+dat we intern bevestigen
+of we capaciteit hebben
+en of dit traject ingepland kan worden.
 
-Geen betaling in de call.
-Geen druk.
-Geen toezeggingen.
+Daarna ontvang je de praktische vervolgstappen.
+
+Je bent daarna volledig vrij
+om wel of niet door te gaan.
+
+Belangrijk:
+	•	Geen betaling in de call
+	•	Geen druk
+	•	Minimaal 24 uur bedenktijd
 
 ⸻
 
-9. NA DE CALL (INTERNE REGELS)
-	•	Altijd minimaal 24 uur tussen call en betaling
-	•	Nooit uitzonderingen maken
+10. INTERNE REGELS (NIET UITSPREKEN)
 	•	Bij twijfel → afwijzen
 	•	Reputatie > omzet
-
-⸻
-
-SLOTNOTITIE
-
-Dit script werkt alleen als:
-	•	jullie elkaar steunen in “nee zeggen”
-	•	jullie niet compenseren met empathie
-	•	jullie rust boven snelheid verkiezen
-
-Dit gesprek is het product.
-Niet de website. Niet de prijs.
+	•	Dit gesprek is het product

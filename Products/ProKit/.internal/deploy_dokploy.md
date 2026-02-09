@@ -24,6 +24,7 @@ SYSTEM_DATABASE_URL=postgresql://<admin-user>:<admin-password>@<db-host>:5433/po
 DATABASE_URL=postgresql://tenant_<slug>_user:${TENANT_DB_PASSWORD}@<db-host>:5433/postgres?schema=tenant_<slug>
 TENANT_DB_PASSWORD=<alphanumeric_only_password>
 PROCHAT_VERSION=<semver>             # must match the git tag without the leading "v"
+NEXT_PUBLIC_APP_URL=https://<public-domain>
 ```
 
 Optional (slug rename support):
@@ -48,6 +49,8 @@ Notes:
 - `SYSTEM_DATABASE_URL` must be an admin connection that can create schemas/roles and run backups. (For Supabase, the admin user is typically `supabase_admin`.)
 - `TENANT_DB_PASSWORD` must be alphanumeric only (no special characters).
 - If your platform does not expand env vars inside other env vars, ProKit expands `${TENANT_DB_PASSWORD}` in `DATABASE_URL` at runtime (before running the deploy gate).
+- `NEXT_PUBLIC_APP_URL` must be set in Dokploy env so build/runtime use the public base URL (emails, sitemap, SEO, checkout callbacks).
+- `next start` will still log `Local: http://localhost:3000` inside the container. That log line is expected and is not the public URL.
 
 ### 2) Backup bind mount (required)
 

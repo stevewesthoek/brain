@@ -1,10 +1,33 @@
 TODO
 
-•	MCP / Dokploy-API integration for remote scripted operations.
+PRIORITY
+- pay water bill
+- apply for niss
+- read application Mercedes
+- transfer money Albert
+- clean rusty connector
+- connect the mxweather
 
-Those can be layered on later without breaking what you’ve got.
+NEXT
+O make funnel Paraguay
+O react to Joe
+- react to Norbert
+- move websites to new cloudpanel
+- cancel Hetzner
+- start making document Bas
+- clean up email
+
+NICE TO HAVE
+- make Docs website auto update
+- make a Editor for websites Joe & Ashley
+O update ProChat website with Stitch
+
+BACKLOG
+- check message Richard
+- make a snippet 'click to copy' page
+- make a training program like: https://build-loop.ai/
 - better solution for supabase shell/wrapper for easy visualitation
-
+- MCP / Dokploy-API integration for remote scripted operations.
 
 IDEAS
 - youtube nanobanana pro thumbnail creator
@@ -12,4 +35,3 @@ IDEAS
 	- listings
 	- open house
 	- etc.
-- make a training program like: https://build-loop.ai/
