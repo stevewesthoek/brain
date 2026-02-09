@@ -8,7 +8,13 @@ This document is intentionally developer-focused (local only). Production behavi
 
 - Node.js 20+
 - Docker Desktop (or equivalent)
-- PostgreSQL 15 reachable at `localhost:5433` (default; configurable via `POSTGRES_PORT`)
+- A **shared** local PostgreSQL instance reachable at `localhost:5433` (default; configurable via `POSTGRES_PORT`)
+
+## Local database rule (required)
+
+- Use one shared local Supabase/Postgres instance for all repos on your machine.
+- Do not spin up per-repo Postgres containers for normal ProKit development.
+- `db:init` provisions only tenant schema/role inside the shared database; it must never create a new database.
 
 ## Slug rule (required)
 
@@ -21,10 +27,10 @@ If you want an app slug like `my_app`, the repo folder must also be named `my_ap
 
 ## Quick start
 
-1. Start Postgres (default dev path):
+1. Ensure shared Postgres is running on `localhost:5433`:
 
 ```bash
-docker compose up -d postgres
+docker ps --format '{{.Names}}' | rg '^supabase$'
 ```
 
 2. Install and run:
@@ -42,6 +48,8 @@ By convention ProKit wires `predev` to bootstrap the local environment:
 - Provision the tenant schema/user (`npm run db:init`)
 - Run dev migrations (`npm run db:migrate:dev`)
 - Start Next.js (`next dev`)
+
+Important: `db:init` only creates/updates `tenant_<slug>` schema, `tenant_<slug>_user`, and registry metadata in `public.tenants` inside the existing shared database. It does not create tenant databases.
 
 If your project removed `predev`, you can always run the steps explicitly:
 

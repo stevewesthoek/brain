@@ -17,6 +17,7 @@ This doc defines provisioning, migrations, cleanup, and the environment contract
 - All apps in that environment use that same database.
 - App isolation is schema/role only: `tenant_<slug>` + `tenant_<slug>_user`.
 - Never create a dedicated database per app.
+- `db:init` must never run `CREATE DATABASE`; it only manages schema, role, grants, and tenant registry metadata in the already-existing shared database.
 
 ## Isolation rules (required)
 
@@ -117,6 +118,8 @@ npm run db:rename -- --from <old> --to <new> [--apply]
 7. Output connection values and write files:
    - `.env` (local development)
    - `.env.production` (production reference)
+
+Invariant: provisioning always targets the existing database from `SYSTEM_DATABASE_URL` (normally `/postgres`) and never creates a new database in dev or prod.
 
 ## Password rules
 

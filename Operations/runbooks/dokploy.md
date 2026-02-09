@@ -5,9 +5,15 @@ Standard steps to deploy apps and run migrations safely.
 
 ## Checklist
 - Verify env vars (APP_SLUG, DATABASE_URL, SYSTEM_DATABASE_URL)
+- Verify `NEXT_PUBLIC_APP_URL` is set to the public domain in Dokploy env.
+- Confirm `SYSTEM_DATABASE_URL` points to the shared environment database (not a per-app database).
 - Run `db:init` and `db:migrate:prod`
 - Confirm health checks
 - Rollback plan noted
+
+## Notes
+- `db:init` provisions tenant schema/role only; it must never create a new database.
+- `next start` logs `Local: http://localhost:3000` in container logs; this is expected and not the public URL.
 
 ## Rollback
 - Re-deploy previous image/tag
