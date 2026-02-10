@@ -1,3 +1,0 @@
-# SaaSKit Infra (Internal)
-
-Placeholder.

@@ -1,3 +1,0 @@
-# SaaSKit Content Plan
-
-Placeholder.

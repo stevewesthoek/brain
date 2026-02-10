@@ -4,24 +4,27 @@ Single source of truth for:
 - Curated dotfiles/configs I actually want versioned (safe + stable)
 - AI rules, prompts, and playbooks
 - Infrastructure and operations docs
-- Product boilerplates and project material
+- Business + brand docs
+- Identity docs (profile/style/theology)
+- Project material
 
 # Start Here
 
-This Brain is the source of truth for every ProChat repo.
+This Brain is the source of truth for cross-repo conventions and internal documentation used by ProChat repos.
+
+Repo-specific technical documentation lives in each repo (for example: ProKit Core docs now live in the ProKit Core repo under `/docs`).
 
 Read in this order:
 1) README.md (map + config philosophy)
 2) Identity/profile.md, Identity/style.md, Identity/theology.md
-3) AI/agents.md and AI/prompts/
-4) Products/ProKit/README.md (boilerplate rules)
-5) Business/conventions.md (folder boundaries + data classification)
+3) Business/conventions.md (folder boundaries + data classification)
+4) AI/agents.md and AI/prompts/
+5) Operations/ (runbooks + system configs)
 
 ## Top-level map
 - `Identity/` - profile, style, theology
 - `AI/` - agents, prompts, providers, skills
 - `Business/` - brand + playbooks
-- `Products/` - boilerplates (`ProKit/`, `SaaSkit/`, `WaaSKit/`)
 - `Operations/` - infrastructure, automations, scripts, snippets, runbooks
 - `Projects/` - project-specific docs
 - `Operations/system-configs/` - curated config files (symlinked, includes Codex config)

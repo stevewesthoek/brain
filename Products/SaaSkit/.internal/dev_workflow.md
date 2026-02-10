@@ -1,3 +1,0 @@
-# SaaSKit Dev Workflow
-
-Placeholder.
