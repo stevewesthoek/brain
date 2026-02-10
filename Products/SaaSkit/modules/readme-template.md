@@ -12,10 +12,16 @@ Use this template only when shipping a new optional module on top of ProKit. Do 
 
 ```bash
 npm install
-npm run db:init -- --slug <slug>
+npm run db:init -- --slug <normalized-slug>
 npm run db:migrate:dev
 npm run dev
 ```
+
+`<normalized-slug>` rule:
+- Start from the repo name.
+- Lowercase it.
+- Remove `-`, `_`, and `.` so it becomes one word.
+- Use this same value for `APP_SLUG`, tenant schema, and tenant user naming.
 
 ## Required environment variables
 

@@ -13,6 +13,13 @@ Standard steps to deploy apps and run migrations safely.
 
 ## Notes
 - `db:init` provisions tenant schema/role only; it must never create a new database.
+- `APP_SLUG` must be the normalized repo name: lowercase, with `-`, `_`, and `.` removed.
+  - Example: `olive-to-organizing` -> `olivetoorganizing`
+  - Example: `says-the-bible` -> `saysthebible`
+  - Example: `prochat` -> `prochat`
+- Tenant naming always follows the normalized slug:
+  - schema: `tenant_<normalized_slug>`
+  - user: `tenant_<normalized_slug>_user`
 - `next start` logs `Local: http://localhost:3000` in container logs; this is expected and not the public URL.
 
 ## Rollback
