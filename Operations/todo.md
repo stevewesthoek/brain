@@ -1,26 +1,26 @@
 TODO
 
+YOUTUBE
+- post tuesday and thursday
+- 15:30
+- immediatly post on Twitter, LinkedIn
+- reply comments (within 2 hours)
+- Add a simple EULA click-acceptance at checkout
+
 PRIORITY
-- pay water bill
-- apply for niss
 - read application Mercedes
-- transfer money Albert
 - clean rusty connector
 - connect the mxweather
+- call Rahmadesh
 
 NEXT
-O make funnel Paraguay
-O react to Joe
 - react to Norbert
-- move websites to new cloudpanel
-- cancel Hetzner
 - start making document Bas
 - clean up email
 
 NICE TO HAVE
 - make Docs website auto update
 - make a Editor for websites Joe & Ashley
-O update ProChat website with Stitch
 
 BACKLOG
 - check message Richard
@@ -30,6 +30,7 @@ BACKLOG
 - MCP / Dokploy-API integration for remote scripted operations.
 
 IDEAS
+- make a whatsapp app
 - youtube nanobanana pro thumbnail creator
 - social media video generator focussed on real estate niche (https://www.youtube.com/watch?v=mnFnu6tGClU)
 	- listings

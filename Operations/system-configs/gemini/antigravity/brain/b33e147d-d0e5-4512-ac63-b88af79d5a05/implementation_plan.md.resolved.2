@@ -1,0 +1,31 @@
+# Implementation Plan - "The SaaS Starting Point" Refinement (v2)
+
+## Goal Description
+Refine the landing page at [src/app/start-here/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/start-here/page.tsx) (recreating it if deleted) to align with the "Preparation vs. Execution" strategy. The new design focuses on clarity, structure, and separating the "thinking" phase (PDF) from the "building" phase (YouTube), using a visual style that matches the "ProChat" premium aesthetic (Light/Navy/Indigo).
+
+## User Review Required
+> [!IMPORTANT]
+> This is a refinement of the previous design. It involves recreating the [page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/page.tsx) file with new copy and structural adjustments.
+> **Critical Change**: Explicit separation in the "What you get" section between PDF (Preparation) and YouTube (Execution).
+
+## Proposed Changes
+
+### Marketing
+#### [RECREATE/MODIFY] [page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/starting-point/page.tsx)
+-   **Hero**: Implement `min-h-[100svh]` split layout.
+    -   New Headline/Subtext.
+    -   Balanced grid columns.
+-   **Audience Section**: Updated copy for "Starting from zero", "Time-constrained", "Niche creator".
+-   **Value Split**: New 2-column layout distinguishing PDF contents vs. YouTube channel contents.
+-   **FAQ**: 5 specific new questions/answers.
+-   **Styles**: Forced light mode (`dark:bg-white`, `dark:text-slate-900`) to ensure contrast.
+
+## Verification Plan
+
+### Manual Verification
+-   **Visual Check**:
+    -   Verify `http://localhost:3000/starting-point`.
+    -   Check 100vh Hero on desktop.
+    -   Check mobile stacking order.
+    -   Verify high contrast (Navy on White).
+    -   Check the distinct "Preparation vs Execution" messaging.

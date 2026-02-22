@@ -81,3 +81,15 @@ Host dokploy
   IdentitiesOnly yes
   ServerAliveInterval 30
   ServerAliveCountMax 3
+
+Host github-personal
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_personal
+  IdentitiesOnly yes
+
+Host github-demo
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_demo
+  IdentitiesOnly yes

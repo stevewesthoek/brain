@@ -36,7 +36,7 @@ theme = Cobalt2
 
 resize-overlay-duration = 4s 200ms
 
-working-directory = "/Users/Office/Repos/Brain"
+working-directory = "Users/Office/Repos/Personal/Brain"
 
 background-opacity = 0.85
 background-blur = 70

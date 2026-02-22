@@ -4,8 +4,8 @@ Single source of truth for:
 - Curated dotfiles/configs I actually want versioned (safe + stable)
 - AI rules, prompts, and playbooks
 - Infrastructure and operations docs
-- Business + brand docs
-- Identity docs (profile/style/theology)
+- Organisation + brand docs
+- Personal docs (profile/style/theology)
 - Project material
 
 # Start Here
@@ -16,15 +16,15 @@ Repo-specific technical documentation lives in each repo (for example: ProKit Co
 
 Read in this order:
 1) README.md (map + config philosophy)
-2) Identity/profile.md, Identity/style.md, Identity/theology.md
-3) Business/conventions.md (folder boundaries + data classification)
+2) Personal/profile.md, Personal/style.md, Personal/theology.md
+3) Organisation/conventions.md (folder boundaries + data classification)
 4) AI/agents.md and AI/prompts/
 5) Operations/ (runbooks + system configs)
 
 ## Top-level map
-- `Identity/` - profile, style, theology
+- `Personal/` - profile, style, theology
 - `AI/` - agents, prompts, providers, skills
-- `Business/` - brand + playbooks
+- `Organisation/` - brand + playbooks
 - `Operations/` - infrastructure, automations, scripts, snippets, runbooks
 - `Projects/` - project-specific docs
 - `Operations/system-configs/` - curated config files (symlinked, includes Codex config)
@@ -32,7 +32,7 @@ Read in this order:
 - `AI/skills/` - canonical skill library (symlinked into AI tools)
 
 ## Ops boundaries (quick)
-See `Business/conventions.md` for details.
+See `Organisation/conventions.md` for details.
 - `runbooks/` - short, repeatable operational procedures
 - `scripts/` - executable automation
 - `snippets/` - small reusable fragments

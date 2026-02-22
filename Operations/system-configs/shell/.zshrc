@@ -29,3 +29,4 @@ export PATH="/Users/Office/.antigravity/antigravity/bin:$PATH"
 
 # Added by Antigravity
 export PATH="/Users/Office/.antigravity/antigravity/bin:$PATH"
+export PATH="$HOME:$PATH"

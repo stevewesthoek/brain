@@ -1,0 +1,73 @@
+# Task: Create "The SaaS Starting Point" Landing Page Design Spec
+
+- [ ] Explore existing codebase styles and configuration <!-- id: 0 -->
+    - [ ] Read [tailwind.config.ts](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/tailwind.config.ts) or [tailwind.config.js](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/old-tailwind.config.js) <!-- id: 1 -->
+    - [ ] Read `src/app/globals.css` <!-- id: 2 -->
+    - [ ] Check [src/app/layout.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/layout.tsx) and [src/app/(marketing)/layout.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/%28marketing%29/layout.tsx) <!-- id: 3 -->
+- [x] Create Design Specification Artifact ([design_spec.md](file:///Users/Office/.gemini/antigravity/brain/b33e147d-d0e5-4512-ac63-b88af79d5a05/design_spec.md)) <!-- id: 4 -->
+    - [x] Layout breakdown <!-- id: 5 -->
+    - [x] Typography system <!-- id: 6 -->
+    - [x] Spacing scale <!-- id: 7 -->
+    - [x] Color usage guide <!-- id: 8 -->
+    - [x] Shadow system <!-- id: 9 -->
+    - [x] Component structure <!-- id: 10 -->
+    - [x] Tailwind-ready class examples <!-- id: 11 -->
+    - [x] Example HTML section structure <!-- id: 12 -->
+    - [x] Accessibility validation notes <!-- id: 13 -->
+- [x] Create Implementation Plan <!-- id: 15 -->
+- [x] Review Design Spec & Plan with User <!-- id: 14 -->
+- [x] Implement Redesign <!-- id: 16 -->
+- [x] Implement Redesign <!-- id: 16 -->
+    - [x] Modify [src/app/start-here/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/start-here/page.tsx) <!-- id: 17 -->
+- [x] Fix Contrast Issues (Force Light Mode) <!-- id: 19 -->
+- [x] Refine Hero Alignment (Balance Height/Width) <!-- id: 20 -->
+- [x] Verify Design <!-- id: 18 -->
+
+# Task: Refine "SaaS Starting Point" Landing Page (v2)
+
+- [x] Update Design Spec & Implementation Plan <!-- id: 21 -->
+    - [x] Incorporate new copy strategy (Preparation vs Execution) <!-- id: 22 -->
+    - [x] Update Layout Spec (100vh Hero, Balanced Grid) <!-- id: 23 -->
+- [x] Implement Refined Landing Page <!-- id: 24 -->
+    - [x] Recreate/Update [src/app/starting-point/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/starting-point/page.tsx) <!-- id: 25 -->
+    - [x] Apply new copy and structure <!-- id: 26 -->
+    - [x] Ensure 100vh Hero & Visual Balance <!-- id: 27 -->
+- [/] Verify Refined Design <!-- id: 28 -->
+- [x] Fix Contrast Issues (Force Light Mode) <!-- id: 19 -->
+- [x] Verify Refined Design (Visual Adjustments Applied) <!-- id: 28 -->
+
+
+# Task: Global Favicon Update
+
+- [x] Locate target favicon ([public/logo/prochat_favicon.ico](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/public/logo/prochat_favicon.ico))
+- [x] Update [src/app/favicon.ico](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/favicon.ico)
+- [x] Update [public/favicon.ico](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/public/favicon.ico)
+- [x] Remove conflicting default icons ([icon.png](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/icon.png), [apple-icon.png](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/apple-icon.png))
+- [x] Clear build cache
+
+# Task: Commit and Push
+
+- [x] Check git status
+- [x] Add all changes
+- [x] Commit with descriptive message
+- [x] Push to `main`
+
+# Task: Fix Store Page Contrast & Revert Docs
+
+- [x] Revert [design_spec.md](file:///Users/Office/.gemini/antigravity/brain/b33e147d-d0e5-4512-ac63-b88af79d5a05/design_spec.md) to previous state
+- [x] Revert [implementation_plan.md](file:///Users/Office/.gemini/antigravity/brain/b33e147d-d0e5-4512-ac63-b88af79d5a05/implementation_plan.md) to previous state
+- [x] Fix contrast in [src/app/store/prokit/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/store/prokit/page.tsx)
+- [x] Fix contrast in [src/app/store/saaskit/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/store/saaskit/page.tsx)
+
+# Task: Update Product Page Copy (ProKit & SaaSkit)
+
+- [x] Update [src/app/store/prokit/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/store/prokit/page.tsx) with new copy
+- [x] Update [src/app/store/saaskit/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/store/saaskit/page.tsx) with new copy
+- [x] Verify no layout/design changes
+
+# Task: Redesign Product Pages (ProKit & SaaSkit)
+
+- [ ] Redesign [src/app/store/prokit/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/store/prokit/page.tsx) (100vh Hero, New Layout, Copy)
+- [ ] Redesign [src/app/store/saaskit/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/store/saaskit/page.tsx) (100vh Hero, New Layout, Copy)
+- [ ] Verify responsiveness and "CTA above fold" requirement
+

@@ -1,0 +1,65 @@
+# Design Specification: "The SaaS Starting Point" Landing Page (v2 Refinement)
+
+## 1. Core Strategy: Preparation vs. Execution
+*   **Concept**: This page is STRICTLY for "Preparation" (The PDF).
+*   **Distinction**:
+    *   **PDF (This Page)**: Homework, Risk Calculation, Ideation, Decision Making.
+    *   **YouTube (External)**: Infrastructure, Coding, Deployment, Vendors.
+*   **Tone**: Calm, Grounded, Pragmatic, Slightly Confrontational ("Structure first"). NO HYPE.
+
+## 2. Layout Breakdown (Refined)
+
+### Hero Section (100vh)
+*   **Height**: Strictly `100vh` (use `min-h-[100svh]`).
+*   **Layout**: Split 50/50.
+    *   **Left**: Headline + Subtext + "Preparation vs Execution" clarification.
+    *   **Right**: Elevated Form Card.
+*   **Spacing**: Generous horizontal padding to create "breathing room".
+
+### "This is for you" Section
+*   **Structure**: 3 Columns.
+*   **Copy Strategy**: Emotional/Specific.
+    *   *Starting from zero*: Identify fear/confusion.
+    *   *Time-constrained*: Identify need for discipline.
+    *   *Creator/Niche*: Identify desire to avoid overbuilding.
+
+### "What you'll get" Section
+*   **Structure**: Split explicitly.
+    *   **Left**: "Inside the PDF" (Preparation).
+    *   **Right**: "On YouTube" (Execution).
+*   **Goal**: Reinforce that the PDF is the prerequisite for the videos.
+
+### FAQ Section
+*   **Questions**:
+    1.  Is this technical?
+    2.  Is this another make-money-fast guide?
+    3.  Do I need money to start?
+    4.  What if I don't have an idea yet?
+    5.  What happens after I download?
+
+## 3. Typography & Visuals
+*   **Font**: `Golos Text` (from codebase).
+*   **Colors**:
+    *   Background: `#F8FAFC` (Slate-50 + Forced Light Mode).
+    *   Text: `#0F172A` (Navy) / `#475569` (Slate).
+    *   Accent: `#4338CA` (Indigo) for CTAs only.
+*   **Visual Balance**:
+    *   Form card must be visually weighty to balance the copy.
+    *   No dark-on-dark contrast.
+
+## 4. Component Structure
+*   `StartPageLayout` (Main)
+    *   `HeroSection` (100vh)
+    *   `AudienceGrid` ("This is for you")
+    *   `ContentSplit` ("What you'll get" - PDF vs YouTube)
+    *   `FAQSection` (Accordions)
+    *   `Footer` (Simple links)
+
+## 5. Copy & Content (Specifics)
+*   **Hero Subtext**: "Prepare before you build. Decide before you deploy."
+*   **Form Micro-copy**: "You'll receive: The PDF immediately, 3 short follow-up emails, Clear next steps."
+*   **Headlines**: "Structure first. SaaS second."
+
+## 6. Accessibility & Responsiveness
+*   **Mobile**: Stacked vertically. Form immediately follows headline.
+*   **Contrast**: Strict AA compliance. Forced light mode styles.

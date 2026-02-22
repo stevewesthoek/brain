@@ -1,0 +1,331 @@
+
+VIDEO 3 SCRIPT
+
+Connect Supabase and Store Real Data (7 Minutes)
+
+Title:
+Connect a Real Database to Your Next.js App (Supabase in 7 Minutes)
+
+⸻
+
+0:00 – FULL FACE (Camera Large)
+
+Say:
+
+“In the last video, we ran our app locally.”
+
+Pause.
+
+“Now we’re connecting a real database and saving actual data.”
+
+Pause.
+
+“No authentication. No complexity. Just one table. One insert. One read.”
+
+Pause.
+
+“Let’s make it real.”
+
+Hard cut.
+
+⸻
+
+0:25 – FULL SCREEN SHARE
+
+Show the working local app from Episode 2.
+
+Say:
+
+“This is running locally on my machine.”
+
+Pause.
+
+“Right now, it doesn’t store anything permanently.”
+
+Pause.
+
+“We’re going to change that.”
+
+⸻
+
+PART 1 – Create Supabase Project
+
+0:50
+
+Open: supabase.com
+
+Click “New Project”.
+
+Say:
+
+“Supabase is a hosted PostgreSQL database. It gives us a real backend without managing servers.”
+
+Keep it simple.
+
+Create project.
+
+Wait for it to initialize.
+
+⸻
+
+1:30 – Get Project Credentials
+
+Open Project Settings → API.
+
+Copy:
+	•	Project URL
+	•	anon public key
+
+Say:
+
+“These two values allow our frontend to talk to the database.”
+
+Pause.
+
+“We’ll store them safely as environment variables.”
+
+⸻
+
+PART 2 – Add Environment Variables
+
+2:00
+
+Open local project.
+
+Open .env.local.
+
+Add:
+
+NEXT_PUBLIC_SUPABASE_URL=your_url_here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key_here
+
+Say:
+
+“Environment variables are configuration values. They prevent us from hardcoding sensitive data.”
+
+Pause.
+
+Save file.
+
+Restart dev server if needed.
+
+⸻
+
+PART 3 – Create Database Table
+
+2:40
+
+Switch back to Supabase.
+
+Open SQL Editor.
+
+Paste:
+
+create table notes (
+  id uuid primary key default gen_random_uuid(),
+  content text not null,
+  created_at timestamp with time zone default now()
+);
+
+Say:
+
+“This creates a simple table called notes.”
+
+Pause.
+
+“One column for content. One timestamp. One ID.”
+
+Click Run.
+
+⸻
+
+PART 4 – Install Supabase Client
+
+3:20
+
+Open terminal.
+
+Run:
+
+npm install @supabase/supabase-js
+
+Say:
+
+“This installs the Supabase client so our app can communicate with the database.”
+
+Let it finish.
+
+⸻
+
+PART 5 – Create Supabase Client File
+
+3:50
+
+Create file: lib/supabaseClient.ts
+
+Add:
+
+import { createClient } from '@supabase/supabase-js'
+
+export const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+Say:
+
+“This initializes the connection using our environment variables.”
+
+Pause.
+
+⸻
+
+PART 6 – Add Simple Insert + Read Logic
+
+4:20
+
+Open homepage file.
+
+Replace content with minimal example:
+
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabaseClient'
+
+export default function Home() {
+  const [notes, setNotes] = useState<any[]>([])
+  const [input, setInput] = useState('')
+
+  async function loadNotes() {
+    const { data } = await supabase
+      .from('notes')
+      .select('*')
+      .order('created_at', { ascending: false })
+    setNotes(data || [])
+  }
+
+  async function addNote() {
+    if (!input) return
+    await supabase.from('notes').insert({ content: input })
+    setInput('')
+    loadNotes()
+  }
+
+  useEffect(() => {
+    loadNotes()
+  }, [])
+
+  return (
+    <main style={{ padding: 40 }}>
+      <h1>Database Connected</h1>
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="Write something"
+      />
+      <button onClick={addNote}>Save</button>
+
+      <ul>
+        {notes.map((note) => (
+          <li key={note.id}>{note.content}</li>
+        ))}
+      </ul>
+    </main>
+  )
+}
+
+Say:
+
+“This is minimal. One input. One button. One list.”
+
+Pause.
+
+“We insert. Then we read.”
+
+Save file.
+
+⸻
+
+PART 7 – Test It
+
+5:40
+
+Refresh browser.
+
+Type:
+
+“First real data”
+
+Click Save.
+
+Pause.
+
+Show it appear in list.
+
+Refresh page.
+
+Pause.
+
+Say:
+
+“And it’s still there.”
+
+Short pause.
+
+“That’s persistence.”
+
+⸻
+
+6:10 – Authority Line
+
+“This is the moment your app becomes real.”
+
+Pause.
+
+“Without data, it’s just a template.”
+
+Pause.
+
+“With data, it’s infrastructure.”
+
+Keep tone calm.
+
+⸻
+
+6:40 – CTA
+
+“If you’re serious about building this safely and not just quickly, start with The SaaS Starting Point.”
+
+Pause.
+
+“It will give you structure before you scale.”
+
+⸻
+
+6:55 – Soft Preview
+
+Stay on screen.
+
+Say:
+
+“In the next video, we’ll deploy this exact database-connected app to production.”
+
+Pause.
+
+“That’s where most beginners break things.”
+
+End.
+
+⸻
+
+Delivery Notes
+	•	Do not explain React.
+	•	Do not explain hooks.
+	•	Do not explain PostgreSQL.
+	•	Do not explain SQL theory.
+	•	Move forward with calm confidence.
+
+If something errors, read the error calmly.
+
+No panic.

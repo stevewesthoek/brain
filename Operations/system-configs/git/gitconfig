@@ -1,3 +1,8 @@
 [user]
 	name = Steve Westhoek
 	email = info@prochat.tools
+[alias]
+	pushall = !git push origin main && git push demo main
+	pushallt = !git push origin --tags && git push demo --tags
+[url "git@github-demo:my-demouser/"]
+	insteadOf = https://github.com/my-demouser/

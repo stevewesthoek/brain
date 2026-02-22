@@ -1,0 +1,201 @@
+
+VIDEO 1 — Final Script (With Node + Anti-Gravity)
+
+⸻
+
+0:00 – 0:25 — Face Cam
+
+“Today I’m going to show you how simple this actually is.
+
+In the next few minutes, we’ll set up the basic tools, deploy a web app to the internet, change something inside the code, and watch it update live.
+
+No chaos.
+No theory.
+Just the real workflow.
+
+My name is Steve. I’m a software tester.
+
+I care about things working — clearly and predictably.
+
+Let’s start.”
+
+Hard cut to screen share.
+
+⸻
+
+0:25 – 0:55 — Tools & Assumptions
+
+“Here’s what we’re using today.
+
+GitHub — that’s where your project lives online.
+Vercel — that’s what puts your project live on the internet.
+Node.js — that allows your computer to run modern web apps.
+Anti-Gravity — that’s where we’ll work with the project using AI.
+
+I’m on macOS.
+If you’re on Windows, the flow is almost identical.
+
+If you don’t have GitHub yet, pause and create an account. It’s free.
+
+Let’s install Node first.”
+
+⸻
+
+0:55 – 1:40 — Install Node.js (Simple)
+
+Open nodejs.org.
+
+“Go to nodejs.org.
+
+Click the LTS version — that stands for Long Term Support.
+
+Download it.
+Install it like any normal application.
+
+That’s it.
+
+You don’t need to understand what Node is yet.
+Just know your computer now understands modern JavaScript projects.”
+
+Pause.
+
+“Now let’s open Anti-Gravity.”
+
+⸻
+
+1:40 – 2:20 — Open Anti-Gravity
+
+Open Anti-Gravity.
+
+“This is where I work.
+
+Instead of memorizing terminal commands, I describe what I want.
+
+You’ll see how simple this can be.”
+
+Pause.
+
+“Now let’s deploy something real.”
+
+⸻
+
+2:20 – 3:40 — Deploy Boilerplate on Vercel
+
+Open vercel.com.
+
+“Log into Vercel.
+
+Click ‘Add New Project.’
+
+We’ll use a template — just a clean starting point.”
+
+Select Next.js starter.
+
+“This is an empty boilerplate.
+That’s intentional.”
+
+Click Deploy.
+
+“We’re not configuring servers.
+We’re not touching infrastructure.
+We’re just deploying.”
+
+Pause during build.
+
+“You don’t need a developer for this.
+You just need to understand the flow.”
+
+Deployment completes.
+
+Open live URL.
+
+“And this is now live on the internet.”
+
+Pause.
+
+⸻
+
+3:40 – 4:30 — Show GitHub Repo
+
+Back to Vercel dashboard.
+
+“Vercel automatically created a GitHub repository for this project.”
+
+Open repository.
+
+“This is the source code behind the site.
+
+This is where we make changes.”
+
+⸻
+
+4:30 – 5:40 — Edit Code in GitHub
+
+Open homepage file.
+
+“I’m going to edit this file directly inside GitHub.”
+
+Click pencil icon.
+
+“I’ll change one line of text.”
+
+Edit headline.
+
+Scroll down.
+
+“Now I commit the change.
+
+A commit is just saving a new version.”
+
+Click Commit.
+
+“That’s it.”
+
+⸻
+
+5:40 – 6:20 — Automatic Redeploy
+
+Switch back to Vercel.
+
+“Now watch this.
+
+Because Vercel is connected to GitHub, it automatically detects the change.”
+
+Show deployment starting.
+
+“Every update triggers a rebuild.”
+
+Pause.
+
+Deployment completes.
+
+Refresh live site.
+
+“And the change is live.”
+
+⸻
+
+6:20 – 6:45 — Confidence & Framing
+
+“Pause for a second.
+
+You installed the basic tools.
+You deployed a project.
+You edited the code.
+You redeployed automatically.
+
+This is the baseline.
+
+Once you understand this loop, you’re no longer dependent on someone else for basic deployment.”
+
+⸻
+
+6:45 – 7:00 — CTA + Preview
+
+“If you’re serious about building this the right way, start with The SaaS Starting Point.
+
+It’s free, and it helps you avoid building in the wrong order.
+
+In the next video, I’ll show you what usually breaks after this step — and how to prevent it.”
+
+End.
