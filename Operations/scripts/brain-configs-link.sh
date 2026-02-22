@@ -196,6 +196,14 @@ ensure_dir "$CONFIGS_DIR/git"
 link_symlink "$HOME_DIR/.gitconfig" "$CONFIGS_DIR/git/gitconfig" "git/gitconfig"
 
 ###############################################################################
+# Git: ~/.gitconfig-demo
+###############################################################################
+say
+say "==> Git: ~/.gitconfig-demo"
+ensure_dir "$CONFIGS_DIR/git"
+link_symlink "$HOME_DIR/.gitconfig-demo" "$CONFIGS_DIR/git/gitconfig-demo" "git/gitconfig-demo"
+
+###############################################################################
 # Shell: ~/.zshrc and ~/.zprofile
 ###############################################################################
 say
@@ -281,6 +289,7 @@ say "==> Verifying symlinks..."
 
 verify_link "$HOME_DIR/.ssh/config"                                  "$CONFIGS_DIR/ssh/config"
 verify_link "$HOME_DIR/.gitconfig"                                   "$CONFIGS_DIR/git/gitconfig"
+verify_link "$HOME_DIR/.gitconfig-demo"                              "$CONFIGS_DIR/git/gitconfig-demo"
 verify_link "$HOME_DIR/.zshrc"                                       "$CONFIGS_DIR/shell/.zshrc"
 verify_link "$HOME_DIR/.zprofile"                                    "$CONFIGS_DIR/shell/.zprofile"
 verify_link "$HOME_DIR/.config/ghostty/config"                       "$CONFIGS_DIR/ghostty/config"

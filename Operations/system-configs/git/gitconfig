@@ -6,3 +6,5 @@
 	pushallt = !git push origin --tags && git push demo --tags
 [url "git@github-demo:my-demouser/"]
 	insteadOf = https://github.com/my-demouser/
+[includeIf "gitdir:/Users/Office/Repos/Demo/"]
+  path = /Users/Office/.gitconfig-demo
