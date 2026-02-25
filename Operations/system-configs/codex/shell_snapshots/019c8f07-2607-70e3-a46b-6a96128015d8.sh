@@ -4404,7 +4404,7 @@ alias run-help=man
 alias supabase='ssh supabase'
 alias which-command=whence
 
-# exports 37
+# exports 36
 export CODEX_INTERNAL_ORIGINATOR_OVERRIDE=codex_vscode
 export COMMAND_MODE=unix2003
 export ELECTRON_RUN_AS_NODE=1
@@ -4423,8 +4423,8 @@ export NVM_INC=/Users/Office/.nvm/versions/node/v24.12.0/include/node
 export OSLogRateLimit=64
 export RUST_LOG=warn
 export SHELL=/bin/zsh
-export SSH_AUTH_SOCK=/private/tmp/com.apple.launchd.eleYz3suon/Listeners
-export STARSHIP_SESSION_KEY=2942714149162113
+export SSH_AUTH_SOCK=/private/tmp/com.apple.launchd.mTCDzvvnVc/Listeners
+export STARSHIP_SESSION_KEY=7438619523726154
 export STARSHIP_SHELL=zsh
 export TERM=xterm-256color
 export TMPDIR=/var/folders/g4/txyv4_ls347fb97r13twxh3c0000gp/T/
@@ -4435,9 +4435,8 @@ export VSCODE_CWD=/
 export VSCODE_ESM_ENTRYPOINT=vs/workbench/api/node/extensionHostProcess
 export VSCODE_HANDLES_UNCAUGHT_ERRORS=true
 export VSCODE_IPC_HOOK='/Users/Office/Library/Application Support/Antigravity/1.10-main.sock'
-export VSCODE_L10N_BUNDLE_LOCATION=''
 export VSCODE_NLS_CONFIG='{"userLocale":"en-us","osLocale":"en-us","resolvedLanguage":"en","defaultMessagesFile":"/Applications/Antigravity.app/Contents/Resources/app/out/nls.messages.json","locale":"en-us","availableLanguages":{}}'
-export VSCODE_PID=22334
+export VSCODE_PID=26686
 export XPC_FLAGS=0x0
 export XPC_SERVICE_NAME=0
 export __CFBundleIdentifier=com.google.antigravity

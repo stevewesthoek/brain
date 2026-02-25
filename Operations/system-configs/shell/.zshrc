@@ -30,3 +30,8 @@ export PATH="/Users/Office/.antigravity/antigravity/bin:$PATH"
 # Added by Antigravity
 export PATH="/Users/Office/.antigravity/antigravity/bin:$PATH"
 export PATH="$HOME:$PATH"
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/Users/Office/.lmstudio/bin"
+# End of LM Studio CLI section
+

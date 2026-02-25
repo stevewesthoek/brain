@@ -1,2 +1,4 @@
 prefix_rule(pattern=["rm", "-f", "PROKIT_NOTICE.md", "src/types/blog.d.ts"], decision="allow")
 prefix_rule(pattern=["rm", "-rf", "public/logo"], decision="allow")
+prefix_rule(pattern=["git", "add"], decision="allow")
+prefix_rule(pattern=["git", "push"], decision="allow")
