@@ -46,6 +46,7 @@ Use these files as primary truth:
 4. Organisation/ecosystem.md → company structure
 5. Organisation/conventions.md → rules and standards
 6. Business/brand-structure.md → brand and positioning
+7. AI/twitter.md → rules for all Twitter output
 
 If conflicts exist → prefer these files.
 
