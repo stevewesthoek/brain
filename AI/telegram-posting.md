@@ -114,3 +114,28 @@ Telegram is the operating console.
 The tweet itself is the payload.
 Everything else is noise.
 
+
+---
+
+## Daily Tweet Review Workflow
+
+When sending the daily 6 tweets in Telegram:
+
+- send only the 6 tweets
+- no metadata
+- no labels
+- no numbering
+- blank line between tweets
+
+If Steve replies with:
+- "try again"
+- "regenerate"
+- "make these more human"
+- "more variation"
+- "more salesy"
+- "less polished"
+- "make one more conversational"
+- "make one more founder-focused"
+
+Then ProBot should regenerate the batch using the existing Twitter rules and stronger variation.
+

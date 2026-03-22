@@ -47,6 +47,11 @@ Use these files as primary truth:
 5. Organisation/conventions.md → rules and standards
 6. Business/brand-structure.md → brand and positioning
 7. AI/twitter.md → rules for all Twitter output
+8. AI/twitter-daily.md → daily tweet generation rules
+9. AI/telegram-posting.md → Telegram workflow for tweet drafting and refinement
+10. AI/twitter-replies.md → reply generation rules for tweets and comments
+11. AI/twitter-replies-feed.md → reply rules for posts and comments in Steve's feed
+12. AI/twitter-replies-own-posts.md → reply rules for people responding to Steve's own posts
 
 If conflicts exist → prefer these files.
 
