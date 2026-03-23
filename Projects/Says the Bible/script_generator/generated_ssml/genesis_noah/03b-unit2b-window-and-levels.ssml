@@ -1,0 +1,37 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.40%" pitch="-2.95%">
+      Genesis even mentions a window near the top of the ark.<break time="500ms"/>
+      A simple opening for light and air.<break time="500ms"/>
+      A reminder that shelter does not mean darkness.<break time="1800ms"/>
+
+      It also speaks of levels within the ark.<break time="500ms"/>
+      Space above, and space below.<break time="500ms"/>
+      A structure made for a long journey.<break time="1800ms"/>
+
+      Noah would have walked up and down those levels.<break time="500ms"/>
+      Checking the rooms as they were finished.<break time="500ms"/>
+      Feeling the strength of the beams beneath his feet.<break time="1000ms"/>
+      Listening to the quiet, before the rain ever came.<break time="1800ms"/>
+
+      Building like this is slow work.<break time="500ms"/>
+      It asks for patience, and attention.<break time="500ms"/>
+      A kind of calm focus, repeated day after day.<break time="1800ms"/>
+
+      And in the middle of all those details, there was a single steady idea.<break time="500ms"/>
+      God was providing a place to be kept safe.<break time="1800ms"/>
+
+      Light was made for the ark.<break time="1000ms"/>
+      God cares about the small details of shelter.<break time="1000ms"/>
+      You are safe in God's care.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

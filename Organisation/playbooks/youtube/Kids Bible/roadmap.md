@@ -102,3 +102,13 @@ Why This Works
 • Audio inventory grows
 • Parents pay for reliability
 • Multilingual scaling easy
+
+Timeline reality (rough)
+
+0–40 audios → ownership products
+40–80 → introduce routine features
+80–150 → subscription makes sense
+150+ → SaaS moat
+
+Not time-based.
+Library-based.

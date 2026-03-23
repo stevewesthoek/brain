@@ -1,0 +1,142 @@
+Manual Setup vs Structured Setup
+Video 9 Script (same tone and structure as Video 1)
+
+Today we’re going to zoom out.
+
+Not add a feature.
+Not wire another service.
+
+We’re going to compare.
+
+Manual setup.
+Versus structured setup.
+
+Here is what we are going to do.
+
+We’ll quickly recap what we wired manually.
+Authentication.
+Database.
+API routes.
+Stripe.
+Custom domain.
+
+Then I’ll show you what comes pre-wired in SaaSKit.
+We’ll look at the time difference.
+And we’ll look at the fragility difference.
+
+No hard sell.
+Just comparison.
+
+The tools are the same as before.
+GitHub.
+Vercel.
+Supabase.
+Stripe.
+And now SaaSKit as a reference.
+
+I assume you followed the previous videos.
+You manually wired everything step by step.
+You saw builds fail.
+You fixed environment variables.
+You connected Stripe.
+You deployed to a custom domain.
+
+My name is Steve.
+I was a professional software tester for over 12 years.
+My job was to verify systems under real production pressure.
+So this comparison is not about convenience.
+It’s about structure.
+
+Let’s recap what you built manually.
+
+You installed Node.
+You connected GitHub to Vercel.
+You deployed a template.
+You added a database.
+You added authentication.
+You added Stripe in test mode.
+You connected a custom domain.
+
+All of that works.
+
+But notice something.
+
+Every single step required decisions.
+Environment variable names.
+Folder structure.
+Route placement.
+Auth protection logic.
+Stripe session handling.
+
+And every decision is a potential weak point.
+
+You saw that in video 4.
+Remove one environment variable.
+Build fails.
+App breaks.
+
+Manual setup is powerful.
+But it is fragile.
+
+Now let’s look at structured setup.
+
+In SaaSKit, authentication is already wired.
+Environment validation is already in place.
+Stripe integration has a defined flow.
+Protected routes follow a pattern.
+Folder structure is opinionated.
+Deployment assumptions are built in.
+
+You don’t start from zero.
+You start from a controlled baseline.
+
+Time difference matters.
+
+Manual setup from scratch can take hours.
+Or days if you hit friction.
+
+Structured setup takes minutes.
+Because decisions are already made.
+And tested.
+
+Fragility difference matters even more.
+
+Manual setup depends on memory.
+Did you forget a key.
+Did you misname a variable.
+Did you protect the route correctly.
+
+Structured setup reduces those moving parts.
+It enforces conventions.
+It narrows freedom.
+But increases stability.
+
+This is the key idea.
+
+Manual wiring teaches you how things work.
+Structured setup lets you move faster without re-solving the same problems.
+
+The manual path you followed in these videos is the controlled baseline.
+
+You now understand the pieces.
+Database.
+Auth.
+Stripe.
+Deployment loop.
+
+SaaSKit is not magic.
+It’s the same infrastructure.
+Pre-wired.
+With guardrails.
+
+You can build everything manually.
+You just proved that.
+
+Or you can start from structure.
+And focus on your feature.
+
+In the next video, we’ll bring this back to the bigger picture.
+Why you should not spend 80 percent of your time wiring infrastructure.
+And where your energy actually belongs.
+
+See you there.

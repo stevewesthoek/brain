@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.25%">
+            In Genesis the story of Abraham begins when the Lord speaks to Abram and tells him to go from his country, his kindred, and his father's house to the land that God will show him.<break time="500ms"/>
+      The Lord joins the command to a promise: He will make Abram a great nation, bless him, make his name great, and through him bless all the families of the earth.<break time="1000ms"/>
+      So Abram goes, as the Lord has told him, and Lot goes with him, while Sarai and all their possessions travel into the land of Canaan.<break time="500ms"/>
+      The story begins not with sight, but with hearing, because Abram moves on the strength of God's word before he owns the land that has been named.<break time="500ms"/>
+      At Shechem the Lord appears and says, To your offspring I will give this land, and Abram builds an altar there to the Lord who had appeared to him.<break time="500ms"/>
+      From the opening, Abraham's life is marked by promise received, journey undertaken, and worship offered in response.<break time="1800ms"/>
+      The story begins with God's steady hand already at work.<break time="1000ms"/>
+      Abram goes because the Lord speaks and promises.<break time="1000ms"/>
+      The life of faith begins with God's word before visible possession.<break time="1000ms"/>
+      You do not need the whole map before trusting the God who speaks.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.25%" pitch="-2.80%">
+            Jesus awakes, rebukes the wind, and says to the sea, Peace. Be still. The command is short, but the authority behind it is immeasurable.<break time="500ms"/>
+      Then the wind ceases, and there is a great calm. Mark does not describe a gradual settling, but a decisive obedience in creation itself.<break time="1000ms"/>
+      The same voice that had called the disciples into the boat now addresses the sea, and the sea obeys.<break time="500ms"/>
+      The storm is not persuaded and it is not negotiated with; it is rebuked.<break time="500ms"/>
+      What the disciples could not master with effort, Christ masters with a word.<break time="500ms"/>
+      This is one of the reasons the story feels so restful once it slows: the power that rules the sea is standing inside the boat with them.<break time="1800ms"/>
+      The turning point comes by God's faithfulness.<break time="1000ms"/>
+      Jesus speaks, and the sea yields to Him.<break time="1000ms"/>
+      The Lord over the storm is greater than the storm itself.<break time="1000ms"/>
+      You are held by One whose word creation obeys.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

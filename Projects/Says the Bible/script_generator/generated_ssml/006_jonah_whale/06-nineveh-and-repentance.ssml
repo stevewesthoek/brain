@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-3.00%">
+            The word of the Lord comes to Jonah the second time, giving the same command to arise and go to Nineveh, and this time Jonah goes according to the word of the Lord.<break time="500ms"/>
+      Nineveh is an exceedingly great city, and Jonah enters it, calling out that in forty days Nineveh shall be overthrown.<break time="500ms"/>
+      Then something astonishing happens: the people of Nineveh believe God, proclaim a fast, and put on sackcloth, from the greatest of them to the least of them.<break time="1000ms"/>
+      Even the king rises from his throne, covers himself with sackcloth, sits in ashes, and calls for all to turn from evil and violence.<break time="500ms"/>
+      When God sees what they do, how they turn from their evil way, He relents of the disaster He said He would do to them, and He does not do it.<break time="500ms"/>
+      The Lord who pursued Jonah across the sea is the same Lord who extends mercy to a city that turns at His warning.<break time="1800ms"/>
+      The Lord continues to care after the crisis.<break time="1000ms"/>
+      Nineveh turns when God speaks, and God responds with mercy.<break time="1000ms"/>
+      The Lord's warnings are not empty threats; they are calls that leave room for repentance.<break time="1000ms"/>
+      God's mercy is larger than your instinct to limit it.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

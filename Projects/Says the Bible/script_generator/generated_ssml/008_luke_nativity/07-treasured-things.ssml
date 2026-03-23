@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+            The shepherds go with haste and find Mary and Joseph, and the baby lying in a manger, exactly as the angel had said.<break time="500ms"/>
+      After seeing Him, they make known the saying that had been told them concerning this child, and all who hear wonder at what the shepherds tell them.<break time="500ms"/>
+      But Mary treasures up all these things, pondering them in her heart, and the shepherds return, glorifying and praising God for all they had heard and seen.<break time="1000ms"/>
+      Luke lets the story settle in wonder, memory, and praise rather than noise.<break time="500ms"/>
+      The child has been announced, seen, and treasured, and the nativity rests in that gentle pattern of revelation received and held.<break time="500ms"/>
+      It is fitting that the story slows with Mary pondering, because the coming of Jesus is not only to be proclaimed, but also quietly kept in the heart.<break time="1800ms"/>
+      The story settles in the gift of God's presence.<break time="1000ms"/>
+      Luke lets the nativity rest in treasuring, pondering, and praise.<break time="1000ms"/>
+      The right response to the birth of Jesus is wonder that remembers.<break time="1000ms"/>
+      You can let the peace of Christ settle slowly within you.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

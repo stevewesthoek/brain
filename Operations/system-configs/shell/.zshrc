@@ -35,3 +35,4 @@ export PATH="$HOME:$PATH"
 export PATH="$PATH:/Users/Office/.lmstudio/bin"
 # End of LM Studio CLI section
 
+alias probot="ssh probot"

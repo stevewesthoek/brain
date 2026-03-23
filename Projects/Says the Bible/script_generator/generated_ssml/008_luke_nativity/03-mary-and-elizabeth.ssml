@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.40%">
+            Mary rises and goes with haste into the hill country to the house of Zechariah and Elizabeth, carrying the promise in her body and the angel's words in her mind.<break time="500ms"/>
+      When Elizabeth hears Mary's greeting, the baby leaps in her womb, and Elizabeth is filled with the Holy Spirit.<break time="500ms"/>
+      She blesses Mary among women and blesses the fruit of her womb, calling her the mother of her Lord.<break time="1000ms"/>
+      Mary answers with praise, magnifying the Lord and rejoicing in God her Saviour, because He has looked on the humble estate of His servant.<break time="500ms"/>
+      Luke lets joy move through this meeting without noise or hurry, as if the promised child is already making hearts alive before He is born.<break time="500ms"/>
+      Mary remains there about three months, and the waiting is filled not with emptiness, but with remembered promise and quiet praise.<break time="1800ms"/>
+      The Lord is already present before the outcome is seen.<break time="1000ms"/>
+      Before Bethlehem, there is a household filled with recognition and praise.<break time="1000ms"/>
+      The coming of Jesus brings joy before the world fully knows His name.<break time="1000ms"/>
+      You can let quiet praise hold the waiting season.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

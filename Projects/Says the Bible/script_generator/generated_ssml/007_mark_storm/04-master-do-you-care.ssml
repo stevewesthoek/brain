@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.60%">
+            The disciples wake Him with a question that gathers panic into one sentence: Teacher, do You not care that we are perishing?<break time="500ms"/>
+      It is an honest question, but it is also a frightened one, because fear often treats delay as indifference and silence as absence.<break time="500ms"/>
+      The disciples are not inventing the danger; the water is real and the wind is real, yet their interpretation of Jesus is not steady.<break time="1000ms"/>
+      They see the waves correctly, but they do not yet see Him correctly.<break time="500ms"/>
+      Mark allows the question to stand in the open, because many readers know the feeling of asking whether the Lord cares when trouble has risen high.<break time="500ms"/>
+      The beauty of the story is that Jesus answers the storm and the fear without leaving the boat or leaving the disciples in their confusion.<break time="1800ms"/>
+      Nothing in this scene is outside God's rule.<break time="1000ms"/>
+      The disciples speak from fear, and Jesus receives that fearful cry inside the boat.<break time="1000ms"/>
+      The presence of panic does not remove the possibility of help.<break time="1000ms"/>
+      You do not need to hide fear before bringing it to Christ.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

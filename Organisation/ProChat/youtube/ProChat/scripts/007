@@ -1,0 +1,131 @@
+Add Stripe in Test Mode (Minimal Billing)
+Video 7 Script (same tone and structure as Video 1)
+
+Today we are going to add payments to this app.
+
+Real payments.
+With Stripe.
+In test mode.
+
+No theory about billing models.
+No pricing psychology.
+Just wiring minimal billing.
+
+Here is what we are going to do.
+We will create a Stripe test account.
+We will add environment variables.
+We will create a simple checkout route.
+We will deploy.
+And we will test a payment.
+
+The tools are the same as before.
+GitHub.
+Vercel.
+Antigravity.
+Supabase.
+And now Stripe.
+
+I assume you already have the app running.
+Database connected.
+Authentication working.
+Deployment stable.
+
+My name is Steve.
+I was a professional software tester for over 12 years.
+My job was to verify that systems behave correctly in production environments.
+So we wire this carefully.
+Minimal.
+Controlled.
+
+Let’s start.
+
+First step.
+Go to Stripe.
+Create an account.
+Switch to test mode.
+
+Inside the dashboard, create a product.
+Give it a name.
+Set a price.
+Monthly or one-time.
+Keep it simple.
+
+Now go to the API keys section.
+Copy the test secret key.
+Copy the publishable key.
+
+Back to our app.
+
+Add two new environment variables.
+Stripe secret key.
+Stripe publishable key.
+
+Add them locally.
+And add them in Vercel.
+
+Next step.
+Install the Stripe SDK in the project.
+
+Now create a simple checkout API route.
+When called, it creates a Stripe checkout session.
+It references the product price ID.
+It sets a success URL.
+And a cancel URL.
+
+Nothing fancy.
+No webhooks yet.
+Just minimal checkout.
+
+On the front end, add one button.
+When clicked, it calls the checkout route.
+And redirects to Stripe’s hosted checkout page.
+
+We test locally first.
+
+Click the button.
+You should be redirected to Stripe’s test checkout.
+Use Stripe’s test card number.
+Confirm payment.
+
+If it succeeds, Stripe redirects you back.
+
+Now we commit.
+
+Clear message.
+Add Stripe checkout in test mode.
+
+Push to GitHub.
+
+Vercel detects the change.
+Builds.
+Deploys.
+
+Now we test in production.
+
+Open the live site.
+Click the checkout button.
+Complete a test payment.
+
+Redirect works.
+No errors.
+Session created.
+
+This is the moment where it changes.
+
+You now have authentication.
+A database.
+API routes.
+Deployment.
+And billing.
+
+This is no longer a toy project.
+
+This feels like a real SaaS.
+
+Still manual.
+Still controlled.
+Still understandable.
+
+In the next video, we’ll tighten this up and talk about what happens after payment and how to verify access properly.
+
+See you there.

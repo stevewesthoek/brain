@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.25%">
+            Matthew begins his light imagery around Jesus' birth with wise men from the east arriving in Jerusalem and asking where the child has been born king of the Jews.<break time="500ms"/>
+      They say they saw His star when it rose and have come to worship Him.<break time="500ms"/>
+      A light in the sky becomes a sign that sends seekers on the road toward the child.<break time="1000ms"/>
+      Matthew does not ask us to explain every detail of the star before we receive its function in the story: it is a God-given guide toward Christ.<break time="500ms"/>
+      Herod is troubled, Jerusalem is troubled with him, but the star belongs to another kind of kingdom and another kind of rule.<break time="500ms"/>
+      The first light in Matthew's story of Jesus is a light that points beyond itself to the One who is to be worshipped.<break time="1800ms"/>
+      The story begins with God's steady hand already at work.<break time="1000ms"/>
+      The star leads the wise men toward the child who is king.<break time="1000ms"/>
+      Light in Matthew first serves the revelation of Christ.<break time="1000ms"/>
+      You can follow the light that points toward Jesus.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

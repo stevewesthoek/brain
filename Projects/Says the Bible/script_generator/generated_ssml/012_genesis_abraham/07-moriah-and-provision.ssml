@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+            In Genesis twenty two God tests Abraham, telling him to take his son, his only son Isaac, whom he loves, and go to the land of Moriah to offer him there on one of the mountains that God will show him.<break time="500ms"/>
+      Abraham rises early, journeys with Isaac, and when Isaac asks where the lamb is, Abraham answers that God will provide for Himself the lamb for a burnt offering.<break time="1000ms"/>
+      At the place God has shown, Abraham builds the altar and stretches out his hand, but the angel of the Lord calls from heaven and tells him not to lay his hand on the boy.<break time="500ms"/>
+      Now I know that you fear God, the angel says, seeing you have not withheld your son, your only son, from Me.<break time="500ms"/>
+      Abraham lifts his eyes and sees a ram caught in a thicket by its horns, and he offers it instead of his son, calling the place The Lord will provide.<break time="500ms"/>
+      The Abraham story comes to one of its deepest points here: trust, surrender, and the provision of God at the place of need.<break time="1800ms"/>
+      The story settles in the gift of God's presence.<break time="1000ms"/>
+      On Moriah, the Lord provides what Abraham cannot produce for himself.<break time="1000ms"/>
+      The God of Abraham remains faithful at the place of testing.<break time="1000ms"/>
+      You can rest in the provision of the Lord.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

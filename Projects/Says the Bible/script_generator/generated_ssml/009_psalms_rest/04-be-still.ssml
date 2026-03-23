@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.60%">
+            Psalm forty six speaks in the middle of upheaval, naming earth that gives way, mountains that move, and waters that roar and foam.<break time="500ms"/>
+      Yet in the centre of that shaking world comes the command, Be still, and know that I am God.<break time="500ms"/>
+      Stillness in this Psalm is not based on pretending the troubles are absent; it comes from knowing who God is in the middle of them.<break time="1000ms"/>
+      The Lord of hosts is with us, the Psalm says. The God of Jacob is our fortress.<break time="500ms"/>
+      So stillness is not vacancy; it is the soul settling under divine reality stronger than the shaking world.<break time="500ms"/>
+      This Psalm allows rest to exist alongside turbulence because God's presence does not depend on outward calm first.<break time="1800ms"/>
+      Nothing in this scene is outside God's rule.<break time="1000ms"/>
+      Psalm forty six places stillness in the knowledge of God's rule and presence.<break time="1000ms"/>
+      The command to be still rests on who God is, not on perfect conditions.<break time="1000ms"/>
+      You can become quiet beneath the steadiness of God.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

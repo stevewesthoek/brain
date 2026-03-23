@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.25%" pitch="-2.80%">
+            From the belly of the fish Jonah prays to the Lord his God, and his prayer sounds like someone who has gone to the depth and discovered that God was already listening there.<break time="500ms"/>
+      He says that out of the belly of Sheol he cried, and the Lord heard his voice; the waters closed in over him, weeds were wrapped about his head, and he went down to the roots of the mountains.<break time="1000ms"/>
+      Yet even there Jonah speaks of the Lord bringing up his life from the pit, and he remembers the Lord when his life is fainting away.<break time="500ms"/>
+      The prayer moves from drowning imagery toward renewed worship, and Jonah says that salvation belongs to the Lord.<break time="500ms"/>
+      At the end of the prayer, the Lord speaks to the fish, and it vomits Jonah out upon the dry land.<break time="500ms"/>
+      The same God who appointed the fish also appoints Jonah's return to the surface, to land, and to the unfinished call.<break time="1800ms"/>
+      The turning point comes by God's faithfulness.<break time="1000ms"/>
+      Jonah is heard from the depth, not only from the shore.<break time="1000ms"/>
+      There is no depth where the Lord stops hearing the cry that turns toward Him.<break time="1000ms"/>
+      You are not unheard in the deep place.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

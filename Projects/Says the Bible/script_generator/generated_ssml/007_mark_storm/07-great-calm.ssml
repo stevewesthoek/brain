@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+            The disciples are filled with great fear and say to one another, Who then is this, that even the wind and the sea obey Him?<break time="500ms"/>
+      Mark ends the scene not with a tidy explanation, but with reverent awe, because the storm has revealed something deeper than danger and rescue alone.<break time="500ms"/>
+      The One in the boat is not only a teacher with wise sayings; He is the Lord whose command reaches the forces that terrify human beings.<break time="1000ms"/>
+      The water becomes quiet, but the bigger stillness comes from seeing more truly who Jesus is.<break time="500ms"/>
+      Once that truth is seen, the storm story becomes more than memory; it becomes a place of trust, because the disciples now know more clearly who is with them.<break time="500ms"/>
+      Mark lets the great calm remain in the air, and it is enough for the story to end there, with Christ revealed and the sea made still.<break time="1800ms"/>
+      The story settles in the gift of God's presence.<break time="1000ms"/>
+      The story ends in awe before the One whom the wind and the sea obey.<break time="1000ms"/>
+      Peace in Mark four is grounded in the identity of Jesus.<break time="1000ms"/>
+      You are safe with the One who commands the storm.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

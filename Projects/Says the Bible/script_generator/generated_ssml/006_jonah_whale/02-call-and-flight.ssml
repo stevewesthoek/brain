@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.25%">
+            The word of the Lord comes to Jonah son of Amittai with a clear command: arise, go to Nineveh, that great city, and call out against it, for its evil has come up before God.<break time="500ms"/>
+      But Jonah rises to flee to Tarshish from the presence of the Lord, going down to Joppa, finding a ship, paying the fare, and stepping aboard to go far in the opposite direction.<break time="1000ms"/>
+      The movement of the story is deliberate: Jonah goes down to the port, down into the ship, and later down into the inner part of it, as if his body is tracing the refusal in his heart.<break time="500ms"/>
+      Nothing in the text suggests confusion about what God asked, because the command is plain and the flight is equally plain.<break time="500ms"/>
+      Jonah does not outrun the Lord by distance, and he does not change the Lord's word by turning away from it.<break time="500ms"/>
+      The book begins with a prophet who hears clearly, resists clearly, and is still met by the God from whom no sea journey can hide him.<break time="1800ms"/>
+      The story begins with God's steady hand already at work.<break time="1000ms"/>
+      Jonah flees from the Lord, but the Lord is already present on the road Jonah chooses.<break time="1000ms"/>
+      Disobedience changes Jonah's direction, but it does not remove God's pursuit.<break time="1000ms"/>
+      You are not beyond the reach of God's searching mercy.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

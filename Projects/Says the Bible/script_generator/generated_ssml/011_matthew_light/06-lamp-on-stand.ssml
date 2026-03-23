@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-3.00%">
+            Jesus continues by saying that people do not light a lamp and put it under a basket, but on a stand, and it gives light to all in the house.<break time="500ms"/>
+      The image is domestic, ordinary, and clear: light is for illumination, not concealment.<break time="500ms"/>
+      Matthew's picture of light moves from star, to dawn, to the lamp set high enough to serve the room around it.<break time="1000ms"/>
+      The disciple is not told to create the flame, but not to hide what God has given.<break time="500ms"/>
+      A lamp on a stand is useful, steady, and quiet, doing its work without noise.<break time="500ms"/>
+      This gentle household image keeps the idea of light from becoming proud, because its purpose remains service.<break time="1800ms"/>
+      The Lord continues to care after the crisis.<break time="1000ms"/>
+      A lamp is placed where its light can serve the house.<break time="1000ms"/>
+      The light Jesus gives is meant for faithful visibility and useful witness.<break time="1000ms"/>
+      You do not need dramatic display to shine faithfully.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

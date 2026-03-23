@@ -1,0 +1,49 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-12.00%" pitch="-3.00%">
+      Then the Psalm reaches the valley.<break time="500ms"/>
+      Even though I walk through the valley of the shadow of death, I will fear no evil.<break time="1000ms"/>
+      For You are with me.<break time="1800ms"/>
+
+      The song does not pretend valleys never come.<break time="500ms"/>
+      It does not deny dim places, narrow places, or long shadows.<break time="500ms"/>
+      But it changes the centre of the scene.<break time="1800ms"/>
+
+      The centre is no longer the valley.<break time="500ms"/>
+      The centre is the Shepherd's presence.<break time="1000ms"/>
+      You are with me.<break time="1800ms"/>
+
+      That is why the line can breathe without panic.<break time="500ms"/>
+      It says walk through.<break time="500ms"/>
+      Not stay forever.<break time="500ms"/>
+      Not be abandoned there.<break time="500ms"/>
+      Walk through, with Someone near enough to say You.<break time="1800ms"/>
+
+      The language changes here as well.<break time="500ms"/>
+      Earlier the song speaks about Him.<break time="500ms"/>
+      In the valley it speaks to Him.<break time="500ms"/>
+      You are with me.<break time="1000ms"/>
+      Trouble narrows the world, but presence becomes more intimate.<break time="1800ms"/>
+
+      Because the Shepherd is near, the shadow remains a shadow.<break time="500ms"/>
+      It can darken the road, but it cannot become the Shepherd.<break time="1800ms"/>
+
+      The valley does not get the last word in Psalm twenty three.<break time="500ms"/>
+      Presence does.<break time="500ms"/>
+      Nearness does.<break time="500ms"/>
+      The Shepherd's companionship does.<break time="1800ms"/>
+
+      The valley may be real.<break time="1000ms"/>
+      The Shepherd's nearness is more central still.<break time="1000ms"/>
+      You do not walk the dark alone.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

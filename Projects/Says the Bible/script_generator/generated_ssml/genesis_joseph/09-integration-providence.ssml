@@ -1,0 +1,37 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-14.00%" pitch="-3.80%">
+      Joseph's story says that God can work underneath what we do not understand.<break time="1800ms"/>
+      Quietly.<break time="1800ms"/>
+      Patiently.<break time="1800ms"/>
+
+      What others meant for harm did not have the final word.<break time="1800ms"/>
+      Preservation came through famine.<break time="1800ms"/>
+      Mercy came through tears.<break time="1800ms"/>
+      Bread came through years of preparation.<break time="1800ms"/>
+
+      You are not forgotten in waiting.<break time="3800ms"/>
+      You are not unseen in the long middle.<break time="1800ms"/>
+      You are not outside God's patient care.<break time="3800ms"/>
+
+      Let your thoughts grow smaller now.<break time="1800ms"/>
+      Let your breathing slow now.<break time="1800ms"/>
+      Let the story settle into one simple truth.<break time="3800ms"/>
+
+      God is present in the waiting.<break time="1800ms"/>
+      Even now.<break time="1800ms"/>
+      Even here.<break time="1800ms"/>
+      Even in the unfinished part.<break time="3800ms"/>
+      You are safe in God's care.<break time="3800ms"/>
+      You can rest.<break time="9000ms"/>
+      You can rest.<break time="9000ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-3.00%">
+            Genesis twenty one opens with one of Scripture's most restful fulfilment lines: The Lord visited Sarah as He had said, and the Lord did to Sarah as He had promised.<break time="500ms"/>
+      Sarah conceives and bears Abraham a son in his old age at the time of which God had spoken to him.<break time="500ms"/>
+      Abraham calls the name of his son Isaac, and Sarah says that God has made laughter for her, and everyone who hears will laugh over her.<break time="1000ms"/>
+      The promise that once sounded impossible is now held in human arms.<break time="500ms"/>
+      Genesis is careful to tie the event to what God had said, as He had promised, at the appointed time, because the birth is a fulfilment before it is merely a surprise.<break time="500ms"/>
+      Isaac's birth teaches that the Lord's word can be slow without becoming uncertain.<break time="1800ms"/>
+      The Lord continues to care after the crisis.<break time="1000ms"/>
+      Isaac is born exactly in the line of God's spoken promise.<break time="1000ms"/>
+      Delayed fulfilment is still fulfilment when the Lord has spoken.<break time="1000ms"/>
+      You do not need to force what God is able to bring in His time.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

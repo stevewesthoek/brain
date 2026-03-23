@@ -1,0 +1,47 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.50%" pitch="-3.60%">
+      Now the story image can grow quiet.<break time="1800ms"/>
+      No new scene is needed.<break time="1800ms"/>
+      Only the Shepherd's steady truth.<break time="1800ms"/>
+
+      The Lord is your Shepherd.<break time="1800ms"/>
+      He leads without rushing.<break time="1800ms"/>
+      He provides without noise.<break time="1800ms"/>
+      He restores what is tired.<break time="1800ms"/>
+
+      He stays near in the valley.<break time="1800ms"/>
+      He guards and guides.<break time="1800ms"/>
+      He prepares peace.<break time="1800ms"/>
+      He brings His people home.<break time="1800ms"/>
+
+      The Shepherd is not temporary.<break time="1800ms"/>
+      His care is not a brief mood.<break time="1800ms"/>
+      His guidance does not fade when night comes.<break time="1800ms"/>
+
+      He does not lose sight of His flock.<break time="1800ms"/>
+      He does not abandon the weary.<break time="1800ms"/>
+      He does not forget the slow.<break time="1800ms"/>
+
+      You are not forgotten in the night.<break time="1800ms"/>
+      You are not unled.<break time="1800ms"/>
+      You are not outside His attention.<break time="1800ms"/>
+
+      You are safe in the Shepherd's care.<break time="3800ms"/>
+      Your next breath can be slower now.<break time="1800ms"/>
+      Your body can be softer now.<break time="1800ms"/>
+      Your thoughts can grow less bright now.<break time="3800ms"/>
+
+      The Shepherd is near.<break time="1800ms"/>
+      You are safe in the Shepherd's care.<break time="3800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

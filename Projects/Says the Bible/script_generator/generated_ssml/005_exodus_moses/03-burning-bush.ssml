@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.40%">
+            Years later Moses is keeping the flock of Jethro in the wilderness, and he comes to Horeb, the mountain of God, where he sees a bush that burns without being consumed.<break time="500ms"/>
+      He turns aside to see this great sight, and from the bush the Lord calls his name, saying, Moses, Moses, and Moses answers, Here I am.<break time="500ms"/>
+      God tells him not to come near, but to take off his sandals, because the place where he is standing is holy ground.<break time="1000ms"/>
+      Then the Lord speaks plainly: He has seen the affliction of His people in Egypt, heard their cry, and knows their sufferings.<break time="500ms"/>
+      He has come down to deliver them and to bring them into a good and broad land, and Moses is told that he will be sent to Pharaoh.<break time="500ms"/>
+      When Moses asks the name of the One who sends him, God answers with steady mystery, I AM WHO I AM, and promises, I will be with you.<break time="1800ms"/>
+      The Lord is already present before the outcome is seen.<break time="1000ms"/>
+      At the bush, Moses learns that God sees, hears, knows, and comes near.<break time="1000ms"/>
+      Deliverance begins with the presence of the Lord, not with the strength of the servant.<break time="1000ms"/>
+      You are not asked to carry what only God can carry.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

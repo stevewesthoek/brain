@@ -1,0 +1,41 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.25%" pitch="-2.90%">
+      As the ark rose, it would have taken time.<break time="500ms"/>
+      Not a single day of work, but many ordinary days.<break time="500ms"/>
+      Boards shaped and set into place.<break time="500ms"/>
+      Measurements checked, and checked again.<break time="1800ms"/>
+
+      Imagine the sound of tools.<break time="500ms"/>
+      The steady strike, and the scrape of wood.<break time="500ms"/>
+      The patient building of rooms within the ark.<break time="1000ms"/>
+      Spaces for rest.<break time="500ms"/>
+      Spaces for food.<break time="500ms"/>
+      Spaces for living creatures to be kept safe.<break time="1800ms"/>
+
+      Genesis speaks of covering the ark with pitch.<break time="500ms"/>
+      A simple, practical sealing.<break time="500ms"/>
+      So the waters would stay outside, and life would stay within.<break time="1800ms"/>
+
+      Noah and his family would have gathered supplies.<break time="500ms"/>
+      Grain and dried food.<break time="500ms"/>
+      Water stored carefully.<break time="500ms"/>
+      Simple provisions for long days.<break time="1800ms"/>
+
+      None of it was dramatic.<break time="500ms"/>
+      It was steady preparation.<break time="1800ms"/>
+
+      A shelter is built by small faithful actions.<break time="1000ms"/>
+      God is not hurried in His care.<break time="1000ms"/>
+      You can do less than you think, and still be held.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

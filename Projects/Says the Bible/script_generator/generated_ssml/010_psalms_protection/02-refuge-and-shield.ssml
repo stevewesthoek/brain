@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.25%">
+            The Psalms often speak of protection not as an abstract idea, but as refuge, shield, rock, and dwelling place.<break time="500ms"/>
+      Psalm three says, You, O Lord, are a shield about me, my glory, and the lifter of my head.<break time="500ms"/>
+      A shield is close, not distant. It belongs in the space where danger would otherwise strike.<break time="1000ms"/>
+      The Psalmist does not claim to be fearless by temperament; he confesses the Lord as the one who surrounds and keeps him.<break time="500ms"/>
+      Again and again in the Psalms, protection is not first about the strength of the worshipper, but about the nearness of God around the worshipper.<break time="500ms"/>
+      The image of shield teaches the heart that divine care can be both personal and present.<break time="1800ms"/>
+      The story begins with God's steady hand already at work.<break time="1000ms"/>
+      The Lord is described as a shield around His servant.<break time="1000ms"/>
+      Protection in the Psalms is close, surrounding care from God Himself.<break time="1000ms"/>
+      You do not stand unguarded before the Lord.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

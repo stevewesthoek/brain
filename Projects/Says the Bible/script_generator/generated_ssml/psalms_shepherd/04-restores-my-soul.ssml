@@ -1,0 +1,49 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.75%">
+      The song keeps moving, but it moves without strain.<break time="500ms"/>
+      He restores my soul.<break time="1000ms"/>
+      He leads me in paths of righteousness for His name's sake.<break time="1800ms"/>
+
+      Restoration in the Psalms is often quiet.<break time="500ms"/>
+      A returning.<break time="500ms"/>
+      A gathering back together.<break time="500ms"/>
+      A life that has been stretched thin becoming whole again.<break time="1800ms"/>
+
+      The Shepherd does not leave the sheep to find the right road alone.<break time="500ms"/>
+      He leads in paths that are steady and true.<break time="500ms"/>
+      Paths that fit His character.<break time="500ms"/>
+      Paths that do not depend on panic for their direction.<break time="1800ms"/>
+
+      Imagine the feel of an even trail under quiet feet.<break time="500ms"/>
+      No sharp rush.<break time="500ms"/>
+      No need to sprint ahead.<break time="500ms"/>
+      Just the next step, and then the next one, under the Shepherd's eye.<break time="1800ms"/>
+
+      And if the soul has felt scattered, the Psalm does not say restore yourself.<break time="500ms"/>
+      It says He restores.<break time="500ms"/>
+      The Shepherd takes the first faithful action toward wholeness.<break time="1800ms"/>
+
+      And the paths of righteousness are often ordinary paths.<break time="500ms"/>
+      Quiet paths.<break time="500ms"/>
+      Faithful paths.<break time="500ms"/>
+      Paths made of small steps more than dramatic leaps.<break time="1800ms"/>
+
+      He restores what has been tired.<break time="500ms"/>
+      He leads what has been uncertain.<break time="500ms"/>
+      He stays faithful to His own name while He does it.<break time="1800ms"/>
+
+      Restoration is not far from you when the Shepherd is near.<break time="1000ms"/>
+      Right paths do not need frantic speed.<break time="1000ms"/>
+      You are safe in the Shepherd's care.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

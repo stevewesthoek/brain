@@ -1,0 +1,27 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.40%">
+            Now the story can become simple.<break time="1800ms"/>
+      No new scene is needed.<break time="1800ms"/>
+      The same truth remains.<break time="1800ms"/>
+      The Lord is still faithful.<break time="1800ms"/>
+      The star led to Jesus.<break time="1800ms"/>
+      The wise men worshipped the child.<break time="1800ms"/>
+      A great light dawned in Galilee.<break time="1800ms"/>
+      Jesus called His people the light of the world.<break time="1800ms"/>
+      The lamp was set on a stand.<break time="1800ms"/>
+      Good works were meant to glorify the Father.<break time="1800ms"/>
+      You are called to walk in His light.<break time="3800ms"/>
+      You are safe in the light of Christ.<break time="3800ms"/>
+      You do not have to carry anything more from the story.<break time="3800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

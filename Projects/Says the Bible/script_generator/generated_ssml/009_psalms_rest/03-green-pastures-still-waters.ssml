@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.40%">
+            Psalm twenty three speaks of the Lord as Shepherd, and one of the first movements of that Psalm is toward green pastures and still waters.<break time="500ms"/>
+      These are not frantic images and they are not crowded images; they are the places where a creature is fed and calmed under attentive care.<break time="500ms"/>
+      He makes me lie down in green pastures, David says, and that verb makes is gentle authority, not harsh force.<break time="1000ms"/>
+      The Shepherd leads beside still waters, because rest needs both provision and quiet, both enoughness and calm.<break time="500ms"/>
+      The Psalm teaches the heart to imagine the Lord not as distant from fatigue, but as the One who leads the tired body into a place of settled care.<break time="500ms"/>
+      When the Psalms speak of rest, they often do so with images of nearness and guidance rather than self-created escape.<break time="1800ms"/>
+      The Lord is already present before the outcome is seen.<break time="1000ms"/>
+      The Shepherd leads toward places where rest can be received.<break time="1000ms"/>
+      God's rest is not empty silence alone; it is cared-for stillness.<break time="1000ms"/>
+      You are safe in the Shepherd's leading.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,20 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.50%" pitch="-3.60%">
+      Now the story path can grow quiet.<break time="1800ms"/>
+      No new Psalm is needed.<break time="1800ms"/>
+      Only the truths that remained beneath them all.<break time="1800ms"/>
+      The Lord leads beside still waters.<break time="1800ms"/>
+      The Lord gives safety for sleep.<break time="1800ms"/>
+      The Lord calls the heart to be still.<break time="1800ms"/>
+      The Lord receives the waiting soul.<break time="1800ms"/>
+      The Lord calms and quiets the heart.<break time="1800ms"/>
+      The Lord gives sleep to His beloved.<break time="1800ms"/>
+      You are safe in His care.<break time="3800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,16 +1,3 @@
-# SSH to CloudPanel server via Cloudflare Tunnel
-Host cloudpanel
-  HostName ssh_cp.prochat.tools
-  ProxyCommand /opt/homebrew/bin/cloudflared access ssh --hostname %h
-  User master
-  IdentityFile ~/.ssh/id_ed25519
-  IdentitiesOnly yes
-
-# Azure CloudPanel via Tailscale
-Host cloudpanel
-  HostName 100.67.211.120
-  User master
-
 # SSH to Dokploy over Tailscale
 #Host dokploy
 #  HostName 100.108.85.31
@@ -27,6 +14,20 @@ Host cloudpanel
 #  IdentityFile ~/.ssh/dokploy_master_key.pem
 #  IdentitiesOnly yes
 
+#Host Dokploy
+#    HostName dokploy.prochat.tools
+#    User master
+#    IdentityFile ~/.ssh/dokploy_master_key.pem
+#    IdentitiesOnly yes # Optional: Ensures only this identity file is tried
+
+Host dokploy
+  HostName 100.83.38.48
+  User master
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
+
 # Supabase via Tailscale (preferred)
 Host supabase
   HostName 100.71.31.88
@@ -40,6 +41,14 @@ Host supabase
 #  ProxyCommand /opt/homebrew/bin/cloudflared access ssh --hostname %h
 #  User master
 
+# SSH to CloudPanel server via Cloudflare Tunnel
+Host cloudpanel
+  HostName ssh_cp.prochat.tools
+  ProxyCommand /opt/homebrew/bin/cloudflared access ssh --hostname %h
+  User master
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+
 # If you still need direct SSH access via the old hostname (cp.prochat.tools)
 # and it's an A record (not through tunnel), keep this block.
 # Otherwise, you can remove it.
@@ -49,12 +58,6 @@ Host supabase
 #    Port 22
 #    IdentityFile ~/.ssh/id_ed25519
 #    IdentitiesOnly yes
-
-#Host Dokploy
-#    HostName dokploy.prochat.tools
-#    User master
-#    IdentityFile ~/.ssh/dokploy_master_key.pem
-#    IdentitiesOnly yes # Optional: Ensures only this identity file is tried
 
 Host *
   AddKeysToAgent yes
@@ -74,14 +77,6 @@ Match host office exec "/usr/bin/nc -G 1 -z 192.168.2.1 22"
   HostName 192.168.2.1
   ConnectTimeout 2
 
-Host dokploy
-  HostName 100.83.38.48
-  User master
-  IdentityFile ~/.ssh/id_ed25519
-  IdentitiesOnly yes
-  ServerAliveInterval 30
-  ServerAliveCountMax 3
-
 Host github-personal
   HostName github.com
   User git
@@ -93,3 +88,10 @@ Host github-demo
   User git
   IdentityFile ~/.ssh/github_demo
   IdentitiesOnly yes
+
+Host probot ProBot openclaw
+  HostName 100.101.212.108
+  User ubuntu
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
+  ConnectTimeout 5

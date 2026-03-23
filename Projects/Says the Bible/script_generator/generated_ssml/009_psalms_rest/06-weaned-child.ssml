@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-3.00%">
+            Psalm one hundred and thirty one is small, but its stillness is deep. The Psalmist says his heart is not lifted up and his eyes are not raised too high.<break time="500ms"/>
+      He does not occupy himself with things too great and too marvellous for him, and then comes the image that has soothed many listeners: a weaned child with its mother.<break time="500ms"/>
+      Like a weaned child with its mother, so is my soul within me.<break time="1000ms"/>
+      The image is not frantic dependence, but quiet closeness, a presence where hunger has softened and striving has gone quiet.<break time="500ms"/>
+      Psalm one hundred and thirty one gives permission to stop reaching for what is beyond our size and to rest instead in humble nearness.<break time="500ms"/>
+      That childlike stillness is not immaturity; it is a mature refusal to carry what belongs to God alone.<break time="1800ms"/>
+      The Lord continues to care after the crisis.<break time="1000ms"/>
+      The Psalm offers the image of a soul quieted like a weaned child with its mother.<break time="1000ms"/>
+      Rest grows where pride lowers and nearness is enough.<break time="1000ms"/>
+      You can release what is too high for you and become quiet before God.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

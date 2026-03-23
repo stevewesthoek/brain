@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-12.00%" pitch="-3.00%">
+      In prison, Joseph met two servants of Pharaoh.<break time="500ms"/>
+      The chief cupbearer and the chief baker.<break time="500ms"/>
+      Each one dreamed in the night and woke troubled by what had been seen.<break time="1800ms"/>
+
+      Joseph listened carefully.<break time="500ms"/>
+      He said that interpretations belong to God.<break time="500ms"/>
+      Then he spoke what the dreams meant.<break time="1800ms"/>
+
+      The meanings came to pass just as he had said.<break time="500ms"/>
+      And Joseph asked the cupbearer to remember him when he returned to Pharaoh's house.<break time="1000ms"/>
+      A simple request.<break time="500ms"/>
+      Please do not leave me here forgotten.<break time="1800ms"/>
+
+      But the cupbearer did forget him.<break time="500ms"/>
+      Not for a day only.<break time="500ms"/>
+      For two full years.<break time="1000ms"/>
+      Time moved slowly in that place.<break time="1800ms"/>
+
+      Morning after morning, the same walls would have met his eyes.<break time="500ms"/>
+      Yet the Lord had not misplaced him there.<break time="1800ms"/>
+
+      This may be the quietest part of Joseph's story.<break time="500ms"/>
+      No robe.<break time="500ms"/>
+      No field.<break time="500ms"/>
+      No sudden rescue.<break time="500ms"/>
+      Only waiting that seemed to stretch on and on.<break time="1800ms"/>
+
+      Forgotten by people does not mean forgotten by God.<break time="1000ms"/>
+      The hidden years are still years held by Him.<break time="1000ms"/>
+      You are not forgotten in waiting.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

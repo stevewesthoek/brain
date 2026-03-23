@@ -1,0 +1,142 @@
+What Changes When Structure Is Pre-Wired
+Video 10 Script (same tone and structure as Video 1)
+
+Today we are not adding anything new.
+
+We are changing perspective.
+
+You already wired authentication.
+You wired a database.
+You wired Stripe.
+You deployed.
+You connected a domain.
+
+Now we ask a different question.
+
+What changes when structure is pre-wired?
+
+Here is what we are going to look at.
+
+Authentication already included.
+Billing already included.
+A dashboard already included.
+Guardrails already included.
+
+This is the transition moment.
+
+The tools are the same.
+Next.js.
+Vercel.
+Supabase.
+Stripe.
+
+But now we look at them through a structured system.
+
+I assume you have gone through the manual setup.
+You saw how many steps it takes.
+You saw how easy it is to misconfigure something.
+You saw how small mistakes can break builds.
+
+My name is Steve.
+I was a professional software tester for over 12 years.
+My job was not to make demos look good.
+My job was to verify systems under pressure.
+So this is about stability.
+Not hype.
+
+Let’s start with authentication.
+
+In the manual version, you installed it.
+Configured it.
+Protected routes manually.
+Handled sessions.
+
+In a pre-wired structure, authentication is already in place.
+Login flow defined.
+Session handling defined.
+Protected route pattern defined.
+
+You don’t decide where to put it.
+It already has a place.
+
+Now billing.
+
+Manually, you created products in Stripe.
+Added environment variables.
+Built a checkout route.
+Tested redirects.
+
+In a structured setup, billing is already integrated.
+Checkout logic defined.
+Success flow defined.
+Access control tied to subscription state.
+
+You don’t invent the billing architecture.
+You plug into it.
+
+Now the dashboard.
+
+Manually, you would have to design it.
+Add layout.
+Handle navigation.
+Decide folder structure.
+
+In a structured setup, a dashboard exists.
+Layout defined.
+Navigation pattern defined.
+User context already wired.
+
+You don’t start with a blank canvas.
+You start with a controlled environment.
+
+Now the most important part.
+
+Guardrails.
+
+Manual setup gives you freedom.
+But freedom without structure creates fragility.
+
+Pre-wired structure limits your choices.
+But it reduces risk.
+
+Environment variables validated.
+Folder structure opinionated.
+Patterns enforced.
+Common mistakes already handled.
+
+This changes how you build.
+
+Instead of thinking about infrastructure,
+You think about your feature.
+
+Instead of asking,
+Did I wire auth correctly,
+You ask,
+Does this feature solve a real problem.
+
+Instead of debugging Stripe sessions,
+You refine onboarding.
+
+This is the shift.
+
+Manual setup teaches you the mechanics.
+Structured setup gives you leverage.
+
+Authority comes from understanding both.
+
+You now know how everything works under the hood.
+So when you use a structured system,
+You are not dependent.
+You are deliberate.
+
+This is where product and infrastructure align.
+
+From here on, the question is no longer
+Can I wire this.
+
+The question becomes
+What should I build.
+
+That’s the real transition.
+
+And that’s where serious SaaS actually begins.

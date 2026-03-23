@@ -1,0 +1,35 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.25%">
+      At last, the ground was dry.<break time="500ms"/>
+      God told Noah to come out of the ark.<break time="1000ms"/>
+      Noah and his family stepped into open air.<break time="500ms"/>
+      And the living creatures went out too.<break time="1800ms"/>
+
+      The long season of floating was over.<break time="500ms"/>
+      Now there was land beneath their feet.<break time="1800ms"/>
+
+      Noah built an altar and worshipped.<break time="500ms"/>
+      And God spoke again.<break time="1000ms"/>
+      A promise, that the flood would not be the pattern forever.<break time="1000ms"/>
+      That seasons would continue.<break time="500ms"/>
+      That the earth would have its rhythms.<break time="1800ms"/>
+
+      And God set a sign in the sky.<break time="500ms"/>
+      A rainbow.<break time="1000ms"/>
+      A gentle reminder of His promise.<break time="1800ms"/>
+
+      Dry ground returned, and life began again.<break time="1000ms"/>
+      God keeps His promises.<break time="1000ms"/>
+      You are safe in God's care.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

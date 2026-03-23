@@ -1,0 +1,48 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.25%">
+      Psalm twenty three opens with a line that feels like a door quietly opening.<break time="500ms"/>
+      The Lord is my shepherd.<break time="1000ms"/>
+      I shall not want.<break time="1800ms"/>
+
+      In that one sentence, the Psalm gives us a whole world.<break time="500ms"/>
+      Not a field of fear.<break time="500ms"/>
+      Not a path of confusion.<break time="500ms"/>
+      But a place where someone strong, watchful, and kind is leading the way.<break time="1800ms"/>
+
+      A shepherd notices what the sheep cannot see from their low place on the ground.<break time="500ms"/>
+      He knows where the grass is good.<break time="500ms"/>
+      He knows where the ground dips suddenly.<break time="500ms"/>
+      He knows when the weather is shifting.<break time="500ms"/>
+      He walks ahead with calm attention.<break time="1800ms"/>
+
+      The Psalms return to this image again and again.<break time="500ms"/>
+      We are the people of His pasture.<break time="1000ms"/>
+      The sheep under His hand.<break time="1800ms"/>
+
+      So the song begins with belonging.<break time="500ms"/>
+      Before movement.<break time="500ms"/>
+      Before comfort.<break time="500ms"/>
+      Before homecoming.<break time="500ms"/>
+      There is belonging.<break time="1800ms"/>
+
+      And when evening comes, a shepherd counts again.<break time="500ms"/>
+      Not because the sheep earned their safety.<break time="500ms"/>
+      But because care keeps watch to the end of the day.<break time="1000ms"/>
+      In this Psalm, the first comfort is simple.<break time="500ms"/>
+      Someone kind is responsible for the keeping of the flock.<break time="1800ms"/>
+
+      The Shepherd knows His own.<break time="1000ms"/>
+      His care means you do not have to live in inward lack.<break time="1000ms"/>
+      You are safe in the Shepherd's care.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

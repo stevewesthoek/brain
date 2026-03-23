@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.00%" pitch="-2.00%">
+      Take a slow breath in.<break time="500ms"/>
+      And let it out gently.<break time="1000ms"/>
+      Again, breathe in.<break time="500ms"/>
+      And breathe out.<break time="1800ms"/>
+
+      Let the muscles around your eyes soften.<break time="500ms"/>
+      Let your hands rest.<break time="500ms"/>
+      Let the day begin to loosen its hold.<break time="1000ms"/>
+      There is nowhere you need to hurry now.<break time="1800ms"/>
+
+      Tonight we will listen to a story from Genesis.<break time="500ms"/>
+      The story of Joseph.<break time="1000ms"/>
+      A story of dreams, long waiting, hidden work, and a goodness that took time to be seen.<break time="1800ms"/>
+
+      This is not a story that rushes.<break time="500ms"/>
+      It moves through fields, through roads, through rooms, through prison walls, and into peace.<break time="1000ms"/>
+      And beneath every change, one quiet truth remains.<break time="1800ms"/>
+
+      God does not forget the one who is waiting.<break time="1000ms"/>
+      God does not lose sight of the unseen years.<break time="1800ms"/>
+
+      Years can pass and still be held by Him.<break time="500ms"/>
+      Places can change and still be held by Him.<break time="500ms"/>
+      The waiting heart can be held as well.<break time="1800ms"/>
+
+      So you do not need to hold the whole story in your mind.<break time="500ms"/>
+      You only need to let it move slowly around you.<break time="500ms"/>
+      One calm sentence at a time.<break time="1000ms"/>
+      One gentle breath at a time.<break time="1800ms"/>
+
+      Tonight, remember this as we begin.<break time="500ms"/>
+      You are not forgotten in waiting.<break time="1000ms"/>
+      You are safe in God's care.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

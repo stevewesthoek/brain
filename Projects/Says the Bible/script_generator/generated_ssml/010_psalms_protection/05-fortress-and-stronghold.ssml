@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.25%" pitch="-2.80%">
+            Psalm eighteen calls the Lord my rock and my fortress and my deliverer, my God, my rock, in whom I take refuge.<break time="500ms"/>
+      Psalm thirty one says, You are my rock and my fortress, and for Your name's sake You lead me and guide me.<break time="500ms"/>
+      A fortress in the Psalms is not merely defensive architecture; it is a way of naming stability that cannot be easily shaken.<break time="1000ms"/>
+      The Lord is not only shelter after impact; He is the solid place from which the heart can stop sliding.<break time="500ms"/>
+      The language of rock, refuge, and stronghold gives heaviness and permanence to the promise of protection.<break time="500ms"/>
+      When the Psalms repeat these words, they are teaching the soul where true solidity is found.<break time="1800ms"/>
+      The turning point comes by God's faithfulness.<break time="1000ms"/>
+      The Lord is named as rock, fortress, and stronghold.<break time="1000ms"/>
+      Protection includes stability, not only escape.<break time="1000ms"/>
+      You can lean your weight on God without fear of collapse.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

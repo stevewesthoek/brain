@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+            Jesus then says, In the same way, let your light shine before others, so that they may see your good works and give glory to your Father who is in heaven.<break time="500ms"/>
+      The final aim is not admiration for the disciple, but glory for the Father.<break time="500ms"/>
+      Matthew's theology of light is therefore both revealed and reflected: Christ dawns, and His people shine in a way that points upward.<break time="1000ms"/>
+      Good works are described not as private inward sentiment only, but as light-bearing action that can be seen.<break time="500ms"/>
+      The story of light in Matthew moves from heaven's sign to earth's witness, from the star to the house, from the child to the disciple.<break time="500ms"/>
+      And yet the centre never changes, because all true light in the Gospel is ordered toward the honour of God through Jesus Christ.<break time="1800ms"/>
+      The story settles in the gift of God's presence.<break time="1000ms"/>
+      Light in Matthew finally points away from self and toward the glory of the Father.<break time="1000ms"/>
+      The purpose of shining is witness, not self-exaltation.<break time="1000ms"/>
+      You can live quietly faithful and let that light point beyond you.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

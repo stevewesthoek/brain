@@ -1,0 +1,38 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.25%">
+      Joseph begins as a young son in the house of Jacob.<break time="500ms"/>
+      His father loved him deeply.<break time="500ms"/>
+      He was given a special robe.<break time="500ms"/>
+      And his brothers saw that he was set apart.<break time="1800ms"/>
+
+      Then Joseph dreamed dreams that stayed bright in the mind.<break time="500ms"/>
+      In one dream, the sheaves in the field bowed around his own.<break time="500ms"/>
+      In another, the sun and moon and stars bent low before him.<break time="1000ms"/>
+      These were not ordinary family conversations.<break time="1800ms"/>
+
+      His brothers heard the dreams, and envy began to grow.<break time="500ms"/>
+      Jacob kept the matter in mind.<break time="500ms"/>
+      And Joseph, still young, carried these strange promises without yet knowing their path.<break time="1800ms"/>
+
+      He did not yet know pits or prisons or storehouses.<break time="500ms"/>
+      He only knew that God had spoken something larger than the day before him.<break time="1800ms"/>
+
+      One day Jacob sent him out to find his brothers in the fields and see if all was well.<break time="500ms"/>
+      Joseph went where he was told.<break time="500ms"/>
+      Across open land, toward men who were already turning hard in heart.<break time="1800ms"/>
+
+      The dream came first.<break time="1000ms"/>
+      Understanding came much later.<break time="1000ms"/>
+      You may hold only a small piece of what God is doing.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

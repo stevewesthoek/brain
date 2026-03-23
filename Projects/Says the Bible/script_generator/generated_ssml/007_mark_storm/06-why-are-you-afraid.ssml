@@ -1,0 +1,24 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-3.00%">
+            After the great calm, Jesus turns to His disciples and asks, Why are you so afraid? Have you still no faith?<break time="500ms"/>
+      The question comes after rescue, not before it, as if He is now teaching them to interpret what has happened in the light of who He is.<break time="500ms"/>
+      Fear had made the storm the largest reality in the boat, but Jesus exposes another reality that was there the whole time: His own presence and authority.<break time="1000ms"/>
+      Faith in this moment is not a denial of waves, but a right estimate of the One who shares the boat.<break time="500ms"/>
+      The disciples had seen His works already, yet this storm reveals that there is still more to learn about Him than they had yet understood.<break time="500ms"/>
+      The question remains gentle enough to hear at night: what if the first thing to remember is not the size of the trouble, but the nearness of Christ?<break time="1800ms"/>
+      The Lord continues to care after the crisis.<break time="1000ms"/>
+      Jesus addresses fear by drawing attention back to Himself.<break time="1000ms"/>
+      Faith grows when His presence is given its proper weight.<break time="1000ms"/>
+      You can let His nearness become larger than your alarm.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>
