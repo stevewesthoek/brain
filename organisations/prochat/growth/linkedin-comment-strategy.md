@@ -1,4 +1,4 @@
-Below is a clean Markdown document you can drop into your Brain / AI prompts / LinkedIn system and feed into any AI assistant.
+Below is a clean Markdown document you can drop into your Brain / AI prompts / LinkedIn system and feed into ProBot.
 It contains:
 	•	Daily LinkedIn growth system
 	•	Comment Pyramid strategy

@@ -415,4 +415,4 @@ If people respect your insights, they will explore what you are building natural
 
 ⸻
 
-If you’d like, I can also create a single master document that merges LinkedIn, Reddit, and X into one unified daily growth playbook so your AI assistant can coordinate all three platforms automatically.
+If you’d like, I can also create a single master document that merges LinkedIn, Reddit, and X into one unified daily growth playbook so ProBot can coordinate all three platforms automatically.

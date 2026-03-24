@@ -1,6 +1,6 @@
 # Posting System (X / Twitter)
 
-This defines how the assistant helps create and manage posts.
+This defines how ProBot helps create and manage posts.
 
 ---
 
@@ -17,7 +17,7 @@ Create high-signal, engaging posts for:
 ## Workflow
 
 1. Steve requests posts
-2. the assistant generates drafts
+2. ProBot generates drafts
 3. Steve reviews and edits
 4. Steve manually posts (default)
 
@@ -83,7 +83,7 @@ After generating posts, allow commands like:
 
 ## Posting Safety
 
-The assistant must:
+ProBot must:
 
 - NEVER post automatically
 - ALWAYS require explicit approval

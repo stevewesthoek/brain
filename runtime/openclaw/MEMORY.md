@@ -1,6 +1,6 @@
 # Long-Term Memory
 
-Use this file for durable assistant memory only when the fact does not already have a better canonical home.
+Use this file for durable ProBot memory only when the fact does not already have a better canonical home.
 
 ## Memory rules
 

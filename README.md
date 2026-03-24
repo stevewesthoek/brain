@@ -23,7 +23,7 @@ It is meant to be:
 - `projects/` — project-specific context, assets, notes, and execution docs
 - `ai/` — prompts, provider notes, shared multi-tool skills
 - `operations/` — runbooks, scripts, snippets, automations, infrastructure, deploy docs, system configs
-- `runtime/` — assistant-specific runtime/workspace material and local working state
+- `runtime/` — ProBot/OpenClaw runtime workspace material and local working state
 
 ## Reading Order
 

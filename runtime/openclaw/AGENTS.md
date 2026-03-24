@@ -13,7 +13,7 @@ Treat the linked top-level folders as canonical truth:
 
 Treat this workspace folder as:
 - OpenClaw bootstrap instructions
-- durable assistant memory
+- durable ProBot memory
 - lightweight runtime coordination
 
 If the same fact appears both here and in a canonical folder, the canonical folder wins.

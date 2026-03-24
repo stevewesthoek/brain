@@ -38,7 +38,7 @@ This workspace links to:
 
 - `personal/`, `organisations/`, `projects/`, `ai/`, `operations/` are canonical
 - `skills/` is an alias to `ai/skills/`
-- `MEMORY.md` and `memory/` are for durable assistant memory that does not yet have a better canonical home
+- `MEMORY.md` and `memory/` are for durable ProBot memory that does not yet have a better canonical home
 - if a fact already belongs in a canonical folder, update it there instead of duplicating it here
 
 ## Recommended config

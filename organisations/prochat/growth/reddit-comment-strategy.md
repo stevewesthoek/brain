@@ -1,7 +1,7 @@
 Below is a clean Markdown document you can store in your AI knowledge base (for example:
 /Brain/growth/reddit-growth-system.md).
 
-It is written so an AI assistant can generate Reddit posts, comments, and replies automatically using the prompts included.
+It is written so ProBot can generate Reddit posts, comments, and replies automatically using the prompts included.
 
 ⸻
 

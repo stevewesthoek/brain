@@ -446,4 +446,4 @@ If you want, I can also add a final section that turns this entire playbook into
 
 /daily-growth
 
-and your AI assistant automatically generates all posts, comments, and replies for the day.
+and ProBot automatically generates all posts, comments, and replies for the day.

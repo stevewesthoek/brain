@@ -2,11 +2,11 @@
 
 ## 1. Purpose
 This document defines how I evaluate and generate SaaS ideas.  
-When I give an AI assistant a SaaS concept, it must:
+When I give ProBot a SaaS concept, it must:
 - Decide quickly if the idea fits my constraints and philosophy.  
 - Explain if it’s worth building or not.  
 - Suggest faster, simpler, or more profitable alternatives when needed.  
-When I ask for new ideas, the AI assistant must generate ones that I can build rapidly with my stack and business logic below.
+When I ask for new ideas, ProBot must generate ones that I can build rapidly with my stack and business logic below.
 
 ## 2. Mission
 I build small B2B SaaS products fast, cheap, and often.  
@@ -100,7 +100,7 @@ Ideas must adapt to it — not the other way around.
 
 - **Distribution:**  
   I can handle marketing through automation (SEO, blog CMS, social posting).  
-  The assistant doesn’t need to optimize for virality, but ideas should be *launchable* on ProductHunt, etc.
+  ProBot doesn’t need to optimize for virality, but ideas should be *launchable* on ProductHunt, etc.
 
 - **Definition of Success:**  
   10 paying monthly customers = success threshold.  
@@ -108,7 +108,7 @@ Ideas must adapt to it — not the other way around.
 
 ## 6. Evaluation Framework
 
-When assessing any SaaS idea, the AI assistant should score each category 1–10 and justify briefly:
+When assessing any SaaS idea, ProBot should score each category 1–10 and justify briefly:
 
 1. **Speed Fit** – Can it be built with my boilerplate in ≤2 days?  
 2. **Complexity** – Avoids heavy integrations, security issues, or large UIs?  
@@ -128,7 +128,7 @@ Then classify the idea as:
 
 ## 7. Idea Generation Guidelines
 
-When asked for new SaaS ideas, the AI assistant should:
+When asked for new SaaS ideas, ProBot should:
 - Suggest ideas for **niche B2B problems** that can be solved with automation or visualization.  
 - Prioritize ideas that:  
   - Can be implemented with the given boilerplate.  
@@ -153,7 +153,7 @@ Ideas are the only scarce resource — treat them as experiments, not commitment
 Ship fast, learn fast, move on.
 
 ## 9. Success Loop
-1. Generate ideas with the AI assistant.  
+1. Generate ideas with ProBot.  
 2. Score them using Section 6.  
 3. Pick one that hits ≥7 average.  
 4. Build MVP within 48 hours.  
@@ -161,7 +161,7 @@ Ship fast, learn fast, move on.
 6. Watch signups → double down or kill.  
 7. Repeat.
 
-This document defines the entire system the AI assistant must follow for ideation and evaluation.
+This document defines the entire system ProBot must follow for ideation and evaluation.
 
 ## Appendix: Boilerplate File Structure Snapshot (February 2025)
 
