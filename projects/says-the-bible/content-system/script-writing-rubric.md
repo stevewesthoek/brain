@@ -4,7 +4,7 @@ Version: v1.3
 Date: 2026-03-01
 Purpose: Define how to write a Saysthe.bible script that is calm, loopable, and consistent across the library.
 
-Canonical references: `bedtime_scripture_format.md`, `script-template.md`
+Canonical references: `bedtime-scripture-format.md`, `../production/script-generator/script-template.md`
 
 ⸻
 
@@ -152,4 +152,3 @@ A script is acceptable only if:
 - The closing loops cleanly.
 - Reflection loops follow the 4-step order.
 - The ratio stays within target.
-

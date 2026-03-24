@@ -1,4 +1,4 @@
-// src/lib/tts/pauseLibrary.ts
+// src/lib/tts/pause-library.ts
 // Shared pause constants for consistent SSML timing across all episodes.
 
 export const Pause = {

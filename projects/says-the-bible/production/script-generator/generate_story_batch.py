@@ -5,8 +5,8 @@ import re
 from pathlib import Path
 
 
-ROOT = Path("/Users/Office/Repos/Personal/Brain/Projects/Says the Bible/script_generator")
-OUT = ROOT / "generated_ssml"
+ROOT = Path(__file__).resolve().parent
+OUT = ROOT / "generated-ssml"
 TEMPLATE = (ROOT / "azure-ssml-template.ssml").read_text(encoding="utf-8")
 
 BREAKS = {

@@ -102,4 +102,3 @@ Release is blocked if any row fails.
 - If a URL changes, update all inbound links within 24 hours.
 - Run a weekly broken-link check every Monday before scheduling posts.
 - New page types must be added to this document before use.
-

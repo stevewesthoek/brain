@@ -8,6 +8,8 @@ This directory defines the authoritative structure for all bedtime audio scripts
 
 If a script conflicts with this documentation, this documentation wins.
 
+Generated outputs in `generated-ssml/` are intentionally kept in Git for sync, review, reuse, and library continuity.
+
 ---
 
 # 1. Core Structure (MANDATORY)
@@ -86,12 +88,12 @@ No custom ad-hoc pauses unless explicitly tested.
 # 5. Code-Level Constants (MANDATORY)
 
 File:
-pauseLibrary.ts
+pause-library.ts
 
 This file is the single source of truth for pause durations.
 
 Do not hardcode <break> values directly in scripts.
-Import from pauseLibrary instead.
+Import from pause-library instead.
 
 ---
 

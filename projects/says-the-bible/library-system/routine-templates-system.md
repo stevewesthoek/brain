@@ -4,7 +4,7 @@ Version: v0.2
 Date: 2026-03-01
 Purpose: Convert library assets into ready-to-run bedtime routines with minimal user decisions.
 
-Canonical references: `operations-spec.md`, `routine-engine-spec.md`
+Canonical references: `../operations/operations-spec.md`, `routine-engine-spec.md`
 
 ⸻
 
@@ -76,4 +76,3 @@ A template is valid only if:
 - Phase 3: Adaptive templates (behavior-informed ordering)
 
 Same concept, deeper personalization over time.
-

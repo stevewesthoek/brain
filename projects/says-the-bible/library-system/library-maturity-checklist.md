@@ -5,7 +5,7 @@ Date: 2026-03-01
 Status: Active
 Purpose: Gate pricing, bundle, translation, and SaaS decisions using numeric thresholds instead of intuition.
 
-Canonical reference: `operations-spec.md`
+Canonical reference: `../operations/operations-spec.md`
 
 ⸻
 
@@ -86,4 +86,3 @@ Weekly sign-off fields:
 - Overall status: `ON_TRACK` / `AT_RISK` / `BLOCKED`
 - Next unlocked gate:
 - Blockers to resolve this week:
-

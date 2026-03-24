@@ -14,8 +14,8 @@ Use this document as source of truth when operational docs conflict.
 Precedence order:
 
 1. `operations-spec.md`
-2. `bedtime_scripture_format.md` + `video_template.md`
-3. `publishing-schedule-8weeks.md` + `roadmap.md`
+2. `../content-system/bedtime-scripture-format.md` + `../content-system/video-template.md`
+3. `publishing-schedule-8-weeks.md` + `roadmap.md`
 4. Other planning docs
 
 If a rule changes, update this document first.

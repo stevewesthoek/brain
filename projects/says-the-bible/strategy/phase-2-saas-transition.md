@@ -228,7 +228,7 @@ Subscription must feel cheaper than friction.
 Success Signals for Phase Shift
 
 Numeric gate authority:
-Use `library-maturity-checklist.md` for go/no-go thresholds.
+Use `../library-system/library-maturity-checklist.md` for go/no-go thresholds.
 
 Move to Phase 2 when:
 
