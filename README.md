@@ -91,7 +91,6 @@ Inside `runtime/openclaw/` you will find standard OpenClaw workspace files such 
 - `MEMORY.md`
 - `HEARTBEAT.md`
 - `memory/`
-- `skills/` → symlink to `ai/skills/`
 
 Recommended OpenClaw config:
 
@@ -111,7 +110,9 @@ Current OpenClaw docs:
 
 Canonical shared skills live in:
 - `ai/skills/`
-- `runtime/openclaw/skills/` is only a workspace alias to that same location
+
+OpenClaw loads shared skills directly from `ai/skills/` via `extraDirs`; there is no
+separate OpenClaw copy of those skill folders.
 
 Tool-native or vendor-managed skills should stay separate:
 - Cursor internal skills: `operations/system-configs/cursor/skills-cursor/`

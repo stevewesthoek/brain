@@ -57,11 +57,9 @@ Loaded as `openclaw-extra`. Shared with Codex and other tools.
 | Brain path | Skill name |
 |---|---|
 | `ai/skills/notebooklm` | `notebooklm` |
+| `ai/skills/taste-skill` | `taste-skill` |
 | `ai/skills/ui-ux-pro-max` | `ui-ux-pro-max` |
 | `ai/skills/web-design` | `web-design` |
-
-`runtime/openclaw/skills` is a repo symlink alias to `ai/skills/` — it is NOT an OpenClaw
-discovery path. OpenClaw reads `ai/skills` directly via `extraDirs`.
 
 ### OpenClaw-specific active skills (`brain/runtime/openclaw/active-skills/`)
 

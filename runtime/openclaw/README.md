@@ -19,11 +19,11 @@ This folder is the dedicated OpenClaw workspace for the Brain repo.
 - `MEMORY.md`
 - `HEARTBEAT.md`
 - `memory/`
-- `skills/` (symlink alias to `ai/skills/` — for cross-tool reference only, not an OpenClaw discovery path)
 - `active-skills/` (OpenClaw-specific skills, organized by domain)
 
 These files are bootstrap/control files for OpenClaw.
 They should point to canonical repo docs instead of copying personal or business truth.
+Shared cross-tool skills remain in `ai/skills/` and are loaded from there via `extraDirs`.
 
 ## Active skills
 
