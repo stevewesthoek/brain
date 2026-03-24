@@ -50,5 +50,8 @@ Read in this order when context is needed:
 
 ## Skills
 
-- Shared skills live in `skills/` and map to `ai/skills/`.
-- Tool-specific internal skills may exist elsewhere, but shared business/domain skills should come from `skills/`.
+- Shared cross-tool skills live in `skills/` (symlink to `ai/skills/`).
+- OpenClaw-specific active skills live in `active-skills/`, organized by domain (`google/`, `x/`).
+- Active skills are exposed to OpenClaw via flat namespaced symlinks in `~/.openclaw/workspace/skills/`.
+- Brain context is auto-loaded every session — no dedicated brain skill needed.
+- See `TOOLS.md` for the full symlink map and naming conventions.

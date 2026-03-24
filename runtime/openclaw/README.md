@@ -19,10 +19,34 @@ This folder is the dedicated OpenClaw workspace for the Brain repo.
 - `MEMORY.md`
 - `HEARTBEAT.md`
 - `memory/`
-- `skills/`
+- `skills/` (symlink to `ai/skills/` — cross-tool shared skills)
+- `active-skills/` (OpenClaw-specific skills, organized by domain)
 
 These files are bootstrap/control files for OpenClaw.
 They should point to canonical repo docs instead of copying personal or business truth.
+
+## Active skills
+
+OpenClaw-specific skills live in `active-skills/` organized by domain:
+
+```
+active-skills/
+├── google/
+│   └── calendar/SKILL.md
+└── x/
+    ├── comment/SKILL.md
+    ├── reply/SKILL.md
+    ├── schedule/SKILL.md
+    └── tweets/SKILL.md
+```
+
+Note: the old `brain` skill was removed. Brain context is now auto-loaded every session
+via workspace root `AGENTS.md` instructions.
+
+These are exposed to OpenClaw via flat namespaced symlinks in:
+`~/.openclaw/workspace/skills/`
+
+See `TOOLS.md` for the full symlink map.
 
 ## Linked canonical folders
 
@@ -32,15 +56,18 @@ This workspace links to:
 - `projects/`
 - `ai/`
 - `operations/`
-- `skills/`
+- `skills/` (cross-tool shared skills)
 
 ## Source-of-truth rule
 
 - `personal/`, `organisations/`, `projects/`, `ai/`, `operations/` are canonical
 - `skills/` is an alias to `ai/skills/`
+- `active-skills/` contains OpenClaw-specific skill definitions backed by this repo
 - `MEMORY.md` and `memory/` are for durable ProBot memory that does not yet have a better canonical home
 - if a fact already belongs in a canonical folder, update it there instead of duplicating it here
 
-## Recommended config
+## Workspace root
 
-Set OpenClaw workspace to this folder in `~/.openclaw/openclaw.json`.
+The OpenClaw workspace root (`~/.openclaw/workspace`) is NOT a Git repo.
+The Brain repo at `~/.openclaw/workspace/brain` is the only Git-backed store.
+Git identity: `ProBot <info@prochat.tools>` (repo-local).
