@@ -19,7 +19,7 @@ This folder is the dedicated OpenClaw workspace for the Brain repo.
 - `MEMORY.md`
 - `HEARTBEAT.md`
 - `memory/`
-- `skills/` (symlink to `ai/skills/` — cross-tool shared skills)
+- `skills/` (symlink alias to `ai/skills/` — for cross-tool reference only, not an OpenClaw discovery path)
 - `active-skills/` (OpenClaw-specific skills, organized by domain)
 
 These files are bootstrap/control files for OpenClaw.
@@ -43,10 +43,10 @@ active-skills/
 Note: the old `brain` skill was removed. Brain context is now auto-loaded every session
 via workspace root `AGENTS.md` instructions.
 
-These are exposed to OpenClaw via flat namespaced symlinks in:
-`~/.openclaw/workspace/skills/`
+These are loaded by OpenClaw directly via `extraDirs` in `~/.openclaw/openclaw.json`.
+`~/.openclaw/workspace/skills/` must remain empty — skills are not exposed via symlinks.
 
-See `TOOLS.md` for the full symlink map.
+See `TOOLS.md` for the full `extraDirs` config.
 
 ## Linked canonical folders
 
@@ -56,7 +56,7 @@ This workspace links to:
 - `projects/`
 - `ai/`
 - `operations/`
-- `skills/` (cross-tool shared skills)
+- `skills/` (symlink alias to `ai/skills/` — cross-tool reference only)
 
 ## Source-of-truth rule
 

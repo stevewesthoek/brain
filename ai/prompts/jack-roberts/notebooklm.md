@@ -4,10 +4,12 @@ Copy and paste the below 👇
 
 Install and set up the NotebookLM MCP server for me:
 
-1. Install the notebooklm-mcp-server package using uv (or pip if uv isn't available)
+1. Install the `notebooklm-mcp-server` npm package: `npm install -g notebooklm-mcp-server`
 2. Add it to my MCP configuration file (usually at ~/.config/opencode/opencode.json or similar)
-3. Run the authentication command (notebooklm-mcp-auth) and open a browser to authorize it
+3. Run the authentication command (`notebooklm-mcp-auth`) and open a browser to authorize it
 4. Verify the installation is working by listing my NotebookLM notebooks
+
+Note: use `notebooklm-mcp-server` (npm), not `notebooklm-mcp` (PyPI) — they are different packages with different tool surfaces.
 
 Make sure to:
 

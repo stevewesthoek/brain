@@ -41,7 +41,7 @@ Installs two binaries to `~/.local/bin/`:
 ## Repo contents
 
 - `README.md` — this file
-- `notebooklm-config.template.json` — legacy template (written for wrong Python package, kept for reference only; not used by `notebooklm-mcp-server`)
+- `notebooklm-config.legacy-python-package.json` — config template written for the wrong Python package (`notebooklm-mcp` PyPI v2.x). Kept for reference only. Not used by `notebooklm-mcp-server`.
 - `openclaw-mcporter.md` — OpenClaw/ProBot bridge instructions
 
 ---
@@ -59,6 +59,20 @@ Installs two binaries to `~/.local/bin/`:
 
 Canonical Codex config: `operations/system-configs/codex/config.toml`
 
+The committed config uses:
+```toml
+[mcp_servers.notebooklm]
+command = "/Users/Office/.local/bin/notebooklm-mcp"
+```
+
+Note: on the Mac, `/Users/Office/.local/bin/notebooklm-mcp` may resolve to the
+`notebooklm-mcp-server` binary depending on how the package was installed (npm global
+install can place binaries at that path). Verify with:
+```bash
+readlink $(which notebooklm-mcp) 2>/dev/null || ls -la ~/.local/bin/notebooklm-mcp
+```
+
+If the Mac binary does not point to `notebooklm-mcp-server`, update the Codex config to:
 ```toml
 [mcp_servers.notebooklm]
 command = "/Users/Office/.local/bin/notebooklm-mcp-server"
@@ -66,13 +80,10 @@ command = "/Users/Office/.local/bin/notebooklm-mcp-server"
 
 Auth:
 ```bash
-notebooklm-mcp-auth
+notebooklm-mcp-auth   # or: ~/.local/bin/notebooklm-mcp-auth
 # then restart Codex and verify:
 codex mcp list
 ```
-
-Note: On Mac, `~/.local/bin/notebooklm-mcp` may resolve to `notebooklm-mcp-server` via
-a shell alias or symlink — confirm with `readlink $(which notebooklm-mcp)`.
 
 ### ProBot / OpenClaw (VPS)
 
