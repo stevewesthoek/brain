@@ -89,9 +89,16 @@ Host github-demo
   IdentityFile ~/.ssh/github_demo
   IdentitiesOnly yes
 
-Host probot ProBot openclaw
+Host ubuntu ProBot openclaw
   HostName 100.101.212.108
   User ubuntu
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
+  ConnectTimeout 5
+
+Host probot ProBot openclaw
+  HostName 100.101.212.108
+  User probot
   ServerAliveInterval 30
   ServerAliveCountMax 3
   ConnectTimeout 5
