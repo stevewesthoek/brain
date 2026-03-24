@@ -1,6 +1,6 @@
-# Twitter Reply Engine
+# X / Twitter Reply Engine
 
-This file defines how ProBot should generate replies to tweets, comments, and replies.
+This file defines how the assistant should generate replies to tweets, comments, and replies.
 
 ## Goal
 
@@ -12,7 +12,7 @@ The input will often be:
 - raw reply text
 - unformatted pasted thread text
 
-ProBot must infer the context and generate high-quality reply options.
+The assistant must infer the context and generate high-quality reply options.
 
 ---
 
@@ -56,7 +56,7 @@ If multiple replies are requested:
 
 ## Reply Modes
 
-ProBot should be able to generate these styles:
+The assistant should be able to generate these styles:
 
 - witty
 - sharp
@@ -130,4 +130,3 @@ If Steve says:
 - "more human"
 
 Then generate a fresh batch with stronger variation.
-

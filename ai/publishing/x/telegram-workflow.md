@@ -1,6 +1,6 @@
-# Telegram Posting Workflow
+# Telegram Workflow for X
 
-This file defines how ProBot should handle tweet drafting and follow-up commands in Telegram.
+This file defines how the assistant should handle tweet drafting and follow-up commands in Telegram.
 
 ## Goal
 
@@ -33,7 +33,7 @@ When sending daily tweet drafts in Telegram:
 
 ## Follow-up Command Rules
 
-After sending tweet drafts, ProBot should understand commands like:
+After sending tweet drafts, the assistant should understand commands like:
 
 - rewrite 2 sharper
 - rewrite 4 shorter
@@ -75,10 +75,10 @@ Do not:
 ## Posting Rules
 
 Default behavior:
-- ProBot drafts only
-- ProBot does NOT post automatically
-- ProBot does NOT schedule automatically
-- ProBot requires explicit approval
+- the assistant drafts only
+- the assistant does NOT post automatically
+- the assistant does NOT schedule automatically
+- the assistant requires explicit approval
 
 If Steve says:
 - "2 post" → treat that as explicit approval to post tweet 2
@@ -137,5 +137,4 @@ If Steve replies with:
 - "make one more conversational"
 - "make one more founder-focused"
 
-Then ProBot should regenerate the batch using the existing Twitter rules and stronger variation.
-
+Then the assistant should regenerate the batch using the existing X rules and stronger variation.

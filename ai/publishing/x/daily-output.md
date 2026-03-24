@@ -1,4 +1,4 @@
-# Daily Twitter Output Rules
+# Daily X Output Rules
 
 Generate exactly 6 tweet drafts.
 
@@ -25,7 +25,7 @@ Style rules:
 - avoid sounding like marketing
 
 Content rules:
-- use the context from PROBOT.md and AI/twitter.md
+- use the context from `personal/profile.md`, `personal/style.md`, and `ai/publishing/x/system.md`
 - vary the angle across the 6 tweets
 - prioritize strong hooks
 - prefer clarity over cleverness

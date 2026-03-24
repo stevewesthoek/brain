@@ -1,4 +1,4 @@
-# Twitter Replies — Feed Context
+# X / Twitter Replies — Feed Context
 
 This file applies when Steve pastes tweets/comments from people in his feed and wants a reply.
 
@@ -48,4 +48,3 @@ If Steve pastes a tweet/comment with no extra instruction:
   - factual
   - engaging
   - conversational
-

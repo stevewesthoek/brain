@@ -1,4 +1,4 @@
-# Twitter System (ProBot)
+# X / Twitter System
 
 ## Goal
 
@@ -85,4 +85,3 @@ If a post performs well:
 If a post gets no replies:
 
 → change angle, not wording
-

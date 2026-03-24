@@ -1,4 +1,4 @@
-# agents.md
+# Micro SaaS Ideation Agents
 
 This file defines reusable AI agents to help generate and refine B2B micro SaaS ideas.
 

@@ -1,4 +1,4 @@
-# Twitter Replies — Own Post Context
+# X / Twitter Replies — Own Post Context
 
 This file applies when someone replied to Steve's own tweet/post and Steve wants a response.
 
@@ -63,4 +63,3 @@ When Steve asks for reply options, default to 6 replies with variation such as:
 - trying to win every argument
 - long explanations
 - sounding like support staff
-
