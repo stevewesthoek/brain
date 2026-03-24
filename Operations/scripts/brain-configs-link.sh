@@ -5,7 +5,7 @@ set -euo pipefail
 # Brain configs linker
 #
 # Centralizes local dev config into:
-#   $BRAIN_REPO/Operations/system-configs
+#   $BRAIN_REPO/operations/system-configs
 #
 # Symlinks created:
 #   ~/.ssh/config                         -> $CONFIGS_DIR/ssh/config
@@ -28,12 +28,14 @@ set -euo pipefail
 ###############################################################################
 
 HOME_DIR="${HOME:-$PWD}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT_FROM_SCRIPT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 
 # Defaults – override with env if needed
-BRAIN_REPO="${BRAIN_REPO:-$HOME_DIR/Repos/Personal/Brain}"
-BRAIN_OPERATIONS_DIR="${BRAIN_OPERATIONS_DIR:-$BRAIN_REPO/Operations}"
+BRAIN_REPO="${BRAIN_REPO:-$REPO_ROOT_FROM_SCRIPT}"
+BRAIN_OPERATIONS_DIR="${BRAIN_OPERATIONS_DIR:-$BRAIN_REPO/operations}"
 CONFIGS_DIR="${CONFIGS_DIR:-$BRAIN_OPERATIONS_DIR/system-configs}"
-BRAIN_AI_DIR="${BRAIN_AI_DIR:-$BRAIN_REPO/AI}"
+BRAIN_AI_DIR="${BRAIN_AI_DIR:-$BRAIN_REPO/ai}"
 
 DRY_RUN="${DRY_RUN:-0}"
 
@@ -167,6 +169,16 @@ say "==> Brain repo: $BRAIN_REPO"
 say
 say "==> Configs dir: $CONFIGS_DIR"
 say
+
+if [ ! -d "$BRAIN_REPO" ]; then
+  say "[ERROR] Brain repo not found: $BRAIN_REPO"
+  exit 1
+fi
+
+if [ ! -d "$CONFIGS_DIR" ]; then
+  say "[ERROR] Configs dir not found: $CONFIGS_DIR"
+  exit 1
+fi
 
 ensure_dir "$CONFIGS_DIR"
 ensure_dir "$BACKUP_ROOT"
