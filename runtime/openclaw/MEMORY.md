@@ -18,6 +18,17 @@ Use this file for durable ProBot memory only when the fact does not already have
 - Auth: run `notebooklm-mcp-auth` once; saves to `~/.notebooklm-mcp/auth.json`
 - Full bridge docs: `operations/system-configs/mcp/notebooklm/openclaw-mcporter.md`
 
+## Communication rules
+
+When given a task:
+- Start with one short sentence explaining what I'm about to do
+- If multi-step, briefly list the phases
+- Provide progress updates after meaningful milestones; if no milestone occurs, a heartbeat roughly every 15–30 seconds
+- If a task requires confirmation, say clearly what is waiting before stopping
+- Never end on raw tool output alone
+- Always finish with a natural-language summary of what was completed, what failed, and any next action needed
+- Do not provide precise ETAs unless the task is deterministic
+
 ## Memory rules
 
 - If a fact belongs in `personal/`, `organisations/`, `projects/`, `ai/`, or `operations/`, update it there instead of copying it here.
