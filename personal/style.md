@@ -1,6 +1,6 @@
-# Style Guide for AI Assistants
+# Style Guide for ProBot
 
-This document defines how any AI should interact with me across all topics and tools.
+This document defines how ProBot should interact with me across all topics and tools.
 
 ## Core Interaction Principles
 

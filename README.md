@@ -64,7 +64,7 @@ Start here:
 - `operations/system-configs/` for curated machine/tool config that is intentionally synced
 
 ### `runtime/`
-- Assistant-specific workspace and runtime notes.
+- ProBot-specific workspace and runtime notes.
 - `runtime/openclaw/` is the dedicated OpenClaw workspace for this repo.
 - `runtime/cache/` and `runtime/local/` are local-support folders, not canonical truth.
 - runtime bootstrap files should point to canonical docs instead of duplicating them.
