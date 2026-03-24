@@ -34,27 +34,36 @@ The old `brain` skill was removed because this auto-loading makes it obsolete.
 
 ## OpenClaw Active Skills
 
-OpenClaw discovers active skills from:
-`~/.openclaw/workspace/skills/`
+Skills live **exclusively in the Brain**. `workspace/skills/` must stay empty — never place skills there.
 
-That folder contains flat namespaced symlinks pointing into the Brain repo:
+OpenClaw loads them via `extraDirs` in `~/.openclaw/openclaw.json`, pointing directly at Brain paths:
 
-| Workspace symlink | Canonical Brain path | Skill name |
-|---|---|---|
-| `skills/google-calendar` | `runtime/openclaw/active-skills/google/calendar` | `google_calendar` |
-| `skills/x-comment` | `runtime/openclaw/active-skills/x/comment` | `x_comment` |
-| `skills/x-reply` | `runtime/openclaw/active-skills/x/reply` | `x_reply` |
-| `skills/x-schedule` | `runtime/openclaw/active-skills/x/schedule` | `x_schedule` |
-| `skills/x-tweets` | `runtime/openclaw/active-skills/x/tweets` | `x_tweets` |
+```json
+"skills": {
+  "load": {
+    "extraDirs": [
+      "/home/ubuntu/.openclaw/workspace/brain/runtime/openclaw/active-skills/x",
+      "/home/ubuntu/.openclaw/workspace/brain/runtime/openclaw/active-skills/google"
+    ]
+  }
+}
+```
 
-### Structure rules
+### Active skills
 
-- **Brain repo** = canonical source of truth for all skill content
-- **Workspace skills/** = execution layer only (flat symlinks)
-- **active-skills/** is organized by domain (`google/`, `x/`)
-- **Workspace symlinks** are flat with namespaced names (e.g. `x-comment`)
-- Do not create real directories in `workspace/skills/` — always symlink to Brain
-- Do not nest skill folders in `workspace/skills/` — OpenClaw expects a flat layout
+| Brain path | Skill name |
+|---|---|
+| `runtime/openclaw/active-skills/google/calendar` | `google_calendar` |
+| `runtime/openclaw/active-skills/x/comment` | `x_comment` |
+| `runtime/openclaw/active-skills/x/reply` | `x_reply` |
+| `runtime/openclaw/active-skills/x/schedule` | `x_schedule` |
+| `runtime/openclaw/active-skills/x/tweets` | `x_tweets` |
+
+### Adding a new skill
+
+1. Create `brain/runtime/openclaw/active-skills/<domain>/<skill-name>/SKILL.md`
+2. If the domain isn't already in `extraDirs`, add it to `~/.openclaw/openclaw.json`
+3. Run `openclaw gateway restart`
 
 ### Separate from shared skills
 
