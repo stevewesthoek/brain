@@ -1,24 +1,70 @@
-# --- Infra & tools caches we do NOT want in Git ---
+# macOS / Python / local tool noise
+.DS_Store
+**/.DS_Store
+**/__pycache__/
+*.pyc
 
-# Docker client state and credentials (tokens, context caches, etc.)
-Operations/system-configs/docker/
+# Cloudflare local cache
+.wrangler/
+**/.wrangler/
 
-# External skills repo cloned by Codex / Anti-Gravity
-Operations/system-configs/codex/vendor_imports/skills/
+# Runtime scratch
+runtime/cache/
+runtime/local/
 
-# Anti-Gravity / Gemini local browser profile (HUGE, mostly cache)
-Operations/system-configs/gemini/antigravity-browser-profile/
+# Tool and infra state we do not want in Git
+operations/system-configs/docker/
+operations/system-configs/antigravity/User/
 
-# n8n workflow backup dumps (can always be re-exported from n8n)
-Operations/automations/n8n/n8n_backup/
+# Claude local runtime
+operations/system-configs/claude/debug/
+operations/system-configs/claude/projects/
+operations/system-configs/claude/shell-snapshots/
+operations/system-configs/claude/statsig/
+operations/system-configs/claude/todos/
 
-# Big marketing assets & PDFs that blow up pack size
-Business/playbooks/youtube/Assets/
-Projects/paraguay/assets/
-# Cursor extension local binaries (not source, just downloaded tools)
-Operations/system-configs/cursor/extensions/openai.chatgpt-0.4.68-universal/bin/
-Operations/system-configs/codex/tmp/
-Operations/system-configs/gemini/antigravity/implicit/
+# Codex local runtime
+operations/system-configs/codex/.codex-global-state.json
+operations/system-configs/codex/.personality_migration
+operations/system-configs/codex/auth.json
+operations/system-configs/codex/archived_sessions/
+operations/system-configs/codex/logs_*.sqlite
+operations/system-configs/codex/logs_*.sqlite-shm
+operations/system-configs/codex/logs_*.sqlite-wal
+operations/system-configs/codex/models_cache.json
+operations/system-configs/codex/session_index.jsonl
+operations/system-configs/codex/sessions/
+operations/system-configs/codex/shell_snapshots/
+operations/system-configs/codex/skills/.system/.codex-system-skills.marker
+operations/system-configs/codex/sqlite/
+operations/system-configs/codex/state_*.sqlite
+operations/system-configs/codex/tmp/
+operations/system-configs/codex/vendor_imports/
+operations/system-configs/codex/worktrees/
 
-# Antigravity runtime MCP config with access tokens (local-only, never commit)
-Operations/system-configs/antigravity/User/
+# Cursor local runtime
+operations/system-configs/cursor/ai-tracking/
+operations/system-configs/cursor/extensions/
+operations/system-configs/cursor/argv.json
+operations/system-configs/cursor/ide_state.json
+operations/system-configs/cursor/projects/
+
+# Gemini / Antigravity local runtime
+operations/system-configs/gemini/antigravity-browser-profile/
+operations/system-configs/gemini/antigravity/annotations/
+operations/system-configs/gemini/antigravity/browser_recordings/
+operations/system-configs/gemini/antigravity/code_tracker/
+operations/system-configs/gemini/antigravity/context_state/
+operations/system-configs/gemini/antigravity/conversations/
+operations/system-configs/gemini/antigravity/html_artifacts/
+operations/system-configs/gemini/antigravity/implicit/
+operations/system-configs/gemini/antigravity/installation_id
+operations/system-configs/gemini/antigravity/knowledge/
+operations/system-configs/gemini/antigravity/skills.backup-*/
+operations/system-configs/gemini/antigravity/user_settings.pb
+
+# Automation dumps
+operations/automations/n8n/n8n_backup/
+
+# Embedded/nested repo kept out until normalized
+ai/skills/taste-skill/
