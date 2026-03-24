@@ -20,6 +20,6 @@ High-level map of how ArkWare Solutions, ProChat, and Yeshua Academy fit togethe
 In short: `Faith -> Strategy and Craft -> Scalable Products`.
 
 ## Brand Source of Truth
-- ArkWare brand profile: `brands/arkware-solutions/overview.md`
-- ProChat brand profile: `brands/prochat/overview.md`
-- Yeshua Academy brand profile: `brands/yeshua-academy/overview.md`
+- ArkWare brand profile: `organisations/arkware/overview.md`
+- ProChat brand profile: `organisations/prochat/brand/company-overview.md`
+- Yeshua Academy brand profile: `organisations/yeshua-academy/overview.md`
