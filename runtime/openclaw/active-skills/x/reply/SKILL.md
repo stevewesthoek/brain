@@ -1,6 +1,6 @@
 ---
 name: x_reply
-description: Generate 6 reply options for raw pasted tweets/comments from the feed.
+description: Generate 6 categorised reply options for raw pasted tweets/comments from the feed.
 user-invocable: true
 ---
 
@@ -19,51 +19,94 @@ Before replying, read these files as operating context (in order):
 
 voice-rules.md is the highest-priority style authority. If anything in the other files conflicts with voice-rules.md, voice-rules.md wins.
 
-Form a short INTERNAL trend brief from free public sources relevant to founders, SaaS, AI agents, vibe coding, shipping speed, and distribution.
-Do not output the trend brief.
-Use it only to bias wording, angles, and topical freshness.
+## Vibe Detection
 
-## Output Rules
+Before generating replies, analyse the pasted tweet/comment and detect its energy:
+- Is it sarcastic, humorous, serious, motivational, controversial, vulnerable, factual, provocative?
+- What community is it aimed at? (founders, devs, general business, personal growth)
+- What kind of reply would naturally fit?
 
-Return exactly 6 reply options.
+Use this detection to calibrate the 6 replies. They should loosely match the energy of the original while still offering variety. If you cannot reliably detect the vibe, default to 6 clearly different categories.
 
-- output only the reply text
-- no intro, no outro, no numbering, no bullets, no labels
-- blank line between each reply
-- every reply must be copy-paste ready
+## Output Format
 
-## Style and Variation
+Format every response as follows:
 
-The 6 options MUST be clearly different across:
-- length (at least 1 under 10 words, at least 1 that's 2-3 sentences)
-- tone (dry humor, factual, provocative, warm, self-deprecating, sharp)
-- structure (statement, question, fragment, "yes and", "yes but", observation)
-- opening words (never start 3+ replies with the same word)
+1. Start with a bold title summarising the original tweet (1 line)
+2. Then 6 numbered reply options, each with:
+   - A **bold category label** (e.g. **🎭 Witty**, **📊 Factual**)
+   - The reply text inside a code block (single backtick-fenced block per reply)
+   - Code blocks make each reply click-to-copy in Telegram and web
 
-Include a mix of:
-- witty / humorous
-- sharp / contrarian
-- factual / data-backed
-- engaging / conversational
-- vulnerable / honest
-- wildcard (unexpected angle)
+### Example output structure:
+
+**Replying to @username — "Original tweet summary"**
+
+**1. 🎭 Witty**
+```
+The actual reply text goes here, copy-paste ready.
+```
+
+**2. 🔥 Sharp**
+```
+Another reply option here.
+```
+
+**3. 📊 Factual**
+```
+Data-backed or experience-based reply.
+```
+
+**4. 💪 Motivational**
+```
+Uplifting angle on the topic.
+```
+
+**5. 🤔 Contrarian**
+```
+Reframe or challenge the premise.
+```
+
+**6. 💬 Conversational**
+```
+Casual, human, starts a dialogue.
+```
+
+## Category Labels
+
+Choose 6 categories from this pool (or invent fitting ones). Never repeat a category in one batch:
+
+- 🎭 Witty
+- 🔥 Sharp
+- 📊 Factual
+- 💪 Motivational
+- 🤔 Contrarian
+- 💬 Conversational
+- 😂 Comedy
+- 🎯 Direct
+- 🧠 Insightful
+- 💡 Reframe
+- 🤷 Self-deprecating
+- ⚡ Provocative
+- 🫡 Respectful disagreement
+- 🪞 Mirror (reflect their point back stronger)
+
+Pick categories that fit the energy of the original tweet. Don't force comedy on a serious post. Don't force motivation on a sarcastic post.
 
 ## Anti-AI Rules
 
 Follow ALL rules in voice-rules.md. Key reminders:
 - No "furthermore", "great point", "totally agree", "the key is"
-- Vary sentence length dramatically — fragments mixed with full sentences
-- At least 1 reply should have casual formatting (lowercase start, missing period, fragment)
-- Include emotional range — not everything should sound wise or motivational
-- Use specific references (time, numbers, personal experience) where natural
-- A reply that makes the author want to reply back is worth more than a clever observation
+- Vary sentence length — fragments mixed with full sentences
+- At least 1 reply should have casual formatting (lowercase, missing period, fragment)
+- Include emotional range — not everything should sound wise
+- A reply that makes the author want to reply back > a clever observation
 
 ## Reply Strategy
 
 - Add what the original tweet missed — a counter-example, a missing step, real data
 - Don't just agree or disagree — extend, reframe, or redirect
 - Short punchy replies often outperform paragraphs
-- The best reply creates a conversation, not a lecture
 - Specificity > vagueness: "I tried this and lost 40% engagement" > "results may vary"
 
 ## Input

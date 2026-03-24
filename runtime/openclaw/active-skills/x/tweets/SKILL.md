@@ -1,6 +1,6 @@
 ---
 name: x_tweets
-description: Generate 6 tweet options for the current posting window using ProBot context and trend scouting.
+description: Generate 6 categorised tweet options for the current posting window using ProBot context and trend scouting.
 user-invocable: true
 ---
 
@@ -29,35 +29,86 @@ Form a short INTERNAL trend brief from free public web sources relevant to:
 Do not output the trend brief.
 Use it only to improve topic freshness, wording, and angle selection.
 
-## Output Rules
+## Output Format
 
-Generate exactly 6 tweet drafts.
+Format every response as follows:
 
-- output only the tweet text
-- no intro, no outro, no numbering, no bullets, no labels, no metadata
-- blank line between tweets
-- every tweet must be directly copy-paste ready for X
+1. Start with a bold title line (e.g. **6 Fresh Tweets — [date or theme]**)
+2. Then 6 numbered tweet options, each with:
+   - A **bold category label** (e.g. **🔥 Authority**, **🤷 Personal**)
+   - The tweet text inside a code block (single backtick-fenced block per tweet)
+   - Code blocks make each tweet click-to-copy in Telegram and web
+
+### Example output structure:
+
+**6 Fresh Tweets**
+
+**1. 🔥 Authority**
+```
+Expert insight or lesson goes here. Short, sharp, no fluff.
+```
+
+**2. 🤷 Personal**
+```
+Relatable struggle or honest take here.
+```
+
+**3. ⚡ Provocative**
+```
+Pattern interrupt or contrarian take.
+```
+
+**4. 💬 Conversational**
+```
+Question or observation that starts dialogue.
+```
+
+**5. 💡 Shareable**
+```
+Broadly quotable, makes the reader look smart for sharing.
+```
+
+**6. 🎲 Wildcard**
+```
+Unexpected angle, different energy from the rest.
+```
+
+## Category Labels
+
+Each batch MUST use 6 different categories. Choose from this pool or invent fitting ones:
+
+### Core categories (use at least 3 per batch):
+- 🔥 Authority — expert insight, lesson, framework
+- 🤷 Personal — relatable struggle, self-deprecation, honest take
+- 💡 Shareable — broadly quotable, viral potential
+
+### Supplementary categories (fill the remaining 3):
+- ⚡ Provocative — contrarian, pattern interrupt
+- 💬 Conversational — question, starts dialogue
+- 😂 Comedy — dry humor, industry joke
+- 📊 Data — specific numbers, results, metrics
+- 🎯 Sales — product or offer angle (subtle, not pushy)
+- 🧠 Insight — reframe or non-obvious observation
+- 🪞 Vulnerability — doubt, failure, messy process
+- 🎲 Wildcard — unexpected angle, different energy
+
+Never repeat a category in one batch.
 
 ## Content Rules
 
 The 6 tweets MUST be clearly different across:
 - structure (statement, question, fragment, list, observation, story)
-- tone (sharp, conversational, vulnerable, provocative, educational, humorous)
+- tone (matches the category label)
 - angle (different topic or perspective per tweet)
 - length (at least 1 under 15 words, at least 1 that's 2-3 lines)
-- rhythm (vary sentence length within tweets — fragments + full sentences)
-
-Use the 3-bucket strategy:
-- 2 tweets: Authority (expert insights, lessons, frameworks)
-- 2 tweets: Personality (relatable struggles, self-deprecation, honest takes)
-- 2 tweets: Shareable (broadly applicable, quotable, makes the reader look smart for sharing)
+- rhythm (vary sentence length within tweets)
 
 ### Hook Variety
 Rotate across these hook types — never use the same type twice in one batch:
 - Bold numerical claim
 - Vulnerability confession
-- Pattern interrupt ("Everyone says X. They're wrong")
-- Identity targeting ("If you have under 1k followers...")
+- Pattern interrupt
+- Identity targeting
 - Specific pain point
 - Question that creates an information gap
 

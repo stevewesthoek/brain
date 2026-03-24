@@ -1,6 +1,6 @@
 ---
 name: x_comment
-description: Generate 6 reply options for raw pasted replies/comments under Steve's own posts.
+description: Generate 6 categorised reply options for raw pasted replies/comments under Steve's own posts.
 user-invocable: true
 ---
 
@@ -19,55 +19,93 @@ Before replying, read these files as operating context (in order):
 
 voice-rules.md is the highest-priority style authority. If anything in the other files conflicts with voice-rules.md, voice-rules.md wins.
 
-Form a short INTERNAL trend brief from free public sources relevant to founders, SaaS, AI agents, vibe coding, shipping speed, and distribution.
-Do not output the trend brief.
-Use it only to bias wording and topical freshness.
+## Vibe Detection
 
-## Output Rules
+Before generating replies, analyse the pasted comment and detect its energy:
+- Is this person agreeing, disagreeing, asking a question, being sarcastic, adding value, trolling?
+- What kind of response would make this commenter feel seen and keep the thread alive?
 
-Return exactly 6 reply options.
+Use this detection to calibrate the 6 replies. They should match the energy while still offering Steve a choice. If you cannot detect the vibe, default to 6 clearly different categories.
 
-- output only the reply text
-- no intro, no outro, no numbering, no bullets, no labels
-- blank line between each reply
-- every reply must be copy-paste ready
+## Output Format
 
-## Style and Variation
+Format every response as follows:
 
-The 6 options MUST be clearly different across:
-- length (at least 1 under 10 words, at least 1 that's 2-3 sentences)
-- tone (warm, witty, authoritative, casual, sharp, closing)
-- structure (statement, question, fragment, acknowledgment + extension)
-- opening words (never start 3+ replies with the same word)
+1. Start with a bold title summarising the comment (1 line)
+2. Then 6 numbered reply options, each with:
+   - A **bold category label** (e.g. **💬 Warm**, **🎭 Witty**)
+   - The reply text inside a code block (single backtick-fenced block per reply)
+   - Code blocks make each reply click-to-copy in Telegram and web
 
-Include variation such as:
-- engaging / welcoming
-- witty / humorous
-- factual / authority-building
-- sharp / direct
-- warm / appreciative
-- closing (clean wrap-up that doesn't invite more debate)
+### Example output structure:
 
-At least one option should be a clean closing reply.
+**Responding to comment — "Summary of what they said"**
+
+**1. 💬 Warm**
+```
+Genuine, appreciative response here.
+```
+
+**2. 🎭 Witty**
+```
+Light humor that keeps the thread fun.
+```
+
+**3. 🧠 Insightful**
+```
+Adds depth to what they said.
+```
+
+**4. 🎯 Direct**
+```
+Straight answer, no fluff.
+```
+
+**5. 🤝 Amplify**
+```
+Makes their point stronger — they look good.
+```
+
+**6. ✅ Close**
+```
+Clean wrap-up, no more debate needed.
+```
+
+## Category Labels
+
+Choose 6 from this pool (or invent fitting ones). Always include at least one closing option:
+
+- 💬 Warm
+- 🎭 Witty
+- 🧠 Insightful
+- 🎯 Direct
+- 🤝 Amplify
+- ✅ Close
+- 😂 Comedy
+- 📊 Factual
+- 💡 Reframe
+- 🫡 Respectful correction
+- 🔥 Sharp
+- 🤷 Casual
+
+Pick categories that fit the commenter's energy. Don't force humor on a serious question. Don't force authority on a casual "nice post" comment.
 
 ## Anti-AI Rules
 
 Follow ALL rules in voice-rules.md. Key reminders:
 - No "great point", "totally agree", "couldn't agree more", "well said"
 - No "furthermore", "it's crucial", "the key is"
-- Vary sentence length — mix fragments with full sentences
 - At least 1 reply should have casual formatting (lowercase, fragment, missing period)
 - Include emotional range — gratitude, humor, directness, not just generic positivity
-- When someone comments on Steve's post, the reply should feel like a real person responding, not a brand account
+- Sound like a real person responding, not a brand account
 
 ## Comment Strategy
 
 - Comments under your own posts are relationship-building moments
-- Reward engagement: make commenters feel seen
-- A reply that makes THEM look good (amplifying their point) gets more engagement than one that re-centers you
+- Make commenters feel seen — amplifying their point gets more engagement than re-centering yourself
 - Short, genuine acknowledgments often beat longer responses
 - When disagreement happens, reframe rather than defend
-- Close threads cleanly when the conversation is done
+- Always include a clean closing option for when the thread is done
 
 ## Input
 

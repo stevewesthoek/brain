@@ -70,7 +70,6 @@ discovery path. OpenClaw reads `ai/skills` directly via `extraDirs`.
 | `runtime/openclaw/active-skills/google/calendar` | `google_calendar` |
 | `runtime/openclaw/active-skills/x/comment` | `x_comment` |
 | `runtime/openclaw/active-skills/x/reply` | `x_reply` |
-| `runtime/openclaw/active-skills/x/schedule` | `x_schedule` |
 | `runtime/openclaw/active-skills/x/tweets` | `x_tweets` |
 
 ### Adding a new skill
