@@ -1,120 +1,170 @@
 # Brain
 
-Single source of truth for:
-- Curated dotfiles/configs I actually want versioned (safe + stable)
-- AI rules, prompts, and playbooks
-- Infrastructure and operations docs
-- Organisation + brand docs
-- Personal docs (profile/style/theology)
-- Project material
+Private knowledge base and shared resource repo for Steve across local machines, IDE tools, and OpenClaw.
 
-# Start Here
+## Purpose
 
-This Brain is the source of truth for cross-repo conventions and internal documentation used by ProChat repos.
+This repo holds:
+- durable personal, business, and project context
+- reusable AI prompts and shared skills
+- operational docs, scripts, and selected system configs
+- OpenClaw workspace files and runtime notes
 
-Repo-specific technical documentation lives in each repo (for example: ProKit Core docs now live in the ProKit Core repo under `/docs`).
+It is meant to be:
+- human-readable
+- AI-readable
+- Git-synced
+- cautious about secrets and machine state
 
-Read in this order:
-1) README.md (map + config philosophy)
-2) Personal/profile.md, Personal/style.md, Personal/theology.md
-3) Organisation/conventions.md (folder boundaries + data classification)
-4) AI/agents.md and AI/prompts/
-5) Operations/ (runbooks + system configs)
+## Top-Level Structure
 
-## Top-level map
-- `Personal/` - profile, style, theology
-- `AI/` - agents, prompts, providers, skills
-- `Organisation/` - brand + playbooks
-- `Operations/` - infrastructure, automations, scripts, snippets, runbooks
-- `Projects/` - project-specific docs
-- `Operations/system-configs/` - curated config files (symlinked, includes Codex config)
-- `Operations/system-configs/mcp/` - canonical MCP server docs/templates and install standards
-- `AI/skills/` - canonical skill library (symlinked into AI tools)
+- `personal/` — personal profile, writing style, values, boundaries
+- `organisations/` — company, brand, messaging, offers, playbooks
+- `projects/` — project-specific context, assets, notes, and execution docs
+- `ai/` — prompts, provider notes, shared multi-tool skills
+- `operations/` — runbooks, scripts, snippets, automations, infrastructure, deploy docs, system configs
+- `runtime/` — assistant-specific runtime/workspace material and local working state
 
-## Ops boundaries (quick)
-See `Organisation/conventions.md` for details.
-- `runbooks/` - short, repeatable operational procedures
-- `scripts/` - executable automation
-- `snippets/` - small reusable fragments
-- `automations/` - higher-level flows (n8n/Zapier/etc)
-- `infrastructure/` - architecture, inventories, and diagrams
+## Reading Order
 
-## Configs philosophy (important)
-We **symlink** important config locations into this repo, but we **do not** commit machine state.
+Start here:
+1. `README.md`
+2. `personal/README.md`
+3. `organisations/README.md`
+4. `projects/README.md`
+5. `ai/README.md`
+6. `operations/README.md`
+7. `runtime/README.md`
 
-- ✅ Commit: human-edited, portable config (e.g. `.ssh/config`, `.gitconfig`, `.zshrc`, `.zprofile`, selected tool config files)
-- ❌ Never commit: tokens, auth, caches, logs, extensions, workspace state, etc.
+## Folder Notes
 
-For example:
-- `~/.cursor` is symlinked into `Operations/system-configs/cursor/`
-  - Git tracks only `Operations/system-configs/cursor/README.md`
-- Docker configs are symlinked but **ignored** by default because they can contain auth tokens.
-  - If you ever want to version specific Docker files, add explicit allowlist entries in `.gitignore`.
-- MCP server configs are centralized in Brain:
-  - Codex registry: `Operations/system-configs/codex/config.toml`
-  - Server docs/templates: `Operations/system-configs/mcp/<server>/`
-  - Token-bearing Antigravity runtime config: `Operations/system-configs/antigravity/User/mcp.json` (ignored)
+### `personal/`
+- Stable personal context.
+- Prefer these files over ad-hoc notes for identity, communication, and values.
 
-## Bootstrap (new machine)
-This repo expects your configs to be linked via:
-- `Operations/scripts/brain-configs-link.sh`
+### `organisations/`
+- Organised by organisation/brand.
+- Use this for brand truth, positioning, legal docs, and growth playbooks.
 
-Ghostty config is managed in two locations on macOS:
-- `~/.config/ghostty/config`
-- `~/Library/Application Support/com.mitchellh.ghostty/config`
+### `projects/`
+- Organised by project.
+- Each project folder should stand on its own and contain its own README when the project is active enough to justify one.
 
-Run it once after cloning to:
-- move existing local files into `Operations/system-configs/...`
-- create symlinks back to the standard locations
-- create backups under `~/.brain-configs-backups/...`
+### `ai/`
+- Shared prompts, publishing systems, agent definitions, and reusable skills.
+- `ai/skills/` is the canonical shared skill library for cross-tool use.
 
-### Safety first
-Dry run:
-```bash
-DRY_RUN=1 bash Operations/scripts/brain-configs-link.sh
+### `operations/`
+- `operations/runbooks/` for repeatable procedures
+- `operations/scripts/` for executable helpers
+- `operations/snippets/` for small reusable fragments
+- `operations/automations/` for workflow exports and higher-level automation
+- `operations/infrastructure/` for architecture and infra docs
+- `operations/deploy/` for real deployment configs only
+- `operations/system-configs/` for curated machine/tool config that is intentionally synced
+
+### `runtime/`
+- Assistant-specific workspace and runtime notes.
+- `runtime/openclaw/` is the dedicated OpenClaw workspace for this repo.
+- `runtime/cache/` and `runtime/local/` are local-support folders, not canonical truth.
+- runtime bootstrap files should point to canonical docs instead of duplicating them.
+
+## OpenClaw Setup
+
+This repo does **not** use the repo root as the OpenClaw workspace.
+
+Instead, the OpenClaw workspace lives at:
+- `runtime/openclaw/`
+
+Why:
+- keeps the repo root clean
+- keeps OpenClaw bootstrap files in one obvious place
+- still lets OpenClaw use the whole Brain through workspace symlinks
+- avoids profile and business drift by keeping canonical truth outside the runtime folder
+
+Inside `runtime/openclaw/` you will find standard OpenClaw workspace files such as:
+- `AGENTS.md`
+- `SOUL.md`
+- `USER.md`
+- `IDENTITY.md`
+- `TOOLS.md`
+- `MEMORY.md`
+- `HEARTBEAT.md`
+- `memory/`
+- `skills/` → symlink to `ai/skills/`
+
+Recommended OpenClaw config:
+
+```json
+{
+  "agent": {
+    "workspace": "/absolute/path/to/brain/runtime/openclaw"
+  }
+}
 ```
 
-Run:
-```bash
-bash Operations/scripts/brain-configs-link.sh
-```
+Current OpenClaw docs:
+- https://openclawlab.com/en/docs/concepts/agent-workspace/
+- https://openclawlab.com/en/docs/concepts/memory/
 
-## Skills (centralized)
-Canonical skills live in `AI/skills/` and are symlinked to tool-specific locations:
-- Codex: `Operations/system-configs/codex/skills/user` -> `AI/skills` (keeps `.system/` intact)
-- Cursor: `Operations/system-configs/cursor/skills` -> `AI/skills`
-- Claude: `Operations/system-configs/claude/skills` -> `AI/skills`
-- Antigravity (global): `~/.gemini/antigravity/skills` -> `AI/skills`
-- Gemini CLI (global): `~/.gemini/skills` -> `AI/skills`
+## Skills
 
-### UI/UX Pro Max (manual)
-UI-UX Pro Max is installed as an AI-agnostic skill in:
-- `AI/skills/ui-ux-pro-max/`
+Canonical shared skills live in:
+- `ai/skills/`
+- `runtime/openclaw/skills/` is only a workspace alias to that same location
 
-Standard workflow (for you + AI):
-1) You ask for a design (e.g. "Brutalism landing page").
-2) AI uses **web-design** skill and auto-consults **ui-ux-pro-max** to select style/palette/typography.
-3) AI returns a build-ready spec for Next.js + Tailwind + shadcn.
+Tool-native or vendor-managed skills should stay separate:
+- Cursor internal skills: `operations/system-configs/cursor/skills-cursor/`
+- Codex bundled/system skills: `operations/system-configs/codex/skills/.system/`
 
-Quick start (manual):
-```bash
-python3 AI/skills/ui-ux-pro-max/scripts/search.py "<product + industry + style>" --design-system -p "<Project Name>"
-```
+Rule of thumb:
+- shared business/domain skills → `ai/skills/`
+- tool-specific helper skills → stay with that tool
 
-Persist a design system:
-```bash
-python3 AI/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "<Project Name>" --page "<page name>"
-```
+## Config and Git Policy
 
-Use with the web-design skill:
-- Run the design-system command first, then apply its output to the web-design spec.
+Only version:
+- portable, human-maintained config
+- docs, prompts, scripts, templates, and canonical notes
+- intentional project deliverables and generated assets that are part of the reusable knowledge base or product library
 
-Update UI/UX Pro Max safely (does not touch your web-design skill):
-```bash
-bash Operations/scripts/update-ui-ux-pro-max.sh
-```
+Do **not** version:
+- auth tokens
+- browser profiles
+- session logs
+- debug dumps
+- SQLite state
+- cache folders
+- `.DS_Store`
+- generated tool runtime
 
-One-liner wrapper (design system + persist):
-```bash
-bash Operations/scripts/design-web.sh "<query>" "<Project Name>" [page]
-```
+`operations/system-configs/` should stay curated. If a file is mostly machine state, it should be ignored or moved out of Git.
+
+Generated-file rule:
+- version generated **project artifacts** when they are intentional outputs you want synced, reviewed, reused, or shipped from this repo
+- do **not** version generated **tool/runtime state** when it is just local machine noise, cache, session history, debug data, or transient automation output
+
+Examples:
+- version: generated SSML or other reusable production assets under a project like `projects/says-the-bible/production/`
+- do not version: `.wrangler/`, Codex/Claude session data, browser profiles, SQLite tool state, IDE caches
+
+## Cloudflare / Wrangler
+
+This repo currently has **no active Cloudflare Pages site**.
+
+If you are not deploying anything to Cloudflare, you do not need:
+- `wrangler.toml`
+- Cloudflare Pages placeholder folders
+- `.wrangler/` cache folders
+
+Wrangler is just Cloudflare’s CLI/config system for Workers and Pages:
+- https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+
+## Design Principle
+
+This repo should optimize for:
+- clear top-level boundaries
+- low ambiguity
+- minimal duplication
+- canonical truth in one place
+- runtime state separated from durable knowledge
