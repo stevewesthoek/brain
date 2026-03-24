@@ -4,10 +4,19 @@ Use this file for durable ProBot memory only when the fact does not already have
 
 ## Skills
 
-- All OpenClaw skills live in `brain/runtime/openclaw/active-skills/` — organized by domain (e.g. `x/`, `google/`)
-- OpenClaw loads them via `extraDirs` in `openclaw.json` — pointing directly at those Brain paths
-- `workspace/skills/` must stay empty — never place skills there, never create symlinks there
-- To add a new skill: create the skill folder + SKILL.md in the Brain under the appropriate domain, then add its parent dir to `extraDirs` in `openclaw.json` if not already present
+- All OpenClaw skills live in the Brain — never in `workspace/skills/` (keep that empty)
+- OpenClaw-specific skills: `brain/runtime/openclaw/active-skills/<domain>/` (x, google)
+- Shared cross-tool skills: `brain/ai/skills/` (notebooklm, ui-ux-pro-max, web-design)
+- Both loaded via `extraDirs` in `~/.openclaw/openclaw.json`
+- To add a new skill: create folder + SKILL.md in the correct Brain path; add parent dir to `extraDirs` if not already present
+
+## NotebookLM
+
+- Correct package: `notebooklm-mcp-server` (npm) — NOT `notebooklm-mcp` (PyPI v2.x, wrong tool surface)
+- ProBot bridge: `mcporter call notebooklm.<tool>` — not native OpenClaw MCP injection
+- mcporter config: `~/.mcporter/mcporter.json` (system scope, outside Git)
+- Auth: run `notebooklm-mcp-auth` once; saves to `~/.notebooklm-mcp/auth.json`
+- Full bridge docs: `operations/system-configs/mcp/notebooklm/openclaw-mcporter.md`
 
 ## Memory rules
 

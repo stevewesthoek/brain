@@ -1,42 +1,128 @@
 # NotebookLM MCP
 
 This folder holds repo-safe documentation and templates for the NotebookLM MCP server.
-Runtime state (cookies, session, Chrome profile) should stay in your home directory and
-must not be committed to this repo.
+Runtime state (auth, cookies) must stay in `~/.notebooklm-mcp/` outside the repo and
+must never be committed.
 
 For the global MCP installation standard, see:
 `operations/system-configs/mcp/README.md`
 
+---
+
+## Package — IMPORTANT
+
+**The correct package is `notebooklm-mcp-server` (npm).**
+
+`notebooklm-mcp` and `notebooklm-mcp-server` are NOT interchangeable.
+
+| Package | Registry | Binary | Tools | Use? |
+|---|---|---|---|---|
+| `notebooklm-mcp-server` | npm | `notebooklm-mcp-server` | Full Brain-aligned surface (notebook_list, notebook_create, research_start, etc.) | ✅ YES |
+| `notebooklm-mcp` (v2.x) | PyPI | `notebooklm-mcp` | Limited 8-tool surface (chat_with_notebook, navigate_to_notebook, etc.) | ❌ NO |
+
+The Brain skill (`ai/skills/notebooklm/SKILL.md`) and `tools.md` were written against the
+`notebooklm-mcp-server` tool surface. Installing the wrong package results in a broken
+integration with no visible error — the server starts but no Brain-documented tools exist.
+
+---
+
+## Install
+
+```bash
+npm install -g notebooklm-mcp-server
+```
+
+Installs two binaries to `~/.local/bin/`:
+- `notebooklm-mcp-server` — MCP stdio server
+- `notebooklm-mcp-auth` — interactive auth CLI
+
+---
+
 ## Repo contents
-- notebooklm-config.template.json
-  Template config for the NotebookLM MCP server. Copy to
-  ~/.notebooklm-mcp/notebooklm-config.json and edit paths if needed.
 
-## Runtime locations (outside repo)
-- ~/.notebooklm-mcp/notebooklm-config.json
-- ~/.notebooklm-mcp/auth.json
-- ~/.notebooklm-mcp/chrome_profile_notebooklm
+- `README.md` — this file
+- `notebooklm-config.template.json` — legacy template (written for wrong Python package, kept for reference only; not used by `notebooklm-mcp-server`)
+- `openclaw-mcporter.md` — OpenClaw/ProBot bridge instructions
 
-## Codex project config
-Canonical config lives at `operations/system-configs/codex/config.toml`.
-Do not duplicate MCP definitions per repo. Repos should consume central config via
-the `.codex -> ~/.codex` symlink pattern.
+---
 
+## Runtime locations (outside repo, never commit)
+
+- `~/.notebooklm-mcp/auth.json` — Google auth cookies (written by `notebooklm-mcp-auth`)
+- `~/.notebooklm-mcp/` — runtime state directory
+
+---
+
+## Client adapters
+
+### Codex (Mac)
+
+Canonical Codex config: `operations/system-configs/codex/config.toml`
+
+```toml
 [mcp_servers.notebooklm]
-command = "/Users/Office/.local/bin/notebooklm-mcp"
+command = "/Users/Office/.local/bin/notebooklm-mcp-server"
+```
 
-## Auth flow
-Run:
-  /Users/Office/.local/bin/notebooklm-mcp-auth
-Then restart Codex and verify:
-  codex mcp list
+Auth:
+```bash
+notebooklm-mcp-auth
+# then restart Codex and verify:
+codex mcp list
+```
 
-## Refresh auth
-If NotebookLM expires your session, re-run:
-  /Users/Office/.local/bin/notebooklm-mcp-auth
-Then restart Codex and verify:
-  codex mcp list
+Note: On Mac, `~/.local/bin/notebooklm-mcp` may resolve to `notebooklm-mcp-server` via
+a shell alias or symlink — confirm with `readlink $(which notebooklm-mcp)`.
 
-## Verified
-As of 2026-01-31, Codex lists the server as enabled using:
-  /Users/Office/.local/bin/notebooklm-mcp --config /Users/Office/.notebooklm-mcp/notebooklm-config.json
+### ProBot / OpenClaw (VPS)
+
+ProBot reaches NotebookLM through `mcporter` as the runtime bridge:
+
+```
+ProBot (exec) → mcporter call notebooklm.<tool> → notebooklm-mcp-server (stdio)
+```
+
+ProBot does NOT use native OpenClaw MCP tool injection.
+`mcp.servers` in `openclaw.json` feeds ACPX (coding agent) only, not the main ProBot agent.
+
+mcporter system config: `~/.mcporter/mcporter.json`
+
+```json
+{
+  "mcpServers": {
+    "notebooklm": {
+      "command": "/home/ubuntu/.local/bin/notebooklm-mcp-server",
+      "description": "NotebookLM MCP server (notebooklm-mcp-server npm, Brain-aligned tool surface)"
+    }
+  }
+}
+```
+
+Full bridge instructions: `openclaw-mcporter.md`
+
+---
+
+## Auth flow (any client)
+
+Run once after install:
+```bash
+notebooklm-mcp-auth
+```
+
+Follow the browser prompt to sign in with your Google account.
+Auth is saved to `~/.notebooklm-mcp/auth.json`.
+
+Re-run when the session expires.
+
+---
+
+## Verify
+
+```bash
+# Check binary is correct package
+notebooklm-mcp-server --version   # should be 3.x
+
+# Via mcporter (ProBot path)
+mcporter list notebooklm           # should show notebook_list, notebook_create, etc.
+mcporter call notebooklm.notebook_list  # requires auth to be done first
+```

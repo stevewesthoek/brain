@@ -1,6 +1,6 @@
 ---
 name: web-design
-description: Use when the user asks for web design work (landing pages, SaaS apps, dashboards, funnels, marketing sites, UX/UI direction, visual systems). Provide a style choice, layout plan, and implementation-ready design spec aligned to the Next.js + Tailwind + shadcn/ui stack. Triggers: "design a landing page", "web design for my SaaS", "create a funnel page", "dashboard UI", "redesign this website", "choose a visual style".
+description: Use when the user asks for web design work (landing pages, SaaS apps, dashboards, funnels, marketing sites, UX/UI direction, visual systems). Provide a style choice, layout plan, and implementation-ready design spec aligned to the Next.js + Tailwind + shadcn/ui stack. Triggers on requests like: design a landing page, web design for my SaaS, create a funnel page, dashboard UI, redesign this website, choose a visual style.
 ---
 
 # Web Design

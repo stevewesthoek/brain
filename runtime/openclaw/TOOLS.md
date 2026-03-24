@@ -36,12 +36,13 @@ The old `brain` skill was removed because this auto-loading makes it obsolete.
 
 Skills live **exclusively in the Brain**. `workspace/skills/` must stay empty — never place skills there.
 
-OpenClaw loads them via `extraDirs` in `~/.openclaw/openclaw.json`, pointing directly at Brain paths:
+OpenClaw loads skills via `extraDirs` in `~/.openclaw/openclaw.json`:
 
 ```json
 "skills": {
   "load": {
     "extraDirs": [
+      "/home/ubuntu/.openclaw/workspace/brain/ai/skills",
       "/home/ubuntu/.openclaw/workspace/brain/runtime/openclaw/active-skills/x",
       "/home/ubuntu/.openclaw/workspace/brain/runtime/openclaw/active-skills/google"
     ]
@@ -49,7 +50,20 @@ OpenClaw loads them via `extraDirs` in `~/.openclaw/openclaw.json`, pointing dir
 }
 ```
 
-### Active skills
+### Shared cross-tool skills (`brain/ai/skills/`)
+
+Loaded as `openclaw-extra`. Shared with Codex and other tools.
+
+| Brain path | Skill name |
+|---|---|
+| `ai/skills/notebooklm` | `notebooklm` |
+| `ai/skills/ui-ux-pro-max` | `ui-ux-pro-max` |
+| `ai/skills/web-design` | `web-design` |
+
+`runtime/openclaw/skills` is a repo symlink alias to `ai/skills/` — it is NOT an OpenClaw
+discovery path. OpenClaw reads `ai/skills` directly via `extraDirs`.
+
+### OpenClaw-specific active skills (`brain/runtime/openclaw/active-skills/`)
 
 | Brain path | Skill name |
 |---|---|
@@ -61,16 +75,31 @@ OpenClaw loads them via `extraDirs` in `~/.openclaw/openclaw.json`, pointing dir
 
 ### Adding a new skill
 
-1. Create `brain/runtime/openclaw/active-skills/<domain>/<skill-name>/SKILL.md`
-2. If the domain isn't already in `extraDirs`, add it to `~/.openclaw/openclaw.json`
-3. Run `openclaw gateway restart`
+- Shared (cross-tool): add to `brain/ai/skills/<skill-name>/SKILL.md` — `ai/skills` already in `extraDirs`
+- OpenClaw-specific: add to `brain/runtime/openclaw/active-skills/<domain>/<skill-name>/SKILL.md`; add domain dir to `extraDirs` if new
+- Run `openclaw gateway restart` after changes
 
-### Separate from shared skills
+## NotebookLM Bridge
 
-- `runtime/openclaw/skills` → `ai/skills/` (cross-tool shared skills: notebooklm, ui-ux-pro-max, web-design)
-- `runtime/openclaw/active-skills/` (OpenClaw-specific active skills)
+ProBot reaches NotebookLM through `mcporter`, not native OpenClaw MCP injection.
 
-These are intentionally separate. Shared skills are tool-agnostic. Active skills are OpenClaw-specific.
+```
+ProBot (exec) → mcporter call notebooklm.<tool> → notebooklm-mcp-server (stdio)
+```
+
+`mcp.servers` in `openclaw.json` feeds ACPX (coding agents) only — not the main ProBot agent.
+
+| Component | Path |
+|---|---|
+| MCP server | `~/.local/bin/notebooklm-mcp-server` (npm: `notebooklm-mcp-server`) |
+| Auth CLI | `~/.local/bin/notebooklm-mcp-auth` |
+| mcporter | `~/.local/bin/mcporter` |
+| mcporter config | `~/.mcporter/mcporter.json` |
+| Auth state | `~/.notebooklm-mcp/auth.json` |
+
+**Do not install `notebooklm-mcp` (PyPI v2.x) — wrong package, wrong tool surface.**
+
+Full bridge docs: `operations/system-configs/mcp/notebooklm/openclaw-mcporter.md`
 
 ## Interpretation Rules
 
