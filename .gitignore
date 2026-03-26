@@ -87,3 +87,5 @@ operations/system-configs/claude/sessions/
 operations/system-configs/claude/shell-snapshots/
 operations/system-configs/claude/statsig/
 operations/system-configs/claude/todos/
+
+operations/system-configs/claude/settings.json
