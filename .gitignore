@@ -68,3 +68,22 @@ operations/automations/n8n/n8n_backup/
 
 # Embedded/nested repo kept out until normalized
 ai/skills/taste-skill/
+
+# macOS junk
+.DS_Store
+
+# Claude volatile runtime
+operations/system-configs/claude/backups/
+operations/system-configs/claude/cache/
+operations/system-configs/claude/debug/
+operations/system-configs/claude/downloads/
+operations/system-configs/claude/file-history/
+operations/system-configs/claude/history.jsonl
+operations/system-configs/claude/paste-cache/
+operations/system-configs/claude/plugins/
+operations/system-configs/claude/projects/
+operations/system-configs/claude/session-env/
+operations/system-configs/claude/sessions/
+operations/system-configs/claude/shell-snapshots/
+operations/system-configs/claude/statsig/
+operations/system-configs/claude/todos/
