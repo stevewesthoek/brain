@@ -1,0 +1,36 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+            Who has measured the waters in the hollow of his hand and marked off the heavens with a span?
+            <break time="1000ms"/>
+            Who has enclosed the dust of the earth in a measure and weighed the mountains in scales and the hills in a balance?
+            <break time="3800ms"/>
+            Isaiah pauses here and asks the listener to do something.
+            <break time="1800ms"/>
+            Look up. Look out. Consider the scale of what you are held by.
+            <break time="3800ms"/>
+            The oceans of the world — all of them together — fit in the hollow of His hand. Not measured with instruments. Not approximated. Held, cupped, like water in a palm. That is the ocean. That is the Pacific. That is the deep Atlantic. That is every sea and every depth — held in the hollow of one hand.
+            <break time="3800ms"/>
+            And He marked off the heavens with a span.
+            <break time="1800ms"/>
+            A span is the distance from the tip of the thumb to the tip of the little finger when the hand is spread wide. The heavens — the entire sky, the stars beyond counting, the galaxies beyond seeing — measured with an outstretched hand. That is His scale.
+            <break time="3800ms"/>
+            He weighed the mountains.
+            <break time="1800ms"/>
+            The mountains that have stood since before human memory, the mountains that make us feel small when we stand at their base — He weighed them the way a merchant weighs goods at a market. He knows the weight of every one.
+            <break time="3800ms"/>
+            And this God — who holds oceans in one hand and measures sky with the other — this God knows the weight of what you are carrying. He has not missed it. He is not confused by the complexity of your situation. He is not stumped by the size of what you face.
+            <break time="1800ms"/>
+            The God who measures mountains also tends the lambs.
+            <break time="1000ms"/>
+            And you are in His keeping.
+    </prosody>
+  </voice>
+</speak>

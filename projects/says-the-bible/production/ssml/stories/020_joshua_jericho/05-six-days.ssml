@@ -1,0 +1,49 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+      The second day came.<break time="500ms"/>
+      They marched again.<break time="500ms"/>
+      Once around the city, in silence.<break time="1000ms"/>
+      Then they returned to camp.<break time="1800ms"/>
+
+      The third day.<break time="500ms"/>
+      The same.<break time="500ms"/>
+      The armed guard, the priests, the ark, the rear guard.<break time="500ms"/>
+      One circuit.<break time="500ms"/>
+      No words.<break time="1000ms"/>
+      Back to camp.<break time="1800ms"/>
+
+      The fourth day.<break time="500ms"/>
+      The fifth.<break time="500ms"/>
+      The sixth.<break time="1000ms"/>
+      Each morning they rose, formed the line, and walked.<break time="1800ms"/>
+
+      The people of Jericho watched from the walls.<break time="500ms"/>
+      Nothing happened.<break time="500ms"/>
+      No attack.<break time="500ms"/>
+      No siege engines.<break time="500ms"/>
+      No battering rams.<break time="1000ms"/>
+      Just the quiet march, the sound of rams' horns, and the deep silence of a people learning to wait.<break time="1800ms"/>
+
+      Six days of the same walk.<break time="500ms"/>
+      Six days of dust and patience.<break time="500ms"/>
+      Six days of trusting what had not yet come to pass.<break time="1800ms"/>
+
+      There is something powerful about repeated faithfulness.<break time="500ms"/>
+      About doing the quiet thing again and again without visible results.<break time="1000ms"/>
+      It builds something in the heart that force never could.<break time="1800ms"/>
+
+      The march was not wasted.<break time="1000ms"/>
+      The waiting was not empty.<break time="1000ms"/>
+      God was working in the silence.<break time="1800ms"/>
+      And the seventh day was almost here.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

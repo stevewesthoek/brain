@@ -69,6 +69,19 @@ operations/automations/n8n/n8n_backup/
 # Embedded/nested repo kept out until normalized
 ai/skills/taste-skill/
 
+# Says the Bible — pipeline output binaries (large files, regenerable from pipeline)
+projects/says-the-bible/production/output/**/*.mp3
+projects/says-the-bible/production/output/**/*.mp4
+projects/says-the-bible/production/output/**/*.png
+projects/says-the-bible/production/output/**/*.jpg
+projects/says-the-bible/production/output/**/*.wav
+projects/says-the-bible/production/output/**/*.aac
+projects/says-the-bible/production/output/**/*.AAC
+projects/says-the-bible/production/output/**/*.m4a
+projects/says-the-bible/production/output/**/*.m4b
+projects/says-the-bible/production/input/assets/brownnoise.wav
+# (keep .gitkeep so folder structure is tracked)
+
 # macOS junk
 .DS_Store
 
@@ -89,3 +102,4 @@ operations/system-configs/claude/statsig/
 operations/system-configs/claude/todos/
 
 operations/system-configs/claude/settings.json
+.gstack/

@@ -1,0 +1,62 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+            The hours pass.
+            <break time="1800ms"/>
+            The sun begins to drop toward the hills.
+            <break time="1000ms"/>
+            Evening is coming.
+            <break time="1800ms"/>
+            The disciples come to Jesus with a practical concern.
+            <break time="1000ms"/>
+            "This is a desolate place," they say,
+            <break time="500ms"/>
+            "and the day is now over.
+            <break time="500ms"/>
+            Send the crowds away to go into the villages
+            <break time="500ms"/>
+            and buy food for themselves."
+            <break time="1800ms"/>
+            It is a reasonable suggestion.
+            <break time="1000ms"/>
+            It is the logical thing to do.
+            <break time="1000ms"/>
+            There is no food here.
+            <break time="500ms"/>
+            The people need to eat.
+            <break time="500ms"/>
+            The towns are not far.
+            <break time="1800ms"/>
+            But Jesus says something unexpected.
+            <break time="1800ms"/>
+            "They need not go away.
+            <break time="1000ms"/>
+            You give them something to eat."
+            <break time="1800ms"/>
+            You give them something to eat.
+            <break time="1800ms"/>
+            The disciples hear the impossible in those words.
+            <break time="1000ms"/>
+            They are standing in a desolate place
+            <break time="500ms"/>
+            with thousands of people
+            <break time="500ms"/>
+            and no resources to speak of.
+            <break time="1800ms"/>
+            But Jesus has not yet seen what they have.
+            <break time="1000ms"/>
+            And what they have,
+            <break time="1000ms"/>
+            in his hands,
+            <break time="1000ms"/>
+            will be enough.
+    </prosody>
+  </voice>
+</speak>

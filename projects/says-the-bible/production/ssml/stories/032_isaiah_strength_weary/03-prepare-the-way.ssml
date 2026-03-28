@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+            A voice cries: in the wilderness prepare the way of the Lord; make straight in the desert a highway for our God.
+            <break time="1000ms"/>
+            Every valley shall be lifted up, and every mountain and hill be made low.
+            <break time="1000ms"/>
+            The uneven ground shall become level, and the rough places a plain.
+            <break time="1000ms"/>
+            And the glory of the Lord shall be revealed.
+            <break time="3800ms"/>
+            There is a voice in the wilderness crying out. Not murmuring quietly. Crying. The kind of cry that comes from someone who has seen something — who knows something is coming — and cannot stay silent.
+            <break time="1800ms"/>
+            Make way. Something is coming. Something is on the move.
+            <break time="3800ms"/>
+            And then the geography begins to shift.
+            <break time="1800ms"/>
+            Every valley lifted. Every mountain made low. The valleys of Isaiah's time were places of shadow and difficulty — low places where you lost sight of the horizon. And God says those valleys are being raised. Whatever has put you in a low place, He is lifting the ground itself.
+            <break time="3800ms"/>
+            Every mountain made low.
+            <break time="1800ms"/>
+            The mountains that loom. The obstacles that seem permanent — too large to go around, too solid to go through. Isaiah says God brings them low. Not that you climb them harder. Not that you find a way around if you are resourceful enough. He lowers them. That is His action. His movement. His power applied to the landscape of your life.
+            <break time="3800ms"/>
+            The rough places, a plain.
+            <break time="1800ms"/>
+            The terrain that has been jagged and difficult, that has torn at your feet, that has made every step costly — He smooths it. He does not just promise that you will survive the rough ground. He makes it plain.
+            <break time="3800ms"/>
+            And the glory of the Lord shall be revealed.
+            <break time="1800ms"/>
+            All this preparation — the lifting, the lowering, the smoothing — it is preparation for an arrival. God is coming. And everything is being made ready for that coming.
+            <break time="1800ms"/>
+            The way is being prepared tonight.
+            <break time="1000ms"/>
+            You do not have to level it yourself.
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+      For as high as the heavens are above the earth, so great is his steadfast love toward those who fear him.<break time="1800ms"/>
+
+      The psalmist reaches for the largest distances he knows.<break time="500ms"/>
+      He does not say God's love is considerable.<break time="500ms"/>
+      He does not say it is generous.<break time="500ms"/>
+      He says it is as high as the heavens are above the earth.<break time="1000ms"/>
+      That is a distance beyond measuring.<break time="1800ms"/>
+
+      And then comes one of the most beautiful lines in all of scripture.<break time="500ms"/>
+      As far as the east is from the west, so far does he remove our transgressions from us.<break time="1800ms"/>
+
+      East and west never meet.<break time="500ms"/>
+      You can walk east forever and never arrive at west.<break time="500ms"/>
+      That is the distance God places between you and your sin.<break time="1000ms"/>
+      Not a short distance.<break time="500ms"/>
+      Not a manageable distance.<break time="500ms"/>
+      An infinite one.<break time="1800ms"/>
+
+      If tonight your mind wants to return to something you regret, hear this again.<break time="500ms"/>
+      God has already moved it farther from you than you can travel.<break time="1000ms"/>
+      It is not hovering nearby.<break time="500ms"/>
+      It is not waiting around the corner.<break time="500ms"/>
+      It has been sent away to a place that has no address.<break time="1800ms"/>
+
+      The distances God uses to describe His mercy are the largest ones we know.<break time="500ms"/>
+      Because His mercy is that large.<break time="1000ms"/>
+      And it is yours.<break time="1000ms"/>
+      Not because you reached far enough to grasp it.<break time="500ms"/>
+      But because He reached all the way to you.<break time="1800ms"/>
+
+      His mercy is great.<break time="1000ms"/>
+      You are forgiven.<break time="1000ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

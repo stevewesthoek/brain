@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+      When he was yet a great way off, his father saw him.<break time="1000ms"/>
+      Saw him.<break time="500ms"/>
+      Recognized the shape of him from far away.<break time="1800ms"/>
+
+      And the father was moved with compassion.<break time="500ms"/>
+      Not irritation, not hesitation, not the weighing of grievances.<break time="500ms"/>
+      Compassion.<break time="1000ms"/>
+      The deep movement of a parent's heart toward a returning child.<break time="1800ms"/>
+
+      He ran.<break time="1000ms"/>
+      The father ran to his son.<break time="500ms"/>
+      This is not a small detail.<break time="500ms"/>
+      Dignity says wait and let him come to you.<break time="1000ms"/>
+      The father does not wait.<break time="1800ms"/>
+
+      He fell on his neck and kissed him.<break time="500ms"/>
+      He held him before any word was spoken.<break time="500ms"/>
+      The son began his rehearsed speech: Father, I have sinned against heaven and before you.<break time="1000ms"/>
+      I am no longer worthy to be called your son.<break time="1800ms"/>
+
+      The father does not let him finish.<break time="500ms"/>
+      He calls to the servants: bring the best robe, and put it on him.<break time="500ms"/>
+      Put a ring on his hand and sandals on his feet.<break time="1000ms"/>
+      Bring the fatted calf, kill it, and let us eat and celebrate.<break time="1800ms"/>
+
+      For this my son was dead, and is alive again.<break time="500ms"/>
+      He was lost, and is found.<break time="1000ms"/>
+      The father's words come before any verdict, any probation, any condition.<break time="1800ms"/>
+
+      The robe, the ring, the sandals, the feast.<break time="500ms"/>
+      Full restoration, freely given.<break time="500ms"/>
+      Not because the son had earned it.<break time="1000ms"/>
+      Because the father had been watching the road, and when he saw his child, he ran.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

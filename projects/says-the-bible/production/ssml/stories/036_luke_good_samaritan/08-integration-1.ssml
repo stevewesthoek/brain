@@ -1,0 +1,27 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.40%">
+      The one who stopped was the neighbor.<break time="1800ms"/>
+      Mercy crossed the road.<break time="3800ms"/>
+      Someone saw and came close.<break time="1800ms"/>
+      The man in the road did not earn it.<break time="3800ms"/>
+
+      He could not earn it.<break time="1800ms"/>
+      He was lying in the dust, unable to rise.<break time="3800ms"/>
+      And still mercy came to him.<break time="1800ms"/>
+      Mercy found him where he was.<break time="9000ms"/>
+
+      You are seen.<break time="1800ms"/>
+      You are cared for.<break time="3800ms"/>
+      Mercy is already near.<break time="1800ms"/>
+      The one who stopped has already crossed the road.<break time="9000ms"/>
+    </prosody>
+  </voice>
+</speak>

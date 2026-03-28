@@ -1,0 +1,45 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+      Jesus said: a certain man had two sons.<break time="500ms"/>
+      Two sons, one father, one household.<break time="1000ms"/>
+      And the younger son came to his father with a request.<break time="1800ms"/>
+
+      He said: give me the share of property that will come to me.<break time="500ms"/>
+      It was a striking thing to ask.<break time="500ms"/>
+      An inheritance is given when a father dies.<break time="1000ms"/>
+      To ask for it now was to say: I want what is mine, and I want it without you.<break time="1800ms"/>
+
+      The father divided his property between them.<break time="500ms"/>
+      He did not refuse.<break time="500ms"/>
+      He let the son have what he asked for.<break time="1000ms"/>
+      Love does not hold tightly what must be released.<break time="1800ms"/>
+
+      Not many days later the younger son gathered everything together.<break time="500ms"/>
+      He packed it all.<break time="500ms"/>
+      He set his face toward a far country.<break time="1000ms"/>
+      He did not look back at what he was leaving behind.<break time="1800ms"/>
+
+      In that far country he spent everything.<break time="500ms"/>
+      The money moved quickly when there was no thought for tomorrow.<break time="500ms"/>
+      He spent recklessly, the story says, on loose living.<break time="1000ms"/>
+      And when he had spent everything, it was gone.<break time="1800ms"/>
+
+      All of it.<break time="500ms"/>
+      Every coin his father had divided for him.<break time="500ms"/>
+      Every last thing he had gathered and carried away.<break time="1000ms"/>
+      Gone.<break time="1800ms"/>
+
+      He had gone as far as he could go from his father's house.<break time="500ms"/>
+      He had chosen the far country fully.<break time="1000ms"/>
+      And now the far country had nothing left to give him.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

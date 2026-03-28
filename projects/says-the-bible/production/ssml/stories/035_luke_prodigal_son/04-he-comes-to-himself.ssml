@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+      He came to himself.<break time="1000ms"/>
+      Three words that carry the whole turn of the story.<break time="500ms"/>
+      He came to himself.<break time="1800ms"/>
+
+      Something in him that had gone quiet began to speak again.<break time="500ms"/>
+      Not loudly, not dramatically.<break time="500ms"/>
+      Quietly, in a field, while watching pigs eat.<break time="1000ms"/>
+      He came back to who he was.<break time="1800ms"/>
+
+      He said to himself: how many of my father's hired servants have more than enough bread?<break time="500ms"/>
+      They have bread to spare.<break time="500ms"/>
+      And here I am, perishing with hunger.<break time="1000ms"/>
+      The contrast was plain and simple and devastating.<break time="1800ms"/>
+
+      He made a decision.<break time="500ms"/>
+      I will arise and go to my father.<break time="500ms"/>
+      He would go back to the place he had left.<break time="1000ms"/>
+      Back to the house he had walked away from with full pockets and a restless heart.<break time="1800ms"/>
+
+      He rehearsed the words he would say.<break time="500ms"/>
+      Father, I have sinned against heaven and before you.<break time="500ms"/>
+      I am no longer worthy to be called your son.<break time="1000ms"/>
+      Make me as one of your hired servants.<break time="1800ms"/>
+
+      He would not ask to be a son again.<break time="500ms"/>
+      He had spent that.<break time="500ms"/>
+      He would ask only for a servant's place.<break time="1000ms"/>
+      A bed, bread, a roof — that would be enough.<break time="1800ms"/>
+
+      He did not know what the father would say.<break time="500ms"/>
+      He had no grounds to expect welcome.<break time="500ms"/>
+      But he rose.<break time="1000ms"/>
+      He turned his face toward home and he rose.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

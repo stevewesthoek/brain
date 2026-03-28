@@ -1,0 +1,41 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.40%">
+      The walls have fallen.<break time="1800ms"/>
+      The silence was not weakness.<break time="1800ms"/>
+      The walking was not wasted.<break time="1800ms"/>
+
+      Obedience did what force could not.<break time="1800ms"/>
+      God's plan was enough.<break time="3800ms"/>
+
+      You do not have to force your way through.<break time="1800ms"/>
+      You do not have to push harder than you can bear.<break time="1800ms"/>
+      You do not have to break down every wall with your own hands.<break time="1800ms"/>
+
+      Some walls fall by waiting.<break time="1800ms"/>
+      Some walls fall by trust.<break time="1800ms"/>
+      Some walls fall because you simply showed up, day after day, and kept walking.<break time="3800ms"/>
+
+      The march is over now.<break time="1800ms"/>
+      The trumpets are quiet.<break time="1800ms"/>
+      The dust has settled on the road around Jericho.<break time="1800ms"/>
+
+      And what remains is peace.<break time="1800ms"/>
+      The peace of a thing that has been finished.<break time="1800ms"/>
+      Not by striving, but by faithfulness.<break time="3800ms"/>
+
+      You can trust.<break time="1800ms"/>
+      You can let go of the effort.<break time="1800ms"/>
+      Obedience is enough.<break time="1800ms"/>
+      God's plan holds.<break time="3800ms"/>
+      You can rest.<break time="9000ms"/>
+    </prosody>
+  </voice>
+</speak>

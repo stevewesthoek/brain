@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+      Solomon goes up to Gibeon.<break time="500ms"/>
+      It is the great high place, the hill where Israel comes to offer sacrifice.<break time="1000ms"/>
+      A thousand burnt offerings he lays upon the altar there.<break time="1800ms"/>
+
+      The smoke rises in the evening air.<break time="500ms"/>
+      The sky grows dark over the hilltop.<break time="500ms"/>
+      The fires burn low.<break time="1000ms"/>
+      And Solomon sleeps.<break time="1800ms"/>
+
+      In that sleep, God comes.<break time="500ms"/>
+      Not with thunder.<break time="500ms"/>
+      Not with a visible hand or a shaking mountain.<break time="500ms"/>
+      But in a dream.<break time="1000ms"/>
+      Quiet as breath.<break time="1800ms"/>
+
+      God appears to Solomon in the night and speaks.<break time="500ms"/>
+      Ask what I shall give you.<break time="1800ms"/>
+
+      Think of it.<break time="500ms"/>
+      The God who made the heavens and the earth, who parted the sea and fed a nation in the wilderness.<break time="1000ms"/>
+      This God leans close in the dark and says, ask.<break time="1800ms"/>
+
+      The offer is open.<break time="500ms"/>
+      There are no conditions.<break time="500ms"/>
+      No limits named.<break time="500ms"/>
+      Anything.<break time="1000ms"/>
+      Solomon considers.<break time="1800ms"/>
+
+      The night is still around him.<break time="500ms"/>
+      The question hangs in the air like incense.<break time="1000ms"/>
+      And the young king, alone with God on the hilltop, begins to answer.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

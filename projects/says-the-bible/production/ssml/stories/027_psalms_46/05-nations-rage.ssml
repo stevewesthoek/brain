@@ -1,0 +1,48 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+      The nations rage.<break time="500ms"/>
+      The kingdoms totter.<break time="1000ms"/>
+      He utters his voice, the earth melts.<break time="1800ms"/>
+
+      The psalm widens now from the natural world to the human world.<break time="500ms"/>
+      Mountains shook earlier.<break time="500ms"/>
+      Now it is kingdoms.<break time="500ms"/>
+      Now it is nations in upheaval.<break time="1000ms"/>
+      The powerful things that people build, empires, systems, plans, all of them totter.<break time="1800ms"/>
+
+      But notice what stops the shaking.<break time="500ms"/>
+      Not an army.<break time="500ms"/>
+      Not a strategy.<break time="500ms"/>
+      Not a negotiation.<break time="1000ms"/>
+      He utters his voice.<break time="1800ms"/>
+
+      One word from God changes everything.<break time="500ms"/>
+      The earth that was shaking simply melts before His speaking.<break time="1000ms"/>
+      Not in destruction, but in submission.<break time="500ms"/>
+      The way a fever breaks.<break time="500ms"/>
+      The way a storm passes.<break time="500ms"/>
+      The way tension leaves a room when the right person speaks.<break time="1800ms"/>
+
+      His voice is sovereign over every trembling thing.<break time="500ms"/>
+      Over every anxious headline.<break time="500ms"/>
+      Over every uncertain tomorrow.<break time="500ms"/>
+      Over every worry you carried into this night.<break time="1800ms"/>
+
+      The nations may rage.<break time="500ms"/>
+      But the one who speaks galaxies into being is not disturbed.<break time="1000ms"/>
+      His voice holds.<break time="1800ms"/>
+
+      God is our refuge.<break time="1800ms"/>
+      The fortress holds.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,48 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+            Fear not, for I am with you.
+            <break time="500ms"/>
+            Be not dismayed, for I am your God.
+            <break time="500ms"/>
+            I will strengthen you.
+            <break time="500ms"/>
+            I will help you.
+            <break time="500ms"/>
+            I will uphold you with my righteous right hand.
+            <break time="1800ms"/>
+            Isaiah forty, verse ten. God speaking. Not suggesting. Not offering, if you can work hard enough to earn it. Speaking. Declaring. Making a promise that holds whether or not you feel it right now.
+            <break time="3800ms"/>
+            Three promises in three short lines.
+            <break time="1000ms"/>
+            I will strengthen you.
+            <break time="1800ms"/>
+            That means what you do not have, He will supply. The energy you have spent. The reserves that feel empty. The will to keep going that seems to have run dry. He knows. He sees. And He steps in not with a pep talk but with actual strength — His own given to you.
+            <break time="3800ms"/>
+            I will help you.
+            <break time="1800ms"/>
+            You are not navigating this alone. Every decision that feels too heavy, every situation where you cannot see the way forward — He is present in it. Active. Working on your behalf. Help is not just on the way. Help is here.
+            <break time="3800ms"/>
+            I will uphold you with my righteous right hand.
+            <break time="1800ms"/>
+            The hand of God. Not a metaphor designed to comfort but then disappear when tested. An actual holding. A gripping. When you feel yourself slipping — into fear, into despair, into exhaustion — there is a hand that does not let go.
+            <break time="3800ms"/>
+            Fear not.
+            <break time="1000ms"/>
+            Not because your circumstances have changed.
+            <break time="500ms"/>
+            Not because the hard thing is over.
+            <break time="500ms"/>
+            But because I am with you.
+            <break time="3800ms"/>
+            Let that settle now. Breathe slowly. You are held.
+    </prosody>
+  </voice>
+</speak>

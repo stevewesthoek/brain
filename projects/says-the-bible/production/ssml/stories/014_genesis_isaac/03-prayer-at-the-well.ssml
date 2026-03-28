@@ -1,0 +1,29 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+            The servant arrived at the city of Nahor, and he made his camels kneel down outside the city by a well of water.<break time="500ms"/>
+      It was evening, the time when women go out to draw water.<break time="1000ms"/>
+      The air was cooling, and the light was softening over the land.<break time="500ms"/>
+      The well sat quiet at the edge of the city, and the servant stood beside his ten camels, weary from the journey.<break time="1800ms"/>
+      And there, beside the well, he prayed.<break time="500ms"/>
+      O Lord God of my master Abraham, please give me success this day, and show kindness to my master Abraham.<break time="1000ms"/>
+      Behold, I stand here by the well of water, and the daughters of the men of the city are coming out to draw water.<break time="500ms"/>
+      Now let it be that the young woman to whom I say, please let down your pitcher that I may drink, and she says, drink, and I will also give your camels a drink, let her be the one You have appointed for Your servant Isaac.<break time="1800ms"/>
+      It was a very specific prayer.<break time="500ms"/>
+      Not vague or uncertain.<break time="500ms"/>
+      He asked God to show him through an act of extraordinary kindness.<break time="500ms"/>
+      To water ten camels after a long journey is not a small thing.<break time="500ms"/>
+      A single camel can drink twenty-five gallons of water.<break time="500ms"/>
+      The servant was asking God for a sign that could not be mistaken.<break time="1000ms"/>
+      And before he had finished speaking, before the prayer was even complete, Rebekah came out.<break time="1800ms"/>
+      You can rest as the prayer is answered.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

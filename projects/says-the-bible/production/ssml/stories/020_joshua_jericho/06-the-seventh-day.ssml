@@ -1,0 +1,47 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+      On the seventh day they rose at dawn.<break time="500ms"/>
+      The sky was still pale and cool.<break time="500ms"/>
+      The camp stirred earlier than before.<break time="500ms"/>
+      Something was different about this morning.<break time="1800ms"/>
+
+      They formed the line again.<break time="500ms"/>
+      The armed guard.<break time="500ms"/>
+      The seven priests with the seven trumpets.<break time="500ms"/>
+      The ark of the covenant.<break time="500ms"/>
+      The rear guard.<break time="1000ms"/>
+      And the people, still silent, still faithful.<break time="1800ms"/>
+
+      They marched around the city once.<break time="500ms"/>
+      Twice.<break time="500ms"/>
+      Three times.<break time="500ms"/>
+      Four.<break time="500ms"/>
+      Five.<break time="500ms"/>
+      Six.<break time="1000ms"/>
+      Seven times around the city on this final day.<break time="1800ms"/>
+
+      On the seventh circuit, the priests blew a long, sustained blast on the trumpets.<break time="1000ms"/>
+      The sound filled the valley and pressed against the stones.<break time="1800ms"/>
+
+      And Joshua spoke.<break time="500ms"/>
+      Shout, for the Lord has given you the city.<break time="1800ms"/>
+
+      And the people shouted.<break time="500ms"/>
+      After six days of silence, they lifted their voices with a great shout.<break time="1000ms"/>
+      Not a cry of war alone, but a cry of faith released.<break time="1000ms"/>
+      The sound of a people who had walked and waited and trusted, finally given permission to let it all out.<break time="1800ms"/>
+
+      The silence had done its work.<break time="500ms"/>
+      The obedience had prepared the ground.<break time="1000ms"/>
+      And now the moment had come.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

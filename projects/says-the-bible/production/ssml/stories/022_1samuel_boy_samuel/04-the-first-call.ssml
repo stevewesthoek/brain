@@ -1,0 +1,43 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+      Then, in the stillness, a voice.<break time="1000ms"/>
+      "Samuel."<break time="1800ms"/>
+
+      The boy hears his own name spoken clearly in the dark.<break time="500ms"/>
+      He does not hesitate.<break time="500ms"/>
+      He rises and runs to Eli.<break time="1000ms"/>
+      "Here I am," he says, "for you called me."<break time="1800ms"/>
+
+      But Eli shakes his head gently.<break time="500ms"/>
+      "I did not call," the old priest says.<break time="500ms"/>
+      "Lie down again."<break time="1800ms"/>
+
+      So Samuel goes back.<break time="500ms"/>
+      He lies down once more on his mat in the dark.<break time="500ms"/>
+      The lamp still flickers above him.<break time="500ms"/>
+      The temple is quiet again.<break time="1800ms"/>
+
+      He does not yet know the Lord.<break time="500ms"/>
+      The word of the Lord has not yet been revealed to him.<break time="1000ms"/>
+      He is not disobedient.<break time="500ms"/>
+      He is not deaf.<break time="500ms"/>
+      He simply has not yet learned to recognize this voice.<break time="1800ms"/>
+
+      And there is no shame in that.<break time="500ms"/>
+      Sometimes the voice of God comes before we have the words to name it.<break time="1000ms"/>
+      Sometimes hearing is something we grow into, not something we are born knowing.<break time="1800ms"/>
+
+      The boy lies down again.<break time="500ms"/>
+      The temple is still.<break time="500ms"/>
+      And the voice is patient.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

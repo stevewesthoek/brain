@@ -1,0 +1,42 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+      The morning comes.<break time="500ms"/>
+      The Jordan is at flood stage.<break time="500ms"/>
+      Harvest time, when the snows melt from the northern hills and the river swells beyond its banks.<break time="1000ms"/>
+      The water runs wide and brown and strong.<break time="1800ms"/>
+
+      The priests lift the ark onto their shoulders.<break time="500ms"/>
+      The golden poles rest in their hands.<break time="500ms"/>
+      The weight of the presence of God is carried between them.<break time="1000ms"/>
+      And they begin to walk toward the water.<break time="1800ms"/>
+
+      Behind them, the entire nation watches.<break time="500ms"/>
+      Thousands upon thousands of men and women and children.<break time="500ms"/>
+      Tents packed, animals gathered, everything they own on their backs.<break time="1000ms"/>
+      All of them watching the priests move toward the flood.<break time="1800ms"/>
+
+      The priests reach the very edge.<break time="500ms"/>
+      The mud is soft beneath their sandals.<break time="500ms"/>
+      The sound of the current is loud and close.<break time="1000ms"/>
+      And they do not stop.<break time="1800ms"/>
+
+      Their feet touch the water.<break time="1000ms"/>
+      This is the moment of faith.<break time="500ms"/>
+      Stepping in before the way is clear.<break time="500ms"/>
+      Obeying before the proof arrives.<break time="1800ms"/>
+
+      They do not know what will happen next.<break time="500ms"/>
+      They only know what God has said.<break time="1000ms"/>
+      And so they step in.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

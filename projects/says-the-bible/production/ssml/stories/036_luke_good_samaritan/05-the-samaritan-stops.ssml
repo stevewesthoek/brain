@@ -1,0 +1,45 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+      But a Samaritan, as he journeyed, came to where the man was.<break time="1000ms"/>
+      A Samaritan.<break time="500ms"/>
+      To those listening to Jesus, this was a surprising word.<break time="1800ms"/>
+
+      Samaritans and Jews had a long history of division and mutual suspicion.<break time="500ms"/>
+      He was the least expected rescuer.<break time="500ms"/>
+      The one whose help would have seemed most unlikely to arrive.<break time="1000ms"/>
+      And yet he is the one who comes, and stops, and acts.<break time="1800ms"/>
+
+      When he saw him, he had compassion.<break time="500ms"/>
+      The same word used for the father who ran to his son.<break time="500ms"/>
+      Compassion: a deep, physical movement of the heart toward another person's need.<break time="1000ms"/>
+      He did not calculate. He felt, and then he moved.<break time="1800ms"/>
+
+      He went to him.<break time="500ms"/>
+      He crossed the road, as the others had crossed to avoid it.<break time="500ms"/>
+      He knelt down beside the wounded man.<break time="1000ms"/>
+      He bound up his wounds.<break time="1800ms"/>
+
+      He poured on oil and wine.<break time="500ms"/>
+      Oil to soothe, wine to clean.<break time="500ms"/>
+      He used what he had with him, the things from his own journey.<break time="1000ms"/>
+      He gave them freely to someone he had never met.<break time="1800ms"/>
+
+      He set the man on his own animal.<break time="500ms"/>
+      He walked so that the wounded man could ride.<break time="500ms"/>
+      He brought him to an inn.<break time="1000ms"/>
+      And he took care of him through the night.<break time="1800ms"/>
+
+      He stayed.<break time="500ms"/>
+      He did not hand him off and hurry on.<break time="500ms"/>
+      He stayed and cared for him until morning came.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

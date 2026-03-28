@@ -1,0 +1,45 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+      Bless the Lord, O my soul.<break time="1000ms"/>
+      And all that is within me, bless his holy name.<break time="1800ms"/>
+
+      The psalm begins not with a command to others, but with a command to oneself.<break time="500ms"/>
+      David is speaking inward.<break time="500ms"/>
+      He is calling his own soul to attention.<break time="1000ms"/>
+      As though the deepest part of him had grown forgetful, and needed reminding.<break time="1800ms"/>
+
+      All that is within me.<break time="500ms"/>
+      Not just the part that feels grateful.<break time="500ms"/>
+      Not just the part that is rested and clear.<break time="500ms"/>
+      But everything.<break time="1000ms"/>
+      The tired places.<break time="500ms"/>
+      The uncertain places.<break time="500ms"/>
+      The places that have been carrying weight all day.<break time="1800ms"/>
+
+      He summons all of it to one purpose.<break time="500ms"/>
+      Bless his holy name.<break time="1000ms"/>
+      Not because the day was easy.<break time="500ms"/>
+      Not because everything made sense.<break time="500ms"/>
+      But because God is worthy of that blessing, no matter the condition of the one who offers it.<break time="1800ms"/>
+
+      There is something deeply freeing in this.<break time="500ms"/>
+      You do not have to arrive at praise in perfect shape.<break time="500ms"/>
+      You can come as you are, weary and full of the day, and still your soul can bless the Lord.<break time="1000ms"/>
+      David did not wait until he felt whole.<break time="500ms"/>
+      He spoke to his soul and told it where to look.<break time="1800ms"/>
+
+      And tonight, you can do the same.<break time="500ms"/>
+      Let every part of you turn gently toward the One who is kind.<break time="1000ms"/>
+      His mercy is great.<break time="1000ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

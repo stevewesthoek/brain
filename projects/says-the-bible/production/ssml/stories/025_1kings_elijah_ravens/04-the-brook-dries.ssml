@@ -1,0 +1,43 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+      The drought did not relent.<break time="500ms"/>
+      The sun rose each day over a land growing harder and drier.<break time="1000ms"/>
+      The grass turned pale. The soil cracked.<break time="500ms"/>
+      The hills that once held green now held dust.<break time="1800ms"/>
+
+      And after a time, the brook Cherith began to slow.<break time="500ms"/>
+      The water that had run so faithfully grew thinner.<break time="1000ms"/>
+      The sound over the stones grew quieter.<break time="500ms"/>
+      Some mornings there was barely a trickle.<break time="1800ms"/>
+
+      Then one day, the brook was dry.<break time="1000ms"/>
+      The stones lay bare. The mud cracked at the edges.<break time="500ms"/>
+      The place that had been Elijah's provision was now empty.<break time="1800ms"/>
+
+      This is a hard moment in the story.<break time="500ms"/>
+      The place God sent him to had run out.<break time="1000ms"/>
+      The provision that was so faithful had come to its end.<break time="1800ms"/>
+
+      But God did not leave Elijah at a dry brook.<break time="500ms"/>
+      The ending of one provision was not the ending of God's care.<break time="1000ms"/>
+      It was a turning point. A doorway to the next place.<break time="1800ms"/>
+
+      God's provision is not always permanent in one place.<break time="500ms"/>
+      Sometimes it moves.<break time="1000ms"/>
+      Sometimes the brook dries so that the next step can begin.<break time="500ms"/>
+      And Elijah would need to follow.<break time="1800ms"/>
+
+      But first, there was simply the quiet of an empty brook.<break time="500ms"/>
+      And a prophet waiting for a word.<break time="1000ms"/>
+      And God, who had not forgotten him.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

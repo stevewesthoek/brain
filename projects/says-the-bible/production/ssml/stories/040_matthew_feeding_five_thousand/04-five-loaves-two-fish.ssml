@@ -1,0 +1,64 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+            The disciples look at what they have.
+            <break time="1800ms"/>
+            "We have only five loaves here," they say.
+            <break time="1000ms"/>
+            "And two fish."
+            <break time="1800ms"/>
+            In another Gospel we are told these belonged to a boy.
+            <break time="1000ms"/>
+            A child who had brought a small lunch.
+            <break time="1800ms"/>
+            Five small loaves of barley bread.
+            <break time="1000ms"/>
+            Two fish.
+            <break time="1800ms"/>
+            It is not a meal.
+            <break time="1000ms"/>
+            It is barely a snack for one person.
+            <break time="1800ms"/>
+            And facing them is a crowd of five thousand men,
+            <break time="500ms"/>
+            plus women and children.
+            <break time="1000ms"/>
+            The number is beyond counting in any practical sense.
+            <break time="1800ms"/>
+            The gap between what they have
+            <break time="500ms"/>
+            and what the crowd needs
+            <break time="500ms"/>
+            is so large it does not even seem worth naming.
+            <break time="1800ms"/>
+            And yet they name it.
+            <break time="1000ms"/>
+            They bring what they have to Jesus.
+            <break time="1800ms"/>
+            That small act matters.
+            <break time="1000ms"/>
+            They do not hide the five loaves and say nothing.
+            <break time="1000ms"/>
+            They do not walk away because it is not enough.
+            <break time="1800ms"/>
+            They say what they have.
+            <break time="1000ms"/>
+            They offer it.
+            <break time="1800ms"/>
+            And that is where the miracle begins.
+            <break time="1000ms"/>
+            With the small offering.
+            <break time="1000ms"/>
+            With the honest admission of not enough.
+            <break time="1000ms"/>
+            Placed in the hands of Jesus.
+    </prosody>
+  </voice>
+</speak>

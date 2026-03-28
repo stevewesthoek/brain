@@ -1,0 +1,43 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.00%" pitch="-2.00%">
+      Take a slow breath in.<break time="500ms"/>
+      And let it out gently.<break time="1000ms"/>
+      Again, breathe in.<break time="500ms"/>
+      And breathe out.<break time="1800ms"/>
+
+      Let your jaw soften.<break time="500ms"/>
+      Let your hands rest open.<break time="500ms"/>
+      Let the edges of the day begin to blur.<break time="1000ms"/>
+      There is nothing left to solve tonight.<break time="1800ms"/>
+
+      Tonight we will rest inside a story from First Kings.<break time="500ms"/>
+      A story about Solomon's wisdom.<break time="1000ms"/>
+      A young king, offered anything by God, who chose understanding over riches or power.<break time="1800ms"/>
+
+      It is a story about a night much like this one.<break time="500ms"/>
+      A quiet night.<break time="500ms"/>
+      A night when God drew near and asked a simple question.<break time="1000ms"/>
+      And the answer that came was not loud or ambitious.<break time="500ms"/>
+      It was humble.<break time="500ms"/>
+      It was honest.<break time="500ms"/>
+      It was enough.<break time="1800ms"/>
+
+      You do not need to hold every detail.<break time="500ms"/>
+      You do not need to stay awake for the ending.<break time="500ms"/>
+      Just let the story carry you.<break time="1000ms"/>
+      Let the rhythm of it become a kind of rest.<break time="1800ms"/>
+
+      Wisdom is given.<break time="500ms"/>
+      Understanding comes gently.<break time="1000ms"/>
+      And you are held tonight.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

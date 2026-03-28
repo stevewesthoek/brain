@@ -28,7 +28,7 @@
 # after a config option, since it would be interpreted as part of the value.
 
 font-family = JetBrainsMono Nerd Font
-font-size = 14
+font-size = 15
 
 font-feature = calt,liga
 #font-feature = -calt,-liga,-dlig    # example: kill ligatures
@@ -57,7 +57,8 @@ clipboard-paste-protection = false
 cursor-style = block
 
 selection-foreground = cell-foreground
-selection-background = #36424C
+# selection-background = #36424C
+selection-background = #000000
 
 scroll-to-bottom = keystroke,no-output
 grapheme-width-method = legacy

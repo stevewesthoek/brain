@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+      Then God speaks.<break time="500ms"/>
+      Go out and stand on the mountain before the Lord.<break time="1000ms"/>
+      And behold, the Lord is about to pass by.<break time="1800ms"/>
+
+      Elijah moves toward the mouth of the cave.<break time="500ms"/>
+      And then it begins.<break time="1800ms"/>
+
+      A great and strong wind tears across the mountain.<break time="500ms"/>
+      It is violent, enormous, splitting rocks and scattering stones.<break time="500ms"/>
+      The kind of wind that makes the ground feel unsteady beneath your feet.<break time="1000ms"/>
+      But the Lord is not in the wind.<break time="1800ms"/>
+
+      After the wind, an earthquake.<break time="500ms"/>
+      The mountain itself trembles.<break time="500ms"/>
+      The walls of the cave shudder.<break time="500ms"/>
+      The deep bones of the earth groan and shift.<break time="1000ms"/>
+      But the Lord is not in the earthquake.<break time="1800ms"/>
+
+      After the earthquake, a fire.<break time="500ms"/>
+      Bright, consuming, roaring across the face of the rock.<break time="500ms"/>
+      The kind of fire that leaves nothing unchanged.<break time="1000ms"/>
+      But the Lord is not in the fire.<break time="1800ms"/>
+
+      Three displays of overwhelming power.<break time="500ms"/>
+      Wind, earthquake, fire.<break time="500ms"/>
+      And God is in none of them.<break time="1000ms"/>
+      The loud things pass.<break time="500ms"/>
+      The shaking things pass.<break time="500ms"/>
+      The burning things pass.<break time="1800ms"/>
+
+      And then the mountain grows very, very still.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

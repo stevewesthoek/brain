@@ -1,0 +1,31 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+            Rebekah came out with her pitcher on her shoulder.<break time="500ms"/>
+      She was the daughter of Bethuel, who was the son of Milcah, the wife of Nahor, Abraham's brother.<break time="500ms"/>
+      She was very beautiful to behold.<break time="1000ms"/>
+      She went down to the well, filled her pitcher, and came up.<break time="500ms"/>
+      The servant ran to meet her and said, please let me drink a little water from your pitcher.<break time="500ms"/>
+      She said, drink, my lord, and she quickly let down her pitcher to her hand and gave him a drink.<break time="1000ms"/>
+      And when she had finished giving him a drink, she said, I will draw water for your camels also, until they have finished drinking.<break time="500ms"/>
+      She hurried and emptied her pitcher into the trough, and ran back to the well to draw water.<break time="500ms"/>
+      She drew for all his camels.<break time="1800ms"/>
+      Ten camels, dusty and thirsty from a long desert road.<break time="500ms"/>
+      She did not hesitate.<break time="500ms"/>
+      She did not count the cost of her effort.<break time="500ms"/>
+      She simply saw a need and gave herself to meeting it, fully and freely.<break time="1000ms"/>
+      And the man, watching her, remained silent.<break time="500ms"/>
+      He gazed at her in silence, wondering whether the Lord had made his journey prosperous or not.<break time="1000ms"/>
+      But in his heart, he was beginning to know.<break time="500ms"/>
+      The kindness was unmistakable.<break time="1800ms"/>
+      You can rest as the water is drawn.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

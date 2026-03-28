@@ -1,0 +1,33 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+            And he dreamed.<break time="1000ms"/>
+      In the dream, there was a ladder set up on the earth, and the top of it reached to heaven.<break time="500ms"/>
+      It stood firm on the ground where Jacob lay, and it stretched upward beyond what the eye could follow.<break time="1000ms"/>
+      And the angels of God were ascending and descending on it.<break time="1800ms"/>
+      They moved steadily, without hurry.<break time="500ms"/>
+      Ascending and descending.<break time="500ms"/>
+      A constant, quiet traffic between heaven and earth.<break time="1000ms"/>
+      The ladder was not shaking.<break time="500ms"/>
+      It was not fragile or uncertain.<break time="500ms"/>
+      It stood as though it had always been there, as though the connection between heaven and this patch of ground had never been broken.<break time="1800ms"/>
+      Jacob had thought he was alone.<break time="500ms"/>
+      He had thought this was an empty place.<break time="500ms"/>
+      But the dream showed him something different.<break time="1000ms"/>
+      Heaven was open above him.<break time="500ms"/>
+      Angels moved between the sky and the ground where he slept.<break time="500ms"/>
+      The distance between God and Jacob was not what Jacob had imagined.<break time="1000ms"/>
+      It was no distance at all.<break time="1800ms"/>
+      The ladder reached from the very earth beneath his body all the way to the throne of heaven.<break time="500ms"/>
+      And Jacob lay at the foot of it, asleep, held, and seen.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

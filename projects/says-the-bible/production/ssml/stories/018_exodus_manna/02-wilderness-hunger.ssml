@@ -1,0 +1,45 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+      Israel has crossed the Red Sea.<break time="500ms"/>
+      The waters that stood like walls have returned to their place.<break time="500ms"/>
+      The song of victory that Miriam sang is now an echo behind them.<break time="1000ms"/>
+      The celebration is over.<break time="1800ms"/>
+
+      Now they walk into the wilderness of Sin, between Elim and Sinai.<break time="500ms"/>
+      The landscape is wide and dry.<break time="500ms"/>
+      Sand stretches in every direction.<break time="500ms"/>
+      The sky is bright and unbroken.<break time="1000ms"/>
+      There is very little shade.<break time="1800ms"/>
+
+      The food they carried from Egypt is running low.<break time="500ms"/>
+      The flatbread baked in haste on the night of departure is long gone.<break time="500ms"/>
+      The dried grain, the simple provisions for a journey they thought would be short.<break time="500ms"/>
+      All of it, thinning.<break time="1800ms"/>
+
+      Hunger is a particular kind of fear.<break time="500ms"/>
+      It does not argue with ideas.<break time="500ms"/>
+      It presses into the body.<break time="500ms"/>
+      It makes the mind loop and the heart tighten.<break time="1000ms"/>
+      And when it comes to a whole people at once, it becomes a wave.<break time="1800ms"/>
+
+      The children ask when there will be food.<break time="500ms"/>
+      The parents look at one another.<break time="500ms"/>
+      The wilderness offers no answer they can see.<break time="1000ms"/>
+      The road behind is closed.<break time="500ms"/>
+      The road ahead is unclear.<break time="1800ms"/>
+
+      And so the people stand in the space between deliverance and provision.<break time="500ms"/>
+      They have been saved, but they have not yet been fed.<break time="1000ms"/>
+      The story pauses here, in the ache of that waiting.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

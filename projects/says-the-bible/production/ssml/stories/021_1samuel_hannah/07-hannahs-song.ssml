@@ -1,0 +1,45 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+      Hannah brought Samuel to Eli.<break time="500ms"/>
+      She said, Oh my lord, I am the woman who stood here beside you, praying to the Lord.<break time="1000ms"/>
+      For this child I prayed.<break time="500ms"/>
+      And the Lord has granted me my petition that I made to him.<break time="1800ms"/>
+
+      Therefore I have lent him to the Lord.<break time="500ms"/>
+      As long as he lives, he is lent to the Lord.<break time="1800ms"/>
+
+      And then Hannah prayed a different kind of prayer.<break time="500ms"/>
+      Not a prayer of tears, but a prayer of praise.<break time="1000ms"/>
+      A song rose from the same heart that had once wept in silence.<break time="1800ms"/>
+
+      My heart exults in the Lord.<break time="500ms"/>
+      My strength is exalted in the Lord.<break time="1000ms"/>
+      There is none holy like the Lord.<break time="500ms"/>
+      There is none besides you.<break time="500ms"/>
+      There is no rock like our God.<break time="1800ms"/>
+
+      The barren has borne seven, she sang.<break time="500ms"/>
+      The Lord kills and brings to life.<break time="500ms"/>
+      He brings low and he exalts.<break time="500ms"/>
+      He raises up the poor from the dust.<break time="1000ms"/>
+      He lifts the needy from the ash heap.<break time="1800ms"/>
+
+      Then Hannah went home.<break time="500ms"/>
+      And the boy Samuel ministered before the Lord in the presence of Eli the priest.<break time="1000ms"/>
+      A small boy in a linen ephod, serving in the quiet of the temple.<break time="1800ms"/>
+
+      The prayer had been answered.<break time="500ms"/>
+      The song had been sung.<break time="500ms"/>
+      The child was where he belonged.<break time="1000ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

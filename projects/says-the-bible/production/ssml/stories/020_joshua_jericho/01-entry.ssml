@@ -1,0 +1,43 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.00%" pitch="-2.00%">
+      Take a slow breath in.<break time="500ms"/>
+      And let it out gently.<break time="1000ms"/>
+      Again, breathe in.<break time="500ms"/>
+      And breathe out.<break time="1800ms"/>
+
+      Let your jaw loosen.<break time="500ms"/>
+      Let your hands go still.<break time="500ms"/>
+      Let whatever was pressing on you today begin to ease.<break time="1000ms"/>
+      There is no rush here.<break time="1800ms"/>
+
+      Tonight we will rest inside the story of the walls of Jericho, from the book of Joshua.<break time="1000ms"/>
+      A city taken not by siege, but by silence.<break time="500ms"/>
+      Not by force, but by walking and obedience.<break time="1800ms"/>
+
+      Seven days of patience.<break time="500ms"/>
+      Seven days of trust.<break time="1000ms"/>
+      A plan that made no sense to the world but was held together by faith.<break time="1800ms"/>
+
+      You do not need to picture every detail.<break time="500ms"/>
+      You do not need to hold the whole story in your mind at once.<break time="500ms"/>
+      Just let it move through you like a quiet wind across dry ground.<break time="1800ms"/>
+
+      If a thought rises, let it pass.<break time="500ms"/>
+      If your body is still restless, let it settle slowly.<break time="500ms"/>
+      The story will carry you at its own pace.<break time="1000ms"/>
+      One step at a time, one breath at a time.<break time="1800ms"/>
+
+      And as we begin, remember only this.<break time="500ms"/>
+      God's plan holds.<break time="1000ms"/>
+      You can rest.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

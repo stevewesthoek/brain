@@ -1,0 +1,41 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+      The angel comes a second time.<break time="500ms"/>
+      Again the gentle touch.<break time="500ms"/>
+      Arise and eat, the angel says, for the journey is too great for you.<break time="1800ms"/>
+
+      The journey is too great for you.<break time="500ms"/>
+      What a tender thing to say.<break time="1000ms"/>
+      God does not pretend Elijah is stronger than he is.<break time="500ms"/>
+      God sees the distance still ahead and provides for it.<break time="1800ms"/>
+
+      Elijah eats and drinks a second time.<break time="500ms"/>
+      And in the strength of that food, he rises.<break time="1000ms"/>
+      He walks.<break time="1800ms"/>
+
+      Forty days and forty nights he travels.<break time="500ms"/>
+      Across the desert, through the dust and silence.<break time="500ms"/>
+      Step by step, sustained not by his own will but by what God placed beside him while he slept.<break time="1800ms"/>
+
+      He is walking to Horeb.<break time="500ms"/>
+      The mountain of God.<break time="500ms"/>
+      The same mountain where Moses once stood and saw the burning bush.<break time="1000ms"/>
+      The same ground where the law was given.<break time="1800ms"/>
+
+      When Elijah arrives, he finds a cave.<break time="500ms"/>
+      And he goes inside.<break time="500ms"/>
+      He lodges there, in the dark, in the quiet, in the deep rock of the mountain.<break time="1000ms"/>
+      He has come as far as his body can carry him.<break time="1800ms"/>
+
+      And now, in the stillness of that cave, he waits.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

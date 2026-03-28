@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+      "The Lord is your keeper.<break time="500ms"/>
+      The Lord is your shade on your right hand."<break time="3800ms"/>
+      Shade is protection from something that would harm you.<break time="1800ms"/>
+      In the ancient world, the sun was not simply warm.<break time="1000ms"/>
+      It was a force that could exhaust and drain,<break time="500ms"/>
+      that could strike a traveler down on a long road.<break time="3800ms"/>
+      To have shade on your right hand<break time="500ms"/>
+      was to have protection right beside you.<break time="1000ms"/>
+      Not off in the distance.<break time="500ms"/>
+      Right there.<break time="3800ms"/>
+      "The sun shall not strike you by day,<break time="500ms"/>
+      nor the moon by night."<break time="3800ms"/>
+      Day and night.<break time="1000ms"/>
+      Every hour is covered.<break time="3800ms"/>
+      In the ancient world, people feared the night moon<break time="500ms"/>
+      as much as the day sun.<break time="1000ms"/>
+      The darkness held its own dangers.<break time="1800ms"/>
+      And the psalm speaks to both.<break time="1800ms"/>
+      There is no hour that falls outside God's keeping.<break time="1000ms"/>
+      No time of day when the protection stops.<break time="1000ms"/>
+      No shift change.<break time="500ms"/>
+      No gap in coverage.<break time="3800ms"/>
+      Whatever comes in the daylight,<break time="500ms"/>
+      He is your shade.<break time="1000ms"/>
+      Whatever comes in the darkness,<break time="500ms"/>
+      He is still there.<break time="3800ms"/>
+      Nothing reaches you<break time="500ms"/>
+      that has not passed through His care.<break time="1800ms"/>
+      Every hour.<break time="500ms"/>
+      Every moment.<break time="500ms"/>
+      Every night.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

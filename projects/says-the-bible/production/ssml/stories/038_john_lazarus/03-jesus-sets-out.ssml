@@ -1,0 +1,33 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+            After two days Jesus says to his disciples: Let us go back to Judea.<break time="1800ms"/>
+            The disciples are uneasy — they remind him that people in Judea recently tried to stone him.<break time="500ms"/>
+            Going back is dangerous.<break time="1800ms"/>
+            But Jesus speaks of Lazarus.<break time="1000ms"/>
+            He says: Our friend Lazarus has fallen asleep.<break time="500ms"/>
+            I am going there to wake him up.<break time="1800ms"/>
+            The disciples misunderstand.<break time="500ms"/>
+            They say: If he has fallen asleep, then he will get better.<break time="1800ms"/>
+            They are thinking of ordinary sleep.<break time="500ms"/>
+            Rest and recovery.<break time="1000ms"/>
+            And Jesus says to them plainly: Lazarus is dead.<break time="1800ms"/>
+            He does not soften it.<break time="500ms"/>
+            He does not cushion it with hope or qualification.<break time="1000ms"/>
+            He says: Lazarus is dead.<break time="1800ms"/>
+            And then he says something remarkable:<break time="500ms"/>
+            And for your sake I am glad I was not there.<break time="1000ms"/>
+            So that you may believe.<break time="1800ms"/>
+            He is not glad that Lazarus died.<break time="500ms"/>
+            He is glad that what comes next will be something they could never have imagined.<break time="1000ms"/>
+            And then he says simply: Let us go to him.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

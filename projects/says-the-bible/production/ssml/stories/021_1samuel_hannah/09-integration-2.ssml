@@ -1,0 +1,37 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.50%" pitch="-3.60%">
+      The temple is quiet now.<break time="1800ms"/>
+      The prayer has been answered.<break time="1800ms"/>
+      The child sleeps before the Lord.<break time="3800ms"/>
+
+      Hannah's tears have become a song.<break time="1800ms"/>
+      Her silence has become praise.<break time="1800ms"/>
+      What was empty has been filled.<break time="3800ms"/>
+
+      You are held in the same faithfulness.<break time="1800ms"/>
+      The God who remembered Hannah remembers you.<break time="1800ms"/>
+      The God who heard the silent prayer hears yours.<break time="3800ms"/>
+
+      Let your thoughts grow quieter now.<break time="1800ms"/>
+      Let your breathing slow.<break time="1800ms"/>
+      Let the story settle into one simple truth.<break time="3800ms"/>
+
+      You can let go of what you are carrying.<break time="1800ms"/>
+      You can lay it down the way Hannah laid down her prayer.<break time="1800ms"/>
+      You can trust that it has been heard.<break time="3800ms"/>
+
+      You are not forgotten.<break time="3800ms"/>
+      You are held.<break time="3800ms"/>
+      You can rest.<break time="9000ms"/>
+      You can rest.<break time="9000ms"/>
+    </prosody>
+  </voice>
+</speak>

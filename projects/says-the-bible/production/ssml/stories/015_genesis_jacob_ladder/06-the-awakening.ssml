@@ -1,0 +1,35 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+            Then Jacob awoke from his sleep.<break time="1000ms"/>
+      He opened his eyes to the same ground, the same stone, the same open sky.<break time="500ms"/>
+      But something had changed.<break time="500ms"/>
+      He knew now what he had not known before.<break time="1800ms"/>
+      And he said, surely the Lord is in this place, and I did not know it.<break time="1000ms"/>
+      Surely the Lord is in this place.<break time="500ms"/>
+      And I did not know it.<break time="1800ms"/>
+      He was afraid, and he said, how awesome is this place.<break time="500ms"/>
+      This is none other than the house of God, and this is the gate of heaven.<break time="1800ms"/>
+      The ground had not changed.<break time="500ms"/>
+      The stone was the same stone.<break time="500ms"/>
+      The place looked no different in the morning light than it had when he lay down.<break time="1000ms"/>
+      But Jacob saw it differently now.<break time="500ms"/>
+      The ordinary ground was holy.<break time="500ms"/>
+      The empty place was the gate of heaven.<break time="500ms"/>
+      God had been there all along, before Jacob arrived, before he laid his head down, before the dream came.<break time="1000ms"/>
+      Jacob simply had not known it.<break time="1800ms"/>
+      And perhaps that is often how it is.<break time="500ms"/>
+      God is present before we are aware.<break time="500ms"/>
+      The ground beneath us is holy before we think to look.<break time="1000ms"/>
+      You can rest in that.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

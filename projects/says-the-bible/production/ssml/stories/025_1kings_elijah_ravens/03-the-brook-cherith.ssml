@@ -1,0 +1,45 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+      Elijah came to the brook Cherith.<break time="500ms"/>
+      A small stream running through a ravine, east of the Jordan.<break time="1000ms"/>
+      The sound of water over stones.<break time="500ms"/>
+      Shade beneath the rock walls.<break time="500ms"/>
+      A hidden place, far from the roads and the palace.<break time="1800ms"/>
+
+      He drank from the brook.<break time="500ms"/>
+      Cool water, clear and steady.<break time="1000ms"/>
+      And he waited.<break time="1800ms"/>
+
+      Then the ravens came.<break time="500ms"/>
+      In the morning, they brought bread and meat.<break time="1000ms"/>
+      In the evening, they brought bread and meat again.<break time="1800ms"/>
+
+      Ravens.<break time="500ms"/>
+      Not servants. Not angels. Not merchants on the road.<break time="1000ms"/>
+      Wild birds, black-feathered, circling down from the sky.<break time="500ms"/>
+      Carrying food in their beaks to a man sitting alone by a brook.<break time="1800ms"/>
+
+      God used the most unlikely servants to sustain His prophet.<break time="500ms"/>
+      Not what anyone would have planned.<break time="1000ms"/>
+      Not what anyone would have expected.<break time="500ms"/>
+      But it was enough.<break time="1800ms"/>
+
+      Morning bread. Evening bread.<break time="500ms"/>
+      Morning meat. Evening meat.<break time="1000ms"/>
+      Day after day.<break time="500ms"/>
+      The rhythm of provision, steady as breathing.<break time="1800ms"/>
+
+      Elijah did not store up for the week ahead.<break time="500ms"/>
+      He received what came each morning and each evening.<break time="1000ms"/>
+      And each time, it was enough.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

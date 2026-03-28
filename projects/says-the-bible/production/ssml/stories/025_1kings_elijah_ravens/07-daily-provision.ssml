@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+      And so the days continued.<break time="500ms"/>
+      She, and he, and her household ate for many days.<break time="1000ms"/>
+      The text says it simply. Matter of fact.<break time="1800ms"/>
+
+      The jar of flour was not spent.<break time="500ms"/>
+      The jug of oil did not become empty.<break time="1000ms"/>
+      According to the word of the Lord that He spoke by Elijah.<break time="1800ms"/>
+
+      Picture the mornings in that small house.<break time="500ms"/>
+      The widow reaching for the jar.<break time="1000ms"/>
+      Tipping it gently.<break time="500ms"/>
+      And flour falling out, just as it had the day before.<break time="1800ms"/>
+
+      The jug of oil, poured again.<break time="500ms"/>
+      Enough to mix the bread.<break time="1000ms"/>
+      Enough to cook the meal.<break time="500ms"/>
+      Not abundance. Not overflow. Not a feast.<break time="1000ms"/>
+      But enough.<break time="1800ms"/>
+
+      Day after day.<break time="500ms"/>
+      Meal after meal.<break time="500ms"/>
+      The same quiet miracle repeated in the kitchen of a widow's house.<break time="1800ms"/>
+
+      God's provision through the drought was not dramatic.<break time="500ms"/>
+      It was steady.<break time="1000ms"/>
+      It was quiet.<break time="500ms"/>
+      It was faithful.<break time="1800ms"/>
+
+      Elijah, the widow, and her son ate for many days.<break time="500ms"/>
+      The famine raged outside the door.<break time="1000ms"/>
+      But inside, there was enough.<break time="1800ms"/>
+
+      There was always enough.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

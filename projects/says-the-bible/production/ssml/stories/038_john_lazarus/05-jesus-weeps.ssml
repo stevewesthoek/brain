@@ -1,0 +1,34 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+            Martha goes back and calls her sister Mary quietly.<break time="500ms"/>
+            She says: The Teacher is here, and he is asking for you.<break time="1800ms"/>
+            Mary rises quickly and goes to him.<break time="1000ms"/>
+            The people who are in the house mourning follow her, thinking she is going to the tomb to weep.<break time="1800ms"/>
+            When Mary reaches Jesus she falls at his feet.<break time="500ms"/>
+            She says the same words her sister said:<break time="500ms"/>
+            Lord, if you had been here, my brother would not have died.<break time="1800ms"/>
+            And when Jesus sees her weeping, and the people around her weeping,<break time="500ms"/>
+            the Gospel says he is deeply moved in his spirit.<break time="500ms"/>
+            Troubled.<break time="1800ms"/>
+            He asks: Where have you laid him?<break time="1000ms"/>
+            They say: Lord, come and see.<break time="1800ms"/>
+            And then — the shortest verse in the entire Bible.<break time="1000ms"/>
+            Two words.<break time="1000ms"/>
+            Jesus wept.<break time="3800ms"/>
+            He who knows the end of the story from the beginning.<break time="500ms"/>
+            He who is about to undo this death entirely.<break time="500ms"/>
+            He stands at the edge of this grief and weeps.<break time="1800ms"/>
+            Not because hope is gone.<break time="500ms"/>
+            But because pain is real.<break time="500ms"/>
+            And love bends all the way down into it.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

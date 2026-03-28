@@ -1,0 +1,62 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+            Certain Chaldeans came forward and reported Shadrach, Meshach, and Abednego to the king.
+            <break time="1000ms"/>
+            These men, they said, pay no attention to you.
+            <break time="1000ms"/>
+            They do not serve your gods.
+            <break time="1000ms"/>
+            They do not worship the golden image you have set up.
+            <break time="1800ms"/>
+            The king's fury was great.
+            <break time="1000ms"/>
+            He had Shadrach, Meshach, and Abednego brought before him.
+            <break time="1000ms"/>
+            And he gave them one last chance.
+            <break time="3800ms"/>
+            He would play the music again.
+            <break time="1000ms"/>
+            They could still bow.
+            <break time="1000ms"/>
+            They could still be saved.
+            <break time="1800ms"/>
+            But — he said, and the threat was plain —
+            <break time="500ms"/>
+            who is the god that will deliver you out of my hands?
+            <break time="3800ms"/>
+            Their answer was unhurried.
+            <break time="1800ms"/>
+            "O Nebuchadnezzar, we have no need to answer you in this matter.
+            <break time="1000ms"/>
+            Our God whom we serve is able to deliver us
+            <break time="500ms"/>
+            from the burning fiery furnace.
+            <break time="1000ms"/>
+            He will deliver us out of your hand, O king.
+            <break time="1800ms"/>
+            But if not —
+            <break time="500ms"/>
+            be it known to you, O king,
+            <break time="500ms"/>
+            that we will not serve your gods
+            <break time="500ms"/>
+            or worship the golden image that you have set up."
+            <break time="3800ms"/>
+            But if not.
+            <break time="1800ms"/>
+            Three words that hold the full weight of real faith.
+            <break time="1800ms"/>
+            Not certainty of the outcome.
+            <break time="1000ms"/>
+            Certainty of the God.
+    </prosody>
+  </voice>
+</speak>

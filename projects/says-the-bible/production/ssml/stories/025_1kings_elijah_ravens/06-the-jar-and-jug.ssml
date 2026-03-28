@@ -1,0 +1,42 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+      Elijah said to her, "Do not fear."<break time="1000ms"/>
+
+      Three words that arrive before the miracle.<break time="500ms"/>
+      Do not fear.<break time="1000ms"/>
+      The same words God gives again and again to those at the edge of what they can carry.<break time="1800ms"/>
+
+      "Go and do as you have said," Elijah told her.<break time="500ms"/>
+      "But first make me a small cake of it and bring it to me."<break time="1000ms"/>
+      "And afterward make something for yourself and your son."<break time="1800ms"/>
+
+      It was a strange request.<break time="500ms"/>
+      Give from your last handful to a stranger before you feed your own child.<break time="1000ms"/>
+      It made no sense by the world's arithmetic.<break time="1800ms"/>
+
+      But then came the promise.<break time="500ms"/>
+      "For thus says the Lord, the God of Israel."<break time="1000ms"/>
+      "The jar of flour shall not be spent, and the jug of oil shall not be empty."<break time="500ms"/>
+      "Until the day that the Lord sends rain upon the earth."<break time="1800ms"/>
+
+      The jar shall not be spent.<break time="500ms"/>
+      The jug shall not be empty.<break time="1000ms"/>
+      Not a storehouse. Not a granary.<break time="500ms"/>
+      A single jar. A single jug.<break time="1000ms"/>
+      But held by the word of God, they would be enough.<break time="1800ms"/>
+
+      And she went and did as Elijah said.<break time="500ms"/>
+      She made the small cake first.<break time="1000ms"/>
+      She trusted the word before she saw the proof.<break time="500ms"/>
+      And that trust was met by faithfulness.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,52 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+      Bless the Lord, O my soul, and forget not all his benefits.<break time="1800ms"/>
+
+      Forget not.<break time="500ms"/>
+      That phrase tells us something honest about being human.<break time="500ms"/>
+      We forget.<break time="1000ms"/>
+      We forget the kindness that carried us through the hard season.<break time="500ms"/>
+      We forget the mercy that met us when we had no defence.<break time="500ms"/>
+      We forget, and the psalm gently calls us back.<break time="1800ms"/>
+
+      Who forgives all your iniquity.<break time="1000ms"/>
+      Every failing.<break time="500ms"/>
+      Every wrong turn.<break time="500ms"/>
+      Every quiet sin you carried alone.<break time="500ms"/>
+      Forgiven.<break time="1800ms"/>
+
+      Who heals all your diseases.<break time="1000ms"/>
+      Not just the body, but the spirit too.<break time="500ms"/>
+      The weariness that goes deeper than tired muscles.<break time="500ms"/>
+      The ache that sleep alone cannot mend.<break time="1800ms"/>
+
+      Who redeems your life from the pit.<break time="1000ms"/>
+      Whatever low place you have known, God reached into it.<break time="500ms"/>
+      He did not leave you there.<break time="1000ms"/>
+      He lifted you out.<break time="1800ms"/>
+
+      Who crowns you with steadfast love and mercy.<break time="1000ms"/>
+      Not a crown you earned.<break time="500ms"/>
+      A crown placed gently on a weary head by hands that will not let go.<break time="1800ms"/>
+
+      Who satisfies you with good so that your youth is renewed like the eagle's.<break time="1000ms"/>
+      There is restoration here.<break time="500ms"/>
+      Strength returning to what felt spent.<break time="500ms"/>
+      Life flowing back into what felt dry.<break time="1800ms"/>
+
+      These are His benefits.<break time="500ms"/>
+      And the psalm says, do not forget them.<break time="1000ms"/>
+      His mercy is great.<break time="1000ms"/>
+      You are forgiven.<break time="1000ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

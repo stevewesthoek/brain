@@ -1,0 +1,36 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.40%">
+            Comfort has come.
+            <break time="3800ms"/>
+            God spoke it twice so that it would find you. So that it would get past the noise and the doubt and the things that tell you it cannot be true. Comfort, comfort — a word spoken to the heart, not just the ear.
+            <break time="9000ms"/>
+            The valley is lifted.
+            <break time="3800ms"/>
+            The low place you have been in — God is already moving the ground. The geography that has pressed in around you does not have the final word. He raises valleys. He is raising this one.
+            <break time="9000ms"/>
+            God carries the lambs.
+            <break time="3800ms"/>
+            The ones who cannot keep pace. The ones whose legs have given out. The ones who have nothing left to give. He does not leave them. He gathers them and carries them against His chest. If that is you tonight — you are being carried.
+            <break time="9000ms"/>
+            He gives power to the faint.
+            <break time="3800ms"/>
+            Not to the strong. Not as something you earn by getting better first. To the faint. In the faintest place, He gives the most. Where you have nothing, He comes with increase.
+            <break time="9000ms"/>
+            He does not grow weary.
+            <break time="3800ms"/>
+            He is not tired. He does not run out. He does not reach a limit and pull back. The God who holds the oceans does not grow faint. He is tireless. He is always present. He is always sufficient.
+            <break time="9000ms"/>
+            You are held by the one who holds the oceans.
+            <break time="3800ms"/>
+            Let that be enough for tonight. Let your body soften around that truth. You do not have to hold yourself up. You are being held.
+    </prosody>
+  </voice>
+</speak>

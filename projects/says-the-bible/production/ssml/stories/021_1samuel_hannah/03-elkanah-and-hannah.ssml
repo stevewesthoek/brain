@@ -1,0 +1,41 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+      Elkanah loved Hannah.<break time="500ms"/>
+      That much was plain.<break time="500ms"/>
+      When the portions were given at the feast, he gave Hannah a double portion.<break time="1000ms"/>
+      Because he loved her.<break time="1800ms"/>
+
+      He saw her weeping.<break time="500ms"/>
+      He saw her unable to eat.<break time="500ms"/>
+      And he came close and asked her gently.<break time="1000ms"/>
+      Hannah, why do you weep?<break time="500ms"/>
+      Why do you not eat?<break time="500ms"/>
+      Why is your heart sad?<break time="1800ms"/>
+
+      Then he said something that was kind but could not reach the place that hurt.<break time="500ms"/>
+      Am I not more to you than ten sons?<break time="1800ms"/>
+
+      His love was real.<break time="500ms"/>
+      His care was sincere.<break time="500ms"/>
+      But there are rooms in the heart that only God can enter.<break time="1000ms"/>
+      There are aches that even the most devoted love cannot quiet.<break time="1800ms"/>
+
+      Hannah did not argue with him.<break time="500ms"/>
+      She did not explain what could not be explained.<break time="500ms"/>
+      She simply carried the weight a little longer.<break time="1000ms"/>
+      And waited for the moment when she could bring it somewhere else.<break time="1800ms"/>
+
+      Some longings are too deep for another person to resolve.<break time="500ms"/>
+      But they are never too deep for God to hear.<break time="1000ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

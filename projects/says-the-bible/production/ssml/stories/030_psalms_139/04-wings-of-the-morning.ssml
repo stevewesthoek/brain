@@ -1,0 +1,43 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+      "If I take the wings of the morning<break time="500ms"/>
+      and dwell in the uttermost parts of the sea."<break time="3800ms"/>
+      The wings of the morning.<break time="1800ms"/>
+      The image is of light itself in motion.<break time="1000ms"/>
+      The first rays of the sun spreading across the horizon<break time="500ms"/>
+      faster than anything can follow.<break time="3800ms"/>
+      If you could travel with that speed,<break time="1000ms"/>
+      out to the farthest edge of the world,<break time="500ms"/>
+      to the uttermost parts of the sea,<break time="1800ms"/>
+      the most remote place imaginable —<break time="3800ms"/>
+      "even there your hand shall lead me,<break time="500ms"/>
+      and your right hand shall hold me."<break time="3800ms"/>
+      Your hand shall lead me.<break time="1800ms"/>
+      Not find me eventually.<break time="500ms"/>
+      Not reach me with some delay.<break time="1800ms"/>
+      Lead me.<break time="1000ms"/>
+      As if God is already there,<break time="500ms"/>
+      already at the farthest ocean,<break time="500ms"/>
+      already waiting to take your hand.<break time="3800ms"/>
+      And your right hand shall hold me.<break time="1800ms"/>
+      The right hand in scripture is the hand of strength and favor.<break time="1000ms"/>
+      The hand that acts.<break time="500ms"/>
+      The hand that steadies.<break time="3800ms"/>
+      You cannot travel so far<break time="500ms"/>
+      that God's hand stops holding you.<break time="1800ms"/>
+      You cannot wander so far<break time="500ms"/>
+      that God's hand stops leading you.<break time="3800ms"/>
+      Across the farthest ocean,<break time="500ms"/>
+      through the longest night,<break time="1000ms"/>
+      His hand is there.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

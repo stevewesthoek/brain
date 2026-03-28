@@ -1,0 +1,38 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+            Because you are precious in my eyes, and honored, and I love you.
+            <break time="3800ms"/>
+            Sit with that for a moment.
+            <break time="1800ms"/>
+            Not because of what you produced today. Not because of how well you held things together. Not because you found the right words, or made the right choice, or managed to be the person you were hoping to be.
+            <break time="1800ms"/>
+            Because you are precious in my eyes.
+            <break time="3800ms"/>
+            This is God speaking over His people. Not a reward being offered to the deserving. A declaration being made over those He has already claimed. The preciousness comes before the behavior. The love is not earned by the outcome.
+            <break time="3800ms"/>
+            Precious. The word in Hebrew carries weight and rarity. What is precious is not common. It is not replaceable. It is looked after. It is not left behind. It is not thrown aside when it becomes inconvenient.
+            <break time="1800ms"/>
+            You are precious in God's eyes.
+            <break time="3800ms"/>
+            Honored. This word means given weight. Given significance. Not overlooked. Not treated as unimportant. God looks at you and sees something of great worth. Not because you have convinced Him of it — because He made you and He knows what He made.
+            <break time="3800ms"/>
+            And I love you.
+            <break time="1800ms"/>
+            Simple. Unadorned. No conditions attached. No list of things that would need to change first. Just: I love you.
+            <break time="3800ms"/>
+            If you have been waiting to feel loved, you do not have to wait for a feeling. The declaration has already been made. These words were spoken over you before you knew enough to receive them.
+            <break time="1800ms"/>
+            Precious. Honored. Loved.
+            <break time="1000ms"/>
+            That is what God says about you tonight.
+    </prosody>
+  </voice>
+</speak>

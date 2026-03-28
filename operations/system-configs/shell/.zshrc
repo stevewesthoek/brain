@@ -37,3 +37,23 @@ export PATH="$PATH:/Users/Office/.lmstudio/bin"
 
 alias probot="ssh probot"
 alias ubuntu="ssh ubuntu"
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+
+export CLAUDE_CODE_USE_BEDROCK=1
+export AWS_REGION=us-east-1
+
+export ANTHROPIC_DEFAULT_OPUS_MODEL='us.anthropic.claude-opus-4-6-v1'
+export ANTHROPIC_DEFAULT_SONNET_MODEL='us.anthropic.claude-sonnet-4-6'
+export ANTHROPIC_DEFAULT_HAIKU_MODEL='us.anthropic.claude-haiku-4-5-20251001-v1:0'
+
+# bun completions
+[ -s "/Users/Office/.bun/_bun" ] && source "/Users/Office/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"

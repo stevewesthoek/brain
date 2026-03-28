@@ -1,0 +1,32 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+            When the camels had finished drinking, the servant took out a golden nose ring weighing half a shekel, and two bracelets for her wrists weighing ten shekels of gold.<break time="500ms"/>
+      He said, whose daughter are you?<break time="500ms"/>
+      Tell me, please, is there room in your father's house for us to lodge?<break time="1000ms"/>
+      She said, I am the daughter of Bethuel, the son of Milcah, whom she bore to Nahor.<break time="500ms"/>
+      She added, we have both straw and feed enough, and room to lodge.<break time="1000ms"/>
+      The servant heard the name Nahor, Abraham's own brother, and he bowed his head.<break time="500ms"/>
+      He worshipped the Lord and said, blessed be the Lord God of my master Abraham, who has not forsaken His mercy and His truth toward my master.<break time="500ms"/>
+      As for me, being on the way, the Lord led me to the house of my master's brethren.<break time="1800ms"/>
+      Rebekah ran and told her mother's household about these things.<break time="500ms"/>
+      Her brother Laban saw the ring and the bracelets on his sister's hands, and he ran out to the man at the well.<break time="500ms"/>
+      He said, come in, O blessed of the Lord.<break time="500ms"/>
+      Why do you stand outside?<break time="500ms"/>
+      I have prepared the house, and a place for the camels.<break time="1000ms"/>
+      So the servant came into the house, and the camels were unloaded and given straw and feed.<break time="500ms"/>
+      Water was brought to wash his feet and the feet of the men who were with him.<break time="500ms"/>
+      Food was set before him, but he said, I will not eat until I have told about my errand.<break time="1000ms"/>
+      And so he told them everything, from Abraham's charge to the prayer at the well to Rebekah's kindness.<break time="500ms"/>
+      He laid it all before them and asked for Rebekah.<break time="1800ms"/>
+      You can rest as the story is told.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

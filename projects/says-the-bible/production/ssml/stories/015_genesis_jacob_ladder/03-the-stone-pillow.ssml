@@ -1,0 +1,33 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+            Jacob took one of the stones of that place and put it under his head.<break time="500ms"/>
+      He lay down in that place to sleep.<break time="1000ms"/>
+      There was no soft bed, no covering but the sky.<break time="500ms"/>
+      The ground was hard beneath him.<break time="500ms"/>
+      The stone was cold against his head.<break time="1000ms"/>
+      He had no tent to set up, no fire to light, no companion to keep watch.<break time="500ms"/>
+      It was just Jacob, the earth, and the night coming on around him.<break time="1800ms"/>
+      Think of how small a man looks lying on open ground.<break time="500ms"/>
+      The land wide in every direction.<break time="500ms"/>
+      The stars appearing one by one above him.<break time="500ms"/>
+      The silence of a place with no name, no marker, no significance that anyone could see.<break time="1000ms"/>
+      He did not choose this place because it was holy.<break time="500ms"/>
+      He stopped here because the sun had set.<break time="500ms"/>
+      It was simply where the day ended.<break time="1800ms"/>
+      And yet this ordinary ground, this hard bed, this nameless place would become something else entirely before the night was through.<break time="1000ms"/>
+      Jacob did not know that yet.<break time="500ms"/>
+      He only knew that he was tired, and that the stone held his head, and that sleep was coming.<break time="1000ms"/>
+      He closed his eyes.<break time="500ms"/>
+      And he slept.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

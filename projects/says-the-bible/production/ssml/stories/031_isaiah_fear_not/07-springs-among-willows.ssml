@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+            For I will pour water on the thirsty land, and streams on the dry ground.
+            <break time="1000ms"/>
+            I will pour my Spirit upon your offspring, and my blessing on your descendants.
+            <break time="1000ms"/>
+            They shall spring up among the grass like willows by flowing streams.
+            <break time="3800ms"/>
+            Dry ground. Thirsty land. Isaiah is not describing something foreign. He is describing a feeling many of us know.
+            <break time="1800ms"/>
+            The feeling that something has been used up. That what was once alive in you has gone quiet. That the soil of your soul has been baked hard and the things that used to grow there are not growing now.
+            <break time="3800ms"/>
+            And God says: I will pour water.
+            <break time="1800ms"/>
+            He does not say: work harder to deserve the rain. He does not say: till the ground more thoroughly and then I will consider it. He says I will pour. The action is His. The source is His. The timing is His — and He has already decided.
+            <break time="3800ms"/>
+            Streams on the dry ground.
+            <break time="1800ms"/>
+            Can you imagine it? The cracked ground beginning to soften. The roots that had pulled inward, waiting, beginning to reach again. The water coming not as a thin trickle but as streams — moving, alive, sufficient.
+            <break time="3800ms"/>
+            And then: like willows by flowing streams.
+            <break time="1800ms"/>
+            Willows grow where there is water. They lean toward it. Their roots go deep into it. They are not brittle — they bend without breaking. They are green when other things are dry. They are alive in a way that is visible, unhurried, rooted.
+            <break time="3800ms"/>
+            That is what God promises to grow in the dry places of your life.
+            <break time="1000ms"/>
+            Not just survival. Not just enough to get by.
+            <break time="1000ms"/>
+            Springs. Rivers. Willows.
+            <break time="1800ms"/>
+            Where drought was — life.
+            <break time="1000ms"/>
+            Let that be the last image you carry toward sleep tonight.
+    </prosody>
+  </voice>
+</speak>

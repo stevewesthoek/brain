@@ -1,0 +1,50 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+      Soon after, the wisdom is tested.<break time="1000ms"/>
+
+      Two women come before the king.<break time="500ms"/>
+      They live in the same house.<break time="500ms"/>
+      Both had given birth to sons, only three days apart.<break time="1000ms"/>
+      But in the night, one child died.<break time="1800ms"/>
+
+      Now each woman claims the living child as her own.<break time="500ms"/>
+      One says, the living child is my son, and the dead is yours.<break time="500ms"/>
+      The other says, no, the dead child is yours, and the living is mine.<break time="1000ms"/>
+      Back and forth, the words tangle.<break time="500ms"/>
+      No witness.<break time="500ms"/>
+      No proof.<break time="500ms"/>
+      Only two voices and one truth hidden between them.<break time="1800ms"/>
+
+      Solomon listens.<break time="500ms"/>
+      Then he speaks.<break time="1000ms"/>
+      Bring me a sword.<break time="1800ms"/>
+
+      The court goes still.<break time="500ms"/>
+      The sword is brought.<break time="500ms"/>
+      Solomon says, divide the living child in two, and give half to the one and half to the other.<break time="1800ms"/>
+
+      One woman agrees.<break time="500ms"/>
+      But the other, the real mother, cries out.<break time="500ms"/>
+      Oh my lord, give her the living child, and by no means put him to death.<break time="1800ms"/>
+
+      Her love could not bear it.<break time="500ms"/>
+      She would rather lose her son to another woman than see him harmed.<break time="1000ms"/>
+      And Solomon knows.<break time="500ms"/>
+      Give the first woman the living child, he says.<break time="500ms"/>
+      She is his mother.<break time="1800ms"/>
+
+      Wisdom saw what argument could not reveal.<break time="500ms"/>
+      It looked beneath the words and found the truth.<break time="1000ms"/>
+      Quietly.<break time="500ms"/>
+      Clearly.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

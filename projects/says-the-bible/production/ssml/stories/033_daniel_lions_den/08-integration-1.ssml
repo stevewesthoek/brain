@@ -1,0 +1,50 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.40%">
+            Let that settle.
+            <break time="1800ms"/>
+            The lions were shut.
+            <break time="3800ms"/>
+            An angel was sent.
+            <break time="3800ms"/>
+            The night passed.
+            <break time="3800ms"/>
+            Daniel trusted.
+            <break time="9000ms"/>
+            He did not have certainty about what would happen.
+            <break time="1800ms"/>
+            He did not have a promise written out before he knelt.
+            <break time="1800ms"/>
+            He had only the habit of turning toward God,
+            <break time="1800ms"/>
+            and the long practice of trusting what he could not see.
+            <break time="9000ms"/>
+            The king found him whole in the morning.
+            <break time="3800ms"/>
+            No wound.
+            <break time="1800ms"/>
+            No harm.
+            <break time="1800ms"/>
+            Because he trusted.
+            <break time="9000ms"/>
+            You are kept by the same God tonight.
+            <break time="3800ms"/>
+            The dark hours are not too long for Him.
+            <break time="3800ms"/>
+            He does not sleep through them.
+            <break time="3800ms"/>
+            He does not look away.
+            <break time="9000ms"/>
+            Whatever your night holds,
+            <break time="3800ms"/>
+            you are not in it alone.
+    </prosody>
+  </voice>
+</speak>

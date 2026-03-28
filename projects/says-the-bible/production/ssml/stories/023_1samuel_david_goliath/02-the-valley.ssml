@@ -1,0 +1,29 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+            In First Samuel the Philistines gather their armies for battle, and they stand on a mountain on one side.<break time="500ms"/>
+      Israel stands on a mountain on the other side.<break time="500ms"/>
+      Between them lies the valley of Elah.<break time="1000ms"/>
+      Two armies face each other across the low ground, and neither moves.<break time="500ms"/>
+      The hills are brown and dry under the sun, and the tents of both camps stretch along the ridgelines.<break time="500ms"/>
+      There is no clash of swords yet, no charge, no battle cry.<break time="1000ms"/>
+      The tension is not in the weapons but in the waiting.<break time="500ms"/>
+      Day after day the armies hold their positions, and the valley between them stays empty and still.<break time="1000ms"/>
+      The soldiers of Israel look across at the Philistine camp and feel the weight of what is coming.<break time="500ms"/>
+      No one steps forward.<break time="500ms"/>
+      The valley waits.<break time="1800ms"/>
+      The silence is heavier than any shout.<break time="1000ms"/>
+      Israel waits on the hillside, and the days pass without resolution.<break time="500ms"/>
+      The story begins not with action but with stillness, and the stillness itself carries a kind of dread.<break time="1000ms"/>
+      But even now, unseen, God is already at work.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

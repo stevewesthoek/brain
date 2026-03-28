@@ -1,0 +1,31 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+            Saul clothes David with his armor.<break time="500ms"/>
+      He puts a helmet of bronze on his head and dresses him in a coat of mail.<break time="500ms"/>
+      David straps on the sword over the armor, and he tries to walk, but he cannot, for he has not tested them.<break time="1000ms"/>
+      David says to Saul, I cannot go with these, for I have not tested them.<break time="500ms"/>
+      So David puts them off.<break time="1000ms"/>
+      He takes his staff in his hand and chooses five smooth stones from the brook.<break time="500ms"/>
+      He places them in his shepherd's bag, in the pouch.<break time="500ms"/>
+      His sling is in his hand.<break time="500ms"/>
+      And he approaches the Philistine.<break time="1800ms"/>
+      When Goliath looks and sees David, he despises him, for he is but a youth, ruddy and handsome in appearance.<break time="500ms"/>
+      The Philistine says, am I a dog, that you come to me with sticks?<break time="500ms"/>
+      And Goliath curses David by his gods.<break time="1000ms"/>
+      Come to me, the giant says, and I will give your flesh to the birds of the air and to the beasts of the field.<break time="1000ms"/>
+      But the boy with the stones does not turn back.<break time="1800ms"/>
+      David goes down to the valley with nothing the world would call a weapon.<break time="1000ms"/>
+      Five smooth stones and a sling, the tools of a shepherd, not a soldier.<break time="1000ms"/>
+      The giant sees only a boy, but God sees something more.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,42 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+      After they had eaten and drunk in Shiloh, Hannah rose.<break time="500ms"/>
+      She went to the temple of the Lord.<break time="500ms"/>
+      Eli the priest was sitting by the doorpost.<break time="1000ms"/>
+      And Hannah was deeply distressed.<break time="1800ms"/>
+
+      She prayed to the Lord.<break time="500ms"/>
+      And she wept bitterly.<break time="1000ms"/>
+      All the years of longing gathered into this one moment.<break time="500ms"/>
+      All the quiet grief poured out before the only One who could answer it.<break time="1800ms"/>
+
+      She made a vow.<break time="500ms"/>
+      O Lord of hosts, if you will look on the affliction of your servant.<break time="500ms"/>
+      If you will remember me and not forget your servant.<break time="500ms"/>
+      If you will give your servant a son.<break time="1000ms"/>
+      Then I will give him to the Lord all the days of his life.<break time="1800ms"/>
+
+      Her lips moved, but her voice was not heard.<break time="500ms"/>
+      She spoke in her heart.<break time="500ms"/>
+      Only her lips were moving.<break time="1000ms"/>
+      The words were too deep for sound.<break time="1800ms"/>
+
+      This was not a rehearsed prayer.<break time="500ms"/>
+      It was not polished or careful.<break time="500ms"/>
+      It was the prayer of a woman pouring out her soul like water before the Lord.<break time="1000ms"/>
+      Raw and honest and desperate and full of faith.<break time="1800ms"/>
+
+      God hears the prayers that have no voice.<break time="500ms"/>
+      The ones spoken only in the heart.<break time="1000ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

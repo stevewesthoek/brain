@@ -1,0 +1,34 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+            Now Boaz came from Bethlehem and said to the reapers, the Lord be with you.<break time="500ms"/>
+      And they answered, the Lord bless you.<break time="1000ms"/>
+      Then Boaz said to his young man who was in charge of the reapers, whose young woman is this?<break time="500ms"/>
+      The servant answered, she is the Moabite who came back with Naomi from the country of Moab.<break time="500ms"/>
+      She said, please let me glean and gather among the sheaves after the reapers.<break time="500ms"/>
+      So she came, and she has continued from early morning until now, except for a short rest.<break time="1800ms"/>
+      Boaz said to Ruth, my daughter, listen to me.<break time="500ms"/>
+      Do not go to glean in another field or leave this one.<break time="500ms"/>
+      Stay close to my young women.<break time="500ms"/>
+      Let your eyes be on the field that they are reaping, and follow them.<break time="500ms"/>
+      I have told the young men not to touch you.<break time="500ms"/>
+      And when you are thirsty, go to the vessels and drink what the young men have drawn.<break time="1800ms"/>
+      Then Ruth fell on her face, bowing to the ground, and said to him, why have I found favour in your eyes, that you should take notice of me, since I am a foreigner?<break time="1000ms"/>
+      Boaz answered her, all that you have done for your mother-in-law since the death of your husband has been fully told to me.<break time="500ms"/>
+      How you left your father and mother and your homeland and came to a people that you did not know before.<break time="1000ms"/>
+      The Lord repay you for what you have done, and a full reward be given you by the Lord, the God of Israel, under whose wings you have come to take refuge.<break time="1800ms"/>
+      In this moment, Boaz does not know what he will become to Ruth.<break time="500ms"/>
+      He is simply a man who sees faithfulness and responds with kindness.<break time="500ms"/>
+      He lets her glean, he gives her water, he speaks words of blessing over a stranger.<break time="1000ms"/>
+      And God is quietly at work in every small act of care.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

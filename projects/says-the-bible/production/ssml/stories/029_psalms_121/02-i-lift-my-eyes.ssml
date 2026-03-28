@@ -1,0 +1,48 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+      Picture a pilgrim on a long road.<break time="500ms"/>
+      The road is dusty.<break time="500ms"/>
+      The journey has been many days.<break time="1000ms"/>
+      Ahead, the hills rise against the sky.<break time="1800ms"/>
+      And the pilgrim lifts their eyes.<break time="3800ms"/>
+      "I lift my eyes to the hills."<break time="1800ms"/>
+      From where does my help come?<break time="3800ms"/>
+      It is not a cry of despair.<break time="500ms"/>
+      It is a posture.<break time="1000ms"/>
+      A deliberate turning of the gaze upward.<break time="1800ms"/>
+      Away from the road and its difficulties.<break time="500ms"/>
+      Away from the dust and the weariness.<break time="1800ms"/>
+      Up toward something larger.<break time="3800ms"/>
+      The question is real.<break time="500ms"/>
+      From where does my help come?<break time="1000ms"/>
+      It is a question every heart asks at some point.<break time="1800ms"/>
+      In the middle of the night.<break time="500ms"/>
+      At the edge of a hard season.<break time="500ms"/>
+      In the quiet moment when the noise falls away<break time="1000ms"/>
+      and something honest rises up.<break time="3800ms"/>
+      But notice the psalm does not leave the question hanging.<break time="1800ms"/>
+      The answer comes immediately.<break time="1000ms"/>
+      Not after a long search.<break time="500ms"/>
+      Not after a struggle.<break time="1800ms"/>
+      The question contains the answer already.<break time="3800ms"/>
+      To lift your eyes is already to begin to find it.<break time="1800ms"/>
+      Not from the hills themselves.<break time="500ms"/>
+      The hills are stone and earth.<break time="500ms"/>
+      They do not speak.<break time="1800ms"/>
+      But from the one who made them.<break time="1000ms"/>
+      From the Lord.<break time="3800ms"/>
+      The help you are looking for<break time="500ms"/>
+      comes from the maker of every hill,<break time="500ms"/>
+      every valley,<break time="500ms"/>
+      every road you have ever walked.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

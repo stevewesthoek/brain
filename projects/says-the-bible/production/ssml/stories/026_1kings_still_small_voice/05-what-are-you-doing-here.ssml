@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+      Inside the cave, the word of the Lord comes to Elijah.<break time="500ms"/>
+      Not a shout.<break time="500ms"/>
+      Not a command.<break time="500ms"/>
+      A question.<break time="1800ms"/>
+
+      What are you doing here, Elijah?<break time="1000ms"/>
+      It is the kind of question a father asks a child who has wandered far from home.<break time="500ms"/>
+      Not accusation.<break time="500ms"/>
+      Invitation.<break time="1800ms"/>
+
+      And Elijah pours out his heart.<break time="500ms"/>
+      I have been very zealous for the Lord, the God of hosts, he says.<break time="1000ms"/>
+      The people of Israel have forsaken your covenant.<break time="500ms"/>
+      They have thrown down your altars.<break time="500ms"/>
+      They have killed your prophets with the sword.<break time="1800ms"/>
+
+      I, even I only, am left.<break time="1000ms"/>
+      And they seek my life, to take it away.<break time="1800ms"/>
+
+      Listen to the weight in those words.<break time="500ms"/>
+      He is not making excuses.<break time="500ms"/>
+      He is telling the truth of his exhaustion.<break time="1000ms"/>
+      He gave everything and it was not enough.<break time="500ms"/>
+      He stood alone and now he feels utterly alone.<break time="1800ms"/>
+
+      And God listens.<break time="500ms"/>
+      God does not interrupt.<break time="500ms"/>
+      God does not correct.<break time="1000ms"/>
+      God lets Elijah say every word that needs to be said.<break time="1800ms"/>
+
+      Sometimes the kindest thing is simply to be heard.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

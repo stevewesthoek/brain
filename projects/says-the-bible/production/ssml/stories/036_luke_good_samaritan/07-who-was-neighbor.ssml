@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+      Jesus finished the story and turned the question around.<break time="500ms"/>
+      Which of these three do you think was neighbor<break time="500ms"/>
+      to the man who fell among robbers?<break time="1000ms"/>
+      The question is no longer: who qualifies as my neighbor?<break time="1800ms"/>
+
+      The question has become: which one acted as a neighbor?<break time="500ms"/>
+      The direction of the question has reversed.<break time="500ms"/>
+      It no longer asks who is close enough to deserve my care.<break time="1000ms"/>
+      It asks who drew close when care was needed.<break time="1800ms"/>
+
+      The lawyer answered: the one who showed him mercy.<break time="500ms"/>
+      He did not say the Samaritan.<break time="500ms"/>
+      Perhaps he could not bring himself to say the word.<break time="1000ms"/>
+      But he knew the answer. The one who showed him mercy.<break time="1800ms"/>
+
+      Jesus said: go and do likewise.<break time="1000ms"/>
+      Four words.<break time="500ms"/>
+      Not a definition but a direction.<break time="1800ms"/>
+
+      The neighbor is the one who stops.<break time="500ms"/>
+      The neighbor is the one who crosses the road.<break time="500ms"/>
+      The neighbor is the one whose compassion moves before the question of obligation is settled.<break time="1000ms"/>
+      The neighbor is not defined by proximity but by action.<break time="1800ms"/>
+
+      Mercy is what it means to be near.<break time="500ms"/>
+      Nearness is what mercy creates.<break time="500ms"/>
+      The two are woven together in the figure of the one who came around the bend,<break time="500ms"/>
+      saw a man in the road, and did not pass by.<break time="1800ms"/>
+
+      Go and do likewise.<break time="1000ms"/>
+      The story ends with those words still ringing in the air,<break time="500ms"/>
+      still ringing wherever someone lies helpless on a road<break time="500ms"/>
+      and someone else has to decide whether to stop.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

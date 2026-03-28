@@ -1,0 +1,32 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+            The people around him see his tears and some of them say:<break time="500ms"/>
+            See how much he loved him.<break time="1800ms"/>
+            Others say: Could not he who opened the eyes of the blind have kept this man from dying?<break time="1800ms"/>
+            The question hangs in the air.<break time="500ms"/>
+            It is the question grief always asks.<break time="1000ms"/>
+            Where were you?<break time="1800ms"/>
+            Jesus, still deeply moved, comes to the tomb.<break time="1000ms"/>
+            It is a cave cut into the hillside, a stone rolled across the entrance.<break time="1800ms"/>
+            He says: Take away the stone.<break time="1800ms"/>
+            Martha hesitates.<break time="500ms"/>
+            She says practically, honestly: Lord, by this time there will be an odor.<break time="500ms"/>
+            He has been dead four days.<break time="1800ms"/>
+            Four days is beyond any reasonable expectation of recovery.<break time="1000ms"/>
+            Even those who witnessed Lazarus get sick and die know what four days means.<break time="1800ms"/>
+            Jesus says to her: Did I not tell you that if you believed you would see the glory of God?<break time="1800ms"/>
+            And so they take away the stone.<break time="1000ms"/>
+            The entrance is open.<break time="500ms"/>
+            The dark is exposed to daylight.<break time="1000ms"/>
+            And Jesus lifts his eyes upward and prays.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

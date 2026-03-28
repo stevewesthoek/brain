@@ -1,0 +1,47 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+      Morning comes to the wilderness.<break time="500ms"/>
+      The air is cool and still.<break time="500ms"/>
+      Dew lies thick around the camp, covering the ground in a fine layer of moisture.<break time="1000ms"/>
+      And then the dew begins to lift.<break time="1800ms"/>
+
+      Beneath it, something remains.<break time="500ms"/>
+      A fine, flake-like thing, thin as frost on the ground.<break time="500ms"/>
+      Small and white and delicate.<break time="500ms"/>
+      It covers the earth the way frost covers a field on a cold morning.<break time="1000ms"/>
+      Quiet, unannounced, simply there.<break time="1800ms"/>
+
+      The people step out of their tents and see it.<break time="500ms"/>
+      They look at one another.<break time="500ms"/>
+      They look at the ground.<break time="500ms"/>
+      And they say to each other a question that becomes a name.<break time="1000ms"/>
+      What is it?<break time="500ms"/>
+      Manna.<break time="1800ms"/>
+
+      Moses speaks gently to the people.<break time="500ms"/>
+      This is the bread that the Lord has given you to eat.<break time="1000ms"/>
+      Not bread from an oven.<break time="500ms"/>
+      Not grain from a field they planted.<break time="500ms"/>
+      Bread from heaven, resting on the desert floor like a gift left at the door before dawn.<break time="1800ms"/>
+
+      There is a quietness to the scene.<break time="500ms"/>
+      No trumpet sounded.<break time="500ms"/>
+      No voice from the sky announced its arrival.<break time="500ms"/>
+      It simply appeared, the way daylight appears.<break time="1000ms"/>
+      The way provision often comes, not with drama but with faithfulness.<break time="1800ms"/>
+
+      The bread is given.<break time="1000ms"/>
+      The people are fed.<break time="500ms"/>
+      The morning holds its promise.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,47 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+      God speaks to Moses.<break time="500ms"/>
+      I will rain bread from heaven for you.<break time="1000ms"/>
+      The people shall go out and gather a day's portion every day, that I may test them, whether they will walk in my law or not.<break time="1800ms"/>
+
+      The promise is specific.<break time="500ms"/>
+      Not a storehouse all at once.<break time="500ms"/>
+      Not a reserve to hoard and measure.<break time="500ms"/>
+      But bread from heaven, falling daily, like rain.<break time="1000ms"/>
+      A portion for a day.<break time="1800ms"/>
+
+      There is something deeply gentle in the design.<break time="500ms"/>
+      God does not hand them a solution they can control.<break time="500ms"/>
+      He gives them a rhythm they must trust.<break time="1000ms"/>
+      Each morning, go out.<break time="500ms"/>
+      Each morning, gather.<break time="500ms"/>
+      Each morning, find that it is enough.<break time="1800ms"/>
+
+      And that evening, something extraordinary happens.<break time="500ms"/>
+      Quail come up and cover the camp.<break time="500ms"/>
+      Birds settling on the ground like a blanket drawn over the earth.<break time="1000ms"/>
+      Meat for the people who remembered the meat pots of Egypt.<break time="500ms"/>
+      God heard even the specific shape of their longing.<break time="1800ms"/>
+
+      The glory of the Lord appears in the cloud.<break time="500ms"/>
+      Not as a distant light, but as a nearness.<break time="500ms"/>
+      A presence that says, I have heard your grumbling.<break time="1000ms"/>
+      At twilight you shall eat meat.<break time="500ms"/>
+      In the morning you shall be filled with bread.<break time="500ms"/>
+      Then you shall know that I am the Lord your God.<break time="1800ms"/>
+
+      The provision begins before the people believe it will come.<break time="1000ms"/>
+      That is how grace works.<break time="500ms"/>
+      It arrives ahead of faith.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

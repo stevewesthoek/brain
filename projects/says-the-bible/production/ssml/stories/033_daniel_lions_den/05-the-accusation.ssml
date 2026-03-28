@@ -1,0 +1,66 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+            They were watching.
+            <break time="1000ms"/>
+            The officials had stationed themselves to see.
+            <break time="1000ms"/>
+            And they saw what they came to see.
+            <break time="1800ms"/>
+            Daniel in his upper room.
+            <break time="1000ms"/>
+            Windows open.
+            <break time="1000ms"/>
+            Kneeling.
+            <break time="1000ms"/>
+            Praying to his God.
+            <break time="3800ms"/>
+            They went quickly to the king.
+            <break time="1000ms"/>
+            They reminded him of the decree.
+            <break time="500ms"/>
+            They named Daniel.
+            <break time="500ms"/>
+            They laid out the evidence with satisfaction.
+            <break time="1800ms"/>
+            And then — the king understood what he had done.
+            <break time="1000ms"/>
+            He understood how he had been used.
+            <break time="1800ms"/>
+            The scripture says the king was distressed.
+            <break time="1000ms"/>
+            He set his mind to rescue Daniel.
+            <break time="1000ms"/>
+            He worked until sunset, searching for a way.
+            <break time="1800ms"/>
+            But the law of the Medes and Persians could not be changed.
+            <break time="1000ms"/>
+            The officials pressed him.
+            <break time="1000ms"/>
+            They would not let it go.
+            <break time="1800ms"/>
+            The decree stands, they said.
+            <break time="500ms"/>
+            The penalty stands.
+            <break time="500ms"/>
+            The king himself cannot undo it.
+            <break time="3800ms"/>
+            A king with all his power,
+            <break time="1000ms"/>
+            and he could not save the man he wanted to save.
+            <break time="1800ms"/>
+            Human power has limits.
+            <break time="1000ms"/>
+            The king knew it that night more than ever.
+            <break time="3800ms"/>
+            There was only one place left for hope to come from.
+    </prosody>
+  </voice>
+</speak>

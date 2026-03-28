@@ -1,0 +1,43 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.00%" pitch="-2.00%">
+      Take a moment to be still.<break time="1800ms"/>
+      Let your body soften.<break time="1000ms"/>
+      Breathe in slowly.<break time="1800ms"/>
+      And breathe out.<break time="3800ms"/>
+      Again.<break time="1000ms"/>
+      Breathe in.<break time="1000ms"/>
+      And let it go.<break time="3800ms"/>
+      Tonight we rest in Psalm 139.<break time="1800ms"/>
+      A psalm of being fully known.<break time="3800ms"/>
+      This is one of the most intimate psalms in all of scripture.<break time="1800ms"/>
+      It speaks of God's knowledge of you<break time="500ms"/>
+      as something total.<break time="1000ms"/>
+      Something that reaches every part of your life.<break time="3800ms"/>
+      Every thought you have had today.<break time="1000ms"/>
+      Every moment you sat down and rose.<break time="1000ms"/>
+      Every word before it left your lips.<break time="3800ms"/>
+      God knew it.<break time="1800ms"/>
+      God knows it.<break time="3800ms"/>
+      And the psalm does not present that as something frightening.<break time="1800ms"/>
+      It presents it as rest.<break time="1800ms"/>
+      As shelter.<break time="1800ms"/>
+      As something to lay down into.<break time="3800ms"/>
+      To be fully known<break time="500ms"/>
+      and still fully held<break time="500ms"/>
+      is the deepest kind of safety.<break time="3800ms"/>
+      So tonight,<break time="1000ms"/>
+      let this psalm speak to the parts of you<break time="500ms"/>
+      that wonder if you are truly seen.<break time="1800ms"/>
+      You are.<break time="1000ms"/>
+      You are fully known.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

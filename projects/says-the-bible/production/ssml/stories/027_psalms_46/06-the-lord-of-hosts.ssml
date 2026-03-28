@@ -1,0 +1,47 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+      The Lord of hosts is with us.<break time="1000ms"/>
+      The God of Jacob is our fortress.<break time="1800ms"/>
+
+      This refrain anchors the entire psalm.<break time="500ms"/>
+      It appears twice, like a great beam holding up a roof.<break time="500ms"/>
+      And each time it says the same two things.<break time="1000ms"/>
+      He is with us.<break time="500ms"/>
+      He is our fortress.<break time="1800ms"/>
+
+      The Lord of hosts.<break time="500ms"/>
+      That name means the God of angel armies.<break time="500ms"/>
+      The God who commands all the forces of heaven.<break time="1000ms"/>
+      Not a local protector.<break time="500ms"/>
+      Not a small comfort.<break time="500ms"/>
+      The one who holds the stars in their courses is personally present with you tonight.<break time="1800ms"/>
+
+      And then the psalm calls Him by another name.<break time="500ms"/>
+      The God of Jacob.<break time="1000ms"/>
+      Jacob, who wrestled through the night at the Jabbok.<break time="500ms"/>
+      Jacob, who limped into the morning with a new name and a blessing.<break time="500ms"/>
+      Jacob, who was not perfect, not polished, not always faithful.<break time="1000ms"/>
+      And yet God called Himself by Jacob's name.<break time="1800ms"/>
+
+      This is the God who stays with people who struggle.<break time="500ms"/>
+      Who meets them in the dark hours.<break time="500ms"/>
+      Who does not wait for them to be strong before He becomes their fortress.<break time="1800ms"/>
+
+      The God of angel armies is your fortress.<break time="500ms"/>
+      The God who knew Jacob is your safe place.<break time="1000ms"/>
+      He is with you.<break time="1800ms"/>
+
+      God is our refuge.<break time="1800ms"/>
+      The fortress holds.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

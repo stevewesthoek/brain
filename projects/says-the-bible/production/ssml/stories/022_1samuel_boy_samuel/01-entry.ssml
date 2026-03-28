@@ -1,0 +1,41 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.00%" pitch="-2.00%">
+      Take a slow breath in.<break time="500ms"/>
+      And let it out gently.<break time="1000ms"/>
+      Again, breathe in.<break time="500ms"/>
+      And breathe out.<break time="1800ms"/>
+
+      Let your eyes close softly.<break time="500ms"/>
+      Let your hands rest where they are.<break time="500ms"/>
+      Let the busy part of your mind grow quieter now.<break time="1000ms"/>
+      There is nothing you need to hold onto tonight.<break time="1800ms"/>
+
+      Tonight we will rest inside a story from First Samuel, chapter three.<break time="500ms"/>
+      The story of the boy Samuel, called by God.<break time="1000ms"/>
+      A child lying in the dark hears his name.<break time="500ms"/>
+      God speaks in the quiet of the night.<break time="1800ms"/>
+
+      This is not a story of thunder or spectacle.<break time="500ms"/>
+      It is a story of a gentle voice in a still room.<break time="500ms"/>
+      A lamp burning low.<break time="500ms"/>
+      A boy who listens.<break time="1000ms"/>
+      A God who is near enough to call by name.<break time="1800ms"/>
+
+      You do not have to follow every detail.<break time="500ms"/>
+      You do not have to remember every word.<break time="500ms"/>
+      Just let the story settle around you like the quiet of a temple at night.<break time="1800ms"/>
+
+      Let your breathing slow.<break time="500ms"/>
+      Let the stillness find you.<break time="1000ms"/>
+      The lamp is burning low, and God is near.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

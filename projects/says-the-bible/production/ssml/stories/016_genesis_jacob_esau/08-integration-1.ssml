@@ -1,0 +1,39 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.40%">
+      The wrestling is over.<break time="1800ms"/>
+      The dawn has come.<break time="1800ms"/>
+      The brothers embraced.<break time="1800ms"/>
+      Fear gave way to tears.<break time="3800ms"/>
+
+      God was in the struggle.<break time="1800ms"/>
+      God was in the long night by the river.<break time="1800ms"/>
+      God was in the limp that came with morning.<break time="1800ms"/>
+      God was in the arms that reached out instead of striking.<break time="3800ms"/>
+
+      You are not defined by your past.<break time="1800ms"/>
+      The mistakes you carry do not have to be the end of the story.<break time="1800ms"/>
+      Jacob deceived his father and fled from his brother.<break time="1800ms"/>
+      And still God met him in the night.<break time="3800ms"/>
+
+      You can be made new.<break time="1800ms"/>
+      A new name can be given.<break time="1800ms"/>
+      A new morning can begin.<break time="3800ms"/>
+
+      The wrestling does not last forever.<break time="1800ms"/>
+      The fear does not have the final word.<break time="1800ms"/>
+      What felt impossible became an embrace.<break time="3800ms"/>
+
+      You are held through the struggle.<break time="1800ms"/>
+      You are held now.<break time="3800ms"/>
+      You can rest.<break time="9000ms"/>
+    </prosody>
+  </voice>
+</speak>

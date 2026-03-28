@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+      The sun rose upon Jacob as he crossed over Peniel.<break time="500ms"/>
+      The first light touched the hills and the water and the dust of the road.<break time="1000ms"/>
+      And Jacob was limping.<break time="1800ms"/>
+
+      His hip had been struck in the night.<break time="500ms"/>
+      He would carry this wound for the rest of his life.<break time="1000ms"/>
+      But it was not a wound of defeat.<break time="1800ms"/>
+
+      It was the mark of a man who had held on.<break time="500ms"/>
+      Who had refused to let go until the blessing came.<break time="1000ms"/>
+      Who had been changed in the struggle.<break time="1800ms"/>
+
+      He was no longer the young man who had deceived his father.<break time="500ms"/>
+      He was no longer the brother who had fled in the night.<break time="1000ms"/>
+      Twenty years and one long night had shaped him into someone new.<break time="1800ms"/>
+
+      His name was now Israel.<break time="500ms"/>
+      The one who strives with God.<break time="1000ms"/>
+      Broken and blessed at once.<break time="1800ms"/>
+
+      The dawn came slowly and quietly.<break time="500ms"/>
+      The way dawn always does.<break time="500ms"/>
+      Not sudden, not loud.<break time="500ms"/>
+      Just the steady opening of light across the land.<break time="1800ms"/>
+
+      And Jacob walked forward into it.<break time="500ms"/>
+      One careful step at a time.<break time="1000ms"/>
+      Toward the brother he had wronged.<break time="500ms"/>
+      Toward the meeting he could no longer avoid.<break time="1800ms"/>
+
+      The night was behind him now.<break time="500ms"/>
+      The dawn had come.<break time="1000ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

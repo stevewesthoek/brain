@@ -1,0 +1,43 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+      "Where shall I go from your Spirit?<break time="500ms"/>
+      Or where shall I flee from your presence?"<break time="3800ms"/>
+      The psalmist asks this question<break time="500ms"/>
+      not as a threat but as a wonder.<break time="1800ms"/>
+      There is nowhere to go<break time="500ms"/>
+      where God is not already there.<break time="3800ms"/>
+      "If I ascend to heaven, you are there."<break time="1800ms"/>
+      The highest place imaginable.<break time="500ms"/>
+      The farthest reach upward.<break time="1000ms"/>
+      God is there.<break time="3800ms"/>
+      "If I make my bed in Sheol, you are there."<break time="1800ms"/>
+      The lowest place.<break time="500ms"/>
+      The place of death and shadows.<break time="500ms"/>
+      The place where all light seems to fail.<break time="1800ms"/>
+      God is there too.<break time="3800ms"/>
+      No height is too high.<break time="500ms"/>
+      No depth is too low.<break time="1800ms"/>
+      No condition of the soul<break time="500ms"/>
+      puts you outside the reach of God's presence.<break time="3800ms"/>
+      Think of the seasons of your life<break time="500ms"/>
+      when you felt most distant.<break time="1800ms"/>
+      The moments of confusion or grief or shame<break time="500ms"/>
+      when God felt very far away.<break time="3800ms"/>
+      The psalm does not say God was absent.<break time="1800ms"/>
+      It says He was there.<break time="1000ms"/>
+      Even in the places that felt like Sheol.<break time="1800ms"/>
+      Even in the low seasons.<break time="500ms"/>
+      Even in the dark.<break time="3800ms"/>
+      There is no place you have ever been<break time="500ms"/>
+      where God was not present with you.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+      Moses asked God a question.<break time="500ms"/>
+      If I go to the people of Israel and say the God of your fathers has sent me, they will ask, what is his name?<break time="1000ms"/>
+      What shall I say to them?<break time="1800ms"/>
+
+      And God said to Moses, I AM WHO I AM.<break time="1000ms"/>
+      Tell them I AM has sent you.<break time="1800ms"/>
+
+      A name that holds all time.<break time="500ms"/>
+      Not I was, though he was.<break time="500ms"/>
+      Not I will be, though he will be.<break time="500ms"/>
+      I AM.<break time="1000ms"/>
+      Present and complete and unending.<break time="1800ms"/>
+
+      The God of Abraham, of Isaac, of Jacob.<break time="500ms"/>
+      This is my name forever, God said.<break time="500ms"/>
+      This is my memorial name to all generations.<break time="1800ms"/>
+
+      Moses listened.<break time="500ms"/>
+      And God gave signs so that the people might believe.<break time="1000ms"/>
+      He told Moses to throw his staff on the ground, and it became a serpent.<break time="500ms"/>
+      Moses drew back from it.<break time="500ms"/>
+      God told him to take it by the tail, and it became a staff again.<break time="1800ms"/>
+
+      Then God said, put your hand inside your cloak.<break time="500ms"/>
+      Moses did, and when he drew it out, his hand was leprous, white as snow.<break time="500ms"/>
+      He put it back, and it was restored, clean and whole.<break time="1800ms"/>
+
+      Signs of power given gently.<break time="500ms"/>
+      A name spoken clearly.<break time="1000ms"/>
+      I AM is near, and he does not forget.<break time="500ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,47 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+      They began to celebrate.<break time="500ms"/>
+      Music, dancing, the smell of the feast.<break time="500ms"/>
+      The whole house was alive with it.<break time="1000ms"/>
+      The one who was lost had come home.<break time="1800ms"/>
+
+      The older son was in the field.<break time="500ms"/>
+      He heard the music as he came near the house.<break time="500ms"/>
+      He called one of the servants and asked what was happening.<break time="1000ms"/>
+      Your brother has come, the servant said, and your father has killed the fatted calf.<break time="1800ms"/>
+
+      The older son was angry.<break time="500ms"/>
+      He would not go in.<break time="500ms"/>
+      The father came out and entreated him.<break time="1000ms"/>
+      He pleaded with his older son as he had run to his younger one.<break time="1800ms"/>
+
+      The older son said: look, I have served you all these years.<break time="500ms"/>
+      I never disobeyed your command.<break time="500ms"/>
+      You never gave me a young goat to celebrate with my friends.<break time="1000ms"/>
+      But when this son of yours comes back, you kill the fatted calf for him.<break time="1800ms"/>
+
+      The father said: son, you are always with me.<break time="500ms"/>
+      Everything I have is yours.<break time="500ms"/>
+      It was fitting to celebrate and be glad.<break time="1000ms"/>
+      For your brother was dead, and is alive.<break time="1800ms"/>
+
+      He was lost, and is found.<break time="1000ms"/>
+      Two sons.<break time="500ms"/>
+      One father.<break time="500ms"/>
+      Both loved extravagantly.<break time="1800ms"/>
+
+      The story ends without an answer from the older son.<break time="500ms"/>
+      The door of the feast is still open.<break time="500ms"/>
+      The father has gone out to both of them.<break time="1000ms"/>
+      And the invitation stands for whoever will come in.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

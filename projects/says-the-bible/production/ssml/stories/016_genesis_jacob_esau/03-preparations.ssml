@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+      Jacob began to prepare.<break time="500ms"/>
+      He divided his people into two camps.<break time="500ms"/>
+      If Esau attacks one, he thought, perhaps the other may escape.<break time="1800ms"/>
+
+      Then Jacob prayed.<break time="500ms"/>
+      He said, O God of my father Abraham, God of my father Isaac.<break time="500ms"/>
+      You told me to return, and you said you would do me good.<break time="1000ms"/>
+      I am not worthy of the least of all the steadfast love you have shown your servant.<break time="1800ms"/>
+
+      With only my staff I crossed this Jordan.<break time="500ms"/>
+      And now I have become two camps.<break time="1000ms"/>
+      Please deliver me from the hand of my brother.<break time="1800ms"/>
+
+      It was an honest prayer.<break time="500ms"/>
+      The prayer of a man who knew he had done wrong and could not undo it.<break time="1800ms"/>
+
+      Then Jacob chose gifts from his flocks.<break time="500ms"/>
+      Two hundred female goats and twenty male goats.<break time="500ms"/>
+      Two hundred ewes and twenty rams.<break time="500ms"/>
+      Thirty milking camels with their young.<break time="500ms"/>
+      Forty cows and ten bulls.<break time="500ms"/>
+      Twenty female donkeys and ten male donkeys.<break time="1800ms"/>
+
+      He sent them ahead in waves, one drove after another.<break time="500ms"/>
+      Each servant carried the same message for Esau.<break time="500ms"/>
+      They belong to your servant Jacob. They are a gift sent to my lord Esau.<break time="1800ms"/>
+
+      Then Jacob sent his wives and children across the brook Jabbok.<break time="500ms"/>
+      Everything he had, he sent across.<break time="1000ms"/>
+      And Jacob was left alone.<break time="1800ms"/>
+
+      Sometimes you must send everything ahead and stand with nothing.<break time="1000ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,40 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+      Samuel is a boy.<break time="500ms"/>
+      He is young, and he lives at the house of the Lord in Shiloh.<break time="1000ms"/>
+      He serves under the old priest Eli.<break time="500ms"/>
+      He opens doors.<break time="500ms"/>
+      He tends the lamp.<break time="500ms"/>
+      He does the small, faithful things that fill a day in the temple.<break time="1800ms"/>
+
+      His mother Hannah had prayed for him before he was born.<break time="500ms"/>
+      She had wept and asked and trusted.<break time="500ms"/>
+      And when the boy came, she gave him back to the Lord.<break time="1000ms"/>
+      Each year she travels to Shiloh to worship.<break time="500ms"/>
+      And each year she brings him a little robe she has made with her own hands.<break time="1800ms"/>
+
+      So Samuel grows up in the presence of the Lord.<break time="500ms"/>
+      Not far from home, but placed in the care of God.<break time="500ms"/>
+      Not abandoned, but entrusted.<break time="1000ms"/>
+      A boy in a holy place, doing quiet work.<break time="1800ms"/>
+
+      In those days, the word of the Lord is rare.<break time="500ms"/>
+      There is no frequent vision.<break time="1000ms"/>
+      The people do not hear from God very often.<break time="500ms"/>
+      The temple is still standing, but the voice of God has grown quiet in the land.<break time="1800ms"/>
+
+      And yet Samuel is there.<break time="500ms"/>
+      Faithful in the silence.<break time="500ms"/>
+      Present in the waiting.<break time="1000ms"/>
+      A boy who does not yet know that God is about to speak.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

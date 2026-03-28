@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+      Then the word of the Lord came to Elijah.<break time="500ms"/>
+      "Arise, go to Zarephath, which belongs to Sidon, and dwell there."<break time="1000ms"/>
+      "Behold, I have commanded a widow there to feed you."<break time="1800ms"/>
+
+      Zarephath.<break time="500ms"/>
+      Not a city of Israel. Not a place you would expect God to send His prophet.<break time="1000ms"/>
+      A foreign town. A Sidonian village on the coast.<break time="500ms"/>
+      And the one God chose to provide was not a wealthy merchant or a noble household.<break time="1000ms"/>
+      It was a widow.<break time="1800ms"/>
+
+      Elijah came to the gate of the city.<break time="500ms"/>
+      And there she was, gathering sticks.<break time="1000ms"/>
+      Thin pieces of wood, dry and pale in the sun.<break time="500ms"/>
+      She moved slowly, bending to pick them up one by one.<break time="1800ms"/>
+
+      He called to her.<break time="500ms"/>
+      "Bring me a little water in a vessel, that I may drink."<break time="1000ms"/>
+      And as she went to get it, he called again.<break time="500ms"/>
+      "Bring me a morsel of bread in your hand."<break time="1800ms"/>
+
+      She stopped.<break time="500ms"/>
+      And she told him the truth of her life.<break time="1000ms"/>
+      "As the Lord your God lives, I have nothing baked, only a handful of flour in a jar, and a little oil in a jug."<break time="1800ms"/>
+
+      "I am gathering two sticks that I may go in and prepare it for myself and my son."<break time="500ms"/>
+      "That we may eat it."<break time="1000ms"/>
+      "And die."<break time="1800ms"/>
+
+      A last meal.<break time="500ms"/>
+      The end of everything she had.<break time="1000ms"/>
+      And yet this was the woman God had chosen.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,42 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+      Israel has wandered for forty years.<break time="500ms"/>
+      Forty years through desert and dust and waiting.<break time="500ms"/>
+      A whole generation has passed since Egypt.<break time="1000ms"/>
+      Moses is gone now, buried by God Himself on a mountain no one can find.<break time="1800ms"/>
+
+      And now they stand at the edge of the Jordan.<break time="500ms"/>
+      Across the river lies Jericho.<break time="500ms"/>
+      Beyond Jericho lies the land God promised to Abraham long ago.<break time="1000ms"/>
+      The promised land is within sight.<break time="1800ms"/>
+
+      But the river is between them and everything they have hoped for.<break time="500ms"/>
+      The Jordan at harvest time is not a gentle stream.<break time="500ms"/>
+      It runs wide and fast, swollen with spring rains from the hills.<break time="1000ms"/>
+      There is no easy way across.<break time="1800ms"/>
+
+      Joshua speaks to the people.<break time="500ms"/>
+      He tells them to consecrate themselves.<break time="500ms"/>
+      To set themselves apart.<break time="1000ms"/>
+      For tomorrow, the Lord will do wonders among you.<break time="1800ms"/>
+
+      They have waited so long for this.<break time="500ms"/>
+      Their parents waited.<break time="500ms"/>
+      Their grandparents waited.<break time="1000ms"/>
+      And now, at last, tomorrow is almost here.<break time="1800ms"/>
+
+      Sometimes the edge is the hardest place to stand.<break time="500ms"/>
+      So close to the answer, and still not there.<break time="1000ms"/>
+      But God does not leave His people stranded at the edge.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

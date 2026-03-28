@@ -1,0 +1,45 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.40%">
+      The wind passed.<break time="1800ms"/>
+      The earthquake passed.<break time="1800ms"/>
+      The fire passed.<break time="1800ms"/>
+      Then the whisper.<break time="3800ms"/>
+
+      God was in the stillness.<break time="1800ms"/>
+      Not in the noise.<break time="1800ms"/>
+      Not in the shaking.<break time="1800ms"/>
+      Not in the burning.<break time="1800ms"/>
+      In the quiet.<break time="3800ms"/>
+
+      You do not need the storm to find God's voice.<break time="1800ms"/>
+      You do not need to stand on a mountain in the wind.<break time="1800ms"/>
+      You do not need fire from heaven to know He is near.<break time="3800ms"/>
+
+      The whisper is enough.<break time="1800ms"/>
+      The gentle word is enough.<break time="1800ms"/>
+      The quiet presence is enough.<break time="3800ms"/>
+
+      Elijah was exhausted.<break time="1800ms"/>
+      Elijah was afraid.<break time="1800ms"/>
+      Elijah thought he was utterly alone.<break time="1800ms"/>
+      And God met him with bread, with sleep, with a whisper, and with truth.<break time="3800ms"/>
+
+      You are not alone.<break time="1800ms"/>
+      You have never been alone.<break time="1800ms"/>
+      The whisper reaches even here.<break time="3800ms"/>
+
+      The storm has passed.<break time="1800ms"/>
+      The whisper remains.<break time="1800ms"/>
+      God is near.<break time="3800ms"/>
+      You can rest.<break time="9000ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,48 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+      All Israel hears of the judgment.<break time="500ms"/>
+      And they stand in awe of the king.<break time="1000ms"/>
+      For they perceive that the wisdom of God is in him to do justice.<break time="1800ms"/>
+
+      Word spreads beyond the borders.<break time="500ms"/>
+      Solomon speaks three thousand proverbs.<break time="500ms"/>
+      His songs number a thousand and five.<break time="1000ms"/>
+      He speaks of trees, from the cedar of Lebanon to the hyssop that grows out of the wall.<break time="500ms"/>
+      He speaks of animals, and birds, and creeping things, and fish.<break time="1800ms"/>
+
+      Kings come from all the earth to hear the wisdom of Solomon.<break time="500ms"/>
+      From every nation, people travel to sit in his court and listen.<break time="1000ms"/>
+      And what they find is not a man who seized his understanding by force.<break time="500ms"/>
+      But a man who received it as a gift.<break time="1800ms"/>
+
+      It all began with one night.<break time="500ms"/>
+      One question from God.<break time="500ms"/>
+      One humble answer from a young king who knew he was small.<break time="1800ms"/>
+
+      He did not ask to be impressive.<break time="500ms"/>
+      He asked to understand.<break time="1000ms"/>
+      And God gave him more than he imagined.<break time="1800ms"/>
+
+      That is how wisdom works in the scriptures.<break time="500ms"/>
+      It is not taken.<break time="500ms"/>
+      It is given.<break time="1000ms"/>
+      It comes to those who know they need it.<break time="500ms"/>
+      It rests in the ones who ask with open hands.<break time="1800ms"/>
+
+      Wisdom is given.<break time="500ms"/>
+      Understanding comes gently.<break time="1000ms"/>
+      You are known.<break time="500ms"/>
+      You are held.<break time="1000ms"/>
+      The night is peace.<break time="500ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

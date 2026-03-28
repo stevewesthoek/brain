@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+      God said to Joshua, See, I have given Jericho into your hand.<break time="1000ms"/>
+      Its king.<break time="500ms"/>
+      Its mighty men of valour.<break time="1000ms"/>
+      All of it, already given.<break time="1800ms"/>
+
+      But the plan was strange.<break time="500ms"/>
+      Not a battering ram.<break time="500ms"/>
+      Not a siege tower.<break time="500ms"/>
+      Not a night raid or a clever ambush.<break time="1000ms"/>
+      Walking.<break time="1800ms"/>
+
+      March around the city once each day for six days.<break time="1000ms"/>
+      Seven priests shall carry seven trumpets of rams' horns before the ark of the covenant.<break time="1000ms"/>
+      And on the seventh day, march around the city seven times.<break time="1800ms"/>
+
+      When the priests blow a long blast on the trumpets, all the people shall shout with a great shout.<break time="1000ms"/>
+      And the walls of the city will fall down flat.<break time="1800ms"/>
+
+      Imagine hearing that as a soldier.<break time="500ms"/>
+      You have come all this way through the wilderness.<break time="500ms"/>
+      You are standing before the most fortified city in the land.<break time="500ms"/>
+      And the instruction is to walk in circles and wait.<break time="1800ms"/>
+
+      But that is how God often works.<break time="500ms"/>
+      His plans do not always make sense to the mind at first.<break time="500ms"/>
+      They ask for patience instead of power.<break time="500ms"/>
+      Trust instead of tactics.<break time="1000ms"/>
+      And in the waiting, something deeper is being built.<break time="1800ms"/>
+
+      Obedience is enough.<break time="1000ms"/>
+      God's plan holds.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

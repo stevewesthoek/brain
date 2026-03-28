@@ -1,0 +1,34 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+            At mealtime Boaz said to her, come here and eat some bread and dip your morsel in the wine.<break time="500ms"/>
+      So she sat beside the reapers, and he passed to her roasted grain.<break time="500ms"/>
+      She ate until she was satisfied, and she had some left over.<break time="1000ms"/>
+      When she rose to glean, Boaz instructed his young men, saying, let her glean even among the sheaves, and do not reproach her.<break time="500ms"/>
+      Also pull out some grain from the bundles for her and leave it for her to glean, and do not rebuke her.<break time="1800ms"/>
+      So Ruth gleaned in the field until evening.<break time="500ms"/>
+      Then she beat out what she had gleaned, and it was about an ephah of barley.<break time="500ms"/>
+      An ephah is a generous amount, far more than a day's wages for a gleaner.<break time="1000ms"/>
+      She carried it into the town and showed it to her mother-in-law.<break time="500ms"/>
+      And Naomi saw how much she had gathered and said, where did you glean today?<break time="500ms"/>
+      Where did you work?<break time="500ms"/>
+      Blessed be the man who took notice of you.<break time="1000ms"/>
+      Ruth told her, the man's name with whom I worked today is Boaz.<break time="500ms"/>
+      And Naomi said to her daughter-in-law, may he be blessed by the Lord, whose kindness has not forsaken the living or the dead.<break time="1000ms"/>
+      The man is a close relative of ours, one of our redeemers.<break time="1800ms"/>
+      The word redeemer appears gently here for the first time.<break time="500ms"/>
+      In Israel's law, a redeemer was a near kinsman who could buy back land and restore a family's name.<break time="500ms"/>
+      Naomi begins to see something Ruth does not yet know.<break time="500ms"/>
+      But neither woman rushes ahead.<break time="500ms"/>
+      They simply gather the grain, rest for the night, and trust what tomorrow may bring.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

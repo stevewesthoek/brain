@@ -1,0 +1,28 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.00%" pitch="-2.75%">
+            David speaks to the men who stand by him, saying, who is this uncircumcised Philistine, that he should defy the armies of the living God?<break time="1000ms"/>
+      The words travel through the camp until they reach the ears of King Saul, and Saul sends for him.<break time="500ms"/>
+      David says to Saul, let no man's heart fail because of him.<break time="500ms"/>
+      Your servant will go and fight with this Philistine.<break time="1000ms"/>
+      Saul says to David, you are not able to go against this Philistine to fight with him, for you are but a youth, and he has been a man of war from his youth.<break time="500ms"/>
+      But David answers quietly.<break time="500ms"/>
+      Your servant used to keep sheep for his father.<break time="500ms"/>
+      And when there came a lion, or a bear, and took a lamb from the flock, I went after him and struck him and delivered it out of his mouth.<break time="1000ms"/>
+      And if he arose against me, I caught him by his beard and struck him and killed him.<break time="500ms"/>
+      Your servant has struck both lions and bears, and this uncircumcised Philistine shall be like one of them, for he has defied the armies of the living God.<break time="1000ms"/>
+      David says, the Lord who delivered me from the paw of the lion and from the paw of the bear will deliver me from the hand of this Philistine.<break time="1800ms"/>
+      David's courage does not come from his own strength but from his memory of God's faithfulness.<break time="1000ms"/>
+      The lion and the bear are not boasts but testimonies.<break time="1000ms"/>
+      God has already been faithful, and David steps forward on that ground.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

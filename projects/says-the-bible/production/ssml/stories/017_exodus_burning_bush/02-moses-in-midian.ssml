@@ -1,0 +1,40 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+      Moses had been in Midian for forty years.<break time="500ms"/>
+      Forty years is a long time to be quiet.<break time="1000ms"/>
+      He had once lived in the palace of Egypt.<break time="500ms"/>
+      He had once walked among princes and servants and gold.<break time="1800ms"/>
+
+      But that was far behind him now.<break time="500ms"/>
+      He had fled Egypt after striking down an Egyptian.<break time="500ms"/>
+      He had run from Pharaoh and from his old life.<break time="1000ms"/>
+      And the desert received him.<break time="1800ms"/>
+
+      In Midian, he married Zipporah, the daughter of Jethro.<break time="500ms"/>
+      He tended his father-in-law's flock.<break time="500ms"/>
+      He learned the paths through the hills and the dry places.<break time="1000ms"/>
+      He knew where the water lay and where the shade fell.<break time="1800ms"/>
+
+      The years passed without fanfare.<break time="500ms"/>
+      No one in Midian called him prince.<break time="500ms"/>
+      No one spoke of Egypt or of his early years.<break time="1000ms"/>
+      He was simply a shepherd walking the land.<break time="1800ms"/>
+
+      He was no longer the man who had fled.<break time="500ms"/>
+      He was not yet the man who would return.<break time="1000ms"/>
+      He was in between, and the wilderness held him there.<break time="1800ms"/>
+
+      Sometimes the quietest years are where God does the deepest work.<break time="1000ms"/>
+      The hidden years are not wasted.<break time="500ms"/>
+      You can rest in that.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

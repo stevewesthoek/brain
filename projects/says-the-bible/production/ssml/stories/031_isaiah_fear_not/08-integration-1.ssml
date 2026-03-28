@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.40%">
+            Fear not.
+            <break time="1800ms"/>
+            God is with you.
+            <break time="3800ms"/>
+            He called you by name.
+            <break time="1800ms"/>
+            Before the day you were born, He knew it. He spoke it. He formed you and He called you — not as one face in a crowd, but as someone He knows fully and loves without condition.
+            <break time="9000ms"/>
+            He walks through the waters beside you.
+            <break time="1800ms"/>
+            Not watching from the shore. Not waiting until you make it through. Beside you. In the current with you. Holding ground when the river runs fast.
+            <break time="9000ms"/>
+            You are precious.
+            <break time="1800ms"/>
+            That is not a word you earned. It is a word He chose. It is how He sees you — not at your best, not after you have cleaned yourself up, but now, as you are, tonight.
+            <break time="9000ms"/>
+            You are honored.
+            <break time="1800ms"/>
+            God gives you weight. He does not dismiss what you carry. He does not look away from what is hard. He sees it, and He calls you honored. Significant. Worth every ounce of His attention.
+            <break time="9000ms"/>
+            You are loved.
+            <break time="1800ms"/>
+            No qualification. No condition. No version of you that He is waiting to see before He decides. He loves you. He has always loved you. He will always love you.
+            <break time="9000ms"/>
+            Nothing separates you from His care.
+            <break time="3800ms"/>
+            Not distance. Not failure. Not the fear you still feel. Not the doubt that comes at night. Nothing in all of creation can pull you out of the hand that holds you.
+            <break time="9000ms"/>
+            Fear not.
+            <break time="3800ms"/>
+            Let your body soften now. Let your breath slow. You are held.
+    </prosody>
+  </voice>
+</speak>

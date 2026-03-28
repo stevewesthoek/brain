@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.00%" pitch="-2.00%">
+      Take a slow breath in.<break time="500ms"/>
+      And let it out gently.<break time="1000ms"/>
+      Again, breathe in.<break time="500ms"/>
+      And breathe out.<break time="1800ms"/>
+
+      Let your body settle into where you are.<break time="500ms"/>
+      Let your thoughts slow down.<break time="500ms"/>
+      Let the day grow quiet around you.<break time="1000ms"/>
+      There is nothing pressing now.<break time="1800ms"/>
+
+      Tonight we will listen to a story from Luke.<break time="500ms"/>
+      The story of the good Samaritan.<break time="1000ms"/>
+      A story about a man left on a road, and the one who stopped when others did not.<break time="1800ms"/>
+
+      The one who stopped was not expected to stop.<break time="500ms"/>
+      He was from the wrong place, by the world's accounting.<break time="500ms"/>
+      He had no obligation, no reason, no natural reason to come close.<break time="1000ms"/>
+      But he saw, and he had compassion, and he crossed the road.<break time="1800ms"/>
+
+      This is a story about what mercy looks like when it moves.<break time="500ms"/>
+      Not mercy as an idea, but mercy as feet on a road, hands binding wounds.<break time="500ms"/>
+      Mercy that costs something and gives anyway.<break time="1000ms"/>
+      Mercy that does not ask first if it is convenient.<break time="1800ms"/>
+
+      You do not need to hold the whole story tonight.<break time="500ms"/>
+      You only need to let it come to you slowly.<break time="500ms"/>
+      One sentence at a time.<break time="1000ms"/>
+      One breath at a time.<break time="1800ms"/>
+
+      Tonight, hold this as we begin.<break time="500ms"/>
+      Mercy is near.<break time="500ms"/>
+      The one who stopped is already on the road beside you.<break time="1000ms"/>
+      You can rest.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

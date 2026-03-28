@@ -1,0 +1,36 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+            Laban and Bethuel answered and said, the thing comes from the Lord.<break time="500ms"/>
+      We cannot speak to you either bad or good.<break time="500ms"/>
+      Here is Rebekah before you.<break time="500ms"/>
+      Take her and go, and let her be the wife of your master's son, as the Lord has spoken.<break time="1000ms"/>
+      When the servant heard their words, he bowed himself to the ground before the Lord.<break time="500ms"/>
+      He brought out jewelry of silver, jewelry of gold, and clothing, and gave them to Rebekah.<break time="500ms"/>
+      He also gave precious things to her brother and to her mother.<break time="1000ms"/>
+      They ate and drank that night, and in the morning the servant said, send me away to my master.<break time="500ms"/>
+      But her brother and her mother said, let the young woman stay with us a few days, at least ten.<break time="500ms"/>
+      After that she may go.<break time="1000ms"/>
+      The servant said, do not hinder me, since the Lord has prospered my way.<break time="500ms"/>
+      Send me away so that I may go to my master.<break time="500ms"/>
+      So they said, we will call the young woman and ask her personally.<break time="1000ms"/>
+      They called Rebekah and said to her, will you go with this man?<break time="500ms"/>
+      And she said, I will go.<break time="1800ms"/>
+      Two words, spoken quietly, that changed the course of a life.<break time="500ms"/>
+      She did not know what lay ahead on that long road south.<break time="500ms"/>
+      She had never met Isaac.<break time="500ms"/>
+      She only knew that God had opened a door, and she chose to walk through it.<break time="1000ms"/>
+      They blessed Rebekah and said, our sister, may you become the mother of thousands of ten thousands, and may your descendants possess the gates of those who hate them.<break time="1000ms"/>
+      And Rebekah arose, and her young women, and they rode on the camels and followed the man.<break time="500ms"/>
+      The servant took Rebekah and departed, and the long journey home began.<break time="1800ms"/>
+      You can rest as the road stretches on.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

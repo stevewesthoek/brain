@@ -1,0 +1,30 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+            Abraham was old, well advanced in years, and the Lord had blessed him in all things.<break time="500ms"/>
+      Sarah, his wife, had died, and Isaac was grown, but he had no wife.<break time="500ms"/>
+      Abraham called the oldest servant of his house, the one who managed all that he had, and said to him, put your hand under my thigh and swear to me.<break time="1000ms"/>
+      Do not take a wife for my son from the daughters of the Canaanites among whom I dwell.<break time="500ms"/>
+      Go to my country, to my kindred, and take a wife for my son Isaac.<break time="1000ms"/>
+      The servant asked, what if the woman is not willing to follow me to this land?<break time="500ms"/>
+      Shall I take your son back to the land from which you came?<break time="500ms"/>
+      Abraham said, do not take my son back there.<break time="500ms"/>
+      The Lord God of heaven, who took me from my father's house, He will send His angel before you.<break time="1000ms"/>
+      It was a promise built on decades of faithfulness.<break time="500ms"/>
+      Abraham had walked with God through impossible things, and now he trusted that same God with his son's future.<break time="1800ms"/>
+      So the servant took ten camels from the camels of his master, and departed.<break time="500ms"/>
+      He carried with him all manner of good things, gifts from Abraham's wealth.<break time="500ms"/>
+      And he set out on the long road to Mesopotamia, to the city of Nahor.<break time="1000ms"/>
+      The journey was slow and steady, across dust and distance.<break time="500ms"/>
+      A mission of trust, carried forward by obedience.<break time="1800ms"/>
+      You can rest as the servant travels.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,58 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.25%" pitch="-2.25%">
+            The tax collectors and sinners were drawing near to Jesus.
+            <break time="500ms"/>
+            All of them were coming to listen.
+            <break time="1000ms"/>
+            These were the people the religious world had written off.
+            <break time="500ms"/>
+            The ones considered impure.
+            <break time="500ms"/>
+            The ones who did not belong at the table.
+            <break time="1800ms"/>
+            And Jesus welcomed them.
+            <break time="1000ms"/>
+            He sat with them.
+            <break time="1000ms"/>
+            He ate with them.
+            <break time="1800ms"/>
+            The Pharisees and the teachers of the law saw this.
+            <break time="500ms"/>
+            And they began to grumble among themselves.
+            <break time="1000ms"/>
+            "This man welcomes sinners," they said.
+            <break time="500ms"/>
+            "And eats with them."
+            <break time="1800ms"/>
+            It was meant as an accusation.
+            <break time="500ms"/>
+            But Jesus heard it as a description worth explaining.
+            <break time="1800ms"/>
+            So he told them a parable.
+            <break time="1000ms"/>
+            And then another.
+            <break time="1000ms"/>
+            And then another.
+            <break time="1800ms"/>
+            Three stories.
+            <break time="500ms"/>
+            All about what is lost and what is found.
+            <break time="1000ms"/>
+            All about the kind of God who goes looking.
+            <break time="1800ms"/>
+            The grumbling in the crowd became the occasion for grace.
+            <break time="1000ms"/>
+            And the ones who thought they did not belong
+            <break time="500ms"/>
+            were the ones Jesus was speaking to most directly.
+    </prosody>
+  </voice>
+</speak>

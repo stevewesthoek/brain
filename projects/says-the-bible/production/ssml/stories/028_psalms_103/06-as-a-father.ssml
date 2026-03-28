@@ -1,0 +1,52 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+      As a father shows compassion to his children, so the Lord shows compassion to those who fear him.<break time="1800ms"/>
+
+      The psalm shifts here from the cosmic to the intimate.<break time="500ms"/>
+      From the height of heaven to the nearness of a parent's hand.<break time="1000ms"/>
+      God is not only vast.<break time="500ms"/>
+      He is close.<break time="500ms"/>
+      He is tender.<break time="500ms"/>
+      He is the kind of father who bends down.<break time="1800ms"/>
+
+      For he knows our frame.<break time="1000ms"/>
+      He remembers that we are dust.<break time="1800ms"/>
+
+      God is not surprised by your weakness.<break time="500ms"/>
+      He made you.<break time="500ms"/>
+      He knows what you are made of.<break time="500ms"/>
+      He knows the limits of your strength, the edges of your patience, the places where your resolve gives way.<break time="1000ms"/>
+      And none of it catches Him off guard.<break time="1800ms"/>
+
+      He remembers that we are dust.<break time="500ms"/>
+      Not stone.<break time="500ms"/>
+      Not iron.<break time="500ms"/>
+      Dust.<break time="1000ms"/>
+      Fragile, light, easily scattered by the wind.<break time="1800ms"/>
+
+      And yet He does not look at dust with contempt.<break time="500ms"/>
+      He looks at it with compassion.<break time="500ms"/>
+      The way a good father looks at a small child who has tried hard and fallen short.<break time="1000ms"/>
+      Not with anger.<break time="500ms"/>
+      Not with disappointment.<break time="500ms"/>
+      But with a love that already knew the fall was coming and prepared the arms to catch.<break time="1800ms"/>
+
+      You do not have to be stronger than you are tonight.<break time="500ms"/>
+      You do not have to pretend you are not tired.<break time="500ms"/>
+      God knows your frame.<break time="1000ms"/>
+      He holds you gently because He knows what you are made of.<break time="1800ms"/>
+
+      You are held.<break time="1000ms"/>
+      You are crowned with kindness.<break time="1000ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

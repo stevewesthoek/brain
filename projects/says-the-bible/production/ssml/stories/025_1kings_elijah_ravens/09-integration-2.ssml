@@ -1,0 +1,42 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.50%" pitch="-3.60%">
+      The brook is quiet now.<break time="1800ms"/>
+      The jar is full.<break time="1800ms"/>
+      The meal is made.<break time="1800ms"/>
+      The house is still.<break time="3800ms"/>
+
+      You do not need to carry tomorrow's worry tonight.<break time="1800ms"/>
+      The jar will have flour in the morning.<break time="1800ms"/>
+      The jug will have oil in the morning.<break time="1800ms"/>
+      But that is morning's concern, not tonight's.<break time="3800ms"/>
+
+      Let your thoughts grow smaller now.<break time="1800ms"/>
+      Let your breathing slow now.<break time="1800ms"/>
+      Let the story settle into one simple truth.<break time="3800ms"/>
+
+      You are provided for.<break time="1800ms"/>
+      You are held.<break time="1800ms"/>
+      The same steadiness that kept the jar from emptying.<break time="1800ms"/>
+      The same faithfulness that sent ravens with bread.<break time="1800ms"/>
+      That care surrounds you now.<break time="3800ms"/>
+
+      You do not need to plan the next step tonight.<break time="1800ms"/>
+      You do not need to solve the drought tonight.<break time="1800ms"/>
+      You only need to rest.<break time="3800ms"/>
+
+      The jar is full.<break time="1800ms"/>
+      The oil does not run dry.<break time="1800ms"/>
+      Enough for today.<break time="3800ms"/>
+      You can rest.<break time="9000ms"/>
+      You can rest.<break time="9000ms"/>
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+      "My help comes from the Lord,<break time="500ms"/>
+      who made heaven and earth."<break time="3800ms"/>
+      Say that slowly to yourself.<break time="1800ms"/>
+      My help comes from the Lord.<break time="1000ms"/>
+      Not from my own effort.<break time="500ms"/>
+      Not from a plan I can work out.<break time="500ms"/>
+      Not from the right circumstances aligning.<break time="1800ms"/>
+      From the Lord.<break time="3800ms"/>
+      And then the psalm adds a second line<break time="500ms"/>
+      that changes everything.<break time="1800ms"/>
+      Who made heaven and earth.<break time="3800ms"/>
+      This is not a small helper.<break time="500ms"/>
+      Not a limited resource.<break time="1800ms"/>
+      The one who helps you<break time="500ms"/>
+      is the one who spoke every galaxy into being.<break time="1000ms"/>
+      Who set the mountains in their place.<break time="500ms"/>
+      Who carved the riverbeds<break time="500ms"/>
+      and filled the seas.<break time="3800ms"/>
+      The same hands that shaped the earth<break time="500ms"/>
+      are the hands that hold you.<break time="3800ms"/>
+      It is simple and vast at the same time.<break time="1800ms"/>
+      Personal and cosmic at once.<break time="1800ms"/>
+      This is not a distant God<break time="500ms"/>
+      who watches from far off.<break time="1800ms"/>
+      This is the maker<break time="500ms"/>
+      who is also the keeper.<break time="3800ms"/>
+      The one great enough to create everything<break time="1000ms"/>
+      is small enough to care for you.<break time="1800ms"/>
+      To help you specifically.<break time="500ms"/>
+      On this road.<break time="500ms"/>
+      On this night.<break time="3800ms"/>
+      My help comes from the Lord,<break time="500ms"/>
+      who made heaven and earth.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

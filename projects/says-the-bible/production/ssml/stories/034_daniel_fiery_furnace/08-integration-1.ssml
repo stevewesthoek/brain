@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.40%">
+            Let that rest with you now.
+            <break time="1800ms"/>
+            The fire had no power.
+            <break time="3800ms"/>
+            The fourth was with them.
+            <break time="3800ms"/>
+            They were not burned.
+            <break time="3800ms"/>
+            They were not alone.
+            <break time="9000ms"/>
+            The furnace could not touch what God was holding.
+            <break time="3800ms"/>
+            The heat that killed the strongest soldiers
+            <break time="1800ms"/>
+            could not harm three men walking with a presence beside them.
+            <break time="9000ms"/>
+            God walks with His people through the flames.
+            <break time="3800ms"/>
+            Not always around the flames.
+            <break time="3800ms"/>
+            Through them.
+            <break time="3800ms"/>
+            Present in the heat itself.
+            <break time="9000ms"/>
+            You are held by the same presence.
+            <break time="3800ms"/>
+            Whatever you are walking through tonight —
+            <break time="3800ms"/>
+            whatever has felt like fire —
+            <break time="3800ms"/>
+            you are not walking through it alone.
+    </prosody>
+  </voice>
+</speak>

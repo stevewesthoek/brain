@@ -1,0 +1,28 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.75%" pitch="-2.60%">
+            Now David is the youngest son of Jesse the Bethlehemite, and Jesse has eight sons.<break time="500ms"/>
+      The three eldest follow Saul to the battle, but David goes back and forth from Saul to feed his father's sheep at Bethlehem.<break time="1000ms"/>
+      He is a shepherd boy, tending the flock in the hills, far from the camp and the noise of armies.<break time="500ms"/>
+      Jesse says to David, take now for your brothers an ephah of this parched grain and these ten loaves, and carry ten cheeses to the commander of their thousand.<break time="500ms"/>
+      See how your brothers fare, and bring some token from them.<break time="1000ms"/>
+      So David rises early in the morning and leaves the sheep with a keeper and goes as Jesse has commanded him.<break time="500ms"/>
+      He comes to the camp as the army is going out to the battle line, shouting the war cry.<break time="500ms"/>
+      And as he speaks with his brothers, the champion, Goliath of Gath, comes out from the Philistine ranks and speaks his same words.<break time="1000ms"/>
+      David hears them.<break time="500ms"/>
+      All the men of Israel, when they see the man, flee from him and are much afraid.<break time="500ms"/>
+      But David does not flee.<break time="1800ms"/>
+      The shepherd boy stands still where the soldiers run.<break time="1000ms"/>
+      He has come with bread and cheese, not with a sword, and yet he does not turn away.<break time="1000ms"/>
+      Something stirs in David that the army has forgotten.<break time="1800ms"/>
+      You can rest.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>

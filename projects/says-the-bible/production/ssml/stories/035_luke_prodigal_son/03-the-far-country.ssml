@@ -1,0 +1,46 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-10.50%" pitch="-2.50%">
+      When he had spent everything, a severe famine arose in that country.<break time="500ms"/>
+      The land had been generous once.<break time="500ms"/>
+      Now it offered nothing.<break time="1000ms"/>
+      And he began to be in want.<break time="1800ms"/>
+
+      He went and hired himself out to a citizen of that country.<break time="500ms"/>
+      There was no dignity in it.<break time="500ms"/>
+      He was far from home, far from family, with no standing left.<break time="1000ms"/>
+      The citizen sent him into his fields to feed pigs.<break time="1800ms"/>
+
+      He sat with the pigs in the field.<break time="500ms"/>
+      The pods they ate were carob pods, cheap and dry.<break time="500ms"/>
+      He longed to fill his stomach with them.<break time="1000ms"/>
+      But no one gave him anything.<break time="1800ms"/>
+
+      No one.<break time="500ms"/>
+      Not the citizen who employed him.<break time="500ms"/>
+      Not a neighbor, not a stranger, not a passing face.<break time="1000ms"/>
+      In the far country, he had become invisible.<break time="1800ms"/>
+
+      This is where the story places him.<break time="500ms"/>
+      In a field, with pigs, hungry, alone.<break time="500ms"/>
+      Utterly spent, utterly far.<break time="1000ms"/>
+      Every layer of comfort stripped away.<break time="1800ms"/>
+
+      This is where the far country ends.<break time="500ms"/>
+      Not in celebration, not in freedom.<break time="500ms"/>
+      In a field, in want, in silence.<break time="1000ms"/>
+      And in the silence, something begins to shift.<break time="1800ms"/>
+
+      He is alone enough now to hear himself think.<break time="500ms"/>
+      He is empty enough now to remember what fullness felt like.<break time="1000ms"/>
+      He is far enough away to begin, slowly, to turn.<break time="1800ms"/>
+    </prosody>
+  </voice>
+</speak>

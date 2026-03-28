@@ -1,0 +1,70 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.75%" pitch="-3.10%">
+            At the first light of dawn,
+            <break time="500ms"/>
+            the king rose.
+            <break time="1000ms"/>
+            He went in haste to the lions' den.
+            <break time="1800ms"/>
+            And when he came near,
+            <break time="500ms"/>
+            he cried out with an anguished voice.
+            <break time="1800ms"/>
+            "Daniel! Servant of the living God!
+            <break time="1000ms"/>
+            Has your God, whom you serve continually,
+            <break time="500ms"/>
+            been able to deliver you from the lions?"
+            <break time="3800ms"/>
+            There was a moment.
+            <break time="1000ms"/>
+            A breath.
+            <break time="1000ms"/>
+            A silence that held everything.
+            <break time="1800ms"/>
+            And then a voice came up from the den.
+            <break time="3800ms"/>
+            "O king, live forever.
+            <break time="1000ms"/>
+            My God sent his angel
+            <break time="500ms"/>
+            and shut the lions' mouths,
+            <break time="500ms"/>
+            so that they have not harmed me,
+            <break time="500ms"/>
+            because I was found blameless before him."
+            <break time="3800ms"/>
+            The king was exceedingly glad.
+            <break time="1000ms"/>
+            He commanded Daniel to be taken up out of the den.
+            <break time="1800ms"/>
+            And when Daniel came up,
+            <break time="1000ms"/>
+            no kind of harm was found on him.
+            <break time="1000ms"/>
+            Not a wound.
+            <break time="500ms"/>
+            Not a mark.
+            <break time="500ms"/>
+            Not a scratch.
+            <break time="1800ms"/>
+            Because he had trusted in his God.
+            <break time="3800ms"/>
+            The night was over.
+            <break time="1000ms"/>
+            The den was empty.
+            <break time="1000ms"/>
+            Daniel stood in the morning light.
+            <break time="1800ms"/>
+            Whole.
+    </prosody>
+  </voice>
+</speak>

@@ -1,0 +1,27 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-13.00%" pitch="-3.40%">
+            The stone became a pillar.<break time="1800ms"/>
+      The ground was holy.<break time="1800ms"/>
+      The ladder reached to heaven.<break time="1800ms"/>
+      God was in that place.<break time="1800ms"/>
+      Jacob did not know it, but God was already there.<break time="1800ms"/>
+      Before the dream, before the sleep, before Jacob even stopped walking.<break time="1800ms"/>
+      God was already there.<break time="3800ms"/>
+      You are not alone.<break time="1800ms"/>
+      The promise still holds.<break time="1800ms"/>
+      Wherever you go, God is with you.<break time="1800ms"/>
+      He will keep you.<break time="1800ms"/>
+      He will not leave you.<break time="3800ms"/>
+      You do not need to earn that presence.<break time="3800ms"/>
+      You can rest.<break time="9000ms"/>
+    </prosody>
+  </voice>
+</speak>

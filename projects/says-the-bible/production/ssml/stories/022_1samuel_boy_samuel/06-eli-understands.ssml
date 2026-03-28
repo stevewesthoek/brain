@@ -1,0 +1,44 @@
+<!--ID=B7267351-473F-409D-9765-754A8EBCDE05;Version=1|{"VoiceNameToIdMapItems":[{"Id":"f1b99834-fbfc-4d32-846d-c4dbd3050c19","Name":"Microsoft Server Speech Text to Speech Voice (en-GB, OllieMultilingualNeural)","ShortName":"en-GB-OllieMultilingualNeural","Locale":"en-GB","VoiceType":"StandardVoice"}]}-->
+<!--ID=FCB40C2B-1F9F-4C26-B1A1-CF8E67BE07D1;Version=1|{"Files":{}}-->
+<!--ID=5B95B1CC-2C7B-494F-B746-CF22A0E779B7;Version=1|{"Locales":{"en-US":{"AutoApplyCustomLexiconFiles":[{}]},"en-GB":{"AutoApplyCustomLexiconFiles":[{}]}}}-->
+<speak xmlns="http://www.w3.org/2001/10/synthesis"
+       xmlns:mstts="http://www.w3.org/2001/mstts"
+       xmlns:emo="http://www.w3.org/2009/10/emotionml"
+       version="1.0"
+       xml:lang="en-GB">
+  <voice name="en-GB-OllieMultilingualNeural">
+    <prosody rate="-11.50%" pitch="-2.90%">
+      The Lord calls Samuel a third time.<break time="1000ms"/>
+      "Samuel."<break time="1800ms"/>
+
+      And a third time the boy rises and goes to Eli.<break time="500ms"/>
+      "Here I am," he says, "for you called me."<break time="1800ms"/>
+
+      But this time something shifts in the old priest's understanding.<break time="500ms"/>
+      Eli perceives that it is the Lord who is calling the boy.<break time="1000ms"/>
+      His dim eyes may not see well, but his heart recognizes what is happening.<break time="1800ms"/>
+
+      So Eli tells Samuel what to do.<break time="500ms"/>
+      "Go, lie down," he says.<break time="500ms"/>
+      "And if he calls you, you shall say, 'Speak, Lord, for your servant hears.'"<break time="1800ms"/>
+
+      It is such a simple instruction.<break time="500ms"/>
+      Not complicated.<break time="500ms"/>
+      Not frightening.<break time="500ms"/>
+      Just an old man helping a young boy know how to respond to the voice of God.<break time="1800ms"/>
+
+      Sometimes we need someone beside us to help us understand what we are hearing.<break time="500ms"/>
+      Someone who has walked longer in the ways of God.<break time="500ms"/>
+      Someone who can say, gently, "That voice you hear is not mine. It belongs to the Lord."<break time="1800ms"/>
+
+      Samuel goes back to his place.<break time="500ms"/>
+      He lies down in the dark.<break time="500ms"/>
+      The lamp of God burns low above him.<break time="1000ms"/>
+      And now he knows what to say if the voice comes again.<break time="1800ms"/>
+
+      He waits.<break time="500ms"/>
+      He listens.<break time="500ms"/>
+      He is ready.<break time="3800ms"/>
+    </prosody>
+  </voice>
+</speak>
