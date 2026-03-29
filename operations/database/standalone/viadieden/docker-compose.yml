@@ -1,0 +1,15 @@
+volumes:
+  data:
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: viadieden
+    ports:
+      - "5447:5432"
+    volumes:
+      - data:/var/lib/postgresql/data

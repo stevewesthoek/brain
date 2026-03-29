@@ -1,0 +1,10 @@
+{
+  "_comment": "This is the user-scope MCP registration for Claude Code. Register via: claude mcp add -s user notebooklm ~/.local/bin/notebooklm-mcp-server",
+  "_note": "Do NOT put mcpServers in settings.json — Claude Code reads MCP servers from ~/.claude.json (written by claude mcp add), not settings.json.",
+  "mcpServers": {
+    "notebooklm": {
+      "command": "~/.local/bin/notebooklm-mcp-server",
+      "scope": "user"
+    }
+  }
+}

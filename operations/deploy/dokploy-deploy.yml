@@ -1,0 +1,38 @@
+# Reusable Dokploy deploy workflow
+# Copy this file to .github/workflows/deploy.yml in any repo that deploys to Dokploy.
+#
+# Required GitHub secrets:
+#   DOKPLOY_API_KEY   — generate in Dokploy dashboard → Settings → API
+#   DOKPLOY_APP_ID    — found in app settings URL in the Dokploy dashboard
+#
+# Optional: adjust branches, add build steps, or extend with health checks.
+
+name: Deploy to Dokploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Dokploy deployment
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST https://dokploy.prochat.tools/api/application.deploy \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"applicationId\": \"${{ secrets.DOKPLOY_APP_ID }}\"}")
+
+          echo "HTTP status: $RESPONSE"
+
+          if [ "$RESPONSE" != "200" ]; then
+            echo "Deployment trigger failed with status $RESPONSE"
+            exit 1
+          fi
+
+          echo "Deployment triggered successfully."

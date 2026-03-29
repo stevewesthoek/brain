@@ -32,7 +32,24 @@ integration with no visible error — the server starts but no Brain-documented 
 npm install -g notebooklm-mcp-server
 ```
 
-Installs two binaries to `~/.local/bin/`:
+After install, create a stable symlink at `~/.local/bin/notebooklm-mcp-server` pointing to
+the nvm binary (so the path doesn't break when the node version changes):
+
+```bash
+ln -sf $(which notebooklm-mcp-server) ~/.local/bin/notebooklm-mcp-server
+```
+
+Then register with Claude Code at user scope (writes to `~/.claude.json`):
+
+```bash
+claude mcp add -s user notebooklm ~/.local/bin/notebooklm-mcp-server
+```
+
+> **Note:** `settings.json` `mcpServers` is NOT read by Claude Code for MCP loading.
+> The correct registration path is `claude mcp add -s user` which writes to `~/.claude.json`.
+> The brain folder documents this config but the active registration lives in `~/.claude.json`.
+
+Binaries:
 - `notebooklm-mcp-server` — MCP stdio server
 - `notebooklm-mcp-auth` — interactive auth CLI
 
