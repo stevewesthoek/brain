@@ -1,7 +1,8 @@
-📄 playbook.md — v0.3 (Brand Section Added)
+📄 playbook.md — v0.4
 
 Status: Active
-Audience: Tired Christian parents first
+Canonical strategy reference: `strategy/CORE.md` — this file covers brand and channel details; CORE.md is authoritative on product positioning and funnel.
+Audience: Christian parents of children ages 3–10
 Channel Type: Utility content, ritual content, audio-first
 Style: Calm, repeatable, minimal visuals, long-form
 
@@ -61,21 +62,21 @@ Infrastructure, not inspiration.
 
 4. What This Channel Actually Sells
 
-Not content.
+Not audio files.
 
-It sells:
+It sells a predictable, scripture-based bedtime routine system.
 
-• Ad-free listening
-• Offline ownership
-• High-quality downloads (WAV + MP3)
-• Structured bedtime routine
-• Calm repetition
-• Environmental sleep cues
+The deliverables:
 
-Reliability is the product.
+• A complete bedtime session (single, $9)
+• A full routine library (bundle, $29–$49)
+• Structured repetition that becomes automatic
+• Screen-free, calm, low-stimulation environment
+
+Reliability is the product. The files are the delivery mechanism.
 
 Distribution note:
-YouTube is free listening; the website sells the high-quality downloads.
+YouTube is free discovery; the website converts visitors into routine system owners.
 
 ⸻
 

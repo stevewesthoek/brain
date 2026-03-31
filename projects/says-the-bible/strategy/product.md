@@ -1,37 +1,47 @@
-📄 PRODUCTS.md — Product Architecture (v0.2)
+📄 PRODUCTS.md — Product Architecture (v0.3)
 Status: Active
+Canonical strategy reference: `strategy/CORE.md` — this file covers product structure detail; CORE.md is authoritative on positioning.
 Purpose: Commercial structure, pricing tiering, and product page design logic.
 
 This prevents pricing chaos and funnel sprawl.
-Reference:  ￼
 
 ⸻
 
 0. Core Principle
 
+We are not selling audio files.
+We are selling a bedtime routine system.
+
 Each video = one SKU.
 Library = compounding asset.
+Bundle = primary revenue driver.
 
-We sell ownership, not access.
+The entry product ($9) is one complete bedtime routine session.
+The bundle ($29–$49) is everything needed for a consistent nightly routine.
 
-Price increases reflect library growth, not feature gating.
+Price increases reflect library depth, not feature gating.
 
 Distribution model:
 
-- YouTube listening is free.
-- The website sells high-quality downloadable files.
+- YouTube is free discovery.
+- The website converts visitors into routine system owners.
 
 ⸻
 
 1. Product Layers
 
-Single Audio (entry)
+Single Routine Session (entry)
+
+Position as: "A complete bedtime routine session"
 
 Contains:
-• WAV master (24-bit / 48kHz)
-• MP3 (320 kbps)
+• Calm narration (30 minutes)
+• Brown noise
+• Structured pacing
+• Repeatable format
+• WAV master (24-bit / 48kHz) + MP3 (320 kbps) for offline use
 
-Price (ownership model, tiered by library size):
+Price (tiered by library depth):
 
 • Launch phase (0–40 audios): $9
 • Growth phase (40–80 audios): $12
@@ -39,27 +49,26 @@ Price (ownership model, tiered by library size):
 
 Goal: fast trust, low friction, long-term perceived value.
 
-Positioning:
-Early buyers receive permanent ownership at early pricing.
-
 Public messaging rule:
-Only the current price is public. Do not mention the ladder or future increases.
+Only the current price is shown. Do not mention the ladder or future increases.
 
 ⸻
 
-Library Bundle (core)
+Routine Library Bundle (PRIMARY REVENUE DRIVER)
+
+Position as: "Everything needed for a consistent, peaceful bedtime routine"
 
 Contains:
-• All audios
-• Future additions
+• All current stories
+• All future releases at no extra cost
 • Routine guidance
 
-Price early: $29–$39
+Price early: $29–$49
 Price later: $49–$79
 
-Bundle price always scales slower than single SKU price.
+Bundle price scales slower than single SKU price.
 
-Goal: habit formation.
+Goal: Install the habit. The bundle makes switching frictionless.
 
 ⸻
 

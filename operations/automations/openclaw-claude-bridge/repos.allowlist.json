@@ -1,0 +1,9 @@
+{
+  "comment": "Top-level directories under REPOS_ROOT that the bridge is allowed to access. Add new repo groups here.",
+  "allowed": [
+    "stevewesthoek",
+    "prochattools",
+    "prochatdemo",
+    "yeshuaacademy"
+  ]
+}

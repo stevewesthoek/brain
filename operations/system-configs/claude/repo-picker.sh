@@ -3,6 +3,7 @@
 # The caller decides what to do with the path (open Claude, cd, etc.)
 
 CACHE_FILE="$HOME/.claude/cache/repos.json"
+USAGE_FILE="$HOME/.claude/cache/repo_usage.json"
 REPOS_ROOT="$HOME/Repos"
 
 scan_to_cache() {
@@ -29,12 +30,35 @@ PYEOF
 }
 
 cache_to_lines() {
-  python3 - "$CACHE_FILE" <<'PYEOF'
-import json, sys
+  python3 - "$CACHE_FILE" "$USAGE_FILE" <<'PYEOF'
+import json, sys, os
+
 with open(sys.argv[1]) as f:
     repos = json.load(f)
+
+usage = {}
+if os.path.exists(sys.argv[2]):
+    with open(sys.argv[2]) as f:
+        usage = json.load(f)
+
+repos.sort(key=lambda r: (-usage.get(r['path'], 0), r['account'], r['name']))
 for r in repos:
     print(f"{r['account']}/{r['name']}\t{r['path']}")
+PYEOF
+}
+
+record_usage() {
+  python3 - "$USAGE_FILE" "$1" <<'PYEOF'
+import json, sys, os, time
+
+usage_file, path = sys.argv[1], sys.argv[2]
+usage = {}
+if os.path.exists(usage_file):
+    with open(usage_file) as f:
+        usage = json.load(f)
+usage[path] = time.time()
+with open(usage_file, 'w') as f:
+    json.dump(usage, f)
 PYEOF
 }
 
@@ -64,5 +88,9 @@ wait "$SCAN_PID" 2>/dev/null || true
 
 [[ -z "$selected" ]] && exit 0
 
+# Record usage so this repo sorts first next time
+selected_path=$(echo "$selected" | cut -f2)
+record_usage "$selected_path"
+
 # Output path only — caller opens Claude
-echo "$selected" | cut -f2
+echo "$selected_path"

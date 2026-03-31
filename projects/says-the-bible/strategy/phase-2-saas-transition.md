@@ -3,6 +3,13 @@
 Version: v0.1
 Date: 2026-02-27
 
+> **DEFERRED PLANNING DOCUMENT**
+> This describes the future SaaS arc. It is valid and intentional — but not active.
+> Current phase (Phase 1) is: library growth, bundle launch, and conversion clarity.
+> Do not build any features described here until the numeric gates in
+> `library-system/library-maturity-checklist.md` are passed.
+> See `strategy/CORE.md` for current execution priorities.
+
 ⸻
 
 Core Principle

@@ -5,7 +5,7 @@
       "cron": "5 9 * * *",
       "prompt": "Run the daily batch pipeline for the Says the Bible April episode queue. Execute this command from the says-the-bible repo:\n\ncd /Users/Office/Repos/prochattools/web/says-the-bible && node scripts/pipeline/batch-run.mjs --slugs 015-genesis-jacob-ladder-30m,016-genesis-jacob-esau-30m,017-exodus-burning-bush-30m,018-exodus-manna-30m,019-joshua-jordan-30m,020-joshua-jericho-30m,021-1samuel-hannah-30m,022-1samuel-boy-samuel-30m,023-1samuel-david-goliath-30m,024-1kings-solomon-wisdom-30m,025-1kings-elijah-ravens-30m,026-1kings-still-small-voice-30m,027-psalms-46-30m,028-psalms-103-30m,029-psalms-121-30m,030-psalms-139-30m,031-isaiah-fear-not-30m,032-isaiah-strength-weary-30m,033-daniel-lions-den-30m,034-daniel-fiery-furnace-30m,035-luke-prodigal-son-30m,036-luke-good-samaritan-30m,037-john-woman-at-well-30m,038-john-lazarus-30m,039-luke-lost-sheep-30m,040-matthew-feeding-five-thousand-30m\n\nAlready-uploaded slugs are skipped automatically (idempotent DB check). If today's upload limit is reached, the batch stops cleanly — tomorrow's run will continue from where it left off. Report how many were uploaded today and how many remain.",
       "createdAt": 1774737039437,
-      "lastFiredAt": 1774859122151,
+      "lastFiredAt": 1774955475567,
       "recurring": true
     }
   ]

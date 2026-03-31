@@ -2,19 +2,27 @@
 
 Single entry point for the project structure, operating rules, and reading order.
 
+## Source of Truth
+
+Start here: `strategy/CORE.md`
+
+That file defines the core strategy, product structure, funnel, execution phases, and risks. All other documents support it. If anything contradicts CORE.md, CORE.md wins.
+
 ## 60-Second Summary
 
-Saysthe.bible is a calm Scripture audio library for bedtime routines.
+Saysthe.bible is a scripture-based bedtime routine system for children ages 3–10.
 
+- We sell a habit, not audio files.
 - Audience: Christian families with children ages 3–10.
-- Free: YouTube listening.
-- Paid: Downloadable WAV (24-bit/48kHz) + MP3 (320 kbps).
-- Pricing ladder (internal): $9 -> $12 -> $19 based on library size and gates.
-- Endgame: library -> routine tools -> subscription SaaS.
+- Free: YouTube listening (discovery).
+- Paid: $9 entry (single routine session) → $29–$49 bundle (full routine library).
+- Pricing ladder (internal): $9 → $12 → $19 based on library size and gates.
+- Current phase: Build library, launch bundle, fix website conversion.
+- SaaS transition: planned but gated — not current.
 
 ## Structure
 
-- `strategy/` — product, positioning, method, channel strategy, SaaS transition
+- `strategy/` — core strategy (CORE.md), product, positioning, method, channel strategy, SaaS transition
 - `operations/` — publishing cadence, roadmap, linking rules, decision gates
 - `content-system/` — writing, video, visual, and content-design rules
 - `library-system/` — taxonomy, maturity gates, routine system, intelligence layer
@@ -22,10 +30,10 @@ Saysthe.bible is a calm Scripture audio library for bedtime routines.
 
 ## If You Only Read Two Documents
 
-1. `operations/operations-spec.md`
-2. `strategy/product.md`
+1. `strategy/CORE.md`
+2. `operations/operations-spec.md`
 
-Those two explain how we operate and how we monetize.
+Those two explain the strategy and how we operate week to week.
 
 ## Canonical Operating Rules
 

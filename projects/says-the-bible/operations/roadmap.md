@@ -1,24 +1,27 @@
 📄 ROADMAP — Validation Library → Routine System
 
-Version: v0.4
-Date: 2026-03-01
+Version: v0.5
+Date: 2026-03-31
+Canonical strategy reference: `strategy/CORE.md`
 Canonical operations reference: `operations-spec.md`
 
 ⸻
 
 Core Positioning
 
-This channel is an audio library disguised as a YouTube channel.
+We sell a bedtime routine system, not audio files.
+This channel is the discovery layer. The website is the conversion layer.
 
 We:
-• build inventory
-• reinforce routines
-• document the method
-• transition to access later
+• build library inventory (content pipeline)
+• launch and grow the bundle (primary revenue)
+• fix conversion clarity on the website
+• transition to routine features and SaaS only when gates are met
 
 Library first.
-Distribution second.
-SaaS later.
+Bundle second.
+Conversion clarity in parallel.
+SaaS only after numeric gates pass (see `library-system/library-maturity-checklist.md`).
 
 ⸻
 
@@ -147,19 +150,19 @@ Each article links to:
 
 Monetization Flow
 
-Early:
-Ownership per audio
+Now:
+Single routine session ($9 entry)
 
-Mid:
-Library bundle
+Next:
+Routine library bundle ($29–$49, PRIMARY REVENUE DRIVER)
 
-Later:
-Routine subscription
+Later (gated):
+Routine features → subscription
 
-Future:
+Future (gated):
 Infrastructure SaaS
 
-Ownership builds trust before access.
+Ownership builds trust. Bundle builds revenue. SaaS builds moat.
 
 ⸻
 
