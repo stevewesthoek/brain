@@ -2,7 +2,7 @@
 
 Use the `/browse` skill from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.
 
-Available skills: `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/design-consultation`, `/review`, `/ship`, `/land-and-deploy`, `/canary`, `/benchmark`, `/browse`, `/qa`, `/qa-only`, `/design-review`, `/setup-browser-cookies`, `/setup-deploy`, `/retro`, `/investigate`, `/document-release`, `/codex`, `/cso`, `/autoplan`, `/careful`, `/freeze`, `/guard`, `/unfreeze`, `/gstack-upgrade`, `/stb-pipeline`, `/notebooklm`, `/output-skill`, `/redesign-skill`, `/soft-skill`, `/taste-skill`, `/ui-ux-pro-max`, `/web-design`, `/stripe`, `/ffmpeg`, `/gh`, `/dokploy`, `/supabase`, `/gws`
+Available skills: `/model-router`, `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/design-consultation`, `/review`, `/ship`, `/land-and-deploy`, `/canary`, `/benchmark`, `/browse`, `/qa`, `/qa-only`, `/design-review`, `/setup-browser-cookies`, `/setup-deploy`, `/retro`, `/investigate`, `/document-release`, `/codex`, `/cso`, `/autoplan`, `/careful`, `/freeze`, `/guard`, `/unfreeze`, `/gstack-upgrade`, `/stb-pipeline`, `/notebooklm`, `/output-skill`, `/redesign-skill`, `/soft-skill`, `/taste-skill`, `/ui-ux-pro-max`, `/web-design`, `/stripe`, `/ffmpeg`, `/gh`, `/dokploy`, `/supabase`, `/gws`, `/cloudflare`, `/forge`
 
 # Skills structure
 
@@ -83,3 +83,31 @@ Global skills are available in every session — only note the ones relevant to 
 Use this file for repo-specific decisions, commands, and constraints.
 Use `decision-log.md` (if present) for confirmed architecture and workflow decisions only.
 ---
+
+# Model routing policy
+
+Route tasks to agents by cost and complexity. Do not ask the user which model to use — route automatically.
+
+| Agent | Model | Use when |
+|-------|-------|----------|
+| `cheap-prep` | Haiku | Summarization, file triage, context compaction, commit drafting |
+| `coder-default` | Sonnet | All normal coding (default) |
+| `deep-architect` | Opus | Complex architecture, high blast radius, repeated failures |
+
+Before escalating to Opus: compact context with `cheap-prep` first.
+After significant decisions: write a short durable summary for the repo's `decision-log.md`.
+See `/model-router` for full policy.
+
+# Codex second-opinion policy
+
+Codex CLI is available only as a secondary review tool, not as the default coding engine.
+
+Rules:
+- Use Codex only when confidence is low, a bug persists after 1–2 attempts, or a second opinion is explicitly useful.
+- Prefer at most 1 Codex call per task, or 2 for difficult debugging.
+- Always compress context before calling Codex — keep the prompt under 12k chars.
+- Use the wrapper script: `brain/tools/codex-review.sh '<compressed context>'`
+- Use `reasoning_effort="high"` (already set in the wrapper) — not `xhigh`.
+- Treat Codex output as advisory, not authoritative.
+- If Codex output is vague or low-value, stop — do not retry.
+- See `/codex-second-opinion` skill for the full routing policy.
