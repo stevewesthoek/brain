@@ -1,4 +1,4 @@
-model = "gpt-5.1-codex-mini"
+model = "gpt-5.4"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 
@@ -11,6 +11,7 @@ args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
 
 [mcp_servers.stitch.env]
 DOTENV_CONFIG_QUIET = "true"
+STITCH_API_KEY = "gcloud-adc"
 
 [features]
 multi_agent = true
@@ -21,11 +22,11 @@ enabled = true
 [plugins."stripe@openai-curated"]
 enabled = true
 
-[plugins."vercel@openai-curated"]
-enabled = true
-
 [plugins."github@openai-curated"]
 enabled = true
 
 [plugins."google-drive@openai-curated"]
 enabled = true
+
+[projects."/Users/Office/Repos/stevewesthoek/brain"]
+trust_level = "trusted"

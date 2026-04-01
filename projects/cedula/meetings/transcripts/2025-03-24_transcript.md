@@ -1,3175 +1,4492 @@
-Paraguay meeting Yosef & Steve
+Strategische Discussie over Emigratie naar Paraguay en Bedrijfsontwikkeling
 
-14:59 - 17:06 GMT+00:00
+09:05 - 12:03 GMT+00:00
 
-00:01 Hey bro.
+00:44 Check, check.
 
-00:02 Hey bro.
+00:44 Die clorini.
 
-00:02 Excuses.
+00:46 Ik zie alleen nog niet.
 
-00:03 Oh, dat is het.
+00:47 Oké, je hoort me.
 
-00:03 Ik dacht.
+00:50 Ja toch?
 
-00:09 Back in business.
+00:51 Yes.
 
-00:12 Zo is dat.
+00:52 Oké.
 
-00:13 Weer wat op.
+00:52 Ja, ik denk dat het aan mij lag.
 
-00:15 Dit niet in de bibliotheek vandaag.
+00:55 Mijn oortjes werken op de een of andere manier niet, dus ik heb nu geluid via mijn computer.
 
-00:18 Ik was in bibliotheek eigenlijk.
+01:01 En mijn oortjes als luidspreker, zo.
 
-00:21 En ik dacht ik kom gewoon lekker thuis.
+01:06 Zo, de technische man, die regelt het gelijk hè?
 
-00:24 Vorige keer hadden ze ons.
+01:09 Hey.
 
-00:28 Het was tijd en toen moest ik weg.
+01:10 Even even schudden zo even.
 
-00:31 Dus ik dacht ja.
+01:12 Ja.
 
-00:32 Ik ga gewoon.
+01:15 Ja man, amen.
 
-00:33 Gewoon thuis komen lekker rustig.
+01:16 Hoe is het broer?
 
-00:35 Vorige keer was het wel was het wel rustig.
+01:18 Ja ja, hier gaat het goed we hebben het hebben we nog maar een kind.
 
-00:39 Dus ik dacht ik kan het wel doen.
+01:22 Maar je zou de Ja.
 
-00:41 Vandaag was veel veel mensen, dus dacht geen risico.
+01:25 Ja, wil ik goed wel eerlijk zeggen.
 
-00:47 En dan kunnen we gewoon focus houden.
+01:26 Bij de derde dan je ja, dan wen je er wel veel sneller.
 
-00:51 Dan kan ik focus houden.
+01:32 Kan me voorstellen.
 
-00:54 Ja, wat hebben jullie daar op de achtergrond?
+01:32 Bij de eerste was voor ons wel zeg maar een.
 
-00:56 Het lijkt wel Picasso ofzo.
+01:37 Hoe noem je dat?
 
-01:00 Ja, je weet toch, ik ben een kunstenaar.
+01:37 Hele wereld gaat op zijn kop, dus je moet wennen.
 
-01:01 Kijk wat ik gemaakt heb.
+01:40 Kort slapen, alles.
 
-01:02 Oh, heb jij gemaakt?
+01:43 Tweede, ook wel goed, maar derde dan is het gewoon van oh dat dat het is heel bekend of maar.
 
-01:03 Nee.
+01:51 Het is wel druk natuurlijk, maar.
 
-01:07 Maar eigenlijk.
+01:52 Maar mentaal en emotioneel kan je er heel goed aan.
 
-01:10 Ja, Ieman heeft wel.
+01:57 Dat.
 
-01:10 Nou gemaakt ja.
+01:58 Maar de andere jongens, hoe slapen zij dan?
 
-01:11 Nee, het is sol van een muurtje zeg maar.
+02:00 Want ik kan me voorstellen dat zij ook minder rust hebben nu.
 
-01:15 Vaak gebruiken we dit als we in de kamer zijn.
+02:03 Nee, zij doen het eigenlijk wel goed.
 
-01:20 Dan voelt mijn vrouw zich gewoon goed zeg maar.
+02:05 We hebben ze getraind.
 
-01:23 Dan heb ik dit wel vaak zeg maar gewoon heel maar dicht.
+02:07 Het had wel veel tijd ingewerkt en gekost zeg maar om te trainen bijvoorbeeld.
 
-01:28 En dan ben ik zeg maar dat als achtergrond.
+02:13 Dat ze gewoon zelf slapen en en als ze wakker worden om gewoon weer zelf in slaap te vallen.
 
-01:30 Ah oké, nee, ik dacht echt dat je dat je ergens in een café zat ofzo.
+02:19 En in hun kamer te blijven.
 
-01:38 Het ziet er best wel kunstig uit.
+02:21 Ze hebben het echt goed gedaan nu al een tijd denk ik, langer dan zes maanden.
 
-01:39 Ik denk oké.
+02:27 Slapen ze nu gewoon op hun kamer en dan blijven ze ook gewoon daar, zeg maar.
 
-01:46 Ja.
+02:32 En dat helpt wel.
 
-01:46 Ja toch?
+02:34 Wat van de baby.
 
-01:47 Ja.
+02:34 Ja, dus eigenlijk alleen de baby moeten we die die jongens die hebben routine.
 
-01:47 Is zo'n zo'n Chinese of zo'n Japanse Japanse afscheiding.
+02:40 Ze gaan naar bed en dan slapen ze en ja, dan moeten dan ik of mijn vrouw gaan dan rond 12 uur hun weer laten plassen, zeg maar.
 
-01:55 Dat je kan vouwen.
+02:51 Ze ze zijn ook gewoon droog, weet je wel, dus dat dat is wel ook wel mooi.
 
-01:56 Ja, precies.
+02:56 En dan ja, dan wakker worden ze wakker wanneer we ook wakker zijn.
 
-01:57 Ja, precies, precies.
+03:03 Ja, ja, dat dat heeft wel veel geholpen.
 
-01:59 Je kan hem echt helemaal ontvouwen.
+03:06 We hebben wel veel dingen gevolgd, veel geïnvesteerd daarin zeg maar.
 
-02:01 Ja, niet je kan hem wel.
+03:10 Tijdje terug, wat nodig is, hoe train je hun, hoe kan je, want als je het echt als we eenmaal, we hadden veel tijd geïnvesteerd tijdje terug.
 
-02:03 Ja.
+03:17 En dat helpt wel, geeft wel echt orde en routine en.
 
-02:05 In vier delen vouwen, dus dat is wel dat is wel artistiek hoor.
+03:21 Ja, de kinderen weten ook wat wat ze kunnen verwachten, weet je wel.
 
-02:08 Ja toch.
+03:26 Niet zeg maar door.
 
-02:15 Nou.
+03:27 Ja, dat hebben ze wel echt nodig.
 
-02:17 Waar waren we gebleven.
+03:30 Ja, dat ze niet zo prikkels geleid worden.
 
-02:20 Ja, ik had vanochtend doorgenomen de fino.
+03:34 Precies, ja, ja, dat ze gewoon weten van oké, ja is ja, nee is nee.
 
-02:28 Oh je hebt hem al helemaal doorgenomen?
+03:41 Dit mag wel, dat mag niet en dat ze het gewoon voelen, weet je, gewoon in je ogen kunnen zien.
 
-02:30 Ja, ja, ja, ik had hem doorgenomen.
+03:47 En consequent zijn en gewoon echt dat prioriteit stellen, heeft voor ons wel echt geholpen.
 
-02:33 Ik heb ook een beetje chat GPT gebruikt, misschien een paar dingetjes net anders te doen, maar gewoon voor mezelf een beetje een beetje af te voelen van hoe kunnen we bepaalde dingen anders verwoorden ofzo.
+03:52 En dan dan op een gegeven moment is het wel en zoals Jacob.
 
-02:46 Ja.
+03:58 Hij was heel erg onrustig met met Jacob en Esau.
 
-02:47 Oké.
+04:04 Er was gewoon heel erg onrust in de gezin en op een gegeven moment ging die er ging die weg en dan moest hij echt strijden met de engel.
 
-02:47 Maar ik heb ik heb wel die hele plaatje Ja.
+04:13 En toen hij zei ik wil gezegend worden, toen werd hij gezegend en toen toen had hij zeg maar overgegeven.
 
-02:51 Van van de tekst.
+04:20 En toen kwam de rust, weet je wel, in zijn leven, toen kon hij weer, toen kon God er op hem bouwen, zeg maar.
 
-02:54 Nou, misschien kunnen we dan beter focussen op op eventuele punten die je hebt of jouw vragen of of je ook hoe je hem niet door te nemen.
+04:26 Ja.
 
-03:03 Ja.
+04:26 En dat strijden, dat is ook wel, elk kind gaat er doorheen, weet je wel, door de emoties en gedachtes, gaat alle kanten op.
 
-03:03 Maar dan kunnen we gewoon kijken hoe we hem kunnen verbeteren.
+04:35 Maar wanneer ze op een punt komen van oké, dit is mijn plek en dit is wat ik kan verwachten.
 
-03:11 Ja, nee, dat is goed, dat is goed.
+04:40 Dit is wie ik ben en ik ben geliefd en ik kan altijd naar papa en mama.
 
-03:19 Volgens mij had de vorige keer.
+04:46 Wanneer ze dat plekje vinden en dat rust vinden, dan ja, dan wordt het ook wel makkelijk en dan krijgen ze ook wel proberen ook wel hun doel te geven ook in hun leven, bijvoorbeeld tegen de ouders te zeggen van oh ja, ik ben de oudste, ik ben de oudste zoon en ik ben een voorbeeld voor de kleinere, voor de andere.
 
-03:22 De vorige keer wel op beeld hè.
+05:03 Nee, dit kan je niet, dus dat hoef je niet te doen, en nu ben je wel groot, weet je wel.
 
-03:24 Ja.
+05:07 Heel veel taken geven, bijvoorbeeld zij zetten de hele tafel met borden en dan vinden ze het hartstikke leuk, want het is voor hun een straf om niet te mogen helpen.
 
-03:29 Volgens mij de vorige.
+05:15 Ja, dat is ook goed, weet je.
 
-03:31 De vorige keer dat niet gedeeld.
+05:16 Je moet ze inderdaad verantwoordelijkheid geven en daarbij dus ook het vertrouwen van hey, dit is jouw taak, ik vertrouw dat jij dat goed doet.
 
-03:36 Ja.
+05:23 Ja.
 
-03:39 Ja, ik heb hier PDF staan.
+05:24 Weet je?
 
-03:43 Words.
+05:24 En dan leer je ze eigenlijk op een heel speelse wijze al verantwoordelijkheid nemen in het leven.
 
-03:45 Ja.
+05:30 Dus ik denk dat dat heel goed is.
 
-03:45 Ja, we waren gebleven eigenlijk bij positionering, professionaliteit en rust.
+05:31 Ik ga het ook toepassen in mijn.
 
-03:52 En ik dacht daar de woord body copy opkomen.
+05:34 In de in mijn opvoeding.
 
-03:57 Ik vroeg me ook wel af waar dat eigenlijk voor staat.
+05:36 Dus.
 
-04:00 Ja, dat is eigenlijk een ander woord voor onder tekst.
+05:37 Ja.
 
-04:05 Ah, oké.
+05:38 Amen.
 
-04:06 Dus dat is zeg maar metadata, dat is niet iets wat in de in de funnel komt, maar net zoals je kop H2 hebt.
+05:39 Amen.
 
-04:19 Hm hm.
+05:40 Dus dat is.
 
-04:19 Als je dat.
+05:40 Ja, dat is wel heel fijn.
 
-04:23 Als je dat bijvoorbeeld in een Word document voert, dan maakt hij daar een titel van.
+05:42 Ja, is wel heel belangrijk man.
 
-04:27 Weet je, dik gedrukt, grote letters.
+05:44 Als als dat niet gebeurt dan.
 
-04:32 En als je body copy hebt of onder tekst, dan is dat gewoon een paragraaf met kleinere letters, weet je, wat zo geformateerd wordt.
+05:46 Ja, kan je moeilijk meerdere kinderen krijgen want wordt het chaos.
 
-04:43 Ah ja, precies, precies, ja.
+05:50 Ja.
 
-04:47 Ja, ja, ja, ik kan ik kan het voor ogen zien ja.
+05:51 Dus, ja.
 
-04:49 Ja.
+05:53 Hey, hoe doen jullie dat met taal?
 
-04:50 Dus is een ja, professionaliteit en rust.
+05:56 Want welke taal spreken jullie thuis?
 
-04:54 Maar natuurlijk, dit is gewoon voor ons zelf natuurlijk al deze.
+05:59 Welke taal spreekt spreekt jouw vrouw en jij met hun?
 
-05:01 Omdat dit is eigenlijk een soort van de frame van de tekst wat wij erin kunnen doen en hoe dat er uit zou kunnen zien.
+06:05 Hoe doen jullie dat?
 
-05:07 Ja, exact.
+06:06 Ja, wij spreken zes talen.
 
-05:07 Het helpt ons.
+06:10 Wow.
 
-05:10 Ja, dat noemen we metadata.
+06:10 Niet schrikken.
 
-05:12 Dat is zeg maar data wat iets zegt over de echte data.
+06:11 No way.
 
-05:17 Dus in dit geval zegt body copy hey deze zin die hier eronder staat.
+06:12 Serieus?
 
-05:22 Wij begeleiden.
+06:15 Maar dat spreken we allemaal niet thuis, maar wij spreken wel.
 
-05:26 Puntje puntje puntje is een body copy.
+06:19 Ik en mijn vrouw zes talen in totaal.
 
-05:32 Met andere woorden, dit is een ondertekst onder een titel.
+06:22 What?
 
-05:38 Ja, precies.
+06:23 Ik dacht dat mijn vrouw al goed was.
 
-05:39 Ja, precies.
+06:25 Mijn vrouw die spreekt volgens mij vijf, vier of vijf.
 
-05:41 Nice.
+06:28 Ja.
 
-05:42 Super.
+06:29 Dat dacht ik al van dit is echt ongelooflijk, maar jij topt je topt het nog even op.
 
-05:48 Ja, ik heb even kijken.
+06:33 Het is wel het is wel samen dus dat dat scheelt wel, maar ja, nee, praktisch we spreken niet alle talen, maar dat zouden we wel kunnen gebruiken.
 
-05:51 Ik heb bijvoorbeeld, ik dacht misschien het woord te gebruiken van ik heb hier een tekst te staan.
+06:42 En ik en mijn vrouw spreken gewoon Engels met elkaar.
 
-05:58 Wij werken met beperkte aantal mensen tegelijk.
+06:47 Dat is gewoon ja, voor de hand liggend.
 
-06:01 Wij richten ons niet op kwaliteit, maar op kwantiteit.
+06:50 Weet je, zij spreekt Engels, ik spreek Engels dan, en het is de taal eigenlijk die we allebei kennen.
 
-06:06 Nee, wij richten ons niet op kwantiteit maar op kwaliteit.
+06:57 En dan mijn vrouw spreekt Duits met de kinderen en dan ik spreek Nederlands met hen en dan hebben ze dus eigenlijk drie talen.
 
-06:11 En migreren is een grote stap en dat nemen wij hartstikke serieus.
+07:09 En dan mijn moeder spreekt dan ja, ze hun dan beeld, dan weten ze wat woorden en weet je wat ze zegt, horen ze dan Erees, dat heet Tigrinya.
 
-06:19 Daarom voeren wij een andere alinea, daarom voeren wij de trajoord zorgvuldig en aandachtig uit.
+07:20 Het is een Semitische taal, het is dicht ja, het lijkt heel erg veel op Hebreeuws, Arabisch, het is een beetje die familietaal, zeg maar.
 
-06:26 Wij hebben heel bewust voor deze specifieke doelgroep gekozen zodat wij jou kunnen verbinden in de nabije toekomst met dit netwerk waarbij christelijke normen en waarden worden gehanteerd.
+07:28 Ja, en dat horen ze wel.
 
-06:39 Maar daar ben ik er niet zeker over.
+07:31 Dat vooral doos deze vier talen eigenlijk, ja.
 
-06:43 Dat willen we ook niet proeven toch?
+07:34 Ja.
 
-06:44 Je bent, want je zei bij positionering, professionaliteit en rust.
+07:35 Maar maar jouw vrouw is is ook.
 
-06:50 Toch?
+07:37 Ja, zij is toch niet?
 
-06:51 Ja, klopt.
+07:39 Ja, zij is Ethiopisch, dus in principe zelf, het komt sowieso op het zelfde neer.
 
-06:53 Ja, klopt, maar dat.
+07:43 Ethiopië is zoals moet je het zo zien zoals Nederland, Duitsland eigenlijk.
 
-06:56 Dit deel inderdaad, pak even bij.
+07:47 Het en maar daar is het gewoon anders natuurlijk, want in Eritrea heb je negen talen, maar ja, je hebt één hoofdtaal.
 
-07:06 Ja, ik heb het hier.
+07:56 Bijna iedereen spreek de maar daar heb je gewoon allemaal stammen, stamtalen zeg maar, maar dat dat stelt niet zo heel veel voor.
 
-07:07 En dan bij ons hebben wij staan bij die originele tekst hebben we staan.
+08:02 In Ethiopië, je hebt ook het zelfde, je hebt ook meer dan denk ik 50 talen ofzo, maar zijn ook allemaal stamtalen, maar tegenwoordig wordt alles gecentraliseerd.
 
-07:13 Niet omdat even kijken.
+08:12 Dus in Ethiopië, er zijn drie grote talen die voornamelijk gesproken worden.
 
-07:14 Oh, ik ben even teveel naar.
+08:18 Eén van de taal heet Amharic, dat is dus wat mijn vrouw spreekt.
 
-07:16 Niet omdat de schaarste gecreëerd moest worden.
+08:23 En de tweede taal van Ethiopië is eigenlijk de eerste taal van Eritrea, dus dat is Tigrinya.
 
-07:18 Was net bij mijn words aan het liggen.
+08:31 Dus dat is ja, dat is wat mijn moeder spreekt, dus mijn moedertaal.
 
-07:21 Ja.
+08:35 Zo, dus even voor mijn beelddvorming, dus nu.
 
-07:25 Volgens mij onze seks.
+08:40 Jij bent van Ethiopië?
 
-07:33 Ja, dat traag wil snelheid, volume.
+08:41 Eritrea.
 
-07:37 Ja, waarom dit traject anders wordt aangepakt.
+08:43 Eritrea.
 
-07:42 Bij positionering en dan body copy en dan staat er dat de traject is niet gebaard voor snelheid of volume.
+08:44 En je vrouw is van Ethiopië.
 
-07:50 Dus ik dacht in plaats van snelheid of volume.
-
-07:54 Dacht ik meer te beschrijven met dat wij op kwaliteit gericht zijn en niet kwantiteit.
-
-08:01 Maar ik weet niet of dat.
-
-08:04 De zware beschrijving is of ik toch simpeler kan maken.
-
-08:08 Ja.
-
-08:12 Dus ja, ik denk dat niet omdat er schaarste gecreëerd moet worden.
-
-08:21 Maar omdat dit traject persoonlijke aandacht, verantwoordelijkheid, rust vraagt.
-
-08:26 Ik denk inderdaad dat dat beter moet.
-
-08:31 En dat.
-
-08:35 Maar als jij mij die zin stuurt in de chat, dan kan ik dat wel vervangen.
-
-08:45 Ja.
+08:46 Ethiopië.
 
 08:46 Ja.
 
-08:47 Is goed.
+08:46 Ethiopië en Eritrea zijn buurlanden van elkaar.
 
-08:50 Is goed bij.
+08:50 Buurlanden, ja.
 
-08:50 Maar voor jouw middelvorming.
+08:51 Klopt, ja.
 
-08:59 De funnel is niet iets wat zeg maar af is.
+08:51 De grote moet je zien Eritrea is zo, het ligt aan de kust en bij de Rode Zee, ik weet niet of je je kan voorstellen, ik weet.
 
-09:03 Een funnel is iets wat eigenlijk constant aangepast moet worden.
+09:00 Ja.
 
-09:09 Ja, precies.
+09:02 En dan aan de linkerkant, aan de westen heb je Sudan, is een grote land.
 
-09:09 Dus wat we het beste kunnen doen is we maken één versie.
+09:06 Ja.
 
-09:15 En die proberen we zo goed.
+09:07 En als je verder gaat, dan heb je Egypte naar het westen.
 
-09:20 Ja, weet je, het hoeven we allemaal niet super perfect en heel lang over na te denken, het moet gewoon kloppen.
+09:10 En dan als je naar de oosten gaat van Eritrea, dan ben je eigenlijk gelijk in de grens van Somalië.
 
-09:28 En daarna gaan we hem live zetten.
+09:15 Een stukje.
 
-09:31 En dan is het beter om een kopie te maken van die funnel.
+09:16 En dan onder is Ethiopië, is een grote land.
 
-09:37 Ja.
+09:19 Ethiopië is ook een gigantische land.
 
-09:39 En dan heb je twee funnels.
+09:20 Ja.
 
-09:42 En maar in die tweede funnel daar verander je een klein dingetje.
+09:21 Eritrea is dan zeggen ze dat het 3,5 keer Nederland is.
 
-09:47 En dan ga je meten, welke funnel converteert beter.
+09:25 Het is niet heel groot, maar het ligt wel aan de kust.
 
-09:54 Dus je hebt bijvoorbeeld één funnel die krijgt ongeveer 500 kijkers.
+09:28 Ja.
 
-10:00 En die andere funnel krijgt ook ongeveer 500.
+09:29 En ja, in Eritrea en Ethiopië, ze hebben gewoon.
 
-10:41 Kijkers.
+09:34 Ze hebben eigenlijk dezelfde cultuur.
 
-10:42 Maar deze funnel die krijgt zeven conversies, zeven mensen die gaan daadwerkelijk betalen.
+09:36 Die waren ze waren ooit één land geweest, maar door de geschiedenis zijn ze gescheiden.
 
-10:47 En hier vijf mensen.
+09:40 Oké.
 
-10:49 Vijf mensen.
+09:41 Maar in principe is dat hetzelfde, dezelfde cultuur en qua taal en.
 
-10:51 Wat je dan doet is dan haal je deze weg.
+09:45 Ja.
 
-10:52 Dan copy je deze funnel weer.
+09:45 Ja.
 
-10:54 En dan ga je weer iets kleins aanpassen om te kijken of je van zeven naar negen mensen kan.
+09:46 En maar hebben jullie nu overlap met een taal anders dan Engels?
 
-11:01 En over tijd wordt die funnel dus iedere keer de funnel die wint, daar ga je op verder borduren.
+09:53 Nederlands?
 
-11:07 En dan leer je ook welke taal je moet spreken, welke woorden je moet gebruiken, wat je niet moet doen.
+09:54 De vrouw die heeft ook Nederlands.
 
-11:11 Weet je, dat dus wat wij nu doen is ook gewoon een educated guess.
+09:55 Nee, ik bedoel een taal van jullie van jullie land, dus dat.
 
-11:17 Weet je, want het gaat niet perfect zijn.
+09:58 Oh zo.
 
-11:20 We doen natuurlijk ons best, maar we hoeven daar niet een wetenschap op los te laten en helemaal perfecte bewoordingen te gaan doen, want we moeten we moeten er toch.
+09:59 De Tigrinya?
 
-11:32 Ervaren, weet je?
+10:00 Ja, Tigrinya.
 
-11:33 We moeten, we moeten toch leren.
+10:00 Ja, en.
 
-11:35 Maar ja goed, we moeten natuurlijk wel we moeten geen dingen inzetten die niet waar zijn, dingen die we niet waar kunnen maken.
+10:02 Dat is wat jullie allebei kunnen verstaan.
 
-11:42 Of gewoon te botte taal, weet je.
+10:05 En nee, niet echt.
 
-11:45 We moeten daar natuurlijk wel een beetje aandacht in zetten.
+10:06 Het is wel Nederlands, Duits.
 
-11:50 Ja, nee, mee eens inderdaad.
+10:08 Dus als je iemand Duits hoort praten dan pak je wel wat.
 
-11:51 Hoef niet te lang meer te hangen, maar inderdaad dat het wel gewoon correct is.
+10:11 Ja, ja.
 
-11:57 Had je mij je zin gestuurd, klopt dat of niet?
+10:11 Maar anders.
 
-12:01 Ik dacht om iets te sturen, maar ben het ook gelijk aan het checken.
+10:13 Helemaal ja.
 
-12:06 Zal ik je per e-mail sturen, makkelijker denk ik.
+10:14 Niet helemaal ja ja.
 
-12:09 Oh nee, je kan het hier in de chat doen hoor, als je wil, is dat makkelijker misschien voor je.
+10:15 Zoiets zat ook wel.
 
-12:11 Oh, in chat.
+10:16 Het is Amhards en Eritreaans zit er ook in.
 
-12:13 Ja, nee, is goed.
+10:20 Het is net anders, maar ja.
 
-12:20 Straeven.
+10:23 En en hoe doen je hoe doen jouw kinderen dat?
 
-12:22 Even kijken, ik voeg er iets toe.
+10:28 Want wij willen namelijk hetzelfde doen.
 
-13:10 Steek een kruisje komen aan waarden te hanteren.
+10:30 Wij spreken ook Engels thuis.
 
-13:12 Ja, ik ga, ik ga het nu toevoegen.
+10:33 En en en mijn vrouw die spreekt eigenlijk alleen maar Engels, normaal ja, zoveel mogelijk Engels naar naar onze dochter.
 
-13:17 Kopiëren.
+10:44 Ja.
 
-13:21 Wacht even.
+10:45 En ik spreek Nederlands.
 
-13:24 Ja, dat is hem.
+10:49 En thuis spreken we Engels en en en zij leert buiten op straat wel of op school, weet je, Portugees.
 
-14:27 Ja, ik zit ook te denken van nu komt het ook bij mij op.
+11:01 En.
 
-14:32 Van het is natuurlijk niet direct immigreren als iemand een verblijfsvergunning krijgt.
+11:03 Mijn oom haar mijn mijn schoonmoeder, die spreek en schoonvader die spreken natuurlijk Portugees.
 
-14:37 Het is gewoon van voor veel mensen die dan die stap nemen, neem ik aan dat ze niet direct gaan immigreren.
+11:11 Ja.
 
-14:42 Dat is meer zeer plan A, B en C.
+11:12 En mijn oom, mijn moeder spreekt Nederlands.
 
-14:51 A is natuurlijk iemand die emigreert.
+11:15 Dus zo krijgt ze van verschillende invals hoeken natuurlijk wel de taal.
 
-14:53 B is iemand die half emigreert zeg maar.
+11:21 Ja.
 
-14:57 Die misschien een paar maanden daarnaartoe gaat of zijn onderneming overzet of een een extra huis koopt zeg maar.
+11:21 Maar ik vroeg me af hoe jouw jongens dat doen, raken ze verward met al die talen of is het Hoe pakken ze de taal op?
 
-15:05 Of investeert in afstand.
+11:30 Ja.
 
-15:09 En dan C heb je iemand die eigenlijk gewoon die verblijfsvergunning heeft, maar.
+11:31 Ja.
 
-15:21 Ja, in de toekomst wat hij wil doen, het is gewoon een soort van een backup zeg maar, een soort van een extra extraatje.
+11:35 Ja, in het begin.
 
-15:31 Dus ik zit te denken van immigreren, misschien moet ik daar weer iets mee doen.
+11:36 Ja, in het begin raakte wel een beetje verward.
 
-15:35 Ik weet niet of dat immigreren is direct.
+11:41 Maar op een gegeven moment hoe meer hoe meer hoe ouder ze worden of hoe meer zeg maar.
 
-15:40 Nou ja, ik denk dat dit is de grandioze visie.
+11:49 Het is ook bijvoorbeeld in onze situatie was zo.
 
-15:49 Dus de taal die we gebruiken is voor dit soort voor deze doelgroep die immigreren in hun hoofd hebben.
+11:53 In het begin ik was veel niet thuis, ik was veel aan het werk.
 
-15:59 Maar immigreren is, is, daar komt zoveel bij kijken.
+11:57 En ze waren heel veel met mijn vrouw en dan spraken ze ook heel veel Duits, dus als ik thuis kwam dan sprak ze gewoon Duits tegen.
 
-16:04 Daar komt van alles bij kijken.
+12:04 Dus ik ik ging gewoon Nederlands met een praten en op een gegeven moment waren we in een seizoen waar ik veel thuis was, dus ik ging veel dingen doen vanuit huis.
 
-16:06 Dus immigreren in op zichzelf is natuurlijk geen service om te verkopen.
+12:12 En dus dan zagen ze mij meer en hoort ze meer Nederlands.
 
-16:12 Kijk, als jij zegt, hier bij ons kun je immigreren voor 5.000.
+12:15 Dus toen is het ook in balans gekomen.
 
-16:16 Ja, wat betekent dat?
+12:19 Nu, dus op een gegeven moment, ja, ze moeten een beetje ordenen zeg maar in hun hoofd, maar het is eigenlijk meer gewoon consequent zijn.
 
-16:18 Ik bedoel, oké, ik snap wat je bedoelt, maar bedoel je daarmee dus dat je met ticket betaalt en dat je een huis hebt voor me daar en dat ik in een netwerk terecht kom, wat bedoel je daarmee met immigreren?
+12:26 Ik spreek gewoon Nederlands met hun en mijn vrouw spreek Duits met hen en dan weten ze van oké, onze moeder spreekt Duits, mijn vader spreekt Nederlands.
 
-16:27 Weet je?
+12:36 Dan gaan ze ook Nederlands tegen mij praten.
 
-16:28 Of bedoel je het heel letterlijk dat je letterlijk door de duane gaat en letterlijk daar jouw registreert en zegt, oké, je hebt hier nu een residency, bedoel je dat, dan ben je het heel vaag.
+12:38 En soms weten ze een woord niet, maar dan zeggen ze het gewoon in Duits.
 
-16:42 Ja, ja, ja, ja, ja, precies.
+12:41 Maar dan zeg ik tegen hen gewoon van oké, mama zegt dit en papa zegt dat.
 
-16:45 Dus maar dit is wel wat onze doelgroep in ons, in hun hart hebben.
+12:45 Ah, oké, en dan, volgende, dan vragen ze volgende keer van: oh, wat zegt papa bijvoorbeeld dit.
 
-16:52 Ja.
+12:50 En dan zegt: papa zegt dit.
 
-16:53 Dus we moeten, we moeten die taal spreken, we moeten al die woorden gebruiken die men gebruikt als ze denken aan immigreren.
+12:53 Dus dan, dan vinden ze het ook heel leuk om echt met mij Nederlands te praten en met haar Duits te praten en.
 
-17:00 Ja.
+13:01 En Engels, want soms vragen ze ook: oh, wat betekent het in Engels?
 
-17:01 Dus dat blijft altijd de hoofdmoot, maar dat is de taal de verpakking zeg maar.
+13:04 En.
 
-17:09 Ja.
+13:05 Zeker dingen.
 
-17:11 Ehm waarbij je impliceert dat dit een grotere visie is, dat er veel mogelijkheden zijn, dat er veel vragen zijn en veel onzekerheden en dat die allemaal ehm aan orde komen, dat die allemaal ontzorgd worden, dat we dat, dat we dat snappen, dat we dat begrijpen dat we een one stop shop zijn, hè, dat je niet verder hoeft te kijken.
+13:06 Ja.
 
-17:35 Ja.
+13:06 Maar als jullie dus met het hele gezin zeg maar aan tafel zitten, dan spreken jullie Engels of niet?
 
-17:35 Maar.
+13:12 Klopt.
 
-17:36 Ja.
+13:13 Ja, automatisch spreek ik Engels met mijn vrouw, maar dan volgen ze ook echt alles.
 
-17:37 Omdat we dat niet kunnen verkopen, immigreren, moeten we het toespitsen op iets specifiek.
+13:18 Ze weten waar wij het over hebben, vooral de oudste.
 
-17:45 Ja, nee exact, dat is zo.
+13:22 Ehm.
 
-17:47 Of niet meetbaar is en ehm.
+13:23 Natuurlijk omdat ik in Nederland als allochtoon was gekomen.
 
-17:49 Meetbaar.
+13:29 Dus heb ik vaak gemerkt, bijvoorbeeld thuis je ouders spreken dan jouw Afrikaanse taal en dan je gaat naar school, je spreekt de hele tijd Nederlands.
 
-17:52 En ehm en toetsbaar.
+13:39 Als je hier geboren bent, bijvoorbeeld.
 
-17:56 Ja.
+13:41 Maar dan je hoort wel alles wat ze zeggen, maar je gaat liever gewoon in Nederlands antwoorden.
 
-17:56 Wat dat eigenlijk hetzelfde.
+13:47 Voor mijn vrouw heeft het ook precies hetzelfde, ze hoort alles wat haar moeder zegt in Ethiopisch in Amha, Ethiopische taal.
 
-17:58 Maar het moet meetbaar zijn in de zin dat het moet eh het moet gaan duidelijk zijn dat je betaalt en dan krijg je dit.
+13:53 Maar zij geeft antwoord in in Nederlands.
 
-18:06 In deze periode.
+13:56 Dus op een gegeven moment ja, raak je in die modus, weet je wel.
 
-18:08 Weet je, het moet een afgebakende eh verwachting zijn.
+14:00 Ik heb het ook precies hetzelfde met Arabisch.
 
-18:12 Want immigreren is ook iets, ja, wanneer houdt dat op.
+14:02 Ik kan Arabisch heel goed verstaan.
 
-18:15 Weet je, wat is het, wat is dan echt het einddoel?
+14:04 Maar spreken dat kan ik wel, maar dat gaat niet vloeiend.
 
-18:19 Ja.
+14:08 Dus dan spreek ik liever een taal die ik vloeiend spreek, zeg maar als iemand anders dat verstaat, weet je wel.
 
-18:20 Ik snap dat je dat niet wil verkopen immigreren, maar eh.
+14:14 Dus zo zie ik ook dat zij ook dat oppakken.
 
-18:23 Nee, nee, ik snap wat je bedoelt.
+14:16 Dus als wij Engels praten, dan verstaan ze alles.
 
-18:25 Ik zit ook gewoon inderdaad zoals je zegt van eh je wilt met het hart spreken van de van de audience.
+14:18 Maar dan antwoorden ze naar mij toe in het Nederlands.
 
-18:32 En eh.
+14:22 En dan antwoorden ze naar Meklit toe in het Duits.
 
-18:34 Ja.
+14:24 Dus ze horen Engels, maar dan gaan ze Duits antwoorden naar Meklit en ze gaan Nederlands antwoorden naar mij.
 
-18:34 Ja, inderdaad.
+14:34 Maar soms.
 
-18:36 Vaak is ik zit te denken van als ze het woord immigreren horen dan ze oh, ik ik wil nog niet immigreren, ik heb nog zoveel onzekerheden, maar ik weet wel zeker dat ik een cedula wil.
+14:34 Soms zeggen ze wel in Duits iets en dan zeg ik papa begrijp papa begrijpt niet wat je zegt ofzo.
 
-18:46 Dat zeg maar.
+14:40 En dan denken ze er na, dan weten ze het weer, gaan ze tegen mij zeggen.
 
-18:47 Dus van oké, is dat een woord, maar dat is meer taalgebruik zoals je zegt gewoon van eh.
+14:46 Het is.
 
-18:51 Ja, maar dat is juist de kracht.
+14:49 Oké, nou goed mooi man.
 
-18:52 Dat is de kracht, ja.
+14:52 Ja, we jullie zijn een beetje ons voorbeeld wat dat betreft, want.
 
-18:53 Want wij weten ook dat als wij, als iemand geen cedula heeft, dan hebben wij geen business.
+14:56 Kijk, niet iedereen heeft dat natuurlijk, weet je?
 
-19:01 Ja.
+15:00 Zo'n complexe taalsituatie.
 
-19:02 Want wij weten ook dat het geld niet zozeer zit in de cedula, maar in de add on services die daarna komen.
+15:03 En voor ons is het belangrijk, ja, net zoals wat voor jullie natuurlijk is, dat.
 
-19:12 Ja.
+15:08 Ja, amen.
 
-19:12 Dus als wij ze kunnen voorzien met een cedula en we kunnen die dienst leveren, dan weten we dat wij een potentiële klant hebben voor een heel lang, een hele lange tijd.
+15:08 De kinderen kunnen communiceren met mijn familie, weet je, in het Nederlands.
 
-19:22 Ja, precies.
+15:13 Niet dat ze daar komen en dat ze niet weten, weet je, wat ze wat ze zeggen.
 
-19:25 En daar is dus waar de waarde is.
+15:17 En voor mijn oma bijvoorbeeld ook, die kan geen niet goed Engels.
 
-19:28 Ja.
+15:27 En natuurlijk is het belangrijk, weet je, dat we ze alvast, weet je, voorbereiden door, weet je, die verschillende talen bij ze te brengen, weet je wel, dat geeft ze alleen maar voordelen in in de toekomst.
 
-19:28 En daarom is het belangrijk om het zo makkelijk mogelijk te maken, want wij weten dat als ze eenmaal die cedula hebben, dan willen ze alles weten, dan gaan ze vragen stellen, hé, hoe zit het met het netwerk en eh wat kan ik daar allemaal mee doen en hoe doen andere mensen dat en eh hebben jullie ook eh een meeting ofzo waar ik bij aan kan sluiten en eh, weet je, noem maar op.
+15:39 Dus en we hebben hier daarop wat verhalen gehoord van mensen die het zeggen ja, ja, moet je niet doen, het is te ingewikkeld, het kind raakt in de war.
 
-19:48 Al die dingen die komen dan.
+15:47 Nou ja, ik geloof het wel dat het.
 
-19:51 Die komen dan, die komen dan boven en al die vragen, die kunnen wij beantwoorden en dan kunnen we allemaal producten en.
+15:50 Weet je, in het begin net iets wat langzamer gaat en wat moeilijker is, maar uiteindelijk zijn die kinderen super vinding rijk en.
 
-20:00 Ja.
+16:00 Misschien is het ja, het is natuurlijk makkelijker om één taal te leren dan drie, maar ja, weet je, misschien praten ze gewoon wat een paar maanden wat minder snel dan andere kinderen, maar op een gegeven moment snappen ze het, denk ik.
 
-20:02 Zelf ze zo mee bouwen.
+16:14 En dan is het echt geen helemaal geen moeite voor hun om om die talen tegelijk te leren.
 
-20:02 Ja, precies.
+16:22 Ja, absoluut.
 
-20:05 En daar is het grote geld, want om eerlijk te zijn, sedula, uiteindelijk gaan we daar niet heel veel geld mee verdienen.
+16:23 Dus het gaat onderzoek, zeggen, kinderen kunnen eigenlijk 12 talen leren in één keer.
 
-20:12 Nee, klopt.
+16:27 Dus echt in een investering, ze kunnen 12 talen spreken.
 
-20:12 Het is, het is maar een ingang inderdaad.
+16:30 Ze zijn ze kunnen veel meer oppakken dan oudere mensen kunnen en hoefrich zijn heel open, weet je wel, want ze kunnen alles ordenen.
 
-20:15 Het is maar, maar het is wel de ingang en het is een hele grote ingang.
+16:39 Dus dat is inderdaad zo, wat je zegt.
 
-20:21 Want als mensen huizen gaan bouwen en je hebt daar commissies over en dat soort dingen, kijk, dan begint het wel aan te tikken.
+16:42 Nou ja, weet je, Anna is ook met de woorden al bezig.
 
-20:28 Ja, precies, precies.
+16:48 Aha.
 
-20:32 Dat zijn wel serieuze zaken, ja, dan.
+16:49 Want ja, ze is eigenlijk vanaf het begin al bezig, maar je zag duidelijk dat vanaf de eerste weken.
 
-20:36 Ja, dat zijn serieuze zaken, ja.
+16:56 Twee maanden kan het kind nog niet eens focussen, weet je.
 
-20:39 Dus ik zie jouw tekst hier.
+16:59 Dus het kind dat ziet helemaal niks.
 
-20:42 Ik zou zeggen in ieder geval met een funnel is heel kort en direct.
+17:01 Maar nu zie je dat ze kan focussen, weet je?
 
-20:50 Geen grote lange teksten, dus ik zou dit in ieder geval wat korter maken.
+17:04 En dat ze kan zien en dat is het al goed om, kijk, ze snapt natuurlijk niet de letters.
 
-20:56 Ja, is schrijver notitie, ja.
+17:11 Nee.
 
-20:59 En de tweede zin.
+17:12 Maar ze ziet wel een vorm.
 
-21:06 Lijkt er een beetje op dat je jezelf aan het verklaren bent.
+17:14 Klopt.
 
-21:12 Tweede zin.
+17:15 En als je dat en als je dat woord herhaalt en je laat dit vorm zien, dan leert ze in ieder geval alvast patronen.
 
-21:14 Hè, tweede alinea?
+17:25 En en als ze wat ouder is, dan gaat ze: oh, dit is taal, dit is een woord.
 
-21:16 Ja, sorry, de tweede alinea en dan de tweede zin.
+17:31 Oh oké, en dit betekent dit, weet je?
 
-21:19 Wij hebben heel bewust voor deze specifieke doelgroep gekozen, zodat wij jou kunnen verbinden binnen dit netwerk en daarbij worden, daarbij wordt gestreven om een christelijke normen en waarde te hanteren.
+17:33 En maar ze heeft al de de de klank heeft ze al geoefend, het geluid heeft ze al geoefend.
 
-21:32 Te hanteren.
+17:41 En we ze weet al dat dat het dit is, weet je?
 
-21:35 Ja.
+17:44 Ze wijst die oké, dat is dit.
 
-21:36 Dus.
+17:47 En wanneer ze wat meer zinnen kan maken en kan spreken, dan begint al die vocabulaire begint op zijn plaats te vallen.
 
-21:37 Oh ja, ze hanteren, ja.
+18:00 En we hebben wat filmpjes gezien van van kinderen van YouTube, echt baby's zijn, baby's die die spreken.
 
-21:39 Wat wij, wat wij doen hiermee is onszelf verklaren.
+18:12 Die die weten wat je zegt toch?
 
-21:45 Hm.
+18:14 Dat bedoel je.
 
-21:46 En.
+18:16 Nou, maar goed, je laat ze aanwijzen.
 
-21:49 Die deze hele.
+18:17 Of je laat ze aanwijzen en ze zeggen wat het is, weet je?
 
-21:51 Ah ja, precies.
+18:20 Ze kunnen amper spreken.
 
-21:53 Maar je wilt niet zeg maar jezelf verklaren, maar je wilt eigenlijk.
+18:22 Ze spreken het echt nog heel babyachtig uit, weet je?
 
-21:57 Ja, nee.
+18:26 En het is eieren, is een is een pen, voet.
 
-21:59 Ja, je wil een statement maken.
+18:31 Weet je?
 
-22:02 Je wil een heel kijk, want met die statement ga je, ga je afvallers krijgen.
+18:32 Ondat ze heel fonetisch nog nog niet eens zo goed kunnen spreken, maar.
 
-22:08 Hm.
+18:37 Dus.
 
-22:08 Maar die wil je toch niet?
+18:38 Met andere woorden, ik geloof wat je zegt, want je bent nooit te jong om te leren en baby's die zijn eigenlijk gewoon leermachines.
 
-22:09 Ja.
+18:46 Die zijn constant aan het kijken, aan het observeren en het leren, patronen herkennen, weet je.
 
-22:09 Nee.
+18:53 Dus eigenlijk ze de het de hele dag dat ze wakker zijn, zijn ze eigenlijk aan het leren.
 
-22:11 En je gaat ambassadeurs krijgen die denken van nou, deze mensen die weten precies waar waar we het, waar ze het over hebben en dat is wat ik ook voel.
+18:59 Dus daar kun je echt gewoon gebruik van maken.
 
-22:20 Hm.
+19:02 Ik denk dat het heel goed is.
 
-22:21 Ja.
+19:04 Je kan niet te vroeg genoeg mee beginnen.
 
-22:22 En als je jezelf gaat verklaren waarbij je bijvoorbeeld dit is heel erg moeilijk in marketing.
+19:06 Nee, precies.
 
-22:29 We gaan heel snel gaan we bijvoorbeeld verklaren waarom wij €3.000 vragen.
+19:08 Zoiets zat echt wel man.
 
-22:33 Ja, maar.
+19:09 Zoiets zat echt wel.
 
-22:36 Ja maar bij ons krijg je dit.
+19:11 Ja, nee, dat is zo.
 
-22:41 Hm.
+19:12 Ja, cultureel moeten we echt achterlaten vaak van: oh, ja, zijn, ik ik heb wel gemerkt bijvoorbeeld, komen oudere mensen komen, ze zien de kleintjes.
 
-22:41 Weet je?
+19:21 Dus oh, dan gaan ze zo als een baby met hun praten.
 
-22:42 En daarmee verzwak je je positie.
+19:24 Ja, exact.
 
-22:46 En daarbij straal je geen autoriteit meer uit.
+19:27 Ja, natuurlijk, als ze dat toelaat je ook gewoon toe, maar zo willen niet met kinderen omgaan, weet je wel.
 
-22:50 En het enige wat wij hebben is deze autoriteit.
+19:32 Nou ja, het is ook iets heel erg cultureels en.
 
-22:55 En daarom moeten we onze autoriteit herkennen als ervaringsdeskundige, zoals jij bijvoorbeeld als sedulahouder en ik als iemand die geëmigreerd is.
+19:37 Nou goed, alles heeft zijn tijd.
 
-23:04 Ja.
+19:39 Kijk, als het echt een baby is, weet je, dan ja, die snapt natuurlijk nog niet zoveel, maar ja, ik denk als als het kind weet je kan spreken, weet je, dan kun je inderdaad best beter normaal met te spreken en.
 
-23:05 Dit maakt ons experts.
+19:52 In plaats van gekke woorden verzinnen die niet bestaan, want ja, weet je, je bent uiteindelijk bezig een voorbeeld aan het geven wat.
 
-23:09 Hm hm.
+20:35 Niet echt is.
 
-23:11 En en daarbij weten wij wat de gevaren zijn, de zorgen zijn.
+20:38 Klopt.
 
-23:17 We hebben de processen doorlopen, we hebben overwonnen.
+20:38 Inderdaad.
 
-23:22 Ja.
+20:39 Dus ja.
 
-23:23 En wij geven de mensen die aan ons profiel voldoen dezelfde mogelijkheid om dat zelf ook te doen.
+20:41 Ja, we moeten daar misschien nog wat meer over delen met elkaar, misschien als we met z'n veertjes zitten.
 
-23:35 En daarmee geef je dus een kwalificatie af.
+20:49 Dan want wij zijn wel benieuwd hoe jullie het allemaal doen.
 
-23:40 Weet je?
+20:55 Ja, absoluut, dat zal wel zo.
 
-23:41 Wij kwalificeren jou.
+20:57 We moeten nog even een datum prikken.
 
-23:43 Je komt niet zomaar door de, hoe zeg je hoe zeg je dat, door de keuring heen.
+20:59 Ik weet even niet.
 
-23:49 Weet je, het klinkt een beetje bot en een beetje plat, maar.
+21:02 Klopt.
 
-23:52 Ja.
+21:02 Ik ben een beetje voorzichtig met.
 
-23:52 Ja, dit is, het is de psychologie, weet je waarbij Ja.
+21:06 Met de dag te vol plannen.
 
-23:57 Dit is wat ambassadeurs maakt.
+21:09 Anders raken mijn vrouw een beetje overbeladen.
 
-23:58 Een ambassadeur is iemand die die die dat wat jij zegt op de straat gaat verklaren als een, als een, als een gospel.
+21:14 Ik bedoel ja, voor ons is het nog nieuw, vooral voor mijn vrouw, dus.
 
-24:08 En die zegt joh, hoe hij het doet, weet je?
+21:18 Dus ja, we snappen niet hoe jullie het doen met drie mensen, met drie kinderen.
 
-24:12 Oh ja zo.
+21:23 Maar ja, we moeten er nog een beetje plannen.
 
-24:14 Die.
+21:29 Zodat.
 
-24:15 Joostef Jo, hoe hij het doet, weet je?
+21:30 Niet teveel in één keer komt.
 
-24:17 Ja, dat is echt goed.
+21:34 Nee, precies.
 
-24:19 Ik en die en die gaat dat verklaren en dat is de beste marketing die je kan krijgen.
+21:36 Het is een beetje wennen, ja.
 
-24:24 Aha.
+21:38 Misschien is het ook wel makkelijker als je, straks als jij en Anne kijken van welke dag moment goed voor jullie zou uitkomen.
 
-24:25 Want anders moet je jezelf gaan verkopen.
+21:47 Dan kan ik kijken, met mijn lid.
 
-24:29 En.
+21:50 En ik denk dat met ook heel leuk vinden om hierover te delen en met elkaar zo, met elkaar te delen wat.
 
-24:30 Ja.
+21:57 Ja, wat het is om ouders te zijn met z'n kleintjes.
 
-24:31 En en is gewoon moeilijk.
+22:02 Lijkt me een goed idee.
 
-24:34 Zodra iemand een attitude heeft naar jou toe die een beetje verkoperig is.
+22:03 Wij komen trouwens waarschijnlijk in juni, na juni.
 
-24:38 Sluit je gelijk, zit gelijk garbage.
+22:12 Juni.
 
-24:41 Gelijk, whatever, het zal wel.
+22:12 Oké.
 
-24:47 Maar als iemand uit autoriteit spreekt, ervaringsdeskundige, weet je, en die probeert je helemaal niet iets te verkopen.
+22:13 Ja, dat is.
 
-24:54 Maar die zegt jou, ja, ik heb dit gedaan, maar er is niet voor iedereen hoor.
+22:15 Dus we moeten het nog even inplannen, maar ja, het zou misschien leuk zijn om om om te ontmoeten.
 
-24:58 Je moet echt sterk voor in je schoenen staan.
+22:23 We gaan we moeten even kijken hoe lang.
 
-25:04 Zou ik dat kunnen doen?
+22:28 En we willen heel veel mensen ontmoeten, dus.
 
-25:05 Ben ik sterk in mijn schoenen, weet je?
+22:32 We moeten even kijken hoe wat en waar, logistiek een beetje regelen zo.
 
-25:10 En, hoe werkt dat dan?
+22:38 En we willen ook Mark ontmoeten.
 
-25:11 En wat betekent dat?
+22:41 Dus misschien.
 
-25:14 Sterk in je schoenen?
+22:42 Kunnen we dat combineren op één of andere manier dat we elkaar en zien en met Mark ontmoeten of.
 
-25:14 Wat denk je?
+22:47 Ja, zeker.
 
-25:16 Is het iets voor mij?
+22:48 Hij woont om de hoek, dus dat is niet ver weg.
 
-25:17 En dan gaan ze die vragen stellen, weet je wel?
+22:52 Maar ja goed, dat laat ik nog wel even weten, maar weet in ieder geval dat wij.
 
-25:18 Oh zo.
+23:01 Kunnen jullie misschien zijn om die kant op te komen.
 
-25:20 En dan heb.
+23:03 Ja, nee mooi, inderdaad.
 
-25:23 Precies.
+23:06 Ja, dat heb ik vorige keer gezegd, maar ik was niet zeker.
 
-25:27 Wow.
+23:09 Is juni, is het begin juni of half juni?
 
-25:27 Ja, dat is inderdaad wel waar.
+23:11 Ja, moeten even kijken, want we moeten afstemmen met meer met meerdere mensen.
 
-25:29 Dat is wel zo.
+23:16 Dus.
 
-25:30 Ja, er is natuurlijk geen misleiding, maar het is.
+23:17 Ja, precies, nee, is goed.
 
-25:34 En, klopt.
+23:18 We gaan het snel, we gaan het snel plannen.
 
-25:35 Met het juiste product is dat.
+23:21 En dan laat ik wel even weten, dan kunnen we misschien een dagje prikken.
 
-25:41 Ik denk dat dit daarvoor het juiste product is.
+23:24 Ja, ja, gaan we doen, wordt leuk.
 
-25:44 Ja, precies, precies.
+23:27 In de zomer, dus goed weer.
 
-25:47 Nee, dat is zo inderdaad.
+23:30 Ja, exact.
 
-25:49 Dat is wel, ja.
+23:31 Hopelijk wel, Nederland weet je het nooit.
 
-25:54 En inderdaad dan heb je ook gelijk, zoals je zei, mensen die gewoon niet stabiel zijn, die vallen ook gelijk snel weg of die voelen zich snel aangevallen of ze worden dan emotioneel, waarom en dan vallen ze ook gewoon weg, dan heb je ook geen gezeik, zeg maar.
+23:33 Nee, je weet het niet, maar je hebt meer hoop wel, maar.
 
-26:09 Ja, maar dit is wat je wil.
+23:37 Dan neem je maar de weervan Portugal.
 
-26:11 De mensen die je die het niet eens zijn, die een hele sterke mening hebben, ja, daar wil je eigenlijk toch niet mee samen.
+23:39 Ja ja.
 
-26:17 Luister, het gaat je hoofdpijn geven, echt.
+23:43 Ja, het is zo.
 
-26:21 Die gaan lopen zeuren om, dat zijn de mensen met wie je dan in zee gaat en dan gaan ze zeggen, ja, maar bij hun is het veel goedkoper, dan krijg ik dit wel en niet.
+23:44 In de kofferbak.
 
-26:28 En voor je het weet zit je in een discussie met hun waar waarom jij zo duur bent.
+23:47 Zo.
 
-26:37 Dat betekent dat ze jouw waarde niet zien.
+23:48 Hoe is het reizen?
 
-26:41 Ze herkennen jouw waarde niet.
+23:50 Gaan jullie, als je naar Nederland komt, gaan jullie dan met de auto, normaal gesproken als jullie zo reizen?
 
-26:45 Ja, precies, precies.
+23:54 Of gaan jullie gewoon vliegen?
 
-26:48 En daarom moeten wij vanuit die waarde, die waardigheid moeten we werken, denk ik.
+23:56 Ik denk dat we dit keer zullen vliegen.
 
-26:54 En je hebt die waardigheid, want jij hebt het verhaal, je hebt de testimony, je hebt de sedula.
+23:58 Dus we gaan waarschijnlijk een huisje huren in ergens in het midden van dat land.
 
-27:00 Heel veel christenen die willen exact wat jij ook hebt.
+24:03 Ja.
 
-27:04 Heel veel.
+24:05 En dan huren we een auto.
 
-27:05 Ja, precies.
+24:09 Ja.
 
-27:09 Mee eens inderdaad, dat is wel sterk, ja.
+24:09 En dan kunnen we overal een beetje naartoe, want de mijn moeder die woont in België.
 
-27:17 Nou, ik heb dat wat jij hebt gestuurd, heb ik in de tunnel gezet.
+24:16 Oh ja, dat zei je.
 
-27:21 Ik zal het nog wel wat bijschaven.
+24:17 En ja, dat is gewoon niet handig, weet je.
 
-27:28 En dan is het denk ik het beste dat ik gewoon een versie maak.
+24:19 Dus 2,5 uur van Amsterdam, weet je, waar veel van mijn vrienden wonen.
 
-27:36 En dan gaan we gewoon samen gaan we hem gewoon verbeteren.
+24:25 En.
 
-27:40 Ja, klinkt goed.
+24:27 En dat is gewoon te lang, voor, sowieso is het te lang überhaupt om een dagje erop uit te gaan.
 
-27:47 En dan neem ik het door, ga ik me ook, ga ik ook gelijk dat doornemen en dan kunnen we het ook bespreken inderdaad.
+24:33 Maar.
 
-27:53 Ik heb ook gewoon die punten opgeschreven wat we net erover hebben gehad over kort en direct zijn bij funnel.
+24:34 Om ook nog, weet je, nu met een baby.
 
-28:01 Autoriteit nemen.
+24:39 Weet je, je moet gewoon een plek hebben waar je thuis kan komen.
 
-28:03 Jezelf positioneren.
+24:43 En.
 
-28:05 Zo maak je ambassadeur, dus eigenlijk mensen die voor je opkomen, maar niet die tegen je gaan spreken.
+24:45 En ja, dus ja, het is gewoon beter, weet je.
 
-28:12 Of slecht over je gaan praten.
+24:48 We willen ook geen druk zetten op mijn moeder, weet je, dan moeten we de auto lenen en dan is die auto een paar dagen kwijt en we moeten sowieso dan toch een huisje huren ofzo.
 
-28:16 Ja.
+24:56 Weet je, dus het beste is dat we gewoon een week daar zijn, ergens in het midden van het land en dan kunnen we elke dag gewoon een uitstapje doen, een dagtripje.
 
-28:20 Ja, en mensen die.
+25:05 Ja, precies.
 
-28:21 Mensen die eigenlijk gewoon ook respect.
+25:07 En hebben ook echt weet je een plekje om thuis te komen, weet je, wat te relax te zijn.
 
-28:28 Ja, die gewoon respecteren en gewoon de service ook meer gaan waarderen, zeg maar.
+25:12 Dus ik denk dat dat het beste is.
 
-28:33 Ze vinden ze ook, ze zien meer dan alleen het geld.
+25:13 Dus dat is een beetje het idee.
 
-28:36 Ze zijn eigenlijk mensen die ook zeggen van hé, kijk hoor echt hiernaar op dat die mensen die, dat hij die stap heeft genomen.
+25:14 Ja, mooi, mooi, mee eens.
 
-28:43 Er is ook een soort van respect dat zij dat doen en dan gaan ze niet later moeilijk doen, dan hebben ze gewoon respect inderdaad.
+25:16 Ik denk dat dat.
 
-28:52 Ja.
+25:19 Midden in het land, zo in de buurt, dus dat is heel mooi toch?
 
-28:53 Dan heeft die Jan Pauls wel goed gedaan eigenlijk, toen had die het ook wel aangepakt.
+25:22 Ja.
 
-28:58 Heb je ook.
+25:22 Moeten even kijken waar.
 
-29:02 Ja, die man die had hij natuurlijk verhaal waar ik eigenlijk door hier over een contact kwam in die Nederlandse man en hij zei ook wel van, ja, hij werd geïnterviewd, weet je wel.
+25:23 Nou ja, het ligt er gewoon een beetje aan of het.
 
-29:13 Zeg die van ja, het is niet voor iedereen, maar uit mijn onderzoeker ben ik uitgekomen en wellicht is het voor jou of misschien een ander land, moet je kijken wat voor wat bij je past.
+25:25 Eh want het begint al heel snel.
 
-29:22 Maar het is en dit en dit, dus hij was, hij kwam heel sterk over.
+25:27 We moeten eigenlijk heel snel regelen, want mensen zijn al huisjes aan het volboeken.
 
-29:25 Dus dat ga ik ook wel van, hm, oké, ik weet toch dat ik het gevoel kreeg van, hij probeer niet je te overtuigen.
+25:31 Oh zo.
 
-29:32 Dus met andere woorden, hij geeft je een eerlijk gevoel van oh, hij is gewoon eerlijk.
+25:33 En ja.
 
-29:35 Hij is gewoon zichzelf.
+25:35 Mooi.
 
-29:37 En dan krijg je ook gelijk een veilig gevoel.
+25:37 Mooi, mooi.
 
-29:40 Dan heb je ook respect voor die persoon, weet je wel?
+25:37 Ja, we zien er naar uit.
 
-29:42 Je voelt niet iemand die jou probeert wat aan te smeren, maar gewoon iemand die gewoon eerlijk is, dit is mijn verhaal en er niet bang is als het niet voor jou is, dat je dat niet neemt.
+25:40 Ja, laat me weten.
 
-29:51 Dan zou hij ook blij mee zijn, zeg maar.
+25:41 Dan gaan we wel mooi tijd van maken.
 
-29:54 Ja, maar uiteindelijk kies je voor de, je kiest voor de verkeerde weg.
+25:44 Afgesproken.
 
-30:00 Want je wil gewoon niet zo.
+25:46 Yes.
 
-30:02 Omgaan met mensen.
+25:50 Oké, waar staan we?
 
-30:03 Kijk, als het een e-book is, weet je, die verkoop je en dat is klaar.
+25:53 Waar.
 
-30:08 Als iemand klachten heeft, dan stuurt hij een e-mail.
+25:55 Ja, precies.
 
-30:12 En als jij je helemaal geen tijd hebt of geen tijd wil vrijmaken voor die klant, dan zeg je gewoon: hé, als je niet tevreden bent, krijg je geld terug.
+25:56 Dan zijn we daar waar we zijn opgehouden natuurlijk.
 
-30:22 Case close, weet je?
+25:59 Ja, dat is ook zo.
 
-30:24 En ik ben voor alle gezeik af.
+26:02 Dus.
 
-30:31 Maar met dit is dat nu eenmaal niet mogelijk.
+26:03 Ja, er zijn wel wat dingen tussendoor gekomen, nieuwe inzichten wat.
 
-30:34 Weet je?
+26:08 Ja.
 
-30:36 En de hele reputatie die hangt eigenlijk aan de klant, aan de ervaring van de klant wat super subjectief is.
+26:09 Ja, precies.
 
-30:45 Weet je?
+26:10 Dus met jou.
 
-30:45 En vooral als je gewoon zeikers hebt, je hebt gewoon mensen die zijn gewoon die zeuren gewoon over alles en dan mag je nog zo'n goede dienst hebben geleverd, maar als zij gaan zeuren, dan betekent dat zij dus heel veel verwachtingen hebben.
+26:11 Ja, precies.
 
-31:00 Dus zullen ze ons heel veel vragen stellen waarvan wij denken, ja, dit is niet echt wat wij nodig vinden of wat we hebben afgesproken binnen onze binnen ons contract, hè, dat wij zouden doen.
+26:13 Ja, het was natuurlijk grote.
 
-31:14 En bijvoorbeeld laten we zeggen dat iemand zegt: "Nou, ik vind Stan niet helemaal niet aardig.
+26:18 Pauze gehad, soort van.
 
-31:17 Hij heeft me helemaal niet goed behandeld."
+26:23 En het is nu weer volgens mij een maand.
 
-31:20 Ja, maar misschien wilde die persoon gewoon dat Stan de deur openhield en hem broodjes smeren in de middag en weer naar huis bracht, weet je.
+26:27 Een maand geleden.
 
-31:29 Ik bedoel, als je onrealistische verwachtingen hebt.
+26:28 Of zes weken geleden dat we laatst hierover hadden.
 
-31:33 Nou goed, we hebben er wel mee te maken, want we kunnen niet tegen die klant zeggen: "Ja, sorry, zit er niet in en gaat gaat hem niet worden."
+26:31 Ja.
 
-31:39 En dan maakt hij een blogpost of dan gaat hij tegen andere mensen zeggen: "Nou, deze mensen die zijn echt vervelend."
+26:32 En.
 
-31:49 Ja, dat wil je niet.
+26:33 Ja, precies.
 
-31:51 Nee.
+26:34 Dus ja, ik kon.
 
-31:52 Kijk, met de e-book heb je daar geen last van, weet je?
+26:36 Ja, ik kon even niet werken, dus ik moest geld verdienen wel tussendoor.
 
-31:55 Iemand kan zeuren, oké, weet je, ten eerste je kan geld teruggeven.
+26:41 Om gewoon voor mijn gezin te zorgen.
 
-31:59 Maar ten tweede ook die persoon die heeft niet echt een invloed op jouw algehele netwerk, zeg maar.
+26:44 En op mijn pad kwam.
 
-32:07 Want waarschijnlijk verkoop je dat e-book, zeg maar, online en de ene persoon die komt uit Paraguay, weet je, en de ander komt uit Nederland.
+26:47 Ik had een paar jerrycans gehaald.
 
-32:13 En als er één tevreden is, ja, dan is de één gewoon niet tevreden, weet je?
+26:50 Om.
 
-32:17 De kan je wel op social media gaan dingen gaan spammen.
+26:51 Wat mensen hadden dat nodig om water op te slaan ofzo.
 
-32:21 Maar de mensen die wij hebben, die is die komen uit een netwerk, die komen uit de kerk, weet je?
+26:55 Dus ik ging even online kijken.
 
-32:27 Het is een christelijke community, dus dat gaat ook, dat galmt ook overal door.
+27:02 En bleek dus wat was het, ik ging even online kijken.
 
-32:30 Weet je?
+27:06 Toen had ik heel, toen heb ik heel goedkoop dat kunnen krijgen, gewoon hele grote jerrycans.
 
-32:32 En deze mensen die gaan het van de daken schreeuwen en dat betekent dat we heel veel op ons op onze zorgen op onze nek nemen.
+27:11 En ik zag dat dat online moeilijk te vinden was.
 
-32:41 Ja.
+27:14 Dus ik had dat online gezet, bijvoorbeeld op Marktplaats en ik kreeg heel veel berichten, mensen willen gewoon heel veel kopen.
 
-32:43 Ja, precies, precies, dat moeten we inderdaad zorgvuldig aanpakken, ja.
+27:19 Ik denk: "Hè, wat gebeurt er nou?"
 
-32:49 Ja, ik denk niet dat dat onverstandig is.
+27:21 En toen bleek dus dat de benzine, misschien heb je wel gehoord, de brandstof heel hoog gegaan is in Nederland.
 
-32:55 Ja.
+27:27 En in België is gewoon veel goedkoper, 50 zeven cent per liter verschil, dus het is echt een heel groot verschil.
 
-32:56 Ja.
+27:34 Ja, zeker, wauw.
 
-33:00 Nou Jan Pauls is van Project Paraguay.
+27:35 En mensen die zijn gewoon gaan hamsteren op jerrycans bleek.
 
-33:04 Ja.
+27:40 Ja.
 
-33:04 Oké, ja.
+27:40 Ja.
 
-33:04 Klopt.
+27:44 En ja, ik ken, ik kende hier dichtbij iets van.
 
-33:08 Project Paraguay.
+27:49 10 minuten rijden, er is een fabriek die ja, die hebben gewoon jerrycans voor voor €2 of zo online gezet.
 
-33:13 En er is trouwens een event.
+27:56 En.
 
-33:16 Dat heet gaat ook noteren, misschien als je Je zit te denken misschien om daar iets mee te doen.
+27:58 En ik had het gehaald en toen heb ik met hun afgesproken van hé, koop alles wat jullie hebben, weet je wel.
 
-33:22 Daar komen juist veel mensen die ze zijn eigenlijk pioniers hierin, vooral voor Nederlanders.
+28:02 En toen heb ik dus alles meegenomen en dat bleef maar verkopen, bleef maar verkopen.
 
-33:29 Jan Pauls natuurlijk de bekende pionier daarin op Paraguay.
+28:05 Ik heb meer dan 200 jerrycans verkocht.
 
-33:48 Ja, En Ja.
+28:09 En je hebt gehandeld.
 
-34:07 Ja.
+28:11 En ja, ik dacht van wow, dit is.
 
-34:09 Volgens mij is het in juni, als ik het goed heb.
+28:13 Mensen bleven maar hamsteren en de prijzen, die bleven maar omhoog gaan.
 
-34:13 Dan hebben ze een grote conferentie.
+28:22 Dus de hele fabriek is leeg.
 
-34:16 Iets van ze verwachten bijna 3.000 mensen daar te komen, 3.000 Nederlanders.
+28:24 En was je er snel bij dan?
 
-34:21 Dus en dat conferentie is van project Paraguay.
+28:25 Ben je er heel snel bij?
 
-34:26 Jan Pauls komt daar ook, maar die conferentie is eigenlijk Even zitten we weer even de video.
+28:26 Klopt, op een gegeven moment werd het wel echt veel.
 
-34:38 Hij heet.
+28:28 Toen was een man in Utrecht, die zei tegen mij van: "Ja, ik koop alles van jou over".
 
-34:40 Die heet op YouTube heet die Sprink, Sprink Plank voor vertrek.
+28:32 Ik zeg, toen had ik wel, ik zei tegen: "Is goed.
 
-34:45 Oké.
+28:34 Ik geef je een goede prijs, neem het maar mee en Utrecht, hij woont in Utrecht, dus op veel meer mensen.
 
-34:46 Sprink plank voor vertrek.
+28:39 Dus ik kan er meegeven.
 
-34:48 Even kijken.
+28:40 Dus als ik het had laten staan, had ik het wel sowieso drie, drievoudig voor gehad ofzo, bleek van veel mensen, maar ik dacht ik moest rustig aandoen.
 
-34:55 Ja.
+28:46 Dus dat, dat was een beetje zo, dus kosten kunnen dekken en alles, dus dat was wel goed.
 
-35:05 Het is dus georganiseerd.
+28:52 En Je had al die jerrycans had je thuis staan of wat?
 
-35:07 Dat heet IFO DSS.
+28:55 Ja, in mijn schuur.
 
-35:12 Ik zie jullie gelijk de website niet.
+28:57 Schuur, eerst moest ik de schuur opruimen, dus ik had alle schuur heel veel weg gedaan, gewoon hup in de in de auto allemaal naar kringloop of naar.
 
-35:17 Dit is de conferentie, ik heb je de website opgestuurd.
+29:05 Milieustraat.
 
-35:40 Is een VO 2026.
+29:07 Dus nu is het opslag van jerrycan geworden.
 
-35:43 Ze zijn best wel succesvol ze zijn best wel succesvol daarin.
+29:11 Ja, maar En zijn de prijzen nog steeds hoog of niet?
 
-36:09 Ze zijn 15 sprekers als ik het goed heb.
+29:13 De?
 
-36:13 Of is veel.
+29:13 De prijzen zijn nog steeds hoog.
 
-36:14 Ja, er zijn dus eigenlijk allemaal, alle mensen die met een verhaal te vertellen hebben.
+29:15 Ja, de prijzen die gaan alleen maar hoger, die was eerst.
 
-36:20 Of ze zijn specialisten in bepaalde gebieden.
+29:18 €1,95 was eerst €1,90 was de normale prijs, dat was al hoog.
 
-36:22 Voor Jan Pauls staat er voor Paraguay en vastgoed daar.
+29:24 Toen werd het.
 
-36:25 Voor Nederland staat er ook bij.
+29:27 €1, toen werd het €2.
 
-36:27 Wie staat er erbij?
+29:31 En een week later was het €1,19 ofzo.
 
-36:27 Portugal.
+29:37 €1,18.
 
-36:34 Oh ja, klopt.
+29:38 En nu is het €1,25.
 
-36:36 Portugal ook inderdaad, ja.
+29:41 Nee, ik bedoel €2,50, het was dus de €2,19, nu is het €2,25.
 
-36:36 Er is ook iemand die in Portugal bezig is.
+29:44 Wauw.
 
-36:42 Waar waar zie je dat?
+29:46 Het is gewoon echt heel duur.
 
-36:43 Even kijken.
+29:48 Als ik mijn auto vol tankte, dan was ik €60 kwijt, nu is het €90, dus het scheelt wel echt heel veel.
 
-36:44 Zoals je gaat als je iets naar beneden scrollt, bij de dat blauwe onderwerpen NVO 2026.
+29:52 Zeker weten, wauw.
 
-36:56 Ja, welk nummer?
+29:54 Ja, volgens mij hebben jullie niet zo heel veel last van.
 
-36:57 14.
+29:57 Ik, het is even geleden dat ik getankt heb.
 
-37:02 Of bijna de laatste.
+30:00 Want we rijden niet zo.
 
-37:03 Reizen naar Paraguay, Dubai, Mexico, Portugal, drie keer Spanje en Italië.
+30:00 Hier, maar ik denk dat we in als ze er 50, 60 zitten ofzo.
 
-37:12 Ja, Portugal is ook wel een plaats in de Wow, is niet te goedkoop.
+30:03 Zo, dat is goedkoop.
 
-37:20 €300 voor een ticket.
+30:04 Ja, het is sowieso goedkoop hier ja.
 
-37:23 Zo, hè.
+30:08 Ja, als je komt neem maar veel brandstof meer extra jerry cannetje mee.
 
-37:25 Exclusief.
+30:16 In de koffern.
 
-37:28 Ook nog.
+30:18 Ja, Jerry can.
 
-37:29 Ja, het is het is voor de nemers eigenlijk ja.
+30:24 Ja.
 
-37:34 Ik weet niet of ze mij een plaats daarin geven, ik denk het niet.
+30:26 Nee, maar.
 
-37:37 Ze selecteren hier ook welke mensen zij uitnodigen om te spreken.
+30:28 Ja, dat was het wel zo'n beetje.
 
-37:39 Ik zat niet te denken om te spreken, maar ik wist dat je daar een stand een stand je kan is een stand kan hebben zeg maar voor dingen kan, maar dat is alleen denk ik voor sprekers.
+30:33 En.
 
-37:49 Ja, maar goed, ik denk wel dat je dan de verkeerde doelgroep hebt.
+30:35 Ja, nu gewoon weer.
 
-37:52 Ik bedoel, er kunnen christenen komen, maar dit is het lijkt echt voor ondernemers.
+30:40 Ja, nu ben ik van plan om dat een beetje te, hoe zeg je dat?
 
-37:57 Ja, inderdaad, het is ondernemers.
+30:45 Meer distributie te zijn zeg maar.
 
-37:59 Ik zat te denken waar ik dan aan zat te denken is maar daar zijn misschien wel ondernemers, maar als ik bijvoorbeeld wel eens kijk bijvoorbeeld op YouTube, schrijven mensen wel eens comments, dan zie ik heel veel christelijke comments wel staan.
+30:46 Ik heb nu een andere klant dus die man die ik had geholpen in Utrecht, ik kan hem voor een hele goede prijs geven.
 
-38:10 Bijvoorbeeld ik heb ik was een stil tegengekomen die ook bijvoorbeeld Jan Pauls kennen, maar die die eigenlijk meer christelijke of zoekwaren naar christelijke netwerk zeg maar.
+30:52 Toen zei hij tegen mij van, ik ken iemand in Rotterdam die heeft nieuwe Jerry Cans.
 
-38:18 Ja, maar wat je dan het beste kan doen is gewoon de comments, auto gewoon de comments counten, weet je, en mensen gewoon direct benaderen.
+30:58 Gewoon helemaal nieuw.
 
-38:25 Hé, wij zijn christenen, wij doen het ook.
+31:00 En voor een hele lage prijs.
 
-38:28 Ja, precies.
+31:06 Dus ik had hem gecontact en ik had goed gesprek met hem gehad en toen heeft hij hem volgens mij de laagste prijs gegeven.
 
-38:29 Kijk, want Uiteindelijk moeten we die funnel, die die is er, maar die moet gevuld worden met mensen.
+31:13 Hij is een hij koopt het in in pellet.
 
-38:36 En hoe we dat doen, ja, dat kan je op tig van manieren doen, maar ik denk vooral ook omdat we natuurlijk het liefst geen geld willen uit willen geven, we ja, we willen het zo makkelijk mogelijk maken, zo effectief mogelijk.
+31:18 En bleek dus dat hij mij de laagste prijs heeft gegeven voor toen heb ik tegen hem gezegd:
 
-38:50 Dat betekent dus ook gewoon handwerk, weet je?
+31:23 Ik ga het gewoon beetje gewoon door het land, ik ga het zelf niet één voor één of 10 voor 10 verkopen.
 
-38:53 Met je mond, bellen, netwerken, dit soort meetings enzo, weet je?
+31:28 Weet je, gewoon mensen die grootschalig willen kopen, zeven, zeven contacten ofzo en dan gewoon doorvoeren zeg maar.
 
-39:01 Naar kerken gaan, comments lezen, berichten direct reageren, weet je, ja, we moeten het zoveel mogelijk gaan doen om een beetje attractie te krijgen, een beetje naamsbekendheid.
+31:35 Ja.
 
-39:13 Ja.
+31:35 Ehm, ja.
 
-39:15 Ja, precies, precies.
+31:43 Ja, dat is goed ja, dat is het beste.
 
-39:16 Ik heb ook iemand die ik ken in in Londen had me gisteren gebeld en waar aanbel.
+31:50 Heb je minste werk.
 
-39:21 Toen zei die toen zei die ook wel zichzelf van hé, wat jij vertelde mij had over over Paraguay, ik heb er doorverteld aan mensen.
+31:53 Toch?
 
-39:27 Dus ze zijn al mee bezig, zei die.
+31:53 Ja.
 
-39:28 En hij zei die hij in hoef zijn kent en mensen in Engeland.
+31:53 Misschien, misschien wel minder.
 
-39:31 Hij zegt die mensen in Engeland lijken ook geïnteresseerd te zijn.
+31:56 Ja.
 
-39:34 Zegt die, wow, dat gaat zo snel.
+31:56 In de omzet, maar op zich minder hoofdpijn.
 
-39:36 Ik had dat niet eens zo verwacht.
+32:02 Ja, dat is wel zo.
 
-39:38 Ik dacht mensen zouden niet zo over geïnteresseerd zijn, maar soms wordt je verbaasd.
+32:04 Dat is wel zo.
 
-39:43 Ja.
+32:05 Het is echt gek.
 
-39:44 Nee, ik denk dat die hier is.
+32:06 Ik word wakker.
 
-39:46 Kijk, het feit dat dit event er is.
+32:07 Mijn telefoon open, ik zie hier 15 berichten van we Jerrycans.
 
-39:50 Ja.
+32:11 Ja.
 
-39:50 Dat dit is een hoe zeg je dat?
+32:15 Wat ik ook had gedaan was, want ik heb zeg maar je kent toch marktplaats, natuurlijk.
 
-39:56 Een een proof.
+32:20 Dus ik heb ook mijn op mijn stad staan, dus de mensen komen dus in de buurt.
 
-40:00 Weet je, het zegt het zegt niet letterlijk.
+32:23 Dus mensen die willen gelijk kopen vaak of ze willen de volgende dag.
 
-40:02 Maar het zegt dat hier een markt voor is.
+32:27 Sommige hebben niet haast dus.
 
-40:05 Ja, precies.
+32:29 Wat ik had, ik had dezelfde advertentie overal grote steden gedaan in Amsterdam, Eindhoven, Tilburg, Breda, Dordrecht, Arnhem, Nijmegen, Maastricht, weet je wel.
 
-40:06 En niet alleen een markt, er is blijkbaar een bewustwording onder de bevolking dat we hier onder de greep zitten van een overheid die eigenlijk steeds meer beperkingen oplegt.
+32:41 En dus ik kreeg al die berichten en dan schreef ik dan probeerde ik dan zeg maar daar mensen te vinden waar ik heel veel naartoe kan sturen, mensen kunnen ophalen.
 
-40:22 En dus als zij een zaal kunnen vullen, want ik weet niet hoeveel mensen hier voor uitgenodigd kunnen worden, maar als zij een zaal kunnen vullen, dat betekent dat dat 20% 15% is christen.
+32:52 Maar als ik mensen nog niet gevonden heb, dan zeg ik gewoon tegen hem van:
 
-40:43 Of heeft christelijke affiniteit, weet je.
+32:54 Ja, het is we hebben het niet meer, het is uitverkocht, maar er is optie om het te verzenden.
 
-40:45 Dus daar kunnen we makkelijk mee concluderen.
+33:02 Voor lage prijs met, weet je wel, met DHL of of DPD.
 
-40:48 Ja, er is een markt.
+33:10 En dan maak ik gewoon een mooi verhaal van en dan standaard een kopiëren plakken stuur ik gewoon naar hen.
 
-40:49 We moeten ze alleen zien te vinden.
+33:16 Oh ja.
 
-40:51 Ja, precies, precies.
+33:17 Ik denk dat.
 
-40:55 Precies inderdaad.
+33:19 40% wil zeggen ja, doe maar, verstuur maar, dat is goed.
 
-40:56 En denk je als we Google ads gebruiken en dan eigenlijk hun taal een beetje gebruiken, maar dan daarin dan dat mensen er tegenkomen, in het verhaal er tegenkomen van hé, we zijn christenen.
+33:24 En dan dan stuur ik het gewoon op, weet je.
 
-41:11 Mensen gaan toch sowieso denken van hé, zij doen dat ook, maar dan in het verhaal gaan, misschien gaan, stel je voor, 1500 mensen gaan er kijken.
+33:28 Ja, dat is echt slim.
 
-41:21 En daar van die 1500, misschien, ik zeg maar iets, er gaan naar kijken en daar van die 1500 zijn er misschien 100 mensen die christelijk zijn, denken, hé, oh, ze zijn christen.
+33:31 Dat is echt slim man.
 
-41:35 Dat is wel interessant, dat wil ik wel leren kennen.
+33:36 Ja, man.
 
-41:37 En dan misschien van die 100, misschien van die 150 gaan beslissen om die stap te nemen.
+33:38 Maar dat is dat op Marktplaats is is die categorie gratis advertentie?
 
-41:43 En dan van die 50 wordt gefilterd, dan hebben we 30 of 20.
+33:47 Ja ja, het is gratis ja, klopt.
 
-41:49 En dat is toch ook wel goed.
+33:48 Ja, klopt.
 
-41:50 Ja, maar je moet het ehm je moet het ook zo zien.
+33:48 Jerry Cans is gratis.
 
-41:56 Het wees niet ehm je moet niet denken, je moet niet denken in concurrentie.
+33:50 Sommige moeten betalen toch?
 
-42:05 Dus het is heel makkelijk om te denken, er zijn nu zeg maar bij wijze van spreken, in heel Nederland 20.000 mensen die dit zouden willen doen.
+33:53 Sommige categorieën.
 
-42:18 En laten we zeggen dat al deze mensen bij elkaar in Nederland die dat zelfde doen, die pakken zeg maar de het grootste deel, die pakken zeg maar 80%.
+33:54 Ja.
 
-42:30 Ja.
+33:54 Klopt.
 
-42:31 En je moet dus niet denken dat wij dus maar nu die 20% hebben of dat wij moeten concurreren met die 80% die zijn al zogenaamd in het bezit hebben.
+33:54 Auto's moet je betalen, ja.
 
-42:44 Dit is niet hoe het werkt.
+33:57 Oke, dat is.
 
-42:45 Er zijn heel veel mensen die weten nog niet eens dat zij dit willen.
+33:57 Weet je slim man.
 
-42:50 Er zijn heel veel mensen die kennen deze mensen helemaal niet en die zien ons voor het eerst.
+33:59 Heb je goed voor elkaar, heb je goed gezocht.
 
-42:55 Ja.
+34:04 Ja, ik heb nog steeds ook nog Yeshua is Lord account.
 
-42:58 Met andere woorden, de wat dit event aangeeft is er is een spirit van ehm bewustzijn dat hey, hier in Nederland zou het wel eens dusdanig mis kunnen gaan, weet je, dat mijn gezin, bedrijf, ehm ik mijn mijn assets, huis noem het op, onder druk komen te staan.
+34:07 Dus ik heb daar ook wat gedaan.
 
-43:24 En eigenlijk vooral christenen, want wij kennen de Bijbel.
+34:10 Ja.
 
-43:28 Ja.
+34:11 Mooi man.
 
-43:28 Wel voor degenen dan die de Bijbel kennen, maar Ja, ja, ja.
+34:12 Oke, het is, nou goed je bent fit, ben rijk genoeg om voor je gezin te zorgen.
 
-43:36 Ehm dit heerst.
+34:18 Dat is goed om te horen.
 
-43:39 En er zijn genoeg vissen in de zee, genoeg.
+34:20 Ja, precies, precies.
 
-43:43 Om ehm dat gevoel dat zij hebben waar ze nog niet eens de definitie voor hebben.
+34:23 Dus dat was even zo.
 
-43:51 Ze weten niet dat het er is, wat het is, hoe ze dat kunnen verwoorden.
+34:24 En, ja, natuurlijk ook wel bezig nadenken van hoe gaan we doen met.
 
-43:55 Nou goed, sommige mensen weten dat natuurlijk wel, maar een groep weet dat niet.
+34:31 Met de Cedulas en Paraguay.
 
-43:59 Ja.
+34:39 Ehm, ja, tegelijkertijd ook wel veel bezig, ik was ook heel veel bezig met transitie wat gebeurt nu met de met Marx groep en onze groep en.
 
-43:59 Nee.
+34:49 Oh ja.
 
-44:01 Kijk, en als wij focussen op dat gevoel, die emotie en wij maken content voor die groep specifiek.
+34:50 Veel gesprek met leiders en met de groep en.
 
-44:14 En we reiken uit naar die specifieke mensen, dan gaan we reactie krijgen.
+34:55 Ja, dat was wel heel veel koste wel veel tijd.
 
-44:20 En deze mensen die hoeven niet Jan Bos te kennen.
+34:59 Dat ook wel was ook wel belangrijk.
 
-44:26 Deze mensen hoeven nog niet eens te weten dat wat wij aanbieden, dat dat is wat ze willen.
+35:01 Ja, ik wil wel.
 
-44:33 Ja.
+35:04 Ja, ik wil wel gewoon voor mij is wel Paraguay is wel prioriteit weet je, gewoon van om dat ook gewoon van ook te pakken.
 
-44:33 Sommige mensen zoeken specifiek naar mensen zoals wij en die willen helemaal niet in zee gaan met mensen als dat.
+35:14 Ja.
 
-44:41 Met hun, ja, want zij, voor hun is het belangrijk dat ze een christelijke connectie hebben.
+35:14 Ja.
 
-44:47 Ja.
+35:18 Oke, ja, nou ik had, ik moet nog even kijken wat ik eigenlijk precies had, maar ik had volgens mij al een pagina gemaakt.
 
-44:48 We hebben al drie groepen die eigenlijk buiten de pot vallen waar zij in de vissen.
+35:25 Mhm.
 
-44:55 Ja.
+35:32 Ja, ik weet niet wat de status daarvan is.
 
-44:56 Ja, inderdaad.
+35:34 Ik had eigenlijk even moeten bekijken.
 
-44:57 Die gaan we sowieso, precies, dus inderdaad, dus dan gaan we dus zij hun eigen pot hebben, weet je, prima.
+35:36 Ja, de.
 
-45:07 Je moet het ook zo zien.
+35:40 Ja, we kunnen in ieder geval vrij snel al een.
 
-45:08 Wij kunnen geen 10.000 klanten aan.
+35:46 Een website opzetten en.
 
-45:12 We hebben er niet zoveel nodig.
+35:51 En ehm.
 
-45:14 We hebben er echt niet zoveel nodig.
+35:56 Ja, kijken hoe we dat onder de onder de mensen kunnen brengen.
 
-45:16 Nee.
+36:01 Ja.
 
-45:17 Als wij 10 klanten kunnen hebben, dan laten we zeggen in het eerste jaar, dan is dat echt heel erg mooi, want met 10 mensen heb je echt een netwerk.
+36:02 Ja, precies.
 
-45:35 Dan kun je echt zeggen, dit is een netwerk.
+36:04 Laten we eens even kijken.
 
-45:38 Ook al is het klein, maar de 11e persoon die ziet dus, wauw, ik kom hier, er zijn al mensen.
+36:06 Misschien kan ik wat laten zien.
 
-45:43 Zij hebben al huizen, er is infrastructuur, er is fellowship, er is hulp, weet je.
+36:08 Ja.
 
-45:51 Ik je komt absoluut niet met lege handen thuis of met lege handen daar.
+36:10 Want ik heb een proefseltje gemaakt.
 
-45:55 Ja.
+36:14 Mhm.
 
-45:56 Ja.
+36:16 Misschien niet.
 
-45:57 Weet je?
+36:20 Helemaal af nog, maar dan heb je niet een beetje een idee.
 
-45:57 En dan en dan schaal je, dan die eerste 10 is gewoon moeilijk.
+36:26 Ja.
 
-46:03 Maar daarna ga je makkelijk van 10 naar 100.
+36:38 Oke, ja.
 
-46:07 Ja.
+36:44 Ik heb wel iets.
 
-46:07 En als je 100 mensen hebt, weet je hoeveel, 100 is heel veel.
+36:52 Nou, het is nog een beetje droog.
 
-46:17 Ja, klopt.
+36:59 Moet ik zeggen.
 
-46:18 Het is heel veel.
+37:01 Dus we kunnen dat nog wat verbeteren, maar het idee is er.
 
-46:19 Het is echt heel veel.
+37:04 Dus ik ga jou eventjes een paatje sturen.
 
-46:20 Dus er zijn genoeg mensen.
+37:08 Ja.
 
-46:22 Er zijn genoeg mensen.
+37:11 Even kijken, kan je exporteren.
 
-46:22 We hoeven ons echt geen zorgen om te maken.
+37:14 Email, denk ik hè.
 
-46:26 Ja, ja, de markt is groot inderdaad.
+37:21 Ehm.
 
-46:28 Ja.
+38:37 Cedula website.
 
-46:29 De markt is hier er zijn genoeg Nederlanders.
+38:41 Oh, wacht even.
 
-46:31 En als de Nederlanders uitgeput zijn, dan gaan we naar de Duitsers en Portugal en, weet je, de markt is echt groot genoeg.
+38:42 Dit is heel erg onscherp.
 
-46:41 Ja.
+38:45 Je kunt bijna niet lezen.
 
-46:41 Ja, dat is zo, mee eens.
+38:48 Oh ja, je klik er op.
 
-46:42 Want wij zijn namelijk niet de eerste en dat is ook, je hoeven niet te pionieren, we hoeven echt niet te pionieren.
+38:52 Oh ja, dat is wel heel inderdaad, heel dun.
 
-46:49 Die andere mensen, die hebben heel veel tijd, geld en energie gestoken in de validatie.
+38:56 Oke.
 
-46:54 Wij hoeven dat niet te doen.
+38:57 Is dat een screenshot?
 
-46:57 We weten al dat het Ja.
+38:59 Was dat een screenshot?
 
-46:57 Ja, precies.
+39:00 Ja.
 
-46:59 Ja, precies, precies.
+39:03 Maar ik weet niet hoe ik dit kan.
 
-47:01 Dat scheelt, ja.
+39:16 Oké.
 
-47:07 Ja.
+39:54 Oké, ja, nee.
 
-47:08 En is super, dat is zo inspirerend ja, dat het Ik denk het belangrijkste wat voor ons is is hoe willen wij naar buiten gaan.
+39:57 Oké, misschien dan op deze manier.
 
-47:19 Willen we een YouTube channel zetten?
+40:00 Ja.
 
-47:20 Willen we ons verhaal vertellen?
+40:54 Niet.
 
-47:22 Hoe gaan we outreach doen?
+41:03 Oké.
 
-47:24 Gaan we zelf naar kerken toe?
+41:10 Deze menu dan.
 
-47:27 Gaan we naar events toe?
+41:14 Ja, neem je tijd.
 
-47:29 Gaan we podcast doen, weet je.
+41:21 Oké, nee, dat werkt niet.
 
-47:32 Dat zijn de belangrijke vragen.
+41:29 Wat ik misschien kan doen.
 
-47:34 Het is meer de hoe.
+41:33 Is
 
-47:36 Ja.
+41:37 Even kijken of ik gewoon even mijn scherm kan delen.
 
-47:36 Want het is het is mogelijk, maar één ding is zeker, dit is hard werken.
+41:40 Dan kan ik het je gewoon laten zien.
 
-47:43 Dus je moet iets kiezen wat je lang kan uithouden, wat je leuk vindt om te doen, wat je veel content over kan maken.
+41:42 Ja.
 
-47:53 Ja.
+41:45 Oh ja, dat is wel makkelijker inderdaad ja, voor nu.
 
-47:53 Want als jij een onderwerp kiest wat, als je daar één keer een video van maakt is het al uitgeput, ja, dan wordt de tweede video heel erg lastig.
+41:53 Ja.
 
-48:03 Ja.
+42:11 Yes.
 
-48:03 Klopt.
+42:52 Oké, zie je mijn scherm?
 
-48:04 Maar als jij een onderwerp kiest dat waar je eigenlijk ongelimiteerd berichten mee kan maken.
+42:58 Ja.
 
-48:12 Of posts, video's, podcasts, whatever.
+42:59 Hij is nog aan het laden, maar ik zie nog niet.
 
-48:20 Ja.
+43:03 Ja, nu zie ik het.
 
-48:21 Dan ja, dat op een gegeven moment gaat dat dus als een sneeuwbaleffect ga je dan mensen aantrekken.
+43:06 Oké.
 
-48:28 Ja, dat is zo inderdaad, ja.
+43:09 Nou, wat we wat ik gedaan heb is de tekst die we hebben gemaakt de vorige keer.
 
-48:30 Mensen blijven hangen en dan willen mensen stappen nemen.
+43:16 Ja.
 
-48:35 En ja, nee, absoluut, absoluut.
+43:16 Die heb ik gebruikt hier als basis voor deze pagina.
 
-48:38 Ja, wat voor mij belangrijk is is iets wat wat relatief makkelijk te doen is.
+43:21 Dus ja, dit is gewoon nog niet af natuurlijk.
 
-48:44 Ik wil binnenkort een YouTube kanaal beginnen voor mijn business.
+43:24 Dit is gewoon.
 
-48:52 Maar ik weet wel dat YouTube is heel erg effectief, maar ja, dat moet je niet onderschatten, dat is echt werk.
+43:26 Een beetje flauw, weet je, want dit is wat je doet de hero pagina.
 
-48:59 Weet je, je moet die, één ding is opnemen, maar daarna moet je het editen, je moet het dat is niet niks.
+43:35 Ah zo ja.
 
-49:06 Dus.
+43:37 En dat is alles wat je hier ziet zonder dat je naar beneden scrolt.
 
-49:07 In welke taal ga je het doen?
+43:44 Ja.
 
-49:09 In mijn business in software maken.
+43:45 Dus hier zou het heel erg duidelijk moeten zijn, oké, wat krijg ik?
 
-49:12 In Engels?
+43:51 Precies.
 
-49:12 In Engels, ja.
+43:54 En wat wil men dat ik doe.
 
-49:14 Nee, is goed.
+43:56 Dus dit is wat je wilt dat men op klikt.
 
-49:16 Kan je ook editen en zo?
+44:01 Ja.
 
-49:17 Of doe je dat doe je niet?
+44:02 Dit noem je de call to action knop.
 
-49:18 Nou ja, ik ga het dus op een bepaalde manier doen dat het gewoon minimale edit is.
+44:06 En hier moet het in één zin.
 
-49:22 Wat ik ga gewoon, wat ik ga doen is gewoon mijn computerscherm laten zien.
+44:09 Kijk, ik zie je muis niet.
 
-49:25 En dan doe ik zo'n zo'n avatar in de hoek, weet je wel.
+44:11 Alleen ik zie de muis niet.
 
-49:28 Ik had het gezien inderdaad.
+44:13 Oh je ziet de muis niet.
 
-49:31 Dus als wat je verkoopt is ook wel wat in de computer zit, dus dat begrijp ik ook wel.
+44:14 Ben je met de muis, ben je met de muis aan het aanwijzen?
 
-49:35 Dus hoef ik niet veel te editen, weet je.
+44:17 Ja, dat klopt, maar dat zie je niet.
 
-49:38 Het is meer gewoon opnemen en dan post ik het gewoon.
+44:19 Nee.
 
-49:42 Ik moet het wel editen in de zin van dat ik knippen plakken.
+44:21 Oké.
 
-49:47 Knippen plakken.
+44:22 Nou nee, dat is wel goed.
 
-49:48 En en dingen die urenlang duren zeg maar.
+44:23 Maar je ziet de blauwe knop.
 
-49:51 Maar als je zo'n video wil maken als als die andere jongens doen van Park Projecte Paraguay, die hebben een camera, die gaan naar buiten.
+44:25 Ja.
 
-50:00 Oh ja.
+44:26 Dat is wat je callt, de call to action knop.
 
-50:01 Dan moet je dat laden in je editing programma.
+44:31 Dat is waar het allemaal om gaat, want je wil dat deze website converteert.
 
-50:07 Dan moet je al die verschillende fragmenten in de volgorde gaan zetten.
+44:37 Ja.
 
-50:11 Moet je daar een verhaallijn van maken met misschien wat animaties, intro, outro.
+44:37 Dus je wilt dat men op die blauwe knop drukt.
 
-50:19 Weet je dat.
+44:40 Ja.
 
-50:23 Dat dat kost zoveel tijd joh.
+44:41 Maar niemand gaat op die knop drukken als het niet duidelijk is voor hun wat is wat ja, wat deze website precies geeft.
 
-50:27 Dat kost zoveel tijd.
+44:52 Dus dat moet de titel, dus een tweede basis opbouwen.
 
-50:30 Ja, klopt inderdaad.
+44:57 Dat moet gelijk duidelijkheid geven.
 
-50:33 Weet je, ik klik op play en het laat gewoon mijn scherm en het neemt gewoon mijn scherm op en ik spreek.
+44:59 Ja.
 
-50:46 That's it en dan stop ik.
+45:00 Wat het is.
 
-50:49 En dan zit alles al op mijn computer.
+45:00 Ja.
 
-50:58 En ik moest alleen maar te editen.
+45:02 En dan eventueel een verdieping.
 
-51:00 Oké, dit is te lang, dit is te kort.
+45:06 Met de begeleidende tekst wat je daaronder ziet, waar staat professionele discrete begeleiding.
 
-51:05 Weet je, het is gewoon makkelijker.
+45:14 Ja.
 
-51:14 Ja, precies.
+45:15 Ja.
 
-51:15 Nee, dat is ook zo.
+45:16 Precies.
 
-51:16 Ik zat ook te denken als ik ook video's maak.
+45:18 Dus nou goed, dit is het in grote lijnen.
 
-51:23 Gewoon verhaal vertellen.
+45:22 Dat moet wil natuurlijk moeten we natuurlijk verfijnen.
 
-51:26 Ook wel gewoon zoals dit.
+45:28 Ja.
 
-51:28 Dit kan ook toch gewoon.
+45:29 En aan de andere kant moeten we het ook niet teveel verfijnen, want het gaat nooit 100% goed zijn.
 
-51:29 Als ik gewoon dit hele schilderij gewoon even achter me zet, ga gewoon praten.
+45:39 En wat je wil is je moet je wil eigenlijk gewoon zo snel mogelijk live gaan, zodat mensen het zien.
 
-51:36 Maakt ook niet zoveel uit.
+45:49 Ja.
 
-51:39 Nou, podcast is één van de beste manier, want podcast die mensen die zetten dat vaak op op de achtergrond.
+45:51 En dan wil je meten met hoe goed wordt deze pagina nou hoe goed converteert het nou.
 
-51:54 Je kan alleen het audio kun je gebruiken.
+46:01 Dus hoeveel mensen drukken op die knop?
 
-52:00 En kijk, als jij gewoon een interessante persoon bent voor dat onderwerp, Ja.
+46:04 Ja.
 
-52:11 Dan gaan mensen die hele podcast luisteren.
+46:05 En dan kan je bijvoorbeeld testen gaan doen met door de tekst te veranderen of de volgorde te veranderen.
 
-52:18 Kijk, met een YouTube video en vooral de de gehypte video's, daarbij heb je echt heel erg belangrijk, je hebt een hoek nodig.
+46:14 De weet je, bepaalde dingen dusdanig te maken dat die pagina gewoon meer effectief wordt.
 
-52:35 Dat moet je gelijk pakken, weet je, als je die video afspeelt, want binnen 10 seconden zijn de meeste mensen al hebben hun aandacht al verloren.
+46:19 Maar dat is testen.
 
-52:42 Dus als je niet gelijk weet je met de bang zeg maar je statement maakt, dan zijn mensen al van whatever.
+46:21 Ja.
 
-52:54 Ja, je moet gelijk aandacht.
+46:23 Je dus ja, je kan deze pagina niet zo maken in één keer zeg maar.
 
-52:59 Dus je moet heel veel editen, het moet mooi zijn, goed geluid en al die dingen, dus dat kost heel veel tijd.
+46:28 Oké, nu is die perfect en dit is het beste wat we kunnen doen.
 
-53:08 Maar een podcast heeft dat niet nodig.
+46:32 Nee, je moet gewoon het proberen zo goed mogelijk te maken.
 
-53:11 Die heeft alleen maar goed geluid nodig.
+46:36 En dan naarmate de tijd vordert, dan verfijn je het steeds meer en meer zodat die pagina beter wordt.
 
-53:14 En natuurlijk een heel duidelijk onderwerp, want mensen die niet geïnteresseerd zijn in een gesprek tussen ons over emigratie, die zijn niet geïnteresseerd.
+46:42 Want wij weten niet Ja.
 
-53:28 Maar daar gaat het niet om.
+46:44 Wat tot de verbeelding spreekt van de mensen.
 
-53:30 Het gaat erom dat als je een goede titel hebt en jij bent geïnteresseerd in dat onderwerp, dan is de kans groot dat jij dat hele podcast afluistert.
+46:49 Weet je, de mensen bepalen hoe goed deze pagina is, niet wij.
 
-53:50 En met een YouTube video is dat niet zo gauw, weet je.
+46:53 Mhm.
 
-53:54 Als iemand een handleiding maakt van 30 minuten, ja, dan gaat echt niet iemand helemaal naar kijken.
+46:54 Ja ja, precies.
 
-54:06 En voor het algoritme van YouTube is het wel belangrijk.
+46:57 Maar goed, hier heb je dus je ziet nog steeds geen muis hè?
 
-54:10 Hoe meer gekeken wordt, hoe langer gekeken wordt, hoe meer je getoond wordt.
+47:01 Nee, klopt.
 
-54:23 Ja, precies, precies.
+47:02 Nee, oké.
 
-54:25 Zij willen dus dat je toch ook gewoon de kwaliteit ja.
+47:02 Maar goed, dit in deze sectie zie je dus wat meer verdieping.
 
-54:36 Nee, inderdaad, dat heb je.
+47:07 Hier geven we zeg maar een introductie met oké.
 
-54:57 Nee, inderdaad, het is ook een soort van.
+47:15 Ja.
 
-55:03 Stel je voor, ja, je gaat gewoon vertellen mensen die je kent.
+47:15 Waar gaat het nu eigenlijk over?
 
-55:07 Het zit ook op social media bijvoorbeeld.
+47:19 Ja.
 
-55:09 Het is ook gewoon heel makkelijk.
+47:19 En hier worden we nu wat meer duidelijker, oké, als je dit doet, dan is dit wat je krijgt.
 
-55:10 Je gaat social media bijvoorbeeld Facebook.
+47:32 Ja.
 
-55:15 Je gaat gewoon automatisch, daar zijn ook gewoon groepen waar mensen ook daarin geïnteresseerd zijn, bijvoorbeeld, of mensen die met emigratie bezig zijn of of mensen die met Paraguay wat met Zuid-Amerika hebben bijvoorbeeld.
+47:33 Dit is het gevolg van werken met ons.
 
-55:39 Ik ga gewoon een beetje op die manier zeg maar of ik kan ik ga het gewoon posten op Facebook.
+47:41 En hier heb je dan nog wat meer verdiepingen.
 
-55:45 En dan mensen gaan dat ook wel zien.
+47:46 Zodat men beetje weet wat het pakket zeg maar in.
 
-55:50 Maar ik dacht als je een video hebt, het is niet direct dat mensen die jou niet kennen gaan dat ze jou gaan vinden op YouTube, maar dat je gewoon zegt van, hé, dit is bijvoorbeeld het dit gaat om Paraguay en je gaat bijvoorbeeld een korte 30 seconden video maken, of een soort van een short.
+47:59 Wat included is in het pakket.
 
-56:17 En je zegt van, hé, als je meer wil weten, kijk naar mijn video, weet je wel, en dan kunnen mensen dan het hele verhaal horen van: "Oké, dit is dit is het verhaal".
+48:05 Ja.
 
-56:29 Dan dat je telkens dat verhaal moet vertellen.
+48:07 Dit is dan de website of de funnel?
 
-56:34 En tuurlijk, het is wel goed voor de relatie, maar gewoon voor het om tijd te besparen kunnen mensen dat dan zien.
+48:10 Dit is de website, volgens mij hè?
 
-56:44 Telkens wat verhaal moeten vertellen dat we dat dat je sedule verkoopt voor Paraguay.
+48:12 Dit is de funnel.
 
-56:55 Ja, bijvoorbeeld.
+48:14 Funnel.
 
-56:59 Ja, nee, dat is dat is mogelijk, absoluut.
+48:15 Ja, precies.
 
-57:09 Maar ja, er zijn heel veel verschillende van van vormen.
+48:17 En dus hier wat contrast, om te filteren tussen de klanten die we wel willen aantrekken en de mensen die we niet willen aantrekken.
 
-57:22 Dat absoluut.
+48:31 Ja.
 
-57:26 Kijk, we moeten daar een balans in zien te vinden.
+48:32 Dus dat maakt de website is ook of dat maakt voor de klanten het ook wat meer gewilliger.
 
-57:29 Kijk, misschien dat dat voor ons een beetje te harde reclame zou zijn, omdat we uiteindelijk met een iets wat gevoeliger groep werken, namelijk christenen die willen fellowshippen.
+48:41 Dus dit is een soort van kwalificatie marketing.
 
-57:54 En dat willen we niet door de strot drukken, want dan lijkt het dat we daar geld op aan het verdienen zijn.
+48:45 Ja ja ja.
 
-58:01 Weet je, kijk met ondernemers is het duidelijk, weet je.
+48:47 Precies.
 
-58:04 Zij zij willen hun geld veilig stellen en daarbij kun je gewoon heel erg duidelijk zeggen: "Ik kan jou geld besparen".
+48:47 En.
 
-58:14 Weet je, als je met ons zaken doet en we gaan in Paraguay investeren.
+48:53 Nou ja, hier wat extra informatie over de transparantie.
 
-58:20 Ja, ja.
+48:59 Hier geven we dan inzicht over het het proces.
 
-01:00:01 Dan bespaar je geld.
+49:06 Van onboarding.
 
-01:00:03 Ik denk dat wij die taal wat genuanceerder moeten hebben.
+49:09 Want dus omdat dit natuurlijk een product is wat je niet heel erg.
 
-01:00:08 En meer op die emotie moeten zitten dat wij de perfecte partner zijn voor een christelijk leven in een andere locatie waar het gewoon nog meer kan, weet je?
+49:13 Makkelijk verkoopt.
 
-01:00:21 En ja, dat is niet iets wat je doordrukt of wat je verkoopt, maar wat je aanbiedt.
+49:16 Dit heeft een hele lange doorlooptijd.
 
-01:00:29 Ja, klopt inderdaad.
+49:20 Moeten we mensen inzicht geven, oké, wat hoe lang duurt het, wat kan ik verwachten, hoe lang duurt elke fase ongeveer?
 
-01:00:31 En het hart moet er sowieso zitten dat je eigenlijk graag je verhaal vertelt aan mensen en dat je eigenlijk mooi vindt om je kennis te delen met mensen en hé, ik hoor graag wat wat je gedachtes zijn, maak een comment of soort van je hebt eigenlijk soort van fellowship met mensen en met je je ervaring en je overtuiging aan het delen.
+49:33 Ja.
 
-01:00:47 Dat is het eigenlijk voor bedoeld.
+49:33 Dus we moeten daar wat meer duidelijkheid over geven.
 
-01:00:49 En dan kan je nog altijd aangeven van hé, ben je toch geïnteresseerd met iets met Paraguay, weet je?
+49:37 Dus een soort van tijdslijn.
 
-01:00:56 Kijk, we hebben een netwerk, we kunnen je, misschien kunnen we je helpen.
+49:41 Ja.
 
-01:01:00 Zoiets op het einde, gewoon heel nuchter, maar het blijft daarbij.
+49:42 En dan hier uiteindelijk de prijs.
 
-01:01:03 Ja, nee, dat is een communicatie, ja.
+49:47 Ja.
 
-01:01:07 Nee, mensen zien, ja, mensen kunnen gewoon zien.
+49:48 En en dan hier nogmaals de call to action.
 
-01:01:09 Het is gewoon hoe je het overbrengt natuurlijk.
+49:54 De ja.
 
-01:01:11 Het is je deelt graag je kennis, je overtuiging.
+49:55 De knop waarvan je wilt dat mensen daarop klikt, klikken.
 
-01:01:15 En je hoort graag mensen comments, hé, wat vinden jullie daarvan?
+50:00 En als je dan hierop klikt, dan hebben kunnen we dat formulier laten openen, waar dus nog meer kwalificatie vragen worden gesteld.
 
-01:01:19 Welke onderwerp zouden jullie willen horen.
+50:40 Out.
 
-01:01:22 Ik ben zelf ook in deze reis, ik ben dingen ook aan het ontdekken en wellicht hebben jullie ook tips.
+50:44 En als men door dat formulier heen komt,
 
-01:01:27 Als ik iets moet uitzoeken of onderzoeken kan ik ook een video van maken.
+50:50 Dan betekent het dat op de laatste pagina er wordt een advies wordt gegeven.
 
-01:01:32 En gewoon eigenlijk een hele interactie, weet je wel?
+51:01 En ik denk dat het voor ons goed is om ook te zeggen: "Hey, sorry, maar wij zien geen hoe zeg je dat het is."
 
-01:01:35 Dat je gewoon met hun meeneemt eigenlijk in je reis en in die ontdekking, dus dat ben je eigenlijk ook aan het filmen en je bent aan het delen met mensen en dan bouw je eigenlijk relatie op die manier.
+51:11 Voor ons het, we wij denken dat een samenwerking niet mogelijk is.
 
-01:01:44 En dan als je dan zegt van hé, hé, kom, ik heb nu online.
+51:18 Weet je, we hoeven daar niet diep op in te gaan.
 
-01:01:49 Misschien kan je je vragen online stellen, we hebben een zoom meeting of zo of Google meet meeting en schrijf je in en dan als je vragen hebt of wil kennis maken, misschien gaan wij jou leren kennen, weet je wel.
+51:22 Maar als iemand bijvoorbeeld aangeeft: "Ja, ik heb een crimineel verleden."
 
-01:02:00 Ja, zoiets.
+51:25 Weet je, dan moeten we ook gewoon denk ik gewoon hard zijn om te zeggen: "Ja, we zien daar geen samenwerking in."
 
-01:02:03 En op die manier ben je dus eigenlijk mensen je neemt mensen dus mee en dan kunnen mensen ook ja, is eigenlijk contact maken met mensen.
+51:29 Want als wij iedereen gaan accepteren,
 
-01:02:13 Ja, ik denk de belangrijkste asset die wij hebben is ons verhaal.
+51:32 Dan betekent dat we dus ook al deze wrijving en mogelijkerwijs ook problemen op onze hals halen.
 
-01:02:23 En daarbij daarbij moet je diep op ingaan, daar moet je double down op gaan.
+51:39 Ja, precies.
 
-01:02:29 Dat is want dat is het enige wat je hebt.
+51:41 En dus ik denk dat het goed is dus om dit formulier, zeg maar, daar zetten we dus een paar scherpe vragen in.
 
-01:02:31 Ja, klopt.
+51:55 En daar aan het einde geven we een advies, geschikt of niet geschikt.
 
-01:02:32 Weet je, dit is wat we hebben, ons verhaal.
+52:00 Ja, niet met die woorden hè, we willen natuurlijk mensen niet straffen, maar gewoon met juiste taal.
 
-01:02:37 En dat maakt ons authentiek, dat maakt ons uniek, dat maakt ons betrouwbaar.
+52:06 En als het wel geschikt is, dan kan men een gesprek in boeken.
 
-01:02:45 En en dat is een hele scherpe filter.
+52:13 En wat je dan krijgt is dan krijg je een agenda vol met geschikte mensen die dus gepre kwalificeerd zijn.
 
-01:02:53 Ja, je gaat dan tegen de meeste mensen eigenlijk zeggen nee, maar daarbij bouw je community op, daarbij bouw je vertrouwen op.
+52:27 En dat zijn ook mensen die daardoor dus ook een hoge hoge kans van slagen hebben en een hogere kans van interesse.
 
-01:03:03 En je zegt dat wat je spreekt, dat doe je ook, want uiteindelijk de visie is community.
+52:38 Want niemand gaat het formulier invullen, weet je, het kost dit is allemaal wrijving.
 
-01:03:11 Ja.
+52:44 En wrijving is op zich iets wat je wil verkopen voorkomen.
 
-01:03:12 Maar als dat community is, dan betekent dat dus ook community met gelijk gestemde mensen, niet met iedereen.
+52:49 Want als jij een e-boek verkoopt van €19, wil je zo min mogelijk wrijving hebben.
 
-01:03:20 Ja.
+52:55 Maar een e-boek van €19, daar kun je ook van verwachten als koper dat je daar verder geen support op krijgt.
 
-01:03:22 Klopt.
+53:01 Weet je?
 
-01:03:23 Dus het mes snijdt aan twee kanten.
+53:03 Als je niet tevreden bent, ben je niet tevreden en €19 is ook een risico wat men heel gauw willig is om te lopen.
 
-01:03:27 En dit is nou precies wat andere mensen niet hebben.
+53:15 Weet je, als het niet goed is, dan is het niet goed, weet je?
 
-01:03:33 Niemand heeft dit.
+53:18 Dan kun je misschien een e-mail sturen van ja, ik vind het niet goed wat je doet, maar daar blijft het ook bij.
 
-01:03:35 Ja, nee, dat is inderdaad uniek, ja.
+53:22 Ja, precies.
 
-01:03:37 En dat moeten we dat moeten we uitbuiten.
+53:23 Maar aangezien wij een heel erg complex product verkopen of een service verkopen.
 
-01:03:39 Het klinkt een beetje grof, maar dat is waar we op moeten focussen.
+53:33 Hebben wij die luxe niet, weet je.
 
-01:03:43 Dat is ons unique selling point.
+53:36 Elke klant moet tevreden zijn, want er hangt namelijk heel veel op het spel, weet je, onze relatie met Stanley, onze onze naam, weet je, als de klant niet tevreden is.
 
-01:03:47 Ja.
+53:52 Dan hebben wij echt een probleem, want als die klant gaat praten, dan hangt dat er is dan kan de business wel eens omvallen, weet je.
 
-01:03:48 En daarom zullen mensen voor ons kiezen en expliciet niet voor iemand anders.
+54:03 Dus wij moeten echt die kwalificatie.
 
-01:03:55 Ja.
+54:09 Eh hanteren en daarvoor moeten dus een beetje wrijving hebben.
 
-01:03:56 Ja, precies.
+54:16 En bij het het omborden daarvan.
 
-01:03:59 Dat is in die netwerk willen we blijven, in die relatie eigenlijk, dan gaan ze die relatie waarderen.
+54:19 En dus nou dit is een beetje de manifestatie, zeg maar, van de tekst wat ik had gemaakt naar een eerste vorm van de funnel.
 
-01:04:03 Dus ja, nou, dat klopt.
+54:38 En wat ik zou kunnen doen is even een werkende versie maken die echt op de website staat.
 
-01:04:07 Dus jouw marketing die heb je eigenlijk al in je.
+54:46 En daar kan je daar eventjes rustig ook nog naar kijken in plaats van op deze manier.
 
-01:04:10 Je hoeft alleen maar jezelf de vragen te stellen, waarom heb ik dit gedaan?
+54:53 Dat is gewoon wat beter.
 
-01:04:15 Wat wil ik hiermee doen?
+54:53 En ja, ik denk dat het dan ik denk dat het handig is of het beste is is dan we kijken er nog een keer naar, we passen aan wat we moeten aanpassen en dan gaan we gewoon live.
 
-01:04:18 Hoe zie ik mijn leven in de toekomst?
+55:09 Want met elke business is het zo dat de techniek is en dat is waar heel veel mensen op focussen.
 
-01:04:22 Wat zou ik met de willen doen?
+55:19 Is "Ah, de website moet mooi, de woorden moeten perfect, alles."
 
-01:04:27 Hoe zie ik een fellowship in Paraguay voor me, weet je?
+55:22 En dan gaan ze focussen, focussen en tijd spenderen om dat helemaal op te passen, aan te pakken.
 
-01:04:31 Dat zijn jouw vragen.
+55:30 Maar wat het belangrijkste is voor ons is om deze boodschap bij zo veel mogelijk mensen te brengen.
 
-01:04:35 En heb je gelijk je marketing, dat is dan je marketing, dat is dan je verhaal.
+55:36 Dus het grootste werk voor ons beide is marketing.
 
-01:04:41 Dat is wat je dan moet gaan vertellen.
+55:41 Weet je, dus we moeten die mensen gaan vinden.
 
-01:04:45 Weet je?
+55:42 We moeten ze de juiste informatie geven, we moeten ze zorgen dat ze deze funnel gaan vinden.
 
-01:04:45 Of het nou een e-mail is, YouTube, met de mond, dat maakt niet uit, dat is meer de hoe.
+55:48 Dus.
 
-01:04:52 Maar de wat is wat je eigenlijk al, dus je moet je zelf eigenlijk interviewen, weet je?
+55:50 Waar we ons 80% op moeten focussen is op een of andere manier marketing.
 
-01:04:57 Wat is jouw geloofsover je overtuiging geweest om deze stappen te maken?
+55:55 Dus of dat nou YouTube is, telefoon opnemen, kerken aanspreken, mensen aanspreken, weet je, dat.
 
-01:05:07 Ja, precies.
+56:02 Dat is even de vraag hoe.
 
-01:05:09 En dan kan je alleen video's of blogs van maken, ja.
+56:03 En ik zou zeggen, het is niet of of, maar en en.
 
-01:05:11 Kan je getuigenis daarin delen.
+56:07 Maar we moeten het meeste tijd besteden aan dat.
 
-01:05:13 Exact.
+56:11 Want deze funnel die kunnen we zo mooi maken als we willen, die tekst ook perfect, maar dan we moeten eigenlijk gewoon morgen bij wijze van live gaan.
 
-01:05:13 Ik heb wel eens vandaag gedacht van Ik had was een vraag die bij mij opkwam.
+56:21 Weet je?
 
-01:05:18 Volgens mij was het door een gesprek, iemand zei wel eens van ja, weet je?
+56:21 En ik denk als we ons daar even een weekje voor geven ofzo, dan kunnen we daar alles het tweede week het maakt niet uit, maar ik bedoel.
 
-01:05:27 Als we dus als iemand die ik ken in Zuid-Afrika die zeiden van ze zijn wel Nederlanders, maar die zeiden van ja, ik wil wel naar Paraguay toe gaan.
+56:31 Laten we gewoon live gaan, want we moeten gewoon zien, we moeten zo snel mogelijk zien of het werkt en hoe goed het werkt.
 
-01:05:35 Ik wil gewoon cedula hebben, maar Paraguay dan kan je kijk, je hebt daar geen visum voor nodig, dus ze zouden we elk moment naartoe kunnen gaan.
+56:39 Want als we ook onze deadline willen halen in een half jaar, dan kunnen we natuurlijk niet vergaderen voor de komende maanden en dan de laatste vier weken live gaan.
 
-01:05:43 En toen dacht ik van ja, ergens het is wel waar, je hebt geen visum nodig, je zou wel naartoe kunnen gaan, maar dat liet me denken, toen dacht ik van, ja, maar dat ergens klopt wel, maar ergens ook weer niet, want je kan er wel naartoe gaan, maar drie maanden later moet je dan weer weg.
+56:47 We hebben echt wat maanden nodig om te zien of dit of dit een beetje werkt, weet je, dus ja, dus.
 
-01:05:58 Maar je kan niet daarnaartoe gaan en gelijk verblijfsvergunning aanvragen.
+56:54 Me eens inderdaad.
 
-01:06:02 Ja, maar je kan waarschijnlijk ook niks bouwen en en je assets daar gaan Ja, precies, en vooral de eerste stap is, zelfs voor iemand moet noodzakelijk weg.
+56:55 Wat denk je daarvan?
 
-01:06:11 Bijvoorbeeld in in eh in Zuid-Afrika is het veel waar veel mensen voor moord.
+56:56 Hoe ver zijn we nu eigenlijk?
 
-01:06:17 Wellicht heb je dat verhaal gehoord.
+56:58 We waren, weet je, wanneer we begonnen waren?
 
-01:06:19 Gewoon en als mensen denken, hé, we moeten vluchten.
+57:00 Welke datum hadden we gegeven?
 
-01:06:24 Er gebeurt iets onverwachts.
+57:01 De datum die we ons hebben gegeven was volgens mij ergens was het 15 juli?
 
-01:06:27 Je kan niet opeens zeggen van oh ja, ik ga even binnen een dag even al mijn papieren regelen waar ik dan daar verblijfsvergunning kan krijgen, want je kan niet meer terug dus ja.
+57:08 Juli.
 
-01:06:35 Want om die papieren te regelen, ben je ook wel drie weken mee bezig.
+57:08 15 juli.
 
-01:06:41 En dat moet ook wel goed gaan, weet je wel?
+57:08 Dachten jullie?
 
-01:06:43 En dan alle papieren moet je dus klaarmaken en regelen en of je moet het zo doen dat je alles dan, maar dat gaat ook weer vervallen, want als ze een apostillen nodig hebben, dan moet dat ook binnen zes moet ook zes maximaal zes maanden geldig zijn.
+57:10 Ja, nou dat zou ja, dat zou kunnen.
 
-01:06:59 Zes maanden oud zijn, dus dan moet je weer nieuw aanvragen.
+57:12 Of of juni, dat weet ik niet.
 
-01:07:03 Dus het is wel iets dat je dacht hé, dat is dat is ook wel iets wat je ontdekt en dan kan je ook gewoon een verhaal van maken, weet je wel?
+57:13 Nou, dan zijn we 15, nee, dan zijn we 15 januari begonnen, denk ik, toch?
 
-01:07:09 Van
+57:18 Klopt, ja, en dan is het dan is het juni dan.
 
-01:07:10 Maar dit is dan iemand die die snapt het gewoon niet.
+57:26 Zou kunnen.
 
-01:07:12 Nee.
+57:29 Maar goed, het is sowieso met even.
 
-01:07:13 En want die ziet de waarde er niet van in.
+57:32 Ik denk dat het gewoon goed is om die datum te volgen, maar kijk, als wij tot de conclusie komen dat we een paar weken langer nodig hebben, dan is dat natuurlijk.
 
-01:07:19 Weet je?
+57:44 Het is meer een ijkpunt, weet je.
 
-01:07:19 Dus dat betekent niet van oké, dan kunnen we nooit meer samenwerken.
+57:46 Want als we geen datum hebben, dan is het "ja, whatever".
 
-01:07:22 Misschien snapt die Ja, en dan zijn ze gewoon niet goed.
+57:51 Precies.
 
-01:07:25 Maar mensen die dit soort vragen hebben, na de uitleg, na de website gelezen te hebben, die altijd beren op de weg zien, weet je?
+57:51 Maar als we een datum hebben, dan weten we tenminste: "oké, weet je, hé, we hebben nog maar zoveel tijd, laten we wat stappen maken in de juiste richting om te proberen om die datum te halen."
 
-01:07:34 Is gewoon die je ja, met jou willen we niet werken, want jij jij waardeert ehm jij waardeert het concept niet, jij waardeert het verhaal niet.
+57:59 Dus ja, het is ook geen religie die datum, maar.
 
-01:07:45 Ja.
+58:03 Nee, precies.
 
-01:07:46 Ze zijn bed terug.
+58:03 Het is wel goed dat we een ijkpunt hebben, denk ik.
 
-01:07:47 Ze weten het allemaal beter.
+58:07 Ja, mee eens inderdaad.
 
-01:07:48 Ja, maar ik heb het helemaal niet nodig, ja, maar je denkt in een scenario dat helemaal niet het scenario is wat wij proberen te voorspiegelen.
+58:08 Dus maar goed, om als we die datum willen halen en we willen echt op die datum of rond die datum echt een gesprek hebben: "hé, werkt dit?"
 
-01:07:59 Het scenario dat wij willen voorspiegelen is inderdaad wat je zegt, de plan A, de plan B, weet je?
+58:18 Dat betekent ook dat dat die website zeg maar al een paar maanden online moet zijn en we moeten al een paar maanden moeten wij het bericht naar buiten brengen, want die website op zichzelf gaat helemaal niks doen, weet je.
 
-01:08:03 Je wil opties hebben, opties creëren voor het geval dat.
+58:31 Het gaat alleen maar werken als als er als er mensen naar kijken.
 
-01:08:09 En hij zegt eigenlijk, ik heb altijd gewoon opties en ik kan doen en laten wat ik wil en er zou nooit een situatie gebeuren dat ik terug hoef te vallen op iets, want ik kan gewoon gaan en ja, maar dat is dan juist wat onder druk staat.
+58:34 En en dat werk dat moeten we dat dat kost gewoon het meeste tijd.
 
-01:08:28 Je kan niet gaan waar en wanneer je maar wilt, dat wordt steeds moeilijker.
+58:39 En.
 
-01:08:36 Dus die snapt het niet.
+58:41 Ben je eens inderdaad.
 
-01:08:38 Nee, precies, precies.
+58:43 En dat betekent niet dat we 20 mensen hiernaar moeten kijken.
 
-01:08:41 Daar doorheen kon ik inderdaad lezen hoe de welke uitdagingen in mensen's hoofd zouden kunnen gaan inderdaad.
+58:46 Kijk, over het algemeen moet je het zo zien:
 
-01:08:47 En dan weet je van dat je dat ook gelijk denkt, hé, dat kan je dan meenemen in je verhaal en dan ja, dus mensen soms vertraagt het voor mensen van ja, ik wil het wel, maar hoe zit het hiermee en dan een maand later komen ze dan achter van ja, ik moet het wel hebben, maar als je dan al het verhaal al voor je hebt.
+58:50 In de marketing, als je een funnel hebt.
 
-01:09:14 En die verteld het, want dat zat al in mij, maar ik had dat niet vertaald natuurlijk.
+58:53 En je hebt 1% conversie.
 
-01:09:17 Ik zou ook kunnen denken van hé, als ik wil, dan ga ik het wel, weet je wel, ik doe het wel wanneer het nodig is.
+58:58 Dus dat betekent van 100 ogen die de funnel zien, komt 1 persoon het product.
 
-01:09:23 Dat doe je ook niet met je rijbewijs, je gaat ook niet denken, oh, als ik auto nodig heb, dan ga ik voor mijn rijbewijs beginnen.
+59:04 Ja.
 
-01:09:29 Zo werkt het ook niet, weet je wel?
+59:06 Ja.
 
-01:09:31 Dus je gaat vooraf wanneer je juist het niet nodig hebt, dan ga je het pas doen en wanneer je het nodig hebt, dan heb je het wel, dan heb je die rijbewijs al klaar, weet je wel, je idee kaart of soort van een rijbewijs.
+59:07 Dat is een normaal functionerende funnel.
 
-01:09:40 Kan je gewoon de weg op.
+59:13 Ja.
 
-01:09:42 En dat is eigenlijk ook wel met met inderdaad met cedula.
+59:14 2% is goed.
 
-01:09:46 Zal je even laten zien.
+59:16 3% is zeer goed.
 
-01:09:47 Dan weet je ook hoe dat eruit ziet.
+59:19 Ja.
 
-01:09:49 Kijk, zo is het aangekomen.
+59:21 1% is goed, 3% is zeer goed.
 
-01:09:52 Ik kan hem ontvangen.
+59:22 Ja.
 
-01:09:53 Het is zeg maar de post met DHL.
+59:24 Ja, 1% is laten we zeggen matig.
 
-01:09:56 Dat werd opgestuurd binnen drie werkdagen had ik al thuis.
+59:29 2% is goed.
 
-01:10:00 Had ik kan al thuis ontvangen.
+59:30 3% is zeer goed.
 
-01:10:02 Die werkt nadat je terugkomt uit Paraguay.
+59:33 Ja, precies.
 
-01:10:05 Nee, sinds dat die verstuurd is.
+59:34 En.
 
-01:10:08 Oké.
+59:35 Ja.
 
-01:10:08 Dat is dus vijf maanden later.
+59:36 Waar is niet zeg ja.
 
-01:10:11 Vijf maanden later, ja.
+59:37 En dat betekent niet dat je niet verder kan gaan.
 
-01:10:12 Dus eerst, ik kan even laten zien.
+59:40 Ik bedoel, er zijn specifiek producten waarbij je misschien zelfs tot 5, 6% kan gaan, weet je.
 
-01:10:15 Eerst krijg je dit, dit krijg je al gelijk eigenlijk, binnen die week krijg je deze.
+59:48 Ja.
 
-01:10:24 Dat is dus verblijfsvergunning.
+59:49 En misschien dat sommige websites wel tot in de 10% kunnen gaan.
 
-01:10:30 Dus dat hier kan je niet zoveel mee.
+59:53 Daar gaat het niet om, dat zijn de extreme en het ligt ook aan het type product.
 
-01:10:33 Dit is ook gewoon voor mijn vrouw en kinderen zeg maar.
+01:00:00 Ja.
 
-01:10:37 En hier kan je niet zoveel mee met dit verblijfsvergunning.
+01:00:00 Maar als we het gewoon simpel gewoon hoe zeg je dat conservatief houden.
 
-01:10:40 Maar hier kan je wel allerlei, hier kan je wel een cedula krijgen.
+01:00:02 En ook het toepassen op ons onze service wat een hele moeilijke service is om te verkopen.
 
-01:10:44 Dit het is gewoon eigenlijk gewoon plastic gewoon zeg maar, je ziet het hè.
+01:00:07 Ja, precies.
 
-01:10:46 Goede tijdelijke vergunning ofzo.
+01:00:08 Dan zou ik zeggen 1%.
 
-01:10:49 Ja, het is een verblijfsvergunning.
+01:00:12 Weet je, om ons gewoon een beetje een idee te geven.
 
-01:10:50 Ja, tijdelijk inderdaad.
+01:00:16 En dan moet je je voorstellen dat als wij dus 100 mensen deze website laten zien.
 
-01:10:52 Maar is ook wel een bewijs dat je dat je geregistreerd staat.
+01:00:23 Dan gaat er maar één persoon kopen.
 
-01:10:58 En dan vijf maanden later krijg je dan Kijk, dan krijg je dit.
+01:00:26 Ja, precies.
 
-01:11:05 Dat is de cedula.
+01:00:28 Snap je?
 
-01:11:11 En dan kan je wel alles mee.
+01:00:28 Dus wij moeten ervoor zorgen dat deze website door duizenden mensen wordt gezien.
 
-01:11:13 Dan ben je dan kan je gewoon huis bezitten, bedrijf bezitten.
+01:00:36 Ja.
 
-01:11:17 Exact.
+01:00:37 Want als de funnel goed werkt, dan hebben we 10 klanten en dat is goed.
 
-01:11:17 Gewoon precies.
+01:00:42 Maar de funnel is natuurlijk nieuw, die moet nog geoptimaliseerd worden.
 
-01:11:18 Je hebt dezelfde rechten zoals mensen in Paraguay.
+01:00:48 En dus nou, je snapt het al.
 
-01:11:24 Dus het is een het is een verblijfsvergunning, echte verblijfsvergunning.
+01:00:53 Wij moeten ervoor zorgen dat duizenden mensen deze funnel gaan zien.
 
-01:11:29 Ja, inderdaad.
+01:00:58 Ja, precies.
 
-01:11:30 En dat is en en is er.
+01:01:00 En daar valt en staat dit hele concept mee.
 
-01:11:31 Zit daar een verlooptatum op?
+01:01:08 Want wij moeten die mensen gaan vinden, we moeten tot hun verbeelding gaan spreken, we moeten hun helpen, begeleiden, we moeten daar content voor maken of dat nou audio, video, blog, maakt het allemaal niet uit, weet je.
 
-01:11:35 Ja, hier staat dan verlooptatum is Het klinkt het ook Portugees.
+01:01:22 En waarschijnlijk een combinatie van, maar we moeten gaan zien, we moeten gaan uitvinden hoe we dat gaan doen, waar deze mensen zijn, wat hun behoeftes zijn.
 
-01:11:45 Dus in het Spaans staat er fecha de emisión.
+01:01:32 Nou goed, veel vragen kun jij al beantwoorden, want jij bent natuurlijk je eigen klant wat dat betreft.
 
-01:11:51 Ja, de date of emisión, experiment.
+01:01:37 Je hebt het al gedaan, je weet wat je behoeftes waren dus we hebben een hele goede invalshoek.
 
-01:12:00 Vervaldatum.
+01:01:45 Maar ja, dat is het allerbelangrijkste, weet je?
 
-01:12:01 Nou, ik is dat is het de datum in de toekomst.
+01:01:50 Waar gaan we ze vinden en hoe gaan we ze Dus ik zou dus niet teveel focussen op deze funnel.
 
-01:12:10 Ja, staat ja, in de toekomst.
+01:01:58 We moeten gewoon gaan meten hoe goed werkt deze funnel?
 
-01:12:12 Nee, je hebt wel gelijk inderdaad.
+01:02:01 Ja.
 
-01:12:14 Het was wel 2025, ja, dat is.
+01:02:02 En dan verbeteren.
 
-01:12:16 Ja, dat is de datum van van dat hij gemaakt is.
+01:02:04 En dan ja, dan gewoon gewoon knallen.
 
-01:12:19 Hoe zeg je dat?
+01:02:12 Ja.
 
-01:12:21 Aangifte datum ofzo.
+01:02:16 Yes, ja, is een goed goed inzicht inderdaad wat we kunnen verwachten en wat ja, wat we minimaal kunnen verwachten in ieder geval.
 
-01:12:23 De Aangifte Emiso is ja, emissie.
+01:02:23 Ja.
 
-01:12:29 Hoe zeg je dat emissie.
+01:02:26 Yes, top.
 
-01:12:32 Nou, ik ben het even kwijt.
+01:02:28 Ja, dit zit er wel goed uit om zo die focus te hebben van marketing en wat de volgende stappen zijn daarin.
 
-01:12:34 Maar er staat er ook een vervaldatum op.
+01:02:37 En ja, natuurlijk de volgende vraag is ook van de inhoud van de boodschap en hoe we dat willen overbrengen.
 
-01:12:36 Ja, ik zie hier inderdaad.
+01:02:41 Daar hadden we het nog vorige keer over gehad weet ik nog.
 
-01:12:39 Fecha de vencimiento.
+01:02:44 Met de visie van ja, wat zijn nou de doelgroepen.
 
-01:12:43 Vencimiento, oké.
+01:02:49 Trouwens, ik weet niet of je nog iets nog verder dingen wil vertellen, maar dat kunnen we nog later op terugkomen.
 
-01:12:45 En dat is in augustus 2000 2027.
+01:02:56 Eh nee, niet hierover, maar ik kan wel even kijken wat we nou precies hebben besproken de laatste keer.
 
-01:12:50 Oké, dat is niet zo heel lang, twee jaar.
+01:03:07 Heb ik jou de notulen gestuurd voor de laatste keer?
 
-01:12:53 Nee, klopt, twee jaar.
+01:03:10 Ik weet het even niet meer.
 
-01:12:56 En dan?
+01:03:12 Dus even kijken, dat was Paraguay.
 
-01:12:56 Maar wat gebeurt er na die twee jaar dan?
+01:03:19 Het is 11 februari.
 
-01:13:00 Na die twee jaar dan gaan we weer daarnaartoe en dan moeten we precies hetzelfde proces doen.
+01:03:21 11 februari.
 
-01:13:06 En dan dan hebben, dat is ook wel weer zo.
+01:03:26 Oh nee, sorry, dat 5 februari.
 
-01:13:09 Dus als je een klant hebt en die klant blijft, na twee jaar doe je ook precies hetzelfde proces in dit land.
+01:03:30 Ja.
 
-01:13:15 Dus Er zijn een paar dingetjes.
+01:03:30 5 februari.
 
-01:13:18 Eén is je je vraagt dus je cedula aan verblijfsvergunning en cedula.
+01:03:49 Ja, nou wat we hebben afgesproken lees ik hier is dat ik zou dus die eerste versie maken van de funnel.
 
-01:13:25 En dat is dus de proces die wij mensen helpen en dan moeten er moeten dus eigenlijk de klanten binnen één jaar nadat zij het land hebben verlaten.
+01:04:00 Mhm.
 
-01:13:35 Bijvoorbeeld, ik had vorig jaar 16 april zijn zijn we teruggekomen naar Nederland.
+01:04:02 En concretiseerde einddoelen en de visie voor het netwerk in Paraguay in een korte paragraaf.
 
-01:13:41 Dus voor 16 april 2026 dit jaar, dan moeten wij weer terug naar Paraguay om de proces voort te zetten.
+01:04:12 Oké, ja.
 
-01:13:53 Dus je moet binnen een jaar weer één keer geweest zijn.
+01:04:13 Was 10 10 februari zei je toch, de laatste?
 
-01:13:56 En maar je hoeft niet daar te zijn als je de juiste contacten hebt.
+01:04:16 5 februari.
 
-01:14:04 Dus dan kan je een bedrag over een bedrag geven en dan zetten ze in het systeem dat het dat het oké is.
+01:04:19 Oh, dat is de meeting inderdaad.
 
-01:14:11 Dus dat je eigenlijk zetten ze dus van oké wij zetten gewoon die proces door.
+01:04:24 Ja.
 
-01:14:16 Een soort van dat je of je moet in het land komen.
+01:04:29 Nou, ik zal het je nog even doorsturen.
 
-01:14:18 Dus dat is veel duurder natuurlijk als je niet hoeft te zijn.
+01:04:32 Ik stuur het je na de meeting wel even door samen met de punten van vandaag.
 
-01:14:22 Is veel duurder.
+01:04:36 Maar wat ik zie is de laatste keer dat we gesproken hadden was, laten we de funnel bespreken.
 
-01:14:24 Dus dan kunnen wij dat ook aanbieden.
+01:04:46 Ja.
 
-01:14:28 Weet je wel, als zij dat één man hebben.
+01:04:46 Dus ja, ik denk dat ik dat beter moet voorbereiden.
 
-01:14:31 En dan dus in dit geval na en dan de tweede jaar dan kom je dan weer terug, dan vraag je precies hetzelfde proces, maar dan onbepaalde tijd aan.
+01:04:50 Maar wat ik kan doen is zoals ik net al voorstelde, ik zet gewoon deze funnel die zet ik live echt op het internet en dan kunnen we daarna kijken.
 
-01:14:40 Oké.
+01:05:08 Ja.
 
-01:14:41 Nou, dus in dit geval valt en dan gaat het nemen ze dus dan gaan ze dus in beslag nemen.
+01:05:08 En dan zal ik hem ook nog eventjes gelijk een beetje een beetje mooi maken, zodat hij eigenlijk gewoon af is en dan hoeven dus alleen maar te kijken naar vinden we het design mooi en is de tekst goed.
 
-01:14:45 En dan vraag je onbepaalde tijd aan.
+01:05:22 Ja.
 
-01:14:49 Ik moet ook gewoon vragen hoe dat hoe dat werkt.
+01:05:24 En dan na dat gesprek dan doe ik dan nog even een poetsingetje er nog een beetje op en dan kunnen we en dan kunnen we in principe live gaan.
 
-01:14:52 Ja, het is ongeveer hetzelfde proces.
+01:05:33 Ja, is goed om te testen inderdaad wat wat eruit gaat pakken.
 
-01:14:53 Dus waarschijnlijk moet je weer vijf maanden wachten.
+01:05:37 En ja, wat ik dus de vorige keer wat ik je laatst stuurde is kijk, we kunnen die website live zetten, maar we hebben een domein nodig.
 
-01:14:55 Ik weet het niet.
+01:05:46 Een website domein.
 
-01:14:55 Of je houdt dit vast totdat jij je onbepaalde tijd kaart hebt, dan waarschijnlijk lever je dit dan weer in.
+01:05:49 Oké.
 
-01:15:02 In ieder geval dan heb je onbepaalde tijd voor 10 jaar krijg je dan.
+01:05:50 En ik kan het op mijn eigen domein zetten, maar dan wordt het een subdomein en dan wordt het iets als bijvoorbeeld sedula.prochat.tools.
 
-01:15:07 Dan volgens mij moet je er één keer per drie jaar zijn of of je hoeft er niet te zijn.
+01:06:03 Maar ja, dat is natuurlijk niet handig, want dat is mijn bedrijf, weet je?
 
-01:15:14 In ieder geval één van de twee.
+01:06:06 Prochat.
 
-01:15:15 Oké.
+01:06:08 Ja.
 
-01:15:16 Dus als je na twee jaar kan je ook nationaliteit aanvragen als je wil.
+01:06:09 Dus het is beter gewoon om een eigen naam te gebruiken en dit is dan denk ik gelijk goed om om gewoon een bedrijfsnaam te gebruiken.
 
-01:15:22 Of je hebt gewoon onbepaalde tijd verblijfsvergunning.
+01:06:22 Hoeven dat niet te registreren, maar we kunnen dat wel vast in het domein zetten.
 
-01:15:32 Het is echt ongelooflijk dat dat landen nog bestaan.
+01:06:27 Ja.
 
-01:15:35 Dat het zo makkelijk gaat.
+01:06:27 Dus Ik heb ik heb gewoon even een klein beetje onderzoek gedaan en ik dacht van nou, is leuk, misschien kunnen we even kijken wat een goede naam is.
 
-01:15:37 Ja.
+01:06:36 Dus ik had wat domeinen gestuurd.
 
-01:15:38 Ja, eigenlijk wel, eigenlijk wel.
+01:06:38 Ja.
 
-01:15:43 Ja, ik ben wel benieuwd hoe dit zit met met business.
+01:06:39 En ben je er al nou al bekeken en of je daar al dacht van hé, dit springt naar buiten, dit zou ik wel wat mooi vinden.
 
-01:15:46 Vooral voor mij ben ik daar en dat is misschien ook een invalshoek die we kunnen doen.
+01:06:50 Ja, ja.
 
-01:15:51 Hm hm.
+01:06:52 Maar we hoeven dat niet nu te beslissen, maar als je een idee hebt dan kun je dat wel met me delen.
 
-01:15:52 Ehm, want in hoeverre het mogelijk is om vanuit bijvoorbeeld Portugal of Nederland om een business te hebben in Paraguay en dan op één of andere manier, terwijl je dus in het buitenland woont of gewoon hier in Europa woont, business doet via Paraguay.
+01:06:57 Want het is zweet gewoon om gelijk op een domein te zetten.
 
-01:16:14 Is is dat een mogelijkheid?
+01:07:03 Want anders kunnen we eigenlijk gewoon niet live, want het ziet er niet en mensen gaan door de waar raken ook denken wat is dit Prochat?
 
-01:16:16 Ja, ja, dat is mogelijk.
+01:07:08 Wat is dit eigenlijk?
 
-01:16:17 Ik ga dat wel gevraagd, ja.
+01:07:08 Ja, precies, precies.
 
-01:16:19 Ja.
+01:07:12 Ja, dat kan ook ja, als de visie ook helder is van oké, dit is de doelgroep, dit is wat die die je willen bereiken, dan dan spreekt dan is het ook wel kunnen we ook gelijk die domeinnaam kiezen die dat doelgroep aanspreekt natuurlijk.
 
-01:16:21 Ja, maar maar ehm waarschijnlijk is het zo, ja, ik denk dat het meer ligt aan het land van waar je woont.
+01:07:35 Ja.
 
-01:16:28 Maar als jij bijvoorbeeld 10 maanden in Nederland woont en twee maanden in Paraguay, dan kun je zeg maar waarschijnlijk als Nederland niet zeggen, ja, maar ik betaal geen belasting, want ik heb een Paraguay een Paraguaans bedrijf.
+01:07:35 Of we moeten het algemener maken, dat kan ook natuurlijk.
 
-01:16:45 En ik betaal daar belasting.
+01:07:37 Ja, nee ja, goed, ik ik ik dacht dus aan Sedula.
 
-01:16:47 Waarschijnlijk lukt dat niet.
+01:07:43 Dus met Sedula, maar ja, misschien had jij gewoon hele het hoeft niet kijk, Sedula is gewoon heel erg concreet en duidelijk.
 
-01:16:50 Ja, ik heb gehoord inderdaad in Nederland dat ze dan kijken waar je het meest woont.
+01:07:54 Ja.
 
-01:16:58 Ehm ja, daar kijken ze inderdaad naar.
+01:07:54 Weet je?
 
-01:17:01 Ja.
+01:07:55 Maar het hoeft helemaal niet het kan ook gewoon een hele andere naam zijn, weet je?
 
-01:17:02 Of als je dat je dan deels dat je dan deels Nederland betaalt en of of Portugal en deels in in Paraguay, dat is ook wel uitzoeken, ja.
+01:07:58 Misschien had je al een naam in gedachten Ja.
 
-01:17:17 Dat zou wel heel interessant zijn.
+01:08:04 Ja, precies.
 
-01:17:19 Ja.
+01:08:06 Nee, ik zat er te denken van ik weet niet hoe flexibel de domeinnaam is.
 
-01:17:20 Inderdaad.
+01:08:11 Stel ons voor we gaan dit doen en dan komen we achter van hé, weet je, misschien moeten we meer richten op misschien willen we dit delegeren.
 
-01:17:21 Misschien is ook wel iets om uit te zoeken, ja, voor ons.
+01:08:24 Dat andere, ik zeg maar iets, dat andere doen, maar dan moeten we meer focussen op vastgoed bijvoorbeeld.
 
-01:17:24 Zullen ook maar naar kijken, ja.
+01:08:30 Ik weet niet of je dan steeds meer die naam kan veranderen of we willen dit erbij doen of dat erbij doen, zeg maar.
 
-01:17:26 Maar in Paraguay zelf, als je als je een bedrijf hebt die lokaal is, zeg maar, die lokale bedrijf, dan betaal je 10% belasting.
+01:08:34 Ik weet niet hoe flexibel domeinnaam kan zijn.
 
-01:17:40 Maar als het als je een bedrijf hebt, zeg maar je bedrijf is in Paraguay.
+01:08:37 Ja.
 
-01:17:45 Nee, hoe was het ook alweer?
+01:08:37 Ja, nee, ik de domein die wil je niet veranderen.
 
-01:17:48 Ja, als je oke is het bedrijf in Paraguay, maar de geld komt uit het buitenland, dan betaal je 0% belasting.
+01:08:42 Dus het is het beste.
 
-01:17:57 Ja.
+01:08:44 Dus misschien is Sedula niet heel erg Want kijk, Sedula is Sedula.
 
-01:18:01 Dat dat is wel dat is ook wel heel interessant voor nomads.
+01:08:51 Dus daar beperk je je gelijk mee.
 
-01:18:08 Ja.
+01:08:53 Ja.
 
-01:18:09 Dat is ook een echte business voor voor nomads, mensen die online bedrijf hebben.
+01:08:54 Dat betekent niet dat dat als je dus iets anders wil gaan doen, dan kun je die domeinnaam niet veranderen.
 
-01:18:16 Ehm dan willen zij natuurlijk zo'n concept opzetten, dat ze dan geld kunnen veel belasting kunnen sparen.
+01:09:00 Dus je wilt natuurlijk een naam hebben wat zeg maar de hele visie dekt.
 
-01:18:23 Dus sparen ze vooral ze veel verdienen natuurlijk.
+01:09:09 Ja.
 
-01:18:26 Nou, dat is ook crazy.
+01:09:09 Maar goed, het is maar net hoe je er naar kijkt, want kijk, Sedula is misschien meer als een een entry point, hoe zeg je dat?
 
-01:18:28 Maar goed, dat betekent wel dat je er echt naartoe moet immigreren natuurlijk.
+01:09:22 Als als een startpunt, want zonder Sedula heb je niks.
 
-01:18:33 Ja, dat denk ik wel inderdaad, ja.
+01:09:28 Ja.
 
-01:18:36 Ja, of in ieder geval in Zuid-Amerika, ja, zijn.
+01:09:28 Dus het gaat, het begint allemaal met de Sedula, dus het maakt het wel heel erg duidelijk en concreet, hé, dit is Sedula, maar dat betekent niet dat je daaronder geen fellowship, vastgoed, emigratie, allerlei soorten van dingen eronder kan hebben, want uiteindelijk is de entry point altijd Sedula.
+
+01:09:51 Daar begint het altijd mee.
+
+01:09:52 Dus dat maakt het wel heel erg duidelijk en concreet.
+
+01:09:55 Maar als je, ik noem maar wat op hè.
+
+01:10:00 Als je het visie wilt noemen,
+
+01:10:03 Emigratie fellowship, ik noem maar wat op.
+
+01:10:05 Weet je, dan kan dat natuurlijk ook.
+
+01:10:08 Dat kan ook.
+
+01:10:12 Dat is geen probleem.
+
+01:10:15 Dus elke naam kan.
+
+01:10:21 Maar ik zou zorgen dat de naam je niet beperkt.
+
+01:10:29 Kijk, als de domeinnaam bijvoorbeeld is cedula aanvragen.nl.
+
+01:10:37 Ja, precies.
+
+01:10:37 Dan zeg je echt, nou, dit gaat letterlijk over het aanvragen van een cedula.
+
+01:10:46 En daarbij stopt de service.
+
+01:10:49 En als je dan ook nog real estate aanbiedt, dat kan wel, maar de naam die beperkt je daar wel een beetje mee.
+
+01:10:58 Ja.
+
+01:10:59 Als het bijvoorbeeld alleen maar zoals ik bijvoorbeeld aangaf wat ik zelf wel mooi vond is cedula.family.
+
+01:11:08 Nou, dat impliceert al meer dat oké, cedula kan gezien worden als enter entry point en de family impliceert in impliceert dat dat er een soort van community is, weet je?
+
+01:11:23 En de cedula maakt deze community mogelijk, weet je?
+
+01:11:27 Dus dat daaronder real estate valt, weet je, dat is niet zo gek.
+
+01:11:33 Ja, ja.
+
+01:11:34 Dus ja, het is belangrijk dat de naam dat je dat impliceert dat er meer mogelijk is dan alleen cedula.
+
+01:11:45 En wat handig is voor Google, voor SEO, voor vindbaarheid, ja, is dat de dat er bepaalde keywords zijn in de naam.
+
+01:11:58 Dus bijvoorbeeld cedula is iets wat al gegoogled wordt.
+
+01:12:05 Ja.
+
+01:12:05 En als jij bijvoorbeeld ID kaart aanvragen.nl doet.
+
+01:12:10 Ja.
+
+01:12:11 Ja, dat zal waarschijnlijk niet zoveel gegoogled worden dan cedula.
+
+01:12:15 Dus dan is het wel slim om cedula in de naam te hebben.
+
+01:12:20 Ja, precies.
+
+01:12:21 Dus het gaat je helpen met vindbaarheid, maar uiteindelijk je wordt nooit gevonden alleen maar door de naam.
+
+01:12:33 Weet je, je wordt dit is dus wat ik dus weer terug kom.
+
+01:12:37 Het is onze taak om deze message aan duizenden mensen te laten zien.
+
+01:12:43 Ja.
+
+01:12:43 Zodat die funnels hun werk kan doen.
+
+01:12:46 Weet je, dus het maakt ook al noem je de website x y x.
+
+01:12:52 .nl, weet je, wat totaal nergens op slaat.
+
+01:12:56 Dan gaat het nog steeds werken.
+
+01:12:59 Ja, ja, ja.
+
+01:13:00 En dat je Ja.
+
+01:13:02 Het is altijd handig om Want op een gegeven moment kijk, krijgt die website organische traffic, omdat je er zoveel mensen naartoe stuurt.
+
+01:13:12 Hm hm.
+
+01:13:13 En je gaat klanten maken en mensen gaan erover praten en er komen referenties naar die website.
+
+01:13:18 Ja.
+
+01:13:19 Weet je, natuurlijk op social media, dan gaat de website organisch gevonden worden door Google.
+
+01:13:28 En als je dan de keywords al in de naam hebt, dan gaat dat wel helpen.
+
+01:13:33 Ja, precies.
+
+01:13:34 Maar goed, weet je, het gaat helpen.
+
+01:13:37 Ja, maar als jij denkt ja, maar ik wil het helemaal geen cedula noemen, dan zal ik me daar ook niet teveel zorgen over maken.
+
+01:13:45 Je kan het noemen hoe je het wil, maar Ja.
+
+01:13:47 Zolang het het moet natuurlijk duidelijk zijn.
+
+01:13:50 Noem het niet xyz.nl, weet je?
+
+01:13:53 Ja, dat is gewoon niet handig voor voor niemand, niet voor Google en niet voor de mensen.
+
+01:13:58 Ja, precies, precies.
+
+01:13:59 Ja, het moet wel logisch zijn, ja.
+
+01:14:01 Ja.
+
+01:14:02 Ja, misschien had je al een naam in gedachte.
+
+01:14:04 De het idee wat ik was maar gewoon om om je wat een beetje te voeren met.
+
+01:14:10 Dit is zijn de mogelijkheden.
+
+01:14:12 Ja, nee, heel goed.
+
+01:14:15 Ja.
+
+01:14:16 Je kan daar nog even over nadenken.
+
+01:14:17 Ja, is wel goed inderdaad om over na te denken ja.
+
+01:14:20 Ja.
+
+01:14:21 Ja, precies.
+
+01:14:21 Vooral de inhoud zou wel belangrijk zijn, denk ik.
+
+01:14:24 Daar ben ik nog niet helemaal over uit.
+
+01:14:27 Nu ook vooral als als ik ook zo in mijn reis ben, dan zie ik zit ben ik zeg maar ook met community bezig wat dat betekent voor mij, weet je wel?
+
+01:14:38 Ik zit ook te kijken van ja, het is wel goed om dat te scheiden van zaken doen.
+
+01:14:52 Ik denk dat zaken doen wel goed is.
+
+01:14:55 Maar dat mensen voor meer weten van oké.
+
+01:14:59 Ja, en ik zit wel meer te denken van oké, dit is wel het ik wil het niet gebruiken om mensen te filteren dat ze dan naar de community komen of de community in Paraguay, weet je wel?
+
+01:15:11 Ik zit wel te kijken van ik moet wel een apart gezette community wat zij doen in Paraguay die vrienden die ze hebben hun eigen community zeg maar.
+
+01:15:18 Die Stanley en zijn groep.
+
+01:15:22 We zijn wel vrienden met elkaar en we werken samen.
+
+01:15:25 Maar het is niet zo dat wij één community zijn.
+
+01:15:27 Zijn in Paraguay of hier.
+
+01:15:29 En zij hebben hun eigen God leidt in bepaalde dingen.
+
+01:15:32 En ze doen bepaalde dingen.
+
+01:15:34 Ze zijn hele goede vrienden en we kunnen fellowship met elkaar.
+
+01:15:37 Maar hun hebben hun zijn op reis, weet je wel, voor wat wat God voor hun heeft.
+
+01:15:43 En en zij gaan dan mensen helpen die geholpen willen worden, dan maken ze er een business van.
+
+01:15:50 Oké, mensen die willen cedula of die willen een huis bouwen van oké, oh ja, we kennen die mensen.
+
+01:15:56 En zij staan er zo één van.
+
+01:15:59 Ze willen niet gezien als individueel.
+
+01:16:01 Oh ja, dit is dit, dit is dat.
+
+01:16:03 Natuurlijk zijn dan het is Stanley.
+
+01:16:05 Maar tegelijkertijd als zij en zelf representeren, dit is dit is dit zijn wij.
+
+01:16:10 Weet je wel?
+
+01:16:11 En dit doen we.
+
+01:16:12 En het is niet een uitnodiging van hé, kom, kijk wat we doen en wordt onderdeel van ons, maar het is meer van hé, wij willen wij willen goed reputatie zijn, weet je wel?
+
+01:16:27 En als mensen misschien als mensen dan denken van hé, dit is het leven die die God op mijn hart legt of dit is het leven die mij aantrekt, dan kunnen ze natuurlijk zeggen van hé, ik wil jullie beter leren kennen, ik wil meer dingen te doen.
+
+01:16:39 Maar er is geen verwachting, weet je wel?
+
+01:16:44 Dus zo zo staan ze daarin en dan willen ze gewoon mensen helpen en gewoon in Paraguay sowieso, je hebt sowieso contacten nodig.
+
+01:16:51 Alles is met met relaties, dus het is je kan niet bij je kan niet bij een aankloppen bij een systeem of overheid dat ze dan even dingen voor je regelen.
+
+01:17:04 Je hebt gewoon contacten nodig en zo zo helpen zij mensen en als mensen op een gegeven moment geholpen willen worden met iets anders, nemen ze contact met hun op of zij nemen contact.
+
+01:17:10 Dus er ontstaat een bepaalde contactrelatie.
+
+01:17:15 Maar zij zij koppelen dat ook wel helemaal los zeg maar.
+
+01:17:20 Zij zouden dan dat geen community noemen, wat zij doen, noemen zij dan community, want dat gaat dan voor een veel dieper.
+
+01:17:27 Zij delen in in leven zeg maar in veel diepere niveau en het is niet bijvoorbeeld als iemand geïnteresseerd is in zeg maar iets.
+
+01:17:43 Even op zondag gekomen en even bidden.
+
+01:17:45 Dat ze dit dan gelijk ook community noemen.
+
+01:17:48 Ze hebben hun eigen standaard daarin, weet je wel?
+
+01:17:50 En en met hun overtuiging.
+
+01:17:55 En natuurlijk ik met de reis waar waar ik in ben ook natuurlijk.
+
+01:17:59 Dus ik ik zie wil daarin van oké, gewoon wil gewoon naar ons toe van dat willen we gewoon wel scheiden, weet je wel?
+
+01:18:06 Gewoon dat mensen dat zeg maar dit is community en en dit is we willen mensen helpen.
+
+01:18:15 Dat zie ik er wel in.
+
+01:18:17 Ja, daar dat moet ik wel meer helderheid krijgen.
+
+01:18:21 Dus ik zie ook wel hoe meer ik zeg maar in deze reis wandel hoe ja, dat dingen ook wel ver ze zouden kunnen veranderen met bepaalde dingen, hoe we dingen doen enzo.
+
+01:18:34 Ja, dan kan je natuurlijk voor een wat algemenere naam kiezen.
 
 01:18:39 Ja.
 
-01:18:39 Brazilië is natuurlijk Portugees sprekende.
+01:18:39 Ja, precies.
 
-01:18:42 Zo kom de hoek.
+01:18:40 De flexibiliteit hebt.
 
-01:18:44 Ja.
+01:18:43 En vooral kijk, als je inderdaad, ik snap wat je bedoelt, als je bijvoorbeeld een community wil, hè?
 
-01:18:45 En en hoe even kijken.
+01:18:48 En ik heb het dan niet zozeer over wat Stanley doet, hè.
 
-01:18:49 Ja, trouwens, dit is ook wel Teedok Mas.
+01:18:51 Ik heb het meer over jouw visie.
 
-01:18:55 Het heet de naam ehm Volgens mij is dit Marcuzo.
+01:18:52 Ja.
 
-01:19:01 Maar dat is dan dat je dan eigenlijk gewoon vrij kan reizen naar Brazilië, Argentinië, Uruguay, nog een aan ja, volgens mij nog een paar andere Zuid-Amerikaanse landen gewoon als dit is een soort van Europese Unie-achtig.
+01:18:53 Want zo moet je het zien.
 
-01:19:19 Zijn er geen ja, dat je nog een vrij kan reizen als je Portugese idee kaart hebt.
+01:18:55 Stanley moet je niet zien als onderdeel van de visie.
 
-01:19:25 Ja.
+01:18:58 Hij is participant in de uitvoering van de strategie, maar dat heeft niks met de visie te Ja.
 
-01:19:26 En als je twee paspoorten kan hebben natuurlijk, dan kan je ook natuurlijk vrij reizen ja.
+01:19:08 Maken.
 
-01:19:32 Paraguay Ja, dat wel.
+01:19:08 Nee, ik zie het ook niet als visie in zeg maar, maar Het was een voorbeeld inderdaad.
 
-01:19:35 Daar zit heel veel, daar zit heel veel in.
+01:19:12 Nee, ik zie het niet als visie zeg maar met wat wij doen.
 
-01:19:38 En als mensen als mensen daar een bedrijf willen opzetten, dan heb je ook zoveel services, weet je wel.
+01:19:17 Het was inderdaad een voorbeeld daarin van zo doen zij dat en zo de visie die ik heb zeg maar, ik zet het te denken om die visie die ik heb met community en met Paraguay zeg maar dat soort van parallel zeg maar naast elkaar te zetten.
 
-01:19:42 Mensen willen bankrekening hebben, mensen willen een accountant hebben.
+01:19:29 Maar ik zit dus nu meer te kijken van misschien daar is wel, daar kan wel een neutrale contact ontstaan met de klanten.
 
-01:19:47 Iemand die weet hoe dat werkt daar.
+01:19:40 Maar het is niet zo dat ze denken van hé, als wij in contact zijn met hem dan hebben wij met die community te maken ofzo.
 
-01:19:50 Hoe je een bedrijf opzetten omdat het gewoon alles niet zo goed geregeld is.
+01:19:45 Dus dat is het niet direct, weet je wel?
 
-01:19:57 Mensen durven het gewoon niet aan om zomaar iemand aan te nemen.
+01:19:48 Het is gewoon van oké, dit is losgekoppeld van elkaar.
 
-01:20:00 Dus dan moet dan dan heb je wel echt
+01:19:51 En maar tegelijkertijd moeten ook wel een focus zijn ook van welke klanten richt je dan?
 
-01:20:03 Mensen nodig die die wel echt weten van oké, ik wijs echt naar die persoon en die persoon zeg maar.
+01:19:56 Als het ook algemeen wordt, dan heb je ook niks, weet je wel?
 
-01:20:06 Dus dat is ook wel echt een markt.
+01:19:59 Moet wel. 01:20:00
 
-01:20:09 Dat is de kracht inderdaad.
+01:20:36 Dus ik wil wel meer focussen van hé, weet je, ben jij iemand die hiermee bezig is, die naar een land wil gaan, die de mogelijkheid geeft bijvoorbeeld om ja, wij hebben gewoon christelijke contacten, inderdaad waar wij het over hadden.
 
-01:20:16 Ja, wij moeten dat allemaal in impliciete tekst moeten we dat aan mensen gaan vertellen, want mensen weten dat.
+01:20:52 Ja, want wat we volgens mij hebben beslist en hebben vastgelegd is dat we ons focussen op Christendom.
 
-01:20:23 Dit zijn de vragen die mensen hebben.
+01:21:00 Ja.
 
-01:20:26 Hoe zit dat, hoe zit dit, hoe zit dat?
+01:21:01 Toch?
 
-01:20:30 En wij moeten ze dat antwoord geven.
+01:21:01 Klopt ja.
 
-01:20:34 En daarbij dat wij ze aan de hand meenemen, dat wij betrouwbaar zijn.
+01:21:03 Ja.
 
-01:20:40 En dat je bij ons.
+01:21:03 Dus dan moeten we ook de taal spreken van christenen.
 
-01:20:43 Dat als je met ons in zee gaat, dat je niet een studiela koopt, maar een emigratie ervaring, wat dat dan ook mag betekenen.
+01:21:07 En dan is het denk ik wel belangrijk dat we wat dit is natuurlijk wat de christelijke behoefte is, weet je, community, hoe zit dat daar?
 
-01:20:50 Ja, precies.
+01:21:14 Weet je, dat is wel de vragen die we moeten, dat betekent niet dat we dat adverteren als, hé, dit is wat we jullie leveren.
 
-01:20:51 Dat is gewoon voor.
+01:21:26 Ja.
 
-01:20:53 Langdurige relatie.
+01:21:27 Of dit is wat je kan verwachten daar, deze community.
 
-01:20:56 Ja, precies, precies.
+01:21:30 Dat betekent niet dat.
 
-01:21:03 Eigenlijk doen die andere dat ook.
+01:21:32 Ja.
 
-01:21:06 Want ja, dat is het enige wat je kan bieden natuurlijk, want dat is belangrijk.
+01:21:32 Maar wij moeten wel in die taal spreken.
 
-01:21:13 Maar wat wij dan anders doen is de target audience.
+01:21:34 Wij moeten verwachten dat men de verwachting heeft dat ze daar community willen.
 
-01:21:18 Waar we focusen op ondernemers, focussen wij ons op.
+01:21:46 Ja.
 
-01:21:21 Ja, precies.
+01:21:47 En wij moeten die vragen beantwoorden en we hoeven daar nog niet te zeggen, hé, daar is een kerk daar en dan kun je naartoe of er zijn vier kerken daar, dan kun je naartoe.
 
-01:21:22 Op de christen.
+01:21:59 Ja.
 
-01:21:25 Dat is het enige verschil eigenlijk.
+01:21:59 Of er zijn verschillende house fellowships.
 
-01:21:29 Ja, precies.
+01:22:05 Nee, we kunnen ook aangeven dat dit de visie is en dit is wat we willen bouwen.
 
-01:21:33 En die netwerk.
+01:22:13 En en het is daar nog niet, maar dit is de algemeen de algemene visie, dit is onze differentiator, het verschil tussen wat andere mensen doen.
 
-01:21:33 En dat is wat mensen willen.
+01:22:31 En wat wij doen.
 
-01:21:35 Ze willen in die netwerk komen.
+01:22:33 Weet je, met ons is het dus niet alleen maar, weet je, naar Paraguay emigreren, maar wij doen dit ook met de visie om een christelijk leven op te bouwen aan de andere kant van de oceaan.
 
-01:21:37 Ja, maar dat willen ondernemers ook.
+01:22:54 En daarbij hebben wij verschillende netwerken, waarbij of daarbij hebben wij een netwerk waar je vrijwillig eventueel mee kan participeren of geholpen kan worden of ja, in ieder geval je visie kan delen.
 
-01:21:41 Dus het is een ander netwerk.
+01:23:15 Weet je, als een eerste stap naar het leveren van dit christelijke pakket, zeg maar.
 
-01:21:43 Ik bedoel als jij een ondernemer bent en je zit in de real estate, ja, dan wil je ook in de netwerk komen van mensen die bouwen, mensen die adviseren, mensen die verkopen, mensen die kopen.
+01:23:26 Dus ik als dat nog steeds de doelgroep is, dan zou ik dat wel expliciet communiceren, want je weet Ja.
 
-01:21:53 Ja, ja.
+01:23:37 Dat mensen dit gaan vragen.
 
-01:21:53 Dus is hetzelfde.
+01:23:38 Dat dat weet je, want want Ja.
 
-01:21:56 Dus.
+01:23:41 Want anders moet je je niet op die doelgroep gaan focussen en dan moet je dat bijvoorbeeld als je dat bijvoorbeeld voor ondernemers doet, dan weet je dat zij gaan vragen hé, hoe zit het daar met de kamer van koophandel en hoe zit het daar met het opzetten van bedrijven?
 
-01:21:56 Ja, precies.
+01:23:53 Want je weet dat dit hun behoefte is.
 
-01:21:57 Dus ja, daarbij is het dus het gaat dus eigenlijk allemaal om netwerk.
+01:23:54 Ja.
 
-01:22:03 Ah, dat betekent dat wij dat netwerk moeten bouwen.
+01:23:55 Ja, precies.
 
-01:22:07 Klopt inderdaad.
+01:23:55 Dus we moeten wel, we moeten dat, we moeten dus anticiperen op de behoeften die onze doelgroep heeft en we moeten dat beantwoorden.
 
-01:22:08 En wij moeten het netwerk zijn.
+01:24:10 Betekent niet dat we een antwoord hebben in de zin van een oplossing.
 
-01:22:10 Wij zijn het netwerk en we bouwen dat netwerk.
+01:24:17 Ja.
 
-01:22:14 Precies.
+01:24:17 Maar we moeten ze wel een bevredigend antwoord geven, weet je?
 
-01:22:16 En dat dat is stap voor stap en is hard werken inderdaad.
+01:24:23 Ja, precies.
 
-01:22:19 Het is.
+01:24:24 En.
 
-01:22:20 Ja, vertrouwen en veel kennis lezen.
+01:24:25 Dus ja, ik snap wat je bedoelt.
 
-01:22:25 Ja, dat wordt dan meer aan mijn kant natuurlijk.
+01:24:28 Dus wat wij dus op een of andere manier moeten duidelijk maken, is dat wij de beste groep zijn om mee samen te werken als een christen.
 
-01:22:27 Dat ga ik ook wel allemaal doen.
+01:24:38 En maar dat we hun dus op dit moment nog geen.
 
-01:22:31 Nou ja.
+01:24:46 Ja.
 
-01:22:34 Zeker maar.
+01:24:50 Of ja, nog geen, of dat wat wij dus niet bieden is een fellowship, bijvoorbeeld, weet je?
 
-01:22:34 Ik denk ja, ik moet het nog ook nog onderzoeken, hoe we Yeshua Academy daarin kunnen gebruiken.
+01:24:55 Wij wij, wij ja, ik zou daar wel voorzichtig mee zijn, dat is wat wij gewoon niet bieden, maar je kan wel zeggen wat wij hebben is een christelijk netwerk.
 
-01:22:39 Maar dat is ook een hele grote differentiator, hoe zeg je dat?
+01:25:08 Ja, precies.
 
-01:22:45 Iets wat het verschil maakt, want Yeshua Academy is een internationale nonprofit.
+01:25:09 Weet je?
 
-01:22:53 Oh joh, oké.
+01:25:09 En dat christelijke netwerk, ja, ik denk dat het ook wijs is om dat uit te bouwen, weet je, zodat je dus niet alleen Stanley hebt, maar dat dat dat groeit.
 
-01:22:54 Een christelijke nonprofit.
+01:25:17 En dat je dus in dat christelijk netwerk mogelijkheid hebt tot fellowship, kerk, real estate, noem maar op en dat dat christelijke netwerk, ook al is het nog maar zo klein, dat dat soms, hoe zeg je dat?
 
-01:22:58 Oh wauw, dus daar kan je.
+01:25:37 Afhankelijk is van een seculair netwerk, bijvoorbeeld met real estate, ja, ik kan me voorstellen dat je dus ook klanten hebt met of een band hebt met seculiere real estate agents, bijvoorbeeld.
 
-01:23:00 Ads mee gebruiken, doen.
+01:25:51 Maar dat is niet erg, weet je?
 
-01:23:03 Ja, dat betekent dat ten eerste dat als we een awareness campagne houden.
+01:25:52 Het is steeds dat de core network, jouw relatie met Stanley is christelijk, weet je?
 
-01:23:11 Dat dat we dat vanuit een hele vertrouwde basis kunnen doen.
+01:25:57 Het is gefundeerd op christelijke waarden, normen, activiteiten en logischerwijs hebben we natuurlijk het seculiere netwerk nodig om.
 
-01:23:25 Dus vanuit Yeshua Academy.
+01:26:08 Ja, dit soort dingen allemaal te verwezenlijken.
 
-01:23:27 Weet je, dat is een nonprofit, die bestaat al, die heeft zich ja, die is erkend.
+01:26:13 Ja, precies.
 
-01:23:34 Eh door de belastingdienst en geregistreerd bij de KVK.
+01:26:16 En dat is niet erg, maar ja, we moeten denk ik wel, dat is waar we op moeten bouwen, dat we een christelijk netwerk hebben.
 
-01:23:38 En als daar bijvoorbeeld bepaalde kijk, wat Yeshua Academy kan doen is projecten.
+01:26:24 En wat dat dan letterlijk betekent, dat is de tweede vraag, maar.
 
-01:23:47 Dus wij zouden samelijk.
+01:26:32 Maar we moeten niet gaan zeggen, hé, dit is je krijgt hier christelijke begeleiding, christelijke fellowship en je moet daarnatoe om dit te doen.
 
-01:23:51 We moeten Yeshua Academy daar wel een klein beetje voor betalen, een paar procent.
+01:26:39 Nee, ik.
 
-01:23:55 Hm hm.
+01:26:41 Nee, ik.
 
-01:23:57 Ehm, maar wij zouden onder de noemer van Yeshua Academy kunnen wij een nieuw project starten.
+01:26:42 Ja, dan geef je valse verwachtingen en en je maakt het jezelf alleen maar moeilijk, want misschien wil mensen helemaal niet met Stanley te maken hebben, bijvoorbeeld, weet je?
 
-01:24:05 Hm.
+01:26:52 Het moet allemaal optioneel zijn.
 
-01:24:06 We noemen het maar eventjes project Paraguay christelijk.
+01:26:55 Maar wel een christelijk tintje hebben, denk ik.
 
-01:24:12 Ja.
+01:26:59 Ja, precies, inderdaad.
 
-01:24:13 Nou, dat traject nogmaals is niet commercieel.
+01:27:01 Het is meer dat ze zeggen van, hé, wij kunnen die mensen vertrouwen.
 
-01:24:20 Heeft niks te maken met project Paraguay commercieel.
+01:27:03 En zij hebben ja, gewoon normale waarde en ze hebben geweten.
 
-01:24:24 Dat is ons bedrijf.
+01:27:09 Misschien is dat het wel, dat het ook vooral een land is.
 
-01:24:27 Wat voor vorm dat dan ook gaat krijgen.
+01:27:11 Het is hetzelfde als je zegt van, hé, ik ga naar de jungle.
 
-01:24:29 En daarin gaan we daadwerkelijk geld vragen met het oog, met Ja.
+01:27:15 En als iemand, als je weet van, hé, dit is een christen, oh, ik vertrouw tenminste wel dat hij mij, dat hij wel eerlijk dat ik vertrouw wel dat ik met hem door het donker en in het licht met hem door de jungle heen aan de andere kant aankomt, zeg maar.
 
-01:24:37 Met de winst eh belang.
+01:27:24 Het is meer meer dat.
 
-01:24:41 Ja.
+01:27:25 Mensen zijn sowieso overtuigd om naar de jungle te gaan, maar dan willen, hebben ze wel mensen nodig die ze wel kunnen vertrouwen.
 
-01:24:41 En dat heeft staat 100% los van dat project.
+01:27:32 Dat is het meer.
 
-01:24:45 Maar wij zouden dus wel onder Yeshua Academy, vertrouwd, officieel zonder dus de druk van verkopen zouden wij dus een awareness project kunnen beginnen.
+01:27:35 Ja, dat was voor mij ook natuurlijk als als zoekende.
 
-01:25:03 Een website puur over ons verhaal bijvoorbeeld.
+01:27:38 Ik was ook van, oké, daar heb ik met seculiere mensen te maken, maar ja, die kan, maar wat seculiere die zien ook gewoon van geld hier nou, weet je, oké.
 
-01:25:08 Ja.
+01:27:45 Daar ook, ik heb gewoon geld nodig.
 
-01:25:08 Eh over christenen.
+01:27:47 Hoe kan ik, snap je wat ik bedoel?
 
-01:25:10 We kunnen er zelfs een bijbelstudie van maken en een christelijke, ja, een community bouwen.
+01:27:48 Maar christenen daar zie, als ze jou zien, ze zien geen dollars voor hun ogen.
 
-01:25:16 Dat is uiteindelijk waar het om gaat.
+01:27:54 Ja, het is dat.
 
-01:25:18 Je bouwt een community van gelijkgezinden.
+01:27:56 Dat dat gevoel eigenlijk meer, want je wil naar een land gaan en dan wil je niet dat als mensen jou zien dat ze gewoon dollars zien, zeg maar.
 
-01:25:22 En stel nou dat wij bijvoorbeeld een YouTube kanaal maken.
+01:28:00 Je wil als mensen jou zien dat ze gewoon zien van, hé, hé, ik wil die persoon leren kennen en.
 
-01:25:25 Ja.
+01:28:07 Ik wil diegene helpen, ik wil gewoon het goede doen.
 
-01:25:26 En dit project Paraguay is powered, hè, dat moet wel erbij powered by Yeshua Academy of een project van Yeshua Academy.
+01:28:09 En natuurlijk als we, als zij wij willen het beste voor elkaar betekenen, als zij als we samen zaken doen, dat hoort erbij, maar het is niet de voornaamlijke focus is.
 
-01:25:38 Ja.
+01:28:20 We gaan niet elkaars belazer, weet je wel?
 
-01:25:39 Ja.
+01:28:23 Dat is ook wat Stanley ook vertelt.
 
-01:25:39 Dan hebben wij een website en een community waar mensen zoals jij en ik samenkomen.
+01:28:24 Natuurlijk zijn verhalen ook dat ik kom die land aan en er wordt heel veel dingen beloofd, maar men niemand komt er, niemand komt na.
 
-01:25:46 Ja.
+01:28:30 Dus als mensen die verhalen horen van die contrast van, hé, weet je, met getuigenis van, hé, ik ga naar zo'n land toe, dan heb je met die dingen te maken.
 
-01:25:47 Ja.
+01:28:36 Dus wij zijn hier doorheen gegaan en nu willen we eigenlijk, we hebben de lesgeld betaald, we willen niet dat jij de lesgeld betaalt.
 
-01:25:48 En daarin kun je wel aangeven.
+01:28:42 Dus eigenlijk nu willen we dus dat jij eigenlijk in de weg wandelde dat haar dat dat al gewoon veiliger is en betrouwbaar is.
 
-01:25:51 Ja.
+01:28:53 Ja.
 
-01:25:53 Nou, wij kennen dit bedrijf dat het op die manier heeft gedaan.
+01:28:54 Betrouwbaar is.
 
-01:25:59 Of je kan mensen zeg maar op een niet verkoopachtige manier kun je aangeven dat er opties zijn.
+01:28:55 Ja.
 
-01:26:08 Ja.
+01:28:55 Is dat dat is de weg om te gaan.
 
-01:26:08 Weet je?
+01:28:57 Want want we hebben op dit moment, we moeten ook realistisch zijn, we hebben niet echt een keiharde differentiator met de andere mensen.
 
-01:26:10 Ja, ja.
+01:29:09 En en ja, zoals ik al zei, wat we moeten waar we ons voor moeten waken.
 
-01:26:10 En als je dat en als we dat goed doen, dan kunnen we dat misschien zelfs adverteren.
+01:29:15 Is dat wij hetzelfde gaan doen als de andere.
 
-01:26:21 Dus misschien is kijk.
+01:29:19 Want als we dat gaan doen, dan gaan mensen gewoon naar de prijs kijken en dan ja, hé, wie is het goedkoopste, waar zijn de meeste testimonials?
 
-01:26:24 Ja.
+01:29:26 En dan doen we het gewoon via die partij.
 
-01:26:24 Uiteindelijk is dit misschien wel de beste het beste startpunt.
+01:29:29 Ja, precies.
 
-01:26:30 Ja, mee eens.
+01:29:29 En wij willen er gewoon voor zorgen dat als mensen die dit willen doen christen zijn, dat ze altijd voor ons kiezen.
 
-01:26:31 Ik bedoel, we hoeven andere zaken niet uit te sluiten hè.
+01:29:42 Hmm.
 
-01:26:33 Ik bedoel, we kunnen wel 10 dingen doen, maar onder het plein van tijd, geld, weinig moeite, grote impact, is het beter om je te focussen op de eerste twee drie, misschien zelfs gewoon één of de meest effectieve wijze.
+01:29:42 Als we specifiek zijn, ja.
 
-01:26:55 Ja.
+01:29:43 Dus kijk, de mensen die ondernemers zijn, die bijvoorbeeld die andere website aantrekt, weet je, met die met die grote beursen en zo, Ja, precies.
 
-01:26:55 En, maar dus nogmaals die dikke maar, het gaat erom dat we kunnen alleen adverteren waar mensen daadwerkelijk op zoeken.
+01:29:51 Kijk, deze mensen die hebben hun keuze al gemaakt, die gaan echt niet met ons in zee.
 
-01:27:02 Maar emigratie is denk ik wel iets waar we op zouden kunnen adverteren.
+01:29:55 Want zij willen mensen hebben die die de erin zijn hebben gemaakt.
 
-01:27:07 Ja.
+01:30:00 Net zoals jij dat zei, jij hebt een bepaald
 
-01:27:07 En dan kunnen we een programma maken, een cursus, want misschien hoeven we niet om met onze kop op YouTube.
+01:30:41 Al de reis gemaakt.
 
-01:27:17 We kunnen bijvoorbeeld ook een cursus maken, awareness cursus, voorbereidings cursus.
+01:30:42 Nou, die andere mensen die al in Paraguay wonen, die hebben ook die reis gemaakt, maar die hebben deze reis gemaakt vanuit een ondernemersperspectief.
 
-01:27:22 Ja.
+01:30:50 Ja, ja.
 
-01:27:22 Christelijke awareness cursus, christelijke voorbereidings cursus.
+01:30:52 En die mensen die hebben al hun leider, hun voorbeeld.
 
-01:27:26 Bijbelstudie, wat zegt de bijbel over emigreren ja, noem hem op.
+01:30:57 Weet je?
 
-01:27:33 Iets wat we leuk vinden, iets wat effectief is.
+01:30:57 Maar de Christen die heeft dat nog niet.
 
-01:27:36 Ja.
+01:30:59 Dus dit is denk ik de markt waar we op ons kunnen richten.
 
-01:27:36 En dan plaatsen we dat dan op, dan komen mensen die gelijkgezind zijn en dan heb je een groep, dan heb je community.
+01:31:07 En ja, precies, precies.
 
-01:27:45 Ja.
+01:31:09 Wij moeten daar de leider in worden.
 
-01:27:46 En het enige wat je dan moet doen is die community naar Paraguay brengen.
+01:31:11 En ja.
 
-01:27:51 Ja.
+01:31:15 En daarbij en dit is communicatie, want dit is gewoon communicatie.
 
-01:27:52 Ja.
+01:31:20 We moeten dat op een bepaalde manier communiceren waarbij mensen het ziet oké, er is een netwerk en daar heb ik daadwerkelijk wat aan.
 
-01:27:56 Ja.
+01:31:29 Ook al is het netwerk nog klein.
 
-01:27:57 Want dat is het moeilijkste en het grootste proces en dat is de kwalificatie.
+01:31:30 Weet je, want dat komt er wel.
 
-01:28:06 Ja, precies, precies.
+01:31:33 Dat netwerk komt er wel.
 
-01:28:08 Ja, dat is zo inderdaad ja.
+01:31:34 Als er een paar mensen naartoe gaan, weet je, met een paar maanden en misschien duurt het een paar jaar, maar weet je.
 
-01:28:10 Ja, ik denk ook daarin als we Ja, gewoon het verhaal, ons verhaal vertellen, dan blijft het bij het verhaal en dan de reis daarin en dan dat gaat mensen inspireren.
+01:31:43 Met een geringe tijd dan wordt er wel over gesproken.
 
-01:28:25 Als het echt in mensen het hart ligt, dan blijft het ook wel hangen en dan dan dan ga je ook.
+01:31:50 En wat ik zie bij de andere mensen, is de mensen die dit doen, die daar naartoe gaan, die zijn heel vaak geneigd om van zichzelf al een YouTube kanaal te beginnen.
 
-01:28:31 Dan heb je ook eigenlijk een visie.
+01:32:04 Om op een of andere manier naar hun achterban, naar Nederland waar ze vandaan komen, te laten merken en blijken en horen dat ze goed zijn, dat ze blij zijn, hoe het met ze gaat, weet je.
 
-01:28:32 Dat is ook wel een doel.
+01:32:21 Ook andere mensen te enthousiasmeren om hetzelfde te doen.
 
-01:28:33 Bijvoorbeeld met curriculum, als er dan mensen naar school gaan, ze gaan niet zomaar dingen leren, maar dan dat is ook, ik ga bijvoorbeeld dit weekend ga ik naar een gesloten event waar dan parlementen, mensen uit leden uit het parlement, advocaten, curriculum daar directieuren, die komen er bij elkaar en die gaan dan uitgezonderd wil, zeg maar dat ik wel uitgenodigd ben, omdat ik contact heb met die die Memorial Press curriculum.
+01:32:24 Weet je, dus mensen zijn al geneigd om content te maken.
 
-01:29:08 Dus de directeur had mij uitgenodigd om ontbijt te wonen, omdat hij weet dat ik een best groot gemeenschap zeg maar betrokken ben.
+01:32:29 Over hun reis en dat gaat ons heel erg voeden met ons eigen netwerk.
 
-01:29:08 En dan Dus dan ga ik daar naartoe en daarin zie ik dus van dat ze ook gewoon dat ze dan bespreken vanuit een doel van oké, maar wat is de eindpunt, weet je wel?
+01:32:35 Ja, ja, ja, ja.
 
-01:29:24 Bijvoorbeeld de curriculum die in ons het heritage gemaakt is, is van oké, maar wat is de einddoel van de curriculum.
+01:32:38 Ja, precies.
 
-01:29:32 De einddoel is dat dat ehm bijvoorbeeld nu, als je kijkt naar de curriculum die in de overheid is, de curriculum de einddoel is dit.
+01:32:40 En ja, ik dus ik denk zoals ik zei, we moeten een verschil maken.
 
-01:29:42 Hoe kan jij als burger de beste werknemer zijn.
+01:32:51 En niet ons gaan vergelijken met die andere mensen.
 
-01:29:51 En dat je mindset wordt zo gevormd, dat je dan moet presteren en dat je zekerheid moet hebben.
+01:32:54 We moeten echt een unieke invalshoek hebben en ik denk dat die christelijke hoek dat goed is.
 
-01:30:00 En dat ik
+01:33:01 Ja.
 
-01:30:01 Dus dan, 36 jaar werkt, weet je wel.
+01:33:02 Mee eens.
 
-01:30:04 Dat als je dan een trouwe als je dan een trouwe werknemer bent.
+01:33:02 Nee, ik voel het.
 
-01:30:11 En dat is dan hun einddoel, zeg maar.
+01:33:03 Ik zie het inderdaad ook ja.
 
-01:30:14 Zo hebben zij het systeem neergezet.
+01:33:05 Mensen het ook weer helder waar we het ook eerder over hadden dat het gewoon nu ja, precies.
 
-01:30:16 Dus uiteindelijk als je klaar bent, dan denk je oké, nu moet ik een baan vinden, ik moet.
+01:33:12 Het is niet concurreren, het is gewoon van exclusief.
 
-01:30:18 En er wordt ook druk op je gezet van oké, als je geen baan hebt, geen ervaring hebt, dan heb je ook niks meer aan je diploma.
+01:33:15 Dit is gewoon eigenlijk exclusief voor christenen en dan exclusief.
 
-01:30:25 Nee, ik heb vier, ik heb zes jaar hard gewerkt in de universiteit.
+01:33:18 Ja.
 
-01:30:31 Als ik nu geen baan vind binnen een jaar dan ja, dan wordt ook alles verouderd en dan krijg ik ook minder minder kans werk, weet je wel.
+01:33:18 Nou ja, het is niet het is niet exclusief.
 
-01:30:38 Er zit allemaal druk achter, zodat je daaraan vast blijft.
+01:33:20 Iedereen kan het doen, zou ik zeggen.
 
-01:30:43 En want dan gaat bijvoorbeeld, dan zie je dus een stijl, dan heb je man en een vrouw.
+01:33:22 Maar de boodschap is ex.
 
-01:30:49 En ze krijgen kinderen, dan gaan zij hun op die manier opvoeden, dan worden ze groot.
+01:33:25 Kijk, hoe meer exclusieve taal je gebruikt, Ja.
 
-01:30:54 En daar is het van oké, waar krijg ik de meeste salaris?
+01:33:30 Hoe beter.
 
-01:30:57 En waar heb ik, krijg ik een vaste baan, waar kan ik carrière opbouwen?
+01:33:32 En dat is waar heel veel mensen een beetje bang voor zijn in business.
 
-01:31:02 Dus uiteindelijk is, waar kan ik carrière opbouwen, waar kan ik het meest geld verdienen?
+01:33:36 Is ja, maar ik wil het aan iedereen verkopen en ja, maar als jij een hele generieke boodschap hebt en je verkoopt aan iedereen, dan heb je een boodschap die tot niemand de verbeelding aanspreekt en dan verkoop je helemaal niks.
 
-01:31:07 Dat is eigenlijk de einddoel, meest geld verdienen en vast contract, dat je dan een contract hebt of een carrière begint, waarin je kan groeien, weet je, zekerheid hebt, zodat je je hypotheek kan afbetalen binnen 30 jaar.
+01:33:50 Ja, precies.
 
-01:31:27 En dat is dus de einddoel.
+01:33:51 Kijk, als ik jou iets wil verkopen en ik zeg: "hé, je moet naar Paraguay gaan.
 
-01:31:29 En dan wat gebeurt er dan?
+01:33:55 Je kan daar een idee kaart hebben en en dan kun je huis kopen en dan kun je van alles kun je daar doen.
 
-01:31:30 Dan zie je de ouders zijn, die wonen bijvoorbeeld in bijvoorbeeld in Utrecht.
+01:34:00 Ja, dan zou je misschien geïnteresseerd zijn.
 
-01:31:39 En in de kinderen zijn afgestudeerd.
+01:34:02 Maar als ik tegen jou zeg: "hé, ik ben een christen, jij bent een christen en wij hebben een christelijk netwerk en je kan hier een idee kaart kopen en dan kun je jouw christelijk leven voortzetten in Paraguay, dan is het dezelfde boodschap.
 
-01:31:43 En die kijken van oké, waar kan ik baan krijgen?
+01:34:14 Of ik bedoel hetzelfde product, maar het spreekt veel meer tot jouw verbeelding.
 
-01:31:45 Ja, ik heb ik kan werken in in Letland.
+01:34:20 Ja, ja, precies.
 
-01:31:50 Dus dan ga je dus naar Letland verhuizen.
+01:34:22 Weet je, en als jij dan zegt: "ja, vind ik goed, maar ik heb een buurman, die is niet christelijk, kan die ook meedoen?
 
-01:31:52 Gaat u in Letland verhuizen, gaat u daar een partner zoeken of wat dan ook, maar dan zie je dus wat er gebeurt, dus je hebt een gezin.
+01:34:26 Ja.
 
-01:31:59 En die gezin wordt aan elkaar getrokken, omdat die mindset zo gevormd is, waar heb je het meeste salaris, waar heb je de meeste carrière.
+01:34:28 Ja, dan zeggen we: "ja, natuurlijk.
 
-01:32:09 Als je bijvoorbeeld gespecialiseerd bent in bijvoorbeeld in auto's, dan denken van ja, dan moet ik naar China emigreren, want daar is nu het meeste werk.
+01:34:29 Weet je, je hoeft geen christen te zijn.
 
-01:32:20 Dus dan draai je dus aan je leven, draait dus eigenlijk niet om de community, je draait niet om je familie, maar eigenlijk jouw leven draait dan om de economie.
+01:34:31 Ja, precies.
 
-01:32:29 Dus je hebt de zon en de planeten draaien om de zon heen.
+01:34:31 Maar mijn boodschap is naar jou.
 
-01:32:33 Dus dus dat zon, als je als je de andere planeet bent, dan draait het om de economie.
+01:34:35 En niet en ja, want ik heb jou wel als klant.
 
-01:32:41 Dus de economie wordt aanbeden, de zon wordt ook gezien van aanbidding, weet je wel.
+01:34:43 Dus exclusieve taal is het beste, maar maak de doelgroep zo klein mogelijk.
 
-01:32:46 Vroeger, de zon, de mensen gaan dat aanbidden, want alles draait om de zon heen.
+01:34:51 Nou niet zo klein mogelijk, maar maak hem scherp.
 
-01:32:50 Dus staat ook, weet je wel, en en zo ook is de economie, zeg maar de werken eigenlijk voor een baas, dus dat is eigenlijk de einddoel van de educatie waar mensen meer naar school gaan.
+01:34:54 Exclusief.
 
-01:33:07 Maar dus wat ik wil daarmee wil zeggen, is ook in curriculum is ook zo van, we moeten dan zit hè, ze hebben dan, oké, wat is de einddoel?
+01:34:56 Leer welke taal die doelgroep spreekt.
 
-01:33:12 De einddoel is dat iemand uiteindelijk goede relatie heeft tussen de ouders, met broeders en zusters en iemand en een jonge jongen van 18 of 17, die dan uiteindelijk gedoopt wordt, voor de bekering komt, in Jeshua het geloof gedoopt en gevuld wordt met de Heilige Geest.
+01:35:01 Maak een product speciaal voor die doelgroep.
 
-01:33:31 En dat u dan een gezinsticht en dan wordt u dus klaargestoomd daarvoor, maar en dat u ook een goede baan heeft, goede ondernemer wordt, waardoor hij ook voor voor voor zijn gezin, voor zijn ouders, natuurlijk ja, je gaat niet je ouders naar een naar een bejaardenhuis sturen, want dat hoort niet bij de gemeenschap denken, weet je, die zorgt voor je ouders.
+01:35:04 En dan zie je ook ten eerste het product is gevalideerd, het werkt.
 
-01:33:58 Die zorgt voor je kinderen, die zorgt voor je mede broeders en zusters die dan ja, de volgende generatie, oudere generatie, nieuwe generatie.
+01:35:06 De website werkt.
 
-01:34:08 Dus dan weet je van oké, maar dan moet ik een onderneming hebben.
+01:35:11 Dan kun je zo snel mogelijk je product of je service daadwerkelijk leveren, want dat is waar het hele bedrijf op draait.
 
-01:34:12 Dus dan wordt je ook klaargestoomd om ondernemer te zijn of mede ondernemer zijn of mede of dat je dan een werknemer bent van een van een ondernemer, weet je wel.
+01:35:18 Dan krijg je je testimonials, getuigenissen, werkervaring.
 
-01:34:24 En dan, daar zit een hele concept achter of bepaalde doel.
+01:35:23 En dat voedt je weer in jouw message, zodat je je product optimaliseert en je je website optimaliseert, je je product je hele operatie eigenlijk optimaliseert.
 
-01:34:31 En zo is ook wat ik ook zie, zeg maar met de onderneming die wij willen doen.
+01:35:35 En dan kun je altijd expanden, weet je, naar meer verticaal of horizontaal.
 
-01:34:38 Dan hebben we ook, wat is de einddoel?
+01:35:45 Meer producten of meer services of een groter target audience.
 
-01:34:39 Wat willen we uiteindelijk bereiken?
+01:35:51 Christelijke die dit doen, christelijke die dat doen.
 
-01:34:42 Weet je wel?
+01:35:54 Of seculair, seculaire mensen of entrepreneurs.
 
-01:34:45 En wat is de volgorde?
+01:35:59 Weet je?
 
-01:34:47 Ja, dat is uiteindelijk wat ik zie is dat één dat het oprecht blijft, want je wil niet dat werkt niet, zoals je zegt van het werkt niet om mensen te overtuigen.
+01:36:00 Omdat je die coor die is al duidelijk, die werkt, die heb je getoetst, je hebt ervaring opgedaan, je hebt service geleverd, je hebt positieve klant feedback gekregen.
 
-01:34:57 Van hé, ja, ik wil dat je dat gaat doen, want het is goed voor je, maar gewoon dat je oprecht verhaal vertelt eigenlijk en dan het organisch mensen dan denken van hé, ik ben ook daar echt geïnteresseerd in, ik wil ook wel een verblijfsvergunning.
+01:36:18 Dat ga je nooit krijgen met "hé, iedereen kan bij ons een idee kaart kopen.
 
-01:35:10 Waarom, waarom we dit doen, waarom ik dit doe van ik vooral, ik zie er, wij zien er geld in, sowieso.
+01:36:24 Wie wil een idee kaart?
 
-01:35:16 Hier zit gewoon geld in.
+01:36:26 Voel jij je aangesproken?
 
-01:35:17 Hier zit werk in.
+01:36:27 Ja nee, helemaal niet.
 
-01:35:19 Eén ding.
+01:36:30 Wie ben jij?
 
-01:35:21 En twee, het is niet alleen maar geld verdienen, het is ook een missie.
+01:36:32 Wat wil je?
 
-01:35:26 Dus en een missie, het is ook een roeping, weet je wel.
+01:36:32 En waarom zou ik dat willen?
 
-01:35:28 Want voor mij is ook wel een deel van mijn roeping van hé, het is een roeping en het is een van een roeping maak je een missie en het is je kan ook wel geld mee verdienen.
+01:36:35 Ja, klopt.
 
-01:35:37 Dus in een.
+01:36:37 Ja, dat is zo inderdaad.
 
-01:35:39 Roeping daarin is eigenlijk wat ik, dus eigenlijk roeping is steelt voor, ik kom uit het geloof.
+01:36:39 Ja, dat is dat is inderdaad de focus.
 
-01:35:45 Ik ben uit het geloof gekomen.
+01:36:42 Gewoon echt die taal spreken van ehm Ja.
 
-01:35:46 Dus ik deel met mensen mijn ervaring van hé, ik ben uit het geloof gekomen.
+01:36:49 Ja, dat daar daar is wel zeker meer markt in.
 
-01:35:50 Ik heb Jezus ervaren in mijn leven.
+01:36:51 Ik denk, zoals we dat gezien hebben, het is heel erg gericht op ondernemers.
 
-01:35:54 En ik was misschien verslaafd en dit en dat en bevrijd, weet je wel.
+01:36:56 Ik denk ook wel inderdaad mensen zijn ook christelijk die denken van "hé, christelijk en ondernemers.
 
-01:35:57 Dus dat wordt ook je roeping.
+01:37:00 Ah, laten we dat doen, weet je wel.
 
-01:35:59 Dus wat God jou geeft, dat ga je ook meegeven aan anderen.
+01:37:03 Ik heb er heel veel gezien, mensen die denken van ja, ik wil wel ik wil wel aangetrokken door die seculiere ondernemers, ik ben aangetrokken door de seculiere boeren of ben aangetrokken door de seculiere ehm.
 
-01:36:04 En ook op die manier wordt het ook een roeping van hé, ik ben ik was mijn reis was dat ik een uitweg zocht voor mijn volgende generatie, voor mijn kinderen en vrouw was wat gebeurt.
+01:37:14 Hoe noem je dat?
 
-01:36:19 En God heeft mij op die manier geleid met Paraguay.
+01:37:16 Zelfvoorzienend leven, wat dan ook.
 
-01:36:22 Ik heb een Paraguayaanse verblijfsvergunning.
+01:37:18 Of thuisonderwijs geven, maar ik mis iets, dat is christenen.
 
-01:36:26 En het is verhaal en ja, dat is mijn verhaal, weet je wel.
+01:37:22 Dus dan Dus eigenlijk, bij elke ze zijn dus die voelen zich nog niet thuis, weet je wel, zijn ondernemers.
 
-01:36:30 En ik kan je daarbij helpen.
+01:37:30 Ja, ik ben misschien zijn er, ik zeg maar iets, 100 ondernemers, maar vijf zijn christelijk, die denken van ja, maar ik wil wel bij hun aansluiten, maar ze zijn niet christelijk, ik voel me niet helemaal thuis.
 
-01:36:33 En ja, en dan mensen zijn dan bereid om om geld daarvoor te geven.
+01:37:39 Oh ja, nu zijn er wel christenen.
 
-01:36:39 En uiteindelijk dus stel voor, wij beginnen wij beginnen daar en een citroen landbouwer citroen, of een citroen wordt, en een citroen wordt geeft, dus daar zit geld in, bij wijze van spreken.
+01:37:41 Oh ja, daar kan ik wel bij en dan krijg je verschillende of verschillende bomen, krijg je een verschillende vruchten, zeg maar die wel die identiteit of die waarde in ieder geval die waarde enorm waarderen van die gedachte groen.
 
-01:36:52 Dan gaan mensen daar ook in investeren.
+01:37:53 Nou ja, kijk, we zouden het natuurlijk nog exclusiever kunnen maken, niet zozeer in de taal, maar wel in het handmatige marketing dat we moeten doen.
 
-01:36:54 Dus uiteindelijk wat ik waar ik mezelf zie is in de nabije toekomst, dat er ook heel veel vraag is uit mij research, wat echt ook validatie, wat ook gevalideerd is, er zijn heel veel christenen die zijn op zoek naar homesteading eh zelfvoorzienend manier van leven.
+01:38:01 We zouden bijvoorbeeld kunnen kijken naar christelijke ondernemers.
 
-01:37:21 En die dan ook met onderwijs, die zijn op zoek zijn, die dan niet weet van hé, oké, ik ga niet meer naar het staatsonderwijs, publiek onderwijs, kinderen sturen, maar ik wil ze een goed onderwijs geven.
+01:38:06 Kijk, als wij als jij bijvoorbeeld al weet dat je 10 jij kent bijvoorbeeld al 10 christelijke ondernemers.
 
-01:37:33 Wat is homesteading eigenlijk precies?
+01:38:11 Ik noem maar wat op hè.
 
-01:37:35 Jouw home settling.
+01:38:13 Nou, dan is dat het beste om als eerste naar uit te kijken dan 10 christenen die geen ondernemers zijn.
 
-01:37:37 Home.
+01:38:21 Want als jij twee of drie ondernemers daar hebt, Ja.
 
-01:37:37 Het homesteading is eigenlijk onder.
+01:38:25 Weet je, dat schept zo of dat geeft jou netwerk zoveel meer waarde dan drie normale christenen.
 
-01:37:41 De homesteading is eigenlijk een bepaalde levensstijl.
+01:38:33 Weet je?
 
-01:37:45 Dat is een huis met een tuin, dat de kinderen en de vrouw bijvoorbeeld, gaan touneren, met eigenlijk eigen eten verbouwen.
+01:38:33 Gewoon families die daar wonen.
 
-01:37:55 Het kan wortels, tomaten, gewoon heel, niet heel zwaar, maar gewoon touneren, zeg maar.
+01:38:35 Niet dat ze geen waarde geven, absoluut niet.
 
-01:38:04 En dan je kan kippen hebben, misschien twee schapen.
+01:38:36 Nee.
 
-01:38:09 Kijk, het is het is geen het is geen landbouw.
+01:38:37 Maar Chris, entrepreneurs over het algemeen die zetten businesses op, weet je, die hebben een business relatie, business netwerk en waarschijnlijk ook een christelijk business netwerk.
 
-01:38:12 Landbouw is echt industrie.
+01:38:49 Die weten geld, die weten risico's in risico's te denken, weet je, die geven het netwerk heel veel initiële waarde.
 
-01:38:14 Bijvoorbeeld dat iemand honderden schapen heeft, dan is dat wel echt dan ben je een farmer.
+01:38:57 Ja.
 
-01:38:19 Dat is dan ben je een farmer, dan ben je een boer.
+01:39:03 Nogmaals, ik zeg niet dat de familie een familie geeft net zoveel waarde, want je hebt ook een andere aspect van een netwerk, weet je?
 
-01:38:21 Dus je hebt een boer en je hebt homesteading.
+01:39:10 Ja.
 
-01:38:24 Dus homesteading is eigenlijk dat je gewoon voorziet voor jouw eigen gezin.
+01:39:11 Je wil natuurlijk niet een netwerk hebben vol van ondernemers, je wil een netwerk hebben met mannen, vrouwen, gezinnen, nomaden, weet je, een mix van iedereen geeft waarde.
 
-01:38:29 En het is ook een levensstijl waar de kinderen ook daarin betrokken zijn, bijvoorbeeld.
+01:39:23 Ja.
 
-01:38:33 Dat de kinderen dan de kippen die eieren rapen en de andere kind een beetje en dat verschoont en En daar hoort onderwijs ook bij?
+01:39:23 Maar ondernemers over het algemeen kan het netwerk misschien versneld volwassen maken.
 
-01:38:44 Dus zelfonderwijs, thuisonderwijs?
+01:39:30 Ja, ja, mee eens.
 
-01:38:47 Ja, als het inderdaad gewoon als bezigheid.
+01:39:31 Want wij willen natuurlijk meerdere aspecten willen wij gaan doen, zoals bijvoorbeeld real estate en ja, andere zaken en ja, als je dus een gezin hebt wat ja, daar wat minder of geen ervaring mee heeft, dan is dat natuurlijk ja, dan gaat dat wat langzamer.
 
-01:38:52 Klopt, dat hoort ook bij.
+01:39:49 Dus met andere woorden, ja, we zouden daar natuurlijk wel slim mee kunnen omgaan, weet je.
 
-01:38:54 Ja, zeker, zeker.
+01:39:54 Wie wie kennen we nu eigenlijk, weet je?
 
-01:38:57 Dat wordt ook mee gecombineerd, niet dat bijvoorbeeld als je naar basisschool gaat, dan hebben ze ook van allerlei activiteiten, weet je wel.
+01:39:55 Waar hoe kunnen we dit of.
 
-01:39:06 Je hebt rekenen, je hebt geschiedenis, topografie en al die dingen heb je sowieso.
+01:40:00 Ja.
 
-01:39:12 Maar dan hebben ze een bezigheid dat ze dan gaan kleuren of dat ze dan gaan sporten of dat ze dan er is altijd gecombineerd, weet je wel, met theorie plus andere activiteiten.
+01:40:43 We kennen misschien een ondernemer die christelijk is en die heeft een christelijk netwerk en dan kunnen we bijvoorbeeld ook zeggen:
 
-01:39:30 Dus die activiteiten is ook puur om dat mensen gaan leren om zelfvoorzienend te zijn.
+01:40:46 Nou, we hebben deze boodschap, kun je dit in je netwerk verspreiden.
 
-01:39:35 Vooral in de tijd die aankomt, dat zal dan belangrijk zijn.
+01:40:51 Ja.
 
-01:39:39 Omdat het kinderen gewoon moeten leren waar eten vandaan komt, weet je wel, hoe groeit een tomaat?
+01:40:52 En en daar ons op focussen, weet je, handmatig.
 
-01:39:45 Hoe groeit.
+01:40:59 Dat is ook een invalshoek.
 
-01:39:45 Wat je wilt niet afhankelijk zijn van de supermarkt natuurlijk, dat is dat eigenlijk je levensstijl is wat je je kinderen leert, waar hoe je moet leven.
+01:41:00 Ja.
 
-01:39:55 Dus wat dat is ook wat.
+01:41:00 Ja, precies, precies.
 
-01:39:59 Kijken.
+01:41:03 Ja, als dat ja, inderdaad.
 
-01:40:00 Pak even bij.
+01:41:06 Dan krijg je dan soort van verschillende getuigenissen van hé, ik ben een ondernemer.
 
-01:40:49 Wat ook nu veel ondernemers doen, vooral die in de IT zitten.
+01:41:11 Ik heb dit dit is mijn dit is mijn verhaal in Paraguay en dan heb je iemand anders.
 
-01:40:53 Zoals bijvoorbeeld Bill Gates en Paul Allen, die hebben dan een IT bedrijf eigenlijk verkocht of ze hebben een klein de zit daarvan.
+01:41:16 Ja, ik ben ik ben een we zijn een familie.
 
-01:41:03 Maar dan hebben ze met al het geld kopen ze heel veel land.
+01:41:20 We hebben 30 jaar hard gewerkt, geld gespaard.
 
-01:41:06 Klopt.
+01:41:23 Nu hebben we het geld, nemen we het geld mee en we gaan een land kopen in Paraguay en we hebben simpel leven, ik zeg maar wat.
 
-01:41:06 Zij kopen heel veel land.
+01:41:29 Of, weet je wel, we hebben verschillende of ik ben een nomade, we hebben verschillende verhalen en getuigenissen, maar dan kunnen wij, maar we hebben allemaal dezelfde waarden, normen en waarden, wij vertrouwen.
 
-01:41:09 Want wat altijd wat grote ondernemers doen is ze kijken van oké.
+01:41:42 We zijn meer vanuit christelijke achtergrond bijvoorbeeld.
 
-01:41:14 Waar wat wordt schaars in de toekomst?
+01:41:47 Dus dan ja, ja, precies.
 
-01:41:17 Wat wordt schaars?
+01:41:56 Ja, en inderdaad, ik denk dat dat ja, exclusief is en tegelijkertijd ook wel toegankelijk is voor ja, verschillende interesses, zeg maar, binnen de christelijke waarde.
 
-01:41:20 En dan kijken ze van als iemand bijvoorbeeld crypto is, iemand die in het begin mee begonnen is, voor nu AI heb je technologie.
+01:42:10 Ja.
 
-01:41:28 Maar zij weten dus dat eten heel schaars gaat zijn.
+01:42:11 Ja.
 
-01:41:30 Dus zij zitten nu echt op het eten.
+01:42:13 Ja, nee, mooi, mooi.
 
-01:41:33 Zij gaan dus echt heel veel land kopen en omdat ze weten dat de economie gaat crashen, dus eten wordt heel schaars en daardoor gaan ze dus daarin investeren.
+01:42:13 Ik denk dat dat wel goed is.
 
-01:41:41 Dus voor christenen als zij dan leren homesteden, dus je hoeft niet je hoeft het niet zelf te doen, bijvoorbeeld bij homestead heritage 5% van de mensen zijn boeren.
+01:42:16 Ja, er is ook is het aan het kijken van ook met ja, als dit zeg maar zo gaat groeien, gaat uitgroeien en dit gaat steeds groter worden.
 
-01:41:50 Dus niet iedereen is een boer.
+01:42:31 Want we hadden het vorige keer over drie dingen wat we wilden doen of wilden zeg maar één zoals drie dingen hadden, volgens mij hadden voorgesteld.
 
-01:41:52 Maar de kinderen krijgen wel een levensstijl waarin als zij opgroeien dat ze dan een keer tomaten hebben geoogst of een wortel hebben in een tuin.
+01:42:43 Eén was alles samen doen, weet je wel, gewoon.
 
-01:42:00 Dat ze dan weten hoe ze een zaad in de grond moeten doen.
+01:42:48 Dit willen we gewoon samen doen wat wat ook welke dingen ondernemers met homeschooling, zelfvoorzienend, wat wat het ook is, we doen het gewoon samen.
 
-01:42:02 Dat ze dan bijvoorbeeld vijf kippen hebben en dat ze eieren rapen, weet je wel.
+01:43:00 Of we zeiden van oké, we gaan twee kanalen van maken die we gewoon nauw samenwerken.
 
-01:42:06 Dat ze ook een bepaalde rust die je hebt gekregen, een connectie met het natuur, weet je wel.
+01:43:05 En bijvoorbeeld dat jij je meer op ondernemers gaat richten, dat ik me meer bijvoorbeeld op zelfvoorzienend of homeschooling ga richten.
 
-01:42:11 Connectie met met de ouders en mensen doen van allerlei dingen om connectie te gaan.
+01:43:13 Zeg maar dat is dat we dat zouden kunnen doen of drie was.
 
-01:42:16 Ze hebben honden, ze hebben katten, ze hebben konijnen.
+01:43:20 Ik weet niet wat het derde was exact, maar het drie was, zover ik me kan herinneren.
 
-01:42:19 Weet je, je ziet toch dat zit echt in de mens.
+01:43:24 Het was dan meer van bijvoorbeeld, ik zeg maar iets, als ik het zo benoem.
 
-01:42:22 Ze willen interactie hebben met dieren, vooral kinderen.
+01:43:27 Weet ik oké, wat is jouw kracht, wat is mijn kracht en dan zijn twee ondernemingen die die werken samen zeg maar.
 
-01:42:25 Maar als het jou juist iets voor teruggeeft, eieren bijvoorbeeld of als mensen dan twee geiten hebben, die geeft de melk voor terug.
+01:43:35 En zochten van oké, hier moeten we zeg maar een echte keuze maken van hoe willen we dit doen, lange termijn.
 
-01:42:33 Ja, er is heel veel vraag, er is heel veel als je YouTube volgt, dan zie je gewoon echt heel veel christenen die dat die op zoek daarnaar zijn, die dat ook willen doen.
+01:43:43 En dat dit gewoon ja, gewoon goed blijft lopen.
 
-01:42:44 Veel dromen daarna.
+01:43:46 Volgens mij dat was ook één van de onderwerpen waar we het over hadden laatst, toch?
 
-01:42:47 En dat is dus homesteding en dan heb je thuisonderwijs natuurlijk.
+01:43:50 Het ging vooral met met marketing, zeg maar, als we video's willen maken of dit voort willen zetten.
 
-01:42:51 Dus zijn ook heel veel mensen aan het zoeken van oké, hoe hoe willen we dat thuisonderwijs doen.
+01:43:57 Ja.
 
-01:42:55 En wat is er voor nodig.
+01:43:57 Als ik het goed begrijp ja.
 
-01:42:58 Dus dat gaat allemaal samen.
+01:44:01 Dus we hebben het hier over ja, de marketing, hè, niet over over Ja, de marketing, dit is wat je zei toch?
 
-01:43:00 Dus homesteding homesteding is niet direct ook homeschooling.
+01:44:09 Niet.
 
-01:43:06 Maar dat gaat wel hand in hand.
+01:44:11 Niet.
 
-01:43:09 Mensen die wel geïnteresseerd zijn in homeschooling, die zijn vaak ook wel.
+01:44:11 Ja, ja, vooral vooral als we gaan als we gaan marketen, dat hoe dat dan eruit gaat zien, ja, dus dit zou drie manieren kunnen marketen, dus één of of doen.
 
-01:43:15 Of ik zou zeggen, mensen die geïnteresseerd zijn in homesteding zijn ook vaak geïnteresseerd in homeschooling.
+01:44:22 Dat is één is dus van hé, we hebben één identiteit.
 
-01:43:22 En.
+01:44:25 Dit is wat we doen.
 
-01:43:25 Ja, vooral ook natuurlijk die ook diegene ook die ook met homesteding, het is er zijn twee kanten.
+01:44:27 Of je hebt twee is:
 
-01:43:33 De andere kant is omdat mensen ook bewust zijn met gezond eten.
+01:44:29 Wij zijn zeg maar twee twee bedrijven, maar wij hoe was het nou?
 
-01:43:36 Dus ze vertrouwen de industrie niet meer.
+01:44:40 Twee bedrijven, nee, nee, nee, nee, de tweede was van ja, wij zijn twee bedrijven, wij werken samen, zeg maar, wat gewoon duidelijk is, weet je wel, dit is we zijn, weet je wel, het is Steve en het is Jozef en wij zijn en en Dio, wij zijn in Dio, we zijn, wij werken samen.
 
-01:43:40 Dus ze vertrouwen dus niet.
+01:44:55 Deze bedrijven zijn met elkaar hebben ze gewoon verbonden en dit is wat dit is Steve, is een ondernemer die woont in Portugal en we zijn goede vrienden en we delen onze reis.
 
-01:43:41 Als zij dingen van supermarkt kopen, dat het dan bijvoorbeeld biologisch moet zijn en gezond moet zijn, dat het niet bespoten is en dat er geen en dan is voor hen van oké, ik wil dan biologisch kopen maar het is onbetaalbaar.
+01:45:08 En bijvoorbeeld Steve die ik ben Steve en ik ben dit is mijn reis, dus waar ik ben en dit is Jozef.
 
-01:43:56 Je kan het is te duur.
+01:45:12 Weet je, dit is mijn zijn goede vrienden en we delen elkaars leven met elkaar en we spuien dingen met elkaar, we delen, we hebben gewoon dit.
 
-01:43:57 Als je vijf kinderen hebt, het is te duur, wat doe je dan.
+01:45:21 En dat is Steve en dat is Jozef en ze hebben verschillend ze zijn verbonden, maar ze hebben twee reizen en ja, bij Steve moet ik echt zijn als ik over onderneming wil weten, bij Jozef moet ik zijn als ik over zelfvoorzienend of homeschooling, ik noem maar wat.
 
-01:44:00 Ja, dan gaan ze in homestads.
+01:45:36 Ja.
 
-01:44:02 Ze zeggen dat het goedkoper is als je het zelf verbouwt.
+01:45:38 En dus hoe wij dat naar voren brengen.
 
-01:44:05 En dan de kinderen die gaan ook mee helpen, die vinden het ook wel leuk.
+01:45:41 Of en de derde is van meer van oké, het is mijn visie.
 
-01:44:08 Met de moeder, weet je wel.
+01:45:48 Het is Jozef, het is dit is wat ik doe en dan en dat dat jij er bijvoorbeeld zegt van hé, oké, ik doe gewoon, ik heb een marketing bedrijf en ik heb zeg maar ja, dus het is de presentatie, we kunnen de zelfvisie doe je ding en als wij kunnen sparren, als ik een beetje dat wij gewoon kunnen sparren, kunnen we gewoon sparren.
 
-01:44:09 Het is het is misschien 1 uur werk per dag, maar dan heb je wel eten voor, weet je wel.
+01:46:12 En ik focus me gewoon op marketing en en dan doen we gewoon zoveel percentage delen met elkaar, we willen gewoon allebei winst maken.
 
-01:44:16 Er zijn allerlei redenen voor.
+01:46:20 Weet je wel, dus je zit een beetje te kijken, deze drie dingen en gewoon dat het gaat ook heel derheid geven van oké, hoe dat kan ook natuurlijk in de toekomst.
 
-01:44:21 Maar dat is dus een beetje eigenlijk ja, de visie die ik hierin zie.
+01:46:28 Het één of de het kan ook in de toekomst veranderen natuurlijk.
 
-01:44:28 Vooral die, dat wordt dan zeg maar de mensen die daarin geïnteresseerd zijn.
+01:46:31 Het is ook gewoon een beetje de beeld zo hoe willen we naar voren, hoe willen we het is wel belangrijk vanaf het begin als ze zien van hé, dit is het gezicht van het bedrijf.
 
-01:44:35 Ehm ik zie het ook wel voor mij bijvoorbeeld als je zo'n plek hebt bijvoorbeeld in Paraguay, waar mensen dat doen, dus meer netwerken en ik kom mensen tegen van, hé ja, ik ben echt ik vind het te gek om eh op te homesteden.
+01:46:40 Van ik kan weer eens gezien, ik heb dat die nog gevolgd bijvoorbeeld vroeger.
 
-01:44:49 Mooi.
+01:46:43 Ik weet niet ken je de ik weet niet of je die gevolgd hebt.
 
-01:44:50 Dus eh dan kan je zo iemand begeleiden en helpen dat hij in Paraguay kan gaan, dat hij daar kan homesteden.
+01:46:48 De, hoe heet het nou?
 
-01:44:55 En dan kan je een concept opzetten bijvoorbeeld Nederlanders die dan naar Paraguay kunnen gaan voor een voor twee weken dat ze dan twee weken lang een homesteding ervaring hebben, dat ze dan gewoon daar kunnen wonen, opstaan, eigenlijk met een routine meegaan en hoe is dat en weet je wel.
+01:46:49 The lighthouse of nou nu heet het The lighthouse, maar vroeger heet het de Blackbox of zo.
 
-01:45:15 Ehm van zulke concepten of vanaf soort van hun af eh je kan van allerlei dingen doen.
+01:46:54 Blackbox.
 
-01:45:22 Dat dat mensen gewoon een keer ervaring hebben, zeg maar.
+01:46:56 Nee, het is zijn YouTube kanalen, ze zijn met marketing begonnen, het is een beetje het principe wat wij aan het doen zijn.
 
-01:45:27 Ja, nou dit is een heel mooi verhaal.
+01:47:01 Maar het was in Nederland zijn een paar mensen die daarin gingen pionieren en dan gingen ze dus adviezen geven van oké, je kan hier naartoe en daar naartoe en we kunnen je hiermee helpen, daarmee helpen.
 
-01:45:30 En ehm ja, dit is iets eh dit is het belangrijkste denk ik eh wat eh waar we over moeten brainstormen.
+01:47:12 Er is een beetje hetzelfde principe, maar dat was een beetje zo, waren een beetje vroeg begonnen.
 
-01:45:37 Ja.
+01:47:15 Maar dan zag je dus van twee gezichten of zo, drie gezichten op een gegeven moment.
 
-01:45:38 Ehm en wat je moet filteren van wat is het nou eigenlijk dat je wil?
+01:47:20 Ze eindigde gewoon allemaal aan hun eigen, ze eindigde hun eigen kanalen hebben, eigen websites.
 
-01:45:44 Want we willen vaak van alles, maar we moeten filteren van wat is nou de essentie, wat is de core, wat is de root?
+01:47:25 Eerst gingen ze samen doen, op een gegeven moment gingen ze, het is ook heel erg Nederlands natuurlijk, want mensen willen gewoon hun hun ding doen en dan gaan.
 
-01:45:52 Want als je het niet in één woord of in één zin kan vertalen, eh vertellen, dan is het wazig en warrig en dan eh je moet dat zo kunnen zeggen: "Dit is het wat ik wil.
+01:47:33 Dan krijg je allemaal verschillende bedrijven.
 
-01:46:05 Dit is de visie."
+01:47:36 Ehm maar het was wel een beetje van hm, wat is gebeurd, je merkt wel dat de dingen zijn veranderd, zijn wat dingen verschoven.
 
-01:46:06 Ja.
+01:47:43 Dus ik zit een beetje te kijken van wat is wat is goed om te doen.
 
-01:46:07 En eh het kost tijd en ik denk dat het eh goed is om daarover na te denken.
+01:47:52 De welk gezicht gaan we geven aan de platform, welke of of gaan wij ons gezicht niet laten zien, dat is gewoon alles op de achtergrond gebeurt.
 
-01:46:10 Als ik je zo hoor praten dan ehm Ja.
+01:47:57 Is alles op de achtergrond gebeurt, dat gaat gewoon door of gaan wij wel ons gezicht laten zien, dit is wie we zijn.
 
-01:46:13 Ehm zie ik eh heel veel mogelijkheden, maar ik denk me even hardop.
+01:48:05 Ehm en dan natuurlijk als we zeggen van hé, dit is wie we zijn, maar nu zijn we hier, nu zijn we daar, gewoon een beetje minstens het verhaal kunnen volgen.
 
-01:46:18 Kijk, stel nou dat we bijvoorbeeld de Yeshua Academy kant op gaan, we maken een eh een non profit project onder de noemer van Yeshua Academy.
+01:48:12 Dus dat zit ik een beetje te kijken in de visie van hoe brengen wij onszelf naar voren.
 
-01:46:28 Ja.
+01:48:16 Ja.
 
-01:46:29 En dat doen we iets.
+01:48:17 Dus daarin zit ik te kijken van vooral nu dat wij zijn allebei in situatie, we willen gewoon ontdekken, weet je wel, wat is het nou voor mijn familie, weet je wel?
 
-01:46:30 Wat we doen is wat jij net beschreef.
+01:48:24 En we staan we nou in en hoe gaan we dingen doen en ja, dus ik zit daarin te kijken van hoe kunnen we naar, hoe kunnen we onszelf naar voren brengen.
 
-01:46:32 Ja.
+01:48:35 Zeg maar, dus één is één was wat wij voorheen besproken hebben wat ik net zei van ja, dit is dit is wie we zijn, we zijn zeg maar één zeg maar dit is dit is, als ze denken als ze denken aan zeg maar iets aan project, ik zeg maar iets, Sedula Paraguay, noem ze Sedula Paraguay, als ze denken Sedula Paraguay, oh, dat is Jozef is Steve en Steve is Jozef, dat zijn gewoon weet je wel, dit is gewoon wie het is.
 
-01:46:33 En daarbij maken we ook de splitsing van, zoals ik al zei, ik heb niks met hem stad.
+01:49:02 Of als zeg oh Sedula Paraguay.
 
-01:46:39 Ik ben niet de persoon die eh een een dergelijk leven voor zichzelf ziet.
+01:49:05 En oh ja, Sedula Paraguay.
 
-01:46:47 Ja, absoluut.
+01:49:07 Oh ja, er zijn die twee goede vrienden, weet je wel, oh ja, dat is de ondernemer en dat is een met homeschooling of zelfvoorzienend en die is veel met community bezig, christelijke community en oh ja, hen hebben een verhaal, ze zijn vriendschap aan het bouwen, is een beetje dat, weet je wel, van oké, dit is wat er gebeurt.
 
-01:46:48 Maar dat maakt mij niet anders of niet minder of meer dan een christen.
+01:49:22 En dan in de toekomst kan natuurlijk dingen veranderen, oh, ze doen die bepaalde dingen, weet je wel?
 
-01:46:53 Ik ben uit een ander hout gesneden.
+01:49:31 Of of doen we gewoon of doen we van oké, ook dit is Jozef.
 
-01:46:56 Ja.
+01:49:35 Dit is Sedula Sedula Paraguay is Jozef en en dan heb je Steve, die is die doet de marketing, weet je wel, dus wij zijn dus de marketing aan het promoten bijvoorbeeld, steeds voor iemand anders die ik zeg maar iets, die doet ook hetzelfde.
 
-01:46:56 En daar komen we gelijk weer wat ik net al zei, kijk, we moeten identificeren dat wat in ons hart zit en dat daar moeten we double down om gaan, omgaan, want dat is de core en dat is wat je uniek maakt.
+01:49:50 Ze zegt van hé, ik wil Steve hebben in mijn team om de marketing goed te doen, weet je wel?
 
-01:47:09 Je moet niet iemand anders proberen te zijn, want dan word je gewoon een hele goedkope namaak.
+01:49:55 En dan ben je dus ook zeg maar echt aan het focussen op marketing en dan dan heb je ook meer bedrijven.
 
-01:47:13 Ja, je wil authentiek.
+01:50:00 Dus Jozef die is standaard, weet je wel, marketing, Steve en er gaan anderen ook komen zeg maar.
 
-01:47:16 Ja.
+01:50:37 Eh in de marketing distributie.
 
-01:47:16 Authenticiteit hebben en dat betekent dat je doet wat jij gelooft.
+01:50:46 Omdat ik ben wel daarover ben zeg maar na gaan denken van het is wel belangrijk om van tevoren echt te weten van waar hoe, wat is het gezicht hierachter zeg maar.
 
-01:47:21 Ja.
+01:50:55 Tuurlijk, kan veranderen maar.
 
-01:47:22 En daar sta je voor en dat breng je naar buiten en dat trekt mensen aan, gelijkgestemde.
+01:50:58 Ik weet niet of het heel erg is.
 
-01:47:30 Ja, ja.
+01:51:01 Ik denk dat we dat in twee manieren kunnen benaderen.
 
-01:47:30 Dat jij anders bent en ik, is geen ehm dat moeten we combineren en daar de kracht van maken.
+01:51:08 Kijk de hoe vraag.
 
-01:47:38 Dus er moet iets bestaan tussen jou en ik wat ons verbindt.
+01:51:12 Dat is denk ik iets wat we nog moeten gaan uitvinden.
 
-01:47:42 Ja.
+01:51:16 Maar dat is niet zo heel belangrijk.
 
-01:47:43 En dat wat ons verbindt dat is onder de umbrella, onder de paraplu wat wij verspreiden.
+01:51:21 Wat in marketing wel belangrijk is is dat één niemand koopt van een avatar.
 
-01:47:53 Ja.
+01:51:33 En met een avatar bedoel ik een business profiel.
 
-01:47:53 En wat dat is, daar moeten we ehm daar moeten we over nadenken, daar moeten we over bidden, daar moeten we over dat moeten we tijd geven, dat moeten we even laten marineren.
+01:51:36 Oh ja ja ja, precies.
 
-01:48:04 Ja, ja, precies.
+01:51:37 Want dit product is heel erg lastig, moeilijk, persoonlijk.
 
-01:48:05 Ik ben bijvoorbeeld meer in de business minded, ik ga mijn eh bedrijf ook oprichten voor businessen.
+01:51:46 En heel erg gebaseerd op getuigenissen, testimonials, ervaring.
 
-01:48:13 Voor businesses ehm educatie hoe je marketing moet doen, software moet maken.
+01:51:53 Dus niemand gaat, laten we zeggen dat we dit bedrijf project Paraguay noemen.
 
-01:48:19 Dat soort zaken.
+01:52:01 Niemand gaat iets kopen van project Paraguay.
 
-01:48:21 En ehm, maar er zijn christenen die gaan naar Paraguay en die willen in een netwerk terecht komen met business minded mensen.
+01:52:04 Mensen gaan iets kopen van Jozef of van Steve of van allebei.
 
-01:48:33 En eh misschien in de IT, maar bedrijven oprichten.
+01:52:10 Want het zijn mensen zijn die ervaring hebben, een gezicht hebben.
 
-01:48:37 Eh een punt is ehm het maakt niet zoveel uit, maar ik ben vanuit e en hout gesneden.
+01:52:15 Daar kunnen we ons aan relateren.
 
-01:48:43 Jij een ander.
+01:52:17 Dat zijn ook christenen, oh die hebben dit al gedaan.
 
-01:48:45 Ja.
+01:52:20 Weet je, mensen willen zich ah oké, zij hebben iets oh, zij hebben iets of ze hebben iets gedaan en dat wil ik ook.
 
-01:48:45 En dat betekent dus dat wij dat wij in de groep, in de target audience, twee subgroepen dienen.
+01:52:29 En ik kan me relateren aan deze mensen en hun reis en hun ervaring en dat wat ze hebben gedaan naar al die handelingen.
 
-01:48:54 Ja.
+01:52:39 Dus dat is denk ik iets waar we voor moeten kiezen, wij moeten ons gezicht laten zien.
 
-01:48:55 En dat maakt onze reach groter.
+01:52:44 Jouw gezicht, mijn gezicht, beide gezicht.
 
-01:48:58 Dat maakt ons concept breder.
+01:52:47 Dat is de hoe, dat doet er even niet toe, maar het belangrijkste is een gezicht.
 
-01:49:01 Dat spreekt tot meer mensen aan en dat betekent ook meer autoriteit.
+01:52:53 Dus dus achter de naam, wat maar gewoon een naampje is, is het gezicht en het gezicht is wat moet met onze eigen werkelijke naam moet profileren naar buiten toe.
 
-01:49:07 Want ik heb een ervaring, jij hebt een ervaring en jij hebt een ervaring die ik niet heb en ik heb er één wat jij niet hebt.
+01:53:05 Ja, precies.
 
-01:49:14 Maar samen hebben we meer.
+01:53:06 Dus product te verkopen is dit product, maar ja, whatever, het is het gezicht.
 
-01:49:17 En als wij kunnen pinpointen wat het is dat jij en ik hebben, waarbij beide van vinden, zien, geloven, willen uitdragen, ja, dat is het wat wij aan onze community, want uiteindelijk is dit wat we aan het doen zijn is community bouwen.
+01:53:15 Daarnaast wat we besproken hebben wat heel erg belangrijk is is dat wij moeten identificeren, herkennen en ook daar, daarom ook moeten gebruiken, dat jij en ik beide al ervaringsdeskundige zijn.
 
-01:49:36 We zijn eigenlijk een fellowship aan het bouwen.
+01:53:32 Ja, precies.
 
-01:49:37 Wat is de fellowship, wat is de naam, wat is de visie, wat is de missie, waarom doen we dit?
+01:53:33 Want ik ben geëmigreerd.
 
-01:49:44 Wat is onze rol daarin?
+01:53:37 En jij hebt een cedula.
 
-01:49:47 En en als we dat hebben, dan kunnen we dat als een Yeshua Academy project gaan uitbaten, zoals ik al zei, cursus, YouTube, e-book, blog, combinatie van.
+01:53:40 Ja, precies.
 
-01:50:00 Want
+01:53:41 Dus mijn ervaring hoewel het niet de cedula is is wel heel erg belangrijk.
 
-01:50:03 Wat als als ik het zo hoor, denk ik dat we in de hoek zouden moeten gaan kijken van educatie.
+01:53:46 Ik heb namelijk ervaring met emigreren.
 
-01:50:12 Ja.
+01:53:50 Ik bedoel, ik zeg niet dat jij dat niet hebt, hè.
 
-01:50:12 Studie, bijbelstudie.
+01:53:53 Ik bedoel je hebt van van het andere land.
 
-01:50:16 Cursussen.
+01:53:55 Maar omdat jij in Nederland bent.
 
-01:50:18 Ja.
+01:53:59 Is jouw ervaring die jij bijdraagt aan het bedrijf, de cedula, het proces van cedula.
 
-01:50:19 En want als jij spreekt over homestead, ja, weet je, dan kun je heel veel dingen over gaan vertellen, maar mensen moeten dat implementeren.
+01:54:07 Ja, mijn.
 
-01:50:26 Dit is een Als jij vanuit de wereld naar het land wil gaan, weet je, vanuit de supermarkt naar het land.
+01:54:08 De ervaring die ik kan bijdragen is als Nederlander emigreren naar een ander land.
 
-01:50:33 Ja, dan moet je bepaalde skills voor hebben.
+01:54:16 En in mijn geval zou ik dat kunnen verwoorden.
 
-01:50:35 Je moet je moet bepaalde dingen opofferen, je moet.
+01:54:19 En natuurlijk is dat niet helemaal de reden, maar ik kan dat verwoorden in een bedrijfstechnisch aspect, want ik doe hier business en mijn business is iets wat zeg maar heel erg online is en dat dat is dus ook iets wat ik zou kunnen anderen zou kunnen leren of ik zou kunnen bijdragen of gewoon laten zien van hé dit werkt, zou je misschien ook kunnen doen in Paraguay.
 
-01:50:39 Weet je, dat is heel veel over te vertellen.
+01:54:48 Het punt is, ik heb ervaring.
 
-01:50:43 Hetzelfde voor business, als je een business wil oprichten in Paraguay.
+01:54:51 In migreren.
 
-01:50:48 Ja, dan moet je business skills hebben.
+01:54:52 Jij hebt ervaring in de cedula en beide ervaringen die zijn handig, want dat maakt ons niet iemand die maar iets verkoopt, maar ervaringsdeskundige.
 
-01:50:50 Je moet weten, ja, je moet bepaald, weet je, dus je kan dus heel erg hands on kun je dingen gaan vertellen.
+01:55:06 Wij hebben daadwerkelijk dingen gedaan.
 
-01:50:57 En daar trek je mensen mee aan en die mensen die zijn logischerwijs geïnteresseerd in ons product.
+01:55:08 Wij weten hoe het proces loopt.
 
-01:51:04 Ja.
+01:55:10 Wij hebben we doen het.
 
-01:51:05 Dus het heeft er niet zozeer met emigratie te maken.
+01:55:13 Dus we prediken we doen dat wat we prediken.
 
-01:51:08 Natuurlijk hangen we alles onder emigratie.
+01:55:17 Ja, precies.
 
-01:51:13 Maar het heeft te maken met, ik noem wat op, homestead business.
+01:55:19 Dus ik denk dus dat is het tweede punt.
 
-01:51:19 Ja.
+01:55:21 Wij moeten dat op een of andere manier gebruiken en uitbuiten.
 
-01:51:20 En dat onder de emigratie umbrella, zodat men wel weet dat wij promoten een ander leven.
+01:55:25 Ja.
 
-01:51:27 Een leven waarbij je zelfvoorzienend bent, je eigen eten maakt, je eigen educatie doet, zelf business voert, financieel stabiel, onafhankelijk bent, weet je, dat soort zaken.
+01:55:27 We moeten dat niet onder water laten, we willen dat naar voren brengen en wij moeten dus dat gezicht zijn van hé, wij zijn wij verkopen dit niet zomaar.
 
-01:51:40 Weet je, dat is een heel pakket, een hele visie.
+01:55:40 Wij verkopen dit omdat de ervaringen hebben en we weten waar we het over hebben.
 
-01:51:43 Ja.
+01:55:44 Ja.
 
-01:51:44 En en wij kunnen dat wij kunnen dat uitdragen.
+01:55:45 Dus ik denk dat die twee dingen die moeten we 100% toepassen.
 
-01:51:47 En we moeten over nadenken hoe en in welke vorm en.
+01:55:50 Ja.
 
-01:51:54 Want wat ik ook zei is, het belangrijkste.
+01:55:51 Dus dan maakt het niet zoveel uit dat jij het gezicht bent en ik de marketing of dat dat maakt allemaal niet uit.
 
-01:51:59 Dit is een marathon.
+01:55:56 Ik zou meer zeggen hoe je hoe zou jij het dat het liefst willen.
 
-01:52:01 Dus wij gaan dit lang moeten doen en veel moeten doen.
+01:56:02 Hoe zou jij dat doen?
 
-01:52:06 Kijk, en als jij als jij over iets moet gaan praten waar je helemaal niet zoveel affiniteit meer hebt, dan ben je heel snel uitgeput.
+01:56:03 Maar hoe het hoe we het ook doen, de identiteit moet één zijn.
 
-01:52:13 Ja.
+01:56:13 Dus of wij dat nu samen doen hoofdzakelijk jij dat dat maakt niet zoveel uit.
 
-01:52:14 Maar als jij je homestead in je hart hebt, dan kun je niet stoppen met spreken erover, weet je, het is alleen maar leuk.
+01:56:21 Maar mensen moeten herkennen.
 
-01:52:21 Ja.
+01:56:23 Ook project Paraguay is deze twee personen of Jozef of dit gezicht of dit gezicht.
 
-01:52:21 Het is alleen maar leuk.
+01:56:31 Weet je, we moeten nou op een uniforme manier mee naar buiten komen.
 
-01:52:22 Lekker weer in onderwerpen over Homestead waar ga ik de volgende keer over spreken?
+01:56:36 En ja.
 
-01:52:27 Nou ja, dan ga je daar onderzoek naar doen en dan vind je het alleen maar leuk.
+01:56:39 En ja, nou ja, ik denk dat ik weet het niet.
 
-01:52:29 Ja, dat is een hobby waar je geld mee verdient in plaats van een burden, hoe zeg je dat?
+01:56:44 Kunnen we misschien nog even over nadenken en Ja, precies.
 
-01:52:35 Een een last.
+01:56:48 En is wel goed wat wat jij wat jij persoonlijk het het prettigste vindt.
 
-01:52:37 Ja.
+01:56:54 Ehm, maar ik denk dat het ik denk dat het handig is om daar twee gezichten van te maken.
 
-01:52:37 Wat je doet om te overleven.
+01:57:02 Ja.
 
-01:52:38 Klopt ja.
+01:57:02 Absoluut.
 
-01:52:39 Ja, alleen inderdaad daarin ook het verschil is, kijk, ik vind het handsturing niet per se leuk.
+01:57:02 Ja, dat is het.
 
-01:52:44 Ik ga het ook niet doen, direct.
+01:57:04 Maar dat is ook inderdaad de investering qua stilstaan voor ehm ja, want dan dan valt die derde optie weg eigenlijk, als ik het zo hoor.
 
-01:52:49 Wat ik hierin zie is, gewoon in het meer een connector.
+01:57:13 Want ik het ook van jou horen van waar je wil er zeg maar in investeren.
 
-01:52:57 Dus zo moet je het zien.
+01:57:17 In zeg maar in dit, in dit van hé, wil ik zeg maar video's maken, wil ik mensen bereiken zeg maar dat ze ook leren wat het betekent om te emigreren, wat het betekent om ehm ik zeg maar iets twee of twee verblijfsvergunningen te hebben.
 
-01:52:59 Ik zie een ik zie een wijk.
+01:57:29 Ik noem maar iets, weet je, je hebt de verhalen en dat wil je naar voren brengen door het platform.
 
-01:53:01 Dus ik ik visioneer een wijk voor mij.
+01:57:32 Dan dan weet dan dan valt de derde weg, want die denken niet van nee, ik wil daar niet mee bezig zijn.
 
-01:53:05 Oké, je moet een wijk gaan bouwen.
+01:57:35 Ik wil gewoon 100% gewoon op marketing focussen.
 
-01:53:07 En om een wijk te bouwen, wat heb je daar nodig?
+01:57:38 En en dat is wat ik wil doen en ik wil dat mensen dat dan ze gewoon hé, dit is een succes.
 
-01:53:10 Dan heb je gemeente nodig, dus overheid.
+01:57:44 En zo wil ik dat mensen mij kennen.
 
-01:53:17 Daar heb je een school nodig, supermarkt nodig.
+01:57:45 Als ze mij nodig hebben voor marketing, wil ik het doen.
 
-01:53:23 Daar heb je een en een huisarts nodig, verloskundigen nodig.
+01:57:47 Is het zo'n keuze, weet je.
 
-01:53:29 Dus je ziet gewoon wat nodig is om een niet een wijk, maar een dorp of wat het ook is, als je echt een dorp wil beginnen, dan heb je gewoon een supermarkt nodig, weet je wel?
+01:57:48 In de zin van hé, dat ik wil meer dan dat.
 
-01:53:39 En en dus dan ga je een supermarkt bouwen en dan komen er een paar huizen en andere huizen komen ook eromheen.
+01:57:50 Ja.
 
-01:53:45 Waarom komen ze eromheen?
+01:57:50 Super.
 
-01:53:46 Omdat ze denken van, "Ha, ik ben geen, ik ben geen boer, maar ik wil wel dichtbij een boer wonen, want dan krijg ik wel mijn eten, weet je wel?
+01:57:51 Ik denk dat dat ook wel heel goed is inderdaad, want je hebt gewoon veel meer dan alleen maar de de marketing.
 
-01:53:55 Ik geef hem geld, hij geeft mij eten."
+01:57:56 Je kan gewoon veel.
 
-01:53:56 Nou ja, ik ben geen leraar, maar ik ga wel dicht bij een school wonen, want dan mijn kinderen kunnen er naar school.
+01:57:57 Het kost gewoon veel tijd, maar dan mensen willen dan gewoon vragen hoe al deze dingen werken, weet je wel.
 
-01:54:02 Ik geef hem geld en zij geeft mij, zij geeft mijn kind wel onderwijs.
+01:58:02 Dus dan dan ben je ook goed beschikbaar zeg maar.
 
-01:54:05 Of ik geef thuis onderwijs, maar zij geeft mij de boeken en zij geeft mij tips, tips, weet je wel?
+01:58:05 Dus dat is ook wel inderdaad goed.
 
-01:54:10 Dus zo is de zo zit de systeem in elkaar.
+01:58:06 Dus dan dan hebben we inderdaad die twee optie.
 
-01:54:16 Dus je hebt mensen die dat ontwerpen.
+01:58:08 Als ik het zo zo hoor.
 
-01:54:18 Er zijn ondernemers.
+01:58:10 Klopt hè?
 
-01:54:21 Of.
+01:58:10 Van nu, denk ik van nee, ik wil ik wil toch wel gewoon mijn verhaal delen en ik wil toch dat ze gewoon weten hé dit is Steve en dit is wat ik voor mensen kan betekenen en dit is hoe ik mensen kan helpen als ze hulp nodig hebben.
 
-01:54:24 En dat is eigenlijk dus wat ik schets zeg maar van, "Oké, ik zie een visie."
+01:58:25 Ja, ik denk kijk het punt is, wat ik net al zei is dit bedrijf valt of staat met ons werk met het naar buiten brengen van onze service.
 
-01:54:30 En de visie is er zijn ik zie allemaal losse mensen van elkaar.
+01:58:38 Ja.
 
-01:54:35 En ik zie mensen die potentieel of bijvoorbeeld, ik zie iemand potentieel die ook een homestter wil zijn.
+01:58:38 Dus met andere woorden waar wij dus 80% mee moeten bezig zijn is communicatie, marketing distributie.
 
-01:54:40 Ik zie iemand potentieel die een ondernemer wil zijn, weet je wel, in Paraguay.
+01:58:48 Ja, absoluut.
 
-01:54:44 En ik zie iemand potentieel die bijvoorbeeld.
+01:58:48 Ja.
 
-01:54:51 Ja, en een arts is.
+01:58:48 Ja.
 
-01:54:54 Ik zeg maar iets.
+01:58:48 Precies, precies.
 
-01:54:54 Misschien die is een arts, maar die denkt van, "Ja, ik zit hier vast in het systeem en ik moet de klanten behandelen op een manier dat ik eigenlijk niet wil."
+01:58:50 Dus als ik bijvoorbeeld aan de zijkant ga staan en ik ga, ja oké, ik doe wel de idee, weet je en that's it.
 
-01:55:00 Ja, ik wil dat wel gebruiken voor in Paraguay, ik zeg maar iets.
+01:58:58 Ja.
 
-01:55:04 En dan voor hun is het eigenlijk gewoon het schetsen van, "Hey, kijk, daar is een wijk.
+01:59:00 Dan gooien we eigenlijk 50% van de tijd gooien we weg.
 
-01:55:09 Daar zijn groepen mensen.
+01:59:05 En dat betekent dat dat we niet alleen in tijd, want jij kan maar zoveel doen in een bepaalde tijd.
 
-01:55:11 Je hebt hier een iemand die huizen bouwt, je hebt hier die een homestter is."
+01:59:13 We gooien niet alleen die tijd weg, maar ook de stem, want ik ga andere mensen aantrekken dan jij.
 
-01:55:17 Dus dan zegt dus die eigenlijk die arts die zegt van, "Oh, als ik naar Paraguay ga, dan woon ik naast een, naast een boer, waar ik eten krijg.
+01:59:19 En ik denk dat het heel erg goed is om vast te stellen en te definiëren wat zijn jouw krachten, wat is het wat jouw stem uniek maakt?
 
-01:55:26 Dan haast het een slager, dan woon ik naast een bakkerij."
+01:59:25 Ja.
 
-01:55:32 Weet je wel?
+01:59:28 En wat is het wat mijn stem uniek maakt en ik zou me dan meer moeten focussen op die groep binnen de target audience binnen de marketing groep die we hebben vastgesteld, moet ik me focussen op die groep en jij op die groep.
 
-01:55:33 Dus je bent eigenlijk, je brengt ze bij elkaar.
+01:59:44 Ja, precies.
 
-01:55:36 Dus je, dus door, dus eigenlijk dat is een beetje wat ik zie hiermee.
+01:59:45 Nee, dat is het zo te denken van dan wordt het ook heel veel breder denk ik.
 
-01:55:41 En daarin hoef ik altijd, hoeven wij al die dingen niet te weten, maar dit is zeg maar mijn verhaal en ik kom zelf in contact met mensen die homestedden.
+01:59:50 Want dan hebben we de focus is Paraguay.
 
-01:55:50 Ik ben zelf daarin geïnteresseerd.
+01:59:52 Dus eigenlijk het gaat echt om Paraguay en als mensen over onderneming willen weten, dan willen ze weten hoe werkt het in Paraguay, weet je wel?
 
-01:55:52 Niet dat ik het zelf ga doen, maar ik wil wel langs een homesteder wonen, want ik moet mijn eten ergens vandaan halen.
+02:00:00 Of dan moet je zeggen van hé, ik ga me investeren dat ik gewoon heel veel kennis gaan vergaren of dat ik heel veel kennis.
 
-01:55:57 Want als je in Paraguay gaat, je kan niet op de overheid rekenen of je kan niet op de, ik zeg op de supermarkt bij wijze van spreken, ik weet het niet, maar.
+02:00:40 Over hebben, dit Ik mensen kan helpen.
 
-01:56:06 Maar je rekent wel op mensen.
+02:00:43 Hoe kunnen ze naar Paraguay emigreren, want alle klanten die wij gaan krijgen, die zijn, ik denk, één van de trefwoorden is Paraguay.
 
-01:56:08 Dus je wilt die connectie hebben, dus je wilt die mensen om je heen hebben.
+02:00:51 Bijvoorbeeld hoe, hoe goed, hoeveel ik weet over homeschooling of hoeveel ik weet over zelfvoorzienend, of hoeveel jij weet over marketing en over ondernemen.
 
-01:56:11 En dat is ook wat als mensen die immigratie naar Paraguay willen maken, dat is ook is waar zij naar op zoek zijn.
+02:01:01 Voor mensen is het gewoon van hé, is het Paraguay of geen Paraguay, weet je wel?
 
-01:56:17 Dus als je het op de allerbeste manier bekijkt, welke wijk ga ik wonen?
+02:01:04 Ik denk dat dat de trefwoord is.
 
-01:56:21 En dan ga je op Google Maps.
+02:01:06 Ik denk als wij als ik heel veel ga delen over zelfvoorzienend bijvoorbeeld en ik ga veel delen over homeschooling, je gaat veel delen over onderneming en over marketing, bij wijze van spreken.
 
-01:56:23 Is daar wel een supermarkt, weet je wel?
+02:01:19 Dan is voor mensen niet direct interessant.
 
-01:56:24 Is daar wel dichtbij zijnde een een kinderarts, want ik heb kinderen of is er ook een tandarts?
+02:01:21 Zij willen gewoon weten van hé, wat ik wil is als ik zelf als klant denk van oké, ik wil naar Paraguay toe, ik wil weten, oké, kan ik daar een ehm zijn daar mensen waar ik op terug kan vallen als ik als ik ergens mee loop.
 
-01:56:30 Dan ga je eens automatisch kijken.
+02:01:32 Ik zeg maar eens, ik rij met een auto en mijn auto gaat stuk, ik kan niet ANWB bellen, maar dan ken ik even, ik zeg maar iets, die persoon bellen, dan gaat hij mij wel vertellen, dan kan hij mij helpen wat ik wel kan doen, weet je wel?
 
-01:56:34 Waar waar kan ik wonen?
+02:01:46 Of gewoon mensen denken heel erg op die manier.
 
-01:56:37 Weet je wel?
+02:01:49 Alles, alles wordt heel erg gefocust op Paraguay, zeg maar.
 
-01:56:38 Ja.
+02:01:52 Dus dan gaan we ook heel veel terugvallen op Stanley.
 
-01:56:39 En maar in Paraguay zo werkt het niet.
+02:01:55 Als ik het zo als ik zo weet, want wij kunnen alleen maar informatie geven, maar ik zie voorlopig mezelf ook niet in Paraguay zijn.
 
-01:56:41 Je gaat niet Google Maps kijken van waar ga ik wonen, maar je denkt van, "Hé, welke contacten heb ik?"
+02:02:02 Dus ik zou nou voorlopig gewoon in Nederland zijn, dus ik kan niet veel vertellen over Paraguay.
 
-01:56:46 Ja.
+02:02:07 Ik kan wel vertellen dat ik ze Dula heb.
 
-01:56:46 Want als ik met als ik met die mensen in contact ben, dan ben dan kom ik in contact wel met aan die mensen die ik nodig heb.
+02:02:10 En en dan als mensen se dulle krijgen, ze gaan daar wonen en ze hebben een verhaal, misschien ik of jij gaan naar Paraguay, gaan we even contact leggen met me of Stanley en zo, bouwen ook huizen.
 
-01:56:53 Dus als ze door die video's of de blogs zien van, "Wow, je hebt echt contacten, je hebt echt ondernemers, je hebt echt accountants, je hebt echt dit en dat en dat."
+02:02:21 Maar wij hebben wel een sleutelpersonen nodig die dat ervaring hebben in Paraguay, die ook dat echt daadwerkelijk meemaken in Paraguay.
 
-01:57:02 En oh, je bent te vertrouwen en jouw netwerk is ook te vertrouwen.
+02:02:28 En ik denk dat dat echt de kern gaan zijn van van het bedrijf, zeg maar.
 
-01:57:06 Ja, dan wil ik wel via jouw studies hebben, dan wil ik wel via jou een huis kopen.
+02:02:35 En wij kunnen daarnaast ook onze verhalen delen, maar uiteindelijk wordt het Paraguay.
 
-01:57:09 En dan wil ik wel één van je van je huizen die jullie aan het bouwen zijn, dan wil ik wel dat kopen of dat huren of dat daarin investeren.
+02:02:41 Mensen die willen gewoon weten over Paraguay van hé, wat heb je te maken met Paraguay?
 
-01:57:18 Dus op een gegeven moment dan mensen gaan dat wijk vertrouwen.
+02:02:45 Weet je, wat is jullie verhaal over Paraguay?
 
-01:57:22 Zo moet je het voor je zien, het is een wijk, weet je wel?
+02:02:47 Dus dan word ik bedoel.
 
-01:57:25 Ja.
+02:02:49 Ik denk, ik denk dat dat heel erg zo gaat zijn.
 
-01:57:26 Een netwerk en daar willen ze gaan wonen of daar willen ze gaan investeren.
+02:02:53 Mijn verhaal met Paraguay is hé, je plan A, plan B en plan C.
 
-01:57:30 Ze hoeven daar niet te wonen, maar dan kunnen ze zeggen van, "Hé, ik zie daar veel potentie in.
+02:02:56 En ik heb ik heb zeg maar, ik zeg maar iets, we hoeven het niet zo te noemen.
 
-01:57:35 Dus ik ga huis daar kopen, want ja, dus dat dat eigenlijk meer.
+02:03:05 Mijn mijn contact met Paraguay is, ik heb plan A.
 
-01:57:40 Dat is de visie zeg maar.
+02:03:08 Dat is ik heb even kijken.
 
-01:57:41 En
+02:03:16 Nee, zo wordt het gebruikt.
 
-01:57:42 Ja, en bijvoorbeeld, ik zeg maar iets, misschien zijn er mensen die charismatisch zijn.
+02:03:18 Sorry.
 
-01:57:49 Qua geloofswijze, maar bijvoorbeeld ik kan zeggen van: "Hé, ik ken iemand die charismatisch is, die bepaalde geloofs, bijvoorbeeld iemand die in prosperity gelooft of zo.
+02:03:18 Dus plan A is dat je echt volledig emigreert naar Paraguay, je woont daar, je werkt daar of je woont daar en en je leeft daar, weet je wel?
 
-01:58:00 Ik weet het niet, maar ik geloof daar zelf niet in.
+02:03:29 Dus je bent volledig geëmigreerd.
 
-01:58:02 Maar als iemand daarna op zoek is, die kent iemand, ik kan je in contact brengen, zakelijk, weet je wel?
+02:03:31 Dus plan A.
 
-01:58:08 Maar ik ga niet zeggen van: "Ik geloof daar niet in."
+02:03:31 Plan B is je hebt een onderneming in Paraguay of je hebt iets of je hebt een tweede huis in Paraguay, weet je wel?
 
-01:58:10 Van: "Oh, oké, ik ben op zoek, oh ja, ik ken wel iemand die dat misschien hebben jullie wat gemeen, weet je wel?"
+02:03:39 Je bent een brug of je bent een brug aan het bouwen naar Paraguay.
 
-01:58:16 Iemand die dan een Man is.
+02:03:44 En plan C is, ik heb helemaal niks in Paraguay, maar ik heb wel se dulla.
 
-01:58:18 Ik zeg maar iets.
+02:03:48 Het wat is, ik kan zo naar, ik kan zo naar naar Paraguay toe en ik heb netwerk daar.
 
-01:58:19 Oké, ja, ik ken mensen die mannen zijn misschien, kan je daarmee in contact brengen.
+02:03:54 Dus je hebt netwerk.
 
-01:58:23 Dus ik ga niet, mensen, we gaan niet mensen overtuigen om te geloven wat ik geloof, wat jij gelooft.
+02:03:55 Dus eerst heb je verblijfsvergunning en je hebt netwerk.
 
-01:58:27 Maar wat wij hen willen is, wij hebben een netwerk en in die netwerk misschien zit er iemand die waar jij klik mee hebt.
+02:03:58 Dat is alles wat je dus plan C.
 
-01:58:36 En dan kunnen wij jou daarin meer brengen.
+02:04:00 Dus eigenlijk mijn verhaal is plan C, ik heb netwerk dus wij hebben dus mijn is netwerk.
 
-01:58:37 En dit is mijn verhaal.
+02:04:07 En nee, ik bedoel sedulla en netwerk.
 
-01:58:39 En als mijn verhaal jou aanspreekt, dan kom je in contact met mij en dan kan ik jou in mijn persoonlijke netwerk, in mijn persoonlijke kerk, die dezelfde, weet je, verlangen hebben, kan ik je daar brengen, weet je wel?
+02:04:11 Dus dat is mijn verhaal en dan het verhaal kan zijn een vervolg en van hé, ik heb gekozen voor plan C, maar eerst als je plan C wilt, ik kan je helpen, want ik heb ervaring Paraguay plan C.
 
-01:58:52 Ik moet andere dingen doen.
+02:04:23 En ik heb de netwerk gebouwd en en als je plan B wilt is ook mogelijk, want ik in het netwerk ken ik mensen die plan B hebben, maar die ook christelijk zijn.
 
-01:58:58 Dus ik heb 2 uur heb ik.
+02:04:31 En plan C, ja, ik ken ook mensen en ik bedoel plan A, ik ken ook mensen die plan A hebben, weet je wel?
 
-01:59:08 Zelf vergeten voor dit gesprek, dus ik moet er wat anders doen.
+02:04:36 Die daar volledig wonen al heel veel ervaring hebben daar, daar hun leven leiden, weet je wel?
 
-01:59:12 Maar.
+02:04:40 Dus je kan je ik heb nauw contact met en is op die manier toch wel direct Paraguay.
 
-01:59:14 Ik stel voor dat ik ga starten met de funnel.
+02:04:46 Paraguay is direct zeg maar verbonden.
 
-01:59:20 Dat we de volgende keer iets visueels hebben, dat waar we naar kunnen kijken.
+02:04:49 En ik zit gewoon zo te kijken van als jij je verhaal zou brengen, wat zou wat zou direct jouw connectie zijn met Paraguay?
 
-01:59:26 Ja, is goed.
+02:05:00 Dus dat zit ik zeg maar, want mensen gaan uiteindelijk willen ze gewoon weten van hé, wat is jouw connectie met Paraguay, weet je wel?
 
-01:59:27 En ik stel voor dat dat wat je zojuist hebt besproken.
+02:05:05 Nee.
 
-01:59:37 Dus in dat je dat wat concreter kan maken en dat je in één zin of een korte paragraaf kan uitleggen van wat is het dat einddoel waar je het over hebt.
+02:05:06 Of als je zegt van hé, weet je, ik ik kan zeggen van hé, ik heb een bedrijf in Paraguay.
 
-01:59:50 Wat is dat netwerk?
+02:05:09 Dat is mijn netwerk, weet je wel, bijvoorbeeld.
 
-01:59:53 Hoe ziet dat eruit?
+02:05:12 Je zou zeggen of ik heb, je hoeft niet en sedulla te hebben, maar hé, ik heb een bedrijf in Paraguay.
 
-01:59:54 Wat wat wat is het nou echt dat je wil.
+02:05:16 Ik heb sedulla Paraguay bedrijf.
 
-02:00:00 En als jij dat kan verwoorden, dan kan ik kijken in hoeverre ik daarbij
+02:05:20 Dat zou wel je netwerk kunnen zijn.
 
-02:00:00 Kijk, netwerk in het algemeen.
+02:05:22 Maar is het bedrijf dan in Paraguay of is het weet je wel, in Nederland of in Portugal?
 
-02:00:02 Ik denk dat dat gewoon een goede zet is.
+02:05:27 Dat zijn ook vragen die wij kunnen beantwoorden, maar dat is denk ik voor klanten het belangrijkste van hé, wat is je jouw netwerk met Paraguay?
 
-02:00:05 Dus netwerken, dat is op zich een hele goede.
+02:05:34 Nou, kijk, uiteindelijk ik ben het met je eens, maar je moet het, je moet het we hebben twee verschillende dingen.
 
-02:00:09 Natuurlijk is netwerken gewoon te vaag, is te groot.
+02:05:41 We hebben communicatie wat gerelateerd is aan de service zelf.
 
-02:00:13 Maar als jij dat kan proberen op papier te zetten, al is het maar heel kort.
+02:05:49 En we hebben identificatie communicatie.
 
-02:00:19 Weet je, dan hebben we iets waar we naartoe kunnen werken.
+02:05:52 Dus we hebben beide nodig.
 
-02:00:23 En ik zou zeggen ook het is ook goed om daar een beetje tijd voor te nemen.
+02:05:55 Wij moeten communiceren, hé, wat je kan verwachten, dit is wie we zijn, dit is wat we doen, dit is hoe het werkt.
 
-02:00:31 Dus we hoeven dan niet overmorgen ofzo alweer om tafel te gaan zitten.
+02:06:03 Dit is wat je kan verwachten.
 
-02:00:36 Ik heb een hele drukke week en ik heb ook een beetje tijd nodig voor die funnel.
+02:06:04 En vervolgens communiceer je ook omdat mensen dingen kopen van mensen, niet van websites.
 
-02:00:42 Dus misschien, misschien zouden we, even kijken.
+02:06:11 Klopt.
 
-02:00:47 Vandaag is donderdag.
+02:06:11 Moeten we vertellen wie wij zijn, wat onze achtergrond is, wat ons verhaal is.
 
-02:00:53 We zouden eventueel dinsdag, volgende week dinsdag de 10e weer om tafel kunnen zitten om te kijken waar we zijn.
+02:06:18 En dat hoeft niet letterlijk overeen te komen.
 
-02:01:02 Ja, dat is goed.
+02:06:21 Kijk, er moet natuurlijk een connectie zijn altijd, vooral met dit type product.
 
-02:01:03 Dan hebben we even, we hebben een beetje tijd, dan kun je er ook een beetje over nadenken.
+02:06:26 En die connectie die is er Ja.
 
-02:01:07 Ja.
+02:06:28 Met jou, maar de visie is er met mij ook ook.
 
-02:01:08 Eens ja.
+02:06:34 Namelijk emigreren, namelijk het zetten van grote stappen.
 
-02:01:10 En dan heb ik een beetje tijd om die funnel te maken.
+02:06:38 Weet je?
 
-02:01:12 En ik ja.
+02:06:39 Dus dat is niet iets wat geen waarde geeft.
 
-02:01:19 Ja, dit kost gewoon tijd, weet je.
+02:06:41 Dus bijvoorbeeld, wat we kunnen doen is we maken bijvoorbeeld, je kan dat op veel verschillende manieren doen, een achtergrond informatie video, weet je, waar we vertellen wie wij zijn, wat we doen, wat onze overtuiging is, wat ons samen heeft gebracht, welke ervaring we hebben, wie wij zijn als persoon, weet je?
 
-02:01:23 En we kunnen dat niet eruit stampen.
+02:07:00 Hoe betrouwbaar zijn wij, Ja.
 
-02:01:27 We moeten daar echt even een beetje bij stilstaan.
+02:07:04 Uit welke autoriteit spreken zij, weet je, uit welke ervaring spreken zij.
 
-02:01:30 En ja.
+02:07:09 En dan heb je een series met praktische video's waarbij we kunnen spreken over verschillende plannen, voorbereiding en ook executie, weet je?
 
-02:01:31 Het, als we goed voorwerk doen, dan hebben we ook gewoon een grotere kans van slagen.
+02:07:25 Het daadwerkelijk zijn, daar netwerk.
 
-02:01:38 Ja.
+02:07:27 Weet je, dat zijn twee verschillende wijzen van communicatie.
 
-02:01:38 En als jij iets in je hart hebt, dan is het belangrijk dat ik wat ik in mijn hart heb dat we dat kunnen vermenigvuldigen, weet je, niet dat we twee losse eilanden zijn.
+02:07:33 En beide zijn belangrijk.
 
-02:01:50 Ja.
+02:07:37 Dus het is voor mij, het is dus niet noodzakelijk, laten we zeggen dat er vijf partners zijn.
 
-02:01:51 Ja, absoluut.
+02:07:42 We doen dit met z'n vijven.
 
-02:01:54 Is dat het idee?
+02:07:45 En er is niet zeg maar één gezicht, maar het is deze groep vrienden die dit doen.
 
-02:01:56 Ja, zeker, zeker.
+02:07:53 Dan betekent het niet dat iedereen een relatie hoeft te hebben met Paraguay.
 
-02:01:59 Dan ga ik ook dat zo helder mogelijk beschrijven en wat de einddoel is daarvan en wat er echt op mijn hart ligt.
+02:08:02 Nee, het is deze vriendengroep die noemt zich zelf vrienden van Paraguay bijvoorbeeld.
 
-02:02:12 En dan kunnen we kijken, als je ook dat doet, dan kunnen we kijken van wat kunnen we hierin mee doen, of het zo is dat we.
+02:08:11 Weet je?
 
-02:02:24 Ja, bijvoorbeeld deze visie dan zeg maar doen.
+02:08:11 En de vrienden van Paraguay als geheel als entiteit, die moet natuurlijk een hele duidelijke en sterke relatie hebben met Paraguay.
 
-02:02:29 Of wat je ook in je hart hebt dat we dat ook erbij doen.
+02:08:21 Want anders ben je iets aan het verkopen waar je geen affiniteit mee hebt en dat maakt het natuurlijk alleen maar lastig.
 
-02:02:34 Of dat het samenkomt.
+02:08:27 Maar vrienden van Paraguay heeft dat.
 
-02:02:36 Ja, ik denk Ja, ik denk dat het belangrijkste is is dat wij iets vinden dat ons beide identificeert.
+02:08:31 Die heeft die affiniteit, want er is één persoon die heeft de sedulla.
 
-02:02:44 Want anders maken we maar 50% gebruik van de kracht die we hebben.
+02:08:36 En die andere vier personen die hebben het niet, maar die zijn in het proces om dat te doen of die hebben andere soort van vergelijkbare ervaringen of één iemand die zit gewoon in de marketing, weet je?
 
-02:02:48 Maar ik heb ook een stem, ik heb ook een netwerk, ik heb ook een unieke stem die bepaalde mensen aanspreekt binnen dezelfde community als onze target audience.
+02:08:47 Maar die doet ja, die heeft geen ervaring en die vinden het allemaal wel prima, maar die staat achter de visie en die is nog steeds in het gezicht.
 
-02:03:01 Ja.
+02:08:59 Ja, absoluut, dat is het, dat is het ook inderdaad.
 
-02:03:05 Dus we kunnen drie dingen doen.
+02:09:01 Dat mensen gewoon helderheid hebben van oh, dit is het, weet je wel?
 
-02:03:07 We hebben alleen jouw stem.
+02:09:04 Dit is wie we voor ons hebben en dit is wat we en dat is natuurlijk ook gewoon van oké, net noem je met marketing bijvoorbeeld.
 
-02:03:10 Nou, dat betekent dat je alleen maar mensen raakt die zich bekend voelen met jou.
+02:09:10 Oké, hé, dit is, dit is denk ik 80% belangrijkste werk van of ja, grootste deel belangrijkste rol in het bedrijf, weet je, marketing is heel belangrijk.
 
-02:03:21 Of we doen het alleen of we doen het met beide onze stem, maar mijn stem is niet zozeer in overleg, in lijn met jouw stem, waardoor je dus eigenlijk een gefragmenteerde target audience hebt.
+02:09:21 En dat mensen gewoon weten oké, dit is wat er gebeurt.
 
-02:03:35 Waarbij je dus eigenlijk twee keer zoveel werk hebt.
+02:09:24 Maar dan is het van het is kijk, als het om het, ik zeg maar iets Ja, dat is ook als ik zeg maar kijk vanuit een klant of vanuit de visie, als mensen dat gaan zien van oké, met wie heb ik te maken, een soort van oké, ik ben Ja, de grote plaatje wat ik zie is van oké, mensen die zijn gewoon heel erg bijna obsessed, van ik heb te maken, ik heb te maken met Paraguay, weet je wel?
 
-02:03:38 Dus je moet twee keer marketing doen, want we kunnen dat niet samenvoegen, want ik heb mijn stem en jij, jij hebt je stem.
+02:09:46 En ik wil horen en waarom zou ik plan C doen, Jozef, weet je, of jouw verhaal, waarom heb je plan C?
 
-02:03:47 Ja.
+02:09:52 Dus dit is mijn verhaal.
 
-02:03:48 En de derde optie is dat we dus beide afstemmen van wat heb jij je hart?
+02:09:54 Oké, goed.
 
-02:03:57 Wat heb ik in mijn hart?
+02:09:55 Ja, ik ben wel meer geïnteresseerd in plan C.
 
-02:03:59 En wat Ja,
+02:09:57 Ik wil plan B of ik wil plan, weet je wel, dan in dat netwerk er is.
 
-02:04:00 Bindt ons.
+02:10:00 Ik kan zeggen, ik heb, weet je wel,
 
-02:04:02 Ja.
+02:10:03 Of we moeten dan de hoe zeg je dat, waar is de grens?
 
-02:04:03 En dan promoten we dat wat ons verbindt met een unieke angle.
+02:10:06 Dus de grens die wij kunnen geven?
 
-02:04:09 En dan ben je dus onze stem niet aan het verdubbelen, maar aan het vermenigvuldigen.
+02:10:08 Plan C is de grens.
 
-02:04:16 Ja, ja, ja, precies.
+02:10:11 Ik heb plan C of zeggen we dan gaan we dat nog hoger?
 
-02:04:19 Precies in de.
+02:10:14 Gaan we nog hoger zetten van oké, je hebt plan C, maar je hebt ook plan D.
 
-02:04:19 Dat maakt het veel krachtiger, want dan heb je niet zozeer dan heb je een stem, één stem met disciplines.
+02:10:21 Ik maak het me misschien makkelijkere taal.
 
-02:04:29 Ja.
+02:10:23 Plan D is geen cédula niks, maar je bent wel verbonden met mensen die wel cédula hebben.
 
-02:04:30 Ja.
+02:10:32 Die wel, dus ik zit in dat netwerk, dan is plan D.
 
-02:04:30 Dus ik noem het maar even, we gaan even op die homestead.
+02:10:35 Weet je wel?
 
-02:04:35 Dus jij hebt dezelfde emigratiestem, maar dan gefocust op Homestead en ik heb de emigratiestem op business.
+02:10:36 Dus ik zit in dat netwerk, maar ik heb geen cédula en geen onderneming in Paraguay zelf geregistreerd.
 
-02:04:50 Ja, precies.
+02:10:43 Dus dan wordt dat en dan, je hebt plan D en dan plan heb je nog plan E en F, weet je wel?
 
-02:04:50 Ja, nee, dat is ook wat ik aan dacht inderdaad.
+02:10:49 Dus waar zit de grens?
 
-02:04:53 En heb je een grote doelgroep.
+02:10:50 Dat zit ik een beetje te zoeken van als wij zeggen van hé, we houden het plan C en dan of we houden het plan D.
 
-02:04:55 En dit maakt, dit is, dit zijn niet zozeer twee losse stemmen met twee keer zoveel mensen.
+02:11:04 Dat kan ook natuurlijk.
 
-02:05:01 Nee, dit vermenigvuldigt.
+02:11:06 Dus zeg van hé, dat is ook plan D, weet je.
 
-02:05:03 Want mensen zien dat oh, zij bieden een totaal oplossing.
+02:11:08 Er zijn ook verhalen van mensen die plan D hebben die nog geen cédula hebben en die misschien niks geregistreerd hebben in Paraguay.
 
-02:05:10 Weet je, zij bieden netwerk, echt een netwerk, niet een specifiek netwerk, maar een breed netwerk.
+02:11:21 Dat is ook een verhaal, weet je?
 
-02:05:16 Ja.
+02:11:22 En en wat heeft dat te maken met Paraguay?
 
-02:05:17 Weet je, dat is gewoon vele malen krachtiger.
+02:11:25 Dus dat ik weet niet, ik zit probeer direct te kijken van gaan wij ook plan D klanten krijgen.
 
-02:05:21 Ja, precies.
+02:11:30 Ik denk dat dat het wordt is, dus welke klanten willen we?
 
-02:05:22 Mee eens, inderdaad ja.
+02:11:33 We willen klanten plan A, plan B, plan C.
 
-02:05:24 Nee, dat is zo, dan dat ook wel zien dat het veel breder is, veel.
+02:11:36 Maar willen we ook klanten plan D?
 
-02:05:30 Dan, ja.
+02:11:38 Die ook die niet die plan D is dus mensen die niet direct geïnteresseerd zijn met Paraguay, maar die wel geïnteresseerd zijn met immigratie.
 
-02:05:33 Mee eens.
+02:11:47 En die wel willen weten van hé, we weten wat betekent het nou als ik, ja, ik wil niet naar Paraguay, maar ik wil wel naar Brazilië of ik wil wel naar Portugal of naar Spanje verhuizen.
 
-02:05:36 Oké, nou, ik moet hangen.
+02:11:56 Maar wat betekent het nou?
 
-02:05:40 Ehm zullen we nog eventjes in de app afspreken dan hoe laat volgende week dinsdag.
+02:11:57 Willen we ook dat verhaal erbij vertellen of of staat dat ook wel snap je?
 
-02:05:45 Ja.
+02:12:02 Ik denk dat we dan dan gaan we dus in de brede.
 
-02:05:46 We kunnen ook gewoon via 4 uur doen.
+02:12:06 Dus dat is product Ja.
 
-02:05:48 Oké, kunnen we ook plannen ja.
+02:12:08 Diversificatie.
 
-02:05:49 Dus dinsdag 4 uur Nederlandse tijd.
+02:12:10 En en dat is iets wat we kunnen toepassen wanneer het eerste heel specifiek afgebakende product of service als dat werkt.
 
-02:05:53 Ja, inderdaad.
+02:12:26 Ja, precies.
 
-02:05:53 Oké.
+02:12:26 Dus ik denk dat we dat zeker kunnen doen, maar ik denk dat als we ook weer teruggaan naar ons document is dat we nu één ding doen, heel simpel, heel snel, zo effectief mogelijk, zodat we snel kunnen valideren, meten, zien hoe het werkt en dan bouwen we uit.
 
-02:05:56 Dan ja, is het natuurlijk ook afgesproken doen we dat.
+02:12:44 Ja.
 
-02:06:00 Ik stuur je dan een uitnodiging, dan heb je dat gelijk in je.
+02:12:45 Dus ik denk en we hebben ook maar op dit moment één product, niks meer.
 
-02:06:03 Yes.
+02:12:50 Daarom is die cédula perfect omdat dat Ja.
 
-02:06:05 Yes, super.
+02:12:56 Dat waarschijnlijk of we moeten iets nieuws bedenken, wat daar nog voor zou kunnen kopen, wat we kunnen verkopen, maar ik weet niet.
 
-02:06:08 Wauw.
+02:13:04 Maar de cédula is het makkelijkst omdat dat relatief makkelijk afgebakend is.
 
-02:06:08 We komen vooruit, zo en nu is echt huis huiswerk doen.
+02:13:11 Ja.
 
-02:06:14 Ja, het ja, maar dat is ook wel leuk.
+02:13:12 We kunnen heel duidelijk zeggen oké, je betaalt nu dit dit geld of later, maakt niet veel uit, maar je betaalt geld en dan met vier maanden, hè, noem even wat op, zes maanden, dan heb je dit product.
 
-02:06:19 Ja, zo is dat.
+02:13:25 Fysieke product.
 
-02:06:21 Zo is dat.
+02:13:26 En dan is de service, dan is het, is deze transactie is afgerond.
 
-02:06:22 Oké, nou ja, neem je ook je rust en je tijd zou ik zeggen, want het is niet makkelijk, weet je, om je gedachten te ordenen.
+02:13:31 Ja, precies.
 
-02:06:32 Maar ehm ja, ik zorg in ieder geval dat er volgende week wat visueels hebben we er kunnen we ergens naar kijken.
+02:13:33 Maar natuurlijk omdat je die transactie hebt en deze relatie hebt weten we dat er meer kan komen.
 
-02:06:38 Yes.
+02:13:38 Dus we kunnen dan plan B, plan A en andere dingen en andere activiteiten daarom kunnen kunnen we upcellen, kunnen we ook verkopen en daardoor dus ook hun ons netwerk groeien laten groeien.
 
-02:06:39 Oké, klinkt goed.
+02:13:51 Dus ik denk dat dus dat is de verticaal.
 
-02:06:41 Yes.
+02:14:03 Ja.
 
-02:06:43 Klinkt goed.
+02:14:04 Hè, dus expansie en en horizontaal is dan de diversificatie.
 
-02:06:43 Thanks en groeten aan die vrouw.
+02:14:11 Want we hebben dus plan C, als we plan C hebben, kunnen we later ook plan B en plan A verkopen.
 
-02:06:46 Zal ik doen.
+02:14:18 Ja, maar alles, alles blijft wel binnen Paraguay hè?
 
-02:06:46 Jij ook groeten aan het gezin.
+02:14:22 Want anders wordt het wel veel te breed.
 
-02:06:49 Yes.
+02:14:23 Wat denk je?
 
-02:06:50 En thanks.
+02:14:24 Ik probeer samen te denken dat we dat zien.
 
-02:06:53 Ik zie je volgende week dan.
+02:14:26 Als dat zich gaat uitbreiden, verticaal en horizontaal en verticaal, dan worden dus meer gespecialiseerd, maar dan wordt het alles binnen Paraguay.
 
-02:06:55 Doen we.
+02:14:36 Ja, ik bedoel.
 
-02:06:56 Goed weekend alvast.
+02:14:37 Als de ondernemer gaat of als het alles.
 
-02:06:57 Oké bro.
+02:14:41 Ja.
 
-02:06:58 Fijn avond.
+02:14:42 Als we in de breedte gaan, dan wordt het een copy van Paraguay en dat passen we toe op, noem het op, Portugal bijvoorbeeld.
 
-02:07:00 Fijn avond.
+02:14:51 Ah zo.
 
-02:07:00 Hoi.
+02:14:53 Ja, precies.
 
-02:07:02 Ciao, ciao.
+02:14:53 Maar dat is een goede dat is een goed punt inderdaad wat je maakt.
 
-02:07:03 Ciao.
+02:14:57 Dan zie ik ook inderdaad waar wij het over hebben.
+
+02:15:00 Dus horizontaal is dus copy-paste met een andere land, een andere land, een andere land.
+
+02:15:04 Oh oké, dus op die manier groeien inderdaad.
+
+02:15:09 Ja.
+
+02:15:09 Dan het andere message worden.
+
+02:15:11 Het is een andere taal, het is niet een andere doelgroep, maar het is wel een andere groep people, andere groep mensen, want die mensen die spreken Portugees en geen Nederlands.
+
+02:15:19 Ja, klopt.
+
+02:15:20 Klopt.
+
+02:15:20 En andere behoeftes.
+
+02:15:22 Ja, precies.
+
+02:15:23 En denk ik wel van ik weet niet hoe dat precies in de bedrijvenwereld werkt, maar voor zover ik heb begrepen, je hebt bijvoorbeeld ehm hoe noemen ze dat?
+
+02:15:33 Ik ben de naam vergeten.
+
+02:15:35 Maar in ieder geval, ik heb zoiets gehoord, je hebt ehm trust, noemen ze trust volgens mij.
+
+02:15:43 Je hebt Blackrock ofzo, je kent die gigantische bedrijven.
+
+02:15:47 Maar die zijn meer op de achtergrond, maar je hebt nog kleinere bedrijven die hebben Coca-Cola, die hebben Fanta, die hebben dit en dat.
+
+02:15:54 Ze hebben heel veel industrie onder dat umbrella, die paraplu.
+
+02:15:59 Umbrella, precies, onder die paraplu, maar dan dat, maar die naam, dat wordt niet gepromoot.
+
+02:16:04 Het wordt niet gepromoot naar Blackrock, wordt niet gepromoot online.
+
+02:16:08 Het is meer op de achtergrond.
+
+02:16:09 Ja.
+
+02:16:09 En dat wordt niet gepromoot, maar worden al die kleine bedrijfjes worden wel individueel gepromoot met hun eigen identiteit, van hé, dit is product Paraguay, dit is product dit, dat is een bedrijf.
+
+02:16:22 En dan als je iets anders wil beginnen, dan begin je dus Coca-Cola, dan begin je bijvoorbeeld iets, wereldse termen, bijvoorbeeld Fanta.
+
+02:16:33 Ja.
+
+02:16:33 Fanta, weet je wel?
+
+02:16:34 Dus het is Fanta.
+
+02:16:35 Dus het is ook hetzelfde is ook dezelfde, maar het is een heel andere bedrijf, weet je wel?
+
+02:16:39 Maar die is wel verbonden, bij wijze van spreken met Blackrock.
+
+02:16:43 Dus het is van Blackrock, maar dat wordt niet gepromoot.
+
+02:16:46 Dus wat wij nu dus de wat wij nu dus aan het opzetten zijn is wij zijn nu Coca-Cola aan het opzetten.
+
+02:16:51 Ja.
+
+02:16:52 En dan straks als we Fanta willen opzetten, dan moeten we dus Blackrock opzetten, zodat Fanta ook daaronder gaat vallen, zodat een touwtje aan Blackrock gaat hangen en een touwtje aan Coca-Cola gaat hangen, dus die houdt het vast en die gaat het een beetje sturen.
+
+02:17:08 Ja.
+
+02:17:09 Ja, precies.
+
+02:17:10 Dus dat die beelden zie ik voor mij.
+
+02:17:12 En dus wij zijn dus nu dit Paraguay aan het doen en dan is plan A, B, C specifiek Paraguay.
+
+02:17:18 Weet je, christenen.
+
+02:17:20 Plan A, B, C Paraguay.
+
+02:17:23 Ja.
+
+02:17:23 Dat is het.
+
+02:17:24 Weet je?
+
+02:17:25 En als we later willen uitbreiden horizontaal, dan moeten we weer een ander bedrijf beginnen van hé, dit is of het is precies hetzelfde copy paste Portugal bijvoorbeeld.
+
+02:17:33 Het is copy-paste ja.
+
+02:17:34 We gaan niks Ja.
+
+02:17:35 Niet het wiel opnieuw uitvinden, maar we moeten de boodschap verfijnen en aanpassen tot de nieuwe groep mensen.
+
+02:17:48 Want inherent heeft die groep in Portugal heeft dezelfde behoeftes als Nederland.
+
+02:17:56 Maar er is taalverschil, er is cultureel verschil.
+
+02:18:00 Er zijn bepaalde nuances die verschillen.
+
+02:18:02 Dus copy-paste betekent niet, je kopieert het gewoon en dan werkt het.
+
+02:18:06 Nee, je moet het fine-tunen, maar de core message weet je al dat het gaat werken, hoe je tot die mensen spreekt, wat hun over het algemeen behoeftes zijn, maar je moet dat wel een beetje gaan fine-tunen, maar dat gaat namelijk, dat gaat veel makkelijker.
+
+02:18:22 En dan kun je ook tegen die Portugese zeggen dat dit concept al toegepast is op Nederlanders, weet je.
+
+02:18:31 Dus dat geeft al gelijk heel veel vertrouwen.
+
+02:18:34 En precies.
+
+02:18:35 Maar wat ik hierin, wat ik hierin zie is van dus die copy-paste zie ik zo, dus wat ik eerst voor ogen had was dus eerst is de focus bijvoorbeeld Paraguay, Nederland.
+
+02:18:49 Dat is de eerste kopie.
+
+02:18:52 Dus alles, zeg maar de hele, je hebt dus Paraguay plan A, B, C.
+
+02:18:58 Paraguay.
+
+02:19:00 Dan kopie Nederland en dan als de volgende kopie horizontaal wat ik zag is Duitsland en Denemarken, Zweden, Franse, weet je wel?
+
+02:19:11 En misschien op een gegeven moment gaan we wel Saoedi-Arabië, weet je wel, misschien gaan we wel Zuid-Afrika.
+
+02:19:17 Dat copy-paste wordt dus alles uiteindelijk richt zich naar Paraguay.
+
+02:19:22 Paraguay is ideale land voor belasting.
+
+02:19:27 Vrijheid overheid, want de hele boodschap is van oké.
+
+02:19:32 Het is goed om cédula te hebben van Paraguay, want de de de dat soort verhaal, maar dat wordt dus plan A, B, C.
+
+02:19:39 Mensen kunnen kiezen wat ze willen, maar copy-paste horizontaal is alle landen Paraguay.
+
+02:19:51 Je moet cédula hebben.
+
+02:19:53 Want ja, we kunnen niet een Portugese, dat is een hele andere concepten Portugese verblijfsvergunning.
+
+02:20:00 Ja, dat gaat niet, weet je.
+
+02:20:00 Je kan niet zomaar een Europese paswoord hebben, dat wordt niet.
+
+02:20:04 Zo'n hele andere concept.
+
+02:20:05 Dan moet je, heb je met visa te maken, werkvergunning.
+
+02:20:11 Ja, het is echt Paraguay is gewoon heel makkelijk.
+
+02:20:14 Het is gewoon Stanley die regelt dat.
+
+02:20:15 Wij werken dit, dat gaat heel snel vermenigvuldigd, want het is gewoon land per land eigenlijk.
+
+02:20:22 Moet je andere taal spreken.
+
+02:20:24 Ja, andere getuigenis nodig iemand die uit Duitser die naar daar gaat, maar dan ga je kijken, kopiëren plakken.
+
+02:20:30 Maar dan verticaal wordt dan meer van oké wij met onderneming.
+
+02:20:38 Hoe kan je land kopen daar.
+
+02:20:43 Weet je wel?
+
+02:20:43 Hoe kan je onderneming beginnen?
+
+02:20:45 Of het kan ook zijn van hoe je kan in Paraguay investeren in woningen, weet je wel?
+
+02:20:50 Want ik de kan je geld in investeren of je kan een huis kopen.
+
+02:20:54 Of weet je wel, kunnen we van allerlei dingen toevoegen verticaal uitbreiden dat mensen kunnen doen.
+
+02:21:01 Maar de hele focus wordt zeg maar Paraguay.
+
+02:21:04 Dat is een beetje wat ik zie.
+
+02:21:05 Ja.
+
+02:21:06 Maar dan wordt ja.
+
+02:21:08 Nee, ik denk dat dat het goed is, maar.
+
+02:21:09 Maar loop niet te snel vooruit op zaken, want dit is natuurlijk, als dit werkt, dan is dit een heel lang proces.
+
+02:21:19 En daarom is het belangrijk om nu.
+
+02:21:21 We moeten nu echt alleen maar plan C taal spreken.
+
+02:21:26 Ja.
+
+02:21:27 Want dat is het enige wat we kunnen bieden.
+
+02:21:30 Wij kunnen realistisch gezien niks anders bieden.
+
+02:21:33 Niks anders.
+
+02:21:36 Kijk met een paar mensen waar je wat een goede relatie mee hebt misschien, weet je, die je persoonlijk wat beter kent zou je al zeg maar een soort van plan B of misschien zelfs al plan A kunnen regelen en verkopen op op lokale basis, weet je niet massaal.
+
+02:21:55 Ja.
+
+02:21:55 Maar persoonlijke basis.
+
+02:21:58 Ja ja.
+
+02:21:59 Ehm, maar het adverteren daarvan dat kunnen we gewoon nog niet doen omdat we die dat netwerk nog niet hebben en ja.
+
+02:22:14 Ja, het is ook gewoon nog niet getoetst, weet je.
+
+02:22:17 Ook al is er een klein netwerkje, je wilt dat er echt wat mensen zijn die dit ervaren en dat die mensen zeggen ja, er is een netwerk.
+
+02:22:23 Kijk, en dan kun je dat ook meer aanbieden.
+
+02:22:25 Dus dat.
+
+02:22:27 Ja.
+
+02:22:27 Dat kost een beetje tijd en het is ook belangrijk.
+
+02:22:33 Dat dat wij daarin groeien en dat ook voor mij, bijvoorbeeld kijk, het is gewoon belangrijk dat dit gaat werken en dat ik ook naar Paraguay ga.
+
+02:22:45 Een cedula heb dat mijn gezin dat heeft.
+
+02:22:52 En dat wij vanuit Paraguay ook het gezicht hebben, dat wij, dat mensen zien dat wij in Paraguay zijn, dat we daar content maken.
+
+02:23:02 Ja.
+
+02:23:07 Weet je, en dat we dat vertrouwen dus gaan gaan opbouwen.
+
+02:23:11 Dus je ziet dat dit al dit gaat al minstens een jaar en eigenlijk misschien wel drie jaar kosten voordat dat natuurlijk is en dan kunnen we op grotere schaal zeg maar plan B en plan A ook gaan verkopen en misschien zelfs wel mensen gaan betalen, inhuren die bepaald werk voor ons voor ons doen.
+
+02:23:32 Ja ja.
+
+02:23:33 En als dat dan allemaal werkt, dan de breedte, dat is niet zo moeilijk, want de breedte is meer gewoon het de de voorkant.
+
+02:23:51 Dus een website zeg maar, communicatie, de voorkant van een bedrijf wat ook wat in de core al goed opereert.
+
+02:24:00 Ja.
+
+02:24:01 Weet je wel?
+
+02:24:02 Want bijvoorbeeld de funnel is gewoon de voorkant van ons bedrijf.
+
+02:24:07 Ja.
+
+02:24:07 Die funnel die haalt mensen naar binnen.
+
+02:24:10 Ja, precies.
+
+02:24:10 Maar als ik die funnel kopieer in het Italiaans.
+
+02:24:13 Ja.
+
+02:24:14 Weet je?
+
+02:24:14 Is het gewoon copy-paste en deze mensen gaan ook door ditzelfde proces.
+
+02:24:20 Dus de breedte, dat is niet zo moeilijk.
+
+02:24:22 Maar de breedte ingaan, dat kunnen we alleen maar doen wanneer de verticaal is solide is.
+
+02:24:31 Ja ja ja.
+
+02:24:31 En wij wij wij kunnen wij kunnen massaal.
+
+02:24:35 Massaal kunnen we niks anders doen dan plan C.
+
+02:24:38 Precies.
+
+02:24:39 Lokaal kun jij, jij hebt misschien hier en daar wat vrienden die je persoonlijk goed kent en die kun je al plan B, plan A aanbieden, want je kan zeggen luister, wij zijn nog in de experimentele fase.
+
+02:24:50 Precies en wat vind je van en ik wilde er niet in haken, maar gewoon een kleine toevoeging daarin.
+
+02:24:55 Van ik zat te denken bijvoorbeeld getuigenis van Stanley, want ze wonen nu daar drie jaar, vier jaar, ze hebben wel plan A.
+
+02:25:00 Hoef ik niet direct via ons, maar wel zeg maar dat zij eigenlijk wel via ons, want zij zijn diegene die dat regelen, maar in ieder geval.
+
+02:25:10 Wij kunnen zeggen van hé, dit is onze eerste getuigenis, zij zijn de eerste getuigenis.
+
+02:25:13 Ik denk dat dan.
+
+02:25:16 Uitbaten ja.
+
+02:25:17 Ja, en dan de Nederlandse stijl die ook die ik had geholpen.
+
+02:25:23 Die zijn die willen eigenlijk plan A willen ze naartoe.
+
+02:25:26 Of plan B eigenlijk, plan A B, zoiets, eigenlijk meer plan A, maar in ieder geval dan hebben we al verticaal zeg maar.
+
+02:25:35 Van dat het in proces is natuurlijk.
+
+02:25:36 Nu hebben we wel getuigenissen mensen die wel plan A hebben of plan B en plan C kunnen we wel.
+
+02:25:40 We moeten dat zoveel mogelijk doen, want als we dat niet hebben kunnen we nooit verticaal de hoogte in.
+
+02:25:47 Precies.
+
+02:25:48 Dus ik denk dat we dat moeten doen.
+
+02:25:51 Maar nogmaals.
+
+02:25:53 Wanneer je duizenden mensen gaat benaderen en naar onze funnel gaat brengen.
+
+02:25:59 Dat betekent dat je dus mensen gaat krijgen die willen kopen en die gaan daar dus ook verwachten.
+
+02:26:07 Dus als jij de verwachting geeft, hé, koop plan A hier.
+
+02:26:12 Dan verwachten zij plan A netwerk.
+
+02:26:17 Plan A kwaliteit, plan A communicatie.
+
+02:26:21 Precies.
+
+02:26:21 Op grote schaal, denk ik, maar dat weet jij beter.
+
+02:26:24 Ik weet het nog.
+
+02:26:26 Dat kunnen we nog niet doen.
+
+02:26:27 We kunnen dat wel handmatig doen, mensen die wij persoonlijk kennen.
+
+02:26:33 Weet je?
+
+02:26:33 En dan kunnen we ook bij hun aangeven, wij leveren plan A, wel degelijk, dan kunnen we een bepaalde prijs voor afspreken.
+
+02:26:40 Maar jij dit netwerk is niet, je komt daar niet met een groep van 50 mensen, weet je, waar je alles kan doen.
+
+02:26:48 Weet je, we zijn nog steeds in de experimentatie experimentatie fase.
+
+02:26:55 Snap wat je bedoelt.
+
+02:26:56 En we kunnen zelfs zeggen, nou, weet je, normaal gesproken zouden we hier €10.000 van vragen, maar omdat we nog bezig zijn vragen we €750.
+
+02:27:08 En dan verwachten we van jou dat jij een getuigenis geeft ook, weet je?
+
+02:27:16 En dan kunnen we dat gebruiken.
+
+02:27:18 Kijk als wij drie of vijf getuigenissen hebben, kijk, dan kun je al tegen een netwerk zeggen, hé, wij verkopen ook plan A, weet je?
+
+02:27:27 Dus.
+
+02:27:29 Maar we hebben dat gewoon eerst nodig.
+
+02:27:33 Precies.
+
+02:27:34 En we hebben letterlijk ervaring nodig.
+
+02:27:37 Want het is één om daar mensen te hebben, maar die mensen moeten daar minimaal zes maanden wonen.
+
+02:27:43 Weet je?
+
+02:27:45 Oh dus de klanten die zes maanden daar woont, zeg maar.
+
+02:27:50 Kijk, als jij zegt, hé, bij mij kun je klant A kopen of plan B, plan A kopen.
+
+02:27:57 En eigenlijk weet eigenlijk, eigenlijk wij kunnen plan A niet verkopen.
+
+02:28:02 Dus het is alleen, kijk, we kunnen plan A, het enige wat wij kunnen verkopen is inderdaad wat je zegt.
+
+02:28:07 Het is plan C, dat is de cedula.
+
+02:28:10 En plan B kunnen we, je kan plan B niet verkopen, maar je kan voor steeds voor.
+
+02:28:18 Dan begin er daar een bouwproject.
+
+02:28:20 We zijn een huis aan het bouwen, dan kunnen we wel plan B verkopen in die zin van hé, je kan ook een huis kopen in Paraguay, want ik heb ook bijvoorbeeld, we hebben ook een huis daar gekocht.
+
+02:28:28 Ik zeg maar iets.
+
+02:28:29 We kopen een huis en dan willen we die huis verkopen of doorverkopen of verhuren.
+
+02:28:32 We hebben een huis gekocht en en in die huis of wij kunnen ook direct zo zeggen dat stel voor dat Stanley en zijn groep wel een huis hebben gekocht.
+
+02:28:41 En die hebben ze een land gekocht.
+
+02:28:42 Dan kunnen we die verhaal binnenbrengen van hé, ja, we hebben wel, zij weten wel hoe je land kan kopen, hoe je een huis kan bouwen of hoe je een huis kan laten bouwen op een goede manier met een goede netwerk.
+
+02:28:53 En ja, en dan plan A, zij zijn ook de getuigenis.
+
+02:28:58 Maar in ieder geval.
+
+02:28:59 Ik weet niet of wij moeten wachten totdat wij plan A en B hebben, misschien zullen we dat nooit hebben, maar.
+
+02:29:06 Wij hebben wel vertrouwd, we hebben wel vertrouwd.
+
+02:29:09 Nee, precies.
+
+02:29:10 Wij hebben.
+
+02:29:10 We hebben vertrouwde mensen die dat al hebben, zeg maar.
+
+02:29:13 Ja.
+
+02:29:13 Zoals ik tegen Stanley zou zeggen.
+
+02:29:14 Netwerk.
+
+02:29:16 Ik bedoel als je stilst voor als iemand zegt van ik wil een huis bouwen in in Paraguay, dat in principe kan dat, want als wij als ik een afspraak maak met Stanley en hij zit gewoon op te springen om dat te doen, dan cedula zeg maar, daar heeft hij niet zo, krijgt hij een klein bedrag voor.
+
+02:29:30 Dus dan zou hij dus wel een huis daar laten bouwen of zelf bouwen met andere wat dan ook.
+
+02:29:35 Maar in ieder geval, ik snap wel wat je bedoelt.
+
+02:29:37 We kunnen het nu niet beloven, maar het is wel beschikbaar.
+
+02:29:40 Kijk, ik denk dat we het op deze manier.
+
+02:29:42 Ja, ik snap, ik snap wel wat je bedoelt.
+
+02:29:44 Wij willen niet direct die eerste keer dat dat vertellen.
+
+02:29:47 Maar ik ja, dat is wel een goed punt, ik ga het weer omschrijven.
+
+02:29:53 Ja.
+
+02:29:53 Wat kijk wat wij denk ik en misschien kunnen we dat al wel in de funnel neerzetten is.
+
+02:30:00 Wat wij zouden moeten verkopen.
+
+02:30:01 Is altijd het minst moeilijke.
+
+02:30:05 Dus ik denk dat.
+
+02:30:05 Minste moeilijke ja.
+
+02:30:06 Ik denk dat het altijd goed is om plan C, dat is wat we verkopen.
+
+02:30:12 Maar vervolgens ja.
+
+02:30:14 Hebben wij een klantenbestand.
+
+02:30:19 En wij gaan communiceren met dat klantenbestand.
+
+02:30:25 En met dat klantenbestand daar gaan wij upsells doen.
+
+02:30:32 Daar gaan wij zeggen: we hebben een netwerk, je kan dit doen, je kan dat doen.
+
+02:30:36 En en dan kun je ze verkopen wat ze willen.
+
+02:30:42 Want je kan dan één op één gesprekken met ze gaan voeren en dan kun je zelfs custom prijzen gaan maken.
+
+02:30:51 Omdat het namelijk een product is wat complex is.
+
+02:30:57 Is het oké, weet je, dat we daar wat meer moeite voor moeten doen met verkoop.
+
+02:31:04 Want een e-book, ja, daar wil je helemaal geen contacten hebben met mensen, want dan ben je veel te veel tijd kwijt om voor 19 euro dingen te gaan uitleggen.
+
+02:31:14 Maar als jij €10.000 vraagt van iemand, weet je, dan is dat best wel normaal dat je daar een gesprek voor in een consultatie gesprek van 45 minuten ofzo, weet je.
+
+02:31:25 Ja, precies.
+
+02:31:26 En en dan kun je een custom prijs maken en dan kun je heel duidelijk uitleggen: hé, wij verkopen ook B en A.
+
+02:31:35 En dan kun je eigenlijk vanaf het begin kun je dat al doen, zodra daar de mogelijkheid voor is.
+
+02:31:40 Maar.
+
+02:31:43 Ja.
+
+02:31:43 Massaal is dan waarschijnlijk gewoon niet handig.
+
+02:31:48 Want kijk, dit is misschien het verschil wat wij doen ten opzichte van andere.
+
+02:31:55 Andere mensen, dan kun je al gelijk plan A kopen en dan wat je doet is een consultatiegesprek eerst met hun.
+
+02:32:07 En dan en dan ga je een plan gaan ze een plan maken hoe je dat allemaal doet.
+
+02:32:11 Maar ik denk dat het eigenlijk veel makkelijker kan, want alles staat en valt met de cedula.
+
+02:32:21 Ja.
+
+02:32:21 Dus niemand kan plan A kopen zonder een cedula.
+
+02:32:25 Dus het begint altijd met de cedula.
+
+02:32:27 Dus als je gewoon alleen maar de cedula verkoopt,
+
+02:32:31 Ja.
+
+02:32:33 Dan is de wrijving ten eerste veel minder, want iemand die alleen maar geïnteresseerd is in plan C.
+
+02:32:41 Die denkt: ik wil gewoon een cedula.
+
+02:32:43 Maar die komt op onze website en met opties, plan A, B, C, €10.000, €5.000.
+
+02:32:51 Nee.
+
+02:32:51 Dus aan mee nodig.
+
+02:32:53 Wat jij doet is zo snel mogelijk die cedula verkopen, maar dan heb je ze.
+
+02:32:57 Ja.
+
+02:32:58 Want als ze namelijk een cedula hebben, ook al zijn ze helemaal niet geïnteresseerd in niks anders, dan ga je ze e-mail sturen, dan ga je ze warm maken, dan ga je ze video's sturen, dan ga je ze info.
+
+02:33:10 Ja.
+
+02:33:10 Informatie sturen.
+
+02:33:11 Dan denk ik: oh, ik ben eigenlijk wel geïnteresseerd om misschien te emigreren of een huis te hebben daar, vakantiehuisje, weet je.
+
+02:33:19 Ja.
+
+02:33:19 En dan kun je een upsell gaan doen.
+
+02:33:22 En dan is het ook gecontroleerd.
+
+02:33:26 Weet je, het is persoonlijk.
+
+02:33:29 Ja.
+
+02:33:30 En en al deze informatie die kun je allemaal automatiseren.
+
+02:33:36 Weet je, dit soort e-mails kun je allemaal automatiseren.
+
+02:33:39 En in die automatisering zetten wij dan ook knoppen waar mensen consultatie kunnen inplannen.
+
+02:33:51 Dus wat je dan weer krijgt is een agenda vol met geïnteresseerden.
+
+02:33:56 En en dat betekent dat je moet gaan verkopen.
+
+02:34:01 Ja, we moeten consultatie gaan hebben, maar je hebt betere service, weet je, mensen voelen zich vertrouwd, je luistert naar ze, je geeft ze custom advies.
+
+02:34:16 En en als mensen overtuigd zijn, dan kunnen ze daarna daarna veel makkelijker verkopen.
+
+02:34:22 Maar aan de voorkant verkopen we alleen Cedula, want niemand kan iets doen zonder Cedula.
+
+02:34:29 Ja, precies.
+
+02:34:30 Nee, precies, dat is een goede.
+
+02:34:32 Ik denk dat als je paar sleutelwoorden daarin gooit, dat is al vaak genoeg van hé, wij kunnen voor jou cedula regelen.
+
+02:34:39 Het de sleutelwoorden zou kunnen zijn van: wij hebben een netwerk die daar wonen en die daar ondernemen en die daar zijn en in de toekomst zou zijn: hé, ik heb daar een woning of ik ik ben de helft van het jaar daar, wat dan ook.
+
+02:34:50 In ieder geval, er zijn van die sleutels dat mensen denken van: oh, hij kent mensen daar.
+
+02:34:54 Zij kennen mensen daar die betrouwbaar zijn.
+
+02:34:57 Oké, dus als ik een cedula heb en ik wil het land bezoeken, dan kan ik hun contacten, dan kan ik via hun contacten kunnen mij ontvangen.
+
+02:35:04 Of een woord van: hé, je bent welkom.
+
+02:35:10 Je kan cedula krijgen en als je ooit Paraguay wil bezoeken, je bent welkom.
+
+02:35:15 Om bijvoorbeeld te komen bezichtigen ofzo.
+
+02:35:19 En gewoon van die kleine dingetjes van: ah, oké, leuk.
+
+02:35:22 Ik heb cedula.
+
+02:35:23 Ik wil wel Paraguay een keer ontdekken.
+
+02:35:24 Misschien over twee jaar of een jaar.
+
+02:35:27 Een keer wil ik het doen.
+
+02:35:27 Maar in ieder geval dan weet ik het van als ik via hun cedula heb, dan heb ik ook een ingang dat ik ja, het land ga leren kennen of dat ik ontvangen ga worden ofzo.
+
+02:35:37 Dat.
+
+02:35:39 Maar dat kunnen we, dat is eigenlijk wat je zegt.
+
+02:35:41 Dat is het enige wat we kunnen aanbieden of verkopen is netwerk.
+
+02:35:45 Ja.
+
+02:35:48 Ja, nee, dat is zo.
+
+02:35:51 Ik moet afronden.
+
+02:35:52 Maar ja, ik denk eigenlijk dat we het nog steeds herijkt hebben, wat we eigenlijk min of meer al hebben besproken.
+
+02:36:02 En ik denk het is goed om even vooruit te denken wat de visie is.
+
+02:36:07 En dus ja, het is goed, maar ik denk dat we er nu ook weer terug moeten komen en even concreet moeten zijn is we moeten het nu heel simpel houden.
+
+02:36:22 En het enige wat we zouden moeten doen, denk ik, is cedula.
+
+02:36:26 Ja.
+
+02:36:27 En and that's it.
+
+02:36:30 Want als wij, kijk, iemand die bij ons cedula heeft gekocht, zal waarschijnlijk 90% van die mensen die gaat klant blijven en zijn bij ons.
+
+02:36:44 Want als ze eenmaal de cedula hebben, gaan ze niet naar andere mensen.
+
+02:36:46 Waarom zouden ze dat doen?
+
+02:36:48 Waarom zouden ze dat gaan ontdekken?
+
+02:36:52 Ze zijn al bij ons gekomen, omdat ze al ons vertrouwden, hè, op een of andere manier.
+
+02:36:58 Dus.
+
+02:36:59 Dus en vervolgens kunnen we ze handmatig, wel geautomatiseerd met e-mails bijvoorbeeld, maar we kunnen ze dan op een geautomatiseerde e-mail marketing manier kunnen we allerlei dingen gaan upsellen.
+
+02:37:15 En we hoeven dat niet, we hoeven geen pakket plan A aan te bieden op op de website.
+
+02:37:19 Kijk, ten eerste.
+
+02:37:20 Nee, dat kunnen we inderdaad nu niet verkopen.
+
+02:37:23 Nee, het is wel meer dat ze want mensen die plan C pakket willen is vaak met de gedachte als ik ooit, want mensen gaan niet zomaar een cedula nemen.
+
+02:37:31 Ze hebben altijd van plan C staat voor plan crisis.
+
+02:37:34 Dus zij zeggen van: hé, als ik plan crisis.
+
+02:37:36 Zij hebben dat zeg maar.
+
+02:37:37 Ze worden dat gezegd.
+
+02:37:39 Plan C is plan crisis.
+
+02:37:40 Dus als er crisis is, dan ga ik naar Paraguay.
+
+02:37:43 Dus dan willen ze alvast weten van: oké, ik wil wel weten dat dit de weg is, als het ooit een crisis is, mijn huis staat in brand, weet ik gewoon van: oké, dan pak ik mijn koffer.
+
+02:37:53 Dan ga ik ik kan die mensen contacten, die gaan mij helpen om wat te huren of weet je wel?
+
+02:37:59 Dat moeten we wel, dat moeten we wel verkopen, zeg maar.
+
+02:38:03 Dat is achter de cedula zit netwerk.
+
+02:38:05 En achter die netwerk Ja, wij moeten inderdaad wij moeten heel erg duidelijk maken dat de cedula de entry is naar een heel nieuw leven, een heel scala aan mogelijkheden.
+
+02:38:19 Ja, dan is het goed.
+
+02:38:21 Zonder dat we zeggen hé, dit is precies wat je krijgt als je ons dit betaalt.
+
+02:38:26 Want dat is allemaal consultatie gesprekken worden.
+
+02:38:30 Nee.
+
+02:38:30 Ja, nee, precies.
+
+02:38:32 Nee, dat wordt ingewikkeld.
+
+02:38:34 We gaan niet zeggen: je kan een huis kopen bij ons ofzo.
+
+02:38:35 Dat gaan we sowieso niet noemen.
+
+02:38:37 Maar dat ze wel in het verhaal kunnen lezen, dat ze zien van: hé, dat dit gaat meer zijn dan alleen maar cedula in de toekomst, ja.
+
+02:38:44 Ja, ik denk dat we het zo moeten aanpakken dat als wij dus de cedula hebben verkocht aan iemand en we hebben vervolgens een consultatiegesprek.
+
+02:38:51 Dan zouden we kunnen zeggen: hé, als je wil, dan kun je ook een huis kopen en ze oh, oké, daar ben ik wel geïnteresseerd naar en dan kunnen we bijvoorbeeld vragen: nou, wat zijn je wensen?
+
+02:38:59 En aan handel we als een soort van intermediair en dan gaan wij bijvoorbeeld eerst ons contact ons netwerk gaan we raadplegen en dan gaan we voor hun gewoon uiteenzetten wat het kost, hoeveel tijd, wat ze nodig hebben, wanneer het af is.
+
+02:39:14 Weet je, en dan presenteren we dat plan aan hun en dan zetten we daar gewoon een prijskaartje aan.
+
+02:39:18 Weet je?
+
+02:39:19 Ja.
+
+02:39:19 Ja, precies.
+
+02:39:21 En als dit als we dit vaker doen, dan kunnen we misschien plannen gaan verkopen, afspraken maken met Stand-in en dan groeit vanzelf de plan B en de plan A wel.
+
+02:39:33 Ja.
+
+02:39:34 Ja, ja.
+
+02:39:35 Maar we moeten dat in het begin handmatig doen, want we hebben daar nu eenmaal nog geen ervaring mee.
+
+02:39:40 En ik denk dat dat prima is.
+
+02:39:44 Dat doen we gewoon van de website af, doen we gewoon handmatig.
+
+02:39:48 Ja.
+
+02:39:49 Direct met de mensen en op de website verkopen we gewoon cedula, want iedereen die dat plan dan ook doet, welke intentie dan ook, moet allemaal cedula hebben.
+
+02:39:57 En als je dat onboarding.
+
+02:40:01 Ja.
+
+02:40:01 Zowiezo.
+
+02:40:01 Ingewikkeld.
+
+02:40:42 Maakt dan dan ja, zijn mensen misschien ja, wordt het gewoon wat lastig voor ze.
+
+02:40:45 Ja, precies.
+
+02:40:45 Ik inderdaad, het is ik denk dat we hetzelfde zeggen.
+
+02:40:49 En ik denk ook wel dat je iets wel bedoelt.
+
+02:40:50 Alleen wat het is voor mij als persoon of heel veel mensen die ik gevolgd heb die Paraguaya die cedula wilde.
+
+02:41:03 Dat gaat zoveel om door hun hoofd, weet je wel?
+
+02:41:06 Van ik wil een sedula, maar misschien wil ik wel verhuizen, misschien niet, misschien dit, misschien dat.
+
+02:41:14 Zijn ze de hele tijd ermee bezig of ik wil Ooh, dat is crisis, wil ik er wel naartoe en wil ik er niet naartoe.
+
+02:41:23 En als we dat kunnen beantwoorden in de als we dat helder kunnen maken in de funnel.
+
+02:41:30 Dat mensen gewoon weten van hé oké, dus ze hebben heel veel zorgen, want mensen denken niet van hey, ik wil alleen maar sedula hebben.
+
+02:41:37 Mensen die denken veel meer dan dat zeggen.
+
+02:41:40 Voor hun is een sedula eigenlijk een netwerk.
+
+02:41:42 Voor hun is het echt een netwerk van hé, ik vertrouw die mensen en ze hebben vertrouwde netwerk.
+
+02:41:51 En we hoeven niet te zeggen van hé, we hebben het beste netwerk of we hebben christelijke hoeven we niet te noemen, maar we moeten het wel.
+
+02:41:59 Ik denk zelfs Ja, aan door een voorbeeld, verhaal van Stanley of verhaal van anderen, maar dat komt nog in de toekomst, maar voor nu willen we het gewoon simpel houden.
+
+02:42:07 Maar in de tekst die wij nu hebben, moet wel zo zijn.
+
+02:42:12 Wij zijn christelijk en wij hebben christelijke netwerk in Paraguay.
+
+02:42:17 Dat moet wel duidelijk zijn.
+
+02:42:19 Mensen die daar wonen.
+
+02:42:26 Nou wat ik voorstel is ik ga de de website updaten met wat we besproken hebben vandaag.
+
+02:42:36 Dan zet ik hem online nog eventjes op mijn domein.
+
+02:42:45 En dan is het denk ik goed om nadat we vandaag gesproken hebben even na te denken over een naam, want we kunnen niet live gaan zonder een naam.
+
+02:42:54 En dan de volgende keer dan bespreken we de funnel samen.
+
+02:43:01 En dan komen daar wat verbeteringen uit en dan ga ik dan nogmaals die verbeteringen doorvoeren.
+
+02:43:07 Moeren en dan starten we online.
+
+02:43:11 En dan zorg ik ervoor dat die funnel dat het duidelijk is dat wij de cedula verkopen, maar dat de cedula de deur opent naar heel veel mogelijkheden.
+
+02:43:24 En het netwerk, nieuw leven, volledige ontzorging, weet je, maar dat is iets wat allemaal na de cedula gebeurt.
+
+02:43:36 En
+
+02:43:41 Ja, dus ik denk dat dat de focus is en dan en dan kunnen we voortdurend zeg maar nadenken, oké, hoe gaan we dit nu eigenlijk doen?
+
+02:43:50 Weet je?
+
+02:43:50 Hoe gaan we dat vermarkten?
+
+02:43:53 Hoe welk netwerk zou ik kunnen aanspreken en weet je, ik denk iets dat dat moeten we gewoon voortdurend analyseren en bekijken en daarin groeien.
+
+02:44:03 Maar we moeten gewoon starten.
+
+02:44:04 We moeten gewoon met, als je niet weet wie je moet aanspreken, dan moet je gewoon iemand aanspreken.
+
+02:44:10 En en hier gewoon mee starten.
+
+02:44:14 En en dan zou ik zeggen ja, laten we gewoon zo snel mogelijk live gaan.
+
+02:44:21 Dus Wanneer zou jij weer kunnen ga er doorheen.
+
+02:44:25 Laten we zeggen, vandaag is het Even kijken, dinsdag.
+
+02:44:29 Eh ja, ik heb ook andere dingen te doen.
+
+02:44:33 Dus misschien zouden we volgende week dinsdag weer kunnen meeten.
+
+02:44:39 Yes, to top.
+
+02:44:41 Ja, dezelfde tijd?
+
+02:44:44 Dan zorg ik dat dat alles af is.
+
+02:44:50 Is goed.
+
+02:44:56 En dan, even kijken, volgende week dinsdag Ik zeg wel ja, maar volgende week dinsdag is de 30e dan komt mijn moeder hier.
+
+02:45:03 Dus dat is niet handig.
+
+02:45:05 Dus kan jij de 30e?
+
+02:45:10 Dat is maandag.
+
+02:45:12 Volgende week maandag.
+
+02:45:15 Ochtend weet ik het niet.
+
+02:45:19 We kunnen wel eind van de middag doen als je kan.
+
+02:45:26 Ja, dat kan.
+
+02:45:27 Wat.
+
+02:45:30 Welke tijd?
+
+02:45:31 4 uur?
+
+02:45:31 Is dat iets?
+
+02:45:32 4 uur?
+
+02:45:33 4 uur NL tijd.
+
+02:45:35 Ja.
+
+02:45:36 Oké?
+
+02:45:36 Ja.
+
+02:45:37 Dat is goed.
+
+02:45:37 Dan doen we dat.
+
+02:45:40 Top.
+
+02:45:40 En misschien nog een gedachte die nog bij mij blijft hangen is wat we net ook over hadden over dat is gewoon voor de hoe wij dit zeg maar voort willen zetten met de drie aspecten van volledig samen doen.
+
+02:46:08 Twee bedrijven, twee vrienden die samenwerken of de derde was met dat ik dat doe en dat jij volledig de marketing zeg maar draait en dat we dat verdelen.
+
+02:46:22 Maar daar hadden we nog over van het wordt het niet.
+
+02:46:23 Dus wij dus wij willen wel zeg maar de eerste of de tweede doen.
+
+02:46:29 Maar dan ja, dat is misschien ook wel iets om te bespreken.
+
+02:46:33 Vooraf ofzo.
+
+02:46:34 Ja, ik moet zeggen dat ik nog steeds een beetje aan het ben je nu echt spreken nu over de werkverdeling of of echt over het bedrijf.
+
+02:46:45 Dus want ik ik dacht dat we al beslist hadden dat want ik heb dat ook in ons businessplan gezet, in ons samenwerkingsmodel de 50/50.
+
+02:47:00 50/50 model is, dus dat we dit samen doen.
+
+02:47:04 Ja.
+
+02:47:05 Ja.
+
+02:47:05 En dus dat betekent 50% van het werk is voor ons, 50% voor jou, 50% voor mij en ook 50% van de winst voor jou en voor mij.
+
+02:47:19 Dus alles gewoon 50/50.
+
+02:47:21 Ja.
+
+02:47:21 Ja, precies.
+
+02:47:21 En dat betekent dus dat wij dus beiden, omdat dat het meeste werk zal zijn, dat we dus beide 80% van onze tijd op marketing bezig zijn om om ons om dit concept voor zoveel mogelijk mensen te brengen.
+
+02:47:42 Ja, inderdaad.
+
+02:47:43 Dus dat dat we doen zeg maar die 50/50%, maar daarin dus zit ik te kijken van want we hadden het net van we willen Want we gaan zeg maar dit marketen en dit heeft vooral te maken met marketen en ook tegelijkertijd zou dat ook invloed hebben van hoe wij dat bedrijf opzetten.
+
+02:48:02 Als wij zeg maar naar de proefperiode van als wij zeggen van door die testperiode wil ik ook gewoon dat wij ook gaan voelen van oké, hoe waar zie ik mezelf zeg maar.
+
+02:48:13 Als je als je zegt van hé, ik zie het echt niet zitten.
+
+02:48:15 Ik heb mijn eigen bedrijf en dit dit doen we samen en ik wil gewoon voornamelijk gewoon marketen qua op de achtergrond van hey, dat het op de website is, alles zeg maar op de ads en alles en dat we het bespreken.
+
+02:48:24 Hoe kunnen we dit zo goed mogelijk in elkaar zetten, zodat het zoveel mogelijk mensen kunnen bereiken?
+
+02:48:27 Ik moet me gewoon daarop focussen.
+
+02:48:30 Of ik wil ook focussen op de inhoud zelf zeg maar.
+
+02:48:34 Je hebt zeg maar één heb je marketing, dus natuurlijk gaan wij bespreken over hoe kunnen wij verhaal vertellen of dat doen, zodat het goed gemaakt zodat het de juiste audience bereikt of zoveel mogelijk audience bereikt.
+
+02:48:45 Zeg maar, dat is de focus op.
+
+02:48:47 Of is het van nee, ik dat dat dat wij er ook zeg maar het eind van de periode weten van hey, wat zie ik echt hierin zeg maar?
+
+02:48:55 Of wil ik ook gewoon daarnaast ook echt investeren in in, ik heb verhaal, zeg maar, ik wil investeren ook in verhaal wat ik heb, hé, ik wil dat het platform ook zeg maar mijn visie.
+
+02:49:07 Zeg maar ik zie in die platform zie ik ook dat ik ooit bijvoorbeeld over immigratie of over de dingen te vertellen heb, of is het gewoon echt puur marketing?
+
+02:49:14 Of dat we het snap wat ik bedoel, dan weten we ook gewoon van dan kunnen we door die proefperiode ook gewoon voelen zeg maar.
+
+02:49:19 We zijn zeg maar aan het afvoelen van hoe willen we dingen doen, hoe gaan we dingen aanpakken?
+
+02:49:22 We gaan het nu simpel houden, we gaan het gewoon doen.
+
+02:49:24 Maar gewoon dat op het eind van de proefstage we weten van hé, dit is echt dit is echt wat ik voel wat ik kan betekenen eigenlijk voor het of dit is wat ik ja, dit is ik wil mezelf gereïncarneerd in, weet je wel?
+
+02:49:40 Maar kijk, dat dat we dat ook zeg maar in juni wel weten van oké, dit is wat ik moet doen, dit is wat ik ga inzetten.
+
+02:49:48 Ja, ik weet niet of ik je helemaal wel goed begrijp, maar kijk hoe ik er hoe ik er in zit is zoals ik al zei, mijn voornaamste doel is geld verdienen.
+
+02:49:59 Ja, precies.
+
+02:50:01 Dus ik doe dit met jou omdat ik hier geld in zie, een business in zie en ik wil ervoor zorg dragen dat deze business werkt.
+
+02:50:03 Of dat wij aan onszelf bewijzen dat hier gewoon geen business in zit.
+
+02:50:06 Dat is prima.
+
+02:50:07 Misschien kunnen we dat bewijzen en ja, we hebben gewoon gemerkt dat dit gewoon geen goede business is of we willen onze tijd en in investeren of wat de reden ook mag zijn.
+
+02:50:17 Dat is die zes maanden.
+
+02:50:20 Maar ervan uitgaande dat dit werkt, dan betekent dat ik persoonlijk en jij natuurlijk ook, maar even vanuit mijn visie, dat ik daar tijd in moet investeren en dan dat ik dus ook mijn best moet doen om deze business te doen slagen.
+
+02:50:34 En dat betekent dus dat ik dus tijd moet investeren aan die marketing.
+
+02:50:38 En dat is misschien niet iets wat ik zozeer zin in heb, wat ik wil doen.
+
+02:50:45 Maar als ik gecommitteerd ben aan dit concept en gecommitteerd ben aan jou en onze afspraken nakom, kan ik daar gewoon niet van weglopen.
+
+02:50:51 Dus ik kan niet zeggen: "Ja, ik ga dat niet doen.
+
+02:50:54 Ik ga lekker websites maken."
+
+02:50:55 Nee, als wij dit tot een hoger niveau willen brengen en succesvol moeten maken, moeten wij beide marketing gaan doen.
+
+02:51:05 En dat betekent dus per definitie dat ik moet gaan inleren wat jij weet.
+
+02:51:11 Ik moet gaan lezen, ik moet gaan leren.
+
+02:51:15 Ik moet we moeten misschien video kijk, dat soort dingen.
+
+02:51:17 Hoe, de hoe weten we nog niet, maar we moeten waarschijnlijk video's gaan maken, we moeten vanuit een bepaalde autoriteit gaan spreken.
+
+02:51:25 Ik betekent, als dit werkt.
+
+02:51:29 Dan moet ik denk ik de schedule gaan halen.
+
+02:51:31 Ik moet zelf ook ervaring gaan opdoen.
+
+02:51:33 Ik moet me in gaan lezen.
+
+02:51:36 Ja, ik moet ervaringsdeskundige worden.
+
+02:51:40 En dat hoort bij mijn verantwoordelijkheid als 50% vennoot in deze business.
+
+02:51:55 En daar horen dus bij dat ik dingen moet gaan doen die ik niet wil doen.
+
+02:52:00 Concurreert dit met mijn bedrijf?
+
+02:52:01 Ja, ik dat betekent dat ik meer een extra bedrijf heb, meer tijd moet vrijmaken en ja, dat gaat zeker eten.
+
+02:52:11 Maar voor mij is dat nu oké, want mijn bedrijf maakt nog niet zoveel geld dat ik het de luxe heb om te zeggen van Ja.
+
+02:52:25 Ja, ik kan gewoon mijn tijd volledig daaraan besteden.
+
+02:52:31 Weet je, het is ik moet dan gewoon wat extra werk doen.
+
+02:52:37 Kijk, als dit bedrijf loopt, dan kunnen we gaan nadenken over extra werk, dan kunnen we een team maken.
+
+02:52:44 Mensen kunnen, weet je, dan kunnen wij misschien meer hoge over gaan zitten en dan doen onze teamleden, die doen dan wat werk, zodat wij wat meer tijd overhouden.
+
+02:52:54 Weet je, maar totdat totdat het moment dat dat er niet is, moeten jij en ik met dingen doen die geld in het laatje brengen.
+
+02:53:04 En dat betekent voor mij dus inderdaad dat ik jouw moet helpen of dat dat dat ik ja, ook marketing moet doen.
+
+02:53:16 Dat ik dus over Paragway moet gaan praten.
+
+02:53:19 Kijk, de hoe.
+
+02:53:22 Ja, dat doet er eigenlijk niet zo heel veel toe.
+
+02:53:26 Ik kan dat waarschijnlijk vanuit misschien een business hoek doen, weet je, vanuit bepaalde autoriteit, ervaring die ik al wel heb.
+
+02:53:39 Weet je, je kan mijn Portugal ervaring gebruiken.
+
+02:53:43 Weet je, het hoeft niet 100% verbonden te zijn met Paragway op dit moment, maar Ja.
+
+02:53:51 Ja, als dit gaat groeien, dan moet ik meer verbonden zijn met Paragway.
+
+02:53:54 Dus ik moet het zelf gaan doen.
+
+02:53:56 Ik moet daar naartoe, we moeten daar content gaan maken, we moeten Ja.
+
+02:54:01 Misschien events gaan opzetten daar, lezingen geven, video's maken.
+
+02:54:06 Ja, ik denk dat we daarnet moeten doen.
+
+02:54:09 Nee, top, top.
+
+02:54:09 Ja, goed om te weten inderdaad.
+
+02:54:10 Het is ook wel voor mij ook, ik hoor nu weer dingen, dus dat is ook wel mooi.
+
+02:54:13 Ik denk we denken over die dingen na en ja, want dat je naar Paraguay ook studio wilde is zoveel nieuw dat ik hoor, weet je wel.
+
+02:54:20 In het begin wat ik hoorde is wat je zei in het begin van, ik zie er gewoon geld in en ik wil gewoon dat we dit doen en.
+
+02:54:26 Dan hoor ik wel zeg maar dat er meer zich, dat er meer groeit in dan alleen maar dat we dit gaan pompen, zeg maar.
+
+02:54:34 Ja, nee ja, goed, ik denk dat dat gewoon dat dat moet gewoon.
+
+02:54:37 Kijk, of ik het wil of niet, dat moet.
+
+02:54:41 En en ja, ik ben ik sta er ook gewoon achter, hè.
+
+02:54:44 Ik bedoel, het is niet zo oh, wat vervelend dat ik dat moet doen.
+
+02:54:46 Nee, ik denk dat dat ik geloof.
+
+02:54:49 Anders had ik het ook niet met je gedaan, weet je.
+
+02:54:50 Ik geloof in het concept, ik denk dat het goed is.
+
+02:54:53 Ik denk dat we heel veel mensen kunnen helpen.
+
+02:54:55 En en als je niet zelf doet wat je gelooft, ja, dan wordt het gewoon heel lastig.
+
+02:55:02 Dus ik denk ik denk als zij dus een aantal klanten hebben, weet je, en helemaal top.
+
+02:55:06 We hebben vijf klanten of zo.
+
+02:55:07 Dan denk ik dat het goed is dat wij, dan hebben we bewezen, hè, het werkt.
+
+02:55:11 En dan moeten we dit naar een hoger niveau gaan tillen en dan moeten we misschien met met beide onze gezinnen of gewoon jij en ik.
+
+02:55:23 Of ik met mijn eigen gezin, weet je, dan moeten we daar naartoe gaan en.
+
+02:55:28 En echt en ons netwerk echt gaan uitbreiden en groeien en en zelf relaties leggen en Ja.
+
+02:55:37 Content maken vooral vanuit daar, weet je, zodat de mensen ziet, oké, deze mensen die gaan daar ook echt naartoe en.
+
+02:55:44 Niet is niet een of andere gappie uit Portugal en een kerel uit Nederland die maar wat dingen verkopen.
+
+02:55:50 Ja, ja, ja, precies.
+
+02:55:52 Maar daadwerkelijk een band hebben met Paraguay.
+
+02:55:55 Dus ik denk ik denk dat dat noodzakelijk is ja.
+
+02:55:57 Maar op op den tijd, dat hoeft niet niet direct.
+
+02:55:59 Als zijn tijd, ja.
+
+02:56:00 Nee, precies, precies.
+
+02:56:01 Ja, het is goed om dat te zien inderdaad voor ons.
+
+02:56:04 Top.
+
+02:56:04 Ja, top.
+
+02:56:06 Dan beantwoordt je vraag.
+
+02:56:08 Ja, nee, absoluut.
+
+02:56:08 Ik zie nu, ik hoor nu meer dingen.
+
+02:56:10 Ik zie gewoon nu meer visie daarin ja.
+
+02:56:11 Ja, dat je absoluut ook meer ziet dan alleen ja, gewoon vanuit Paraguay zeg maar.
+
+02:56:21 Dus ja.
+
+02:56:21 Top.
+
+02:56:21 Ja.
+
+02:56:21 Nee, nee, nee, dat dat denk ik.
+
+02:56:24 Nee, we moeten dit als we dit doen moeten we het goed doen en dan moeten we alles.
+
+02:56:30 En dan moeten we investeren en dat betekent met geld, met tijd, met energie, met moeite, met netwerk en relatie.
+
+02:56:37 Eh.
+
+02:56:39 En dan gaan dingen zijn waar we geen zin in hebben.
+
+02:56:41 Dat Ja.
+
+02:56:42 In die we niet leuk vinden.
+
+02:56:44 Maar als het geld komt, dan kunnen we dat ook uitbesteden aan andere mensen en dan wordt het beter, maar ja, de eerste jaren zullen het waarschijnlijk.
+
+02:56:53 Hard bikkelen.
+
+02:56:55 Bikkelen ja.
+
+02:56:55 Bikkelen.
+
+02:56:56 Ja.
+
+02:56:56 Ja, alles zelf doen ja.
+
+02:57:01 Top.
+
+02:57:01 Top bro.
+
+02:57:01 Nee, goed.
+
+02:57:03 Dan doen we maandag, gaan we maandag even Fieren bellen en dan.
+
+02:57:09 Affiniteit en daar houden we nog contact over.
+
+02:57:12 Ja, laat me weten trouwens met je gezin wanneer we kunnen als gezinnen kunnen.
+
+02:57:16 Kunnen bellen, wat we er moet uit.
+
+02:57:17 Ja, dan check ik het eventjes met mijn vrouw en dan laat ik het je laat ik het je gauw weten.
+
+02:57:22 Afgesproken?
+
+02:57:22 Top.
+
+02:57:24 Afgesproken.
+
+02:57:26 Oké bro, dan bedankt voor goed gesprek weer.
+
+02:57:31 En ik ben weer helemaal gemotiveerd en nou, we gaan er wat moois van maken.
+
+02:57:37 Amen.
+
+02:57:38 Doen we.
+
+02:57:40 Het is goed.
+
+02:57:41 Broeder.
+
+02:57:41 We spreken elkaar toch wel volgende week dan?
+
+02:57:43 Doen we.
+
+02:57:44 Oké bro.
+
+02:57:45 Groetjes.
+
+02:57:46 Yo.
+
+02:57:46 Jij ook.
+
+02:57:46 Doei doei.
+
+02:57:47 Doei.
+
+02:57:48 Doei doei.
+

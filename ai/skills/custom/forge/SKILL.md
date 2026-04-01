@@ -196,12 +196,67 @@ supabase db push
 supabase gen types typescript --local > src/types/supabase.ts
 ```
 
-#### 6b. Stripe
-Using `/stripe`:
+#### 6b. Stripe — account, keys, webhooks
+
+**Step 1 — Manual (one required step):**
+Pause and prompt the user:
+
+> "Before we continue, go to dashboard.stripe.com → switch account menu → **New account** and create a Stripe account named **`<app-name>`**. Stripe automatically creates a paired test environment. Come back and confirm when it's done."
+
+Wait for confirmation before continuing.
+
+**Step 2 — Login via CLI and capture keys:**
+```bash
+stripe login --project-name "<app-name>"
+# Opens browser. After login, keys are saved to CLI config.
+
+# Verify — keys are visible here (never commit or print):
+stripe config --list --project-name "<app-name>"
+```
+From `stripe config --list` output, note:
+- `test_mode_pub_key` → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (test)
+- `test_mode_api_key` → `STRIPE_SECRET_KEY` (test)
+- `live_mode_pub_key` → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (production)
+- `live_mode_api_key` → `STRIPE_SECRET_KEY` (production)
+
+**Step 3 — Create test webhook endpoint:**
+```bash
+stripe post /webhook_endpoints \
+  --project-name "<app-name>" \
+  -d "url=https://<app-url>/api/webhooks/stripe" \
+  -d "enabled_events[]=checkout.session.completed" \
+  -d "enabled_events[]=checkout.session.expired" \
+  -d "enabled_events[]=customer.subscription.deleted" \
+  -d "enabled_events[]=customer.subscription.updated" \
+  -d "enabled_events[]=invoice.paid" \
+  -d "enabled_events[]=invoice.payment_failed"
+```
+The `secret` field in the response → `STRIPE_WEBHOOK_SECRET` (test env). Capture immediately — shown once.
+
+**Step 4 — Create live webhook endpoint:**
+```bash
+stripe post /webhook_endpoints \
+  --project-name "<app-name>" \
+  --live \
+  -d "url=https://<app-url>/api/webhooks/stripe" \
+  -d "enabled_events[]=checkout.session.completed" \
+  -d "enabled_events[]=checkout.session.expired" \
+  -d "enabled_events[]=customer.subscription.deleted" \
+  -d "enabled_events[]=customer.subscription.updated" \
+  -d "enabled_events[]=invoice.paid" \
+  -d "enabled_events[]=invoice.payment_failed"
+```
+The `secret` field in the response → `STRIPE_WEBHOOK_SECRET` (production env). Capture immediately — shown once.
+
+**Step 5 — Set environment variables:**
+Write the test keys to `.env.local` / `.env.test`.
+Write the live keys to `.env.production` AND set them in Dokploy via `/dokploy` skill.
+See the environment variables template below.
+
+**Step 6 — Create Stripe products and prices:**
 - Create a Product for each pricing tier defined in Phase 4d
-- Create recurring Prices (monthly)
-- Copy the Price IDs into `.env`
-- Set up a webhook endpoint pointing to the app's `/api/webhooks/stripe` route
+- Create recurring Prices (monthly) for each product
+- Copy the Price IDs into `.env` as `STRIPE_PRICE_<TIER>_ID`
 - Test with a test-mode checkout flow before going live
 
 #### 6c. Dokploy
@@ -275,8 +330,28 @@ If `/canary` finds issues → diagnose and fix before marking done.
 
 ## Environment variables template
 
-Every product needs at minimum:
+Every product needs these variables in both environments.
 
+**`.env.local` / `.env.test` (test environment):**
+```env
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Stripe — test mode (pk_test_..., sk_test_..., whsec_...)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# Optional
+RESEND_API_KEY=
+```
+
+**`.env.production` + Dokploy (production environment):**
 ```env
 # App
 NEXT_PUBLIC_APP_URL=https://app.example.com
@@ -286,9 +361,9 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# Stripe
-STRIPE_SECRET_KEY=
+# Stripe — live mode (pk_live_..., sk_live_... or rk_live_..., whsec_...)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 
 # Optional
@@ -302,7 +377,7 @@ RESEND_API_KEY=
 - Stack is fixed at Next.js + Supabase + Stripe. Multi-stack support is a future refinement.
 - FFmpeg hero assumes stock footage is available locally. Sourcing workflow TBD.
 - Cloudflare tunnel setup assumes `cloudflared` is running as a persistent service. Service install steps may vary.
-- Stripe products must be created manually via `/stripe` CLI — no automated product scaffolding yet.
+- Stripe account creation requires one manual step in the Stripe Dashboard — all other Stripe setup (CLI login, webhooks, env vars) is automated.
 - No multi-region or CDN configuration in this version.
 
 ---
@@ -312,3 +387,4 @@ RESEND_API_KEY=
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 2026-03-30 | Initial design — full workflow skeleton, all phases defined |
+| 0.2 | 2026-04-01 | Phase 6b expanded: Stripe account setup fully automated (CLI login, test + live webhook creation with 6 events, env var split for test vs production). One manual step: Dashboard account creation. |

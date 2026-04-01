@@ -3,6 +3,290 @@
   "tools": [
     {
       "server_name": "codex_apps",
+      "tool_name": "_search_meetings",
+      "tool_namespace": "mcp__codex_apps__zoom",
+      "tool": {
+        "name": "zoom_search_meetings",
+        "title": "search_meetings",
+        "description": "# Search Meetings Tool V2.7\n\n**[READ-ONLY]**\n\nAdvanced search functionality for user meetings. AI analyzes user input to identify keywords (`q`) and time ranges (`from`, `to`), then uses these extracted parameters to query the user's meeting list, sorting results by relevance.\n\n## Core Functionality\n\nUnlike the standard list tool, this tool uses a search engine to find meetings matching specific topics, attendees, or contexts.\n\n### Usage Guideline (MANDATORY)\n\n**ALWAYS use this Search Tool when:**\n*   User asks for meeting information but **does NOT provide a specific Meeting ID** (e.g., \"Show my meetings\", \"Find the budget review\", \"What meetings did I have last week?\").\n*   This tool is the **primary entry point** for all vague or natural language meeting queries.\n*   **DO NOT** ask the user for an ID first; attempt to find the meeting using this tool based on their description.\n\n### Input Processing & Parameter Extraction (MANDATORY)\n\nBefore calling this tool, the AI **MUST** perform the following analysis on the user's prompt:\n\n1.  **Extract Keywords (`q`):**\n    *   Analyze the user's intent to find specific words (e.g., \"project alpha\", \"sync with bob\", \"budget review\").\n    *   **CRITICAL - ENTITY EXTRACTION:**\n        *   Extract **ANY** specific noun, name, or title found in the object position of the query.\n        *   *Example:* \"Search for meeting **Assistant**\" -> `q=\"Assistant\"` (Do NOT ignore \"Assistant\" thinking it refers to you/AI).\n        *   *Example:* \"Find **Weekly Sync**\" -> `q=\"Weekly Sync\"`.\n    *   **Action:** Extract these keywords and put them into the `q` parameter.\n    *   If multiple keywords are present, combine them appropriately.\n\n2.  **Calculate Time Range (`from`, `to`):**\n    *   **CRITICAL - TIMEZONE CONVERSION (MANDATORY):**\n        *   **STEP 1: Identify User Timezone.** Check the current user context/environment. If user is in China/Asia/Shanghai, offset is **-8 hours** (UTC+8).\n        *   **STEP 2: Perform Calculation.** `API_UTC_Time = User_Local_Time - User_Timezone_Offset`.\n        *   **Example (UTC+8 User):**\n            *   User says \"10am\" (10:00).\n            *   Calculation: `10:00 - 8 hours = 02:00`.\n            *   **Correct Result:** `...T02:00:00Z`.\n            *   **WRONG Result:** `...T08:00:00Z` (This is a common error where no subtraction happens).\n        *   **Do NOT** treat user input numbers directly as UTC (unless they explicitly say \"UTC\").\n    *   **Precision Requirement:** Match the user's provided time **as precisely as possible, down to the hour**.\n    *   **Specific Logic for \"Just Finished\" / \"Recent\":**\n        *   If user says \"just finished\", \"latest\", \"recent\", or \"today\":\n        *   Set `from` to **Start of Today** (00:00 local converted to UTC) or **Current Time - 24 hours**.\n        *   Do **NOT** use the 1-week default for these specific phrases.\n    *   **DEFAULT BEHAVIOR (IMPORTANT):**\n        *   **For General/History Search:** If no time specified AND no \"recent/latest\" keywords, default to **last 1 week**. (`from` = now - 7 days).\n        *   **For Upcoming/Future Search:** If user intent is clearly future (e.g., \"upcoming meetings\"), default `from` to **current time**.\n    *   `from`: Start of the range (UTC).\n    *   `to`: End of the range (UTC).\n\n### Default Parameters\n- **`page_size`**: Default `50` (Max 50).\n\n---\n\n## Output & Response Presentation Rules\n\n**CRITICAL - ABSOLUTELY FORBIDDEN**\n\n**YOU ARE STRICTLY PROHIBITED FROM OUTPUTTING THE MEETING LIST TEXT.**\n\n**FORBIDDEN OUTPUT EXAMPLES:**\n- ❌ \"Here are the meetings matching 'project':\"\n- ❌ \"1. Project Sync — Nov 27, 2025...\"\n- ❌ \"I found the following meetings...\"\n- ❌ ANY numbered list of meetings\n- ❌ ANY meeting titles, dates, or times\n- ❌ ANY description of meeting topics\n\n**REASON:** The meeting search results are **ALREADY VISIBLE IN THE UI**. Your output must only guide the user's next action.\n\n---\n\n### Workflow: Handling Search Results\n\n**MANDATORY OUTPUT Generation:**\n\nFirst, check if you used `from` and `to` parameters:\n\n*   **IF (and ONLY IF) `from`/`to` were used:**\n    Display the search range (Bold the times and timezone):\n    *\"Searching meetings from **[Local_From_Time]** to **[Local_To_Time]** (**[User_Timezone]**)...\"*\n    *(If the timezone is incorrect, please tell me your correct timezone)*\n*   **IF NO time parameters were used:**\n    **DO NOT** display the \"Searching meetings from...\" line. **DO NOT** invent a time range.\n\nThen, choose the matching scenario based on whether the results contain historical (recordable) meetings:\n\n#### Scenario A: Results contain ANY Past Meetings\n\nIf the results include meetings that have already happened (which might have assets), you MUST offer the asset options.\n\n**MANDATORY OUTPUT:**\n\n**Summary Line:**\n*   *\"I found [Total] meeting(s) matching '**[q]**'.\"* (If `q` is empty, omit \"matching...\").\n\n**Action Prompt:**\n```\nWhat would you like to do with the past meeting(s)?\n\n1. Recap meeting – Includes AI summary, docs, recording, and whiteboards\n2. View recording – Shows full recording details\n\nPlease pick 1 or 2, and tell me which meeting you mean.\n```\n\n**ABSOLUTE PROHIBITIONS:**\n- ❌ **DO NOT** add meeting lists or details.\n\n#### Scenario B: Results contain ONLY Upcoming Meetings\n\nIf the search results contain ONLY upcoming meetings (no historical assets):\n\n**MANDATORY OUTPUT:**\n*   **Summary Line:** *\"I found [Total] meeting(s) matching '**[q]**'.\"* (If `q` is empty, omit \"matching...\").\n*   **Conclusion:** *\"You can view them in the list above.\"*\n*   **Prohibitions:**\n    *   **DO NOT** offer Recap/Recording options (assets don't exist).\n    *   **DO NOT** list the meetings details.\n\n#### Scenario C: No Results (Total = 0)\n\n**MANDATORY OUTPUT:**\n*   **If `q` is NOT empty:** *\"No meetings found matching '**[q]**' within that time range. Please try a different keyword or provide the specific Meeting Number/ID directly.\"*\n*   **If `q` IS empty:** *\"No meetings found within that time range. Please try a different keyword or provide the specific Meeting Number/ID directly.\"*\n\n---\n\n### User Selection Handling\n\nWhen the user selects a meeting from the search results (e.g., \"recap the first one\"):\n\n1.  **Identify the Target:**\n    *   Locate the corresponding meeting object in the `meetings` array from the search response.\n\n2.  **Extract Identifiers:**\n    *   **`meeting_uuid`**: The unique string ID (PRIMARY identifier).\n    *   **`meeting_number`**: The numeric ID (Fallback identifier).\n\n3.  **Double-Encode UUID (CRITICAL & MANDATORY):**\n    *   Before calling ANY downstream tool (Assets or Recording), you **MUST** check the UUID.\n    *   **Rule:** If `meeting_uuid` starts with `/` or contains `//`:\n        *   Apply **Double URL Encoding**.\n        *   `%` becomes `%25`, `/` becomes `%2F`.\n        *   *Example:* `/Qk7s...` -> `%252FQk7s...` (Encoded once to `%2F`, then `%` to `%25`).\n    *   **Reason:** Fails to do this will cause API 404/400 errors due to path parsing issues.\n\n4.  **Call Next Tool:**\n    *   **Recap:** Call `get_meeting_assets` using the **Double-Encoded** `meeting_uuid` (or `meeting_number` if UUID is missing).\n    *   **Recording:** Call `get_recording_resource` using the **Double-Encoded** `meeting_uuid` (or `meeting_number` if UUID is missing).\n\n**CRITICAL - ID Usage:**\n- **ALWAYS PREFER UUID** (`meeting_uuid`) when calling downstream tools.\n- Only use numeric ID (`meeting_number`) if the UUID is null or empty.\n- This ensures we target the exact meeting instance found in the search results.\n\n---\n\n## Rate Limit\n- Label: **MEDIUM**",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "description": "The start date, in yyyy-MM-dd'T'HH:mm:ss'Z' UTC format, used to retrieve the meeting summaries' creation date range."
+            },
+            "page_size": {
+              "type": "integer",
+              "default": "50",
+              "description": "The number of records returned with a single API call.",
+              "maximum": 50
+            },
+            "to": {
+              "type": "string",
+              "description": "The end date, in yyyy-MM-dd'T'HH:mm:ss'Z' UTC format, used to retrieve the meeting summaries' creation date range."
+            },
+            "next_page_token": {
+              "type": "string"
+            },
+            "q": {
+              "type": "string",
+              "description": "Full-text search query across topic, summary, and transcript."
+            }
+          },
+          "required": []
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": true,
+          "openWorldHint": true
+        },
+        "_meta": {
+          "openai/outputTemplate": "ui://widget/meeting-list-card.html",
+          "openai/widgetAccessible": true,
+          "resource_name": "Zoom_search_meetings",
+          "_codex_apps": {
+            "resource_uri": "/asdk_app_69373a13116c819189d046aea1278836/link_6957a89fe24481919cc4f9f1841ae21c/search_meetings",
+            "contains_mcp_source": true
+          },
+          "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
+          "connector_name": "Zoom",
+          "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content.",
+          "link_id": "link_6957a89fe24481919cc4f9f1841ae21c"
+        }
+      },
+      "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
+      "connector_name": "Zoom",
+      "plugin_display_names": [],
+      "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content."
+    },
+    {
+      "server_name": "codex_apps",
+      "tool_name": "_get_meeting_assets",
+      "tool_namespace": "mcp__codex_apps__zoom",
+      "tool": {
+        "name": "zoom_get_meeting_assets",
+        "title": "get_meeting_assets",
+        "description": "# Search Meetings Tool V3.1\n\n**[READ-ONLY]**\n\nAdvanced search functionality for user meetings. AI analyzes user input to identify keywords (`q`) and time ranges (`from`, `to`), then uses these extracted parameters to query the user's meeting list, sorting results by relevance.\n\n## Core Functionality\n\nUnlike the standard list tool, this tool uses a search engine to find meetings matching specific topics, attendees, or contexts.\n\n### Usage Guideline (MANDATORY)\n\n**ALWAYS use this Search Tool when:**\n*   User asks for meeting information but **does NOT provide a specific Meeting ID** (e.g., \"Show my meetings\", \"Find the budget review\", \"What meetings did I have last week?\").\n*   This tool is the **primary entry point** for all vague or natural language meeting queries.\n*   **DO NOT** ask the user for an ID first; attempt to find the meeting using this tool based on their description.\n\n### Input Processing & Parameter Extraction (MANDATORY)\n\nBefore calling this tool, the AI **MUST** perform the following analysis on the user's prompt:\n\n1.  **Extract Keywords (`q`):**\n    *   Analyze the user's intent to find specific words (e.g., \"project alpha\", \"sync with bob\", \"budget review\").\n    *   **CRITICAL - ENTITY EXTRACTION:**\n        *   Extract **ANY** specific noun, name, or title found in the object position of the query.\n        *   *Example:* \"Search for meeting **Assistant**\" -> `q=\"Assistant\"` (Do NOT ignore \"Assistant\" thinking it refers to you/AI).\n        *   *Example:* \"Find **Weekly Sync**\" -> `q=\"Weekly Sync\"`.\n    *   **Action:** Extract these keywords and put them into the `q` parameter.\n    *   If multiple keywords are present, combine them appropriately.\n\n2.  **Calculate Time Range (`from`, `to`):**\n    *   **CRITICAL - TIMEZONE CONVERSION (MANDATORY):**\n        *   **STEP 1: Identify User Timezone.** Check the current user context/environment. If user is in China/Asia/Shanghai, offset is **-8 hours** (UTC+8).\n        *   **STEP 2: Perform Calculation.** `API_UTC_Time = User_Local_Time - User_Timezone_Offset`.\n        *   **Example (UTC+8 User):**\n            *   User says \"10am\" (10:00).\n            *   Calculation: `10:00 - 8 hours = 02:00`.\n            *   **Correct Result:** `...T02:00:00Z`.\n            *   **WRONG Result:** `...T08:00:00Z` (This is a common error where no subtraction happens).\n        *   **Do NOT** treat user input numbers directly as UTC (unless they explicitly say \"UTC\").\n    *   **Precision Requirement:** Match the user's provided time **as precisely as possible, down to the hour**.\n    *   **Specific Logic for \"Just Finished\" / \"Recent\":**\n        *   If user says \"just finished\", \"latest\", \"recent\", or \"today\":\n        *   Set `from` to **Start of Today** (00:00 local converted to UTC) or **Current Time - 24 hours**.\n        *   Do **NOT** use the 1-week default for these specific phrases.\n    *   **DEFAULT BEHAVIOR (IMPORTANT):**\n        *   **For General/History Search:** If no time specified AND no \"recent/latest\" keywords, default to **last 1 week**. (`from` = now - 7 days).\n        *   **For Upcoming/Future Search:** If user intent is clearly future (e.g., \"upcoming meetings\"), default `from` to **current time**.\n    *   `from`: Start of the range (UTC).\n    *   `to`: End of the range (UTC).\n\n### Default Parameters\n- **`page_size`**: Default `50` (Max 50).\n\n---\n\n## Output & Response Presentation Rules\n\n**CRITICAL - ABSOLUTELY FORBIDDEN**\n\n**YOU ARE STRICTLY PROHIBITED FROM OUTPUTTING THE MEETING LIST TEXT.**\n\n**FORBIDDEN OUTPUT EXAMPLES:**\n- ❌ \"Here are the meetings matching 'project':\"\n- ❌ \"1. Project Sync — Nov 27, 2025...\"\n- ❌ \"I found the following meetings...\"\n- ❌ ANY numbered list of meetings\n- ❌ ANY meeting titles, dates, or times\n- ❌ ANY description of meeting topics\n- ❌ ANY summary, analysis, or interpretation of meeting content\n- ❌ ANY additional commentary beyond the EXACT mandatory output format specified below\n\n**REASON:** The meeting search results are **ALREADY VISIBLE IN THE UI**. Your output must only guide the user's next action.\n\n**CRITICAL - NO SUMMARIZATION OR ANALYSIS (MANDATORY):**\n- **DO NOT** summarize meeting topics, attendees, or any meeting details\n- **DO NOT** provide analysis or interpretation of the search results\n- **DO NOT** add explanatory text beyond the exact format specified in each scenario\n- **DO NOT** describe what meetings were found beyond the count\n- **STRICTLY FOLLOW** the exact output format specified below - output ONLY what is explicitly required, nothing more\n\n---\n\n### Workflow: Handling Search Results\n\n**CRITICAL RULE - NO SUMMARIZATION:**\n**YOU MUST NOT summarize, analyze, or describe meeting content in your response. Output ONLY the exact format specified for each scenario below. Any additional commentary, summary, or analysis is STRICTLY PROHIBITED.**\n\n**MANDATORY OUTPUT Generation:**\n\nFirst, check if you used `from` and `to` parameters:\n\n*   **IF (and ONLY IF) `from`/`to` were used:**\n    Display the search range (Bold the times and timezone):\n    *\"Searching meetings from **[Local_From_Time]** to **[Local_To_Time]** (**[User_Timezone]**)...\"*\n    *(If the timezone is incorrect, please tell me your correct timezone)*\n*   **IF NO time parameters were used:**\n    **DO NOT** display the \"Searching meetings from...\" line. **DO NOT** invent a time range.\n\nThen, choose the matching scenario based on whether the results contain historical (recordable) meetings:\n\n#### Scenario A: Results contain ANY Past Meetings\n\nIf the results include meetings that have already happened (which might have assets), you MUST offer the asset options.\n\n**MANDATORY OUTPUT:**\n\n**Summary Line:**\n*   *\"I found [Total] meeting(s) matching '**[q]**'.\"* (If `q` is empty, omit \"matching...\").\n\n**Action Prompt:**\n```\nWhat would you like to do with the past meeting(s)?\n\n1. Recap meeting – Includes AI summary, docs, recording, and whiteboards\n2. View recording – Shows full recording details\n\nPlease pick 1 or 2, and tell me which meeting you mean.\n```\n\n**ABSOLUTE PROHIBITIONS:**\n- ❌ **DO NOT** add meeting lists or details.\n\n#### Scenario B: Results contain ONLY Upcoming Meetings\n\nIf the search results contain ONLY upcoming meetings (no historical assets):\n\n**MANDATORY OUTPUT (EXACT FORMAT - NO DEVIATIONS):**\n*   **Summary Line:** *\"I found [Total] meeting(s) matching '**[q]**'.\"* (If `q` is empty, omit \"matching...\").\n*   **Conclusion:** *\"You can view them in the list above.\"*\n\n**ABSOLUTE PROHIBITIONS:**\n*   ❌ **DO NOT** offer Recap/Recording options (assets don't exist).\n*   ❌ **DO NOT** list the meetings details.\n*   ❌ **DO NOT** summarize meeting topics, titles, or content.\n*   ❌ **DO NOT** describe what meetings were found.\n*   ❌ **DO NOT** add any analysis, interpretation, or commentary.\n*   ❌ **DO NOT** provide additional context or explanations.\n*   ❌ **DO NOT** mention meeting times, dates, or attendees.\n*   ❌ **STRICTLY FORBIDDEN:** Any text beyond the two exact lines specified above.\n\n**CRITICAL:** Output ONLY the two lines specified above. Any additional text, summary, or description is PROHIBITED.\n\n#### Scenario C: No Results (Total = 0)\n\n**MANDATORY OUTPUT:**\n*   **If `q` is NOT empty:** *\"No meetings found matching '**[q]**' within that time range. Please try a different keyword or provide the specific Meeting Number/ID directly.\"*\n*   **If `q` IS empty:** *\"No meetings found within that time range. Please try a different keyword or provide the specific Meeting Number/ID directly.\"*\n\n---\n\n### User Selection Handling\n\nWhen the user selects a meeting from the search results (e.g., \"recap the first one\"):\n\n1.  **Identify the Target:**\n    *   Locate the corresponding meeting object in the `meetings` array from the search response.\n\n2.  **Extract Identifiers:**\n    *   **`meeting_uuid`**: The unique string ID (PRIMARY identifier).\n    *   **`meeting_number`**: The numeric ID (Fallback identifier).\n\n3.  **Double-Encode UUID (CRITICAL & MANDATORY):**\n    *   Before calling ANY downstream tool (Assets or Recording), you **MUST** check the UUID.\n    *   **Rule:** If `meeting_uuid` starts with `/` or contains `//`:\n        *   Apply **Double URL Encoding**.\n        *   `%` becomes `%25`, `/` becomes `%2F`.\n        *   *Example:* `/Qk7s...` -> `%252FQk7s...` (Encoded once to `%2F`, then `%` to `%25`).\n    *   **Reason:** Fails to do this will cause API 404/400 errors due to path parsing issues.\n\n4.  **Call Next Tool:**\n    *   **Recap:** Call `get_meeting_assets` using the **Double-Encoded** `meeting_uuid` (or `meeting_number` if UUID is missing).\n    *   **Recording:** Call `get_recording_resource` using the **Double-Encoded** `meeting_uuid` (or `meeting_number` if UUID is missing).\n\n**CRITICAL - ID Usage:**\n- **ALWAYS PREFER UUID** (`meeting_uuid`) when calling downstream tools.\n- Only use numeric ID (`meeting_number`) if the UUID is null or empty.\n- This ensures we target the exact meeting instance found in the search results.\n\n---\n\n## Rate Limit\n- Label: **MEDIUM**",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "meetingId": {
+              "type": "string",
+              "description": "The meeting identifier. This field accepts either a UUID-format meeting ID or a numeric meeting number. Prefer passing the UUID-format meeting ID when available. Before invoking the API, the meetingId must be double-encoded; otherwise, the request may fail. If users provide natural language (e.g., 'last meeting'), use searchMeetings to resolve the correct meetingId. Numeric meeting numbers return assets for the latest meeting instance, while UUIDs return assets for the specific occurrence."
+            }
+          },
+          "required": [
+            "meetingId"
+          ]
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": true,
+          "openWorldHint": true
+        },
+        "_meta": {
+          "openai/outputTemplate": "ui://widget/meeting-recap.html",
+          "openai/widgetAccessible": true,
+          "resource_name": "Zoom_get_meeting_assets",
+          "_codex_apps": {
+            "resource_uri": "/asdk_app_69373a13116c819189d046aea1278836/link_6957a89fe24481919cc4f9f1841ae21c/get_meeting_assets",
+            "contains_mcp_source": true
+          },
+          "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
+          "connector_name": "Zoom",
+          "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content.",
+          "link_id": "link_6957a89fe24481919cc4f9f1841ae21c"
+        }
+      },
+      "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
+      "connector_name": "Zoom",
+      "plugin_display_names": [],
+      "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content."
+    },
+    {
+      "server_name": "codex_apps",
+      "tool_name": "_recordings_list",
+      "tool_namespace": "mcp__codex_apps__zoom",
+      "tool": {
+        "name": "zoom_recordings_list",
+        "title": "recordings_list",
+        "description": "List all recordings\nLists all [cloud recordings](https://support.zoom.us/hc/en-us/articles/203741855-Cloud-Recording) for a user.  \nFor user-level apps, pass the [`me` value](https://developers.zoom.us/docs/api/rest/using-zoom-apis/#the-me-keyword) instead of the `userId` parameter.  To access a user's passcode protected cloud recording, send the user's [OAuth access token](https://developers.zoom.us/docs/integrations/oauth/) as a bearer token in the authorization header.  \nExample:  `curl -H \"Authorization: Bearer <ACCESS_TOKEN>\" https://{{base-domain}}/rec/archive/download/xyz`\n\nThis can list the current person's records, only displaying the corresponding record information.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string"
+            },
+            "page_size": {
+              "type": "integer",
+              "default": "30",
+              "maximum": 300
+            },
+            "next_page_token": {
+              "type": "string"
+            },
+            "mc": {
+              "type": "string",
+              "default": "false"
+            },
+            "trash": {
+              "type": "boolean",
+              "default": "false"
+            },
+            "trash_type": {
+              "type": "string",
+              "default": "meeting_recordings"
+            },
+            "meeting_id": {
+              "type": "integer"
+            },
+            "to": {
+              "type": "string"
+            },
+            "userId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "userId"
+          ]
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": true,
+          "openWorldHint": true
+        },
+        "_meta": {
+          "resource_name": "Zoom_recordings_list",
+          "_codex_apps": {
+            "resource_uri": "/asdk_app_69373a13116c819189d046aea1278836/link_6957a89fe24481919cc4f9f1841ae21c/recordings_list",
+            "contains_mcp_source": true
+          },
+          "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
+          "connector_name": "Zoom",
+          "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content.",
+          "link_id": "link_6957a89fe24481919cc4f9f1841ae21c"
+        }
+      },
+      "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
+      "connector_name": "Zoom",
+      "plugin_display_names": [],
+      "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content."
+    },
+    {
+      "server_name": "codex_apps",
+      "tool_name": "_create_new_file_with_markdown",
+      "tool_namespace": "mcp__codex_apps__zoom",
+      "tool": {
+        "name": "zoom_create_new_file_with_markdown",
+        "title": "create_new_file_with_markdown",
+        "description": "Creates a new Zoom Docs document from Markdown content.\n\nUse this tool whenever the user asks to save or create content in Zoom Docs. \nPass the user's content as a single Markdown string.\n\nAfter invoking this tool, you must:\n1. Tell the user the name of the newly created document.\n2. Provide the `file_link` to the user.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "file_name": {
+              "type": "string",
+              "description": "The name of the file."
+            },
+            "parent_id": {
+              "type": "string",
+              "description": "The ID of the parent file. The newly created file will become a child of this parent. If this parameter is omitted, the file will be placed under **My Docs**. Use `root` to represent the top-level folder of the current user. Folders can only be created under **My Docs**, a shared folder, or another folder."
+            },
+            "content": {
+              "type": "string",
+              "description": "The markdown formatted content."
+            }
+          },
+          "required": [
+            "content"
+          ]
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": true
+        },
+        "_meta": {
+          "resource_name": "Zoom_create_new_file_with_markdown",
+          "_codex_apps": {
+            "resource_uri": "/asdk_app_69373a13116c819189d046aea1278836/link_6957a89fe24481919cc4f9f1841ae21c/create_new_file_with_markdown",
+            "contains_mcp_source": true
+          },
+          "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
+          "connector_name": "Zoom",
+          "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content.",
+          "link_id": "link_6957a89fe24481919cc4f9f1841ae21c"
+        }
+      },
+      "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
+      "connector_name": "Zoom",
+      "plugin_display_names": [],
+      "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content."
+    },
+    {
+      "server_name": "codex_apps",
+      "tool_name": "_get_recording_resource",
+      "tool_namespace": "mcp__codex_apps__zoom",
+      "tool": {
+        "name": "zoom_get_recording_resource",
+        "title": "get_recording_resource",
+        "description": "Description:\n\n**PRIORITY TRIGGER CONDITIONS - Use THIS Tool When User Mentions Recording:**\n\n**HIGH PRIORITY - Always use THIS tool when user explicitly mentions:**\n- \"recording\" + any action (play, watch, view, listen, open, start, etc.)\n- \"play recording\" | \"play the recording\"\n- \"watch the recording\" | \"view the recording\" | \"listen to the recording\"\n- \"open the recording\" | \"start the recording\" | \"launch the recording\"\n- \"jump to recording\" | \"go to recording\" | \"navigate to recording\"\n- \"recording content\" | \"recording details\" | \"recording transcript\"\n- \"what's in the recording\" | \"recording summary\" | \"recording analysis\"\n\n**MEDIUM PRIORITY - Use THIS tool when context suggests recording focus:**\n- User asks about specific content AND mentions time/timeline (e.g., \"What did they say at 5 minutes?\")\n- User wants to search/find specific topics within content (implies transcript search)\n- User asks about speakers, dialogue, or conversation details\n- User mentions playback, timestamps, or navigation within content\n\n**LOW PRIORITY - Use ASSETS tool first, then THIS tool if needed:**\n- General meeting information requests without \"recording\" keyword\n- \"Show me my meetings\" / \"What meetings do I have?\"\n- Basic meeting metadata (duration, participants, date) without content focus\n\n---\n\n**CRITICAL: When to Use This Tool vs. Assets Tool**\n\n**Use THIS RECORDING tool when:**\n- User **explicitly mentions \"recording\"** in their request\n- User wants **detailed recording content**: transcript text, per-topic summaries, next steps\n- User needs to **search within a recording** (e.g., \"What did they say about X?\")\n- User wants to **jump to a specific part** of a recording (requires transcript + playback URL)\n- User needs **granular timeline data** (who said what and when)\n- User wants to **play/watch/view/listen to** a recording\n\n**Use the ASSETS tool when:**\n- User wants **meeting-level information** (meeting summary, recordings list, whiteboards, docs)\n- User asks for \"meeting assets\", \"meeting recordings\", \"meeting summary\" **without** mentioning \"recording\" specifically\n- User wants to know **what recordings exist** for a meeting\n- User needs **basic recording metadata** (duration, file size, download links)\n\n**ENHANCED DECISION RULE:**\n\n1. **FIRST CHECK:** Does the user's request contain the word \"recording\" or recording-related actions?\n   - YES → Use THIS tool immediately\n   - NO → Continue to step 2\n\n2. **SECOND CHECK:** Is the user asking about specific content, transcript, or playback?\n   - YES → Use THIS tool\n   - NO → Use ASSETS tool\n\n3. **FALLBACK:** If unclear, and user mentions \"meeting\" without \"recording\" → Use ASSETS tool first\n\n**Examples of Enhanced Triggering:**\n\n**ALWAYS use THIS tool for:**\n- \"Play the recording\"\n- \"I want to watch the recording\"\n- \"Show me the recording content\"\n- \"What's in this recording?\"\n- \"Open the recording file\"\n- \"Start the recording\"\n- \"Jump to 5 minutes in the recording\"\n- \"Find where they talked about pricing in the recording\"\n\n**Use ASSETS tool first for:**\n- \"Show me my meetings\"\n- \"What meetings do I have today?\"\n- \"Meeting summary\" (without \"recording\")\n- \"My recent meetings\"\n\n**Context-dependent (analyze user intent):**\n- \"What did we discuss?\" → If no recording context, use ASSETS; if recording context exists, use THIS tool\n- \"Show me the summary\" → If user was previously discussing recordings, use THIS tool; otherwise use ASSETS\n\n---\n\nUse this tool whenever you need **detailed content or granular metadata** for a specific recording:\n\n- transcript text (to answer questions, find topics, or locate time ranges),\n- summaries (overall or per-topic),\n- next steps / action items,\n- or playable URLs (for jumping to a specific point in the recording).\n\nThis tool can return:\n\n- transcript segments,\n- summary segments,\n- next-step segments,\n- playback URLs,\n- and utility information derived from these (e.g., recording duration).\n\nIf the user's request is unclear OR you are not sure which resource type is needed,\nomit the \"types\" parameter so that ALL available resources are fetched.\nYou can then decide which parts to use to answer the user.\n\nParameters:\n- types (string, optional):\n  A comma-separated list of resource types to retrieve.\n  Valid values (case-insensitive, no spaces needed):\n    • \"transcript\"  → transcript segments for the recording\n    • \"summary\"     → summary segments for the recording\n    • \"nextStep\"    → next-step segments for the recording\n    • \"playUrl\"     → playback URL segments for the recording\n\n  Behavior rules for \"types\":\n  - If omitted or an empty string, the tool MUST fetch ALL available resource types.\n  - If some values are invalid, ignore the invalid ones and still fetch the valid types.\n  - If the user is asking about the content or meaning of the recording\n    (e.g., \"What did they say about X?\", \"Find the part where they discussed Y\"),\n    you SHOULD include \"transcript\" in types.\n  - If the user wants to jump to or play a specific part of the recording\n    (e.g., \"Take me to the part where they talk about pricing\"),\n    you SHOULD include both \"transcript\" and \"playUrl\" in types.\n\n- raw_passcode (string, optional):\n  The plaintext passcode for playing the recording. Up to 10 characters, containing lowercase letters, digits, special characters (e.g., !, @, #), or sometimes all digits.\n  (e.g., passcode directly copied from a Zoom shared link).\n\n- encode_passcode (string, optional):\n  The encrypted passcode used for playing the recording. It is an encoded string typically appended to the recording’s share link as the pwd parameter.\n  (e.g., the `pwd=xxx` value from a Zoom shared link).\n\n- clip_num (integer, optional):\n  The index (1-based or as defined by the implementation) of the recording clip to retrieve,\n  for recordings that contain multiple clips.\n  If the requested clip number exceeds the available clip count, the tool should return null.\n\n- play_time (integer, optional):\n  The user's desired playback starting time in SECONDS relative to the selected clip.\n  For example:\n  - play_time = 0   → start from the beginning of the clip\n  - play_time = 20  → start 20 seconds into the clip\n\n  When the user asks to \"jump to\", \"play from\", or \"go to the part where...\",\n  you can:\n    1) Use the returned transcripts to find the relevant segment and its timestamp, then\n    2) Call or interpret play URLs with an appropriate play_time value.\n\nBehavior:\n\n- **ENHANCED PREREQUISITE CHECK:** \n  - If user mentions \"recording\" or recording-related actions → Use THIS tool immediately\n  - If user asks about content analysis, transcript, or playback → Use THIS tool\n  - If user asks general meeting questions without \"recording\" context → Use ASSETS tool first\n\n- The tool returns ONLY the resource types requested via \"types\".\n  - If \"types\" is empty or omitted, the tool returns ALL available resource types.\n\n- If a particular resource type does not exist, its field MUST be omitted from the response.\n\n- Recording duration can be computed using:\n    duration = recording_end - recording_start\n\n- Returned transcript data can (and should) be used by the model to:\n    - answer content questions,\n    - search for specific topics or phrases,\n    - determine appropriate time ranges for playback.\n\n- Returned play URLs can be used by the client or the model to initiate playback\n  from a desired start time.\n\n- If the user's question is ambiguous or mixed (e.g., might need both content and playback),\n  you SHOULD omit \"types\" so that all resources are retrieved.\n\n- **IMPORTANT:** This tool has PRIORITY when \"recording\" is explicitly mentioned. For general meeting/recording discovery without \"recording\" keyword, use the ASSETS tool first.\n\nReturn Structure (JSON):\n\n{\n  \"transcripts\": [\n    {\n      \"timeline\": [\n        {\n          \"text\": \"string\",\n          \"ts\": \"HH:mm:ss.SSS\",       // start time relative to recording start\n          \"end_ts\": \"HH:mm:ss.SSS\",   // end time relative to recording start\n          \"display_name\":\"string\",     // the person speaking in this sentence may be empty; if empty, it means they are not a Zoom user.\n        }\n      ],\n      \"recording_id\": \"string\",\n      \"meeting_id\": \"string\",\n      \"recording_start\": \"timestamp (string)\",\n      \"recording_end\": \"timestamp (string)\"\n    }\n  ],\n  \"summaries\": [\n    {\n      \"recordingStartTime\": number,\n      \"recording_start\": \"timestamp (string)\",\n      \"total_items\": number,\n      \"overall_summary\": \"string | null\",\n      \"items\": [\n        {\n          \"label\": \"string\",\n          \"summary\": \"string\"\n        }\n      ]\n    }\n  ],\n  \"next_steps\": [\n    {\n      \"recordingStartTime\": number,\n      \"recording_start\": \"timestamp (string)\",\n      \"total_items\": number,\n      \"items\": [\n        {\n          \"text\": \"string\"\n        }\n      ]\n    }\n  ],\n  \"play_urls\": [\n    {\n      \"recording_start\": \"timestamp (string)\",\n      \"urls\": [\n        \"string\"\n      ],\n      \"play_time\": number\n    }\n  ]\n}\n\nNotes:\n\n- Include each top-level field (transcripts, summaries, next_steps, play_urls)\n  ONLY if corresponding data exists.\n- If no resource exists for a requested type, omit that field entirely.\n\n**Enhanced Tool Selection Examples:**\n\n**CORRECT - Use THIS tool immediately:**\n- \"Play the recording\" → THIS tool (explicit recording mention)\n- \"I want to watch the recording\" → THIS tool (explicit recording mention)\n- \"What's in this recording?\" → THIS tool (explicit recording mention)\n- \"Open the recording\" → THIS tool (explicit recording mention)\n- \"Find the part where they discussed pricing in the recording\" → THIS tool (explicit recording mention)\n\n**WRONG - Should use THIS tool, not ASSETS:**\n- User: \"Play the recording\" → Calling ASSETS tool \n- User: \"Show me the recording content\" → Calling ASSETS tool \n\n**CORRECT - Use ASSETS tool first:**\n- \"What meetings do I have?\" → ASSETS tool (no recording mention)\n- \"Show me my meeting summary\" → ASSETS tool (meeting-level, no recording mention)\n- \"My recent meetings\" → ASSETS tool (no recording mention)\n\n**Context-dependent examples:**\n- \"What did we discuss about the budget?\" → If user was previously talking about recordings, use THIS tool; otherwise use ASSETS\n- \"Show me the summary\" → If recording context exists, use THIS tool; otherwise use ASSETS\n\n**Rule of thumb:** \n- **Recording keyword present** → THIS tool has PRIORITY\n- **Recording actions (play, watch, view, listen, open)** → THIS tool has PRIORITY  \n- **Content analysis without recording context** → Consider both tools based on specificity\n- **General meeting discovery** → ASSETS tool first",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "clip_num": {
+              "type": "integer"
+            },
+            "play_time": {
+              "type": "integer"
+            },
+            "meetingId": {
+              "type": "string",
+              "description": "The original meetingId is not a pure number, but rather a format similar to atsXxhSEQWit9t+U02HXNQ==. The parameters in this format need to be double-encoded (/docs/api/using-zoom-apis/#meeting-id-and-uuid) to obtain the UUID before making an API request."
+            },
+            "types": {
+              "type": "string"
+            },
+            "raw_passcode": {
+              "type": "string",
+              "description": "The plaintext passcode for playing the recording. Up to 10 characters, containing lowercase letters, digits, special characters (e.g., !, @, #), or sometimes all digits."
+            },
+            "encode_passcode": {
+              "type": "string",
+              "description": "The encrypted passcode used for playing the recording. It is an encoded string typically appended to the recording’s share link as the pwd parameter."
+            }
+          },
+          "required": [
+            "meetingId"
+          ]
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": true,
+          "openWorldHint": true
+        },
+        "_meta": {
+          "openai/outputTemplate": "ui://widget/meeting-recording.html",
+          "openai/widgetAccessible": true,
+          "resource_name": "Zoom_get_recording_resource",
+          "_codex_apps": {
+            "resource_uri": "/asdk_app_69373a13116c819189d046aea1278836/link_6957a89fe24481919cc4f9f1841ae21c/get_recording_resource",
+            "contains_mcp_source": true
+          },
+          "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
+          "connector_name": "Zoom",
+          "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content.",
+          "link_id": "link_6957a89fe24481919cc4f9f1841ae21c"
+        }
+      },
+      "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
+      "connector_name": "Zoom",
+      "plugin_display_names": [],
+      "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content."
+    },
+    {
+      "server_name": "codex_apps",
       "tool_name": "_batch_update_document",
       "tool_namespace": "mcp__codex_apps__google_drive",
       "tool": {
@@ -4683,290 +4967,6 @@
       "connector_name": "Google Drive",
       "plugin_display_names": [],
       "connector_description": "Search and work with files from Google Drive, Docs, Sheets, and Slides."
-    },
-    {
-      "server_name": "codex_apps",
-      "tool_name": "_search_meetings",
-      "tool_namespace": "mcp__codex_apps__zoom",
-      "tool": {
-        "name": "zoom_search_meetings",
-        "title": "search_meetings",
-        "description": "# Search Meetings Tool V2.7\n\n**[READ-ONLY]**\n\nAdvanced search functionality for user meetings. AI analyzes user input to identify keywords (`q`) and time ranges (`from`, `to`), then uses these extracted parameters to query the user's meeting list, sorting results by relevance.\n\n## Core Functionality\n\nUnlike the standard list tool, this tool uses a search engine to find meetings matching specific topics, attendees, or contexts.\n\n### Usage Guideline (MANDATORY)\n\n**ALWAYS use this Search Tool when:**\n*   User asks for meeting information but **does NOT provide a specific Meeting ID** (e.g., \"Show my meetings\", \"Find the budget review\", \"What meetings did I have last week?\").\n*   This tool is the **primary entry point** for all vague or natural language meeting queries.\n*   **DO NOT** ask the user for an ID first; attempt to find the meeting using this tool based on their description.\n\n### Input Processing & Parameter Extraction (MANDATORY)\n\nBefore calling this tool, the AI **MUST** perform the following analysis on the user's prompt:\n\n1.  **Extract Keywords (`q`):**\n    *   Analyze the user's intent to find specific words (e.g., \"project alpha\", \"sync with bob\", \"budget review\").\n    *   **CRITICAL - ENTITY EXTRACTION:**\n        *   Extract **ANY** specific noun, name, or title found in the object position of the query.\n        *   *Example:* \"Search for meeting **Assistant**\" -> `q=\"Assistant\"` (Do NOT ignore \"Assistant\" thinking it refers to you/AI).\n        *   *Example:* \"Find **Weekly Sync**\" -> `q=\"Weekly Sync\"`.\n    *   **Action:** Extract these keywords and put them into the `q` parameter.\n    *   If multiple keywords are present, combine them appropriately.\n\n2.  **Calculate Time Range (`from`, `to`):**\n    *   **CRITICAL - TIMEZONE CONVERSION (MANDATORY):**\n        *   **STEP 1: Identify User Timezone.** Check the current user context/environment. If user is in China/Asia/Shanghai, offset is **-8 hours** (UTC+8).\n        *   **STEP 2: Perform Calculation.** `API_UTC_Time = User_Local_Time - User_Timezone_Offset`.\n        *   **Example (UTC+8 User):**\n            *   User says \"10am\" (10:00).\n            *   Calculation: `10:00 - 8 hours = 02:00`.\n            *   **Correct Result:** `...T02:00:00Z`.\n            *   **WRONG Result:** `...T08:00:00Z` (This is a common error where no subtraction happens).\n        *   **Do NOT** treat user input numbers directly as UTC (unless they explicitly say \"UTC\").\n    *   **Precision Requirement:** Match the user's provided time **as precisely as possible, down to the hour**.\n    *   **Specific Logic for \"Just Finished\" / \"Recent\":**\n        *   If user says \"just finished\", \"latest\", \"recent\", or \"today\":\n        *   Set `from` to **Start of Today** (00:00 local converted to UTC) or **Current Time - 24 hours**.\n        *   Do **NOT** use the 1-week default for these specific phrases.\n    *   **DEFAULT BEHAVIOR (IMPORTANT):**\n        *   **For General/History Search:** If no time specified AND no \"recent/latest\" keywords, default to **last 1 week**. (`from` = now - 7 days).\n        *   **For Upcoming/Future Search:** If user intent is clearly future (e.g., \"upcoming meetings\"), default `from` to **current time**.\n    *   `from`: Start of the range (UTC).\n    *   `to`: End of the range (UTC).\n\n### Default Parameters\n- **`page_size`**: Default `50` (Max 50).\n\n---\n\n## Output & Response Presentation Rules\n\n**CRITICAL - ABSOLUTELY FORBIDDEN**\n\n**YOU ARE STRICTLY PROHIBITED FROM OUTPUTTING THE MEETING LIST TEXT.**\n\n**FORBIDDEN OUTPUT EXAMPLES:**\n- ❌ \"Here are the meetings matching 'project':\"\n- ❌ \"1. Project Sync — Nov 27, 2025...\"\n- ❌ \"I found the following meetings...\"\n- ❌ ANY numbered list of meetings\n- ❌ ANY meeting titles, dates, or times\n- ❌ ANY description of meeting topics\n\n**REASON:** The meeting search results are **ALREADY VISIBLE IN THE UI**. Your output must only guide the user's next action.\n\n---\n\n### Workflow: Handling Search Results\n\n**MANDATORY OUTPUT Generation:**\n\nFirst, check if you used `from` and `to` parameters:\n\n*   **IF (and ONLY IF) `from`/`to` were used:**\n    Display the search range (Bold the times and timezone):\n    *\"Searching meetings from **[Local_From_Time]** to **[Local_To_Time]** (**[User_Timezone]**)...\"*\n    *(If the timezone is incorrect, please tell me your correct timezone)*\n*   **IF NO time parameters were used:**\n    **DO NOT** display the \"Searching meetings from...\" line. **DO NOT** invent a time range.\n\nThen, choose the matching scenario based on whether the results contain historical (recordable) meetings:\n\n#### Scenario A: Results contain ANY Past Meetings\n\nIf the results include meetings that have already happened (which might have assets), you MUST offer the asset options.\n\n**MANDATORY OUTPUT:**\n\n**Summary Line:**\n*   *\"I found [Total] meeting(s) matching '**[q]**'.\"* (If `q` is empty, omit \"matching...\").\n\n**Action Prompt:**\n```\nWhat would you like to do with the past meeting(s)?\n\n1. Recap meeting – Includes AI summary, docs, recording, and whiteboards\n2. View recording – Shows full recording details\n\nPlease pick 1 or 2, and tell me which meeting you mean.\n```\n\n**ABSOLUTE PROHIBITIONS:**\n- ❌ **DO NOT** add meeting lists or details.\n\n#### Scenario B: Results contain ONLY Upcoming Meetings\n\nIf the search results contain ONLY upcoming meetings (no historical assets):\n\n**MANDATORY OUTPUT:**\n*   **Summary Line:** *\"I found [Total] meeting(s) matching '**[q]**'.\"* (If `q` is empty, omit \"matching...\").\n*   **Conclusion:** *\"You can view them in the list above.\"*\n*   **Prohibitions:**\n    *   **DO NOT** offer Recap/Recording options (assets don't exist).\n    *   **DO NOT** list the meetings details.\n\n#### Scenario C: No Results (Total = 0)\n\n**MANDATORY OUTPUT:**\n*   **If `q` is NOT empty:** *\"No meetings found matching '**[q]**' within that time range. Please try a different keyword or provide the specific Meeting Number/ID directly.\"*\n*   **If `q` IS empty:** *\"No meetings found within that time range. Please try a different keyword or provide the specific Meeting Number/ID directly.\"*\n\n---\n\n### User Selection Handling\n\nWhen the user selects a meeting from the search results (e.g., \"recap the first one\"):\n\n1.  **Identify the Target:**\n    *   Locate the corresponding meeting object in the `meetings` array from the search response.\n\n2.  **Extract Identifiers:**\n    *   **`meeting_uuid`**: The unique string ID (PRIMARY identifier).\n    *   **`meeting_number`**: The numeric ID (Fallback identifier).\n\n3.  **Double-Encode UUID (CRITICAL & MANDATORY):**\n    *   Before calling ANY downstream tool (Assets or Recording), you **MUST** check the UUID.\n    *   **Rule:** If `meeting_uuid` starts with `/` or contains `//`:\n        *   Apply **Double URL Encoding**.\n        *   `%` becomes `%25`, `/` becomes `%2F`.\n        *   *Example:* `/Qk7s...` -> `%252FQk7s...` (Encoded once to `%2F`, then `%` to `%25`).\n    *   **Reason:** Fails to do this will cause API 404/400 errors due to path parsing issues.\n\n4.  **Call Next Tool:**\n    *   **Recap:** Call `get_meeting_assets` using the **Double-Encoded** `meeting_uuid` (or `meeting_number` if UUID is missing).\n    *   **Recording:** Call `get_recording_resource` using the **Double-Encoded** `meeting_uuid` (or `meeting_number` if UUID is missing).\n\n**CRITICAL - ID Usage:**\n- **ALWAYS PREFER UUID** (`meeting_uuid`) when calling downstream tools.\n- Only use numeric ID (`meeting_number`) if the UUID is null or empty.\n- This ensures we target the exact meeting instance found in the search results.\n\n---\n\n## Rate Limit\n- Label: **MEDIUM**",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "from": {
-              "type": "string",
-              "description": "The start date, in yyyy-MM-dd'T'HH:mm:ss'Z' UTC format, used to retrieve the meeting summaries' creation date range."
-            },
-            "page_size": {
-              "type": "integer",
-              "default": "50",
-              "description": "The number of records returned with a single API call.",
-              "maximum": 50
-            },
-            "to": {
-              "type": "string",
-              "description": "The end date, in yyyy-MM-dd'T'HH:mm:ss'Z' UTC format, used to retrieve the meeting summaries' creation date range."
-            },
-            "next_page_token": {
-              "type": "string"
-            },
-            "q": {
-              "type": "string",
-              "description": "Full-text search query across topic, summary, and transcript."
-            }
-          },
-          "required": []
-        },
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": true,
-          "openWorldHint": true
-        },
-        "_meta": {
-          "openai/outputTemplate": "ui://widget/meeting-list-card.html",
-          "openai/widgetAccessible": true,
-          "resource_name": "Zoom_search_meetings",
-          "_codex_apps": {
-            "resource_uri": "/asdk_app_69373a13116c819189d046aea1278836/link_6957a89fe24481919cc4f9f1841ae21c/search_meetings",
-            "contains_mcp_source": true
-          },
-          "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
-          "connector_name": "Zoom",
-          "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content.",
-          "link_id": "link_6957a89fe24481919cc4f9f1841ae21c"
-        }
-      },
-      "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
-      "connector_name": "Zoom",
-      "plugin_display_names": [],
-      "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content."
-    },
-    {
-      "server_name": "codex_apps",
-      "tool_name": "_get_meeting_assets",
-      "tool_namespace": "mcp__codex_apps__zoom",
-      "tool": {
-        "name": "zoom_get_meeting_assets",
-        "title": "get_meeting_assets",
-        "description": "# Search Meetings Tool V3.1\n\n**[READ-ONLY]**\n\nAdvanced search functionality for user meetings. AI analyzes user input to identify keywords (`q`) and time ranges (`from`, `to`), then uses these extracted parameters to query the user's meeting list, sorting results by relevance.\n\n## Core Functionality\n\nUnlike the standard list tool, this tool uses a search engine to find meetings matching specific topics, attendees, or contexts.\n\n### Usage Guideline (MANDATORY)\n\n**ALWAYS use this Search Tool when:**\n*   User asks for meeting information but **does NOT provide a specific Meeting ID** (e.g., \"Show my meetings\", \"Find the budget review\", \"What meetings did I have last week?\").\n*   This tool is the **primary entry point** for all vague or natural language meeting queries.\n*   **DO NOT** ask the user for an ID first; attempt to find the meeting using this tool based on their description.\n\n### Input Processing & Parameter Extraction (MANDATORY)\n\nBefore calling this tool, the AI **MUST** perform the following analysis on the user's prompt:\n\n1.  **Extract Keywords (`q`):**\n    *   Analyze the user's intent to find specific words (e.g., \"project alpha\", \"sync with bob\", \"budget review\").\n    *   **CRITICAL - ENTITY EXTRACTION:**\n        *   Extract **ANY** specific noun, name, or title found in the object position of the query.\n        *   *Example:* \"Search for meeting **Assistant**\" -> `q=\"Assistant\"` (Do NOT ignore \"Assistant\" thinking it refers to you/AI).\n        *   *Example:* \"Find **Weekly Sync**\" -> `q=\"Weekly Sync\"`.\n    *   **Action:** Extract these keywords and put them into the `q` parameter.\n    *   If multiple keywords are present, combine them appropriately.\n\n2.  **Calculate Time Range (`from`, `to`):**\n    *   **CRITICAL - TIMEZONE CONVERSION (MANDATORY):**\n        *   **STEP 1: Identify User Timezone.** Check the current user context/environment. If user is in China/Asia/Shanghai, offset is **-8 hours** (UTC+8).\n        *   **STEP 2: Perform Calculation.** `API_UTC_Time = User_Local_Time - User_Timezone_Offset`.\n        *   **Example (UTC+8 User):**\n            *   User says \"10am\" (10:00).\n            *   Calculation: `10:00 - 8 hours = 02:00`.\n            *   **Correct Result:** `...T02:00:00Z`.\n            *   **WRONG Result:** `...T08:00:00Z` (This is a common error where no subtraction happens).\n        *   **Do NOT** treat user input numbers directly as UTC (unless they explicitly say \"UTC\").\n    *   **Precision Requirement:** Match the user's provided time **as precisely as possible, down to the hour**.\n    *   **Specific Logic for \"Just Finished\" / \"Recent\":**\n        *   If user says \"just finished\", \"latest\", \"recent\", or \"today\":\n        *   Set `from` to **Start of Today** (00:00 local converted to UTC) or **Current Time - 24 hours**.\n        *   Do **NOT** use the 1-week default for these specific phrases.\n    *   **DEFAULT BEHAVIOR (IMPORTANT):**\n        *   **For General/History Search:** If no time specified AND no \"recent/latest\" keywords, default to **last 1 week**. (`from` = now - 7 days).\n        *   **For Upcoming/Future Search:** If user intent is clearly future (e.g., \"upcoming meetings\"), default `from` to **current time**.\n    *   `from`: Start of the range (UTC).\n    *   `to`: End of the range (UTC).\n\n### Default Parameters\n- **`page_size`**: Default `50` (Max 50).\n\n---\n\n## Output & Response Presentation Rules\n\n**CRITICAL - ABSOLUTELY FORBIDDEN**\n\n**YOU ARE STRICTLY PROHIBITED FROM OUTPUTTING THE MEETING LIST TEXT.**\n\n**FORBIDDEN OUTPUT EXAMPLES:**\n- ❌ \"Here are the meetings matching 'project':\"\n- ❌ \"1. Project Sync — Nov 27, 2025...\"\n- ❌ \"I found the following meetings...\"\n- ❌ ANY numbered list of meetings\n- ❌ ANY meeting titles, dates, or times\n- ❌ ANY description of meeting topics\n- ❌ ANY summary, analysis, or interpretation of meeting content\n- ❌ ANY additional commentary beyond the EXACT mandatory output format specified below\n\n**REASON:** The meeting search results are **ALREADY VISIBLE IN THE UI**. Your output must only guide the user's next action.\n\n**CRITICAL - NO SUMMARIZATION OR ANALYSIS (MANDATORY):**\n- **DO NOT** summarize meeting topics, attendees, or any meeting details\n- **DO NOT** provide analysis or interpretation of the search results\n- **DO NOT** add explanatory text beyond the exact format specified in each scenario\n- **DO NOT** describe what meetings were found beyond the count\n- **STRICTLY FOLLOW** the exact output format specified below - output ONLY what is explicitly required, nothing more\n\n---\n\n### Workflow: Handling Search Results\n\n**CRITICAL RULE - NO SUMMARIZATION:**\n**YOU MUST NOT summarize, analyze, or describe meeting content in your response. Output ONLY the exact format specified for each scenario below. Any additional commentary, summary, or analysis is STRICTLY PROHIBITED.**\n\n**MANDATORY OUTPUT Generation:**\n\nFirst, check if you used `from` and `to` parameters:\n\n*   **IF (and ONLY IF) `from`/`to` were used:**\n    Display the search range (Bold the times and timezone):\n    *\"Searching meetings from **[Local_From_Time]** to **[Local_To_Time]** (**[User_Timezone]**)...\"*\n    *(If the timezone is incorrect, please tell me your correct timezone)*\n*   **IF NO time parameters were used:**\n    **DO NOT** display the \"Searching meetings from...\" line. **DO NOT** invent a time range.\n\nThen, choose the matching scenario based on whether the results contain historical (recordable) meetings:\n\n#### Scenario A: Results contain ANY Past Meetings\n\nIf the results include meetings that have already happened (which might have assets), you MUST offer the asset options.\n\n**MANDATORY OUTPUT:**\n\n**Summary Line:**\n*   *\"I found [Total] meeting(s) matching '**[q]**'.\"* (If `q` is empty, omit \"matching...\").\n\n**Action Prompt:**\n```\nWhat would you like to do with the past meeting(s)?\n\n1. Recap meeting – Includes AI summary, docs, recording, and whiteboards\n2. View recording – Shows full recording details\n\nPlease pick 1 or 2, and tell me which meeting you mean.\n```\n\n**ABSOLUTE PROHIBITIONS:**\n- ❌ **DO NOT** add meeting lists or details.\n\n#### Scenario B: Results contain ONLY Upcoming Meetings\n\nIf the search results contain ONLY upcoming meetings (no historical assets):\n\n**MANDATORY OUTPUT (EXACT FORMAT - NO DEVIATIONS):**\n*   **Summary Line:** *\"I found [Total] meeting(s) matching '**[q]**'.\"* (If `q` is empty, omit \"matching...\").\n*   **Conclusion:** *\"You can view them in the list above.\"*\n\n**ABSOLUTE PROHIBITIONS:**\n*   ❌ **DO NOT** offer Recap/Recording options (assets don't exist).\n*   ❌ **DO NOT** list the meetings details.\n*   ❌ **DO NOT** summarize meeting topics, titles, or content.\n*   ❌ **DO NOT** describe what meetings were found.\n*   ❌ **DO NOT** add any analysis, interpretation, or commentary.\n*   ❌ **DO NOT** provide additional context or explanations.\n*   ❌ **DO NOT** mention meeting times, dates, or attendees.\n*   ❌ **STRICTLY FORBIDDEN:** Any text beyond the two exact lines specified above.\n\n**CRITICAL:** Output ONLY the two lines specified above. Any additional text, summary, or description is PROHIBITED.\n\n#### Scenario C: No Results (Total = 0)\n\n**MANDATORY OUTPUT:**\n*   **If `q` is NOT empty:** *\"No meetings found matching '**[q]**' within that time range. Please try a different keyword or provide the specific Meeting Number/ID directly.\"*\n*   **If `q` IS empty:** *\"No meetings found within that time range. Please try a different keyword or provide the specific Meeting Number/ID directly.\"*\n\n---\n\n### User Selection Handling\n\nWhen the user selects a meeting from the search results (e.g., \"recap the first one\"):\n\n1.  **Identify the Target:**\n    *   Locate the corresponding meeting object in the `meetings` array from the search response.\n\n2.  **Extract Identifiers:**\n    *   **`meeting_uuid`**: The unique string ID (PRIMARY identifier).\n    *   **`meeting_number`**: The numeric ID (Fallback identifier).\n\n3.  **Double-Encode UUID (CRITICAL & MANDATORY):**\n    *   Before calling ANY downstream tool (Assets or Recording), you **MUST** check the UUID.\n    *   **Rule:** If `meeting_uuid` starts with `/` or contains `//`:\n        *   Apply **Double URL Encoding**.\n        *   `%` becomes `%25`, `/` becomes `%2F`.\n        *   *Example:* `/Qk7s...` -> `%252FQk7s...` (Encoded once to `%2F`, then `%` to `%25`).\n    *   **Reason:** Fails to do this will cause API 404/400 errors due to path parsing issues.\n\n4.  **Call Next Tool:**\n    *   **Recap:** Call `get_meeting_assets` using the **Double-Encoded** `meeting_uuid` (or `meeting_number` if UUID is missing).\n    *   **Recording:** Call `get_recording_resource` using the **Double-Encoded** `meeting_uuid` (or `meeting_number` if UUID is missing).\n\n**CRITICAL - ID Usage:**\n- **ALWAYS PREFER UUID** (`meeting_uuid`) when calling downstream tools.\n- Only use numeric ID (`meeting_number`) if the UUID is null or empty.\n- This ensures we target the exact meeting instance found in the search results.\n\n---\n\n## Rate Limit\n- Label: **MEDIUM**",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "meetingId": {
-              "type": "string",
-              "description": "The meeting identifier. This field accepts either a UUID-format meeting ID or a numeric meeting number. Prefer passing the UUID-format meeting ID when available. Before invoking the API, the meetingId must be double-encoded; otherwise, the request may fail. If users provide natural language (e.g., 'last meeting'), use searchMeetings to resolve the correct meetingId. Numeric meeting numbers return assets for the latest meeting instance, while UUIDs return assets for the specific occurrence."
-            }
-          },
-          "required": [
-            "meetingId"
-          ]
-        },
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": true,
-          "openWorldHint": true
-        },
-        "_meta": {
-          "openai/outputTemplate": "ui://widget/meeting-recap.html",
-          "openai/widgetAccessible": true,
-          "resource_name": "Zoom_get_meeting_assets",
-          "_codex_apps": {
-            "resource_uri": "/asdk_app_69373a13116c819189d046aea1278836/link_6957a89fe24481919cc4f9f1841ae21c/get_meeting_assets",
-            "contains_mcp_source": true
-          },
-          "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
-          "connector_name": "Zoom",
-          "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content.",
-          "link_id": "link_6957a89fe24481919cc4f9f1841ae21c"
-        }
-      },
-      "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
-      "connector_name": "Zoom",
-      "plugin_display_names": [],
-      "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content."
-    },
-    {
-      "server_name": "codex_apps",
-      "tool_name": "_recordings_list",
-      "tool_namespace": "mcp__codex_apps__zoom",
-      "tool": {
-        "name": "zoom_recordings_list",
-        "title": "recordings_list",
-        "description": "List all recordings\nLists all [cloud recordings](https://support.zoom.us/hc/en-us/articles/203741855-Cloud-Recording) for a user.  \nFor user-level apps, pass the [`me` value](https://developers.zoom.us/docs/api/rest/using-zoom-apis/#the-me-keyword) instead of the `userId` parameter.  To access a user's passcode protected cloud recording, send the user's [OAuth access token](https://developers.zoom.us/docs/integrations/oauth/) as a bearer token in the authorization header.  \nExample:  `curl -H \"Authorization: Bearer <ACCESS_TOKEN>\" https://{{base-domain}}/rec/archive/download/xyz`\n\nThis can list the current person's records, only displaying the corresponding record information.",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "from": {
-              "type": "string"
-            },
-            "page_size": {
-              "type": "integer",
-              "default": "30",
-              "maximum": 300
-            },
-            "next_page_token": {
-              "type": "string"
-            },
-            "mc": {
-              "type": "string",
-              "default": "false"
-            },
-            "trash": {
-              "type": "boolean",
-              "default": "false"
-            },
-            "trash_type": {
-              "type": "string",
-              "default": "meeting_recordings"
-            },
-            "meeting_id": {
-              "type": "integer"
-            },
-            "to": {
-              "type": "string"
-            },
-            "userId": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "userId"
-          ]
-        },
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": true,
-          "openWorldHint": true
-        },
-        "_meta": {
-          "resource_name": "Zoom_recordings_list",
-          "_codex_apps": {
-            "resource_uri": "/asdk_app_69373a13116c819189d046aea1278836/link_6957a89fe24481919cc4f9f1841ae21c/recordings_list",
-            "contains_mcp_source": true
-          },
-          "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
-          "connector_name": "Zoom",
-          "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content.",
-          "link_id": "link_6957a89fe24481919cc4f9f1841ae21c"
-        }
-      },
-      "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
-      "connector_name": "Zoom",
-      "plugin_display_names": [],
-      "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content."
-    },
-    {
-      "server_name": "codex_apps",
-      "tool_name": "_create_new_file_with_markdown",
-      "tool_namespace": "mcp__codex_apps__zoom",
-      "tool": {
-        "name": "zoom_create_new_file_with_markdown",
-        "title": "create_new_file_with_markdown",
-        "description": "Creates a new Zoom Docs document from Markdown content.\n\nUse this tool whenever the user asks to save or create content in Zoom Docs. \nPass the user's content as a single Markdown string.\n\nAfter invoking this tool, you must:\n1. Tell the user the name of the newly created document.\n2. Provide the `file_link` to the user.",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "file_name": {
-              "type": "string",
-              "description": "The name of the file."
-            },
-            "parent_id": {
-              "type": "string",
-              "description": "The ID of the parent file. The newly created file will become a child of this parent. If this parameter is omitted, the file will be placed under **My Docs**. Use `root` to represent the top-level folder of the current user. Folders can only be created under **My Docs**, a shared folder, or another folder."
-            },
-            "content": {
-              "type": "string",
-              "description": "The markdown formatted content."
-            }
-          },
-          "required": [
-            "content"
-          ]
-        },
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": true,
-          "openWorldHint": true
-        },
-        "_meta": {
-          "resource_name": "Zoom_create_new_file_with_markdown",
-          "_codex_apps": {
-            "resource_uri": "/asdk_app_69373a13116c819189d046aea1278836/link_6957a89fe24481919cc4f9f1841ae21c/create_new_file_with_markdown",
-            "contains_mcp_source": true
-          },
-          "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
-          "connector_name": "Zoom",
-          "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content.",
-          "link_id": "link_6957a89fe24481919cc4f9f1841ae21c"
-        }
-      },
-      "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
-      "connector_name": "Zoom",
-      "plugin_display_names": [],
-      "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content."
-    },
-    {
-      "server_name": "codex_apps",
-      "tool_name": "_get_recording_resource",
-      "tool_namespace": "mcp__codex_apps__zoom",
-      "tool": {
-        "name": "zoom_get_recording_resource",
-        "title": "get_recording_resource",
-        "description": "Description:\n\n**PRIORITY TRIGGER CONDITIONS - Use THIS Tool When User Mentions Recording:**\n\n**HIGH PRIORITY - Always use THIS tool when user explicitly mentions:**\n- \"recording\" + any action (play, watch, view, listen, open, start, etc.)\n- \"play recording\" | \"play the recording\"\n- \"watch the recording\" | \"view the recording\" | \"listen to the recording\"\n- \"open the recording\" | \"start the recording\" | \"launch the recording\"\n- \"jump to recording\" | \"go to recording\" | \"navigate to recording\"\n- \"recording content\" | \"recording details\" | \"recording transcript\"\n- \"what's in the recording\" | \"recording summary\" | \"recording analysis\"\n\n**MEDIUM PRIORITY - Use THIS tool when context suggests recording focus:**\n- User asks about specific content AND mentions time/timeline (e.g., \"What did they say at 5 minutes?\")\n- User wants to search/find specific topics within content (implies transcript search)\n- User asks about speakers, dialogue, or conversation details\n- User mentions playback, timestamps, or navigation within content\n\n**LOW PRIORITY - Use ASSETS tool first, then THIS tool if needed:**\n- General meeting information requests without \"recording\" keyword\n- \"Show me my meetings\" / \"What meetings do I have?\"\n- Basic meeting metadata (duration, participants, date) without content focus\n\n---\n\n**CRITICAL: When to Use This Tool vs. Assets Tool**\n\n**Use THIS RECORDING tool when:**\n- User **explicitly mentions \"recording\"** in their request\n- User wants **detailed recording content**: transcript text, per-topic summaries, next steps\n- User needs to **search within a recording** (e.g., \"What did they say about X?\")\n- User wants to **jump to a specific part** of a recording (requires transcript + playback URL)\n- User needs **granular timeline data** (who said what and when)\n- User wants to **play/watch/view/listen to** a recording\n\n**Use the ASSETS tool when:**\n- User wants **meeting-level information** (meeting summary, recordings list, whiteboards, docs)\n- User asks for \"meeting assets\", \"meeting recordings\", \"meeting summary\" **without** mentioning \"recording\" specifically\n- User wants to know **what recordings exist** for a meeting\n- User needs **basic recording metadata** (duration, file size, download links)\n\n**ENHANCED DECISION RULE:**\n\n1. **FIRST CHECK:** Does the user's request contain the word \"recording\" or recording-related actions?\n   - YES → Use THIS tool immediately\n   - NO → Continue to step 2\n\n2. **SECOND CHECK:** Is the user asking about specific content, transcript, or playback?\n   - YES → Use THIS tool\n   - NO → Use ASSETS tool\n\n3. **FALLBACK:** If unclear, and user mentions \"meeting\" without \"recording\" → Use ASSETS tool first\n\n**Examples of Enhanced Triggering:**\n\n**ALWAYS use THIS tool for:**\n- \"Play the recording\"\n- \"I want to watch the recording\"\n- \"Show me the recording content\"\n- \"What's in this recording?\"\n- \"Open the recording file\"\n- \"Start the recording\"\n- \"Jump to 5 minutes in the recording\"\n- \"Find where they talked about pricing in the recording\"\n\n**Use ASSETS tool first for:**\n- \"Show me my meetings\"\n- \"What meetings do I have today?\"\n- \"Meeting summary\" (without \"recording\")\n- \"My recent meetings\"\n\n**Context-dependent (analyze user intent):**\n- \"What did we discuss?\" → If no recording context, use ASSETS; if recording context exists, use THIS tool\n- \"Show me the summary\" → If user was previously discussing recordings, use THIS tool; otherwise use ASSETS\n\n---\n\nUse this tool whenever you need **detailed content or granular metadata** for a specific recording:\n\n- transcript text (to answer questions, find topics, or locate time ranges),\n- summaries (overall or per-topic),\n- next steps / action items,\n- or playable URLs (for jumping to a specific point in the recording).\n\nThis tool can return:\n\n- transcript segments,\n- summary segments,\n- next-step segments,\n- playback URLs,\n- and utility information derived from these (e.g., recording duration).\n\nIf the user's request is unclear OR you are not sure which resource type is needed,\nomit the \"types\" parameter so that ALL available resources are fetched.\nYou can then decide which parts to use to answer the user.\n\nParameters:\n- types (string, optional):\n  A comma-separated list of resource types to retrieve.\n  Valid values (case-insensitive, no spaces needed):\n    • \"transcript\"  → transcript segments for the recording\n    • \"summary\"     → summary segments for the recording\n    • \"nextStep\"    → next-step segments for the recording\n    • \"playUrl\"     → playback URL segments for the recording\n\n  Behavior rules for \"types\":\n  - If omitted or an empty string, the tool MUST fetch ALL available resource types.\n  - If some values are invalid, ignore the invalid ones and still fetch the valid types.\n  - If the user is asking about the content or meaning of the recording\n    (e.g., \"What did they say about X?\", \"Find the part where they discussed Y\"),\n    you SHOULD include \"transcript\" in types.\n  - If the user wants to jump to or play a specific part of the recording\n    (e.g., \"Take me to the part where they talk about pricing\"),\n    you SHOULD include both \"transcript\" and \"playUrl\" in types.\n\n- raw_passcode (string, optional):\n  The plaintext passcode for playing the recording. Up to 10 characters, containing lowercase letters, digits, special characters (e.g., !, @, #), or sometimes all digits.\n  (e.g., passcode directly copied from a Zoom shared link).\n\n- encode_passcode (string, optional):\n  The encrypted passcode used for playing the recording. It is an encoded string typically appended to the recording’s share link as the pwd parameter.\n  (e.g., the `pwd=xxx` value from a Zoom shared link).\n\n- clip_num (integer, optional):\n  The index (1-based or as defined by the implementation) of the recording clip to retrieve,\n  for recordings that contain multiple clips.\n  If the requested clip number exceeds the available clip count, the tool should return null.\n\n- play_time (integer, optional):\n  The user's desired playback starting time in SECONDS relative to the selected clip.\n  For example:\n  - play_time = 0   → start from the beginning of the clip\n  - play_time = 20  → start 20 seconds into the clip\n\n  When the user asks to \"jump to\", \"play from\", or \"go to the part where...\",\n  you can:\n    1) Use the returned transcripts to find the relevant segment and its timestamp, then\n    2) Call or interpret play URLs with an appropriate play_time value.\n\nBehavior:\n\n- **ENHANCED PREREQUISITE CHECK:** \n  - If user mentions \"recording\" or recording-related actions → Use THIS tool immediately\n  - If user asks about content analysis, transcript, or playback → Use THIS tool\n  - If user asks general meeting questions without \"recording\" context → Use ASSETS tool first\n\n- The tool returns ONLY the resource types requested via \"types\".\n  - If \"types\" is empty or omitted, the tool returns ALL available resource types.\n\n- If a particular resource type does not exist, its field MUST be omitted from the response.\n\n- Recording duration can be computed using:\n    duration = recording_end - recording_start\n\n- Returned transcript data can (and should) be used by the model to:\n    - answer content questions,\n    - search for specific topics or phrases,\n    - determine appropriate time ranges for playback.\n\n- Returned play URLs can be used by the client or the model to initiate playback\n  from a desired start time.\n\n- If the user's question is ambiguous or mixed (e.g., might need both content and playback),\n  you SHOULD omit \"types\" so that all resources are retrieved.\n\n- **IMPORTANT:** This tool has PRIORITY when \"recording\" is explicitly mentioned. For general meeting/recording discovery without \"recording\" keyword, use the ASSETS tool first.\n\nReturn Structure (JSON):\n\n{\n  \"transcripts\": [\n    {\n      \"timeline\": [\n        {\n          \"text\": \"string\",\n          \"ts\": \"HH:mm:ss.SSS\",       // start time relative to recording start\n          \"end_ts\": \"HH:mm:ss.SSS\",   // end time relative to recording start\n          \"display_name\":\"string\",     // the person speaking in this sentence may be empty; if empty, it means they are not a Zoom user.\n        }\n      ],\n      \"recording_id\": \"string\",\n      \"meeting_id\": \"string\",\n      \"recording_start\": \"timestamp (string)\",\n      \"recording_end\": \"timestamp (string)\"\n    }\n  ],\n  \"summaries\": [\n    {\n      \"recordingStartTime\": number,\n      \"recording_start\": \"timestamp (string)\",\n      \"total_items\": number,\n      \"overall_summary\": \"string | null\",\n      \"items\": [\n        {\n          \"label\": \"string\",\n          \"summary\": \"string\"\n        }\n      ]\n    }\n  ],\n  \"next_steps\": [\n    {\n      \"recordingStartTime\": number,\n      \"recording_start\": \"timestamp (string)\",\n      \"total_items\": number,\n      \"items\": [\n        {\n          \"text\": \"string\"\n        }\n      ]\n    }\n  ],\n  \"play_urls\": [\n    {\n      \"recording_start\": \"timestamp (string)\",\n      \"urls\": [\n        \"string\"\n      ],\n      \"play_time\": number\n    }\n  ]\n}\n\nNotes:\n\n- Include each top-level field (transcripts, summaries, next_steps, play_urls)\n  ONLY if corresponding data exists.\n- If no resource exists for a requested type, omit that field entirely.\n\n**Enhanced Tool Selection Examples:**\n\n**CORRECT - Use THIS tool immediately:**\n- \"Play the recording\" → THIS tool (explicit recording mention)\n- \"I want to watch the recording\" → THIS tool (explicit recording mention)\n- \"What's in this recording?\" → THIS tool (explicit recording mention)\n- \"Open the recording\" → THIS tool (explicit recording mention)\n- \"Find the part where they discussed pricing in the recording\" → THIS tool (explicit recording mention)\n\n**WRONG - Should use THIS tool, not ASSETS:**\n- User: \"Play the recording\" → Calling ASSETS tool \n- User: \"Show me the recording content\" → Calling ASSETS tool \n\n**CORRECT - Use ASSETS tool first:**\n- \"What meetings do I have?\" → ASSETS tool (no recording mention)\n- \"Show me my meeting summary\" → ASSETS tool (meeting-level, no recording mention)\n- \"My recent meetings\" → ASSETS tool (no recording mention)\n\n**Context-dependent examples:**\n- \"What did we discuss about the budget?\" → If user was previously talking about recordings, use THIS tool; otherwise use ASSETS\n- \"Show me the summary\" → If recording context exists, use THIS tool; otherwise use ASSETS\n\n**Rule of thumb:** \n- **Recording keyword present** → THIS tool has PRIORITY\n- **Recording actions (play, watch, view, listen, open)** → THIS tool has PRIORITY  \n- **Content analysis without recording context** → Consider both tools based on specificity\n- **General meeting discovery** → ASSETS tool first",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "clip_num": {
-              "type": "integer"
-            },
-            "play_time": {
-              "type": "integer"
-            },
-            "meetingId": {
-              "type": "string",
-              "description": "The original meetingId is not a pure number, but rather a format similar to atsXxhSEQWit9t+U02HXNQ==. The parameters in this format need to be double-encoded (/docs/api/using-zoom-apis/#meeting-id-and-uuid) to obtain the UUID before making an API request."
-            },
-            "types": {
-              "type": "string"
-            },
-            "raw_passcode": {
-              "type": "string",
-              "description": "The plaintext passcode for playing the recording. Up to 10 characters, containing lowercase letters, digits, special characters (e.g., !, @, #), or sometimes all digits."
-            },
-            "encode_passcode": {
-              "type": "string",
-              "description": "The encrypted passcode used for playing the recording. It is an encoded string typically appended to the recording’s share link as the pwd parameter."
-            }
-          },
-          "required": [
-            "meetingId"
-          ]
-        },
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": true,
-          "openWorldHint": true
-        },
-        "_meta": {
-          "openai/outputTemplate": "ui://widget/meeting-recording.html",
-          "openai/widgetAccessible": true,
-          "resource_name": "Zoom_get_recording_resource",
-          "_codex_apps": {
-            "resource_uri": "/asdk_app_69373a13116c819189d046aea1278836/link_6957a89fe24481919cc4f9f1841ae21c/get_recording_resource",
-            "contains_mcp_source": true
-          },
-          "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
-          "connector_name": "Zoom",
-          "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content.",
-          "link_id": "link_6957a89fe24481919cc4f9f1841ae21c"
-        }
-      },
-      "connector_id": "asdk_app_69373a13116c819189d046aea1278836",
-      "connector_name": "Zoom",
-      "plugin_display_names": [],
-      "connector_description": "Enables searching a user’s meetings, accessing past meeting assets (summaries, docs, whiteboards, recordings), and retrieving detailed recording resources such as transcripts, summaries, next steps, and playback URLs. Also supports listing a user’s cloud recordings and creating new meeting-related documents from Markdown content."
     },
     {
       "server_name": "codex_apps",

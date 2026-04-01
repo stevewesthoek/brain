@@ -1,12 +1,14 @@
 ---
 name: dokploy
-description: Use when the user asks to deploy, manage, or inspect applications on the Dokploy server. Covers MCP-based direct control, CLI operations, and CI/CD pipeline setup via GitHub Actions. Server: https://dokploy.prochat.tools
+description: "Use when the user asks to deploy, manage, or inspect applications on the Dokploy server. Uses Dokploy CLI exclusively. Server: https://dokploy.prochat.tools"
 ---
 
 # Dokploy
 
 ## What this skill is for
-Help Claude manage deployments, applications, databases, and projects on the self-hosted Dokploy server at `https://dokploy.prochat.tools` — via MCP tools (direct), CLI commands (scripted), or GitHub Actions (automated CI/CD).
+Help manage deployments, applications, databases, and projects on the self-hosted Dokploy server at `https://dokploy.prochat.tools` — via the **Dokploy CLI** (direct commands) or the **REST API** (curl, GitHub Actions).
+
+The Dokploy CLI is the single, preferred interface. Do not use or reference any MCP server for Dokploy.
 
 ## Use this skill when
 - Deploying or redeploying an application on Dokploy
@@ -23,49 +25,69 @@ Help Claude manage deployments, applications, databases, and projects on the sel
 
 ## Safety rules
 1. **Confirm before deploy.** Always state which app and which environment before triggering a deployment. Wait for confirmation.
-2. **Never log or commit API keys.** The `DOKPLOY_API_KEY` must never appear in code, logs, or committed files.
+2. **Never log or commit API keys.** `DOKPLOY_API_KEY` must never appear in code, logs, or committed files.
 3. **Test deploys first.** Use dry-run or staging apps where available before touching production.
 4. **Confirm destructive actions.** Deleting apps, databases, or projects requires explicit user confirmation.
 5. **Verify server URL.** All operations target `https://dokploy.prochat.tools`. Double-check before targeting a different server.
 
-## Layer stack
+## Authentication
 
-### Layer 1 — MCP (direct Claude control)
-The `@ahdev/dokploy-mcp` MCP server is registered at user scope. Claude can directly call 67 Dokploy tools without leaving the conversation.
+The API key and server URL are stored in `~/.config/dokploy/.env` (local, never committed):
 
-Config:
-- `DOKPLOY_URL`: `https://dokploy.prochat.tools/api`
-- `DOKPLOY_API_KEY`: stored in `~/.claude.json` (never in repo)
-- Stable binary: `~/.local/bin/dokploy-mcp`
-
-### Layer 2 — CLI (scripted operations)
-```bash
-~/.local/bin/dokploy-cli   # use this path to avoid the 'dokploy' ssh alias
+```
+DOKPLOY_API_KEY=...
+DOKPLOY_URL=https://dokploy.prochat.tools/api
 ```
 
-Common commands:
+Load them in any shell command with:
 ```bash
+source ~/.config/dokploy/.env
+```
+
+This file is the single source of truth for Dokploy credentials — used by Claude Code, Codex, and any script.
+
+> Important: `dokploy` in the shell is aliased to `ssh dokploy` (SSH shortcut to the server).
+> Always invoke the CLI via `~/.local/bin/dokploy-cli` to avoid the alias conflict.
+
+## Layer 1 — CLI (all interactive and scripted operations)
+
+```bash
+~/.local/bin/dokploy-cli --version   # @dokploy/cli v0.2.8
 ~/.local/bin/dokploy-cli --help
-~/.local/bin/dokploy-cli authenticate
-~/.local/bin/dokploy-cli app deploy --appId <id>
-~/.local/bin/dokploy-cli app list
-~/.local/bin/dokploy-cli project list
 ```
 
-> Note: `dokploy` in terminal is aliased to `ssh dokploy` (SSH shortcut to the server).
-> Always call the CLI via `~/.local/bin/dokploy-cli` or its full nvm path.
+Common operations:
+```bash
+# List all projects and apps
+source ~/.config/dokploy/.env
+curl -s -X GET "https://dokploy.prochat.tools/api/project.all" \
+  -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool
 
-### Layer 3 — GitHub Actions (automated CI/CD)
+# Deploy an application
+source ~/.config/dokploy/.env
+curl -s -X POST "https://dokploy.prochat.tools/api/application.deploy" \
+  -H "x-api-key: $DOKPLOY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"applicationId": "<app-id>"}'
+
+# Get app details
+source ~/.config/dokploy/.env
+curl -s -X GET "https://dokploy.prochat.tools/api/application.one?applicationId=<app-id>" \
+  -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool
+```
+
+## Layer 2 — GitHub Actions (automated CI/CD)
+
 Reusable workflow template: `brain/operations/deploy/dokploy-deploy.yml`
 
 Required GitHub secrets per repo:
-- `DOKPLOY_API_KEY` — generate in Dokploy dashboard → Settings → API
+- `DOKPLOY_API_KEY` — copy from `~/.config/dokploy/.env`
 - `DOKPLOY_APP_ID` — found in app settings in the Dokploy dashboard
 
 ## Recommended workflow — new app deployment
 
 ```
-1. Create project in Dokploy dashboard (or via MCP)
+1. Create project in Dokploy dashboard
 2. Create application under the project
 3. Set environment variables in app settings
 4. Add custom domain if needed
@@ -75,20 +97,17 @@ Required GitHub secrets per repo:
 ```
 
 ## Recommended workflow — manual redeploy
-```bash
-# Via CLI
-~/.local/bin/dokploy-cli app deploy --appId <your-app-id>
 
-# Via REST API
-curl -X POST https://dokploy.prochat.tools/api/application.deploy \
+```bash
+source ~/.config/dokploy/.env
+curl -s -X POST "https://dokploy.prochat.tools/api/application.deploy" \
   -H "x-api-key: $DOKPLOY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"applicationId": "<your-app-id>"}'
 ```
 
 ## Notes
-- MCP binary: `~/.local/bin/dokploy-mcp` (v npm @ahdev/dokploy-mcp)
-- CLI binary: `~/.local/bin/dokploy-cli` (v npm @dokploy/cli@0.2.8)
-- MCP registered at user scope via `claude mcp add -s user`
-- API key and URL stored in `~/.claude.json` — never in brain repo
+- CLI binary: `~/.local/bin/dokploy-cli` → symlink to `@dokploy/cli@0.2.8` (nvm node v24.12.0)
+- Credentials: `~/.config/dokploy/.env` — local only, never in any repo
 - Dokploy server: `https://dokploy.prochat.tools`
+- This skill applies to both Claude Code and Codex — both use CLI/curl, not MCP

@@ -1,9 +1,45 @@
 ---
 name: supabase
 description: Use when the user asks to manage Supabase — running migrations, generating TypeScript types, diffing schemas, managing local dev stack, or inspecting the self-hosted Supabase instance. Assumes Supabase CLI is installed globally via Homebrew and the target is a self-hosted instance.
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "bash ${CLAUDE_SKILL_DIR}/bin/check-db-prod.sh"
+          statusMessage: "Checking database context safety..."
 ---
 
 # Supabase CLI
+
+## STOP — DB Context Check (run before every operation)
+
+Before executing any database command, state this out loud:
+
+> "I am working on **[APP NAME]** — **[LOCAL / PRODUCTION]** database."
+
+Identify the target from the connection string:
+
+| Connection | Environment | Rules |
+|---|---|---|
+| `localhost:5432` or `localhost:5433` | **LOCAL** | Safe to reset, push, drop |
+| `100.71.31.88:5433` (Tailscale VPS) | **PRODUCTION** | Read-only unless user explicitly confirms write |
+| `$SUPABASE_DB_URL_READONLY` | **PRODUCTION READ-ONLY** | Never pass to write commands |
+| `$SUPABASE_DB_URL` | **PRODUCTION WRITE** | Schema migrations only — requires confirmation |
+
+**If the target is ambiguous — ask before running anything.**
+
+### Operation risk levels
+
+| Operation | Local | Production |
+|---|---|---|
+| `migration list`, `db diff`, `gen types` | ✅ proceed | ✅ proceed (read-only) |
+| `db push`, `migration apply` | ✅ proceed | ⚠️ confirm with user first |
+| `db reset` | ✅ proceed | 🚫 NEVER |
+| `DROP TABLE/DATABASE`, `TRUNCATE` | ✅ proceed | 🚫 NEVER |
+| `prisma db push`, `prisma migrate dev` | ✅ proceed | 🚫 NEVER |
+
+---
 
 ## What this skill is for
 Help Claude use the Supabase CLI safely for database migrations, schema diffing, type generation, and local development against a self-hosted Supabase instance.

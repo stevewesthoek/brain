@@ -76,3 +76,8 @@ repos() {
   [[ -z "$repo_path" ]] && return 0
   cd "$repo_path" && claude
 }
+
+# Session picker — type `session` to browse and resume a previous Claude session
+session() {
+  bash ~/.claude/session-picker.sh
+}

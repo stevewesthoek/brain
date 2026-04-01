@@ -24,7 +24,7 @@ Canonical config lives at `operations/system-configs/codex/config.toml`.
 Do not duplicate MCP definitions per repo. Repos should consume central config via
 the `.codex -> ~/.codex` symlink pattern.
 
-`stitch` entry:
+`stitch` entry (canonical — keep `config.toml` and `codex-config.template.toml` in sync with this):
 
 [mcp_servers.stitch]
 command = "npx"
@@ -32,6 +32,7 @@ args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
 
 [mcp_servers.stitch.env]
 DOTENV_CONFIG_QUIET = "true"
+STITCH_API_KEY = "gcloud-adc"
 
 ## Setup flow
 Recommended helper:
@@ -48,9 +49,13 @@ Manual OAuth/project setup:
 - codex mcp list
 
 ## Notes
-- The proxy mode avoids storing API keys in repo config and uses gcloud auth.
-- Set `DOTENV_CONFIG_QUIET = "true"` for this server in Codex config. This prevents
-  dotenv startup banners on stdout, which can break MCP JSON-RPC handshakes.
+- `STITCH_API_KEY = "gcloud-adc"` is NOT a secret — it is a sentinel value that tells
+  the proxy to use Google Application Default Credentials from `~/.stitch-mcp/`.
+  Both Claude (`~/.claude.json`) and Codex (`config.toml`) must have this set or the
+  proxy will refuse to start with: "StitchProxy requires an API key (STITCH_API_KEY)".
+- The proxy mode avoids storing real API keys in repo config and uses gcloud ADC auth.
+- Set `DOTENV_CONFIG_QUIET = "true"` to prevent dotenv startup banners on stdout,
+  which can break MCP JSON-RPC handshakes.
 - `init` can install/manage gcloud in `~/.stitch-mcp` if system gcloud is absent.
 - Optional system gcloud mode:
   - Add `STITCH_USE_SYSTEM_GCLOUD = "1"` under `[mcp_servers.stitch.env]`.

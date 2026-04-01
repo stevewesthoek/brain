@@ -23,6 +23,7 @@ It is meant to be:
 - `projects/` — project-specific context, assets, notes, and execution docs
 - `ai/` — prompts, provider notes, shared multi-tool skills
 - `operations/` — runbooks, scripts, snippets, automations, infrastructure, deploy docs, system configs
+- `tools/` — utility and workflow scripts for this machine (`tools/scripts/`)
 - `runtime/` — ProBot/OpenClaw runtime workspace material and local working state
 
 ## Reading Order
@@ -61,7 +62,7 @@ Start here:
 - `operations/automations/` for workflow exports and higher-level automation
 - `operations/infrastructure/` for architecture and infra docs
 - `operations/deploy/` for real deployment configs only
-- `operations/system-configs/` for curated machine/tool config that is intentionally synced
+- `operations/system-configs/` for curated machine/tool config that is intentionally synced — most subdirs here are the symlink targets for `~/.claude`, `~/.codex`, `~/.kiro`, `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml`
 
 ### `runtime/`
 - ProBot-specific workspace and runtime notes.
