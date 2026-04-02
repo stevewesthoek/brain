@@ -37,6 +37,25 @@ Start here:
 6. `operations/README.md`
 7. `runtime/README.md`
 
+## Expanding This Repo
+
+Rule: whenever you add or change content, update the documentation that describes it.
+
+| What you're adding | What to update |
+|--------------------|----------------|
+| New top-level folder | This README (Top-Level Structure + Folder Notes), plus Reading Order if it needs a start-here doc |
+| New project under projects/ | `projects/README.md`, plus a README in the new project folder if it's active |
+| New skill | `ai/skills/README.md` if the structure changes; symlink in `ai/skills/active/`; `CLAUDE.md` global skills list if it's user-facing |
+| New tool config under system-configs/ | `operations/system-configs/README.md` symlink map |
+| New automation | `operations/automations/README.md` (if it exists), or note in `operations/README.md` |
+| New script under tools/scripts/ | `tools/README.md` |
+| Confirmed architecture decision | `operations/decision-log.md` |
+| Change to how Claude or Codex should behave globally | `~/.claude/CLAUDE.md` (global) or `brain/CLAUDE.md` (repo-level) |
+
+This table is the contract. If a tool reads the docs and finds no pointer to a new folder, it will not know it exists. Keep this table current.
+
+**Before removing anything:** check if the item is a symlink target (see `CLAUDE.md` under "Do not break"), has an active symlink in `ai/skills/active/`, or is referenced in the table above. If yes, update those references first.
+
 ## Folder Notes
 
 ### `personal/`
@@ -62,7 +81,7 @@ Start here:
 - `operations/automations/` for workflow exports and higher-level automation
 - `operations/infrastructure/` for architecture and infra docs
 - `operations/deploy/` for real deployment configs only
-- `operations/system-configs/` for curated machine/tool config that is intentionally synced — most subdirs here are the symlink targets for `~/.claude`, `~/.codex`, `~/.kiro`, `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml`
+- `operations/system-configs/` for synced tool config and selected machine state — subdirs are the symlink targets for `~/.claude`, `~/.codex`, `~/.kiro`, `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml`. Each subdir is mixed-content: portable config, intentionally versioned state, and gitignored machine noise. See `operations/system-configs/README.md` for details.
 
 ### `runtime/`
 - ProBot-specific workspace and runtime notes.
@@ -139,6 +158,8 @@ Do **not** version:
 - cache folders
 - `.DS_Store`
 - generated tool runtime
+
+Exception: some tool state is intentionally versioned for continuity. This includes Codex skill imports, vendor references, and selective history files. These are present by design but are not canonical reference material — treat them as supporting artifacts, not docs.
 
 `operations/system-configs/` should stay curated. If a file is mostly machine state, it should be ignored or moved out of Git.
 
