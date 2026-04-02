@@ -30,3 +30,6 @@ enabled = true
 
 [projects."/Users/Office/Repos/stevewesthoek/brain"]
 trust_level = "trusted"
+
+[projects."/Users/Office/Repos/prochattools/waas/accountant"]
+trust_level = "trusted"

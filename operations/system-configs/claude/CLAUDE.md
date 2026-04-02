@@ -88,26 +88,29 @@ Use `decision-log.md` (if present) for confirmed architecture and workflow decis
 
 Route tasks to agents by cost and complexity. Do not ask the user which model to use — route automatically.
 
-| Agent | Model | Use when |
-|-------|-------|----------|
+| Agent | Model/Tool | Use when |
+|-------|------------|----------|
 | `cheap-prep` | Haiku | Summarization, file triage, context compaction, commit drafting |
 | `coder-default` | Sonnet | All normal coding (default) |
 | `deep-architect` | Opus | Complex architecture, high blast radius, repeated failures |
+| `codex` | Codex CLI | Parallel load balancing, code review, second opinion, well-scoped isolated tasks |
 
 Before escalating to Opus: compact context with `cheap-prep` first.
+When running 3+ parallel agents: route 1–2 self-contained tasks to Codex for engine diversity.
 After significant decisions: write a short durable summary for the repo's `decision-log.md`.
 See `/model-router` for full policy.
 
-# Codex second-opinion policy
+# Codex policy
 
-Codex CLI is available only as a secondary review tool, not as the default coding engine.
+Codex CLI is available as both a secondary reviewer AND a parallel task executor for well-scoped work.
 
 Rules:
-- Use Codex only when confidence is low, a bug persists after 1–2 attempts, or a second opinion is explicitly useful.
-- Prefer at most 1 Codex call per task, or 2 for difficult debugging.
-- Always compress context before calling Codex — keep the prompt under 12k chars.
+- Use for second opinion when confidence is low or a bug persists after 1–2 attempts.
+- Use for load balancing when spawning multiple parallel sub-agents — spread work across engines.
+- Always compress context before calling — keep the prompt under 12k chars.
 - Use the wrapper script: `brain/tools/codex-review.sh '<compressed context>'`
 - Use `reasoning_effort="high"` (already set in the wrapper) — not `xhigh`.
 - Treat Codex output as advisory, not authoritative.
-- If Codex output is vague or low-value, stop — do not retry.
+- Max 1–2 Codex calls per task; do not chain without clear value.
+- Do not use for tasks requiring full repo context or interactive file editing.
 - See `/codex-second-opinion` skill for the full routing policy.

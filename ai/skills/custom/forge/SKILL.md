@@ -153,6 +153,46 @@ Initialize with the default stack:
 npx create-next-app@latest <name> --typescript --tailwind --eslint --app --src-dir
 ```
 
+Immediately after scaffold, before any other file, create `.claudeignore`:
+```bash
+cat > .claudeignore << 'EOF'
+node_modules/
+.next/
+dist/
+build/
+out/
+.turbo/
+.cache/
+coverage/
+*.log
+logs/
+package-lock.json
+yarn.lock
+bun.lock
+pnpm-lock.yaml
+*.map
+supabase/.branches/
+supabase/.temp/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.mp4
+*.mp3
+*.wav
+*.pdf
+*.zip
+*.tar.gz
+*.woff
+*.woff2
+*.ttf
+*.eot
+*.otf
+.DS_Store
+EOF
+```
+
 #### 5b. Design system — run these three skills in order
 1. **`/taste-skill`** — establish the design foundation: spacing scale, type ramp, color tokens, shadow system, motion primitives
 2. **`/ui-ux-pro-max`** — define UX architecture: information hierarchy, component patterns, interaction model, page structure

@@ -10,6 +10,5 @@ Production assets for episode creation and audio generation.
 ## Rule
 
 Keep tooling and produced scripts here, separate from strategy and operating docs.
-
-Generated production artifacts in this project are intentionally versioned in Git.
-That includes generated SSML and other production outputs that are part of the reusable library asset base.
+Version scripts, SSML, and intentional reusable production source assets here.
+Do not version rendered media and campaign output folders under `output/`; they are large, regenerable pipeline artifacts.

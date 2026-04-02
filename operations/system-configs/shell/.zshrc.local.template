@@ -1,0 +1,12 @@
+# Local-only shell secrets and machine-specific overrides.
+# Copy to .zshrc.local and fill in real values on this machine only.
+
+# Supabase production — inspection only
+# export SUPABASE_DB_URL_READONLY=""
+# export PGSSLMODE=disable
+# export SUPABASE_URL=""
+# export SUPABASE_SERVICE_ROLE_KEY=""
+
+# Google Workspace CLI
+# export GOOGLE_WORKSPACE_CLI_CLIENT_ID=""
+# export GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=""

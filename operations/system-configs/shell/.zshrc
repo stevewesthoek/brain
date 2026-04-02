@@ -57,27 +57,31 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
-# Supabase production — INSPECTION ONLY via Tailscale
-# Safe: migration list, gen types, db diff
-# FORBIDDEN: db push, db reset, prisma migrate dev/deploy, any write operation
-export SUPABASE_DB_URL_READONLY="postgresql://supabase_admin:<REDACTED_DB_PASSWORD>@100.71.31.88:5433/postgres?sslmode=disable"
-export PGSSLMODE=disable
-export SUPABASE_URL="http://100.71.31.88:8000"
-export SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NzIyMzU4NjYsImV4cCI6MjA4NzU5NTg2Nn0.<REDACTED_SUPABASE_SERVICE_ROLE_KEY>"
 
-# Google Workspace CLI
-export GOOGLE_WORKSPACE_CLI_CLIENT_ID=891024122587-tk2rhr2pah8sfj8nknnc23kieerupb88.apps.googleusercontent.com
-export GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=<REDACTED_GOOGLE_CLIENT_SECRET>
+# Local-only secrets and machine-specific credentials
+LOCAL_SHELL_ENV="$HOME/Repos/stevewesthoek/brain/operations/system-configs/shell/.zshrc.local"
+[[ -f "$LOCAL_SHELL_ENV" ]] && source "$LOCAL_SHELL_ENV"
 
-# Repo picker — type `repos` in any terminal to open Claude Code in a selected repo
-repos() {
+# Repo picker — repo-claude opens Claude, repo-codex opens Codex
+repo-claude() {
   local repo_path
-  repo_path=$(bash ~/.claude/repo-picker.sh)
+  repo_path=$(bash ~/Repos/stevewesthoek/brain/tools/scripts/repo-picker.sh)
   [[ -z "$repo_path" ]] && return 0
   cd "$repo_path" && claude
 }
 
-# Session picker — type `session` to browse and resume a previous Claude session
-session() {
-  bash ~/.claude/session-picker.sh
+repo-codex() {
+  local repo_path
+  repo_path=$(bash ~/Repos/stevewesthoek/brain/tools/scripts/repo-picker.sh)
+  [[ -z "$repo_path" ]] && return 0
+  cd "$repo_path" && codex
+}
+
+# Session picker — session-claude for Claude, session-codex for Codex
+session-claude() {
+  bash ~/Repos/stevewesthoek/brain/tools/scripts/claude-session-picker.sh
+}
+
+session-codex() {
+  bash ~/Repos/stevewesthoek/brain/tools/scripts/codex-session-picker.sh
 }

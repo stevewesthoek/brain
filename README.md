@@ -151,6 +151,7 @@ Only version:
 
 Do **not** version:
 - auth tokens
+- credentials, connection strings, and client secrets
 - browser profiles
 - session logs
 - debug dumps
@@ -168,8 +169,8 @@ Generated-file rule:
 - do **not** version generated **tool/runtime state** when it is just local machine noise, cache, session history, debug data, or transient automation output
 
 Examples:
-- version: generated SSML or other reusable production assets under a project like `projects/says-the-bible/production/`
-- do not version: `.wrangler/`, Codex/Claude session data, browser profiles, SQLite tool state, IDE caches
+- version: generated SSML, scripts, and intentional reusable production source assets under a project like `projects/says-the-bible/production/`
+- do not version: rendered media output folders, `.wrangler/`, Codex/Claude session data, browser profiles, SQLite tool state, IDE caches, local shell credentials
 
 ## Cloudflare / Wrangler
 

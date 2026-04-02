@@ -2,3 +2,5 @@ prefix_rule(pattern=["rm", "-f", "PROKIT_NOTICE.md", "src/types/blog.d.ts"], dec
 prefix_rule(pattern=["rm", "-rf", "public/logo"], decision="allow")
 prefix_rule(pattern=["git", "add"], decision="allow")
 prefix_rule(pattern=["git", "push"], decision="allow")
+prefix_rule(pattern=["git", "commit"], decision="allow")
+prefix_rule(pattern=["git", "rm", "--cached"], decision="allow")

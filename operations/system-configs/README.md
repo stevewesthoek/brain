@@ -32,9 +32,11 @@ Each subdir may contain a mix of:
 - Machine state — present in the working tree but gitignored (logs, session data, auth tokens, caches)
 
 When reading this folder, prefer explicit portable config files. Do not mistake runtime artifacts for canonical reference material.
+Credentials and client secrets never belong in tracked config. Use an ignored local overlay or template when a tool needs machine-only secrets.
 
 ## What to edit vs. what to leave alone
 
 - Safe to edit: `CLAUDE.md`, `config.toml`, `.zshrc`, `ghostty/config`, `starship/starship.toml`, `git/ignore`, and any file described as portable config in the subdir
+- Local-only secrets: keep them in ignored overlay files such as `shell/.zshrc.local`, not in tracked config
 - Do not edit casually: SQLite files, `history.jsonl`, `auth.json`, `.tmp` folders, `log/` directories, session archives
 - Do not delete: anything that is a symlink target; see `brain/CLAUDE.md` under "Do not break"

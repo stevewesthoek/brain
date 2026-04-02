@@ -1,0 +1,34 @@
+# Claude Code ignore — brain repo
+# Prevents Claude from reading session data, caches, and compiled bundles
+
+# Session JSONL files (~143MB, never useful to read)
+operations/system-configs/claude/projects/
+operations/system-configs/claude/sessions/
+operations/system-configs/claude/shell-snapshots/
+operations/system-configs/claude/paste-cache/
+operations/system-configs/claude/file-history/
+operations/system-configs/claude/backups/
+operations/system-configs/claude/debug/
+operations/system-configs/claude/downloads/
+operations/system-configs/claude/tasks/
+operations/system-configs/claude/todos/
+operations/system-configs/claude/plans/
+operations/system-configs/claude/statsig/
+operations/system-configs/claude/logs/
+
+# Cache files
+operations/system-configs/claude/cache/
+
+# Compiled plugin bundles (minified, not readable)
+operations/system-configs/claude/plugins/marketplaces/context-mode/*.bundle.mjs
+operations/system-configs/claude/plugins/marketplaces/context-mode/node_modules/
+operations/system-configs/claude/plugins/marketplaces/claude-plugins-official/external_plugins/*/node_modules/
+
+# Codex temp
+operations/system-configs/codex/.tmp/
+
+# Generated production output
+projects/says-the-bible/production/output/
+
+# OS
+.DS_Store

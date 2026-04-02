@@ -13,6 +13,7 @@ It is the canonical home for Claude Code global config. Files here are loaded by
 
 ### What's machine state (not canonical)
 Most of this folder is machine-generated runtime state. The main categories:
+- `.claude/` — Claude internal machine state, including scheduled task metadata and local settings overlays
 - `projects/` — per-repo session state; auto-memory lives nested here at `projects/<hash>/memory/`
 - `sessions/`, `session-env/`, `cache/`, `paste-cache/` — session and cache artifacts
 - `logs/` — session logs (gitignored)
