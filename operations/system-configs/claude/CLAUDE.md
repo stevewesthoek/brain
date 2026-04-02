@@ -86,6 +86,9 @@ Use `decision-log.md` (if present) for confirmed architecture and workflow decis
 
 # Model routing policy
 
+Canonical policy: `brain/ai/policy/routing.md`. Both Claude and Codex read this as the source of truth.
+Run `/model-router` to re-prime full routing awareness.
+
 Route tasks to agents by cost and complexity. Do not ask the user which model to use — route automatically.
 
 | Agent | Model/Tool | Use when |
@@ -95,25 +98,6 @@ Route tasks to agents by cost and complexity. Do not ask the user which model to
 | `deep-architect` | Opus | Complex architecture, high blast radius, repeated failures |
 | `codex` | Codex CLI | Parallel load balancing, code review, second opinion, well-scoped isolated tasks |
 
-Before escalating to Opus: compact context with `cheap-prep` first.
-When running 3+ parallel agents: route 1–2 self-contained tasks to Codex for engine diversity.
-After significant decisions: write a short durable summary for the repo's `decision-log.md`.
-See `/model-router` for full policy.
-
-# Codex policy
-
-Codex CLI is available as both a secondary reviewer AND a parallel task executor for well-scoped work.
-
-Three tiers — route by task weight:
-- **mini**: `codex-review.sh '<prompt>' mini` — fast, cheap; quick sanity checks and parallel filler
-- **standard**: `codex-review.sh '<prompt>'` — normal second opinion or parallel execution (default)
-- **max**: `codex-review.sh '<prompt>' max` — deep review; auth, migrations, high-stakes code
-
-General rules:
-- Use for load balancing when spawning 3+ parallel sub-agents — spread work across engines.
-- Use for second opinion when confidence is low or a bug persists after 1–2 attempts.
-- Always compress context before calling — keep the prompt under 12k chars.
-- Treat Codex output as advisory, not authoritative.
-- Max 1–2 Codex calls per task; do not chain without clear value.
-- Do not use for tasks requiring full repo context or interactive file editing.
-- See `/model-router` for full Codex routing table and `/codex-second-opinion` for review-specific policy.
+Codex tiers: `codex-review.sh '<prompt>' mini|standard|max` — route by task weight (mini=fast/cheap, standard=default, max=high-stakes).
+Before escalating to Opus: compact with `cheap-prep` first.
+When running 3+ parallel agents: route 1–2 tasks to Codex for engine diversity.

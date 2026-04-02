@@ -5,6 +5,11 @@ description: Routing policy for selecting the right agent per task. Invoke with 
 
 # /model-router — Model Routing Policy
 
+Canonical source: `brain/ai/policy/routing.md`
+This skill loads and applies the full unified routing policy for the current session.
+
+---
+
 ## Agent roster
 
 | Agent | Model/Tool | Use when |
@@ -23,29 +28,26 @@ description: Routing policy for selecting the right agent per task. Invoke with 
    - Blast radius is high (prod data, shared infrastructure, auth, migrations)
    - `coder-default` has failed or produced unsatisfactory results after 2+ attempts
    - The decision will be load-bearing for future architecture
-4. **Before escalating to Opus**: run `cheap-prep` to compact context into a concise briefing first. Do not pass raw conversation history to Opus.
-5. **Delegate to `codex`** when spinning up multiple parallel sub-agents — spread load across engines instead of running all agents on Sonnet. Route to Codex when:
+4. **Before escalating to Opus**: run `cheap-prep` to compact context into a concise briefing first.
+5. **Delegate to `codex`** for parallel load or second opinion:
    - Running 3+ agents in parallel (route 1–2 self-contained tasks to Codex)
-   - The task is well-scoped and needs no broad repo context (code review, diff analysis, risk check)
-   - A second opinion alongside a main coding agent is useful
-   - Consecutive multi-step pipelines benefit from engine diversity
+   - Well-scoped task needing no broad repo context (code review, diff analysis, risk check)
+   - Second opinion alongside a main coding agent
 
 ## Codex sub-model routing
 
-Codex has three tiers. Route by task weight — same logic as Claude model routing.
-
 | Tier | Invocation | When to use |
 |------|-----------|-------------|
-| **mini** | `codex-review.sh '<prompt>' mini` | Quick sanity check, obvious issue scan, simple diff, fast parallel filler |
-| **standard** | `codex-review.sh '<prompt>'` | Normal second opinion, parallel task execution, typical code review (default) |
-| **max** | `codex-review.sh '<prompt>' max` | High-stakes review (auth, migrations, prod-touching), deep architecture critique, when standard wasn't enough |
+| **mini** | `codex-review.sh '<prompt>' mini` | Quick sanity check, obvious issue scan, fast parallel filler |
+| **standard** | `codex-review.sh '<prompt>'` | Normal second opinion, parallel execution, typical code review (default) |
+| **max** | `codex-review.sh '<prompt>' max` | High-stakes review (auth, migrations, prod-touching), deep critique |
 
-Global config (`~/.codex/config.toml`): `model = "gpt-5.4"`, `model_reasoning_effort = "high"`.
-Mini overrides: `codex-mini-latest` + effort `"low"`. Max overrides: effort `"xhigh"`. Standard inherits config.
+Global Codex config: `model = "gpt-5.4"`, `model_reasoning_effort = "high"`.
+Mini overrides: `codex-mini-latest` + effort `low`. Max overrides: effort `xhigh`.
 
-**General Codex rules:**
+**Codex rules:**
 - Always compress context before calling — prompt must be under 12k chars
-- Treat output as advisory, not authoritative — integrate only the useful parts
+- Treat output as advisory — integrate only the useful parts
 - Max 1–2 Codex calls per task; do not chain without clear value
 - Do not use for tasks needing full repo context or interactive file editing
 
