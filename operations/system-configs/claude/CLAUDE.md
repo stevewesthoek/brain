@@ -104,13 +104,16 @@ See `/model-router` for full policy.
 
 Codex CLI is available as both a secondary reviewer AND a parallel task executor for well-scoped work.
 
-Rules:
+Three tiers — route by task weight:
+- **mini**: `codex-review.sh '<prompt>' mini` — fast, cheap; quick sanity checks and parallel filler
+- **standard**: `codex-review.sh '<prompt>'` — normal second opinion or parallel execution (default)
+- **max**: `codex-review.sh '<prompt>' max` — deep review; auth, migrations, high-stakes code
+
+General rules:
+- Use for load balancing when spawning 3+ parallel sub-agents — spread work across engines.
 - Use for second opinion when confidence is low or a bug persists after 1–2 attempts.
-- Use for load balancing when spawning multiple parallel sub-agents — spread work across engines.
 - Always compress context before calling — keep the prompt under 12k chars.
-- Use the wrapper script: `brain/tools/codex-review.sh '<compressed context>'`
-- Use `reasoning_effort="high"` (already set in the wrapper) — not `xhigh`.
 - Treat Codex output as advisory, not authoritative.
 - Max 1–2 Codex calls per task; do not chain without clear value.
 - Do not use for tasks requiring full repo context or interactive file editing.
-- See `/codex-second-opinion` skill for the full routing policy.
+- See `/model-router` for full Codex routing table and `/codex-second-opinion` for review-specific policy.

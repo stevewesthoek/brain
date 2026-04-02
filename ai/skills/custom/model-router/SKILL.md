@@ -30,14 +30,24 @@ description: Routing policy for selecting the right agent per task. Invoke with 
    - A second opinion alongside a main coding agent is useful
    - Consecutive multi-step pipelines benefit from engine diversity
 
-## Codex delegation rules
+## Codex sub-model routing
 
-- Invoke via: `brain/tools/codex-review.sh '<compressed task description>'`
-- Always compress context before calling — keep prompt under 12k chars
-- Use `reasoning_effort="high"` (already set in the wrapper)
-- Treat Codex output as advisory — integrate only the useful parts
+Codex has three tiers. Route by task weight — same logic as Claude model routing.
+
+| Tier | Invocation | When to use |
+|------|-----------|-------------|
+| **mini** | `codex-review.sh '<prompt>' mini` | Quick sanity check, obvious issue scan, simple diff, fast parallel filler |
+| **standard** | `codex-review.sh '<prompt>'` | Normal second opinion, parallel task execution, typical code review (default) |
+| **max** | `codex-review.sh '<prompt>' max` | High-stakes review (auth, migrations, prod-touching), deep architecture critique, when standard wasn't enough |
+
+Global config (`~/.codex/config.toml`): `model = "gpt-5.4"`, `model_reasoning_effort = "high"`.
+Mini overrides: `codex-mini-latest` + effort `"low"`. Max overrides: effort `"xhigh"`. Standard inherits config.
+
+**General Codex rules:**
+- Always compress context before calling — prompt must be under 12k chars
+- Treat output as advisory, not authoritative — integrate only the useful parts
 - Max 1–2 Codex calls per task; do not chain without clear value
-- Do not use for tasks requiring full repo context or interactive file editing
+- Do not use for tasks needing full repo context or interactive file editing
 
 ## Post-completion memory
 
@@ -51,4 +61,6 @@ After significant work, produce a compact summary (5 bullets or fewer) for:
 Haiku ~25x cheaper than Opus. Use freely.
 Sonnet ~5x cheaper than Opus. Use for almost everything.
 Opus: reserve for genuinely hard problems. Do not escalate out of impatience.
-Codex: separate billing (OpenAI). Use for engine diversity in parallel workloads, not pure cost savings.
+Codex mini: fast, cheap — use for quick passes and parallel filler.
+Codex standard: balanced — default for second opinions and parallel tasks.
+Codex max: expensive — reserve for high-stakes reviews, same threshold as Opus.
