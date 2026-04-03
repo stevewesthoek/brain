@@ -4,7 +4,17 @@
 [alias]
 	pushall = !git push origin main && git push demo main
 	pushallt = !git push origin --tags && git push demo --tags
-[url "git@github-demo:my-demouser/"]
-	insteadOf = https://github.com/my-demouser/
-[includeIf "gitdir:/Users/Office/Repos/Demo/"]
-  path = /Users/Office/.gitconfig-demo
+[credential "https://github.com"]
+	helper =
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[includeIf "gitdir:/Users/Office/Repos/stevewesthoek/"]
+	path = /Users/Office/.gitconfig-github-stevewesthoek
+[includeIf "gitdir:/Users/Office/Repos/prochattools/"]
+	path = /Users/Office/.gitconfig-github-prochattools
+[includeIf "gitdir:/Users/Office/Repos/prochatdemo/"]
+	path = /Users/Office/.gitconfig-github-prochatdemo
+[includeIf "gitdir:/Users/Office/Repos/yeshuaacademy/"]
+	path = /Users/Office/.gitconfig-github-yeshuaacademy

@@ -1,6 +1,10 @@
 model = "gpt-5.4"
 model_reasoning_effort = "high"
 personality = "pragmatic"
+# Full-access mode removes harness approval prompts for normal work.
+# Judgment is still constrained by the shared policy in `brain/ai/policy/guardrails.md`.
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
 
 [mcp_servers.notebooklm]
 command = "/Users/Office/.local/bin/notebooklm-mcp"
@@ -32,4 +36,7 @@ enabled = true
 trust_level = "trusted"
 
 [projects."/Users/Office/Repos/prochattools/waas/accountant"]
+trust_level = "trusted"
+
+[projects."/Users/Office/Repos/prochattools/saas/proofly"]
 trust_level = "trusted"

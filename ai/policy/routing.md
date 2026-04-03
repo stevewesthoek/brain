@@ -2,6 +2,7 @@
 
 This is the canonical routing policy for all AI tools in this workspace.
 Both Claude Code and Codex operate as one unified system — each reads this as the source of truth.
+Safety and high-risk action policy canonical source: `brain/ai/policy/guardrails.md`.
 
 Tool-specific config files (`CLAUDE.md`, `AGENTS.md`) embed the relevant parts of this policy.
 When updating routing rules, update this file first, then sync the tool configs.

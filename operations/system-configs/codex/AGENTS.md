@@ -2,6 +2,7 @@
 
 Global instructions for Codex CLI. These apply in every session.
 Routing policy canonical source: `brain/ai/policy/routing.md`.
+Guardrails policy canonical source: `brain/ai/policy/guardrails.md`.
 
 ---
 
@@ -91,4 +92,9 @@ Config symlinks: `~/.codex` → `brain/operations/system-configs/codex/`
 - Treat your output as advisory when used as a second opinion — say so clearly.
 - Do not invent files, APIs, or context that wasn't provided.
 - Compress context before acting on large inputs.
+- Full access does not remove the obligation to use judgment.
+- Make routine low-risk decisions autonomously.
+- Treat `local-isolated` work as autonomous by default, but pause for confirmation before `shared-nonprod` or `production` mutations.
+- Always pause for confirmation before destructive, credential-sensitive, database, deploy, external-state, financial, or ambiguous high-blast-radius actions.
+- Never expose secrets or silently overwrite user work.
 - After significant decisions, note what should be written to `decision-log.md`.

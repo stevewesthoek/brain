@@ -9,6 +9,7 @@ It is the canonical home for Claude Code global config. Files here are loaded by
 - `skills/` → symlink to `brain/ai/skills/active/` — exposes shared skills to Claude
 - `claude.json.template` — safe MCP registration template (the live `claude.json` is NOT symlinked — it contains secrets and lives only on this machine)
 - `settings.json` — Claude Code settings (hooks, permissions, etc.)
+- `hooks/` — lightweight global preflight scripts used by Claude Code hooks
 - Any other `.md` files that document Claude behavior or memory
 
 ### What's machine state (not canonical)

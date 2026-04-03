@@ -2,6 +2,46 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/check-risky-command.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/check-sensitive-edit.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/check-sensitive-edit.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/check-sensitive-edit.sh"
+          }
+        ]
+      }
+    ]
+  },
   "model": "sonnet",
   "statusLine": {
     "type": "command",

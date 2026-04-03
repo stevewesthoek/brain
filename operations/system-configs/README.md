@@ -36,7 +36,7 @@ Credentials and client secrets never belong in tracked config. Use an ignored lo
 
 ## What to edit vs. what to leave alone
 
-- Safe to edit: `CLAUDE.md`, `config.toml`, `.zshrc`, `ghostty/config`, `starship/starship.toml`, `git/ignore`, and any file described as portable config in the subdir
+- Safe to edit: `CLAUDE.md`, `AGENTS.md`, `config.toml`, `rules/default.rules`, `.zshrc`, `ghostty/config`, `starship/starship.toml`, `git/gitconfig`, `git/gitconfig-demo`, `git/ignore`, and any file described as portable config in the subdir
 - Local-only secrets: keep them in ignored overlay files such as `shell/.zshrc.local`, not in tracked config
 - Do not edit casually: SQLite files, `history.jsonl`, `auth.json`, `.tmp` folders, `log/` directories, session archives
 - Do not delete: anything that is a symlink target; see `brain/CLAUDE.md` under "Do not break"

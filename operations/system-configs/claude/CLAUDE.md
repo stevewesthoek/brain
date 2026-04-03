@@ -1,6 +1,7 @@
 # gstack
 
 Use the `/browse` skill from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.
+Canonical guardrails policy: `brain/ai/policy/guardrails.md`.
 
 Available skills: `/model-router`, `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/design-consultation`, `/review`, `/ship`, `/land-and-deploy`, `/canary`, `/benchmark`, `/browse`, `/qa`, `/qa-only`, `/design-review`, `/setup-browser-cookies`, `/setup-deploy`, `/retro`, `/investigate`, `/document-release`, `/codex`, `/cso`, `/autoplan`, `/careful`, `/freeze`, `/guard`, `/unfreeze`, `/gstack-upgrade`, `/stb-pipeline`, `/notebooklm`, `/output-skill`, `/redesign-skill`, `/soft-skill`, `/taste-skill`, `/ui-ux-pro-max`, `/web-design`, `/stripe`, `/ffmpeg`, `/gh`, `/dokploy`, `/supabase`, `/gws`, `/cloudflare`, `/forge`
 
@@ -101,3 +102,14 @@ Route tasks to agents by cost and complexity. Do not ask the user which model to
 Codex tiers: `codex-review.sh '<prompt>' mini|standard|max` — route by task weight (mini=fast/cheap, standard=default, max=high-stakes).
 Before escalating to Opus: compact with `cheap-prep` first.
 When running 3+ parallel agents: route 1–2 tasks to Codex for engine diversity.
+
+# Guardrails
+
+Even when Claude is configured to bypass permission prompts, broad access is not blanket authorization.
+
+- Make routine low-risk decisions autonomously.
+- Treat `local-isolated` work as autonomous by default, but ask before `shared-nonprod` or `production` mutations.
+- Ask before destructive filesystem/git actions, credential handling, deploys, database/data mutations, external-system mutations, financial/customer-impacting actions, or any ambiguous high-risk step.
+- Never expose secrets in output.
+- Never silently overwrite user work.
+- Prefer previews, diffs, and read-only inspection before risky mutations.
