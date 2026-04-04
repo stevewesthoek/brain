@@ -84,6 +84,8 @@ Local repos live at `~/Repos/` organized by GitHub account:
 
 Config symlinks: `~/.codex` → `brain/operations/system-configs/codex/`
 
+Shared AI-agnostic skills live in `brain/ai/skills/`. For self-hosted n8n CLI work, use the shared `/n8n` skill at `brain/ai/skills/custom/n8n/n8n-cli/`. For Azure CLI work, use the shared `/azure` skill at `brain/ai/skills/custom/azure/azure-cli/`. For Hetzner Cloud CLI work, use the shared `/hetzner` skill at `brain/ai/skills/custom/hetzner/hetzner-cli/`.
+
 ---
 
 ## Behavior rules

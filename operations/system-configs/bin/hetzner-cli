@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stable local entrypoint for Hetzner Cloud CLI usage across Claude and Codex.
+# If a local env file exists, source it first so HCLOUD_TOKEN / HCLOUD_CONTEXT
+# can be provided without committing secrets to the repo.
+
+env_file="${HETZNER_ENV_FILE:-$HOME/.config/hetzner/.env}"
+if [[ -f "${env_file}" ]]; then
+  # shellcheck disable=SC1090
+  source "${env_file}"
+fi
+
+hcloud_bin="${HCLOUD_BIN:-/opt/homebrew/bin/hcloud}"
+
+exec "${hcloud_bin}" "$@"

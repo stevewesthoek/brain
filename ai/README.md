@@ -18,5 +18,4 @@ Shared AI-facing material for multiple tools.
 
 If it only exists for one tool’s internal behavior, keep it with that tool under `operations/system-configs/`.
 
-OpenClaw loads shared skills directly from `ai/skills/` via `extraDirs`; do not create a
-second OpenClaw copy of these folders.
+Shared skills live in `ai/skills/` and are available to every agent; do not duplicate them elsewhere.

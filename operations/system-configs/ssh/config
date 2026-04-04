@@ -52,12 +52,12 @@ Host cloudpanel
 # If you still need direct SSH access via the old hostname (cp.prochat.tools)
 # and it's an A record (not through tunnel), keep this block.
 # Otherwise, you can remove it.
-#Host CloudPanel
-#    User root
-#    Hostname cp.prochat.tools
-#    Port 22
-#    IdentityFile ~/.ssh/id_ed25519
-#    IdentitiesOnly yes
+Host CloudPanel
+    User root
+    Hostname cp.prochat.tools
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
 
 Host *
   AddKeysToAgent yes
@@ -89,16 +89,11 @@ Host github-demo
   IdentityFile ~/.ssh/github_demo
   IdentitiesOnly yes
 
-Host ubuntu ProBot openclaw
-  HostName 100.101.212.108
+Host cloudpanel-aws
+  HostName 13.135.227.0
   User ubuntu
-  ServerAliveInterval 30
-  ServerAliveCountMax 3
-  ConnectTimeout 5
-
-Host probot ProBot openclaw
-  HostName 100.101.212.108
-  User probot
+  IdentityFile ~/.ssh/cloudpanel-aws-key.pem
+  IdentitiesOnly yes
   ServerAliveInterval 30
   ServerAliveCountMax 3
   ConnectTimeout 5

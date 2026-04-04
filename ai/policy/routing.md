@@ -57,6 +57,23 @@ Invoked via `brain/tools/codex-review.sh`. Route by task weight.
 
 ---
 
+## Automatic routing
+
+Route automatically on every task — never ask the user which model to use.
+
+**Decompose into sub-agents when ALL of these are true:**
+- The task has 3+ distinct subtasks that can be worked independently, OR involves 6+ files across different concerns
+- Routing to cheaper agents saves an estimated ≥20% of total tokens vs handling everything in Sonnet
+- The overhead of decomposition (spawning agents, merging results) is less than the savings
+
+**Do not decompose when:**
+- The task is small (single file, single fix, one clear question)
+- Subtasks share too much context to be isolated
+- Estimated savings are under 20%
+- You're already inside a sub-agent
+
+**After completing any task that used multiple agents:** report which agents/models were used (one line: "Used: Sonnet + Haiku cheap-prep + Codex mini").
+
 ## Cross-engine routing rules
 
 1. **Default**: Claude Sonnet handles the task alone.

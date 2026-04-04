@@ -19,6 +19,23 @@ This skill loads and applies the full unified routing policy for the current ses
 | `deep-architect` | Opus | Complex architecture, major migrations, high-blast-radius changes, ambiguous tradeoffs, repeated Sonnet failures |
 | `codex` | Codex CLI | Parallel task delegation, code review, advisory second opinion, well-scoped isolated tasks |
 
+## Automatic routing (apply without being asked)
+
+Route automatically on every task — do not ask the user which model to use.
+
+**Decompose a task into sub-agents when ALL of these are true:**
+- The task has 3+ distinct subtasks that can be worked on independently, OR involves 6+ files across different concerns
+- Routing to cheaper agents saves an estimated ≥20% of total tokens vs handling everything in Sonnet
+- The overhead of decomposition (spawning agents, merging results) is less than the savings
+
+**Do not decompose when:**
+- The task is small (single file, single fix, one clear question)
+- The subtasks share too much context to be isolated
+- The estimated savings are under 20% — the routing overhead isn't worth it
+- You're already inside a sub-agent
+
+**After completing any task with multiple agents:** Report which agents/models were used at the end (one line: "Used: Sonnet + Haiku cheap-prep + Codex mini").
+
 ## Routing rules
 
 1. **Default to `coder-default`** (Sonnet) for all coding tasks.

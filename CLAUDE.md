@@ -31,6 +31,8 @@ When working across repos, treat each Git repo independently. Do not apply one r
 
 - `ai/skills/` — skill management (active symlinks, vendors, custom)
 - `tools/scripts/` — utility and workflow scripts (boilerplate sync, cleanup helpers, etc.)
+- `tools/n8n-api.sh` — wrapper for the live `n8n.prochat.tools` Public API
+- `tools/scripts/backup-n8n.sh` — server-side export of live n8n credentials/workflows into the gitignored local backup folder
 - `operations/system-configs/` — global tool configs, all symlinked from home directory
 - `operations/decision-log.md` — confirmed decisions for the brain repo itself
 
@@ -47,6 +49,10 @@ When working across repos, treat each Git repo independently. Do not apply one r
 
 `~/.claude.json` (Claude Code's MCP registrations) is **not** symlinked — it contains secrets. A safe template lives at `operations/system-configs/claude/claude.json.template`.
 
+Local machine secrets that are intentionally not in-repo:
+- `~/.config/dokploy/.env`
+- `~/.config/n8n/.env`
+
 ## Decision log
 
 The decision log for this repo lives at `operations/decision-log.md`.
@@ -60,3 +66,4 @@ Use it for confirmed architecture and workflow decisions only.
 - `~/.kiro` is a directory-level symlink → `brain/operations/system-configs/kiro`. Do not delete or restructure that folder.
 - `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are individual file symlinks → brain. Do not delete the source files in brain.
 - `tools/scripts/` contains workflow and setup scripts that are used on this machine — do not delete without checking if they are still in use.
+- `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` may be a symlink into `brain/operations/system-configs/launchagents/com.office.nightly-scheduler.plist`. Keep the repo file as the source of truth.

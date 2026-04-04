@@ -1,0 +1,16 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowAssumeClaudeCodexRoles",
+      "Effect": "Allow",
+      "Action": [
+        "sts:AssumeRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::909439522876:role/ClaudeCodexProvisioner",
+        "arn:aws:iam::909439522876:role/ClaudeCodexDestroyer"
+      ]
+    }
+  ]
+}

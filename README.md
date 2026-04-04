@@ -1,6 +1,6 @@
 # Brain
 
-Private knowledge base and shared resource repo for Steve across local machines, IDE tools, and OpenClaw.
+Private knowledge base and shared resource repo for Steve across local machines, IDE tools, and the ProBot runtime.
 
 ## Purpose
 
@@ -8,7 +8,7 @@ This repo holds:
 - durable personal, business, and project context
 - reusable AI prompts and shared skills
 - operational docs, scripts, and selected system configs
-- OpenClaw workspace files and runtime notes
+- runtime and ProBot workspace notes
 
 It is meant to be:
 - human-readable
@@ -24,7 +24,7 @@ It is meant to be:
 - `ai/` — prompts, provider notes, shared multi-tool skills
 - `operations/` — runbooks, scripts, snippets, automations, infrastructure, deploy docs, system configs
 - `tools/` — utility and workflow scripts for this machine (`tools/scripts/`)
-- `runtime/` — ProBot/OpenClaw runtime workspace material and local working state
+- `runtime/` — ProBot runtime workspace material and local working state
 
 ## Reading Order
 
@@ -85,54 +85,27 @@ This table is the contract. If a tool reads the docs and finds no pointer to a n
 
 ### `runtime/`
 - ProBot-specific workspace and runtime notes.
-- `runtime/openclaw/` is the dedicated OpenClaw workspace for this repo.
 - `runtime/cache/` and `runtime/local/` are local-support folders, not canonical truth.
 - runtime bootstrap files should point to canonical docs instead of duplicating them.
 
-## OpenClaw Setup
+## Runtime & ProBot
 
-This repo does **not** use the repo root as the OpenClaw workspace.
+All runtime glue now lives under `runtime/`. The local ProBot daemon is the always-on teleport layer for Claude, Codex, and Brain — there is no separate OpenClaw workspace anymore.
 
-Instead, the OpenClaw workspace lives at:
-- `runtime/openclaw/`
+If you need to understand the runtime setup:
+- Read `projects/probot/SPEC.md` for the Telegram command center architecture.
+- Track ongoing decisions in `operations/decision-log.md` (search for "ProBot" or "OpenClaw" to see the decommissioning notes).
+- Use the `runtime/cache/` and `runtime/local/` folders only for disposable state; keep canonical context in the top-level folders.
 
-Why:
-- keeps the repo root clean
-- keeps OpenClaw bootstrap files in one obvious place
-- still lets OpenClaw use the whole Brain through workspace symlinks
-- avoids profile and business drift by keeping canonical truth outside the runtime folder
-
-Inside `runtime/openclaw/` you will find standard OpenClaw workspace files such as:
-- `AGENTS.md`
-- `SOUL.md`
-- `USER.md`
-- `IDENTITY.md`
-- `TOOLS.md`
-- `MEMORY.md`
-- `HEARTBEAT.md`
-- `memory/`
-
-Recommended OpenClaw config:
-
-```json
-{
-  "agent": {
-    "workspace": "/absolute/path/to/brain/runtime/openclaw"
-  }
-}
-```
-
-Current OpenClaw docs:
-- https://openclawlab.com/en/docs/concepts/agent-workspace/
-- https://openclawlab.com/en/docs/concepts/memory/
+Runtime bootstrap pointers, memory notes, and approval checkpoints belong in their canonical document rather than duplicated runtime files.
 
 ## Skills
 
 Canonical shared skills live in:
 - `ai/skills/`
 
-OpenClaw loads shared skills directly from `ai/skills/` via `extraDirs`; there is no
-separate OpenClaw copy of those skill folders.
+Shared skills live in `ai/skills/` and are consumed directly by every agent; there is no
+need to duplicate them under another workspace.
 
 Tool-native or vendor-managed skills should stay separate:
 - Cursor internal skills: `operations/system-configs/cursor/skills-cursor/`

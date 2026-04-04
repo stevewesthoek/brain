@@ -16,7 +16,7 @@ Use project folders for:
 Prefer project-local files when discussing a specific project, but prefer:
 - `personal/`
 - `organisations/`
-- `runtime/openclaw/restricted-repos.md`
+- `operations/decision-log.md`
 
 for global behavior, identity, and safety.
 
@@ -29,6 +29,7 @@ for global behavior, identity, and safety.
 ## Current projects
 
 - `cedula/` — Paraguay residency / cédula onboarding project with funnel, planning, and meeting notes
+- `probot/` — local-first Telegram control plane for Brain, Claude, and Codex session workflows
 - `says-the-bible/` — Scripture audio library project with strategy, operations, content system, library system, and production assets
 
 ## Naming

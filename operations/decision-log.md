@@ -20,3 +20,91 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Context: The goal is hands-off safety with minimal latency for high-risk actions such as deploys, destructive commands, database mutations, and secret-bearing file changes.
 - Impact: Claude now runs automatic low-cost checks before those tool calls. Codex still relies on shared policy instructions because no equivalent hook layer is documented here.
 - Rollback: Remove the `hooks` block from `operations/system-configs/claude/settings.json` and delete the scripts under `operations/system-configs/claude/hooks/`.
+- Date: 2026-04-03
+- Decision: Standardize self-hosted n8n CLI usage through a shared `/n8n` skill backed by the official global `n8n` npm package and a stable `~/.local/bin/n8n-cli` symlink.
+- Context: The repo already centralizes CLI workflows for Stripe, GitHub, Supabase, Cloudflare, and Dokploy. n8n should follow the same AI-agnostic pattern for both Claude and Codex.
+- Impact: Both agents now have one documented way to inspect or operate self-hosted n8n, with npm and Docker execution modes documented in the same skill.
+- Rollback: Remove `ai/skills/custom/n8n/n8n-cli`, delete the `ai/skills/active/n8n` symlink, remove the `~/.local/bin/n8n-cli` symlink, and delete the related doc and rule updates.
+- Date: 2026-04-03
+- Decision: Use the live n8n Public API on `n8n.prochat.tools` as the default automation interface, with local auth in `~/.config/n8n/.env` and a stable `~/.local/bin/n8n-api` wrapper.
+- Context: The n8n instance is hosted as a Docker Compose app on Dokploy. Dokploy manages the container, but workflow CRUD should use n8n's supported Public API for frictionless prompt-to-workflow automation.
+- Impact: Claude and Codex can now target the live server headlessly for workflow, credential, variable, and project operations without requiring routine UI login.
+- Rollback: Remove `brain/tools/n8n-api.sh`, delete `~/.local/bin/n8n-api`, remove `~/.config/n8n/.env`, and revert the `/n8n` skill and rules updates if a different integration path is chosen.
+- Date: 2026-04-03
+- Decision: Back up live n8n credentials and workflows into the gitignored local path `operations/automations/n8n/n8n_backup/` using `tools/scripts/backup-n8n.sh`.
+- Context: The Public API on the current n8n build does not expose routine credential listing, but server-side `n8n export:*` in the Dokploy-hosted container does allow full recovery exports, including decrypted credentials for migration to a new instance.
+- Impact: Existing n8n OAuth/API credentials and workflows are now recoverable from the local machine backup set even if the self-hosted server is reinstalled.
+- Rollback: Delete `tools/scripts/backup-n8n.sh`, remove the local backup directory, and choose a different recovery/export workflow.
+- Date: 2026-04-03
+- Decision: Schedule the n8n backup with a daily `launchd` calendar trigger at 03:00 plus `RunAtLoad` catch-up, instead of a 15-minute polling interval.
+- Context: The Mac mini is usually always on, but may occasionally reboot or be temporarily off. A lighter schedule is preferred as long as backups still resume automatically after restart.
+- Impact: The job now runs with near-zero idle overhead while still catching up automatically after reboot once the user session is active and Lisbon time is past 03:00.
+- Rollback: Restore the previous `StartInterval`-based LaunchAgent if tighter catch-up polling is preferred.
+- Date: 2026-04-03
+- Decision: Standardize Azure access through the official Azure CLI (`az`) installed via Homebrew, a stable `~/.local/bin/azure-cli` symlink, and a shared `/azure` skill with multi-account subscription-first guidance.
+- Context: Azure is closer to AWS-style account/subscription CLI work than to n8n-style app-local automation. The user has two Azure accounts and wants one AI-agnostic way for Claude and Codex to inspect and manage them.
+- Impact: Both agents now have one documented Azure CLI path and a helper inventory script to enumerate subscriptions, resource groups, and resources after login.
+- Rollback: Remove `ai/skills/custom/azure/azure-cli`, delete the `ai/skills/active/azure` symlink, remove `~/.local/bin/azure-cli`, and delete `tools/scripts/azure-inventory.sh` if a different Azure integration approach is chosen.
+- Date: 2026-04-03
+- Decision: Standardize self-hosted CloudPanel CLI usage through a shared `/cloudpanel` skill backed by the remote `clpctl` binary and a stable local wrapper at `~/.local/bin/cloudpanel-cli`.
+- Context: The CloudPanel server is already reachable through the repo-managed `cloudpanel` SSH alias in `operations/system-configs/ssh/config`. Both Claude and Codex need one AI-agnostic way to operate it without introducing an MCP server.
+- Impact: Both agents now have one documented command path for CloudPanel operations on the self-hosted host: `~/.local/bin/cloudpanel-cli` or the direct fallback `ssh cloudpanel /usr/bin/clpctl`.
+- Rollback: Remove `ai/skills/custom/cloudpanel/cloudpanel-cli`, delete the `ai/skills/active/cloudpanel` symlink, remove the `~/.local/bin/cloudpanel-cli` symlink, and delete the wrapper script at `operations/system-configs/bin/cloudpanel-cli`.
+- Date: 2026-04-03
+- Decision: Standardize AWS CLI usage through a shared `/aws` skill backed by a stable local wrapper at `~/.local/bin/aws-cli`, with mandatory workload qualification before any EC2 or Lightsail provisioning.
+- Context: AWS is intended to be one stage in a larger infrastructure pipeline, and server creation must be sized from explicit workload answers instead of guesswork. The AWS CLI is already installed and authenticated on this machine.
+- Impact: Both Claude and Codex now have one documented, AI-agnostic AWS CLI entrypoint plus a shared qualification workflow for deciding between EC2 and Lightsail and selecting the right machine shape.
+- Rollback: Remove `ai/skills/custom/aws/aws-cli`, delete the `ai/skills/active/aws` symlink, remove the `~/.local/bin/aws-cli` symlink, delete `operations/system-configs/bin/aws-cli`, and remove the related rule updates.
+- Date: 2026-04-03
+- Decision: Standardize AWS role usage with `provisioner` and `destroyer` profiles exposed through `~/.local/bin/aws-provisioner` and `~/.local/bin/aws-destroyer`, while keeping `~/.local/bin/aws-cli` as the generic base wrapper.
+- Context: The AWS account now uses two assumed roles for AI automation. The safe default should be explicit in the local command surface so both Claude and Codex use the non-destructive role by default.
+- Impact: AI-driven AWS work now defaults to the provisioner role for discovery and provisioning, and reserves the destroyer role for explicit teardown workflows only.
+- Rollback: Remove the wrapper scripts from `operations/system-configs/bin`, remove the `~/.local/bin/aws-provisioner` and `~/.local/bin/aws-destroyer` symlinks, and revert the AWS skill language back to direct profile or generic wrapper usage.
+- Date: 2026-04-03
+- Decision: Make `operations/infrastructure/infra.md` the canonical machine-readable human-readable infrastructure reference for cloud accounts, servers, access paths, and hosted platforms.
+- Context: Infrastructure facts had become fragmented across skills, SSH config, runbooks, and memory. The user wants one place that Claude and Codex can consult for Azure, AWS, Dokploy, CloudPanel, n8n, server IPs, and access paths.
+- Impact: The repo now has one central infrastructure document that is updated from live inventory and can serve as the recovery and orientation reference point for future sessions.
+- Rollback: Move the canonical infra reference to a different file and replace cross-references once a better location is chosen.
+- Date: 2026-04-03
+- Decision: Standardize Hetzner Cloud CLI usage through a shared `/hetzner` skill backed by the official `hcloud` binary, a stable `~/.local/bin/hetzner-cli` wrapper, and local-only auth in `~/.config/hetzner/.env` or native `hcloud` contexts.
+- Context: Hetzner is part of the server migration path, but Hetzner infrastructure control is a different layer from CloudPanel site migration. Claude and Codex need one AI-agnostic interface for Hetzner Cloud infrastructure that matches the repo’s other CLI integrations.
+- Impact: Both agents now have one documented, shared Hetzner CLI path for server, firewall, volume, network, image, and DNS-zone operations without committing credentials to the repo.
+- Rollback: Remove `ai/skills/custom/hetzner/hetzner-cli`, delete the `ai/skills/active/hetzner` symlink, remove `~/.local/bin/hetzner-cli`, delete `operations/system-configs/bin/hetzner-cli`, and revert the related doc/rule updates.
+- Date: 2026-04-03
+- Decision: Standardize Azure CLI usage around subscription-explicit provisioner and destroyer wrappers instead of ambient account context.
+- Context: Azure access is authenticated to two subscriptions in two different tenants. The safe interface for Claude and Codex is to make both the subscription and the destructive/non-destructive intent explicit in the command path.
+- Impact: AI-driven Azure work now defaults to `azure-apps-provisioner` or `azure-data-provisioner` for inventory and provisioning, and reserves the matching destroyer wrappers for explicit teardown workflows.
+- Rollback: Remove the wrapper scripts from `operations/system-configs/bin`, remove the `~/.local/bin/azure-*` symlinks, and revert the Azure skill back to generic `az` plus manual subscription targeting.
+- Date: 2026-04-03
+- Decision: Back the Azure provisioner and destroyer wrappers with dedicated service principals and custom Azure RBAC roles per subscription.
+- Context: Local wrapper discipline alone was not enough. Azure needed account-side enforcement comparable to the AWS role model, but the two subscriptions live in different tenants, so each subscription required its own principals.
+- Impact: `PROCHAT-APPS` and `PROCHAT-DATA` now each have provisioner and destroyer service principals, with custom non-destructive provisioner roles and `Contributor` destroyer roles, and the local wrappers now authenticate through those principals.
+- Rollback: Delete the Azure service principals and custom roles, remove the local credential files under `~/.config/azure-ai/credentials/`, and revert the Azure wrappers back to direct user-authenticated `az`.
+- Date: 2026-04-03
+  Area: cloudflare
+  Decision: Standardize Cloudflare access for Claude and Codex behind account-aware provisioner and destroyer wrappers with external credential files under `~/.config/cloudflare-ai/credentials/`. Use dedicated Cloudflare API tokens per account and role, but rely on local wrapper guardrails for destructive separation because Cloudflare token permissions do not cleanly distinguish DNS/tunnel edit from delete.
+- Date: 2026-04-04
+- Decision: Make `operations/infrastructure/scheduler-inventory.md` the canonical inventory for Office-Mac timed jobs, LaunchAgents, and app-level schedulers that should be considered together.
+- Context: Scheduler knowledge was split across app-specific docs, launchd plist files, crontab entries, and n8n exports. The user wants one central place to see what runs when, what is heavy, and what should be ordered.
+- Impact: Future scheduled-job additions now have one review point, and the current `03:00` collision plus repo/live drift are explicitly documented in one place.
+- Rollback: Move the canonical scheduler inventory into a different infrastructure document and replace links once a better location is chosen.
+- Date: 2026-04-04
+- Decision: Centralize Office-Mac nightly jobs behind `com.office.nightly-scheduler` and `tools/scripts/office-nightly-scheduler.sh`, with ordered execution of STB batch, n8n backup, and Claude session cleanup.
+- Context: The live machine had three independent `03:00` jobs competing in the same slot. The user wants one sane, reliable scheduler that prevents overlap and stops the chain on hangs.
+- Impact: The Office Mac now has a single nightly entrypoint with locking, per-job timeouts, run-state markers, and ordered execution. The STB batch registration path also moves away from owning its own direct daily cron entry.
+- Rollback: Reinstall the individual crontab / LaunchAgent entries, disable `com.office.nightly-scheduler`, and revert the STB scheduler registration flow to direct cron ownership if centralized sequencing is no longer desired.
+- Date: 2026-04-04
+- Decision: Migrate the live `Office` Mac to the centralized nightly scheduler and retire the standalone `com.office.n8n-backup`, `stb-pipeline-batch`, and `claude-session-cleanup` schedule owners.
+- Context: The repo-side scheduler changes were ready, but the live machine still had the old overlapping `03:00` cron and LaunchAgent state.
+- Impact: The live machine now matches the documented design: `com.office.nightly-scheduler` is installed in `~/Library/LaunchAgents`, the STB batch is registered through `~/.local/state/office-scheduler/stb-pipeline-batch.env`, direct batch/cleanup cron entries are gone, and `com.office.n8n-backup` has been removed from the active LaunchAgent set.
+- Rollback: Recreate the removed crontab entries, reinstall `~/Library/LaunchAgents/com.office.n8n-backup.plist`, boot out `com.office.nightly-scheduler`, and remove the STB scheduler state file if the machine must return to independent job ownership.
+- Date: 2026-04-04
+- Decision: Generate a post-run scheduler snapshot automatically to `runtime/local/office-scheduler/latest-run.md` after each real nightly scheduler execution.
+- Context: The user wants measured durations from the live `03:00` run without relying on memory or a second investigation pass. The repo should have an easy local source of truth for the latest observed runtimes without creating daily Git churn.
+- Impact: After each real nightly run, the latest job statuses, durations, and log tail are rendered to a gitignored local markdown file that can be reviewed and copied back into the canonical scheduler inventory.
+- Rollback: Remove `tools/scripts/render-office-scheduler-report.sh`, stop calling it from `tools/scripts/office-nightly-scheduler.sh`, and delete `runtime/local/office-scheduler/latest-run.md` if automated local runtime snapshots are no longer wanted.
+- Date: 2026-04-04
+- Decision: Retire the OpenClaw Claude bridge and AWS OpenClaw host, and standardize on the local `ProBot` Telegram daemon running on the `Office` Mac.
+- Context: The OpenClaw VPS and bridge had become redundant after moving to a local-first workflow around Claude, Codex, and Brain. The user wanted Telegram access without ongoing AWS cost or bridge maintenance.
+- Impact: The AWS OpenClaw Lightsail instance and snapshots are deleted, the local bridge LaunchAgent and logs are removed, and `tools.prochat.probot` is now the only always-on Telegram control surface documented in Brain.
+- Rollback: Recreate the AWS host and snapshots from scratch or restore the retired bridge code and LaunchAgent if a remote bridge architecture is needed again.

@@ -41,10 +41,6 @@ claude mcp add -s user context-mode ~/.local/bin/context-mode
 
 No required environment variables.
 
-| Env var | Default | Notes |
-|---|---|---|
-| `OPENCLAW_STATE_DIR` | `/openclaw` | Only needed for OpenClaw deployments |
-
 ---
 
 ## Runtime locations (outside repo, never commit)

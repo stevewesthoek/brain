@@ -1,0 +1,6 @@
+Host cloudpanel-aws
+  HostName PLACEHOLDER_IP
+  User ubuntu
+  IdentityFile ~/.ssh/cloudpanel-aws-key.pem
+  IdentitiesOnly yes
+  StrictHostKeyChecking accept-new

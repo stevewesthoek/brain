@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stable local wrapper for the remote CloudPanel CLI.
+# Paths and host alias can be overridden for debugging, but the default
+# contract for both Claude and Codex is:
+#   ~/.local/bin/cloudpanel-cli -> this script -> ssh cloudpanel /usr/bin/clpctl
+
+target_host="${CLOUDPANEL_SSH_HOST:-cloudpanel}"
+remote_bin="${CLOUDPANEL_CLI_REMOTE_BIN:-/usr/bin/clpctl}"
+
+exec ssh "${target_host}" "${remote_bin}" "$@"

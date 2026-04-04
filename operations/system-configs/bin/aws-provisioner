@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Shared safe default for AWS automation.
+# Uses the non-destructive provisioner role by default.
+
+export AWS_PROFILE="${AWS_PROFILE:-provisioner}"
+exec /Users/Office/Repos/stevewesthoek/brain/operations/system-configs/bin/aws-cli "$@"

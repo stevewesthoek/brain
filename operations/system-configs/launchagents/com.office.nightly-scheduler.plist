@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.office.nightly-scheduler</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/zsh</string>
+      <string>-lc</string>
+      <string>/Users/Office/Repos/stevewesthoek/brain/tools/scripts/office-nightly-scheduler.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/Office/Repos/stevewesthoek/brain</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>PATH</key>
+      <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+      <key>Hour</key>
+      <integer>3</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/Office/Library/Logs/office-scheduler/nightly.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/Office/Library/Logs/office-scheduler/nightly.error.log</string>
+  </dict>
+</plist>

@@ -13,7 +13,7 @@ description: Says the Bible — monthly episode generation and pipeline executio
 ## Current state
 
 - Episodes **001–013** — fully produced and live on YouTube
-- Episodes **014–040** — SSML ready, registered in run.mjs, OS cron scheduled
+- Episodes **014–040** — SSML ready, registered in run.mjs, and registered with the Office nightly scheduler
 - **Next batch starts at 041**
 
 ---
@@ -23,10 +23,10 @@ description: Says the Bible — monthly episode generation and pipeline executio
 Episodes are generated in bulk, but YouTube enforces a **~10 videos/day channel cap** (separate from the API quota). The pipeline handles this automatically:
 
 1. **SSML + episode files** are generated upfront (all at once, CPU-only)
-2. **`npm run pipeline:schedule`** installs an OS-level crontab entry (fires daily at 9:05 AM = 1:05 AM Pacific, just after YouTube quota reset)
-3. The **OS cron** runs `batch-run.mjs` every day — it processes up to 10 episodes, stops cleanly when the daily limit is reached, and resumes tomorrow
+2. **`npm run pipeline:schedule`** registers the STB batch with the Office nightly scheduler
+3. The **Office nightly scheduler** starts at **3:00 AM local time** and runs `batch-run.mjs` first in the heavy batch lane
 4. Already-uploaded episodes are **skipped automatically** (idempotent DB check)
-5. You can **close the terminal completely** — the cron runs independently of Claude or any open session
+5. You can **close the terminal completely** — the scheduler runs independently of Claude or any open session
 
 **You never need to think about batching or timing. Run `pipeline:schedule` once, done.**
 
@@ -220,32 +220,32 @@ Add the new episodes to `SLUG_TO_SSML_FOLDER` and `STORY_METADATA` in:
 },
 ```
 
-### Step 7 — Install the OS scheduler
+### Step 7 — Register the nightly batch
 
-After all SSML is generated and run.mjs is updated, install the OS cron with one command:
+After all SSML is generated and run.mjs is updated, register the batch with the Office nightly scheduler with one command:
 
 ```bash
 cd /Users/Office/Repos/prochattools/web/says-the-bible
 npm run pipeline:schedule -- --slugs 041-genesis-rebekah-30m,042-...,043-...
 ```
 
-This installs (or replaces) a macOS crontab entry that fires every day at **9:05 AM local time** (= 1:05 AM Pacific, just after YouTube's midnight quota reset). The cron:
+This writes the STB batch configuration used by the Office nightly scheduler, which starts at **3:00 AM local time**. The nightly batch:
 - Runs `batch-run.mjs` with all the slugs
 - Uploads up to 10 videos per day (YouTube's channel-level cap)
 - Skips already-uploaded episodes automatically
 - Stops cleanly when today's limit is reached, resumes tomorrow
 - Logs everything to `/tmp/stb-pipeline-batch.log`
 
-**After running `pipeline:schedule`, you can close the terminal. The Mac handles everything.**
+**After running `pipeline:schedule`, you can close the terminal. The Mac handles everything through the centralized nightly scheduler.**
 
 Monitor progress anytime:
 ```bash
 tail -f /tmp/stb-pipeline-batch.log
 ```
 
-Cancel the cron (if needed):
+Disable the nightly batch (if needed):
 ```bash
-crontab -l | grep -v stb-pipeline-batch | crontab -
+rm -f ~/.local/state/office-scheduler/stb-pipeline-batch.env
 ```
 
 ### Step 8 — Verify on YouTube Studio
@@ -263,7 +263,7 @@ crontab -l | grep -v stb-pipeline-batch | crontab -
 - [ ] All episode `.md` files written in `production/episodes/`
 - [ ] All SSML sets generated (12 files each) in `production/ssml/stories/`
 - [ ] `run.mjs` updated — `SLUG_TO_SSML_FOLDER` and `STORY_METADATA`
-- [ ] `npm run pipeline:schedule -- --slugs ...` run → OS cron installed
+- [ ] `npm run pipeline:schedule -- --slugs ...` run → nightly scheduler registration updated
 - [ ] YouTube Studio: videos appearing as Scheduled over the following days
 - [ ] `episodes/` folder committed to brain repo
 
@@ -300,6 +300,6 @@ npm run pipeline:run:no-upload -- --slug NNN-slug-30m
 | Assets (noise, fonts, template) | `production/input/assets/` |
 | Pipeline orchestrator | `scripts/pipeline/run.mjs` |
 | Batch runner | `scripts/pipeline/batch-run.mjs` |
-| OS cron installer | `scripts/pipeline/install-cron.mjs` |
+| Nightly scheduler registrar | `scripts/pipeline/install-cron.mjs` |
 | Batch log | `/tmp/stb-pipeline-batch.log` |
 | SSML gold standard | `production/ssml/stories/006_jonah_whale/` |

@@ -59,7 +59,7 @@ Binaries:
 
 - `README.md` — this file
 - `notebooklm-config.legacy-python-package.json` — config template written for the wrong Python package (`notebooklm-mcp` PyPI v2.x). Kept for reference only. Not used by `notebooklm-mcp-server`.
-- `openclaw-mcporter.md` — OpenClaw/ProBot bridge instructions
+- `probot-mcporter.md` — ProBot bridge instructions
 
 ---
 
@@ -102,16 +102,13 @@ notebooklm-mcp-auth   # or: ~/.local/bin/notebooklm-mcp-auth
 codex mcp list
 ```
 
-### ProBot / OpenClaw (VPS)
+### ProBot / mcporter bridge
 
 ProBot reaches NotebookLM through `mcporter` as the runtime bridge:
 
 ```
 ProBot (exec) → mcporter call notebooklm.<tool> → notebooklm-mcp-server (stdio)
 ```
-
-ProBot does NOT use native OpenClaw MCP tool injection.
-`mcp.servers` in `openclaw.json` feeds ACPX (coding agent) only, not the main ProBot agent.
 
 mcporter system config: `~/.mcporter/mcporter.json`
 

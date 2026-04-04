@@ -1,0 +1,262 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STATE_DIR="${OFFICE_SCHEDULER_STATE_DIR:-$HOME/.local/state/office-scheduler}"
+LOG_DIR="${OFFICE_SCHEDULER_LOG_DIR:-$HOME/Library/Logs/office-scheduler}"
+MAIN_LOG="$LOG_DIR/nightly.log"
+LOCK_DIR="$STATE_DIR/nightly.lock"
+LAST_COMPLETED_FILE="$STATE_DIR/last_completed_lisbon_date"
+STB_CONFIG_FILE="${OFFICE_SCHEDULER_STB_CONFIG_FILE:-$STATE_DIR/stb-pipeline-batch.env}"
+REPORT_SCRIPT="${OFFICE_SCHEDULER_REPORT_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/render-office-scheduler-report.sh}"
+
+mkdir -p "$STATE_DIR" "$LOG_DIR"
+chmod 700 "$STATE_DIR" "$LOG_DIR"
+touch "$MAIN_LOG"
+chmod 600 "$MAIN_LOG"
+
+timestamp() {
+  TZ=Europe/Lisbon date '+%Y-%m-%d %H:%M:%S %Z'
+}
+
+log() {
+  printf '[%s] %s\n' "$(timestamp)" "$*" >> "$MAIN_LOG"
+}
+
+write_job_state() {
+  local job_name="$1"
+  local status="$2"
+  local exit_code="$3"
+  local duration_seconds="$4"
+  local state_file="$STATE_DIR/${job_name}.last"
+
+  cat > "$state_file" <<EOF
+job_name=$job_name
+status=$status
+exit_code=$exit_code
+duration_seconds=$duration_seconds
+updated_at_lisbon=$(timestamp)
+EOF
+  chmod 600 "$state_file"
+}
+
+run_with_timeout() {
+  local timeout_seconds="$1"
+  local command="$2"
+
+  python3 - "$timeout_seconds" "$command" <<'PY'
+import subprocess
+import sys
+
+timeout_seconds = int(sys.argv[1])
+command = sys.argv[2]
+
+try:
+    completed = subprocess.run(
+        command,
+        shell=True,
+        executable="/bin/bash",
+        timeout=timeout_seconds,
+        env=None,
+    )
+    raise SystemExit(completed.returncode)
+except subprocess.TimeoutExpired:
+    print(f"[office-nightly-scheduler] timeout after {timeout_seconds}s", file=sys.stderr)
+    raise SystemExit(124)
+PY
+}
+
+run_job() {
+  local job_name="$1"
+  local timeout_seconds="$2"
+  local command="$3"
+
+  local started_at
+  local ended_at
+  local duration_seconds
+  started_at="$(date +%s)"
+
+  log "starting job=$job_name timeout=${timeout_seconds}s"
+
+  if run_with_timeout "$timeout_seconds" "$command"; then
+    ended_at="$(date +%s)"
+    duration_seconds="$((ended_at - started_at))"
+    write_job_state "$job_name" "success" "0" "$duration_seconds"
+    log "finished job=$job_name status=success duration=${duration_seconds}s"
+    return 0
+  else
+    local exit_code="$?"
+    ended_at="$(date +%s)"
+    duration_seconds="$((ended_at - started_at))"
+
+    if [[ "$exit_code" -eq 124 ]]; then
+      write_job_state "$job_name" "timeout" "$exit_code" "$duration_seconds"
+      log "finished job=$job_name status=timeout duration=${duration_seconds}s"
+    else
+      write_job_state "$job_name" "failed" "$exit_code" "$duration_seconds"
+      log "finished job=$job_name status=failed exit_code=$exit_code duration=${duration_seconds}s"
+    fi
+
+    return "$exit_code"
+  fi
+}
+
+run_stb_pipeline_batch() {
+  if [[ ! -f "$STB_CONFIG_FILE" ]]; then
+    log "skipping job=stb-pipeline-batch reason=no_config_file file=$STB_CONFIG_FILE"
+    return 0
+  fi
+
+  # shellcheck disable=SC1090
+  source "$STB_CONFIG_FILE"
+
+  if [[ "${STB_BATCH_ENABLED:-1}" != "1" ]]; then
+    log "skipping job=stb-pipeline-batch reason=disabled"
+    return 0
+  fi
+
+  if [[ -z "${STB_REPO_ROOT:-}" || -z "${STB_NODE_PATH:-}" || -z "${STB_SLUGS:-}" ]]; then
+    log "skipping job=stb-pipeline-batch reason=incomplete_config"
+    return 0
+  fi
+
+  local timeout_seconds="${STB_TIMEOUT_SECONDS:-10800}"
+  local batch_log="${STB_BATCH_LOG:-/tmp/stb-pipeline-batch.log}"
+  local extra_flags="${STB_EXTRA_FLAGS:-}"
+  local command
+
+  command=$(
+    printf 'cd %q && %q --env-file .env scripts/pipeline/batch-run.mjs --slugs %q --fail-on-errors %s >> %q 2>&1' \
+      "$STB_REPO_ROOT" \
+      "$STB_NODE_PATH" \
+      "$STB_SLUGS" \
+      "$extra_flags" \
+      "$batch_log"
+  )
+
+  run_job "stb-pipeline-batch" "$timeout_seconds" "$command"
+}
+
+run_n8n_backup() {
+  local timeout_seconds="${N8N_BACKUP_TIMEOUT_SECONDS:-1800}"
+  local backup_script="${N8N_BACKUP_SCHEDULE_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/run-n8n-backup-schedule.sh}"
+  local backup_log="${N8N_BACKUP_LOG_FILE:-$LOG_DIR/n8n-backup.log}"
+  local command
+
+  command=$(
+    printf '%q >> %q 2>&1' \
+      "$backup_script" \
+      "$backup_log"
+  )
+
+  run_job "n8n-backup" "$timeout_seconds" "$command"
+}
+
+run_claude_session_cleanup() {
+  local timeout_seconds="${CLAUDE_CLEANUP_TIMEOUT_SECONDS:-300}"
+  local cleanup_script="${CLAUDE_CLEANUP_SCRIPT:-$HOME/.claude/cleanup-sessions.sh}"
+  local command
+
+  if [[ ! -x "$cleanup_script" ]]; then
+    log "skipping job=claude-session-cleanup reason=missing_script path=$cleanup_script"
+    return 0
+  fi
+
+  command="$(printf '%q' "$cleanup_script")"
+  run_job "claude-session-cleanup" "$timeout_seconds" "$command"
+}
+
+render_runtime_report() {
+  if [[ -x "$REPORT_SCRIPT" ]]; then
+    OFFICE_SCHEDULER_STATE_DIR="$STATE_DIR" \
+    OFFICE_SCHEDULER_LOG_DIR="$LOG_DIR" \
+    "$REPORT_SCRIPT" || log "warning report_render_failed script=$REPORT_SCRIPT"
+  fi
+}
+
+main() {
+  local today_lisbon
+  local hour_lisbon
+
+  today_lisbon="$(TZ=Europe/Lisbon date +%F)"
+  hour_lisbon="$(TZ=Europe/Lisbon date +%H)"
+
+  if [[ "${FORCE_RUN:-0}" != "1" ]]; then
+    if (( 10#$hour_lisbon < 3 )); then
+      log "skipping nightly scheduler reason=before_cutoff today=$today_lisbon hour=$hour_lisbon"
+      exit 0
+    fi
+
+    if [[ -f "$LAST_COMPLETED_FILE" ]] && [[ "$(cat "$LAST_COMPLETED_FILE")" == "$today_lisbon" ]]; then
+      log "skipping nightly scheduler reason=already_completed today=$today_lisbon"
+      exit 0
+    fi
+  fi
+
+  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    log "skipping nightly scheduler reason=lock_present lock=$LOCK_DIR"
+    exit 0
+  fi
+
+  trap 'rm -rf "$LOCK_DIR"' EXIT
+  chmod 700 "$LOCK_DIR"
+  printf '%s\n' "$$" > "$LOCK_DIR/pid"
+  chmod 600 "$LOCK_DIR/pid"
+
+  log "nightly scheduler start today=$today_lisbon"
+
+  local stop_chain=0
+
+  if run_stb_pipeline_batch; then
+    :
+  else
+    local rc="$?"
+    if [[ "$rc" -eq 124 ]]; then
+      log "stopping chain reason=stb_timeout"
+      stop_chain=1
+    else
+      log "continuing chain after stb failure exit_code=$rc"
+    fi
+  fi
+
+  if [[ "$stop_chain" -eq 0 ]]; then
+    if run_n8n_backup; then
+      :
+    else
+      local rc="$?"
+      if [[ "$rc" -eq 124 ]]; then
+        log "stopping chain reason=n8n_timeout"
+        stop_chain=1
+      else
+        log "continuing chain after n8n backup failure exit_code=$rc"
+      fi
+    fi
+  fi
+
+  if [[ "$stop_chain" -eq 0 ]]; then
+    if run_claude_session_cleanup; then
+      :
+    else
+      local rc="$?"
+      if [[ "$rc" -eq 124 ]]; then
+        log "stopping chain reason=cleanup_timeout"
+        stop_chain=1
+      else
+        log "continuing after cleanup failure exit_code=$rc"
+      fi
+    fi
+  fi
+
+  if [[ "$stop_chain" -eq 0 ]]; then
+    printf '%s\n' "$today_lisbon" > "$LAST_COMPLETED_FILE"
+    chmod 600 "$LAST_COMPLETED_FILE"
+    log "nightly scheduler completed today=$today_lisbon"
+    render_runtime_report
+    exit 0
+  fi
+
+  log "nightly scheduler incomplete today=$today_lisbon"
+  render_runtime_report
+  exit 1
+}
+
+main "$@"

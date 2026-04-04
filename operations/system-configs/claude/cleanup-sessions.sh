@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # cleanup-sessions.sh — delete Claude session files older than 90 days.
-# Run daily via crontab. Logs to ~/.claude/logs/cleanup-sessions.log.
+# Run inside the Office nightly scheduler. Logs to ~/.claude/logs/cleanup-sessions.log.
 
 PROJECTS_DIR="$HOME/.claude/projects"
 LOG_DIR="$HOME/.claude/logs"

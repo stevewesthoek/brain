@@ -7,3 +7,4 @@ Short, repeatable procedures for operational tasks.
 - supabase.md
 - cloudflare.md
 - mcp-centralization.md
+- n8n.md

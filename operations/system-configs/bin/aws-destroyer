@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Shared destructive AWS wrapper.
+# Only use this when the user has explicitly requested teardown or cleanup.
+
+export AWS_PROFILE="${AWS_PROFILE:-destroyer}"
+exec /Users/Office/Repos/stevewesthoek/brain/operations/system-configs/bin/aws-cli "$@"

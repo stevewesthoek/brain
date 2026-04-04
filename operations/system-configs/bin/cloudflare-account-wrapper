@@ -1,0 +1,356 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 2 ]]; then
+  cat >&2 <<'EOF'
+usage: cloudflare-account-wrapper <profile-name> <command> [args...]
+
+commands:
+  verify
+  account
+  zones list [zone-name]
+  zones get <zone-name-or-id>
+  dns list <zone-name-or-id>
+  dns upsert <zone-name-or-id> <type> <name> <content> [--ttl <seconds>] [--proxied <true|false>]
+  dns delete <zone-name-or-id> <record-id>
+  tunnels list
+  tunnels info <tunnel-name-or-id>
+  tunnels dns-route <tunnel-name-or-id> <hostname> [--ttl <seconds>] [--proxied <true|false>]
+  tunnels delete <tunnel-name-or-id>
+  api <METHOD> <PATH> [JSON]
+  wrangler [args...]
+  cloudflared [args...]
+EOF
+  exit 1
+fi
+
+profile_name="$1"
+shift
+
+command_name="$1"
+shift
+
+mode="provisioner"
+if [[ "${profile_name}" == *"-destroyer" ]]; then
+  mode="destroyer"
+fi
+
+cred_dir="${CLOUDFLARE_AI_CREDENTIALS_DIR:-$HOME/.config/cloudflare-ai/credentials}"
+profile_dir="${CLOUDFLARE_AI_PROFILE_DIR:-$HOME/.config/cloudflare-ai/profiles}/${profile_name}"
+cred_file="${cred_dir}/${profile_name}.env"
+
+if [[ ! -f "${cred_file}" ]]; then
+  echo "Cloudflare credential file not found: ${cred_file}" >&2
+  exit 1
+fi
+
+# shellcheck disable=SC1090
+source "${cred_file}"
+
+: "${CLOUDFLARE_API_TOKEN:?missing CLOUDFLARE_API_TOKEN}"
+: "${CLOUDFLARE_ACCOUNT_ID:?missing CLOUDFLARE_ACCOUNT_ID}"
+
+export CLOUDFLARE_API_TOKEN
+export CF_API_TOKEN="${CLOUDFLARE_API_TOKEN}"
+export CLOUDFLARE_ACCOUNT_ID
+export CLOUDFLARE_API_BASE="${CLOUDFLARE_API_BASE:-https://api.cloudflare.com/client/v4}"
+export WRANGLER_HOME="${profile_dir}/wrangler"
+mkdir -p "${WRANGLER_HOME}"
+
+api_base="${CLOUDFLARE_API_BASE}"
+wrangler_bin="${CLOUDFLARE_WRANGLER_BIN:-$(command -v wrangler || true)}"
+cloudflared_bin="${CLOUDFLARE_CLOUDFLARED_BIN:-$(command -v cloudflared || true)}"
+
+if [[ -z "${wrangler_bin}" ]]; then
+  wrangler_bin="/opt/homebrew/bin/wrangler"
+fi
+
+if [[ -z "${cloudflared_bin}" ]]; then
+  cloudflared_bin="/opt/homebrew/bin/cloudflared"
+fi
+
+cf_api() {
+  local method="$1"
+  local path="$2"
+  local payload="${3:-}"
+  local url="${api_base}${path}"
+
+  if [[ -n "${payload}" ]]; then
+    curl -fsS \
+      -X "${method}" \
+      -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+      -H "Content-Type: application/json" \
+      "${url}" \
+      --data "${payload}"
+  else
+    curl -fsS \
+      -X "${method}" \
+      -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+      "${url}"
+  fi
+}
+
+require_non_destructive() {
+  local action="$1"
+  if [[ "${mode}" != "destroyer" ]]; then
+    echo "Blocked destructive Cloudflare action for ${profile_name}: ${action}" >&2
+    echo "Use the matching destroyer wrapper for delete or teardown operations." >&2
+    exit 2
+  fi
+}
+
+urlencode() {
+  python3 - "$1" <<'PY'
+import sys
+from urllib.parse import quote
+
+print(quote(sys.argv[1], safe=""))
+PY
+}
+
+resolve_zone_id() {
+  local zone_ref="$1"
+
+  if [[ "${zone_ref}" =~ ^[0-9a-f]{32}$ ]]; then
+    printf '%s\n' "${zone_ref}"
+    return 0
+  fi
+
+  local encoded
+  encoded="$(urlencode "${zone_ref}")"
+
+  cf_api "GET" "/zones?account.id=${CLOUDFLARE_ACCOUNT_ID}&name=${encoded}&per_page=1" \
+    | jq -er '.result[0].id'
+}
+
+resolve_tunnel_id() {
+  local tunnel_ref="$1"
+
+  if [[ "${tunnel_ref}" =~ ^[0-9a-f-]{36}$ ]]; then
+    printf '%s\n' "${tunnel_ref}"
+    return 0
+  fi
+
+  cf_api "GET" "/accounts/${CLOUDFLARE_ACCOUNT_ID}/cfd_tunnel?is_deleted=false" \
+    | jq -er --arg name "${tunnel_ref}" '.result[] | select(.name == $name) | .id' \
+    | head -n 1
+}
+
+default_ttl="1"
+default_proxied="true"
+
+case "${command_name}" in
+  verify)
+    cf_api "GET" "/user/tokens/verify" | jq
+    ;;
+
+  account)
+    cf_api "GET" "/accounts/${CLOUDFLARE_ACCOUNT_ID}" | jq
+    ;;
+
+  zones)
+    subcommand="${1:-}"
+    shift || true
+    case "${subcommand}" in
+      list)
+        if [[ $# -gt 0 ]]; then
+          zone_name="$(urlencode "$1")"
+          cf_api "GET" "/zones?account.id=${CLOUDFLARE_ACCOUNT_ID}&name=${zone_name}" | jq
+        else
+          cf_api "GET" "/zones?account.id=${CLOUDFLARE_ACCOUNT_ID}" | jq
+        fi
+        ;;
+      get)
+        zone_id="$(resolve_zone_id "${1:?missing zone name or id}")"
+        cf_api "GET" "/zones/${zone_id}" | jq
+        ;;
+      *)
+        echo "unknown zones subcommand: ${subcommand}" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+
+  dns)
+    subcommand="${1:-}"
+    shift || true
+    case "${subcommand}" in
+      list)
+        zone_id="$(resolve_zone_id "${1:?missing zone name or id}")"
+        cf_api "GET" "/zones/${zone_id}/dns_records?per_page=100" | jq
+        ;;
+      upsert)
+        zone_ref="${1:?missing zone name or id}"
+        record_type="${2:?missing record type}"
+        record_name="${3:?missing record name}"
+        record_content="${4:?missing record content}"
+        shift 4
+
+        ttl="${default_ttl}"
+        proxied="${default_proxied}"
+
+        while [[ $# -gt 0 ]]; do
+          case "$1" in
+            --ttl)
+              ttl="${2:?missing ttl value}"
+              shift 2
+              ;;
+            --proxied)
+              proxied="${2:?missing proxied value}"
+              shift 2
+              ;;
+            *)
+              echo "unknown option: $1" >&2
+              exit 1
+              ;;
+          esac
+        done
+
+        zone_id="$(resolve_zone_id "${zone_ref}")"
+        existing="$(cf_api "GET" "/zones/${zone_id}/dns_records?type=$(urlencode "${record_type}")&name=$(urlencode "${record_name}")&per_page=1")"
+        record_id="$(printf '%s' "${existing}" | jq -r '.result[0].id // empty')"
+        payload="$(jq -nc \
+          --arg type "${record_type}" \
+          --arg name "${record_name}" \
+          --arg content "${record_content}" \
+          --argjson ttl "${ttl}" \
+          --argjson proxied "${proxied}" \
+          '{type:$type,name:$name,content:$content,ttl:$ttl,proxied:$proxied}')"
+
+        if [[ -n "${record_id}" ]]; then
+          cf_api "PUT" "/zones/${zone_id}/dns_records/${record_id}" "${payload}" | jq
+        else
+          cf_api "POST" "/zones/${zone_id}/dns_records" "${payload}" | jq
+        fi
+        ;;
+      delete)
+        require_non_destructive "dns delete"
+        zone_id="$(resolve_zone_id "${1:?missing zone name or id}")"
+        record_id="${2:?missing record id}"
+        cf_api "DELETE" "/zones/${zone_id}/dns_records/${record_id}" | jq
+        ;;
+      *)
+        echo "unknown dns subcommand: ${subcommand}" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+
+  tunnels)
+    subcommand="${1:-}"
+    shift || true
+    case "${subcommand}" in
+      list)
+        cf_api "GET" "/accounts/${CLOUDFLARE_ACCOUNT_ID}/cfd_tunnel?is_deleted=false" | jq
+        ;;
+      info)
+        tunnel_id="$(resolve_tunnel_id "${1:?missing tunnel name or id}")"
+        cf_api "GET" "/accounts/${CLOUDFLARE_ACCOUNT_ID}/cfd_tunnel/${tunnel_id}" | jq
+        ;;
+      dns-route)
+        tunnel_ref="${1:?missing tunnel name or id}"
+        hostname="${2:?missing hostname}"
+        shift 2
+
+        ttl="${default_ttl}"
+        proxied="true"
+
+        while [[ $# -gt 0 ]]; do
+          case "$1" in
+            --ttl)
+              ttl="${2:?missing ttl value}"
+              shift 2
+              ;;
+            --proxied)
+              proxied="${2:?missing proxied value}"
+              shift 2
+              ;;
+            *)
+              echo "unknown option: $1" >&2
+              exit 1
+              ;;
+          esac
+        done
+
+        tunnel_id="$(resolve_tunnel_id "${tunnel_ref}")"
+        zone_guess="${CLOUDFLARE_DEFAULT_ZONE_NAME:-}"
+
+        if [[ -z "${zone_guess}" ]]; then
+          zone_guess="$(python3 - "${hostname}" <<'PY'
+import sys
+host = sys.argv[1].strip(".")
+parts = host.split(".")
+print(".".join(parts[-2:]) if len(parts) >= 2 else host)
+PY
+)"
+        fi
+
+        zone_id="$(resolve_zone_id "${zone_guess}")"
+        target="${tunnel_id}.cfargotunnel.com"
+        existing="$(cf_api "GET" "/zones/${zone_id}/dns_records?type=CNAME&name=$(urlencode "${hostname}")&per_page=1")"
+        record_id="$(printf '%s' "${existing}" | jq -r '.result[0].id // empty')"
+        payload="$(jq -nc \
+          --arg type "CNAME" \
+          --arg name "${hostname}" \
+          --arg content "${target}" \
+          --argjson ttl "${ttl}" \
+          --argjson proxied "${proxied}" \
+          '{type:$type,name:$name,content:$content,ttl:$ttl,proxied:$proxied}')"
+
+        if [[ -n "${record_id}" ]]; then
+          cf_api "PUT" "/zones/${zone_id}/dns_records/${record_id}" "${payload}" | jq
+        else
+          cf_api "POST" "/zones/${zone_id}/dns_records" "${payload}" | jq
+        fi
+        ;;
+      delete)
+        require_non_destructive "tunnels delete"
+        tunnel_id="$(resolve_tunnel_id "${1:?missing tunnel name or id}")"
+        cf_api "DELETE" "/accounts/${CLOUDFLARE_ACCOUNT_ID}/cfd_tunnel/${tunnel_id}" | jq
+        ;;
+      *)
+        echo "unknown tunnels subcommand: ${subcommand}" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+
+  api)
+    method="${1:?missing HTTP method}"
+    path="${2:?missing API path}"
+    payload="${3:-}"
+
+    if [[ "${method^^}" == "DELETE" ]]; then
+      require_non_destructive "api DELETE ${path}"
+    fi
+
+    cf_api "${method^^}" "${path}" "${payload}" | jq
+    ;;
+
+  wrangler)
+    if [[ $# -gt 0 ]]; then
+      case "$1" in
+        delete|rollback)
+          require_non_destructive "wrangler $1"
+          ;;
+      esac
+    fi
+    exec "${wrangler_bin}" "$@"
+    ;;
+
+  cloudflared)
+    if [[ $# -ge 2 && "$1" == "tunnel" ]]; then
+      case "$2" in
+        delete|cleanup)
+          require_non_destructive "cloudflared tunnel $2"
+          ;;
+      esac
+    fi
+    exec "${cloudflared_bin}" "$@"
+    ;;
+
+  *)
+    echo "unknown command: ${command_name}" >&2
+    exit 1
+    ;;
+esac

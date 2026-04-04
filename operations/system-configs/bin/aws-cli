@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stable local entrypoint for AWS CLI usage across Claude and Codex.
+# Default path matches the current machine; override only for debugging.
+
+aws_bin="${AWS_CLI_BIN:-/usr/local/bin/aws}"
+
+exec "${aws_bin}" "$@"

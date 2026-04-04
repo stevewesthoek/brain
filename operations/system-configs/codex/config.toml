@@ -32,6 +32,9 @@ enabled = true
 [plugins."google-drive@openai-curated"]
 enabled = true
 
+[plugins."vercel@openai-curated"]
+enabled = false
+
 [projects."/Users/Office/Repos/stevewesthoek/brain"]
 trust_level = "trusted"
 

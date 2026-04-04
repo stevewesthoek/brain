@@ -1,0 +1,46 @@
+{
+  "Name": "ClaudeCodexAppsProvisioner",
+  "IsCustom": true,
+  "Description": "Provision and manage Azure infrastructure in PROCHAT-APPS without destructive delete operations.",
+  "Actions": [
+    "Microsoft.Authorization/*/read",
+    "Microsoft.Compute/*",
+    "Microsoft.Insights/*",
+    "Microsoft.ManagedIdentity/*",
+    "Microsoft.MarketplaceOrdering/*",
+    "Microsoft.Network/*",
+    "Microsoft.Resources/deployments/*",
+    "Microsoft.Resources/subscriptions/resourceGroups/*",
+    "Microsoft.Storage/*"
+  ],
+  "NotActions": [
+    "Microsoft.Compute/disks/delete",
+    "Microsoft.Compute/galleries/delete",
+    "Microsoft.Compute/images/delete",
+    "Microsoft.Compute/restorePointCollections/delete",
+    "Microsoft.Compute/snapshots/delete",
+    "Microsoft.Compute/virtualMachineScaleSets/delete",
+    "Microsoft.Compute/virtualMachines/delete",
+    "Microsoft.ManagedIdentity/userAssignedIdentities/delete",
+    "Microsoft.Network/applicationGateways/delete",
+    "Microsoft.Network/azureFirewalls/delete",
+    "Microsoft.Network/bastionHosts/delete",
+    "Microsoft.Network/dnsResolvers/delete",
+    "Microsoft.Network/loadBalancers/delete",
+    "Microsoft.Network/natGateways/delete",
+    "Microsoft.Network/networkInterfaces/delete",
+    "Microsoft.Network/networkSecurityGroups/delete",
+    "Microsoft.Network/networkWatchers/delete",
+    "Microsoft.Network/privateDnsZones/delete",
+    "Microsoft.Network/publicIPAddresses/delete",
+    "Microsoft.Network/routeTables/delete",
+    "Microsoft.Network/virtualNetworks/delete",
+    "Microsoft.Network/virtualNetworkGateways/delete",
+    "Microsoft.Resources/deployments/delete",
+    "Microsoft.Resources/subscriptions/resourceGroups/delete",
+    "Microsoft.Storage/storageAccounts/delete"
+  ],
+  "AssignableScopes": [
+    "/subscriptions/1db6646e-69c0-4ee0-a4d5-53d40421a5a4"
+  ]
+}

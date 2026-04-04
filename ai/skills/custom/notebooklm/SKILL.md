@@ -1,6 +1,6 @@
 ---
 name: notebooklm
-description: Use when the user asks for NotebookLM, deep research across many sources, building a research notebook from web URLs or Brain excerpts, querying an existing notebook for answers, or generating source-grounded outputs such as briefing docs, study guides, slide decks, mind maps, and source summaries. Prefer for research-heavy strategy and planning work, multi-source comparison, and synthesis tasks. Optimized for ProBot/OpenClaw while remaining usable as a shared cross-tool research workflow.
+description: Use when the user asks for NotebookLM, deep research across many sources, building a research notebook from web URLs or Brain excerpts, querying an existing notebook for answers, or generating source-grounded outputs such as briefing docs, study guides, slide decks, mind maps, and source summaries. Prefer for research-heavy strategy and planning work, multi-source comparison, and synthesis tasks. Optimized for ProBot while remaining usable as a shared cross-tool research workflow.
 ---
 
 # NotebookLM
@@ -116,8 +116,8 @@ Use this mapping:
 9. Return the useful output directly, and generate richer artifacts when appropriate.
 10. Record or summarize the notebook used if it matters for continuity.
 
-## ProBot/OpenClaw operating stance
-- This skill is shared across tools, but optimize behavior first for ProBot/OpenClaw.
+## ProBot operating stance
+- This skill is shared across tools, but optimize behavior first for ProBot.
 - Favor workflows that expand Steve’s business and personal knowledge in a way ProBot can later reuse.
 - When useful, connect NotebookLM research back to canonical Brain files rather than leaving knowledge stranded only inside NotebookLM.
 

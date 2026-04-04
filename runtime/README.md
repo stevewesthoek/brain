@@ -1,16 +1,12 @@
 # Runtime
 
-Assistant runtime and workspace material.
+Assistant runtime and workspace material tied to the ProBot daemon.
 
 ## Structure
 
-- `openclaw/` — dedicated OpenClaw workspace for this Brain repo
 - `cache/` — disposable cache
 - `local/` — local-only scratch/state if needed
 
 ## Rule
 
-`runtime/openclaw/` is the OpenClaw home inside this repo.
-Canonical personal, organisation, project, AI, and operations content still lives in the main top-level folders.
-
-Runtime files should be bootstrap pointers, memory, and coordination only — not duplicate copies of canonical docs.
+Runtime files are bootstrap pointers, approvals, and lightweight notes for the always-on ProBot agent. Canonical personal, organisation, project, AI, and operations content stays in the top-level folders; do not duplicate it here.
