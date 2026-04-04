@@ -102,13 +102,15 @@ async function getBedrockCosts(): Promise<BedrockCosts> {
 }
 
 interface WindowUsage {
-  count: number;
-  resetAt: string | null;
+  remainingPercent: number;
+  usedPercent: number;
+  resetsAt: string | null;
 }
 
 interface CodexUsage {
   fiveHour: WindowUsage;
   sevenDay: WindowUsage;
+  asOf: string | null; // timestamp of the token_count event we parsed
 }
 
 function walkJsonl(dir: string, out: string[]): void {
@@ -121,34 +123,59 @@ function walkJsonl(dir: string, out: string[]): void {
   } catch { /* skip unreadable dirs */ }
 }
 
-function getCodexUsage(codexSessionsDir: string): CodexUsage {
-  const now = Date.now();
-  const fiveHourMs = 5  * 60 * 60 * 1_000;
-  const sevenDayMs = 7 * 24 * 60 * 60 * 1_000;
-  const fiveHourCutoff = now - fiveHourMs;
-  const sevenDayCutoff = now - sevenDayMs;
+interface RateLimitWindow { used_percent: number; window_minutes: number; resets_at: number }
+interface TokenCountPayload { primary?: RateLimitWindow; secondary?: RateLimitWindow }
 
+function getCodexUsage(codexSessionsDir: string): CodexUsage {
+  const fallback: CodexUsage = {
+    fiveHour: { remainingPercent: 100, usedPercent: 0, resetsAt: null },
+    sevenDay:  { remainingPercent: 100, usedPercent: 0, resetsAt: null },
+    asOf: null,
+  };
+
+  // Only scan files modified in the last 7 days to keep it fast
+  const sevenDayCutoff = Date.now() - 7 * 24 * 60 * 60 * 1_000;
   const files: string[] = [];
   walkJsonl(codexSessionsDir, files);
 
-  const mtimes: number[] = [];
+  // Find the most recent token_count event across all recent sessions
+  let bestTs = 0;
+  let bestPrimary: RateLimitWindow | null = null;
+  let bestSecondary: RateLimitWindow | null = null;
+
   for (const f of files) {
-    try { mtimes.push(fs.statSync(f).mtimeMs); } catch { /* skip */ }
+    try {
+      if (fs.statSync(f).mtimeMs < sevenDayCutoff) continue;
+      const lines = fs.readFileSync(f, "utf8").split("\n");
+      for (const line of lines) {
+        if (!line.includes("token_count")) continue;
+        try {
+          const obj = JSON.parse(line) as { timestamp?: string; type?: string; payload?: { type?: string; rate_limits?: TokenCountPayload } };
+          if (obj.type !== "event_msg" || obj.payload?.type !== "token_count") continue;
+          const ts = obj.timestamp ? new Date(obj.timestamp).getTime() : 0;
+          if (ts <= bestTs) continue;
+          const rl = obj.payload.rate_limits;
+          if (!rl?.primary) continue;
+          bestTs = ts;
+          bestPrimary   = rl.primary   ?? null;
+          bestSecondary = rl.secondary ?? null;
+        } catch { /* malformed line */ }
+      }
+    } catch { /* unreadable file */ }
   }
 
-  const fiveHourSet = mtimes.filter((t) => t >= fiveHourCutoff);
-  const sevenDaySet = mtimes.filter((t) => t >= sevenDayCutoff);
+  if (!bestPrimary) return fallback;
 
-  const fiveHourResetAt = fiveHourSet.length > 0
-    ? new Date(Math.min(...fiveHourSet) + fiveHourMs).toISOString()
-    : null;
-  const sevenDayResetAt = sevenDaySet.length > 0
-    ? new Date(Math.min(...sevenDaySet) + sevenDayMs).toISOString()
-    : null;
+  const toWindow = (w: RateLimitWindow): WindowUsage => ({
+    usedPercent:      Math.round(w.used_percent),
+    remainingPercent: Math.round(Math.max(0, 100 - w.used_percent)),
+    resetsAt:         new Date(w.resets_at * 1000).toISOString(),
+  });
 
   return {
-    fiveHour: { count: fiveHourSet.length, resetAt: fiveHourResetAt },
-    sevenDay: { count: sevenDaySet.length, resetAt: sevenDayResetAt },
+    fiveHour: toWindow(bestPrimary),
+    sevenDay: bestSecondary ? toWindow(bestSecondary) : fallback.sevenDay,
+    asOf: new Date(bestTs).toISOString(),
   };
 }
 
@@ -381,40 +408,55 @@ function repoCard(r){
     +(h.exists?'<button class="btn-copy" onclick="copyResume(this,'+JSON.stringify(h.resumePrompt)+')">Copy resume</button>':'')
     +'</div></div>';
 }
-function fmtReset(iso,mode){
-  if(!iso)return'No sessions recorded';
+function fmtReset(iso){
+  if(!iso)return'No data yet';
   const d=new Date(iso);
   const now=new Date();
+  const diffMs=d-now;
+  if(diffMs<=0)return'Resetting…';
+  const diffM=Math.floor(diffMs/60000);
+  const timeStr=diffM<60?'in '+diffM+'m':'in '+Math.floor(diffM/60)+'h '+String(diffM%60).padStart(2,'0')+'m';
   const sameDay=d.toDateString()===now.toDateString();
-  if(mode==='time')return'Resets '+(sameDay?'today ':'')
-    +d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  return'Resets '+d.toLocaleDateString([],{month:'short',day:'numeric'})
-    +' at '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const clockStr=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const dateStr=sameDay?'today':d.toLocaleDateString([],{month:'short',day:'numeric'});
+  return'Resets '+dateStr+' at '+clockStr+' ('+timeStr+')';
+}
+function pctColor(pct){
+  return pct>50?'var(--green)':pct>20?'var(--amber)':'var(--red)';
+}
+function pctBar(pct,color){
+  return'<div class="bar" style="margin-top:10px"><div class="bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div>';
+}
+function codexCard(label,w){
+  if(!w.resetsAt)return'<div class="ac"><div class="ac-label">'+label+'</div>'
+    +'<div class="ac-value" style="font-size:15px;color:var(--muted)">No data</div>'
+    +'<div class="ac-reset">Start a Codex session first</div></div>';
+  const c=pctColor(w.remainingPercent);
+  return'<div class="ac">'
+    +'<div class="ac-label">'+label+'</div>'
+    +'<div class="ac-row"><div class="ac-value" style="color:'+c+'">'+w.remainingPercent+'%</div>'
+    +'<div class="ac-unit">remaining</div></div>'
+    +pctBar(w.remainingPercent,c)
+    +'<div class="ac-reset" style="margin-top:8px">'+fmtReset(w.resetsAt)+'</div>'
+    +'</div>';
 }
 function renderAIUsage(bedrock,codex){
   const bedrockVal=bedrock.error?'—':'$'+bedrock.mtdUsd.toFixed(2);
   const bedrockSub=bedrock.error
-    ?'<div class="ac-err" title="'+esc(bedrock.error.slice(0,120))+'">⚠ needs ce:GetCostAndUsage permission</div>'
+    ?'<div class="ac-err" title="'+esc(bedrock.error.slice(0,160))+'">⚠ needs ce:GetCostAndUsage IAM permission</div>'
     :'<div class="ac-reset">Resets '+new Date(bedrock.monthResetDate+'T00:00:00').toLocaleDateString([],{month:'short',day:'numeric'})+'</div>';
   const bedrockCard='<div class="ac">'
     +'<div class="ac-label">Bedrock Spend (MTD)</div>'
     +'<div class="ac-row"><div class="ac-value">'+bedrockVal+'</div></div>'
     +bedrockSub
     +'</div>';
-  const c5=codex.fiveHour;
-  const c7=codex.sevenDay;
-  const fiveCard='<div class="ac">'
-    +'<div class="ac-label">Codex Sessions · 5h Window</div>'
-    +'<div class="ac-row"><div class="ac-value">'+c5.count+'</div><div class="ac-unit">sessions</div></div>'
-    +'<div class="ac-reset">'+fmtReset(c5.resetAt,'time')+'</div>'
+  const asOf=codex.asOf?'<div style="font-size:10px;color:var(--subtle);margin-top:4px">as of '+age(codex.asOf)+'</div>':'';
+  return'<div class="sec-hd" style="margin-bottom:16px"><span class="sec-title">AI Usage</span>'
+    +'<span class="sec-count" style="font-size:10px">'+asOf+'</span></div>'
+    +'<div class="ai-grid fade">'+bedrockCard
+    +codexCard('Codex · 5h Window',codex.fiveHour)
+    +codexCard('Codex · 7d Window',codex.sevenDay)
     +'</div>';
-  const sevenCard='<div class="ac">'
-    +'<div class="ac-label">Codex Sessions · 7d Window</div>'
-    +'<div class="ac-row"><div class="ac-value">'+c7.count+'</div><div class="ac-unit">sessions</div></div>'
-    +'<div class="ac-reset">'+fmtReset(c7.resetAt,'date')+'</div>'
-    +'</div>';
-  return'<div class="sec-hd" style="margin-bottom:16px"><span class="sec-title">AI Usage</span></div>'
-    +'<div class="ai-grid fade">'+bedrockCard+fiveCard+sevenCard+'</div>';
 }
 function copyResume(btn,p){
   navigator.clipboard.writeText(p).then(()=>{
