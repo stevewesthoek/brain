@@ -2,8 +2,12 @@ import http from "node:http";
 import os from "node:os";
 import fs from "node:fs";
 import path from "node:path";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 import type { AppContext } from "../types/app.js";
 import { buildSessionOverview } from "../services/sessions.js";
+
+const execAsync = promisify(exec);
 
 const START_TIME = Date.now();
 
@@ -64,15 +68,103 @@ function getReposData(app: AppContext) {
   return repos;
 }
 
+// ─── AI usage helpers ─────────────────────────────────────────────────────────
+
+interface BedrockCosts {
+  mtdUsd: number;
+  monthResetDate: string;
+  error?: string;
+}
+
+async function getBedrockCosts(): Promise<BedrockCosts> {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  const end   = now.toISOString().slice(0, 10);
+  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  // Use local date parts to avoid UTC offset shifting the day
+  const monthResetDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
+
+  // If start === end (first of month) cost explorer requires at least 1 day range
+  if (start === end) {
+    return { mtdUsd: 0, monthResetDate };
+  }
+
+  try {
+    const filter = JSON.stringify({ Dimensions: { Key: "SERVICE", Values: ["Amazon Bedrock"] } });
+    const cmd = `aws ce get-cost-and-usage --time-period Start=${start},End=${end} --granularity MONTHLY --metrics BlendedCost --filter '${filter}' --output json`;
+    const { stdout } = await execAsync(cmd, { timeout: 15_000 });
+    const data = JSON.parse(stdout) as { ResultsByTime?: Array<{ Total?: { BlendedCost?: { Amount?: string } } }> };
+    const amount = parseFloat(data.ResultsByTime?.[0]?.Total?.BlendedCost?.Amount ?? "0");
+    return { mtdUsd: Math.round(amount * 100) / 100, monthResetDate };
+  } catch (err) {
+    return { mtdUsd: 0, monthResetDate, error: String(err) };
+  }
+}
+
+interface WindowUsage {
+  count: number;
+  resetAt: string | null;
+}
+
+interface CodexUsage {
+  fiveHour: WindowUsage;
+  sevenDay: WindowUsage;
+}
+
+function walkJsonl(dir: string, out: string[]): void {
+  try {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walkJsonl(full, out);
+      else if (entry.name.endsWith(".jsonl")) out.push(full);
+    }
+  } catch { /* skip unreadable dirs */ }
+}
+
+function getCodexUsage(codexSessionsDir: string): CodexUsage {
+  const now = Date.now();
+  const fiveHourMs = 5  * 60 * 60 * 1_000;
+  const sevenDayMs = 7 * 24 * 60 * 60 * 1_000;
+  const fiveHourCutoff = now - fiveHourMs;
+  const sevenDayCutoff = now - sevenDayMs;
+
+  const files: string[] = [];
+  walkJsonl(codexSessionsDir, files);
+
+  const mtimes: number[] = [];
+  for (const f of files) {
+    try { mtimes.push(fs.statSync(f).mtimeMs); } catch { /* skip */ }
+  }
+
+  const fiveHourSet = mtimes.filter((t) => t >= fiveHourCutoff);
+  const sevenDaySet = mtimes.filter((t) => t >= sevenDayCutoff);
+
+  const fiveHourResetAt = fiveHourSet.length > 0
+    ? new Date(Math.min(...fiveHourSet) + fiveHourMs).toISOString()
+    : null;
+  const sevenDayResetAt = sevenDaySet.length > 0
+    ? new Date(Math.min(...sevenDaySet) + sevenDayMs).toISOString()
+    : null;
+
+  return {
+    fiveHour: { count: fiveHourSet.length, resetAt: fiveHourResetAt },
+    sevenDay: { count: sevenDaySet.length, resetAt: sevenDayResetAt },
+  };
+}
+
 async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
-  const sessions = await buildSessionOverview(
-    app.config.claudeProjectsDir,
-    app.config.codexSessionsDir,
-    app.config.codexSessionIndex,
-  ).catch(() => []);
+  const [sessions, bedrock] = await Promise.all([
+    buildSessionOverview(
+      app.config.claudeProjectsDir,
+      app.config.codexSessionsDir,
+      app.config.codexSessionIndex,
+    ).catch(() => []),
+    getBedrockCosts(),
+  ]);
+  const codexUsage = getCodexUsage(app.config.codexSessionsDir);
 
   return {
     meta: {
@@ -87,6 +179,8 @@ async function getDashboardData(app: AppContext) {
       memTotalGB:  Math.round(memTotal / 1073741824 * 10) / 10,
       memPercent:  Math.round((memUsed / memTotal) * 100),
     },
+    bedrock,
+    codexUsage,
     repos: getReposData(app),
     sessions: sessions.slice(0, 8).map((s) => ({
       tool: s.tool, projectLabel: s.projectLabel,
@@ -185,6 +279,17 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
 .si-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .si-age{font-size:11px;color:var(--subtle);font-family:var(--mono)}
 .tmux{font-size:10px;padding:1px 6px;border-radius:3px;background:var(--green-d);color:var(--green);border:1px solid rgba(52,211,153,.2)}
+/* ai usage */
+.ai-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:36px}
+@media(max-width:900px){.ai-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.ai-grid{grid-template-columns:1fr}}
+.ac{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.ac-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.ac-value{font-size:22px;font-weight:600;font-family:var(--mono);letter-spacing:-.5px}
+.ac-reset{font-size:11px;color:var(--muted);margin-top:2px}
+.ac-err{font-size:11px;color:var(--red);margin-top:2px}
+.ac-row{display:flex;gap:6px;align-items:baseline}
+.ac-unit{font-size:13px;color:var(--muted);font-weight:400;font-family:var(--font)}
 /* loading */
 .loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--muted);font-size:13px;gap:10px}
 .spin{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
@@ -212,6 +317,7 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
 </header>
 <main>
   <div id="stats"><div class="loading"><div class="spin"></div>Loading...</div></div>
+  <div id="aiusage"></div>
   <div id="repos"></div>
   <div id="sessions"></div>
 </main>
@@ -275,6 +381,41 @@ function repoCard(r){
     +(h.exists?'<button class="btn-copy" onclick="copyResume(this,'+JSON.stringify(h.resumePrompt)+')">Copy resume</button>':'')
     +'</div></div>';
 }
+function fmtReset(iso,mode){
+  if(!iso)return'No sessions recorded';
+  const d=new Date(iso);
+  const now=new Date();
+  const sameDay=d.toDateString()===now.toDateString();
+  if(mode==='time')return'Resets '+(sameDay?'today ':'')
+    +d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  return'Resets '+d.toLocaleDateString([],{month:'short',day:'numeric'})
+    +' at '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+function renderAIUsage(bedrock,codex){
+  const bedrockVal=bedrock.error?'—':'$'+bedrock.mtdUsd.toFixed(2);
+  const bedrockSub=bedrock.error
+    ?'<div class="ac-err" title="'+esc(bedrock.error.slice(0,120))+'">⚠ needs ce:GetCostAndUsage permission</div>'
+    :'<div class="ac-reset">Resets '+new Date(bedrock.monthResetDate+'T00:00:00').toLocaleDateString([],{month:'short',day:'numeric'})+'</div>';
+  const bedrockCard='<div class="ac">'
+    +'<div class="ac-label">Bedrock Spend (MTD)</div>'
+    +'<div class="ac-row"><div class="ac-value">'+bedrockVal+'</div></div>'
+    +bedrockSub
+    +'</div>';
+  const c5=codex.fiveHour;
+  const c7=codex.sevenDay;
+  const fiveCard='<div class="ac">'
+    +'<div class="ac-label">Codex Sessions · 5h Window</div>'
+    +'<div class="ac-row"><div class="ac-value">'+c5.count+'</div><div class="ac-unit">sessions</div></div>'
+    +'<div class="ac-reset">'+fmtReset(c5.resetAt,'time')+'</div>'
+    +'</div>';
+  const sevenCard='<div class="ac">'
+    +'<div class="ac-label">Codex Sessions · 7d Window</div>'
+    +'<div class="ac-row"><div class="ac-value">'+c7.count+'</div><div class="ac-unit">sessions</div></div>'
+    +'<div class="ac-reset">'+fmtReset(c7.resetAt,'date')+'</div>'
+    +'</div>';
+  return'<div class="sec-hd" style="margin-bottom:16px"><span class="sec-title">AI Usage</span></div>'
+    +'<div class="ai-grid fade">'+bedrockCard+fiveCard+sevenCard+'</div>';
+}
 function copyResume(btn,p){
   navigator.clipboard.writeText(p).then(()=>{
     const o=btn.textContent;btn.textContent='✓ Copied';btn.classList.add('ok');
@@ -295,6 +436,7 @@ function render(d){
   document.getElementById('host').textContent=d.meta.hostname;
   document.getElementById('upd').textContent='updated '+age(d.meta.updatedAt);
   document.getElementById('stats').innerHTML=renderStats(d.meta,d.machine);
+  document.getElementById('aiusage').innerHTML=renderAIUsage(d.bedrock,d.codexUsage);
   const rhtml=d.repos.length===0
     ?'<div class="empty">No repo aliases configured.</div>'
     :'<div class="repos fade">'+d.repos.map(repoCard).join('')+'</div>';
