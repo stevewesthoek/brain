@@ -37,7 +37,7 @@ theme = Cobalt2
 
 resize-overlay-duration = 4s 200ms
 
-working-directory = "~/Repos/stevewesthoek/brain/operations/system-configs/claude"
+working-directory = "~/Repos/stevewesthoek/brain"
 
 background-opacity = 0.85
 background-blur = 70

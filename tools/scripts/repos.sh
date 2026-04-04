@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
-# Repo picker — outputs the selected repo path to stdout. Nothing else.
-# The caller decides what to do with the path (open Claude, cd, etc.)
+# repos — unified repo picker for Claude and Codex.
+# Invoked as the `repos` shell function (defined in ~/.zshrc).
+#
+# Step 1: pick AI tool with fzf (Claude is default).
+# Step 2: pick a repo from ~/Repos (sorted by most recently used).
+# Opens the selected repo in Claude (`claude`) or Codex (`codex`).
+#
+# Repo list is cached at ~/.claude/cache/repos.json and rescanned in the
+# background on every run to stay fresh. Usage timestamps are tracked in
+# ~/.claude/cache/repo_usage.json so recently opened repos float to the top.
 
 CACHE_FILE="$HOME/.claude/cache/repos.json"
 USAGE_FILE="$HOME/.claude/cache/repo_usage.json"
@@ -62,6 +70,16 @@ with open(usage_file, 'w') as f:
 PYEOF
 }
 
+# Step 1: pick AI tool — Claude is default (first item)
+tool=$(printf "Claude\nCodex" | fzf \
+  --prompt="  open with: " \
+  --height=7 \
+  --layout=reverse \
+  --border=rounded \
+  --bind='tab:down,btab:up' \
+  2>/dev/null)
+[[ -z "$tool" ]] && exit 0
+
 # Bootstrap cache if missing
 [[ ! -f "$CACHE_FILE" ]] && scan_to_cache
 
@@ -69,9 +87,9 @@ PYEOF
 scan_to_cache &
 SCAN_PID=$!
 
-# Show picker
+# Step 2: pick repo
 selected=$(cache_to_lines | fzf \
-  --prompt="  repo: " \
+  --prompt="  repo ($tool): " \
   --height=50% \
   --layout=reverse \
   --border=rounded \
@@ -80,17 +98,19 @@ selected=$(cache_to_lines | fzf \
   --preview='echo "  {2}"' \
   --preview-window='down:1:wrap' \
   --bind='tab:down,btab:up' \
-  2>/dev/null
-)
+  2>/dev/null)
 
 kill "$SCAN_PID" 2>/dev/null
 wait "$SCAN_PID" 2>/dev/null || true
 
 [[ -z "$selected" ]] && exit 0
 
-# Record usage so this repo sorts first next time
 selected_path=$(echo "$selected" | cut -f2)
 record_usage "$selected_path"
 
-# Output path only — caller opens Claude
-echo "$selected_path"
+cd "$selected_path" || exit 1
+if [[ "$tool" == "Claude" ]]; then
+  exec claude
+else
+  exec codex
+fi

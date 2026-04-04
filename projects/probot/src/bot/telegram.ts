@@ -10,6 +10,13 @@ import { appendNote } from "../services/notes.js";
 import { answerBrainQuery } from "../services/brain.js";
 import { assertSafeFilePath, formatFileHit, searchFiles } from "../services/files.js";
 import { routeNaturalLanguage } from "../services/intents.js";
+import {
+  buildResumePrompt,
+  formatHandoffSummary,
+  listRepoHandoffs,
+  readCurrentHandoff,
+  resolveRepoPath,
+} from "../services/handoff.js";
 
 function isAuthorized(ctx: Context, app: AppContext): boolean {
   const userId = ctx.from?.id;
@@ -161,6 +168,76 @@ export function createTelegramBot(app: AppContext): Bot {
     } catch (error) {
       await ctx.reply(error instanceof Error ? error.message : "Failed to prepare file send.");
     }
+  });
+
+  bot.command("dashboard", async (ctx) => {
+    if (app.config.dashboardPort === 0) {
+      await ctx.reply("Dashboard is not enabled.\nSet PROBOT_DASHBOARD_PORT in your .env to activate it.");
+      return;
+    }
+    const url = app.config.dashboardUrl || `http://${app.config.hostname}:${app.config.dashboardPort}`;
+    await ctx.reply(`Dashboard: ${url}`);
+  });
+
+  bot.command("repos", async (ctx) => {
+    const repos = listRepoHandoffs(app.config.repoAliases);
+    if (repos.length === 0) {
+      await ctx.reply("No repo aliases configured.\nSet PROBOT_REPO_ALIASES in your .env:\n  name:/absolute/path,name2:/path2");
+      return;
+    }
+    const lines = repos.map((r) => {
+      const status = r.exists ? "handoff: yes" : "handoff: no";
+      const goal = r.goal ? r.goal.slice(0, 60) : "no goal set";
+      const updated = r.updatedAt ?? "never";
+      return `${r.name} · ${goal} · ${updated} · [${status}]`;
+    });
+    await ctx.reply(truncate(lines.join("\n")));
+  });
+
+  bot.command("handoff", async (ctx) => {
+    const arg = parseArgument(ctx.msg?.text);
+    if (!arg) {
+      const repos = listRepoHandoffs(app.config.repoAliases);
+      if (repos.length === 0) {
+        await ctx.reply("No repo aliases configured.\nSet PROBOT_REPO_ALIASES in your .env.");
+        return;
+      }
+      const lines = repos.map((r) => {
+        const status = r.exists ? "handoff: yes" : "handoff: no";
+        const goal = r.goal ? r.goal.slice(0, 60) : "no goal set";
+        const updated = r.updatedAt ?? "never";
+        return `${r.name} · ${goal} · ${updated} · [${status}]`;
+      });
+      await ctx.reply(truncate(lines.join("\n")));
+      return;
+    }
+
+    const repoPath = resolveRepoPath(arg, app.config.repoAliases);
+    if (!repoPath) {
+      await ctx.reply(`Unknown repo: ${arg}\nUse /repos to list known repos.`);
+      return;
+    }
+
+    const { content } = readCurrentHandoff(repoPath);
+    await ctx.reply(truncate(formatHandoffSummary(arg, content)));
+  });
+
+  bot.command("resume", async (ctx) => {
+    const arg = parseArgument(ctx.msg?.text);
+    if (!arg) {
+      await ctx.reply("Usage: /resume <repo>\nUse /repos to list known repos.");
+      return;
+    }
+
+    const repoPath = resolveRepoPath(arg, app.config.repoAliases);
+    if (!repoPath) {
+      await ctx.reply(`Unknown repo: ${arg}\nUse /repos to list known repos.`);
+      return;
+    }
+
+    const prompt = buildResumePrompt(repoPath);
+    const message = `Resume prompt for ${arg}:\n\n${prompt}\n\n---\nPaste this into your Claude session to resume.`;
+    await ctx.reply(truncate(message));
   });
 
   bot.callbackQuery(/^(approve|reject):/, async (ctx) => {

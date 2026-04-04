@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stable local entrypoint for Tailscale CLI usage across Claude and Codex.
+# Wraps the system tailscale binary with a consistent path for scripting,
+# pre-flight checks, and skill automation.
+
+tailscale_bin="${TAILSCALE_BIN:-/opt/homebrew/bin/tailscale}"
+
+if [[ ! -x "$tailscale_bin" ]]; then
+  # Fallback: find tailscale in PATH
+  tailscale_bin="$(command -v tailscale 2>/dev/null || true)"
+  if [[ -z "$tailscale_bin" ]]; then
+    echo "ERROR: tailscale binary not found. Install with: brew install tailscale" >&2
+    exit 1
+  fi
+fi
+
+exec "$tailscale_bin" "$@"

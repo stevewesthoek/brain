@@ -9,4 +9,8 @@ ProBot commands:
 /brain <query>
 /find <query>
 /send <absolute-path>
+/repos
+/handoff [repo]
+/resume <repo>
+/dashboard
 `.trim();

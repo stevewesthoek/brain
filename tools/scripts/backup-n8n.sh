@@ -16,7 +16,19 @@ find_n8n_container() {
   ssh "$SSH_TARGET" "docker ps --format '{{.Names}} {{.Image}}' | awk '/n8nio\\/n8n:/ {print \$1; exit}'"
 }
 
-CONTAINER="${N8N_DOCKER_CONTAINER:-$(find_n8n_container)}"
+CONTAINER="${N8N_DOCKER_CONTAINER:-}"
+
+# Tailscale pre-flight: verify node is reachable before SSH
+_ts="${TAILSCALE_BIN:-$HOME/.local/bin/tailscale-cli}"
+[[ -x "$_ts" ]] || _ts="$(command -v tailscale 2>/dev/null || true)"
+if [[ -n "$_ts" ]] && ! "$_ts" ping -c 1 --timeout 5s "$SSH_TARGET" >/dev/null 2>&1; then
+  echo "Pre-flight failed: Tailscale node '$SSH_TARGET' is unreachable. Aborting." >&2
+  exit 1
+fi
+
+if [[ -z "$CONTAINER" ]]; then
+  CONTAINER="$(find_n8n_container)"
+fi
 
 if [[ -z "$CONTAINER" ]]; then
   echo "No running n8n container found on $SSH_TARGET" >&2

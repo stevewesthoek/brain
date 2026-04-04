@@ -2,6 +2,7 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
+  "model": "sonnet",
   "hooks": {
     "PreToolUse": [
       {
@@ -40,15 +41,32 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/inject-handoff.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/auto-handoff.sh"
+          }
+        ]
+      }
     ]
   },
-  "model": "sonnet",
   "statusLine": {
     "type": "command",
     "command": "bash /Users/Office/.claude/statusline-command.sh"
   },
-  "autoDreamEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
   "extraKnownMarketplaces": {
     "context-mode": {
       "source": {
@@ -56,5 +74,7 @@
         "repo": "mksglu/context-mode"
       }
     }
-  }
+  },
+  "autoDreamEnabled": true,
+  "skipDangerousModePermissionPrompt": true
 }

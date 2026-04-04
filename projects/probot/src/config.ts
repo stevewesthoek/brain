@@ -37,6 +37,12 @@ const schema = z.object({
   CLAUDE_PROJECTS_DIR: z.string().default(path.join(os.homedir(), ".claude", "projects")),
   CODEX_SESSIONS_DIR: z.string().default(path.join(os.homedir(), ".codex", "sessions")),
   CODEX_SESSION_INDEX: z.string().default(path.join(os.homedir(), ".codex", "session_index.jsonl")),
+  PROBOT_REPO_ALIASES: z.string().default(""),
+  SLACK_BOT_TOKEN: z.string().optional(),
+  SLACK_APP_TOKEN: z.string().optional(),
+  SLACK_ALLOWED_USER_IDS: z.string().default(""),
+  PROBOT_DASHBOARD_PORT: z.coerce.number().int().nonnegative().default(0),
+  PROBOT_DASHBOARD_URL: z.string().default(""),
 });
 
 const parsed = schema.parse(process.env);
@@ -46,6 +52,18 @@ const splitCsv = (raw: string): string[] =>
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+
+const splitAliases = (raw: string): Map<string, string> => {
+  const map = new Map<string, string>();
+  for (const item of raw.split(",").map((s) => s.trim()).filter(Boolean)) {
+    const colonIdx = item.indexOf(":");
+    if (colonIdx < 1) continue;
+    const name = item.slice(0, colonIdx).trim();
+    const repoPath = item.slice(colonIdx + 1).trim();
+    if (name && repoPath) map.set(name, repoPath);
+  }
+  return map;
+};
 
 export interface Config {
   telegramBotToken: string;
@@ -59,6 +77,12 @@ export interface Config {
   claudeProjectsDir: string;
   codexSessionsDir: string;
   codexSessionIndex: string;
+  repoAliases: Map<string, string>;
+  slackBotToken: string | undefined;
+  slackAppToken: string | undefined;
+  slackAllowedUserIds: string[];
+  dashboardPort: number;
+  dashboardUrl: string;
   projectRoot: string;
   hostname: string;
   envPath: string;
@@ -76,6 +100,12 @@ export const config: Config = {
   claudeProjectsDir: path.resolve(parsed.CLAUDE_PROJECTS_DIR),
   codexSessionsDir: path.resolve(parsed.CODEX_SESSIONS_DIR),
   codexSessionIndex: path.resolve(parsed.CODEX_SESSION_INDEX),
+  repoAliases: splitAliases(parsed.PROBOT_REPO_ALIASES),
+  slackBotToken: parsed.SLACK_BOT_TOKEN,
+  slackAppToken: parsed.SLACK_APP_TOKEN,
+  slackAllowedUserIds: splitCsv(parsed.SLACK_ALLOWED_USER_IDS),
+  dashboardPort: parsed.PROBOT_DASHBOARD_PORT,
+  dashboardUrl: parsed.PROBOT_DASHBOARD_URL,
   projectRoot,
   hostname: os.hostname(),
   envPath,

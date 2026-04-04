@@ -12,6 +12,9 @@
 runtime/cache/
 runtime/local/
 
+# AI memory — ephemeral session handoff
+.ai/current.md
+
 # Tool and infra state we do not want in Git
 operations/system-configs/docker/
 operations/system-configs/antigravity/User/

@@ -31,10 +31,19 @@ When working across repos, treat each Git repo independently. Do not apply one r
 
 - `ai/skills/` — skill management (active symlinks, vendors, custom)
 - `tools/scripts/` — utility and workflow scripts (boilerplate sync, cleanup helpers, etc.)
+  - `repos.sh` — unified repo picker (`repos` shell command): pick Claude or Codex, then pick a repo to open
+  - `sessions.sh` — unified session picker (`sessions` shell command): pick Claude or Codex, then resume a session
+  - `backup-n8n.sh` — server-side export of live n8n credentials/workflows into the gitignored local backup folder
 - `tools/n8n-api.sh` — wrapper for the live `n8n.prochat.tools` Public API
-- `tools/scripts/backup-n8n.sh` — server-side export of live n8n credentials/workflows into the gitignored local backup folder
 - `operations/system-configs/` — global tool configs, all symlinked from home directory
 - `operations/decision-log.md` — confirmed decisions for the brain repo itself
+
+### Per-repo AI memory (not in brain itself)
+
+Each project repo uses a conventional `ai/` directory for Claude handoff memory:
+- `.ai/current.md` — short-term resumable session handoff (overwritten each session)
+- `.ai/handoffs/` — archive of timestamped past handoffs
+- `decision-log.md` — long-term durable decisions only (append-only, separate from handoffs)
 
 ### Symlink map (home → brain)
 

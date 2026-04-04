@@ -3,7 +3,7 @@
 Use the `/browse` skill from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.
 Canonical guardrails policy: `brain/ai/policy/guardrails.md`.
 
-Available skills: `/model-router`, `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/design-consultation`, `/review`, `/ship`, `/land-and-deploy`, `/canary`, `/benchmark`, `/browse`, `/qa`, `/qa-only`, `/design-review`, `/setup-browser-cookies`, `/setup-deploy`, `/retro`, `/investigate`, `/document-release`, `/codex`, `/cso`, `/autoplan`, `/careful`, `/freeze`, `/guard`, `/unfreeze`, `/gstack-upgrade`, `/stb-pipeline`, `/notebooklm`, `/output-skill`, `/redesign-skill`, `/soft-skill`, `/taste-skill`, `/ui-ux-pro-max`, `/web-design`, `/stripe`, `/ffmpeg`, `/gh`, `/dokploy`, `/supabase`, `/gws`, `/cloudflare`, `/n8n`, `/azure`, `/hetzner`, `/forge`
+Available skills: `/model-router`, `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/design-consultation`, `/review`, `/ship`, `/land-and-deploy`, `/canary`, `/benchmark`, `/browse`, `/qa`, `/qa-only`, `/design-review`, `/setup-browser-cookies`, `/setup-deploy`, `/retro`, `/investigate`, `/document-release`, `/codex`, `/cso`, `/autoplan`, `/careful`, `/freeze`, `/guard`, `/unfreeze`, `/gstack-upgrade`, `/stb-pipeline`, `/notebooklm`, `/output-skill`, `/redesign-skill`, `/soft-skill`, `/taste-skill`, `/ui-ux-pro-max`, `/web-design`, `/stripe`, `/ffmpeg`, `/gh`, `/dokploy`, `/supabase`, `/gws`, `/cloudflare`, `/n8n`, `/azure`, `/hetzner`, `/tailscale`, `/forge`
 
 # Skills structure
 
@@ -82,10 +82,14 @@ Global skills are available in every session — only note the ones relevant to 
 - Hetzner: [yes/no] — use `/hetzner` for Hetzner Cloud CLI infrastructure discovery or management
 - NotebookLM: [yes/no] — use `/notebooklm` for research, source synthesis, and briefing docs
 - Codex: [yes/no] — use `/codex` for AI-assisted code review and adversarial challenge mode
+- Handoff: [yes/no] — use `/handoff` for session start/end compressed handoffs and `.ai/` memory system setup
 
 ## Memory
 Use this file for repo-specific decisions, commands, and constraints.
-Use `decision-log.md` (if present) for confirmed architecture and workflow decisions only.
+Use `.ai/current.md` for short-term resumable session handoffs (overwritten each session).
+Use `.ai/handoffs/` for archived timestamped past handoffs.
+Use `decision-log.md` for confirmed architecture and workflow decisions only (append-only, never overwritten).
+Never use full transcripts as memory — use `/handoff setup` to initialize the `.ai/` system in a new repo.
 ---
 
 # Model routing policy

@@ -162,6 +162,22 @@ The provisioner wrapper blocks obvious destructive raw operations.
 - This skill now prefers the guarded wrapper layer for DNS and tunnel operations.
 - Live `wrangler whoami` on 2026-04-03 showed OAuth auth for `info@prochat.tools` and access to the `ProChat Studio` and `JPV Bootcamp` accounts.
 - The current Wrangler OAuth token only exposes `zone (read)`, not `zone (write)`, so full DNS write access should use dedicated API tokens stored under `~/.config/cloudflare-ai/credentials/`.
+
+## Token permissions (ProChat Studio)
+
+Two API tokens exist under `~/.config/cloudflare-ai/credentials/`:
+
+| File | Role | Permissions |
+|------|------|-------------|
+| `prochat-provisioner.env` | Provisioner | DNS (read/write), Tunnels (read/write), **Access: Apps and Policies (edit)** |
+| `prochat-destroyer.env` | Destroyer | DNS (delete), Tunnels (delete), **Access: Apps and Policies (edit)** |
+
+Both tokens were upgraded on 2026-04-05 to include `Access: Apps and Policies — Edit` for the ProChat Studio account.
+This enables automated creation and management of Cloudflare Zero Trust Access applications and policies via the API escape hatch:
+```bash
+~/.local/bin/cloudflare-prochat-provisioner api POST /accounts/<id>/access/apps '{...}'
+~/.local/bin/cloudflare-prochat-provisioner api POST /accounts/<id>/access/apps/<app-id>/policies '{...}'
+```
 - Cloudflare API docs: https://developers.cloudflare.com/api/
 - Cloudflare token docs: https://developers.cloudflare.com/fundamentals/api/get-started/create-token/
 - Tunnel docs: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/

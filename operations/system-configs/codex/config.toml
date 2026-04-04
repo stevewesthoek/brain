@@ -43,3 +43,6 @@ trust_level = "trusted"
 
 [projects."/Users/Office/Repos/prochattools/saas/proofly"]
 trust_level = "trusted"
+
+[projects."/Users/Office/Repos/prochattools/web/says-the-bible"]
+trust_level = "trusted"
