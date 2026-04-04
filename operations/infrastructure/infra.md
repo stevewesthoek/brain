@@ -212,6 +212,25 @@ Current state:
 - CloudPanel SSH is done through a Cloudflare Tunnel, not Tailscale.
 - Supabase PostgreSQL is intended to stay private to the server and trusted internal access paths.
 
+## Tailscale Network Inventory
+
+All nodes in the tailnet as of 2026-04-04:
+
+| Node | Tailscale IP | OS | Role | Status |
+|------|--------------|----|------|--------|
+| `office` | `100.86.124.66` | macOS | Primary control plane (Mac mini) | Online |
+| `dokploy` | `100.83.38.48` | Linux | Azure VM — app host / container orchestrator | Online |
+| `supabase` | `100.71.31.88` | Linux | Azure VM — Supabase / PostgreSQL backend | Online |
+| `macbook` | `100.70.12.18` | macOS | Secondary Mac — personal laptop | Idle |
+| `iphone` | `100.107.201.123` | iOS | Mobile device | Online |
+| `motorola` | `100.107.156.26` | Android | Mobile device | Offline |
+
+Nodes without Tailscale:
+- `cloudpanel` (Hetzner) — uses Cloudflare Tunnel for SSH; no Tailscale installed
+
+Tag assignments:
+- `tagged-devices`: `dokploy`, `supabase`, `probot` — server nodes managed as tagged devices in the tailnet
+
 ## Automation Interfaces
 
 These are the standard AI-agnostic interfaces both Claude and Codex should use:
@@ -224,6 +243,7 @@ These are the standard AI-agnostic interfaces both Claude and Codex should use:
 | Dokploy | `~/.local/bin/dokploy-cli` and Dokploy API | Primary deployment surface for hosted apps |
 | n8n | `~/.local/bin/n8n-api` | Primary headless workflow automation interface |
 | CloudPanel | `~/.local/bin/cloudpanel-cli` | Production-scoped; confirm before mutations |
+| Tailscale | `~/.local/bin/tailscale-cli` | Network observability: node status, reachability checks, pre-flight pings before SSH |
 
 ## Recovery-Critical Notes
 
@@ -238,11 +258,96 @@ These are the standard AI-agnostic interfaces both Claude and Codex should use:
   - `~/.local/bin/azure-cli` is the generic user-authenticated `az`
   - `azure-apps-*` and `azure-data-*` wrappers authenticate through dedicated service principals stored in `~/.config/azure-ai/credentials/`
 
+## Domain & Site Inventory
+
+Central record of all known public domains. Update status here when enabling or disabling a site.
+
+To re-enable a disabled site: add its entry back to the relevant Cloudflare Tunnel ingress config (see Cloudflare Tunnel section below).
+
+### CloudPanel AWS (tunnel `1bdef92e`)
+
+Sites hosted on the AWS CloudPanel server (13.135.227.0), accessed via the `CloudPanel AWS` Cloudflare Tunnel.
+SSH access: `ssh cloudpanel-aws` (ubuntu user with sudo).
+CloudPanel UI: `https://cp.prochat.tools`
+
+| Domain | Status | Notes |
+|--------|--------|-------|
+| `cp.prochat.tools` | Online | CloudPanel AWS UI — `https://localhost:8443` |
+| `admin.yeshua.academy` | Online | WordPress (catch-all default) |
+| `legacy.prochat.tools` | Online | WordPress — legacy ProChat site |
+| `feelgoodwithana.com` | Online | WordPress |
+| `microgreens.market` | Online | WordPress |
+| `onefleshinchrist.com` | Online | WordPress |
+| `wedding.onefleshinchrist.com` | Online | WordPress |
+| `pedroandkristina.com` | Online | WordPress |
+| `vilasolidaria.pt` | Online | WordPress |
+| `portal.jpvbootcamp.com` | Online | WordPress |
+| `ag.prochat.tools` | **Disabled** | WordPress — removed from tunnel 2026-04-04; site files intact on server. Re-enable: add `{"service":"http://localhost:8080","hostname":"ag.prochat.tools","originRequest":{"httpHostHeader":"ag.prochat.tools"}}` back to AWS tunnel ingress before the catch-all entry. |
+| `thedutchperformance.nl` | **Disabled** | WordPress — removed from tunnel 2026-04-04; site files intact on server; SSL cert valid until July 2026. Re-enable: add `{"service":"http://localhost:8080","hostname":"thedutchperformance.nl","originRequest":{"httpHostHeader":"thedutchperformance.nl"}}` back to AWS tunnel ingress before the catch-all entry. |
+
+### Dokploy (tunnel `dc7bb87e`)
+
+Sites deployed on the Dokploy host (Azure VM `vm-dokploy`, 68.221.139.108).
+SSH access: `ssh dokploy` (Tailscale).
+Dokploy UI: `https://dokploy.prochat.tools`
+
+| Domain | App | Project | Status | Notes |
+|--------|-----|---------|--------|-------|
+| `dokploy.prochat.tools` | — | Ops | Online | Dokploy UI |
+| `n8n.prochat.tools` | n8n | Ops | Online | Workflow automation |
+| `studio.prochat.tools` | Supabase Studio | Ops | Online | Supabase admin UI (proxied through Dokploy host) |
+| `yeshua.academy` | Yeshua Academy | Web | Online | — |
+| `openfund.pt` | Open Fund | Web | Online | — |
+| `prochat.tools` | ProChat | Web | Online | — |
+| `saysthebible.com` | Says the Bible | Web | Online | — |
+| `cedula.pt` | Cedula | Web | Online | — |
+| `olivetoorganizing.com` | Olive to Organizing | Clients | Online | — |
+| `jpvbootcamp.com` | JPV Bootcamp | Clients | Online | — |
+| `jccp-management.pro` | JCCP Holdings | Clients | Online | Added to Dokploy tunnel 2026-04-04 |
+| `lean.diet` | — | TBD | Parked | Added to Dokploy tunnel 2026-04-04; domain repurposed, new project not yet created |
+| `arkware.solutions` | — | TBD | Parked | Added to Dokploy tunnel 2026-04-04; domain repurposed, new project not yet created |
+| `viadieden.com` | Via di Eden | Clients | Online | — |
+| `xgrow.io` | xGrow | SaaS | Error | xGrow app was in error state as of 2026-04-03 |
+| `statuslink.io` | Status Link | SaaS | Online | — |
+| `proofly.io` | Proofly | SaaS | Online | — |
+
+> Domain names for some Dokploy apps (ProChat Accountant, Egg Cooker, Free Resend, ProKit, SaaSKit boilerplates, kutt, umami) are not yet confirmed — verify via Dokploy UI or `/dokploy` skill.
+
+### Supabase
+
+Self-hosted Supabase on Azure VM `vm-supabase` (68.221.194.245).
+SSH access: `ssh supabase` (Tailscale).
+
+| Domain | Status | Notes |
+|--------|--------|-------|
+| `studio.prochat.tools` | Online | Supabase Studio — proxied through Dokploy |
+
+### Cloudflare Tunnel Reference
+
+| Tunnel | ID | Server | Purpose |
+|--------|-----|--------|---------|
+| `CloudPanel` (Hetzner) | `91069afe-7e45-4703-88c3-73bcf61c3fb6` | Hetzner `cloudpanel` | Hetzner CloudPanel SSH + UI + studio.prochat.tools |
+| `CloudPanel AWS` | `1bdef92e-5e70-4836-9552-3e4653cef43a` | AWS `cloudpanel-aws` | All CloudPanel AWS hosted WordPress sites |
+| `Dokploy` | `dc7bb87e-...` | Azure `vm-dokploy` | All Dokploy-hosted apps |
+
+### Hetzner CloudPanel (tunnel `91069afe`) — Legacy
+
+The Hetzner server is the **old** CloudPanel. Migrated sites have been removed from its tunnel. Remaining tunnel entries as of 2026-04-04:
+
+| Hostname | Service | Notes |
+|----------|---------|-------|
+| `ssh_cp.prochat.tools` | SSH | Cloudflare SSH ingress for `cloudpanel` alias |
+| `cp.prochat.tools` | CloudPanel UI | Stale — DNS now points to AWS tunnel; effectively unreachable |
+| `studio.prochat.tools` | Supabase Studio | — |
+
+Known sites still present on Hetzner server filesystem (not yet deleted):
+- `jccp-management.pro` — requires manual deletion via Hetzner CloudPanel UI at `https://91.99.71.221:8443`
+
 ## Gaps / TODO
 
-- Add CloudPanel site-level inventory if a reliable read-only export path is identified.
-- The cloud-automation access gap is closed for Azure and AWS; the remaining infra documentation gap is CloudPanel site inventory and any broader domain mapping.
-- Add any additional public domains that map to the Dokploy-hosted apps if a canonical domain inventory is created.
+- Confirm domain names for remaining Dokploy apps (ProChat Accountant, Egg Cooker, Free Resend, kutt, umami, boilerplates).
+- Delete `jccp-management.pro` site files from Hetzner server via CloudPanel UI.
+- Update xGrow status once error state is resolved.
 
 Last updated:
-- 2026-04-03 22:31 WEST
+- 2026-04-04 WEST
