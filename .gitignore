@@ -96,6 +96,9 @@ operations/automations/n8n/n8n_backup/
 # Embedded/nested repo kept out until normalized
 ai/skills/taste-skill/
 
+# ProBot — runtime SQLite database (binary, changes constantly, WAL files)
+projects/probot/data/
+
 # Says the Bible — generated output folders are large and regenerable
 projects/says-the-bible/production/output/
 projects/says-the-bible/production/input/assets/brownnoise.wav
