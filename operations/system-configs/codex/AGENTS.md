@@ -88,6 +88,60 @@ Shared AI-agnostic skills live in `brain/ai/skills/`. For self-hosted n8n CLI wo
 
 ---
 
+## Session lifecycle
+
+Every session follows this flow — same as Claude, same file format:
+
+1. **Start** — Check for `.ai/current.md` in the current repo. If it exists and isn't a blank template, read it and use it as context: goal, status, files touched, next steps. Do not ask the user to repeat what's already there.
+2. **Work** — Route by task weight. Track what's done and what's pending.
+3. **End** — When the user says `/handoff pause`, "save session", "pause", or "I'm done for now": write `.ai/current.md` with the session summary using the structure below. Ask for confirmation before writing.
+
+**Note:** Claude has a Stop hook that writes `.ai/current.md` automatically. Codex does not — you must write it when asked. The format is identical so both AIs can resume each other's sessions.
+
+### `.ai/current.md` structure
+
+```markdown
+# Current Handoff
+
+## Repo
+{repo name} ({git branch})
+
+## Tool
+Codex
+
+## Goal
+{what the session was trying to accomplish}
+
+## Status
+{current state — in progress / paused / blocked}
+
+## Files touched
+- path/to/file
+
+## Decisions made
+- {decision + brief reason}
+
+## Next steps
+- {next step}
+
+## Blockers
+{blockers or "None"}
+
+## Resume prompt
+{exact prompt to paste when resuming}
+```
+
+**Memory promotion** — at session end, decide where information belongs:
+
+| What | Where |
+|------|-------|
+| Confirmed architecture/workflow decision | `decision-log.md` — append |
+| Stable global convention | `AGENTS.md` or `CLAUDE.md` |
+| Hard-won codebase-specific pattern | Note it — Claude can run `/learner` next session |
+| Everything else | `.ai/current.md` only — ephemeral |
+
+---
+
 ## Behavior rules
 
 - Be pragmatic and concise.
