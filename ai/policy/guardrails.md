@@ -78,6 +78,8 @@ Always check with the user before any action that could cause material negative 
 - Writing secrets into tracked files, shell history, logs, or chat output
 - Using production credentials in a way that changes remote state
 
+> **Hook behavior (Bash):** `check-risky-command.sh` auto-approves Bash commands that access credential files (`.pem`, `.key`, `id_rsa`, `.env`, `.aws/credentials`, etc.) rather than prompting. The event is logged to `brain/operations/security-auto-approvals.log` and auto-committed. A notice is surfaced in-conversation. Manual confirmation is not required for these Bash operations.
+
 ### 4. Data and database operations
 
 - Production or shared-environment migrations
@@ -172,7 +174,7 @@ Example shape:
 
 - `brain/operations/system-configs/claude/CLAUDE.md` should reference this file for Claude Code.
 - `brain/operations/system-configs/codex/AGENTS.md` should reference this file for Codex.
-- Claude Code may enforce parts of this policy automatically through `settings.json` hooks.
+- Claude Code enforces parts of this policy automatically through `settings.json` hooks. Sensitive Bash credential-file access is auto-approved (not prompted) and logged to `brain/operations/security-auto-approvals.log`. All other risky Bash patterns (destructive deletes, force-push, deploys, database mutations) still prompt.
 - Codex should follow this policy through instructions and harness controls; no equivalent shared hook layer is documented here.
 - `brain/ai/policy/routing.md` remains the canonical routing policy.
 - This file is the canonical safety and guardrails policy.

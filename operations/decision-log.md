@@ -108,3 +108,13 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Context: The OpenClaw VPS and bridge had become redundant after moving to a local-first workflow around Claude, Codex, and Brain. The user wanted Telegram access without ongoing AWS cost or bridge maintenance.
 - Impact: The AWS OpenClaw Lightsail instance and snapshots are deleted, the local bridge LaunchAgent and logs are removed, and `tools.prochat.probot` is now the only always-on Telegram control surface documented in Brain.
 - Rollback: Recreate the AWS host and snapshots from scratch or restore the retired bridge code and LaunchAgent if a remote bridge architecture is needed again.
+- Date: 2026-04-06
+- Decision: Change `check-risky-command.sh` sensitive credential file access from manual-confirmation (`ask`) to auto-approve with logging.
+- Context: The manual confirmation prompt was interrupting flow on routine Bash credential reads (e.g. `cat .env`, `cp .pem`). The security signal was useful but blocking was not.
+- Impact: Bash commands that touch credential files (`.pem`, `.key`, `id_rsa`, `.env`, `.aws/credentials`, etc.) are now auto-approved. Each event is timestamped and logged to `brain/operations/security-auto-approvals.log`, auto-committed via background git, and surfaced as a non-blocking notice in the Claude conversation. All other risky Bash patterns (destructive deletes, force-push, deploys, database mutations) still prompt as before. `guardrails.md` updated to document this behavior.
+- Rollback: In `check-risky-command.sh` section 4, replace the `auto_allow_sensitive` call with the original `ask "Sensitive credential file access or mutation detected. Confirm before printing, copying, moving, or deleting secrets."` call and remove the `auto_allow_sensitive()` function.
+- Date: 2026-04-05
+- Decision: Deploy New Relic Standard (nonprofit) across the full infra stack — 3 servers, 12 apps, PostgreSQL, Docker logs, 11 synthetic monitors, and ProBot dashboard widget.
+- Context: No observability existed beyond 7 Azure VM-level metric alerts. xGrow was in silent error state, n8n workflow failures were invisible, and there was no APM on any app.
+- Impact: All three Linux servers report via infra agents (EU region, account 7019441). All 12 Dokploy Node.js apps have NR APM via `NODE_OPTIONS=--require newrelic`. Docker container logs forward via fluent-bit. PostgreSQL monitored via `newrelic_monitor` read-only role. Synthetics check all public URLs every 5 min. ProBot dashboard shows live server health and uptime dots.
+- Rollback: Remove `newrelic-infra` from servers, remove `NODE_OPTIONS`/`NEW_RELIC_*` env vars from Dokploy apps, delete NR entities via NerdGraph, remove `~/.config/newrelic/.env`.
