@@ -36,10 +36,10 @@ Avoid using Codex for:
 | Tier | When to use | Effort |
 |------|-------------|--------|
 | **mini** (codex-mini-latest) | Quick checks, parallel filler, obvious issue scan | low |
-| **standard** (default, gpt-5.4) | Normal code review, second opinion, parallel tasks | high |
+| **standard** (default, gpt-5.4) | Normal code review, second opinion, parallel tasks | medium |
 | **max** (default, gpt-5.4) | Auth, migrations, prod-touching, high-stakes review | xhigh |
 
-Default config: `model = "gpt-5.4"`, `model_reasoning_effort = "high"`.
+Default config: `model = "gpt-5.4"`, `model_reasoning_effort = "medium"`.
 
 ---
 

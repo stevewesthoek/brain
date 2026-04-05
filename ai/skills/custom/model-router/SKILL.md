@@ -59,7 +59,7 @@ Route automatically on every task — do not ask the user which model to use.
 | **standard** | `codex-review.sh '<prompt>'` | Normal second opinion, parallel execution, typical code review (default) |
 | **max** | `codex-review.sh '<prompt>' max` | High-stakes review (auth, migrations, prod-touching), deep critique |
 
-Global Codex config: `model = "gpt-5.4"`, `model_reasoning_effort = "high"`.
+Global Codex config: `model = "gpt-5.4"`, `model_reasoning_effort = "medium"`.
 Mini overrides: `codex-mini-latest` + effort `low`. Max overrides: effort `xhigh`.
 
 **Codex rules:**

@@ -9,7 +9,7 @@
 #
 # Tier routing:
 #   mini     → codex-mini-latest, reasoning_effort="low"   — quick pass, obvious issues
-#   standard → config default,    reasoning_effort="high"  — normal second opinion
+#   standard → config default,    reasoning_effort="medium"  — normal second opinion
 #   max      → config default,    reasoning_effort="xhigh" — deep review, risky code
 
 set -euo pipefail
@@ -67,6 +67,6 @@ case "$TIER" in
   standard|*)
     echo "[codex-review] tier=standard" >&2
     codex exec "$PROMPT" -s read-only \
-      -c 'model_reasoning_effort="high"'
+      -c 'model_reasoning_effort="medium"'
     ;;
 esac
