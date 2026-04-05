@@ -4,3 +4,9 @@ Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.procha
 [2026-04-05T23:56:47Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
 Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/project.all" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool 2>/dev/null | grep -E '"name"|"applicationId"|"appName"' | head -80
 
+[2026-04-05T23:59:50Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env && curl -s -X POST "https://dokploy.prochat.tools/api/application.deploy" \
+  -H "x-api-key: $DOKPLOY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"applicationId": "Hu9rBtZj7XRwD7oxRZ4v7"}' -v 2>&1 | tail -20
+
