@@ -39,7 +39,6 @@ resize-overlay-duration = 4s 200ms
 
 working-directory = "~/Repos/stevewesthoek/brain"
 
-background-opacity = 0.85
 background-blur = 70
 
 window-padding-x = 30
@@ -47,9 +46,10 @@ window-padding-y = 30
 
 # Keep native frame (so corners/edges are resizable)
 window-decoration = auto
+background-opacity = 0.85
 
 # Hide the macOS titlebar (no traffic lights / title bar)
-macos-titlebar-style = hidden
+macos-titlebar-style = transparent 
 
 confirm-close-surface = false
 clipboard-paste-protection = false
