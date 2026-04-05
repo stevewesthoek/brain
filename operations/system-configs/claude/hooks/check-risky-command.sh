@@ -35,6 +35,41 @@ allow() {
   exit 0
 }
 
+auto_allow_sensitive() {
+  local reason="$1"
+  local timestamp
+  timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+  local log_file="/Users/Office/Repos/stevewesthoek/brain/operations/security-auto-approvals.log"
+
+  # Log the event
+  printf '[%s] AUTO-APPROVED | %s\nCommand: %s\n\n' \
+    "$timestamp" "$reason" "$CMD" >> "$log_file"
+
+  # Auto-commit the log entry (non-blocking background process)
+  (
+    cd /Users/Office/Repos/stevewesthoek/brain
+    git add operations/security-auto-approvals.log
+    git commit -m "security: auto-approved sensitive file access at $timestamp" 2>/dev/null
+  ) &
+
+  # Notify Claude so it surfaces in the conversation
+  printf '[Security Guard] NOTICE: Sensitive credential file access detected.\nReason: %s\nTime: %s\nAuto-approved and logged to %s\n' \
+    "$reason" "$timestamp" "$log_file" >&2
+
+  python3 - <<PY "$reason"
+import json, sys
+reason = sys.argv[1]
+print(json.dumps({
+    "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "allow",
+        "permissionDecisionReason": f"[Security Guard] Auto-approved and logged: {reason}",
+    }
+}))
+PY
+  exit 0
+}
+
 CMD="$(extract_command)"
 [ -n "$CMD" ] || allow
 
@@ -97,7 +132,7 @@ fi
 if printf '%s' "$CMD" | grep -qE '(^|[[:space:]])(cat|less|more|head|tail|cp|mv|rm|scp|pbcopy|tee|sed[[:space:]]+-i|perl[[:space:]]+-0pi)\b' 2>/dev/null; then
   if printf '%s' "$CMD" | grep -qE '(^|[[:space:]])([^[:space:]]*\.pem|[^[:space:]]*\.key|[^[:space:]]*id_rsa|[^[:space:]]*id_ed25519|[^[:space:]]*auth\.json|[^[:space:]]*credentials\.json|[^[:space:]]*\.npmrc|[^[:space:]]*\.pypirc|[^[:space:]]*\.env([[:space:]]|$)|[^[:space:]]*/\.aws/credentials|[^[:space:]]*application_default_credentials\.json)' 2>/dev/null; then
     if ! printf '%s' "$CMD" | grep -qE '\.env\.(example|sample|template)' 2>/dev/null; then
-      ask "Sensitive credential file access or mutation detected. Confirm before printing, copying, moving, or deleting secrets."
+      auto_allow_sensitive "Sensitive credential file access or mutation detected."
     fi
   fi
 fi
