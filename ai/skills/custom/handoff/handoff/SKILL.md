@@ -52,9 +52,17 @@ End a meaningful session and write compressed state to `.ai/current.md`.
 3. List any decisions made during this session
 4. Note next steps (concise bullet list)
 5. Flag any blockers or missing info
-6. Decide: does this need a durable entry in `decision-log.md`?
-   - Yes? Append a new dated entry with decision + reason + impact
-   - No? Write "No decision-log update needed."
+6. Decide where this session's information belongs — promote to the right layer, let the rest go:
+
+   | What you have | Where it goes |
+   |---------------|---------------|
+   | Confirmed architecture or workflow decision | `decision-log.md` — append a dated entry |
+   | New stable convention (global or this repo) | `CLAUDE.md` (repo or `~/.claude/CLAUDE.md`) |
+   | Cross-repo preference or repeated correction | Auto memory — feedback or user type |
+   | Non-obvious bug fix, codebase gotcha, workaround | `/learner` → extracted as a reusable skill |
+   | Everything else (temp state, files, next steps) | `.ai/current.md` only — it expires next session |
+
+   Default: if unsure, write it to `.ai/current.md` and let it expire. Promote only when it will matter again.
 7. Write `.ai/current.md` with this exact structure:
 
 ```markdown
@@ -104,6 +112,7 @@ End a meaningful session and write compressed state to `.ai/current.md`.
 ```
 
 9. Optionally, save a timestamped copy to `.ai/handoffs/YYYY-MM-DD-HH-MM-SS.md` (archive)
+10. **Learner check:** Before closing, ask: "Did anything non-obvious get solved this session — a tricky bug, a workaround, a codebase-specific gotcha?" If yes, prompt: "Run `/learner` to extract it as a reusable skill before you go."
 
 ### `/handoff resume`
 

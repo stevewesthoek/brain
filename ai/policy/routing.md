@@ -85,12 +85,37 @@ Route automatically on every task — never ask the user which model to use.
 
 ---
 
+## Skill sequences
+
+Common task types and the skills that compose well together. Use as a starting point, not a rigid script.
+
+| Task type | Skill sequence |
+|-----------|---------------|
+| Ship a feature | `/review` → `/codex` (second opinion) → `/ship` → `/land-and-deploy` |
+| Debug a hard problem | `/investigate` → `/codex` (second opinion if stuck) → `/learner` (if non-obvious fix) |
+| New repo setup | `/handoff setup` → build → `/review` → `/ship` |
+| Infrastructure change | `/hetzner` or `/azure` → `/careful` (if destructive) → `/handoff pause` |
+| Research → build | `/notebooklm` → `/office-hours` → `/plan-eng-review` → build |
+| End of any session | `/handoff pause` → `/learner` (if warranted) |
+
+Don't chain skills speculatively. Add a step only if it has clear value for that task.
+
+---
+
 ## Post-task memory
 
-After significant work, write a compact summary (5 bullets or fewer) to:
-- The repo's `decision-log.md` — confirmed architecture/workflow decisions only
-- `CLAUDE.md` — if a new stable convention was established
-- Auto memory — if it is a cross-repo preference
+After significant work, write a compact summary (5 bullets or fewer) to the right layer — promote to the highest layer where the information will matter again:
+
+| Information type | Where it goes |
+|-----------------|---------------|
+| Confirmed architecture or workflow decision (this repo) | `decision-log.md` — append only |
+| Stable convention that applies globally | `~/.claude/CLAUDE.md` or repo `CLAUDE.md` |
+| Cross-repo preference or repeated correction | Auto memory (feedback or user type) |
+| Hard-won codebase-specific debugging pattern | `/learner` → `ai/skills/custom/learned/` |
+| Temporary session state, next steps, files touched | `.ai/current.md` only — ephemeral |
+| Anything else | Let it go — don't store noise |
+
+Promote up only when the information will recur. When in doubt, use `.ai/current.md` and let it expire.
 
 ---
 

@@ -1,112 +1,160 @@
 #!/usr/bin/env bash
-# auto-handoff.sh — writes .ai/current.md when a Claude session stops.
-# Registered as a Stop hook in ~/.claude/settings.json.
-# Zero LLM calls. Zero tokens. Pure file parsing.
+# auto-handoff.sh — Stop hook
+# Mechanically parses the session transcript and writes a compact .ai/current.md.
+# Zero LLM calls. Zero token cost. No infinite loop risk.
+# Preserves manually-written handoffs that contain real decisions.
 
 set -euo pipefail
 
 INPUT=$(cat)
 
-# Extract transcript path from hook JSON
-TRANSCRIPT_PATH=$(echo "$INPUT" | node -e "
-const chunks = [];
-process.stdin.on('data', d => chunks.push(d));
-process.stdin.on('end', () => {
-  try {
-    const d = JSON.parse(Buffer.concat(chunks).toString());
-    process.stdout.write(d.transcript_path || '');
-  } catch { process.stdout.write(''); }
-}" 2>/dev/null <<< "$INPUT" || echo "")
+# Guard: stop_hook_active=true means this Stop was triggered by a Stop hook — exit to prevent recursion.
+STOP_HOOK_ACTIVE=$(node -e "
+const d = JSON.parse(process.argv[1]);
+process.stdout.write(String(d.stop_hook_active || false));
+" "$INPUT" 2>/dev/null || echo "false")
+[ "$STOP_HOOK_ACTIVE" = "true" ] && exit 0
 
-if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
-  exit 0
-fi
+TRANSCRIPT_PATH=$(node -e "
+const d = JSON.parse(process.argv[1]);
+process.stdout.write(d.transcript_path || '');
+" "$INPUT" 2>/dev/null || echo "")
+[ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ] && exit 0
 
-# Parse JSONL, extract CWD and last user prompt, write handoff
-node - "$TRANSCRIPT_PATH" <<'NODEEOF'
+node - "$TRANSCRIPT_PATH" 2>/dev/null <<'NODEEOF' || true
 const fs = require('fs');
 const path = require('path');
 
 const transcriptPath = process.argv[2];
-if (!transcriptPath || !fs.existsSync(transcriptPath)) process.exit(0);
+const rawLines = fs.readFileSync(transcriptPath, 'utf8').trim().split('\n').filter(Boolean);
+const entries = rawLines.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
 
-const lines = fs.readFileSync(transcriptPath, 'utf8').split('\n').filter(Boolean);
-const entries = lines.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+// Skip trivial sessions
+if (entries.length < 4) process.exit(0);
 
-// Get working directory
-let cwd = '';
+// CWD and git branch from most recent entries
+let cwd = '', gitBranch = '';
+for (const e of [...entries].reverse()) {
+  if (e.cwd && !cwd) cwd = e.cwd;
+  if (e.gitBranch && !gitBranch) gitBranch = e.gitBranch;
+  if (cwd && gitBranch) break;
+}
+if (!cwd) process.exit(0);
+
+const handoffDir = path.join(cwd, '.ai');
+const handoffFile = path.join(handoffDir, 'current.md');
+
+// Only write if .ai/ already exists — don't create it for repos not using the system
+if (!fs.existsSync(handoffDir)) process.exit(0);
+
+// Preserve manually-written handoffs (no auto-saved marker + has real decisions)
+if (fs.existsSync(handoffFile)) {
+  const existing = fs.readFileSync(handoffFile, 'utf8');
+  const isAutoSave = existing.includes('auto-saved at');
+  const hasRealDecisions = existing.includes('## Decisions made') &&
+    !existing.includes('None recorded') &&
+    !existing.includes('None this session');
+  if (!isAutoSave && hasRealDecisions) process.exit(0);
+}
+
+// Files edited/written — exclude secrets
+const SECRET_PAT = /\.(env|pem|key|p12|pfx)$|credentials|secrets|\.npmrc|\.pypirc|id_rsa|id_ed25519/i;
+const filesEdited = new Set();
 for (const e of entries) {
-  if (e.cwd) { cwd = e.cwd; break; }
-}
-
-if (!cwd || !fs.existsSync(path.join(cwd, '.ai'))) process.exit(0);
-
-const handoffPath = path.join(cwd, '.ai', 'current.md');
-const repoName = path.basename(cwd);
-const now = new Date().toISOString().slice(0, 16).replace('T', ' ');
-
-// Find last user prompt (skip meta/system entries)
-let lastPrompt = 'No prompt recorded';
-for (let i = entries.length - 1; i >= 0; i--) {
-  const e = entries[i];
-  if (e.type !== 'user' || e.isMeta) continue;
-  const content = e.message?.content;
-  let text = '';
-  if (typeof content === 'string') text = content.trim();
-  else if (Array.isArray(content)) {
-    text = content.filter(c => c?.type === 'text').map(c => c.text).join(' ').trim();
-  }
-  if (text && !text.startsWith('<')) {
-    lastPrompt = text.slice(0, 300);
-    break;
+  if (e.toolUseResult?.filePath) {
+    const fp = e.toolUseResult.filePath;
+    if (!SECRET_PAT.test(fp)) filesEdited.add(fp.replace(cwd + '/', '').replace(cwd, ''));
   }
 }
 
-// Find last assistant text snippet
-let lastReply = '';
-for (let i = entries.length - 1; i >= 0; i--) {
-  const e = entries[i];
-  if (e.type !== 'assistant') continue;
-  const content = e.message?.content;
-  if (typeof content === 'string') lastReply = content.slice(0, 200);
-  else if (Array.isArray(content)) {
-    const t = content.find(c => c?.type === 'text');
-    if (t?.text) lastReply = t.text.slice(0, 200);
+// Recent bash commands (last 5, sanitized)
+const bashCmds = [];
+for (const e of entries) {
+  if (e.message?.role === 'assistant' && Array.isArray(e.message.content)) {
+    for (const c of e.message.content) {
+      if (c.type === 'tool_use' && c.name === 'Bash' && c.input?.command) {
+        const cmd = c.input.command.slice(0, 120).replace(/\n/g, ' ');
+        if (!SECRET_PAT.test(cmd) && !/export\s+\w+=.+/i.test(cmd)) bashCmds.push(cmd);
+      }
+    }
   }
-  if (lastReply) break;
 }
 
-const handoff = `# Current Handoff
+// Goal: first real user text
+let goal = '';
+for (const e of entries) {
+  if (e.message?.role === 'user' && Array.isArray(e.message.content)) {
+    for (const c of e.message.content) {
+      if (c.type === 'text' && c.text?.length > 15 && !c.text.startsWith('---')) {
+        goal = c.text.slice(0, 250).replace(/\n+/g, ' ').trim();
+        break;
+      }
+    }
+    if (goal) break;
+  }
+}
+
+// Last assistant summary
+let lastSummary = '';
+for (const e of [...entries].reverse()) {
+  if (e.message?.role === 'assistant' && Array.isArray(e.message.content)) {
+    for (const c of e.message.content) {
+      if (c.type === 'text' && c.text?.length > 30) {
+        lastSummary = c.text.slice(0, 400).replace(/\n+/g, ' ').trim();
+        break;
+      }
+    }
+    if (lastSummary) break;
+  }
+}
+
+const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+const repo = path.basename(cwd);
+const branch = gitBranch || 'unknown';
+
+const filesList = filesEdited.size > 0
+  ? [...filesEdited].slice(0, 12).map(f => `- ${f}`).join('\n')
+  : '- none recorded';
+
+const cmdsList = bashCmds.slice(-5).length > 0
+  ? bashCmds.slice(-5).map(c => `- \`${c}\``).join('\n')
+  : '- none recorded';
+
+fs.writeFileSync(handoffFile, `# Current Handoff
 
 ## Repo
-${repoName}
+${repo} (${branch})
 
 ## Tool
 Claude Code
 
 ## Goal
-${lastPrompt}
+${goal || 'See transcript for context'}
 
 ## Status
-- Auto-saved at ${now} (session stopped)
-- Run \`git diff --name-only HEAD\` to see recent file changes
+auto-saved at ${timestamp} — run /handoff resume to reconstruct full context
 
 ## Files touched
-- (check git diff --name-only HEAD)
+${filesList}
+
+## Recent commands
+${cmdsList}
+
+## Last response summary
+${lastSummary || 'none'}
 
 ## Decisions made
-- (review session if decisions were made)
+None recorded automatically — run /handoff pause to capture decisions explicitly
 
 ## Next steps
-1. Run \`/resume ${repoName}\` in ProBot to get the resume prompt
-2. Check git status for uncommitted changes
+Run /handoff resume to reconstruct context from this auto-save
 
 ## Blockers
-- None recorded automatically
+Unknown — auto-save only
 
 ## Resume prompt
-Continue work on ${repoName}. Last task: ${lastPrompt.slice(0, 200)}
-`;
-
-fs.writeFileSync(handoffPath, handoff, 'utf8');
+Resume from last session in ${repo} (${branch}). Review .ai/current.md and recent git log for full context.
+`, 'utf8');
 NODEEOF
+
+exit 0
