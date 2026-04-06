@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AMApplicationBuild</key>
+	<string>523.1</string>
+	<key>AMApplicationVersion</key>
+	<string>2.10</string>
+	<key>AMDocumentVersion</key>
+	<string>2</string>
+	<key>actions</key>
+	<array>
+		<dict>
+			<key>action</key>
+			<dict>
+				<key>AMAccepts</key>
+				<dict>
+					<key>Container</key>
+					<string>List</string>
+					<key>Optional</key>
+					<true/>
+					<key>Types</key>
+					<array>
+						<string>com.apple.cocoa.string</string>
+					</array>
+				</dict>
+				<key>AMActionVersion</key>
+				<string>2.0.3</string>
+				<key>AMApplication</key>
+				<array>
+					<string>TextEdit</string>
+				</array>
+				<key>AMParameterProperties</key>
+				<dict>
+					<key>COMMAND_STRING</key>
+					<dict/>
+					<key>CheckedForUserDefaultShell</key>
+					<dict/>
+					<key>inputMethod</key>
+					<dict/>
+					<key>shell</key>
+					<dict/>
+					<key>source</key>
+					<dict/>
+				</dict>
+				<key>AMProvides</key>
+				<dict>
+					<key>Container</key>
+					<string>List</string>
+					<key>Types</key>
+					<array>
+						<string>com.apple.cocoa.string</string>
+					</array>
+				</dict>
+				<key>ActionBundlePath</key>
+				<string>/System/Library/Automator/Run Shell Script.action</string>
+				<key>ActionName</key>
+				<string>Run Shell Script</string>
+				<key>ActionParameters</key>
+				<dict>
+					<key>COMMAND_STRING</key>
+					<string>
+# Get selected text from stdin
+CONTENT=$(cat)
+
+if [ -z "$CONTENT" ]; then
+  osascript -e 'display alert "Save to Brain" message "No text selected or clipboard empty." as warning'
+  exit 1
+fi
+
+# Ask for title
+TITLE=$(osascript -e 'text returned of (display dialog "Title for this note:" &amp; return &amp; "(leave blank to auto-generate)" default answer "" with title "Save to Brain" buttons {"Cancel", "Save"} default button "Save")')
+if [ $? -ne 0 ]; then exit 0; fi
+
+# Build JSON safely using python
+RESPONSE=$(python3 -c "
+import json, urllib.request, sys
+title = sys.argv[1]
+content = sys.argv[2]
+payload = json.dumps({'title': title, 'content': content, 'source': 'shortcut'}).encode()
+req = urllib.request.Request(
+    'https://n8n.prochat.tools/webhook/brain-inbox',
+    data=payload,
+    headers={'Content-Type': 'application/json'},
+    method='POST'
+)
+try:
+    with urllib.request.urlopen(req, timeout=30) as r:
+        result = json.loads(r.read())
+        print(result.get('title', 'Saved'))
+except Exception as e:
+    print('ERROR: ' + str(e))
+    sys.exit(1)
+" "$TITLE" "$CONTENT")
+
+if [ $? -ne 0 ]; then
+  osascript -e "display alert \"Save to Brain failed\" message \"$RESPONSE\" as warning"
+else
+  osascript -e "display notification \"$RESPONSE\" with title \"Saved to Brain ✓\" sound name \"Glass\""
+fi
+</string>
+					<key>CheckedForUserDefaultShell</key>
+					<true/>
+					<key>inputMethod</key>
+					<integer>0</integer>
+					<key>shell</key>
+					<string>/bin/bash</string>
+					<key>source</key>
+					<string></string>
+				</dict>
+				<key>BundleIdentifier</key>
+				<string>com.apple.RunShellScript</string>
+				<key>CFBundleVersion</key>
+				<string>2.0.3</string>
+				<key>CanShowSelectedItemsWhenRun</key>
+				<false/>
+				<key>CanShowWhenRun</key>
+				<true/>
+				<key>Category</key>
+				<array>
+					<string>AMCategoryUtilities</string>
+				</array>
+				<key>Class Name</key>
+				<string>RunShellScriptAction</string>
+				<key>InputUUID</key>
+				<string>input-uuid-001</string>
+				<key>Keywords</key>
+				<array>
+					<string>Shell</string>
+					<string>Script</string>
+					<string>Run</string>
+					<string>Unix</string>
+					<string>Command</string>
+				</array>
+				<key>OutputUUID</key>
+				<string>output-uuid-001</string>
+				<key>UUID</key>
+				<string>main-action-uuid-001</string>
+				<key>UnlocalizedApplications</key>
+				<array>
+					<string>Automator</string>
+				</array>
+				<key>arguments</key>
+				<dict/>
+				<key>isViewVisible</key>
+				<true/>
+				<key>location</key>
+				<string>354.000000:254.000000</string>
+				<key>nibPath</key>
+				<string>/System/Library/Automator/Run Shell Script.action/Contents/Resources/Base.lproj/main.nib</string>
+			</dict>
+			<key>isViewVisible</key>
+			<true/>
+		</dict>
+	</array>
+	<key>connectors</key>
+	<dict/>
+	<key>workflowMetaData</key>
+	<dict>
+		<key>serviceInputCanBeEmpty</key>
+		<false/>
+		<key>serviceInputTypeIdentifier</key>
+		<string>com.apple.Automator.servicesMenu.input</string>
+		<key>serviceOutputTypeIdentifier</key>
+		<string>com.apple.Automator.servicesMenu.output</string>
+		<key>serviceProcessesInput</key>
+		<false/>
+		<key>workflowTypeDescription</key>
+		<string>Service receives selected text in any application</string>
+		<key>workflowTypeIdentifier</key>
+		<string>com.apple.Automator.servicesMenu</string>
+	</dict>
+</dict>
+</plist>
