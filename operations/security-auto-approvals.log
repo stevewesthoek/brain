@@ -301,3 +301,6 @@ Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.procha
 [2026-04-06T13:07:13Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
 Command: grep -i "STRIPE_SECRET_KEY\|STRIPE_PUBLISHABLE" /Users/Office/Repos/prochattools/web/says-the-bible/.env | head -5
 
+[2026-04-06T13:07:47Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: cat .env | grep -E 'STRIPE|DATABASE' | sed 's/=.*/=<redacted>/'
+
