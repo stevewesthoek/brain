@@ -187,3 +187,12 @@ Command: sleep 120 && ssh dokploy "ls -lt /etc/dokploy/logs/web-public-olivetoor
 [2026-04-06T09:05:31Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
 Command: sleep 180 && ssh dokploy "ls -lt /etc/dokploy/logs/web-public-olivetoorganizing-zwthea/ | head -3" && source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=xBuP3eoiwNO5l2qY_N_1h" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "import json,sys; data=json.load(sys.stdin); d=data[0]; print(len(data), 'deployments. Latest:', d['deploymentId'], '|', d['status'], '|', d['startedAt'])"
 
+[2026-04-06T09:08:53Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: sleep 300 && ssh dokploy "ls -lt /etc/dokploy/logs/web-public-olivetoorganizing-zwthea/ | head -3" && source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=xBuP3eoiwNO5l2qY_N_1h" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+print('Total:', len(data))
+d = data[0]
+print(f'Latest: {d[\"deploymentId\"]} | {d[\"status\"]} | {d[\"startedAt\"]}')
+" && ssh dokploy "docker exec dokploy-redis.1.vx3yzxsd9xy31pwbvetq4ukhh redis-cli LRANGE bull:deployments:wait 0 5 2>/dev/null"
+
