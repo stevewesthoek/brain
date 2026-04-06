@@ -129,3 +129,14 @@ echo ""
 echo "=== New log files on server ==="
 ssh dokploy "ls -la /etc/dokploy/logs/web-cedula-b1gepj/ | tail -3; ls -la /etc/dokploy/logs/web-public-jpv-bootcamp-l66egq/ | tail -3; ls -la /etc/dokploy/logs/web-public-jccp-holdings-pvtist/ | tail -3; ls -la /etc/dokploy/logs/apps-saas-status-link-dw1c6j/ | tail -3; ls -la /etc/dokploy/logs/saas-proofly-ixcmnz/ | tail -3" 2>/dev/null
 
+[2026-04-06T08:34:27Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: sleep 30 && source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=xBuP3eoiwNO5l2qY_N_1h" \
+  -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+print('Total:', len(data))
+latest = data[0]
+print(f'Latest: {latest[\"deploymentId\"]} | {latest[\"status\"]} | {latest[\"startedAt\"]}')
+print('Title:', latest.get('title','')[:80])
+" && ssh dokploy "ls -lt /etc/dokploy/logs/web-public-olivetoorganizing-zwthea/ | head -3"
+
