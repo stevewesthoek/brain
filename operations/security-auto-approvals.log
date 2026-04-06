@@ -391,3 +391,14 @@ Command: cat ~/Repos/stevewesthoek/brain/operations/system-configs/claude/claude
 # Check actual claude.json (not symlinked, has secrets)
 python3 -c "import json; d=json.load(open('/Users/Office/.claude.json')); servers=d.get('mcpServers',{}); [print(k) for k in servers]" 2>/dev/null
 
+[2026-04-06T14:15:34Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: ls -la ~/.notebooklm-mcp/chrome_profile_notebooklm/ 2>/dev/null; echo "--- chrome-profile (has content) ---"; ls ~/.notebooklm-mcp/chrome-profile/ 2>/dev/null | head -15; echo "---"; cat ~/.notebooklm-mcp/auth.json 2>/dev/null | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for k, v in d.items():
+    if 'token' in k.lower() or 'secret' in k.lower() or 'password' in k.lower():
+        print(f'{k}: [REDACTED]')
+    else:
+        print(f'{k}: {str(v)[:80]}')
+" 2>/dev/null
+
