@@ -97,3 +97,14 @@ for d in data[:3]:
     print(f'  {d[\"deploymentId\"]} | {d[\"status\"]} | {d[\"startedAt\"]} | {d.get(\"title\",\"\")[:60]}')
 " && ssh dokploy "ls -lt /etc/dokploy/logs/web-public-olivetoorganizing-zwthea/ | head -5"
 
+[2026-04-06T08:22:54Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env
+
+# Check Via di Eden's current log tail
+ssh dokploy "tail -15 '/etc/dokploy/logs/web-public-viadieden-kttqn4/web-public-viadieden-kttqn4-2026-04-06:08:11:27.log' 2>/dev/null" 2>/dev/null
+
+echo ""
+echo "--- Checking for any new log files for other apps on the server ---"
+ssh dokploy "ls -la /etc/dokploy/logs/web-cedula-b1gepj/ 2>/dev/null | tail -5" 2>/dev/null
+ssh dokploy "ls -la /etc/dokploy/logs/saas-proofly-ixcmnz/ 2>/dev/null | tail -5" 2>/dev/null
+
