@@ -53,3 +53,9 @@ echo "---"
 curl -s -X GET "https://dokploy.prochat.tools/api/application.logs?applicationId=ub3NVzkB14Q-i3mNrIp0W&tail=50" \
   -H "x-api-key: $DOKPLOY_API_KEY" 2>&1 | head -60
 
+[2026-04-06T08:04:41Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env
+# Try SSH into dokploy server to get docker logs directly
+# First check if the ssh alias works for dokploy server access
+ssh -o ConnectTimeout=5 dokploy "docker ps --filter name=saas-proofly --format '{{.Names}}\t{{.Status}}' 2>&1 | head -20" 2>&1
+
