@@ -220,3 +220,11 @@ data = json.load(sys.stdin)
 print(json.dumps(data, indent=2))
 " | head -200
 
+[2026-04-06T09:34:16Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=Hu9rBtZj7XRwD7oxRZ4v7" \
+  -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+print(json.dumps(data[0] if data else data, indent=2))
+" 2>&1 | head -100
+
