@@ -63,3 +63,27 @@ ssh -o ConnectTimeout=5 dokploy "docker ps --filter name=saas-proofly --format '
 Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.one?deploymentId=Qq3WWdiZDRfapK361Hhrn" \
   -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool 2>&1 | head -60
 
+[2026-04-06T08:15:09Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env
+
+# Check current build logs via the deployment log API for the most recent deployments
+# Also look for today's (Apr 6) deploys specifically
+
+for entry in \
+  "Cedula:AktEorHW60rlMBm5HZvFk:/etc/dokploy/logs/web-cedula-b1gepj/web-cedula-b1gepj-2026-04-05:18:58:46.log" \
+  "JCCP Holdings:5AAnd3xHlYQQTs1lUUObk:/etc/dokploy/logs/web-public-jccp-holdings-pvtist/web-public-jccp-holdings-pvtist-2026-04-05:19:01:56.log" \
+  "Via di Eden:RFoyUafEcx53RM8wqzaKg:/etc/dokploy/logs/web-public-viadieden-kttqn4/web-public-viadieden-kttqn4-2026-04-06:08:11:27.log" \
+  "Status Link:1PHd9keOrNiCK5rub9paI:/etc/dokploy/logs/apps-saas-status-link-dw1c6j/apps-saas-status-link-dw1c6j-2026-04-05:19:03:03.log" \
+  "Proofly:oSPP3G3xIAAcGoK1V1wyU:/etc/dokploy/logs/saas-proofly-ixcmnz/saas-proofly-ixcmnz-2026-04-06:08:08:55.log"
+do
+  name="${entry%%:*}"
+  rest="${entry#*:}"
+  did="${rest%%:*}"
+  logpath="${rest#*:}"
+  
+  echo "=== $name (deployId: $did) ==="
+  # Read last 30 lines of log via SSH
+  ssh dokploy "tail -30 '$logpath' 2>/dev/null || echo 'LOG NOT FOUND: $logpath'" 2>/dev/null | tail -20
+  echo ""
+done
+
