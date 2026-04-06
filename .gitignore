@@ -120,6 +120,9 @@ operations/system-configs/shell/.zshrc.local
 
 .gstack/
 
+# Security auto-approval log — local audit trail, not for git
+operations/security-auto-approvals.log
+
 # Obsidian runtime state (changes every open, not useful to track)
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json

@@ -179,6 +179,20 @@ run_dance_of_life_sync() {
   run_job "dance-of-life-sync" "$timeout_seconds" "$command"
 }
 
+run_gemini_cleanup() {
+  local timeout_seconds="${GEMINI_CLEANUP_TIMEOUT_SECONDS:-60}"
+  local gemini_dir="${HOME}/.gemini"
+  local max_age_days="${GEMINI_CLEANUP_MAX_AGE_DAYS:-7}"
+  local command
+
+  command=$(printf \
+    'find %q/tmp %q/history -mindepth 1 -mtime +%d -delete 2>/dev/null; true' \
+    "$gemini_dir" "$gemini_dir" "$max_age_days"
+  )
+
+  run_job "gemini-cleanup" "$timeout_seconds" "$command"
+}
+
 render_runtime_report() {
   if [[ -x "$REPORT_SCRIPT" ]]; then
     OFFICE_SCHEDULER_STATE_DIR="$STATE_DIR" \
@@ -273,6 +287,9 @@ main() {
       fi
     fi
   fi
+
+  # Gemini tmp/history cleanup — always runs last, never stops chain
+  run_gemini_cleanup || log "warning gemini-cleanup failed but chain continues"
 
   if [[ "$stop_chain" -eq 0 ]]; then
     printf '%s\n' "$today_lisbon" > "$LAST_COMPLETED_FILE"

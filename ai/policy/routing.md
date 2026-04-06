@@ -154,3 +154,5 @@ Referenced by:
 - `brain/operations/system-configs/codex/AGENTS.md` (Codex global config)
 - `brain/operations/system-configs/gemini/GEMINI.md` (Gemini global config)
 - `brain/ai/skills/custom/model-router/SKILL.md` (Claude skill shim)
+
+**Sync discipline:** `AGENTS.md` and `GEMINI.md` embed role-specific routing summaries inline for agent-local context. When updating routing rules here, check those files for stale inline tables or contradicting instructions. The model tiers table and cost priority order are the most likely to drift.

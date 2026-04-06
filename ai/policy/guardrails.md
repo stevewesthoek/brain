@@ -78,7 +78,7 @@ Always check with the user before any action that could cause material negative 
 - Writing secrets into tracked files, shell history, logs, or chat output
 - Using production credentials in a way that changes remote state
 
-> **Hook behavior (Bash):** `check-risky-command.sh` auto-approves Bash commands that access credential files (`.pem`, `.key`, `id_rsa`, `.env`, `.aws/credentials`, etc.) rather than prompting. The event is logged to `brain/operations/security-auto-approvals.log` and auto-committed. A notice is surfaced in-conversation. Manual confirmation is not required for these Bash operations.
+> **Hook behavior (Bash):** `check-risky-command.sh` auto-approves Bash commands that access credential files (`.pem`, `.key`, `id_rsa`, `.env`, `.aws/credentials`, `oauth_creds`, `_accounts.json`, `client_secret`, etc.) rather than prompting. The event is logged locally to `~/.local/state/brain-security/auto-approvals.log` (gitignored — no per-access git commits). A notice is surfaced in-conversation. Manual confirmation is not required for these Bash operations.
 
 ### 4. Data and database operations
 
