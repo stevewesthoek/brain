@@ -339,3 +339,8 @@ for line in lines[-100:]:
 Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.one?deploymentId=PD9wxzCzS1skwFLPjQszg" \
   -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool | grep -i 'log\|status' | head -20
 
+[2026-04-06T13:33:35Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env
+# Check log via SSH while waiting
+ssh dokploy "ls -lt /etc/dokploy/logs/apps-saas-says-the-bible-kkmykn/ | head -5" 2>&1
+
