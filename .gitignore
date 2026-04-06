@@ -129,3 +129,6 @@ operations/security-auto-approvals.log
 
 # Obsidian daily notes — personal ephemeral, not part of repo config
 notes/daily/*.md
+
+# Obsidian Git plugin local state
+.obsidian/plugins/obsidian-git/data/

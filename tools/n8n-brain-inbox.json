@@ -1,0 +1,99 @@
+{
+  "name": "Brain Inbox — ChatGPT Capture",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "brain-inbox",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "n1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "key", "value": "={{ $vars.GEMINI_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"You are processing a ChatGPT conversation for a personal knowledge management system using the PARA method.\\n\\nPARA definitions:\\n- project: has a clear finish line (SaaS app, automation, specific deliverable)\\n- area: ongoing responsibility, no end date (health, finance, business, personal development, ministry)\\n- resource: reference material, research, learning, frameworks, how-to knowledge\\n- inbox: unclear, mixed, needs more context\\n\\nContext about the owner:\\n- Builds SaaS apps and business automations\\n- Manages prochattools business (statuslink, xgrow, prochat, says-the-bible, probot)\\n- Has Yeshua Academy (ministry work)\\n- Goal: automate everything, optimise costs, work efficiently\\n\\nTitle hint: {{ $json.title }}\\n\\nConversation content:\\n{{ $json.content }}\\n\\nRespond ONLY with valid JSON, no markdown, no explanation:\\n{\\n  \\\"title\\\": \\\"concise title max 6 words\\\",\\n  \\\"para_type\\\": \\\"project|area|resource|inbox\\\",\\n  \\\"confidence\\\": 0.0,\\n  \\\"area_hint\\\": \\\"which life or business area\\\",\\n  \\\"tags\\\": [\\\"tag1\\\", \\\"tag2\\\"],\\n  \\\"summary\\\": \\\"2-3 sentence summary of the key insight or decision\\\",\\n  \\\"key_points\\\": [\\\"point 1\\\", \\\"point 2\\\", \\\"point 3\\\"],\\n  \\\"action_items\\\": [\\\"actionable task if any\\\"],\\n  \\\"note_content\\\": \\\"full structured markdown body for the note, without frontmatter\\\"\\\n}\"\n    }]\n  }]\n}"
+      },
+      "id": "n2",
+      "name": "Gemini Flash — Classify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiResponse = $input.first().json;\nconst rawText = geminiResponse.candidates[0].content.parts[0].text;\n\n// Strip markdown code fences if Gemini wrapped the JSON\nconst cleanJson = rawText\n  .replace(/^```json\\s*/m, '')\n  .replace(/^```\\s*/m, '')\n  .replace(/\\s*```$/m, '')\n  .trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleanJson);\n} catch (e) {\n  // Fallback: dump raw to inbox for manual review\n  parsed = {\n    title: 'Unprocessed capture',\n    para_type: 'inbox',\n    confidence: 0,\n    area_hint: '',\n    tags: ['needs-review'],\n    summary: 'Gemini could not process — review manually.',\n    key_points: [],\n    action_items: [],\n    note_content: rawText\n  };\n}\n\n// Generate filename: YYYY-MM-DD-slug.md\nconst now = new Date();\nconst date = now.toISOString().slice(0, 10);\nconst slug = (parsed.title || 'capture')\n  .toLowerCase()\n  .replace(/[^a-z0-9\\s-]/g, '')\n  .trim()\n  .replace(/\\s+/g, '-')\n  .slice(0, 40);\nconst filename = `${date}-${slug}.md`;\nconst filepath = `notes/inbox/${filename}`;\n\n// Build tags yaml\nconst tagsYaml = (parsed.tags || ['capture'])\n  .map(t => `  - ${t}`).join('\\n');\n\n// Build frontmatter\nconst frontmatter = [\n  '---',\n  'type: capture',\n  'source: chatgpt',\n  `para_type: ${parsed.para_type || 'inbox'}`,\n  `confidence: ${parsed.confidence || 0}`,\n  `area: ${parsed.area_hint || ''}`,\n  `created: ${date}`,\n  'tags:',\n  tagsYaml,\n  '---'\n].join('\\n');\n\n// Build body\nconst keyPoints = (parsed.key_points || [])\n  .map(p => `- ${p}`).join('\\n') || '-';\nconst actionItems = (parsed.action_items || [])\n  .map(a => `- [ ] ${a}`).join('\\n');\nconst confidence = Math.round((parsed.confidence || 0) * 100);\n\nconst noteBody = [\n  frontmatter,\n  '',\n  `# ${parsed.title}`,\n  '',\n  '## Summary',\n  parsed.summary || '',\n  '',\n  '## Key Points',\n  keyPoints,\n  '',\n  actionItems ? `## Action Items\\n${actionItems}\\n` : '',\n  '## Notes',\n  parsed.note_content || '',\n  '',\n  '---',\n  `*ChatGPT capture · ${date} · ${confidence}% confidence · suggested: ${parsed.para_type}*`,\n  `*Review in [[home|Command Center]] — promote to [[notes/projects/|projects]], [[notes/areas/|areas]], or [[notes/resources/|resources]]*`\n].join('\\n');\n\nreturn [{\n  json: {\n    filepath,\n    filename,\n    content: noteBody,\n    title: parsed.title,\n    para_type: parsed.para_type,\n    confidence: parsed.confidence\n  }\n}];"
+      },
+      "id": "n3",
+      "name": "Build Note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "create",
+        "owner": "stevewesthoek",
+        "repository": "brain",
+        "filePath": "={{ $json.filepath }}",
+        "fileContent": "={{ $json.content }}",
+        "commitMessage": "=brain: capture — {{ $json.title }}",
+        "additionalParameters": {}
+      },
+      "id": "n4",
+      "name": "GitHub — Save to Inbox",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [920, 300],
+      "credentials": {
+        "githubApi": {
+          "id": "1",
+          "name": "GitHub Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"saved\",\n  \"file\": \"{{ $('Build Note').first().json.filepath }}\",\n  \"title\": \"{{ $('Build Note').first().json.title }}\",\n  \"type\": \"{{ $('Build Note').first().json.para_type }}\",\n  \"confidence\": {{ $('Build Note').first().json.confidence }}\n}"
+      },
+      "id": "n5",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1160, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Gemini Flash — Classify", "type": "main", "index": 0 }]]
+    },
+    "Gemini Flash — Classify": {
+      "main": [[{ "node": "Build Note", "type": "main", "index": 0 }]]
+    },
+    "Build Note": {
+      "main": [[{ "node": "GitHub — Save to Inbox", "type": "main", "index": 0 }]]
+    },
+    "GitHub — Save to Inbox": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,1 +1,6 @@
-["dataview", "obsidian-tasks-plugin", "obsidian-kanban"]
+[
+  "dataview",
+  "obsidian-tasks-plugin",
+  "obsidian-kanban",
+  "obsidian-git"
+]
