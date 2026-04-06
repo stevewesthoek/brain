@@ -264,3 +264,15 @@ print('applicationStatus:', d.get('applicationStatus'))
 print('updatedAt:', d.get('updatedAt'))
 " && echo "---" && ssh dokploy "docker service ps apps-saas-says-the-bible-kkmykn 2>/dev/null | head -10"
 
+[2026-04-06T09:55:26Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: sleep 20 && source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=Hu9rBtZj7XRwD7oxRZ4v7" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+print('Latest deployments:')
+for d in data[:3]:
+    title = (d.get('title','') or '')[:60]
+    started = (d.get('startedAt') or '')[:19]
+    finished = (d.get('finishedAt') or 'running')[:19]
+    print(f'  {d[\"createdAt\"][:19]} | {d[\"status\"]:12} | started:{started} | {title}')
+" && echo '---' && ssh dokploy "ls -lt /etc/dokploy/logs/apps-saas-says-the-bible-kkmykn/ | head -5"
+
