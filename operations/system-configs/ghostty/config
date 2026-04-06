@@ -61,4 +61,7 @@ selection-foreground = cell-foreground
 selection-background = #000000
 
 scroll-to-bottom = keystroke,no-output
-grapheme-width-method = legacy
+grapheme-width-method = unicode
+
+# Reflow wrapped lines when terminal is resized
+resize-overlay = after-first
