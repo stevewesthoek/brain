@@ -358,3 +358,31 @@ echo ""
 echo "=== Check PATH for gcloud ==="
 echo $PATH | tr ':' '\n' | head -20
 
+[2026-04-06T14:12:04Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: 
+echo "=== Contents of key .env files (checking structure only, no secrets) ==="
+echo ""
+echo "1. ~/.config/n8n/.env"
+cat ~/.config/n8n/.env 2>/dev/null | grep "^[A-Z_]*=" | cut -d'=' -f1 || echo "Cannot read"
+
+echo ""
+echo "2. ~/.config/dokploy/.env"
+cat ~/.config/dokploy/.env 2>/dev/null | grep "^[A-Z_]*=" | cut -d'=' -f1 || echo "Cannot read"
+
+echo ""
+echo "3. ~/.config/hetzner/.env"
+cat ~/.config/hetzner/.env 2>/dev/null | grep "^[A-Z_]*=" | cut -d'=' -f1 || echo "Cannot read"
+
+echo ""
+echo "4. ~/.config/newrelic/.env"
+cat ~/.config/newrelic/.env 2>/dev/null | grep "^[A-Z_]*=" | cut -d'=' -f1 || echo "Cannot read"
+
+echo ""
+echo "5. ~/.config/probot/.env"
+cat ~/.config/probot/.env 2>/dev/null | grep "^[A-Z_]*=" | cut -d'=' -f1 || echo "Cannot read"
+
+echo ""
+echo "=== AWS credential structure ==="
+echo "Config file:"
+cat ~/.aws/config 2>/dev/null | head -10 || echo "Cannot read"
+
