@@ -311,3 +311,15 @@ Command: cat .env | grep -E 'STRIPE_SECRET_KEY|NEXT_PUBLIC_STRIPE' | awk -F= '{p
 Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/project.all" \
   -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool | head -100
 
+[2026-04-06T13:11:31Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.one?deploymentId=PD9wxzCzS1skwFLPjQszg" \
+  -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+log = data.get('log', '')
+# Find relevant lines
+for line in log.split('\n'):
+    if any(k in line.lower() for k in ['prebuild', 'stripe', 'catalog', 'error', 'warn', 'live', 'price', 'available', 'sync', 'fatal']):
+        print(line[:200])
+" 2>&1 | head -60
+
