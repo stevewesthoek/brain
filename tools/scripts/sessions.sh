@@ -211,10 +211,85 @@ for s in sessions:
 PYEOF
 }
 
+list_gemini_sessions() {
+  python3 - "$HOME/.gemini" <<'PYEOF'
+import os, sys, json
+from datetime import datetime, timezone
+
+gemini_dir = sys.argv[1]
+home = os.path.expanduser("~")
+
+# Gemini stores checkpoints under ~/.gemini/tmp/
+checkpoints_dir = os.path.join(gemini_dir, "tmp")
+sessions = []
+
+if not os.path.isdir(checkpoints_dir):
+    sys.exit(0)
+
+for entry in sorted(os.listdir(checkpoints_dir)):
+    entry_path = os.path.join(checkpoints_dir, entry)
+    if not os.path.isdir(entry_path):
+        continue
+
+    meta_file = os.path.join(entry_path, "checkpoint.json")
+    if not os.path.exists(meta_file):
+        continue
+
+    try:
+        with open(meta_file) as f:
+            meta = json.load(f)
+    except Exception:
+        continue
+
+    timestamp = meta.get("timestamp") or meta.get("created_at", "")
+    cwd = meta.get("cwd") or meta.get("workdir", "~")
+    summary = meta.get("description") or meta.get("summary") or entry
+
+    if not timestamp:
+        try:
+            mtime = os.path.getmtime(meta_file)
+            timestamp = datetime.fromtimestamp(mtime, timezone.utc).isoformat()
+        except Exception:
+            continue
+
+    sessions.append({
+        "id": entry,
+        "cwd": cwd,
+        "timestamp": timestamp,
+        "summary": str(summary)[:120].replace("\n", " "),
+    })
+
+sessions.sort(key=lambda s: s["timestamp"], reverse=True)
+
+now = datetime.now(timezone.utc)
+for s in sessions:
+    try:
+        ts = datetime.fromisoformat(s["timestamp"].replace("Z", "+00:00"))
+        delta = now - ts
+        total_hours = delta.days * 24 + delta.seconds // 3600
+        if delta.days >= 7:
+            age = f"{delta.days // 7}w ago"
+        elif delta.days >= 1:
+            age = f"{delta.days}d ago"
+        elif total_hours >= 1:
+            age = f"{total_hours}h ago"
+        else:
+            age = f"{delta.seconds // 60}m ago"
+    except Exception:
+        age = "?"
+
+    cwd = s["cwd"].replace(home, "~")
+    parts = [p for p in cwd.split("/") if p]
+    short_proj = "/".join(parts[-2:]) if len(parts) >= 2 else cwd
+
+    print(f"{age}\t{short_proj}\t{s['summary']}\t{s['cwd']}\t{s['id']}")
+PYEOF
+}
+
 # Step 1: pick AI tool — Claude is default (first item)
-tool=$(printf "Claude\nCodex" | fzf \
+tool=$(printf "Claude\nCodex\nGemini" | fzf \
   --prompt="  open with: " \
-  --height=7 \
+  --height=9 \
   --layout=reverse \
   --border=rounded \
   --bind='tab:down,btab:up' \
@@ -239,7 +314,7 @@ if [[ "$tool" == "Claude" ]]; then
   selected_cwd=$(echo "$selected" | cut -f4)
   selected_sid=$(echo "$selected" | cut -f5)
   cd "$selected_cwd" && exec claude --resume "$selected_sid"
-else
+elif [[ "$tool" == "Codex" ]]; then
   selected=$(list_codex_sessions | fzf \
     --prompt="  session (Codex): " \
     --height=60% \
@@ -256,4 +331,21 @@ else
   selected_cwd=$(echo "$selected" | cut -f4)
   selected_sid=$(echo "$selected" | cut -f5)
   cd "$selected_cwd" && exec codex resume "$selected_sid"
+else
+  selected=$(list_gemini_sessions | fzf \
+    --prompt="  session (Gemini): " \
+    --height=60% \
+    --layout=reverse \
+    --border=rounded \
+    --delimiter=$'\t' \
+    --with-nth=1,2,3 \
+    --header="age        project                  summary" \
+    --preview='printf "  project:  %s\n  session:  %s\n\n  %s" "{4}" "{5}" "{3}"' \
+    --preview-window='down:4:wrap' \
+    --bind='tab:down,btab:up' \
+    2>/dev/null)
+  [[ -z "$selected" ]] && exit 0
+  selected_cwd=$(echo "$selected" | cut -f4)
+  selected_sid=$(echo "$selected" | cut -f5)
+  cd "$selected_cwd" && exec gemini --resume "$selected_sid"
 fi

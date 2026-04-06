@@ -3,7 +3,7 @@
 Use the `/browse` skill from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.
 Canonical guardrails policy: `brain/ai/policy/guardrails.md`.
 
-Available skills: `/model-router`, `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/design-consultation`, `/review`, `/ship`, `/land-and-deploy`, `/canary`, `/benchmark`, `/browse`, `/qa`, `/qa-only`, `/design-review`, `/setup-browser-cookies`, `/setup-deploy`, `/retro`, `/investigate`, `/document-release`, `/codex`, `/cso`, `/autoplan`, `/careful`, `/freeze`, `/guard`, `/unfreeze`, `/gstack-upgrade`, `/stb-pipeline`, `/notebooklm`, `/output-skill`, `/redesign-skill`, `/soft-skill`, `/taste-skill`, `/ui-ux-pro-max`, `/web-design`, `/stripe`, `/ffmpeg`, `/gh`, `/dokploy`, `/supabase`, `/gws`, `/cloudflare`, `/n8n`, `/azure`, `/hetzner`, `/tailscale`, `/forge`
+Available skills: `/model-router`, `/gemini`, `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/design-consultation`, `/review`, `/ship`, `/land-and-deploy`, `/canary`, `/benchmark`, `/browse`, `/qa`, `/qa-only`, `/design-review`, `/setup-browser-cookies`, `/setup-deploy`, `/retro`, `/investigate`, `/document-release`, `/codex`, `/cso`, `/autoplan`, `/careful`, `/freeze`, `/guard`, `/unfreeze`, `/gstack-upgrade`, `/stb-pipeline`, `/notebooklm`, `/output-skill`, `/redesign-skill`, `/soft-skill`, `/taste-skill`, `/ui-ux-pro-max`, `/web-design`, `/stripe`, `/ffmpeg`, `/gh`, `/dokploy`, `/supabase`, `/gws`, `/cloudflare`, `/n8n`, `/azure`, `/hetzner`, `/tailscale`, `/forge`
 
 # Skills structure
 
@@ -82,6 +82,7 @@ Global skills are available in every session — only note the ones relevant to 
 - Hetzner: [yes/no] — use `/hetzner` for Hetzner Cloud CLI infrastructure discovery or management
 - NotebookLM: [yes/no] — use `/notebooklm` for research, source synthesis, and briefing docs
 - Codex: [yes/no] — use `/codex` for AI-assisted code review and adversarial challenge mode
+- Gemini: [yes/no] — use `/gemini` for large-context preprocessing and free-tier Flash analysis
 - Handoff: [yes/no] — use `/handoff` for session start/end compressed handoffs and `.ai/` memory system setup
 
 ## Memory
@@ -99,16 +100,19 @@ Run `/model-router` to re-prime full routing awareness.
 
 Route tasks to agents by cost and complexity. Do not ask the user which model to use — route automatically.
 
-| Agent | Model/Tool | Use when |
-|-------|------------|----------|
-| `cheap-prep` | Haiku | Summarization, file triage, context compaction, commit drafting |
-| `coder-default` | Sonnet | All normal coding (default) |
-| `deep-architect` | Opus | Complex architecture, high blast radius, repeated failures |
-| `codex` | Codex CLI | Parallel load balancing, code review, second opinion, well-scoped isolated tasks |
+| Agent | Model/Tool | Cost | Use when |
+|-------|------------|------|----------|
+| `gemini-flash` | Gemini Flash | **Free** | Large context preprocessing (>100k tokens), bulk analysis, free-tier summarization |
+| `cheap-prep` | Haiku | Cheapest paid | Summarization, file triage, context compaction, commit drafting |
+| `coder-default` | Sonnet | Mid paid | All normal coding (default) |
+| `deep-architect` | Opus | Expensive | Complex architecture, high blast radius, repeated failures |
+| `codex` | Codex CLI | Paid subscription | Parallel load balancing, code review, second opinion, well-scoped isolated tasks |
 
 Codex tiers: `codex-review.sh '<prompt>' mini|standard|max` — route by task weight (mini=fast/cheap, standard=default, max=high-stakes).
-Before escalating to Opus: compact with `cheap-prep` first.
-When running 3+ parallel agents: route 1–2 tasks to Codex for engine diversity.
+Gemini tiers: `gemini-review.sh '<prompt>' [flash|pro]` — flash=free/1M-context (default), pro=deep reasoning (conserve).
+Before escalating to Opus: run Gemini Flash or `cheap-prep` to compact context first.
+When running 3+ parallel agents: route tasks to Gemini Flash and/or Codex for engine diversity and cost savings.
+Large context (>100k tokens): always run Gemini Flash preprocessing first, then work in Claude on the compact summary.
 
 # Guardrails
 

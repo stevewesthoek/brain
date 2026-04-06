@@ -20,6 +20,7 @@ operations/system-configs/docker/
 operations/system-configs/antigravity/User/
 
 # Claude local runtime and machine state
+operations/system-configs/claude/image-cache/
 operations/system-configs/claude/.claude/
 operations/system-configs/claude/backups/
 operations/system-configs/claude/cache/
@@ -72,6 +73,17 @@ operations/system-configs/cursor/argv.json
 operations/system-configs/cursor/ide_state.json
 operations/system-configs/cursor/projects/
 
+# Gemini CLI runtime state and secrets (never commit)
+operations/system-configs/gemini/oauth_creds.json
+operations/system-configs/gemini/google_accounts.json
+operations/system-configs/gemini/state.json
+operations/system-configs/gemini/installation_id
+operations/system-configs/gemini/history/
+operations/system-configs/gemini/tmp/
+operations/system-configs/gemini/settings.json
+operations/system-configs/gemini/projects.json
+operations/system-configs/gemini/trustedFolders.json
+
 # Gemini / Antigravity local runtime
 operations/system-configs/gemini/antigravity-browser-profile/
 operations/system-configs/gemini/antigravity/annotations/
@@ -107,3 +119,10 @@ projects/says-the-bible/production/input/assets/brownnoise.wav
 operations/system-configs/shell/.zshrc.local
 
 .gstack/
+
+# Obsidian runtime state (changes every open, not useful to track)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# Obsidian daily notes — personal ephemeral, not part of repo config
+notes/daily/*.md

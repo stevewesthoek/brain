@@ -65,6 +65,7 @@ Each project repo uses a conventional `ai/` directory for Claude handoff memory:
 |-----------|-----------|
 | `~/.claude` | `operations/system-configs/claude/` |
 | `~/.codex` | `operations/system-configs/codex/` |
+| `~/.gemini` | `operations/system-configs/gemini/` |
 | `~/.kiro` | `operations/system-configs/kiro/` |
 | `~/.config/starship.toml` | `operations/system-configs/starship/starship.toml` |
 | `~/.config/ghostty/config` | `operations/system-configs/ghostty/config` |
@@ -86,6 +87,7 @@ Use it for confirmed architecture and workflow decisions only.
 - `~/.claude` is a directory-level symlink → `brain/operations/system-configs/claude`. Do not delete or restructure that folder.
 - `~/.claude/skills` is a symlink → `brain/ai/skills/active`. Keep `active/` as symlinks only; do not put raw skill folders directly in `active/`.
 - `~/.codex` is a directory-level symlink → `brain/operations/system-configs/codex`. Do not delete or restructure that folder.
+- `~/.gemini` is a directory-level symlink → `brain/operations/system-configs/gemini`. Do not delete or restructure that folder.
 - `~/.kiro` is a directory-level symlink → `brain/operations/system-configs/kiro`. Do not delete or restructure that folder.
 - `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are individual file symlinks → brain. Do not delete the source files in brain.
 - `tools/scripts/` contains workflow and setup scripts that are used on this machine — do not delete without checking if they are still in use.

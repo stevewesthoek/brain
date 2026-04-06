@@ -30,5 +30,8 @@ operations/system-configs/codex/.tmp/
 # Generated production output
 projects/says-the-bible/production/output/
 
+# Obsidian daily notes (personal, ephemeral)
+notes/daily/
+
 # OS
 .DS_Store

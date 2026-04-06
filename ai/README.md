@@ -7,7 +7,6 @@ Shared AI-facing material for multiple tools.
 - `agents/` — reusable agent definitions and constraints
 - `prompts/` — reusable prompt libraries
 - `publishing/` — channel-specific publishing systems and operating workflows
-- `providers/` — provider-specific notes
 - `skills/` — canonical shared skills
 
 ## Rule

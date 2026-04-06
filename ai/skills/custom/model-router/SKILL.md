@@ -1,6 +1,6 @@
 ---
 name: model-router
-description: Routing policy for selecting the right agent per task. Invoke with /model-router to re-prime routing awareness. Reference when deciding between cheap-prep (Haiku), coder-default (Sonnet), deep-architect (Opus), or Codex CLI.
+description: Routing policy for selecting the right agent per task. Invoke with /model-router to re-prime routing awareness. Reference when deciding between cheap-prep (Haiku), coder-default (Sonnet), deep-architect (Opus), Codex CLI, or Gemini CLI.
 ---
 
 # /model-router — Model Routing Policy
@@ -12,12 +12,17 @@ This skill loads and applies the full unified routing policy for the current ses
 
 ## Agent roster
 
-| Agent | Model/Tool | Use when |
-|-------|------------|----------|
-| `cheap-prep` | Haiku | Summarization, file triage, context compaction, commit messages, lightweight classification |
-| `coder-default` | Sonnet | All normal coding: features, bugs, refactors, tests (default) |
-| `deep-architect` | Opus | Complex architecture, major migrations, high-blast-radius changes, ambiguous tradeoffs, repeated Sonnet failures |
-| `codex` | Codex CLI | Parallel task delegation, code review, advisory second opinion, well-scoped isolated tasks |
+| Agent | Model/Tool | Cost | Use when |
+|-------|------------|------|----------|
+| `gemini-flash` | Gemini Flash | **Free** | Large context preprocessing (>100k tokens), bulk analysis, free-tier summarization |
+| `cheap-prep` | Haiku | Cheapest paid | Summarization, file triage, context compaction, commit messages, lightweight classification |
+| `coder-default` | Sonnet | Mid paid | All normal coding: features, bugs, refactors, tests (default) |
+| `deep-architect` | Opus | Expensive | Complex architecture, major migrations, high-blast-radius changes, repeated Sonnet failures |
+| `codex` | Codex CLI | Paid subscription | Parallel task delegation, code review, advisory second opinion, well-scoped isolated tasks |
+
+**Cost priority:** Gemini Flash (free) > Haiku > Codex mini > Sonnet > Codex standard > Opus / Codex max
+
+---
 
 ## Automatic routing (apply without being asked)
 
@@ -31,25 +36,32 @@ Route automatically on every task — do not ask the user which model to use.
 **Do not decompose when:**
 - The task is small (single file, single fix, one clear question)
 - The subtasks share too much context to be isolated
-- The estimated savings are under 20% — the routing overhead isn't worth it
+- The estimated savings are under 20%
 - You're already inside a sub-agent
 
-**After completing any task with multiple agents:** Report which agents/models were used at the end (one line: "Used: Sonnet + Haiku cheap-prep + Codex mini").
+**After completing any task with multiple agents:** Report which agents/models were used (one line: "Used: Sonnet + Gemini Flash preprocessing + Codex mini").
+
+---
 
 ## Routing rules
 
 1. **Default to `coder-default`** (Sonnet) for all coding tasks.
-2. **Use `cheap-prep`** (Haiku) before starting a task when context is large or unclear — summarize first, then code.
-3. **Escalate to `deep-architect`** (Opus) only when:
+2. **Large context first**: when input is >100k tokens (many files, large logs, big diffs), run `gemini-review.sh` (Flash) first to produce a compact briefing. Then work in Claude on the summary. This is free and saves significant Sonnet tokens.
+3. **Free-tier preference**: for pure analysis/summarization tasks, prefer Gemini Flash (free) over Haiku (paid).
+4. **Use `cheap-prep`** (Haiku) for moderate context compaction where Gemini overhead isn't worth it.
+5. **Escalate to `deep-architect`** (Opus) only when:
    - Major design ambiguity spans multiple systems
    - Blast radius is high (prod data, shared infrastructure, auth, migrations)
    - `coder-default` has failed or produced unsatisfactory results after 2+ attempts
    - The decision will be load-bearing for future architecture
-4. **Before escalating to Opus**: run `cheap-prep` to compact context into a concise briefing first.
-5. **Delegate to `codex`** for parallel load or second opinion:
+6. **Before escalating to Opus**: run Gemini Flash or `cheap-prep` to compact context into a concise briefing first.
+7. **Delegate to `codex`** for parallel load or second opinion:
    - Running 3+ agents in parallel (route 1–2 self-contained tasks to Codex)
-   - Well-scoped task needing no broad repo context (code review, diff analysis, risk check)
+   - Well-scoped task needing code review or diff analysis
    - Second opinion alongside a main coding agent
+   - Note: Codex is on a paid subscription — use deliberately.
+
+---
 
 ## Codex sub-model routing
 
@@ -59,14 +71,21 @@ Route automatically on every task — do not ask the user which model to use.
 | **standard** | `codex-review.sh '<prompt>'` | Normal second opinion, parallel execution, typical code review (default) |
 | **max** | `codex-review.sh '<prompt>' max` | High-stakes review (auth, migrations, prod-touching), deep critique |
 
-Global Codex config: `model = "gpt-5.4"`, `model_reasoning_effort = "medium"`.
-Mini overrides: `codex-mini-latest` + effort `low`. Max overrides: effort `xhigh`.
+Prompt limit: 12k chars. Compress before calling. Paid subscription — use deliberately.
 
-**Codex rules:**
-- Always compress context before calling — prompt must be under 12k chars
-- Treat output as advisory — integrate only the useful parts
-- Max 1–2 Codex calls per task; do not chain without clear value
-- Do not use for tasks needing full repo context or interactive file editing
+---
+
+## Gemini sub-model routing
+
+| Tier | Invocation | When to use |
+|------|-----------|-------------|
+| **flash** (default) | `gemini-review.sh '<prompt>'` | All preprocessing, bulk analysis, large context (up to 1M tokens) — FREE |
+| **pro** | `gemini-review.sh '<prompt>' pro` | Deep reasoning when Flash is insufficient; ~50 RPD limit — conserve |
+
+Prompt limit: 500k chars enforced in script; Flash handles up to ~1M tokens.
+Flash is free — use liberally. Pro is limited — conserve.
+
+---
 
 ## Post-completion memory
 
@@ -75,11 +94,14 @@ After significant work, produce a compact summary (5 bullets or fewer) for:
 - `CLAUDE.md` updates if a new stable convention was established
 - Auto memory if it is a cross-repo preference
 
+---
+
 ## Cost ratios (rough)
 
-Haiku ~25x cheaper than Opus. Use freely.
-Sonnet ~5x cheaper than Opus. Use for almost everything.
+Gemini Flash: **free** — first choice for any preprocessing or large-context task.
+Haiku: ~25× cheaper than Opus. Use freely for moderate context compaction.
+Sonnet: ~5× cheaper than Opus. Use for almost everything.
 Opus: reserve for genuinely hard problems. Do not escalate out of impatience.
-Codex mini: fast, cheap — use for quick passes and parallel filler.
+Codex mini: fast — use for quick parallel passes (paid, use deliberately).
 Codex standard: balanced — default for second opinions and parallel tasks.
-Codex max: expensive — reserve for high-stakes reviews, same threshold as Opus.
+Codex max / Gemini Pro: reserve for high-stakes reviews only.

@@ -8,11 +8,14 @@ Guardrails policy canonical source: `brain/ai/policy/guardrails.md`.
 
 ## Unified AI system
 
-You (Codex) and Claude Code operate as one unified AI system for this workspace.
+You (Codex), Claude Code, and Gemini CLI operate as one unified AI system for this workspace.
 Do not think of yourself as standalone — you are the parallel/review engine.
-Claude handles long-context, repo-wide, and iterative work. You handle well-scoped, isolated, fast tasks.
 
-Use both engines in the same session when workload warrants it.
+- **Claude** orchestrates. It handles long-context, repo-wide, iterative work, architecture, and memory.
+- **Gemini Flash** preprocesses. It ingests large context (1M tokens), summarizes bulk input cheaply (free tier).
+- **Codex** (you) reviews and executes isolated tasks. Best for code review, second opinions, well-scoped work.
+
+Use all three engines in the same session when workload warrants it.
 
 ---
 
@@ -58,10 +61,11 @@ When handing work back to Claude or reasoning about what Claude should do:
 ## Cross-engine routing
 
 1. Default: Claude Sonnet handles tasks alone.
-2. Parallel load (3+ sub-agents): 1–2 self-contained tasks come to Codex.
-3. Second opinion: Codex standard when confidence is low or a bug persists after 1–2 Claude attempts.
-4. Code review: Codex standard for normal diffs; Codex max for auth, migrations, high-stakes code.
-5. Context exhausted: compact with Haiku first, then route to appropriate engine.
+2. Large context input (>100k tokens): Gemini Flash preprocesses first → compact summary → Claude acts.
+3. Parallel load (3+ sub-agents): 1–2 self-contained tasks come to Codex and/or Gemini Flash.
+4. Second opinion on code/logic: Codex standard when confidence is low or bug persists after 1–2 Claude attempts.
+5. Code review: Codex standard for normal diffs; Codex max for auth, migrations, high-stakes code.
+6. Context exhausted: compact with Gemini Flash (free) or Haiku, then route to appropriate engine.
 
 ---
 
@@ -74,6 +78,16 @@ Keep prompts under 12k chars. Output is advisory — Claude integrates what is u
 
 ---
 
+## Gemini review wrapper
+
+When Claude orchestrates Gemini for large-context preprocessing, it uses:
+`brain/tools/gemini-review.sh '<content to analyze>' [flash|pro]`
+
+Flash is the default and is free (~1500 RPD, 1M token context). Pro is limited — conserve.
+Gemini output feeds back into Claude for action.
+
+---
+
 ## Workspace layout
 
 Local repos live at `~/Repos/` organized by GitHub account:
@@ -82,7 +96,7 @@ Local repos live at `~/Repos/` organized by GitHub account:
 - `prochatdemo/` — demo projects
 - `yeshuaacademy/` — Yeshua Academy projects
 
-Config symlinks: `~/.codex` → `brain/operations/system-configs/codex/`
+Config symlinks: `~/.codex` → `brain/operations/system-configs/codex/`, `~/.gemini` → `brain/operations/system-configs/gemini/`
 
 Shared AI-agnostic skills live in `brain/ai/skills/`. For self-hosted n8n CLI work, use the shared `/n8n` skill at `brain/ai/skills/custom/n8n/n8n-cli/`. For Azure CLI work, use the shared `/azure` skill at `brain/ai/skills/custom/azure/azure-cli/`. For Hetzner Cloud CLI work, use the shared `/hetzner` skill at `brain/ai/skills/custom/hetzner/hetzner-cli/`. For Tailscale network inspection and pre-flight checks, use the shared `/tailscale` skill at `brain/ai/skills/custom/tailscale/tailscale/`.
 

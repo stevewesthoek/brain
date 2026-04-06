@@ -124,3 +124,9 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Context: No observability existed beyond 7 Azure VM-level metric alerts. xGrow was in silent error state, n8n workflow failures were invisible, and there was no APM on any app.
 - Impact: All three Linux servers report via infra agents (EU region, account 7019441). All 12 Dokploy Node.js apps have NR APM via `NODE_OPTIONS=--require newrelic`. Docker container logs forward via fluent-bit. PostgreSQL monitored via `newrelic_monitor` read-only role. Synthetics check all public URLs every 5 min. ProBot dashboard shows live server health and uptime dots.
 - Rollback: Remove `newrelic-infra` from servers, remove `NODE_OPTIONS`/`NEW_RELIC_*` env vars from Dokploy apps, delete NR entities via NerdGraph, remove `~/.config/newrelic/.env`.
+
+- Date: 2026-04-06
+- Decision: Add Gemini CLI as a third AI engine (large-context preprocessor) in the unified system.
+- Context: Claude (orchestrator) + Codex (reviewer) needed a free-tier large-context engine. Gemini Flash has a 1M token context window and ~1500 RPD / 1M TPM free tier — ideal for preprocessing large inputs before handing to Claude/Codex.
+- Impact: Three-engine routing policy in routing.md. ~/.gemini was already symlinked to brain/operations/system-configs/gemini/. GEMINI.md replaced with global instructions. /gemini skill added at ai/skills/custom/gemini/. gemini-review.sh wrapper at tools/. repos.sh and sessions.sh updated to include Gemini as third option. AGENTS.md, model-router skill, and both CLAUDE.md files updated. Cost priority: Gemini Flash (free) > Haiku > Codex mini > Sonnet > Codex standard > Opus.
+- Rollback: Remove ai/skills/active/gemini symlink, ai/skills/custom/gemini/, tools/gemini-review.sh. Revert routing.md, model-router/SKILL.md, AGENTS.md, both CLAUDE.md files, repos.sh, sessions.sh. GEMINI.md reverts to previous landing page builder content.
