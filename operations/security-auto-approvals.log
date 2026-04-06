@@ -386,3 +386,8 @@ echo "=== AWS credential structure ==="
 echo "Config file:"
 cat ~/.aws/config 2>/dev/null | head -10 || echo "Cannot read"
 
+[2026-04-06T14:13:23Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: cat ~/Repos/stevewesthoek/brain/operations/system-configs/claude/claude.json.template 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); [print(k, '->', list(d.get('mcpServers',{}).get(k,{}).keys())) for k in d.get('mcpServers',{})]" 2>/dev/null; echo "---template end---"
+# Check actual claude.json (not symlinked, has secrets)
+python3 -c "import json; d=json.load(open('/Users/Office/.claude.json')); servers=d.get('mcpServers',{}); [print(k) for k in servers]" 2>/dev/null
+
