@@ -344,3 +344,17 @@ Command: source ~/.config/dokploy/.env
 # Check log via SSH while waiting
 ssh dokploy "ls -lt /etc/dokploy/logs/apps-saas-says-the-bible-kkmykn/ | head -5" 2>&1
 
+[2026-04-06T14:11:59Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: 
+echo "=== Looking for .env files that might contain secrets ==="
+find ~ -maxdepth 3 -name ".env" -type f 2>/dev/null | grep -v ".git" | head -20
+
+echo ""
+echo "=== Checking if gcloud is installed via Homebrew or elsewhere ==="
+ls /opt/homebrew/bin/ | grep -E "^(gcloud|gsutil)" || echo "Not in Homebrew"
+ls /usr/local/bin/ | grep -E "^(gcloud|gsutil)" || echo "Not in /usr/local/bin"
+
+echo ""
+echo "=== Check PATH for gcloud ==="
+echo $PATH | tr ':' '\n' | head -20
+
