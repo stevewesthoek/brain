@@ -6,18 +6,6 @@ ProBot is a personal Telegram command center for the local Brain + Claude + Code
 
 It is not a clone of OpenClaw (retired AWS VPS bridge, decommissioned 2026-04-04).
 
-### Two codebases
-
-There are two ProBot implementations:
-
-| Path | Status | Stack |
-|------|--------|-------|
-| `brain/projects/probot` | **Deployed (this spec)** | grammy, SQLite, zod — no LLM |
-| `prochattools/ops/probot` | Experimental / next-gen | Ollama LLMs, RAG, memory, voice, MCP |
-
-This spec and the deployed LaunchAgent (`tools.prochat.probot`) refer to `brain/projects/probot` only.
-The prochattools version is a separate evolution; it is not currently deployed on the Office Mac.
-
 It exists to solve five practical problems:
 
 1. Remote access to trusted files and notes

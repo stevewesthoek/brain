@@ -165,6 +165,20 @@ run_claude_session_cleanup() {
   run_job "claude-session-cleanup" "$timeout_seconds" "$command"
 }
 
+run_dance_of_life_sync() {
+  local timeout_seconds="${DANCE_OF_LIFE_TIMEOUT_SECONDS:-21600}"  # 6 hours
+  local sync_script="${DANCE_OF_LIFE_SYNC_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dance-of-life-sync.sh}"
+  local command
+
+  if [[ ! -x "$sync_script" ]]; then
+    log "skipping job=dance-of-life-sync reason=missing_script path=$sync_script"
+    return 0
+  fi
+
+  command="$(printf 'FORCE_RESCAN=1 %q' "$sync_script")"
+  run_job "dance-of-life-sync" "$timeout_seconds" "$command"
+}
+
 render_runtime_report() {
   if [[ -x "$REPORT_SCRIPT" ]]; then
     OFFICE_SCHEDULER_STATE_DIR="$STATE_DIR" \
@@ -242,6 +256,20 @@ main() {
         stop_chain=1
       else
         log "continuing after cleanup failure exit_code=$rc"
+      fi
+    fi
+  fi
+
+  if [[ "$stop_chain" -eq 0 ]]; then
+    if run_dance_of_life_sync; then
+      :
+    else
+      local rc="$?"
+      if [[ "$rc" -eq 124 ]]; then
+        log "continuing after dance-of-life-sync timeout exit_code=$rc"
+        # Not stopping chain — this job is lowest priority, timeout is expected during bulk download
+      else
+        log "continuing after dance-of-life-sync failure exit_code=$rc"
       fi
     fi
   fi

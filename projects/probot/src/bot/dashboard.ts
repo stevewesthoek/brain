@@ -68,10 +68,73 @@ function getReposData(app: AppContext) {
   return repos;
 }
 
+// ─── New Relic helpers ────────────────────────────────────────────────────────
+
+interface NRHost {
+  name: string;
+  alertSeverity: "NOT_ALERTING" | "NOT_CONFIGURED" | "CRITICAL" | "WARNING" | null;
+  reporting: boolean;
+}
+
+interface NRSynthetic {
+  name: string;
+  alertSeverity: string | null;
+  reporting: boolean;
+}
+
+interface NRHealth {
+  hosts: NRHost[];
+  synthetics: NRSynthetic[];
+  error?: string;
+}
+
+async function getNRHealth(): Promise<NRHealth> {
+  const apiKey = process.env.NEW_RELIC_USER_API_KEY;
+  const accountId = process.env.NEW_RELIC_ACCOUNT_ID;
+  if (!apiKey || !accountId) return { hosts: [], synthetics: [], error: "NR credentials not set" };
+
+  const query = `{
+    actor {
+      hosts: entitySearch(query: "accountId = ${accountId} AND type = 'HOST' AND domain = 'INFRA'") {
+        results { entities { name reporting alertSeverity } }
+      }
+      synthetics: entitySearch(query: "accountId = ${accountId} AND domain = 'SYNTH' AND type = 'MONITOR'") {
+        results { entities { name reporting alertSeverity } }
+      }
+    }
+  }`;
+
+  try {
+    const { stdout } = await execAsync(
+      `curl -s -X POST https://api.eu.newrelic.com/graphql \
+        -H "Content-Type: application/json" \
+        -H "API-Key: ${apiKey}" \
+        -d ${JSON.stringify(JSON.stringify({ query }))}`,
+      { timeout: 10_000 }
+    );
+    const data = JSON.parse(stdout) as {
+      data?: {
+        actor?: {
+          hosts?: { results?: { entities?: NRHost[] } };
+          synthetics?: { results?: { entities?: NRSynthetic[] } };
+        }
+      }
+    };
+    return {
+      hosts: data.data?.actor?.hosts?.results?.entities ?? [],
+      synthetics: data.data?.actor?.synthetics?.results?.entities ?? [],
+    };
+  } catch (err) {
+    return { hosts: [], synthetics: [], error: String(err) };
+  }
+}
+
 // ─── AI usage helpers ─────────────────────────────────────────────────────────
 
 interface BedrockCosts {
   mtdUsd: number;
+  dailyUsd: number;
+  totalUsd: number;
   monthResetDate: string;
   error?: string;
 }
@@ -80,24 +143,44 @@ async function getBedrockCosts(): Promise<BedrockCosts> {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
   const end   = now.toISOString().slice(0, 10);
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   // Use local date parts to avoid UTC offset shifting the day
   const monthResetDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
 
   // If start === end (first of month) cost explorer requires at least 1 day range
   if (start === end) {
-    return { mtdUsd: 0, monthResetDate };
+    return { mtdUsd: 0, dailyUsd: 0, totalUsd: 0, monthResetDate };
   }
 
   try {
-    const filter = JSON.stringify({ Dimensions: { Key: "SERVICE", Values: ["Amazon Bedrock"] } });
-    const cmd = `aws ce get-cost-and-usage --time-period Start=${start},End=${end} --granularity MONTHLY --metrics BlendedCost --filter '${filter}' --output json`;
-    const { stdout } = await execAsync(cmd, { timeout: 15_000 });
-    const data = JSON.parse(stdout) as { ResultsByTime?: Array<{ Total?: { BlendedCost?: { Amount?: string } } }> };
-    const amount = parseFloat(data.ResultsByTime?.[0]?.Total?.BlendedCost?.Amount ?? "0");
-    return { mtdUsd: Math.round(amount * 100) / 100, monthResetDate };
+    // Get MTD costs (all services, all accounts in organization)
+    const mtdCmd = `aws ce get-cost-and-usage --time-period Start=${start},End=${end} --granularity MONTHLY --metrics BlendedCost --output json`;
+    const mtdRes = await execAsync(mtdCmd, { timeout: 15_000 });
+    const mtdData = JSON.parse(mtdRes.stdout) as { ResultsByTime?: Array<{ Total?: { BlendedCost?: { Amount?: string } } }> };
+    const mtdAmount = parseFloat(mtdData.ResultsByTime?.[0]?.Total?.BlendedCost?.Amount ?? "0");
+
+    // Get daily costs (yesterday to today) - take the most recent day
+    const dailyCmd = `aws ce get-cost-and-usage --time-period Start=${yesterday},End=${end} --granularity DAILY --metrics BlendedCost --output json`;
+    const dailyRes = await execAsync(dailyCmd, { timeout: 15_000 });
+    const dailyData = JSON.parse(dailyRes.stdout) as { ResultsByTime?: Array<{ Total?: { BlendedCost?: { Amount?: string } } }> };
+    const dailyAmount = parseFloat(dailyData.ResultsByTime?.[dailyData.ResultsByTime.length - 1]?.Total?.BlendedCost?.Amount ?? "0");
+
+    // Get all-time total (last 12 months)
+    const allTimeStart = new Date(now.getFullYear() - 1, now.getMonth(), 1).toISOString().slice(0, 10);
+    const totalCmd = `aws ce get-cost-and-usage --time-period Start=${allTimeStart},End=${end} --granularity MONTHLY --metrics BlendedCost --output json`;
+    const totalRes = await execAsync(totalCmd, { timeout: 15_000 });
+    const totalData = JSON.parse(totalRes.stdout) as { ResultsByTime?: Array<{ Total?: { BlendedCost?: { Amount?: string } } }> };
+    const totalAmount = (totalData.ResultsByTime ?? []).reduce((sum, item) => sum + parseFloat(item.Total?.BlendedCost?.Amount ?? "0"), 0);
+
+    return {
+      mtdUsd: Math.round(mtdAmount * 100) / 100,
+      dailyUsd: Math.round(dailyAmount * 100) / 100,
+      totalUsd: Math.round(totalAmount * 100) / 100,
+      monthResetDate,
+    };
   } catch (err) {
-    return { mtdUsd: 0, monthResetDate, error: String(err) };
+    return { mtdUsd: 0, dailyUsd: 0, totalUsd: 0, monthResetDate, error: String(err) };
   }
 }
 
@@ -183,13 +266,14 @@ async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
-  const [sessions, bedrock] = await Promise.all([
+  const [sessions, bedrock, nrHealth] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
       app.config.codexSessionsDir,
       app.config.codexSessionIndex,
     ).catch(() => []),
     getBedrockCosts(),
+    getNRHealth(),
   ]);
   const codexUsage = getCodexUsage(app.config.codexSessionsDir);
 
@@ -208,6 +292,7 @@ async function getDashboardData(app: AppContext) {
     },
     bedrock,
     codexUsage,
+    nrHealth,
     repos: getReposData(app),
     sessions: sessions.slice(0, 8).map((s) => ({
       tool: s.tool, projectLabel: s.projectLabel,
@@ -307,7 +392,8 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
 .si-age{font-size:11px;color:var(--subtle);font-family:var(--mono)}
 .tmux{font-size:10px;padding:1px 6px;border-radius:3px;background:var(--green-d);color:var(--green);border:1px solid rgba(52,211,153,.2)}
 /* ai usage */
-.ai-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:36px}
+.ai-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:36px}
+@media(max-width:1200px){.ai-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){.ai-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:500px){.ai-grid{grid-template-columns:1fr}}
 .ac{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:6px}
@@ -324,6 +410,15 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
 .fade{animation:fade .3s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .empty{color:var(--subtle);font-size:13px;padding:24px;text-align:center;border:1px dashed var(--border);border-radius:8px}
+/* nr health */
+.nr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:36px}
+@media(max-width:900px){.nr-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.nr-grid{grid-template-columns:1fr}}
+.nr-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.nr-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.nr-name{font-size:13px;font-weight:500;color:var(--text)}
+.nr-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.nr-err{font-size:11px;color:var(--muted);padding:12px 0}
 </style>
 </head>
 <body>
@@ -345,6 +440,7 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
 <main>
   <div id="stats"><div class="loading"><div class="spin"></div>Loading...</div></div>
   <div id="aiusage"></div>
+  <div id="nrhealth"></div>
   <div id="repos"></div>
   <div id="sessions"></div>
 </main>
@@ -441,22 +537,68 @@ function codexCard(label,w){
     +'</div>';
 }
 function renderAIUsage(bedrock,codex){
-  const bedrockVal=bedrock.error?'—':'$'+bedrock.mtdUsd.toFixed(2);
-  const bedrockSub=bedrock.error
-    ?'<div class="ac-err" title="'+esc(bedrock.error.slice(0,160))+'">⚠ needs ce:GetCostAndUsage IAM permission</div>'
-    :'<div class="ac-reset">Resets '+new Date(bedrock.monthResetDate+'T00:00:00').toLocaleDateString([],{month:'short',day:'numeric'})+'</div>';
-  const bedrockCard='<div class="ac">'
-    +'<div class="ac-label">Bedrock Spend (MTD)</div>'
-    +'<div class="ac-row"><div class="ac-value">'+bedrockVal+'</div></div>'
-    +bedrockSub
+  const bedrockErr=bedrock.error?'<div class="ac-err" title="'+esc(bedrock.error.slice(0,160))+'">⚠ '+esc(bedrock.error.slice(0,80))+'</div>':'';
+  const bedrockMtd='<div class="ac">'
+    +'<div class="ac-label">AWS Spend (MTD)</div>'
+    +'<div class="ac-value">'+(bedrock.error?'—':'$'+bedrock.mtdUsd.toFixed(2))+'</div>'
+    +(bedrockErr?bedrockErr:'<div class="ac-reset">Resets '+new Date(bedrock.monthResetDate+'T00:00:00').toLocaleDateString([],{month:'short',day:'numeric'})+'</div>')
+    +'</div>';
+  const bedrockDaily='<div class="ac">'
+    +'<div class="ac-label">AWS Spend (Daily)</div>'
+    +'<div class="ac-value">'+(bedrock.error?'—':'$'+bedrock.dailyUsd.toFixed(2))+'</div>'
+    +'<div class="ac-reset">latest 24h</div>'
+    +'</div>';
+  const bedrockTotal='<div class="ac">'
+    +'<div class="ac-label">AWS Spend (Total)</div>'
+    +'<div class="ac-value">'+(bedrock.error?'—':'$'+bedrock.totalUsd.toFixed(2))+'</div>'
+    +'<div class="ac-reset">last 12 months</div>'
     +'</div>';
   const asOf=codex.asOf?'<div style="font-size:10px;color:var(--subtle);margin-top:4px">as of '+age(codex.asOf)+'</div>':'';
   return'<div class="sec-hd" style="margin-bottom:16px"><span class="sec-title">AI Usage</span>'
     +'<span class="sec-count" style="font-size:10px">'+asOf+'</span></div>'
-    +'<div class="ai-grid fade">'+bedrockCard
+    +'<div class="ai-grid fade">'+bedrockMtd+bedrockDaily+bedrockTotal
     +codexCard('Codex · 5h Window',codex.fiveHour)
     +codexCard('Codex · 7d Window',codex.sevenDay)
     +'</div>';
+}
+function nrDot(severity,reporting){
+  if(!reporting)return'var(--gray)';
+  if(severity==='CRITICAL')return'var(--red)';
+  if(severity==='WARNING')return'var(--amber)';
+  if(severity==='NOT_ALERTING')return'var(--green)';
+  return'var(--muted)';
+}
+function nrLabel(severity,reporting){
+  if(!reporting)return'not reporting';
+  if(severity==='CRITICAL')return'critical';
+  if(severity==='WARNING')return'warning';
+  if(severity==='NOT_ALERTING')return'healthy';
+  return'no alerts set';
+}
+function renderNRHealth(nr){
+  if(nr.error&&!nr.hosts.length&&!nr.synthetics.length){
+    return'<div class="nr-err">New Relic: '+esc(nr.error)+'</div>';
+  }
+  const hostCards=nr.hosts.map(h=>{
+    const dot=nrDot(h.alertSeverity,h.reporting);
+    const lbl=nrLabel(h.alertSeverity,h.reporting);
+    return'<div class="nr-card"><div class="nr-dot" style="background:'+dot+'"></div>'
+      +'<div><div class="nr-name">'+esc(h.name)+'</div><div class="nr-sub">'+lbl+'</div></div></div>';
+  }).join('');
+  const synCards=nr.synthetics.map(s=>{
+    const dot=nrDot(s.alertSeverity,s.reporting);
+    const lbl=nrLabel(s.alertSeverity,s.reporting);
+    return'<div class="nr-card"><div class="nr-dot" style="background:'+dot+'"></div>'
+      +'<div><div class="nr-name">'+esc(s.name)+'</div><div class="nr-sub">'+lbl+'</div></div></div>';
+  }).join('');
+  const hostSection=hostCards
+    ?'<div class="sec-hd" style="margin-bottom:12px"><span class="sec-title">Servers</span><span class="sec-count">'+nr.hosts.length+'</span></div>'
+     +'<div class="nr-grid fade">'+hostCards+'</div>':''
+  const synSection=synCards
+    ?'<div class="sec-hd" style="margin-bottom:12px"><span class="sec-title">Uptime Checks</span><span class="sec-count">'+nr.synthetics.length+'</span></div>'
+     +'<div class="nr-grid fade">'+synCards+'</div>':''
+  return'<div class="sec-hd" style="margin-bottom:16px"><span class="sec-title">New Relic</span></div>'
+    +hostSection+synSection;
 }
 function copyResume(btn,p){
   navigator.clipboard.writeText(p).then(()=>{
@@ -479,6 +621,7 @@ function render(d){
   document.getElementById('upd').textContent='updated '+age(d.meta.updatedAt);
   document.getElementById('stats').innerHTML=renderStats(d.meta,d.machine);
   document.getElementById('aiusage').innerHTML=renderAIUsage(d.bedrock,d.codexUsage);
+  document.getElementById('nrhealth').innerHTML=renderNRHealth(d.nrHealth);
   const rhtml=d.repos.length===0
     ?'<div class="empty">No repo aliases configured.</div>'
     :'<div class="repos fade">'+d.repos.map(repoCard).join('')+'</div>';
