@@ -184,3 +184,6 @@ Command: sleep 30 && ssh dokploy "ls -lt /etc/dokploy/logs/web-public-olivetoorg
 [2026-04-06T09:03:07Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
 Command: sleep 120 && ssh dokploy "ls -lt /etc/dokploy/logs/web-public-olivetoorganizing-zwthea/ | head -3" && source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=xBuP3eoiwNO5l2qY_N_1h" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "import json,sys; data=json.load(sys.stdin); d=data[0]; print(len(data), 'deployments. Latest:', d['deploymentId'], '|', d['status'], '|', d['startedAt'])"
 
+[2026-04-06T09:05:31Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: sleep 180 && ssh dokploy "ls -lt /etc/dokploy/logs/web-public-olivetoorganizing-zwthea/ | head -3" && source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=xBuP3eoiwNO5l2qY_N_1h" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "import json,sys; data=json.load(sys.stdin); d=data[0]; print(len(data), 'deployments. Latest:', d['deploymentId'], '|', d['status'], '|', d['startedAt'])"
+
