@@ -232,3 +232,15 @@ print(json.dumps(data[0] if data else data, indent=2))
 Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=aPR9SvYn_JvGdMTk3CzeI" \
   -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool 2>/dev/null | head -60
 
+[2026-04-06T09:43:17Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/application.readTraefikConfig?applicationId=Hu9rBtZj7XRwD7oxRZ4v7" -H "x-api-key: $DOKPLOY_API_KEY" 2>/dev/null | head -50; echo "---"; curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=Hu9rBtZj7XRwD7oxRZ4v7" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+if isinstance(data, list):
+    print('Total deployments:', len(data))
+    for d in data[:5]:
+        print('  -', d.get('createdAt','?')[:19], '|', d.get('status','?'), '|', d.get('deploymentId','?'))
+else:
+    print(json.dumps(data)[:500])
+"
+
