@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -euo pipefail
+exec /Users/Office/Repos/stevewesthoek/brain/operations/system-configs/bin/gws-org-wrapper destroyer "$@"

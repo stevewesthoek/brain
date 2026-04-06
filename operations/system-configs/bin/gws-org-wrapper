@@ -1,0 +1,355 @@
+#!/usr/bin/env python3
+"""gws-org-wrapper — Google Workspace org-wide service account wrapper
+
+Usage: gws-org-wrapper <mode> <command> [subcommand] [args...]
+
+Modes:
+  provisioner   Read, list, create, update operations (safe default)
+  destroyer     Suspend, delete, wipe operations (opt-in, explicit only)
+
+Commands:
+  users list                                         List all org users
+  users get <email>                                  Get user details
+  users create --first F --last L --email E          Create a new user
+  users suspend <email>                              [destroyer only]
+  users delete <email>                               [destroyer only, not client-protected]
+
+  domains list                                       List all org domains
+
+  gmail list <email> [--query Q] [--max N]           List messages for user
+  gmail get <email> <message-id>                     Get message headers + snippet
+  gmail delete <email> <message-id>                  [destroyer only]
+  gmail purge <email> --query Q [--max N]            [destroyer only, --query required]
+
+  groups list                                        List all groups
+"""
+
+import sys
+import os
+import json
+import argparse
+import warnings
+
+warnings.filterwarnings("ignore")
+
+SERVICE_ACCOUNT_FILE = os.path.expanduser("~/.config/gws/service-account.json")
+ADMIN_SUBJECT = "info@prochat.tools"
+
+# Client-owned domains — hard-protected, never deletable via automation
+PROTECTED_DOMAINS = frozenset({
+    "zoetree.ventures",
+    "feelgoodwithana.com",
+    "microgreens.market",
+    "thedutchperformance.nl",
+    "viadieden.it",
+    "olivetoorganizing.com",
+})
+
+ADMIN_SCOPES = [
+    "https://www.googleapis.com/auth/admin.directory.user",
+    "https://www.googleapis.com/auth/admin.directory.domain.readonly",
+    "https://www.googleapis.com/auth/admin.directory.group",
+]
+
+GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.modify"
+
+
+def get_admin_creds():
+    from google.oauth2 import service_account
+    return service_account.Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_FILE,
+        scopes=ADMIN_SCOPES,
+        subject=ADMIN_SUBJECT,
+    )
+
+
+def get_gmail_creds(email):
+    from google.oauth2 import service_account
+    return service_account.Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_FILE,
+        scopes=[GMAIL_SCOPE],
+        subject=email,
+    )
+
+
+def admin_service():
+    from googleapiclient.discovery import build
+    return build("admin", "directory_v1", credentials=get_admin_creds(), cache_discovery=False)
+
+
+def gmail_service(email):
+    from googleapiclient.discovery import build
+    return build("gmail", "v1", credentials=get_gmail_creds(email), cache_discovery=False)
+
+
+def require_destroyer(mode, action):
+    if mode != "destroyer":
+        print(
+            f"ERROR: '{action}' is a destructive operation.\n"
+            f"Use gws-destroyer instead of gws-provisioner.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+
+def check_protected(email):
+    domain = email.split("@")[-1].lower()
+    if domain in PROTECTED_DOMAINS:
+        print(
+            f"ERROR: {email} belongs to a client-protected domain ({domain}).\n"
+            f"Automated deletion or suspension of client accounts is blocked.\n"
+            f"Only an explicit manual command from the owner can remove this account.",
+            file=sys.stderr,
+        )
+        sys.exit(3)
+
+
+def out(data):
+    print(json.dumps(data, indent=2, default=str))
+
+
+# ── users ──────────────────────────────────────────────────────────────────────
+
+def cmd_users(mode, args):
+    if not args:
+        print("Usage: gws-org-wrapper <mode> users <list|get|create|suspend|delete> ...", file=sys.stderr)
+        sys.exit(1)
+
+    sub = args[0]
+    rest = args[1:]
+
+    if sub == "list":
+        svc = admin_service()
+        result = svc.users().list(customer="my_customer", orderBy="email", maxResults=200).execute()
+        users = []
+        for u in result.get("users", []):
+            domain = u["primaryEmail"].split("@")[-1]
+            users.append({
+                "email": u["primaryEmail"],
+                "name": u.get("name", {}).get("fullName", ""),
+                "admin": u.get("isAdmin", False),
+                "suspended": u.get("suspended", False),
+                "protected": domain in PROTECTED_DOMAINS,
+                "aliases": u.get("aliases", []),
+            })
+        out(users)
+
+    elif sub == "get":
+        if not rest:
+            print("Usage: users get <email>", file=sys.stderr)
+            sys.exit(1)
+        svc = admin_service()
+        u = svc.users().get(userKey=rest[0]).execute()
+        out({
+            "email": u["primaryEmail"],
+            "name": u.get("name", {}),
+            "admin": u.get("isAdmin", False),
+            "suspended": u.get("suspended", False),
+            "orgUnitPath": u.get("orgUnitPath", ""),
+            "aliases": u.get("aliases", []),
+            "creationTime": u.get("creationTime", ""),
+            "lastLoginTime": u.get("lastLoginTime", ""),
+        })
+
+    elif sub == "create":
+        p = argparse.ArgumentParser()
+        p.add_argument("--first", required=True)
+        p.add_argument("--last", required=True)
+        p.add_argument("--email", required=True)
+        p.add_argument("--password", default="ChangeMe123!")
+        opts = p.parse_args(rest)
+        svc = admin_service()
+        body = {
+            "name": {"givenName": opts.first, "familyName": opts.last},
+            "primaryEmail": opts.email,
+            "password": opts.password,
+            "changePasswordAtNextLogin": True,
+        }
+        result = svc.users().insert(body=body).execute()
+        out({"created": result["primaryEmail"], "id": result["id"]})
+
+    elif sub == "suspend":
+        require_destroyer(mode, "users suspend")
+        if not rest:
+            print("Usage: users suspend <email>", file=sys.stderr)
+            sys.exit(1)
+        check_protected(rest[0])
+        svc = admin_service()
+        result = svc.users().update(userKey=rest[0], body={"suspended": True}).execute()
+        out({"suspended": result["primaryEmail"]})
+
+    elif sub == "delete":
+        require_destroyer(mode, "users delete")
+        if not rest:
+            print("Usage: users delete <email>", file=sys.stderr)
+            sys.exit(1)
+        check_protected(rest[0])
+        svc = admin_service()
+        svc.users().delete(userKey=rest[0]).execute()
+        out({"deleted": rest[0]})
+
+    else:
+        print(f"Unknown users subcommand: {sub}", file=sys.stderr)
+        sys.exit(1)
+
+
+# ── domains ────────────────────────────────────────────────────────────────────
+
+def cmd_domains(mode, args):
+    sub = args[0] if args else "list"
+
+    if sub == "list":
+        svc = admin_service()
+        result = svc.domains().list(customer="my_customer").execute()
+        domains = []
+        for d in result.get("domains", []):
+            domains.append({
+                "domain": d["domainName"],
+                "primary": d.get("isPrimary", False),
+                "verified": d.get("verified", False),
+            })
+        out(sorted(domains, key=lambda x: (not x["primary"], x["domain"])))
+
+    else:
+        print(f"Unknown domains subcommand: {sub}", file=sys.stderr)
+        sys.exit(1)
+
+
+# ── gmail ──────────────────────────────────────────────────────────────────────
+
+def cmd_gmail(mode, args):
+    if len(args) < 2:
+        print("Usage: gws-org-wrapper <mode> gmail <list|get|delete|purge> <email> ...", file=sys.stderr)
+        sys.exit(1)
+
+    sub = args[0]
+    email = args[1]
+    rest = args[2:]
+
+    if sub == "list":
+        p = argparse.ArgumentParser()
+        p.add_argument("--query", "-q", default="")
+        p.add_argument("--max", type=int, default=10)
+        opts = p.parse_args(rest)
+        svc = gmail_service(email)
+        params = {"userId": "me", "maxResults": opts.max}
+        if opts.query:
+            params["q"] = opts.query
+        result = svc.users().messages().list(**params).execute()
+        messages = result.get("messages", [])
+        out({
+            "account": email,
+            "total_estimate": result.get("resultSizeEstimate", 0),
+            "returned": len(messages),
+            "messages": messages,
+        })
+
+    elif sub == "get":
+        if not rest:
+            print("Usage: gmail get <email> <message-id>", file=sys.stderr)
+            sys.exit(1)
+        svc = gmail_service(email)
+        msg = svc.users().messages().get(userId="me", id=rest[0], format="metadata",
+                                          metadataHeaders=["From", "To", "Subject", "Date"]).execute()
+        headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
+        out({
+            "id": msg["id"],
+            "threadId": msg["threadId"],
+            "snippet": msg.get("snippet", ""),
+            "from": headers.get("From", ""),
+            "to": headers.get("To", ""),
+            "subject": headers.get("Subject", ""),
+            "date": headers.get("Date", ""),
+            "labels": msg.get("labelIds", []),
+        })
+
+    elif sub == "delete":
+        require_destroyer(mode, "gmail delete")
+        if not rest:
+            print("Usage: gmail delete <email> <message-id>", file=sys.stderr)
+            sys.exit(1)
+        svc = gmail_service(email)
+        svc.users().messages().trash(userId="me", id=rest[0]).execute()
+        out({"trashed": rest[0], "account": email})
+
+    elif sub == "purge":
+        require_destroyer(mode, "gmail purge")
+        p = argparse.ArgumentParser()
+        p.add_argument("--query", "-q", required=True,
+                       help="Required: search query to scope the purge (e.g. 'older_than:1y')")
+        p.add_argument("--max", type=int, default=100)
+        opts = p.parse_args(rest)
+
+        svc = gmail_service(email)
+        result = svc.users().messages().list(
+            userId="me", q=opts.query, maxResults=opts.max
+        ).execute()
+        messages = result.get("messages", [])
+        if not messages:
+            out({"purged": 0, "account": email, "query": opts.query})
+            return
+
+        ids = [m["id"] for m in messages]
+        svc.users().messages().batchDelete(userId="me", body={"ids": ids}).execute()
+        out({"purged": len(ids), "account": email, "query": opts.query})
+
+    else:
+        print(f"Unknown gmail subcommand: {sub}", file=sys.stderr)
+        sys.exit(1)
+
+
+# ── groups ─────────────────────────────────────────────────────────────────────
+
+def cmd_groups(mode, args):
+    sub = args[0] if args else "list"
+
+    if sub == "list":
+        svc = admin_service()
+        result = svc.groups().list(customer="my_customer").execute()
+        groups = result.get("groups", [])
+        out([{
+            "email": g["email"],
+            "name": g.get("name", ""),
+            "members": g.get("directMembersCount", 0),
+        } for g in groups])
+
+    else:
+        print(f"Unknown groups subcommand: {sub}", file=sys.stderr)
+        sys.exit(1)
+
+
+# ── main ───────────────────────────────────────────────────────────────────────
+
+def main():
+    if len(sys.argv) < 3:
+        print(__doc__, file=sys.stderr)
+        sys.exit(1)
+
+    mode = sys.argv[1]
+    command = sys.argv[2]
+    args = sys.argv[3:]
+
+    if mode not in ("provisioner", "destroyer"):
+        print(f"ERROR: mode must be 'provisioner' or 'destroyer', got '{mode}'", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        if command == "users":
+            cmd_users(mode, args)
+        elif command == "domains":
+            cmd_domains(mode, args)
+        elif command == "gmail":
+            cmd_gmail(mode, args)
+        elif command == "groups":
+            cmd_groups(mode, args)
+        else:
+            print(f"Unknown command: {command}", file=sys.stderr)
+            print(__doc__, file=sys.stderr)
+            sys.exit(1)
+    except Exception as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
