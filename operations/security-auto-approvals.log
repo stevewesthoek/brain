@@ -17,3 +17,16 @@ Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.procha
 Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/application.readBuildLogs?applicationId=xBuP3eoiwNO5l2qY_N_1h" \
   -H "x-api-key: $DOKPLOY_API_KEY" 2>&1 | head -60
 
+[2026-04-06T08:03:06Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/project.all" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for project in data:
+    keys = list(project.keys())
+    print('Project:', project.get('name'), '| keys:', keys)
+    # Print counts for array fields
+    for k in keys:
+        if isinstance(project[k], list):
+            print(f'  {k}: {len(project[k])} items')
+" 2>&1 | head -60
+
