@@ -276,3 +276,11 @@ for d in data[:3]:
     print(f'  {d[\"createdAt\"][:19]} | {d[\"status\"]:12} | started:{started} | {title}')
 " && echo '---' && ssh dokploy "ls -lt /etc/dokploy/logs/apps-saas-says-the-bible-kkmykn/ | head -5"
 
+[2026-04-06T09:56:03Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=Hu9rBtZj7XRwD7oxRZ4v7" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for d in data[:5]:
+    print(f'  {d[\"createdAt\"][:19]} | {d[\"status\"]:12} | {(d.get(\"title\",\"\") or \"\")[:60]}')
+" && echo '---' && ssh dokploy "ls -lt /etc/dokploy/logs/apps-saas-says-the-bible-kkmykn/ 2>/dev/null | head -5"
+
