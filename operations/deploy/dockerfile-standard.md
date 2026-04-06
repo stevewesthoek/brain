@@ -75,7 +75,7 @@ CMD ["npm", "run", "start"]
 | Stripe keys validated at module level | Add `ENV STRIPE_SECRET_KEY=sk_live_build_placeholder_...` etc. in builder |
 | `SYSTEM_DATABASE_URL` for a system prisma client | Add `ENV SYSTEM_DATABASE_URL=postgresql://build:build@localhost:5432/build` |
 | `better-sqlite3` or other native modules | Add `RUN apt-get install -y python3 make g++` in **deps** stage |
-| Start script uses `psql` (deploy gate, db checks) | Add `postgresql-client` to the runner `apt-get install` line |
+| Start script uses `psql` (deploy gate, db checks) | Install `postgresql-client-15` via PGDG repo — the default apt package installs v13 which fails version-match checks against a PG15 server (see below) |
 | SQLite data dir needed at build time | Add `RUN mkdir -p /app/data` in **builder** stage (better-sqlite3 opens DB at module-eval) |
 | App has a custom start script | Replace CMD with `CMD ["sh", "scripts/runtime/start-prod.sh"]` and add `COPY scripts` in runner |
 | next.js standalone output | Copy `.next/standalone` instead of `.next`; see prochat Dockerfile |
@@ -102,6 +102,22 @@ Known SDKs in this stack that need build-time placeholders:
 - **Resend** — `new Resend(key)` throws `Missing API key` if key is undefined
 - **Stripe** — `getStripeSecretKey()` / env validation at module level in `stripe-env.ts`
 - **New Relic** — runtime only, no build-time issue (injected via NODE_OPTIONS at container start)
+
+### PostgreSQL client version must match server
+
+The default `apt-get install postgresql-client` installs v13 on bullseye. If the Postgres server is v15 and the start script enforces a version match, the container will crash. Install the versioned package via PGDG:
+
+```dockerfile
+RUN apt-get update && apt-get install -y --no-install-recommends curl gnupg lsb-release && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-15 && \
+    rm -rf /var/lib/apt/lists/*
+```
+
+The Dokploy-hosted PostgreSQL server version is **15**. Always use `postgresql-client-15`.
+
+---
 
 ### NEXT_PUBLIC_* vars — use real values, not placeholders
 
