@@ -74,9 +74,10 @@ CMD ["npm", "run", "start"]
 | Resend instantiated at module level | Add `ENV RESEND_API_KEY=re_build_placeholder` in builder |
 | Stripe keys validated at module level | Add `ENV STRIPE_SECRET_KEY=sk_live_build_placeholder_...` etc. in builder |
 | `SYSTEM_DATABASE_URL` for a system prisma client | Add `ENV SYSTEM_DATABASE_URL=postgresql://build:build@localhost:5432/build` |
-| `better-sqlite3` or other native modules | Add `RUN apt-get install -y python3 make g++` in **deps** stage |
+| `better-sqlite3` or other native modules | Add `RUN apt-get install -y python3 make g++` in **deps** stage; add `RUN mkdir -p /app/data` in **both builder and runner** stages |
 | Start script uses `psql` (deploy gate, db checks) | Install `postgresql-client-15` via PGDG repo — the default apt package installs v13 which fails version-match checks against a PG15 server (see below) |
-| SQLite data dir needed at build time | Add `RUN mkdir -p /app/data` in **builder** stage (better-sqlite3 opens DB at module-eval) |
+| SQLite data dir needed | Add `RUN mkdir -p /app/data` in **both builder** (better-sqlite3 opens DB at module-eval during `next build`) **and runner** (data dir must exist at runtime) |
+| `NEXT_PUBLIC_*` env vars | Use **real production values** — these are baked into the client JS bundle at build time; Dokploy runtime injection is too late (see section below) |
 | App has a custom start script | Replace CMD with `CMD ["sh", "scripts/runtime/start-prod.sh"]` and add `COPY scripts` in runner |
 | next.js standalone output | Copy `.next/standalone` instead of `.next`; see prochat Dockerfile |
 
@@ -90,6 +91,25 @@ When creating a new Dokploy app:
 2. In Dokploy: set **buildType = `dockerfile`** (not nixpacks)
 3. Set all runtime env vars in Dokploy (Prisma DB URL, SDK keys, app URL, etc.)
 4. Trigger deploy — the Dockerfile controls the build; Dokploy injects runtime config
+
+---
+
+## force-dynamic — prevent static prerender of pages with live queries
+
+Next.js will attempt to statically prerender pages at build time unless told otherwise. If a page makes a Prisma query (or any DB call) **before** calling `headers()` or `cookies()`, it runs against the dummy DATABASE_URL — which has no real database behind it — and the build crashes with a connection error.
+
+Add `export const dynamic = 'force-dynamic'` at the top of any page that:
+- Makes Prisma/DB queries at render time
+- Calls server-side functions that rely on runtime env vars
+- Does NOT already call `headers()` or `cookies()` (those implicitly opt out of static prerender)
+
+```typescript
+// dashboard/page.tsx
+// Makes live Prisma queries — must never be statically prerendered at build time.
+export const dynamic = 'force-dynamic'
+```
+
+**Note:** `force-dynamic` does NOT prevent module-level code from running during `next build`'s "Collecting page data" phase — it only prevents the page body from being rendered. Module-level constructors (Prisma, Resend, Stripe) still execute. The placeholder ENVs above are still required.
 
 ---
 

@@ -362,7 +362,9 @@ CMD ["npm", "run", "start"]
 | Multiple prisma schemas (e.g. `schema.prisma` + `system.prisma`) | Run `npx prisma generate` for each schema explicitly in builder |
 | Custom prisma output path (`output = "../node_modules/@prisma/system-client"`) | Make sure the generate command uses `--schema=prisma/system.prisma` |
 | SDK key validated at module load (Resend, Stripe, etc.) | Add `ENV KEY=placeholder_value` in builder stage |
-| `better-sqlite3` or other native modules | Add `RUN apt-get install -y python3 make g++` in deps stage |
+| `better-sqlite3` or other native modules | Add `RUN apt-get install -y python3 make g++` in **deps** stage; add `RUN mkdir -p /app/data` in **both builder and runner** stages |
+| Start script calls `psql` (deploy gate / migrations) | Install `postgresql-client-15` via PGDG repo in runner — default apt on bullseye installs v13, which fails a version-match check against the Dokploy PG15 server. See `brain/operations/deploy/dockerfile-standard.md`. |
+| `NEXT_PUBLIC_*` env vars | Use **real production values** — baked into the client JS bundle at build time; placeholder values ship to users' browsers. |
 | App uses `next start` with standalone output | Copy `.next/standalone` instead of `.next` in runner |
 | App has a custom start script | Replace CMD with `CMD ["sh", "scripts/runtime/start-prod.sh"]` and `COPY scripts` |
 
@@ -496,7 +498,8 @@ RESEND_API_KEY=
 - Cloudflare tunnel setup assumes `cloudflared` is running as a persistent service. Service install steps may vary.
 - Stripe account creation requires one manual step in the Stripe Dashboard — all other Stripe setup (CLI login, webhooks, env vars) is automated.
 - No multi-region or CDN configuration in this version.
-- Dockerfile template assumes PostgreSQL (Prisma). SQLite apps (`better-sqlite3`) need `RUN mkdir -p /app/data` in builder so module-eval DB open doesn't fail during page collection.
+- Dockerfile template assumes PostgreSQL (Prisma). SQLite apps (`better-sqlite3`) need: (1) `RUN apt-get install -y python3 make g++` in deps stage for native compilation; (2) `RUN mkdir -p /app/data` in **both** builder (module-eval DB open during page collection) and runner (data dir must exist at runtime).
+- Pages making live Prisma queries at render time may need `export const dynamic = 'force-dynamic'` if they don't call `headers()`/`cookies()` first — otherwise Next.js attempts static prerender against the dummy DATABASE_URL and the build crashes. Note: `force-dynamic` does NOT prevent module-level constructors from running; placeholder ENVs are still required.
 
 ---
 
@@ -507,3 +510,4 @@ RESEND_API_KEY=
 | 0.1 | 2026-03-30 | Initial design — full workflow skeleton, all phases defined |
 | 0.2 | 2026-04-01 | Phase 6b expanded: Stripe account setup fully automated (CLI login, test + live webhook creation with 6 events, env var split for test vs production). One manual step: Dashboard account creation. |
 | 0.3 | 2026-04-06 | Phase 6c rewritten: always use dockerfile buildType (never nixpacks). Added standard Dockerfile template, key rules table, and explanation of nixpacks NODE_OPTIONS leak. |
+| 0.4 | 2026-04-06 | Customisation table: added psql/PGDG row, NEXT_PUBLIC_* row, expanded SQLite row (runner stage mkdir + deps build tools). Known limitations: added force-dynamic caveat. |
