@@ -140,3 +140,41 @@ print(f'Latest: {latest[\"deploymentId\"]} | {latest[\"status\"]} | {latest[\"st
 print('Title:', latest.get('title','')[:80])
 " && ssh dokploy "ls -lt /etc/dokploy/logs/web-public-olivetoorganizing-zwthea/ | head -3"
 
+[2026-04-06T08:42:00Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env
+
+for entry in \
+  "Cedula:WESe1NAxTlCgcnj-YiutJ" \
+  "JPV Bootcamp:aPR9SvYn_JvGdMTk3CzeI" \
+  "JCCP Holdings:HydSqf1OVKTELDuRW_KM3" \
+  "Via di Eden:34heLjzG-klSB3ja7ZSG5" \
+  "Status Link:1hooC9kE4Yn5SXmYI9DLg" \
+  "Proofly:ub3NVzkB14Q-i3mNrIp0W"
+do
+  name="${entry%%:*}"
+  id="${entry##*:}"
+  result=$(curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=${id}" -H "x-api-key: $DOKPLOY_API_KEY")
+  latest=$(echo "$result" | python3 -c "
+import sys, re
+raw = sys.stdin.read()
+items = re.findall(r'\{[^{}]*\"deploymentId\"[^{}]*\}', raw, re.DOTALL)
+if items:
+    item = items[0]
+    status = re.search(r'\"status\":\"([^\"]+)\"', item)
+    created = re.search(r'\"createdAt\":\"([^\"]+)\"', item)
+    logpath = re.search(r'\"logPath\":\"([^\"]+)\"', item)
+    c = created.group(1) if created else '?'
+    s = status.group(1) if status else '?'
+    marker = ' <-- TODAY' if '2026-04-06' in c else ''
+    lp = logpath.group(1) if logpath else ''
+    print(f'{s} at {c}{marker}|{lp}')
+" 2>&1)
+  status_part="${latest%%|*}"
+  logpath_part="${latest##*|}"
+  echo "$name: $status_part"
+  # Read log tail if there's a today logpath
+  if [[ "$latest" == *"TODAY"* ]] && [[ -n "$logpath_part" ]]; then
+    ssh dokploy "tail -5 '$logpath_part' 2>/dev/null" 2>/dev/null | sed 's/^/  LOG: /'
+  fi
+done
+
