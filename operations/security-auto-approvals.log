@@ -323,3 +323,15 @@ for line in log.split('\n'):
         print(line[:200])
 " 2>&1 | head -60
 
+[2026-04-06T13:11:38Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.one?deploymentId=PD9wxzCzS1skwFLPjQszg" \
+  -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+log = data.get('log', '')
+# Show last 100 lines
+lines = log.split('\n')
+for line in lines[-100:]:
+    print(line[:200])
+" 2>&1 | head -80
+
