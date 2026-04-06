@@ -30,3 +30,15 @@ for project in data:
             print(f'  {k}: {len(project[k])} items')
 " 2>&1 | head -60
 
+[2026-04-06T08:03:25Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/project.all" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import json, sys
+raw = sys.stdin.read()
+data = json.loads(raw)
+# Find statuslink and viadieden as applications too
+for project in data:
+    for env in project.get('environments', []):
+        for item in env.get('applications', []):
+            print(f\"PROJECT={project['name']} | NAME={item['name']} | ID={item['applicationId']} | STATUS={item.get('applicationStatus','?')}\")
+" 2>&1 | head -60
+
