@@ -299,10 +299,87 @@ See the environment variables template below.
 - Copy the Price IDs into `.env` as `STRIPE_PRICE_<TIER>_ID`
 - Test with a test-mode checkout flow before going live
 
-#### 6c. Dokploy
+#### 6c. Dockerfile — create before deploying
+
+**Always use a custom `Dockerfile` with `dockerfile` buildType in Dokploy. Never use nixpacks for this stack.**
+
+Why: Dokploy's nixpacks mode injects ALL app env vars (including `NODE_OPTIONS=--require newrelic`) as `ENV` statements that are active during every `RUN` step. This causes `npm ci` to fail with `Cannot find module 'newrelic'` — Node.js tries to preload newrelic before node_modules exists.
+
+With `dockerfile` buildType, Dokploy uses the repo's own Dockerfile and only injects env vars at container *runtime*. The build environment is clean.
+
+**Standard Dockerfile template for this stack:**
+
+```dockerfile
+# ---- Base ----
+FROM node:20-bullseye AS base
+WORKDIR /app
+
+# ---- Deps ----
+FROM base AS deps
+COPY package.json package-lock.json* ./
+# Copy prisma dir if repo has prisma schemas (postinstall runs prisma generate)
+COPY prisma ./prisma
+# Use npm ci without --omit=dev: prisma CLI is a devDep needed for postinstall
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+
+# ---- Builder ----
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# Placeholder values for keys validated at module-eval time during next build.
+# Real values are injected at runtime by Dokploy — these never reach the client bundle.
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
+# Add any other SDK keys that throw if missing at module load:
+# ENV RESEND_API_KEY=re_build_placeholder
+# ENV STRIPE_SECRET_KEY=sk_live_build_placeholder_00000000000000000000
+RUN --mount=type=cache,target=/app/.next/cache \
+    npx prisma generate && \
+    npm run build
+
+# ---- Runner ----
+FROM node:20-bullseye-slim AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+CMD ["npm", "run", "start"]
+```
+
+**Key rules when customising the template:**
+
+| Situation | What to do |
+|---|---|
+| Multiple prisma schemas (e.g. `schema.prisma` + `system.prisma`) | Run `npx prisma generate` for each schema explicitly in builder |
+| Custom prisma output path (`output = "../node_modules/@prisma/system-client"`) | Make sure the generate command uses `--schema=prisma/system.prisma` |
+| SDK key validated at module load (Resend, Stripe, etc.) | Add `ENV KEY=placeholder_value` in builder stage |
+| `better-sqlite3` or other native modules | Add `RUN apt-get install -y python3 make g++` in deps stage |
+| App uses `next start` with standalone output | Copy `.next/standalone` instead of `.next` in runner |
+| App has a custom start script | Replace CMD with `CMD ["sh", "scripts/runtime/start-prod.sh"]` and `COPY scripts` |
+
+**After creating the Dockerfile, set buildType in Dokploy:**
+
+```bash
+# Using /dokploy skill:
+# 1. Find the applicationId
+# 2. PATCH buildType to "dockerfile"
+# 3. Trigger deploy
+```
+
+#### 6d. Dokploy — project setup
 Using `/dokploy`:
 - Create a new project
 - Create an application linked to the GitHub repo
+- **Set buildType to `dockerfile`** (not nixpacks)
 - Set all environment variables (Supabase URL + anon key, Stripe keys, app URL, etc.)
 - Trigger initial deploy
 - Confirm the app is running
@@ -419,6 +496,7 @@ RESEND_API_KEY=
 - Cloudflare tunnel setup assumes `cloudflared` is running as a persistent service. Service install steps may vary.
 - Stripe account creation requires one manual step in the Stripe Dashboard — all other Stripe setup (CLI login, webhooks, env vars) is automated.
 - No multi-region or CDN configuration in this version.
+- Dockerfile template assumes PostgreSQL (Prisma). SQLite apps (`better-sqlite3`) need `RUN mkdir -p /app/data` in builder so module-eval DB open doesn't fail during page collection.
 
 ---
 
@@ -428,3 +506,4 @@ RESEND_API_KEY=
 |---|---|---|
 | 0.1 | 2026-03-30 | Initial design — full workflow skeleton, all phases defined |
 | 0.2 | 2026-04-01 | Phase 6b expanded: Stripe account setup fully automated (CLI login, test + live webhook creation with 6 events, env var split for test vs production). One manual step: Dashboard account creation. |
+| 0.3 | 2026-04-06 | Phase 6c rewritten: always use dockerfile buildType (never nixpacks). Added standard Dockerfile template, key rules table, and explanation of nixpacks NODE_OPTIONS leak. |
