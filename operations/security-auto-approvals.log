@@ -256,3 +256,11 @@ Command: source ~/.config/dokploy/.env && curl -s -X POST "https://dokploy.proch
   -H "Content-Type: application/json" \
   -d '{"applicationId": "aPR9SvYn_JvGdMTk3CzeI"}' | python3 -m json.tool 2>/dev/null | head -5
 
+[2026-04-06T09:45:10Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/application.one?applicationId=Hu9rBtZj7XRwD7oxRZ4v7" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print('applicationStatus:', d.get('applicationStatus'))
+print('updatedAt:', d.get('updatedAt'))
+" && echo "---" && ssh dokploy "docker service ps apps-saas-says-the-bible-kkmykn 2>/dev/null | head -10"
+
