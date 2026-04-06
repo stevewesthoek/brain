@@ -1,1 +1,9 @@
-{}
+{
+  "newFileLocation": "folder",
+  "newFileFolderPath": "notes/inbox",
+  "attachmentFolderPath": "notes/resources/attachments",
+  "trashOption": "local",
+  "promptDelete": true,
+  "defaultViewMode": "source",
+  "foldHeading": false
+}

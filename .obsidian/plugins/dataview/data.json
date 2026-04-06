@@ -1,0 +1,13 @@
+{
+  "enableInlineDataview": true,
+  "enableDataviewJs": false,
+  "inlineQueryPrefix": "=",
+  "renderNullAs": "-",
+  "taskCompletionTracking": true,
+  "taskCompletionText": "✅",
+  "warnOnEmptyResult": false,
+  "refreshEnabled": true,
+  "refreshInterval": 5000,
+  "prettyRenderInlineFields": true,
+  "allowHtml": false
+}

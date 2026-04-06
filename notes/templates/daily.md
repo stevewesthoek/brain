@@ -1,24 +1,55 @@
-## Captures
-> Ideas, observations, or things to follow up on later.
+---
+type: daily
+date: {{date:YYYY-MM-DD}}
+---
+
+# {{date:YYYY-MM-DD}}
+
+## 🔴 Overdue
+
+```tasks
+not done
+due before today
+limit 3
+```
+
+## 🎯 Focus Today
+*3 things that matter most.*
+
+1. 
+2. 
+3. 
+
+---
+
+## 📥 Captures
+*Ideas, observations, things to follow up on. Don't filter — dump everything.*
 
 - 
 
-## Working on
-> Active sessions, repos, tasks.
+---
+
+## 🔨 Working On
 
 - 
 
-## Decisions to promote
-> Things that hardened today. Promote before closing the day.
+---
 
-| Decision | Promote to |
-|----------|------------|
-|  | `decision-log.md` / `CLAUDE.md` / `/learner` / let it go |
+## 💡 Decisions to Promote
+*Things that hardened today. Promote before closing.*
 
-## Blockers / waiting on
+| What | Promote to |
+|------|------------|
+|  | `decision-log` / `strategy` / `project note` / let go |
+
+---
+
+## 🚧 Blockers
 
 - 
 
-## Tomorrow
+---
+
+## ➡️ Tomorrow
 
 - 
