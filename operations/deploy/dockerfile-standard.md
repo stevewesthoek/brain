@@ -14,6 +14,7 @@ With `dockerfile` buildType, Dokploy uses the repo's own Dockerfile as-is. Env v
 
 ```dockerfile
 # ---- Base ----
+# node:20 minimum — New Relic APM (NODE_OPTIONS=--require newrelic) requires Node >=20
 FROM node:20-bullseye AS base
 WORKDIR /app
 
@@ -74,6 +75,7 @@ CMD ["npm", "run", "start"]
 | Stripe keys validated at module level | Add `ENV STRIPE_SECRET_KEY=sk_live_build_placeholder_...` etc. in builder |
 | `SYSTEM_DATABASE_URL` for a system prisma client | Add `ENV SYSTEM_DATABASE_URL=postgresql://build:build@localhost:5432/build` |
 | `better-sqlite3` or other native modules | Add `RUN apt-get install -y python3 make g++` in **deps** stage |
+| Start script uses `psql` (deploy gate, db checks) | Add `postgresql-client` to the runner `apt-get install` line |
 | SQLite data dir needed at build time | Add `RUN mkdir -p /app/data` in **builder** stage (better-sqlite3 opens DB at module-eval) |
 | App has a custom start script | Replace CMD with `CMD ["sh", "scripts/runtime/start-prod.sh"]` and add `COPY scripts` in runner |
 | next.js standalone output | Copy `.next/standalone` instead of `.next`; see prochat Dockerfile |
