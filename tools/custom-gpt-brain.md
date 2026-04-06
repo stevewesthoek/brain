@@ -60,7 +60,7 @@ Be concise. Do not add unnecessary commentary. When the user says "save this", "
 In the Custom GPT editor, click **Add actions** → paste this schema:
 
 ```yaml
-openapi: 3.0.0
+openapi: 3.1.0
 info:
   title: Brain API
   version: 1.0.0
