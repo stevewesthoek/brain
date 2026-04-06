@@ -244,3 +244,6 @@ else:
     print(json.dumps(data)[:500])
 "
 
+[2026-04-06T09:43:25Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env && curl -s -X GET "https://dokploy.prochat.tools/api/deployment.one?deploymentId=lgN26NvhWSLWab7iJuOu5" -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool | head -80
+
