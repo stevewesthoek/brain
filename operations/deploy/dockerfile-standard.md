@@ -103,6 +103,18 @@ Known SDKs in this stack that need build-time placeholders:
 - **Stripe** — `getStripeSecretKey()` / env validation at module level in `stripe-env.ts`
 - **New Relic** — runtime only, no build-time issue (injected via NODE_OPTIONS at container start)
 
+### NEXT_PUBLIC_* vars — use real values, not placeholders
+
+`NEXT_PUBLIC_*` variables are **baked into the client JS bundle at build time**. Unlike server-only keys, they cannot be overridden at runtime — whatever is set in the builder stage is what ships. Use the real production URL, not a placeholder:
+
+```dockerfile
+# NEXT_PUBLIC_* baked into bundle — use real production values
+ENV NEXT_PUBLIC_APP_URL=https://yourapp.com
+ENV APP_BASE_URL=https://yourapp.com
+```
+
+If the app has env var validation that throws when `NEXT_PUBLIC_APP_URL` is missing, this must be set in the builder stage with the correct production URL.
+
 ---
 
 ## Reference
