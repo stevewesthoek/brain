@@ -402,3 +402,6 @@ for k, v in d.items():
         print(f'{k}: {str(v)[:80]}')
 " 2>/dev/null
 
+[2026-04-06T15:34:05Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: cat ~/.config/gws/client_secret.json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(list(d.keys()))" 2>/dev/null || echo "Can't read"
+
