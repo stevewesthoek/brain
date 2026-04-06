@@ -1,9 +1,12 @@
 ---
+
 kanban-plugin: board
+
 ---
 
 ## 📥 Inbox
 
+- [ ] Add hotmail to the brain.
 
 
 ## 🔍 Scoped
@@ -19,6 +22,8 @@ kanban-plugin: board
 
 
 ## ✅ Done
+
+
 
 
 
