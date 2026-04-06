@@ -137,6 +137,15 @@ If there is real doubt, ask one short confirmation question before proceeding.
 - History rewriting, force pushes, branch deletion, and destructive cleanup require confirmation.
 - If the repo is dirty, do not overwrite or discard changes you did not make unless explicitly confirmed.
 
+### Google Workspace
+
+- **Provisioner is the default.** All read, list, inspect, create, and update operations use `gws-provisioner`. Discovery first.
+- **Destroyer is opt-in only.** User suspension, deletion, account wipe, and email purge require `gws-destroyer` plus explicit user confirmation in the standard format (target / action / risk / rollback).
+- **Client accounts are hard-protected.** Accounts in protected domains (`zoetree.ventures`, `feelgoodwithana.com`, `microgreens.market`, `thedutchperformance.nl`, `viadieden.it`, `olivetoorganizing.com`) cannot be suspended or deleted by any automated action. The wrapper exits non-zero if attempted. Only an explicit manual command from the owner can override this.
+- **Email purge always requires --query.** Bulk email deletion without an explicit query filter is blocked at the wrapper level.
+- **Never expose email body content in output.** Headers and snippet only unless the user explicitly requests the full body.
+- **User creation always requires confirmation.** State the new email, org, and initial password plan before creating.
+
 ---
 
 ## Extra rules

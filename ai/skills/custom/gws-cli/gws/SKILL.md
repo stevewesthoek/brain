@@ -1,185 +1,131 @@
 ---
 name: gws
-description: Use when the user asks to work with Google Workspace services via the CLI — reading email, managing Drive files, Sheets, Calendar, Docs, Tasks, Contacts, and more. Supports multiple authenticated Google accounts via `gwsa`. Assumes gws is installed globally via Homebrew.
+description: Use when the user asks to work with Google Workspace — reading email, managing users, provisioning accounts, org administration, Drive, Calendar, Gmail. Uses service account with domain-wide delegation. Provisioner is the safe default; destroyer is opt-in for destructive ops.
 ---
 
-# Google Workspace CLI (gws)
+# Google Workspace CLI
 
 ## What this skill is for
-Help Claude use `gwsa` (multi-account wrapper) or `gws` to interact with Google Workspace services (Gmail, Drive, Calendar, Sheets, Docs, Tasks, etc.) safely and consistently from the command line.
+Help Claude use `gws-provisioner` and `gws-destroyer` to interact with the Google Workspace org
+via a service account with domain-wide delegation. Covers all 17 domains and 20 users in the
+`prochat.tools` / `yeshua.academy` org without per-account logins.
 
 ## Use this skill when
-- Reading, searching, or sending Gmail messages
-- Listing or reading Google Drive files and folders
-- Reading or writing Google Sheets
-- Managing Google Calendar events
-- Reading or writing Google Docs
-- Managing Tasks, Contacts, or Keep notes
-- Running cross-service workflows via `gws workflow`
+- Reading or searching Gmail for any org user
+- Listing or managing org users (create, suspend, delete)
+- Listing org domains
+- Managing groups
+- Provisioning new accounts across any domain in the org
+- Running org-wide email operations
 
 ## Do not use this skill for
-- Operations on production or shared org data without explicit user confirmation
-- Sending emails or creating calendar events without stating the action and waiting for confirmation
-- Destructive operations (delete emails, delete files) without explicit user confirmation
+- Operations on client-protected accounts without explicit owner instruction
+- Sending emails or creating calendar events without confirming the action first
+- Bulk destructive operations without a scoped query or explicit user confirmation
+- Personal non-org Gmail (use browser)
 
 ## Safety rules
-1. **Auth before anything.** Always verify auth before issuing commands. If unauthenticated, run `gwsa-login <email>`.
-2. **Read before write.** For any mutation (send, create, delete, update), show the user what will happen and wait for confirmation.
-3. **Never expose tokens or credentials.** Do not log, print, or commit OAuth tokens, client IDs, or secrets.
-4. **Scope requests tightly.** Use filters and `--params` to limit results — avoid pulling large datasets unnecessarily.
+1. **Provisioner is the default.** All read, list, inspect, create, and update ops use `gws-provisioner`.
+2. **Destroyer is opt-in.** Suspension, deletion, and purge require `gws-destroyer` plus explicit user confirmation.
+3. **Client accounts are hard-protected.** The wrapper blocks deletion/suspension of accounts in: `zoetree.ventures`, `feelgoodwithana.com`, `microgreens.market`, `thedutchperformance.nl`, `viadieden.it`, `olivetoorganizing.com`. Only the owner can remove these manually.
+4. **Email purge always requires --query.** Never run purge without a scoped query — the wrapper enforces this.
+5. **Never expose email body content.** Return headers and snippet only unless the user explicitly asks for full body.
+6. **User creation always requires confirmation.** State the email, org, and password plan before creating.
 
 ---
 
-## Multi-account usage (always use `gwsa`)
-
-All Google Workspace accounts are accessed via the `gwsa` wrapper, which selects the right credentials automatically.
+## Stable entrypoints
 
 ```bash
-gwsa <email> <service> <resource> [sub-resource] <method> [flags]
+~/.local/bin/gws-provisioner   # safe default
+~/.local/bin/gws-destroyer     # destructive ops only
 ```
 
-### Check which accounts are authenticated
-```bash
-gwsa
-# Prints all accounts with ✓ (ready) or ✗ (needs login)
-```
-
-### Authenticate a new account (one-time, browser flow)
-```bash
-gwsa-login info@arkware.solutions
-# Opens browser — user signs in as that account — done
-```
-
-### Examples with multiple accounts
-```bash
-# Read gmail for a specific account
-gwsa info@arkware.solutions gmail users messages list --params '{"userId":"me","maxResults":10}'
-
-# Add calendar event to a specific account
-gwsa steve@yeshua.academy calendar events insert --params '{"calendarId":"primary"}' --json '{...}'
-
-# List Drive files for a specific account
-gwsa info@vilasolidaria.pt drive files list --params '{"pageSize":10}'
-```
-
-### Account inventory
-Full account list with auth status: `brain/operations/accounts/email-inventory.md`
-
-Accounts:
-- info@prochat.tools (✓ authenticated)
-- info@arkware.solutions
-- steve@yeshua.academy
-- info@yeshua.academy
-- maintain@lean.diet
-- info@vilasolidaria.pt
-- what@saysthe.bible
-- most@wanted.house
-- just@onestatus.link
+Wrapper source: `operations/system-configs/bin/gws-provisioner`, `gws-destroyer`, `gws-org-wrapper`
 
 ---
 
-## Single-account usage (for info@prochat.tools only)
+## Commands
 
-The bare `gws` command uses `~/.config/gws/` and defaults to `info@prochat.tools`.
+### Users
 
 ```bash
-gws <service> <resource> [sub-resource] <method> [flags]
+# List all users with admin/protected/suspended status
+gws-provisioner users list
+
+# Get details for a specific user
+gws-provisioner users get steve@prochat.tools
+
+# Create a user (requires confirmation before running)
+gws-provisioner users create --first Jane --last Doe --email jane@prochat.tools
+
+# Suspend a user (non-client only)
+gws-destroyer users suspend demo@prochat.tools
+
+# Delete a user (non-client only, requires explicit user confirmation first)
+gws-destroyer users delete demo@prochat.tools
 ```
 
-**Prefer `gwsa info@prochat.tools ...` over bare `gws ...`** — it's explicit and consistent.
+### Domains
 
----
-
-## Command structure
-
+```bash
+# List all org domains
+gws-provisioner domains list
 ```
-gwsa <email> <service> <resource> [sub-resource] <method> [flags]
-```
-
-Common flags:
-- `--params '<JSON>'` — URL/query parameters
-- `--json '<JSON>'` — request body (POST/PATCH/PUT)
-- `--format table|json|yaml|csv` — output format (default: json)
-- `--page-all` — auto-paginate through all results
-- `--page-limit <N>` — max pages when paginating (default: 10)
-
-## Example commands
 
 ### Gmail
-```bash
-# List recent messages
-gwsa <email> gmail users messages list --params '{"userId": "me", "maxResults": 10}'
 
-# Read a specific message
-gwsa <email> gmail users messages get --params '{"userId": "me", "id": "<messageId>"}'
+```bash
+# List recent messages (headers + IDs)
+gws-provisioner gmail list info@prochat.tools --max 10
 
 # Search messages
-gwsa <email> gmail users messages list --params '{"userId": "me", "q": "from:someone@example.com"}'
+gws-provisioner gmail list steve@prochat.tools --query "from:someone@example.com" --max 20
 
-# Send an email (confirm first)
-gwsa <email> gmail users messages send --params '{"userId": "me"}' --json '{"raw": "<base64-encoded-email>"}'
+# Get a single message (headers + snippet)
+gws-provisioner gmail get info@prochat.tools <message-id>
+
+# Trash a single message
+gws-destroyer gmail delete info@prochat.tools <message-id>
+
+# Bulk purge (--query required)
+gws-destroyer gmail purge demo@prochat.tools --query "older_than:1y" --max 500
 ```
 
-### Calendar
+### Groups
+
 ```bash
-# List upcoming events
-gwsa <email> calendar events list --params '{"calendarId": "primary", "maxResults": 10, "orderBy": "startTime", "singleEvents": true}'
-
-# Create an event (confirm first)
-gwsa <email> calendar events insert --params '{"calendarId": "primary"}' --json '{...}'
+gws-provisioner groups list
 ```
 
-### Drive
+---
+
+## Org inventory
+
+Full inventory of all 17 domains and 20 users: `operations/accounts/gws-org-inventory.md`
+Quick reference: `operations/accounts/email-inventory.md`
+
+---
+
+## Deprecated: per-user OAuth (gwsa)
+
+`gwsa` and `gwsa-login` are deprecated for org accounts. The service account covers all current
+and future users without browser logins.
+
 ```bash
-# List files
-gwsa <email> drive files list --params '{"pageSize": 10}'
+# OLD — deprecated, do not use for org accounts
+gwsa info@arkware.solutions gmail users messages list ...
 
-# Search files
-gwsa <email> drive files list --params '{"q": "name contains \"report\""}'
+# NEW
+gws-provisioner gmail list info@arkware.solutions --max 10
 ```
 
-### Sheets
-```bash
-# Read cell values
-gwsa <email> sheets spreadsheets values get --params '{"spreadsheetId": "...", "range": "Sheet1!A1:D10"}'
-```
+`gwsa` may still be used for non-org personal Google accounts not part of the GWS org.
 
-### Tasks
-```bash
-gwsa <email> tasks tasks list --params '{"tasklist": "@default"}'
-```
-
-### Schema inspection
-```bash
-gws schema gmail.users.messages.list
-gws schema drive.files.list
-```
-
-## Services reference
-| Service | Description |
-|---------|-------------|
-| `gmail` | Email — send, read, manage |
-| `drive` | Files and folders |
-| `sheets` | Spreadsheets |
-| `calendar` | Events and calendars |
-| `docs` | Google Docs |
-| `slides` | Presentations |
-| `tasks` | Task lists |
-| `people` | Contacts and profiles |
-| `keep` | Google Keep notes |
-| `chat` | Google Chat spaces |
-| `workflow` / `wf` | Cross-service productivity workflows |
-| `forms` | Google Forms |
-| `script` | Google Apps Script |
-
-## Auth architecture
-
-- Shared OAuth2 client: `~/.config/gws/client_secret.json`
-- Per-account credentials: `~/.config/gws-accounts/<email>/credentials.enc`
-- Env var: `GOOGLE_WORKSPACE_CLI_CONFIG_DIR` — `gwsa` sets this automatically
-- Login flow: `gwsa-login <email>` → browser OAuth → tokens saved
+---
 
 ## Notes
-- gws installed at: `/opt/homebrew/bin/gws` (version 0.22.3)
-- gwsa wrapper: `brain/tools/scripts/gwsa.sh`
-- Install/upgrade: `brew install googleworkspace-cli` / `brew upgrade googleworkspace-cli`
+- Service account key: `~/.config/gws/service-account.json`
+- Admin subject (DWD impersonation): `info@prochat.tools`
+- gws CLI (underlying tool): `/opt/homebrew/bin/gws` v0.22.3 — kept for schema inspection only
+- Wrapper verified working: 2026-04-07

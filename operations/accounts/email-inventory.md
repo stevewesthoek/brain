@@ -4,47 +4,45 @@ Central reference for all email accounts across identities and brands.
 Maintained in `brain/operations/accounts/email-inventory.md`.
 
 CLI access:
-- **Google Workspace accounts** → `gwsa <email> <command>` (uses `gws` under the hood)
+- **Google Workspace accounts** → `gws-provisioner` / `gws-destroyer` (service account, domain-wide)
 - **Microsoft/Hotmail** → `m365 outlook mail list` (uses CLI for Microsoft 365)
 
 ---
 
-## Google Workspace Accounts
+## Google Workspace (service account, domain-wide)
 
-All Google accounts use the same shared OAuth2 client (`~/.config/gws/client_secret.json`).
-Per-account credentials live in `~/.config/gws-accounts/<email>/`.
-
-| Email | Brand / Project | Repo | Auth Status | Notes |
-|-------|----------------|------|-------------|-------|
-| info@prochat.tools | ProChat Tools | `prochattools/` | ✓ Authenticated | Primary ops account |
-| info@arkware.solutions | Arkware Solutions | — | ✗ Pending login | — |
-| steve@yeshua.academy | Yeshua Academy | `yeshuaacademy/` | ✗ Pending login | Personal/ministry |
-| info@yeshua.academy | Yeshua Academy | `yeshuaacademy/` | ✗ Pending login | Org inbox |
-| maintain@lean.diet | Lean Diet | — | ✗ Pending login | — |
-| info@vilasolidaria.pt | Vila Solidária | — | ✗ Pending login | — |
-| what@saysthe.bible | Says the Bible | `prochattools/web/says-the-bible` | ✗ Pending login | STB project email |
-| most@wanted.house | Wanted House | — | ✗ Pending login | — |
-| just@onestatus.link | OneStatus Link | `prochattools/saas/statuslink` | ✗ Pending login | — |
-
-### Authenticate a pending account
+All 17 domains and 20 users are accessed via a single service account with domain-wide delegation.
+Full inventory: `brain/operations/accounts/gws-org-inventory.md`
 
 ```bash
-gwsa-login <email>
-# Browser opens → sign in as <email> → done
+# List all users
+gws-provisioner users list
+
+# Read inbox for any org user
+gws-provisioner gmail list <email> [--query Q] [--max N]
+
+# Create a user
+gws-provisioner users create --first F --last L --email E
+
+# Suspend / delete (non-client only)
+gws-destroyer users suspend <email>
+gws-destroyer users delete <email>
+
+# Purge emails (--query required)
+gws-destroyer gmail purge <email> --query "older_than:1y"
 ```
 
-### Use an authenticated account
+Service account key: `~/.config/gws/service-account.json`
+Admin subject: `info@prochat.tools`
+Entrypoints: `~/.local/bin/gws-provisioner`, `~/.local/bin/gws-destroyer`
 
-```bash
-# Gmail
-gwsa <email> gmail users messages list --params '{"userId":"me","maxResults":10}'
+### Deprecated: per-user OAuth (gwsa)
 
-# Calendar
-gwsa <email> calendar events list --params '{"calendarId":"primary","maxResults":10,"singleEvents":true,"orderBy":"startTime"}'
+`gwsa` and `gwsa-login` are deprecated for org accounts. The service account covers all current
+and future users without per-account browser logins.
 
-# Drive
-gwsa <email> drive files list --params '{"pageSize":10}'
-```
+`~/.config/gws-accounts/` and `~/.config/gws/client_secret.json` are kept in place for the
+`gws` CLI tool (non-org personal use only) but no longer required for org operations.
 
 ---
 
@@ -69,42 +67,18 @@ To unblock later:
 
 For now: access `westhoek@hotmail.com` via browser/webmail at outlook.live.com.
 
-### Check status
-
-```bash
-m365 status
-```
-
-### Common commands
-
-```bash
-# List recent emails
-m365 outlook mail list --mailbox westhoek@hotmail.com
-
-# List calendar events
-m365 outlook event list
-
-# OneDrive files
-m365 onedrive list
-```
-
----
-
-## Auth setup notes
-
-**For Google accounts:** All 9 GWS accounts share one GCP OAuth2 project (one `client_secret.json`).
-If a new GWS domain blocks the consent screen, check the Google Admin Console for that domain → Security → API Controls → and allow the OAuth2 client ID `891024122587-...`.
-
-**For Microsoft:** `m365 login` uses device code flow by default (no browser needed) or browser OAuth via `m365 login --authType browser`.
-
 ---
 
 ## Quick reference
 
 | I want to… | Command |
 |------------|---------|
-| Read inbox of info@arkware.solutions | `gwsa info@arkware.solutions gmail users messages list --params '{"userId":"me","maxResults":10}'` |
-| Add calendar event to steve@yeshua.academy | `gwsa steve@yeshua.academy calendar events insert --params '{"calendarId":"primary"}' --json '{...}'` |
+| List all org users | `gws-provisioner users list` |
+| Read inbox of info@arkware.solutions | `gws-provisioner gmail list info@arkware.solutions --max 10` |
+| Search emails | `gws-provisioner gmail list <email> --query "from:someone@example.com"` |
+| Create a new user | `gws-provisioner users create --first F --last L --email E` |
+| Suspend a user | `gws-destroyer users suspend <email>` |
+| Delete a user (non-client) | `gws-destroyer users delete <email>` |
+| Purge old emails | `gws-destroyer gmail purge <email> --query "older_than:1y"` |
+| List all domains | `gws-provisioner domains list` |
 | Read Hotmail inbox | `m365 outlook mail list` |
-| Check which GWS accounts are authenticated | `gwsa` (no args — lists all with status) |
-| Add a new GWS account | `gwsa-login <email>` |

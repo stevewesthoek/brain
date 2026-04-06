@@ -125,6 +125,12 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Impact: All three Linux servers report via infra agents (EU region, account 7019441). All 12 Dokploy Node.js apps have NR APM via `NODE_OPTIONS=--require newrelic`. Docker container logs forward via fluent-bit. PostgreSQL monitored via `newrelic_monitor` read-only role. Synthetics check all public URLs every 5 min. ProBot dashboard shows live server health and uptime dots.
 - Rollback: Remove `newrelic-infra` from servers, remove `NODE_OPTIONS`/`NEW_RELIC_*` env vars from Dokploy apps, delete NR entities via NerdGraph, remove `~/.config/newrelic/.env`.
 
+- Date: 2026-04-07
+- Decision: Replace per-user OAuth GWS access (gwsa) with a single service account with domain-wide delegation, following the provisioner/destroyer wrapper pattern used by AWS, Azure, and Cloudflare.
+- Context: The org has 17 domains and 20 users across yeshua.academy (primary), prochat.tools, and 15 additional domains including 6 client-owned domains. Per-user OAuth required a separate browser login per account and had no protection model.
+- Impact: `gws-provisioner` and `gws-destroyer` wrappers now provide org-wide access via `~/.config/gws/service-account.json`. Six client-domain accounts are hard-protected in the wrapper (exit 3 on any delete/suspend attempt). `gwsa` is deprecated for org accounts. `messaggerocristiano.it` domain scheduled for manual deletion (no users, no longer needed — requires `admin.directory.domain` write scope added to DWD first).
+- Rollback: Re-authenticate per-user accounts via `gwsa-login`, remove service account wrapper scripts from `operations/system-configs/bin/`, revert gws skill to per-user instructions.
+
 - Date: 2026-04-06
 - Decision: Add Gemini CLI as a third AI engine (large-context preprocessor) in the unified system.
 - Context: Claude (orchestrator) + Codex (reviewer) needed a free-tier large-context engine. Gemini Flash has a 1M token context window and ~1500 RPD / 1M TPM free tier — ideal for preprocessing large inputs before handing to Claude/Codex.
