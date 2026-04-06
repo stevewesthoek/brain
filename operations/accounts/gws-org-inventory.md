@@ -1,7 +1,7 @@
 # Google Workspace Org Inventory
 
 Canonical reference for the GWS organization managed via domain-wide delegation.
-Last scanned: 2026-04-07
+Last scanned: 2026-04-07 | Domains: 16 (messaggerocristiano.it deleted 2026-04-07)
 
 ## Access
 
@@ -45,7 +45,7 @@ Wrapper source: `operations/system-configs/bin/gws-provisioner`, `gws-destroyer`
 | wanted.house | no | yes | own | Wanted House project |
 | onestatus.link | no | yes | own | StatusLink / OneStatus |
 | casaqr.pt | no | yes | own | CasaQR project |
-| messaggerocristiano.it | no | yes | own | Pending deletion — no users, no longer needed |
+| ~~messaggerocristiano.it~~ | — | — | — | Deleted 2026-04-07 — no users, no longer needed |
 
 ---
 
