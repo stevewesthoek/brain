@@ -196,3 +196,20 @@ d = data[0]
 print(f'Latest: {d[\"deploymentId\"]} | {d[\"status\"]} | {d[\"startedAt\"]}')
 " && ssh dokploy "docker exec dokploy-redis.1.vx3yzxsd9xy31pwbvetq4ukhh redis-cli LRANGE bull:deployments:wait 0 5 2>/dev/null"
 
+[2026-04-06T09:23:08Z] AUTO-APPROVED | Sensitive credential file access or mutation detected.
+Command: source ~/.config/dokploy/.env
+
+# Get JPV Bootcamp's today log path
+result=$(curl -s -X GET "https://dokploy.prochat.tools/api/deployment.all?applicationId=aPR9SvYn_JvGdMTk3CzeI" -H "x-api-key: $DOKPLOY_API_KEY")
+logpath=$(echo "$result" | python3 -c "
+import sys, re
+raw = sys.stdin.read()
+items = re.findall(r'\{[^{}]*\"deploymentId\"[^{}]*\}', raw, re.DOTALL)
+if items:
+    item = items[0]
+    logpath = re.search(r'\"logPath\":\"([^\"]+)\"', item)
+    print(logpath.group(1) if logpath else '')
+" 2>&1)
+echo "JPV Bootcamp log: $logpath"
+ssh dokploy "grep -A5 'npm run build\|prisma generate\|error\|Error' '$logpath' 2>/dev/null | tail -40" 2>/dev/null | tail -30
+
