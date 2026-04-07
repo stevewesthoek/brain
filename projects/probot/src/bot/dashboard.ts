@@ -147,6 +147,7 @@ interface SchedulerJob {
   durationSeconds: number | null;
   lastRunAt: string | null;   // ISO string
   nextRunAt: string;          // ISO string — next 03:00 Lisbon
+  errorMessage: string | null;
 }
 
 function nextSchedulerRun(): string {
@@ -192,9 +193,10 @@ function getNightScheduler(): SchedulerJob[] {
         // approximate: Lisbon is UTC or UTC+1 — parse as UTC then note it's close enough
         if (!isNaN(d.getTime())) lastRunAt = d.toISOString();
       }
-      return { key, label, status, exitCode, durationSeconds, lastRunAt, nextRunAt: nextRun };
+      const errorMessage = kv["error_message"]?.trim() || null;
+      return { key, label, status, exitCode, durationSeconds, lastRunAt, nextRunAt: nextRun, errorMessage };
     } catch {
-      return { key, label, status: "never" as const, exitCode: null, durationSeconds: null, lastRunAt: null, nextRunAt: nextRun };
+      return { key, label, status: "never" as const, exitCode: null, durationSeconds: null, lastRunAt: null, nextRunAt: nextRun, errorMessage: null };
     }
   });
 }
@@ -439,6 +441,10 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
 .sched-name{font-weight:500;color:var(--text)}
 .sched-meta{font-size:11px;color:var(--subtle);font-family:var(--mono);margin-top:2px}
 .sched-dur{font-size:12px;font-family:var(--mono);color:var(--muted);text-align:right}
+.sched-err-row{background:var(--card)}
+.sched-err-row td{padding:0 12px 10px;border-bottom:1px solid var(--border)}
+.sched-err-row:last-of-type td{border-bottom:none}
+.sched-err{font-size:11px;font-family:var(--mono);color:var(--red);background:var(--red-d);border:1px solid rgba(248,113,113,.2);border-radius:5px;padding:6px 10px;line-height:1.5;word-break:break-all}
 /* loading */
 .loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--muted);font-size:13px;gap:10px}
 .spin{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
@@ -649,14 +655,18 @@ function renderScheduler(jobs){
     if(s<3600)return Math.floor(s/60)+'m '+( s%60)+'s';
     return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';
   }
-  const rows=jobs.map(j=>'<tr class="sched-row">'
-    +'<td><div class="sched-name">'+esc(j.label)+'</div></td>'
-    +'<td>'+statusBadge(j)+'</td>'
-    +'<td><div class="sched-meta">'+(j.lastRunAt?age(j.lastRunAt):'—')+'</div></td>'
-    +'<td><div class="sched-meta">'+fmtReset(j.nextRunAt)+'</div></td>'
-    +'<td class="sched-dur">'+fmtDur(j.durationSeconds)+'</td>'
-    +'</tr>'
-  ).join('');
+  const rows=jobs.map(j=>{
+    const errRow=(j.status==='failed'||j.status==='timeout')&&j.errorMessage
+      ?'<tr class="sched-err-row"><td colspan="5"><div class="sched-err">'+esc(j.errorMessage)+'</div></td></tr>'
+      :'';
+    return'<tr class="sched-row">'
+      +'<td><div class="sched-name">'+esc(j.label)+'</div></td>'
+      +'<td>'+statusBadge(j)+'</td>'
+      +'<td><div class="sched-meta">'+(j.lastRunAt?age(j.lastRunAt):'—')+'</div></td>'
+      +'<td><div class="sched-meta">'+fmtReset(j.nextRunAt)+'</div></td>'
+      +'<td class="sched-dur">'+fmtDur(j.durationSeconds)+'</td>'
+      +'</tr>'+errRow;
+  }).join('');
   const ok=jobs.filter(j=>j.status==='success').length;
   return'<div class="sec-hd" style="margin-bottom:12px"><span class="sec-title">Night Scheduler</span>'
     +'<span class="sec-count">'+ok+'/'+jobs.length+'</span></div>'

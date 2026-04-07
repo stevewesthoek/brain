@@ -187,6 +187,7 @@ run_claude_session_cleanup() {
 run_dance_of_life_sync() {
   local timeout_seconds="${DANCE_OF_LIFE_TIMEOUT_SECONDS:-21600}"  # 6 hours
   local sync_script="${DANCE_OF_LIFE_SYNC_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dance-of-life-sync.sh}"
+  local sync_log="$LOG_DIR/dance-of-life-sync.log"
   local command
 
   if [[ ! -x "$sync_script" ]]; then
@@ -194,8 +195,8 @@ run_dance_of_life_sync() {
     return 0
   fi
 
-  command="$(printf 'FORCE_RESCAN=1 %q' "$sync_script")"
-  run_job "dance-of-life-sync" "$timeout_seconds" "$command"
+  command="$(printf 'FORCE_RESCAN=1 %q >> %q 2>&1' "$sync_script" "$sync_log")"
+  run_job "dance-of-life-sync" "$timeout_seconds" "$command" "$sync_log"
 }
 
 run_gemini_cleanup() {
