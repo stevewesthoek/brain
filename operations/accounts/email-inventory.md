@@ -11,7 +11,7 @@ CLI access:
 
 ## Google Workspace (service account, domain-wide)
 
-All 17 domains and 20 users are accessed via a single service account with domain-wide delegation.
+All 17 domains and 21 users are accessed via a single service account with domain-wide delegation.
 Full inventory: `brain/operations/accounts/gws-org-inventory.md`
 
 ```bash
@@ -42,7 +42,20 @@ Entrypoints: `~/.local/bin/gws-provisioner`, `~/.local/bin/gws-destroyer`
 
 | Email | Type | Auth Status | Notes |
 |-------|------|-------------|-------|
-| westhoek@hotmail.com | Microsoft Personal (Hotmail/Live) | ✗ Browser only | CLI blocked by Microsoft |
+| westhoek@hotmail.com | Microsoft Personal (Hotmail/Live) | ✗ Browser only → forwarded to hotmail@prochat.tools | CLI blocked by Microsoft |
+
+### Forwarding setup (done in browser — one-time)
+
+All Hotmail email is forwarded to `hotmail@prochat.tools` (Google Workspace).
+Manage it from there via `gws-provisioner`.
+
+**In `outlook.live.com` → Settings → Mail → Forwarding:**
+- Enable forwarding → `hotmail@prochat.tools`
+
+**In `outlook.live.com` → Settings → Mail → Rules → New rule:**
+- Condition: applies to all messages
+- Action: Move to Deleted Items
+- This auto-trashes in Hotmail as each email is forwarded, keeping the Hotmail inbox clean
 
 ### Why CLI access is not possible (as of 2026-04-07)
 
