@@ -2,6 +2,7 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
+  "model": "sonnet",
   "hooks": {
     "PreToolUse": [
       {
@@ -75,6 +76,5 @@
     }
   },
   "autoDreamEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
-  "model": "haiku"
+  "skipDangerousModePermissionPrompt": true
 }
