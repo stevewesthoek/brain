@@ -70,6 +70,7 @@ Each project repo uses a conventional `ai/` directory for Claude handoff memory:
 | `~/.config/starship.toml` | `operations/system-configs/starship/starship.toml` |
 | `~/.config/ghostty/config` | `operations/system-configs/ghostty/config` |
 | `~/.config/git/ignore` | `operations/system-configs/git/ignore` |
+| `~/.docker` | `operations/system-configs/docker/` |
 
 `~/.claude.json` (Claude Code's MCP registrations) is **not** symlinked — it contains secrets. A safe template lives at `operations/system-configs/claude/claude.json.template`.
 
@@ -89,6 +90,7 @@ Use it for confirmed architecture and workflow decisions only.
 - `~/.codex` is a directory-level symlink → `brain/operations/system-configs/codex`. Do not delete or restructure that folder.
 - `~/.gemini` is a directory-level symlink → `brain/operations/system-configs/gemini`. Do not delete or restructure that folder.
 - `~/.kiro` is a directory-level symlink → `brain/operations/system-configs/kiro`. Do not delete or restructure that folder.
+- `~/.docker` is a directory-level symlink → `brain/operations/system-configs/docker`. Do not delete or restructure that folder — Docker Desktop will fail to start if the target doesn't exist.
 - `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are individual file symlinks → brain. Do not delete the source files in brain.
 - `tools/scripts/` contains workflow and setup scripts that are used on this machine — do not delete without checking if they are still in use.
 - `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` may be a symlink into `brain/operations/system-configs/launchagents/com.office.nightly-scheduler.plist`. Keep the repo file as the source of truth.
