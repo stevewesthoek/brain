@@ -199,6 +199,42 @@ run_dance_of_life_sync() {
   run_job "dance-of-life-sync" "$timeout_seconds" "$command" "$sync_log"
 }
 
+run_skill_prune() {
+  local day_of_month
+  day_of_month="$(TZ=Europe/Lisbon date +%-d)"
+
+  if [[ "$day_of_month" -ne 7 ]]; then
+    log "skipping job=skill-prune reason=not_prune_day day=$day_of_month"
+    return 0
+  fi
+
+  local month_key
+  month_key="$(TZ=Europe/Lisbon date +%Y-%m)"
+  local last_prune_file="$STATE_DIR/skill-prune.last-month"
+
+  if [[ -f "$last_prune_file" ]] && [[ "$(cat "$last_prune_file")" == "$month_key" ]]; then
+    log "skipping job=skill-prune reason=already_ran_this_month month=$month_key"
+    return 0
+  fi
+
+  local timeout_seconds="${SKILL_PRUNE_TIMEOUT_SECONDS:-300}"
+  local prune_log="$LOG_DIR/skill-prune.log"
+  local claude_bin
+  claude_bin="$(command -v claude 2>/dev/null || echo 'claude')"
+  local command
+  command=$(printf 'cd %q && %q --print %q >> %q 2>&1' \
+    "$HOME/Repos/stevewesthoek/brain" \
+    "$claude_bin" \
+    "/skill-prune" \
+    "$prune_log"
+  )
+
+  if run_job "skill-prune" "$timeout_seconds" "$command" "$prune_log"; then
+    printf '%s\n' "$month_key" > "$last_prune_file"
+    chmod 600 "$last_prune_file"
+  fi
+}
+
 run_gemini_cleanup() {
   local timeout_seconds="${GEMINI_CLEANUP_TIMEOUT_SECONDS:-60}"
   local gemini_dir="${HOME}/.gemini"
@@ -308,8 +344,11 @@ main() {
     fi
   fi
 
-  # Gemini tmp/history cleanup — always runs last, never stops chain
+  # Gemini tmp/history cleanup — never stops chain
   run_gemini_cleanup || log "warning gemini-cleanup failed but chain continues"
+
+  # Skill library pruning — runs on the 7th of each month only, never stops chain
+  run_skill_prune || log "warning skill-prune failed but chain continues"
 
   if [[ "$stop_chain" -eq 0 ]]; then
     printf '%s\n' "$today_lisbon" > "$LAST_COMPLETED_FILE"

@@ -131,6 +131,12 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Impact: `gws-provisioner` and `gws-destroyer` wrappers now provide org-wide access via `~/.config/gws/service-account.json`. Six client-domain accounts are hard-protected in the wrapper (exit 3 on any delete/suspend attempt). `gwsa` is deprecated for org accounts. `messaggerocristiano.it` domain scheduled for manual deletion (no users, no longer needed — requires `admin.directory.domain` write scope added to DWD first).
 - Rollback: Remove service account wrapper scripts from `operations/system-configs/bin/`, remove `~/.config/gws/service-account.json`, revert gws skill to per-account OAuth instructions, and re-add `gwsa`/`gwsa-login` shell functions to `.zshrc` if per-user OAuth is needed again.
 
+- Date: 2026-04-07
+- Decision: Add monthly skill library pruning via the nightly scheduler.
+- Context: The active skill library reached 79 skills. Beyond ~60 non-tool skills the token overhead and signal dilution outweigh the benefit of additional skills. A saturation point exists.
+- Impact: `/skill-prune` skill added at `ai/skills/custom/learned/skill-prune/`. Monthly pruning job added to `office-nightly-scheduler.sh` — fires on the 7th of each month, skips silently on all other nights. State tracked in `~/.local/state/office-scheduler/skill-prune.last-month`. Log at `~/Library/Logs/office-scheduler/skill-prune.log`. Skills README updated with maintenance policy and quality gate. Scheduler inventory updated with full chain member list. Two new learned skills also added this session: `dokploy-swarm-deploy-stale` and `nextjs-fixed-header-hero-flex-overflow`.
+- Rollback: Remove `run_skill_prune` function and its call from `office-nightly-scheduler.sh`. Remove `ai/skills/active/skill-prune` symlink and `ai/skills/custom/learned/skill-prune/`.
+
 - Date: 2026-04-06
 - Decision: Add Gemini CLI as a third AI engine (large-context preprocessor) in the unified system.
 - Context: Claude (orchestrator) + Codex (reviewer) needed a free-tier large-context engine. Gemini Flash has a 1M token context window and ~1500 RPD / 1M TPM free tier — ideal for preprocessing large inputs before handing to Claude/Codex.

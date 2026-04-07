@@ -61,6 +61,9 @@ These jobs are ordered by the nightly scheduler rather than owning their own dir
 | `1` | `stb-pipeline-batch` | `com.office.nightly-scheduler` | High variance. Treat as long-running. On `2026-04-04` it failed quickly because `brownnoise.wav` was missing. | `High` CPU, disk, network, API usage | If it times out, the chain stops. If it exits fast with an error, the chain logs it and continues. | Registered by the STB installer into `~/.local/state/office-scheduler/stb-pipeline-batch.env`. |
 | `2` | `n8n-backup` | `com.office.nightly-scheduler` | Likely `1-5 min` by inference from export scope and current log shape | `Low` to `Medium` CPU/network/SSH/container exec | If it times out, the chain stops. | Reuses `tools/scripts/run-n8n-backup-schedule.sh` inside the nightly lane. |
 | `3` | `claude-session-cleanup` | `com.office.nightly-scheduler` | Seconds | `Negligible` | If it times out, the chain stops. | Source: `operations/system-configs/claude/cleanup-sessions.sh`. |
+| `4` | `dance-of-life-sync` | `com.office.nightly-scheduler` | Up to 6 hours (bulk download); timeout does not stop chain | `Medium` network/disk during bulk download | Timeout does not stop chain — lowest priority job. | Source: `tools/scripts/dance-of-life-sync.sh`. |
+| `5` | `gemini-cleanup` | `com.office.nightly-scheduler` | Seconds | `Negligible` | Never stops chain. | Deletes `~/.gemini/tmp` and `~/.gemini/history` entries older than 7 days. |
+| `6` | `skill-prune` | `com.office.nightly-scheduler` | 1–5 min (Claude headless session) | `Negligible` | Never stops chain. Only executes on the 7th of each month; skips silently on all other days. State tracked in `~/.local/state/office-scheduler/skill-prune.last-month`. | Runs `claude --print '/skill-prune'` to review and propose pruning of the AI skill library. Log: `~/Library/Logs/office-scheduler/skill-prune.log`. Source: `ai/skills/custom/learned/skill-prune/SKILL.md`. |
 
 ## Persistent LaunchAgents / Daemons
 
@@ -142,4 +145,4 @@ Current implementation shape:
 - Keep hourly guards and always-on daemons outside that sequential runner unless they become expensive
 
 Last updated:
-- `2026-04-04 09:02 WEST`
+- `2026-04-07` — Added `dance-of-life-sync`, `gemini-cleanup`, and `skill-prune` to Nightly Chain Members table to reflect current scheduler state.
