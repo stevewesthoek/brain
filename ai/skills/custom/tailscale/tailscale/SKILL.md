@@ -9,7 +9,7 @@ description: Use when the user asks to inspect Tailscale network status, check n
 
 Help Claude and Codex inspect and reason about the Tailscale network safely using the local CLI wrapper. Tailscale is the primary private network for this infrastructure — all Azure VMs (dokploy, supabase) and the Office Mac communicate over Tailscale. Pre-flight checks use Tailscale to verify node reachability before SSH, backup, or deploy operations.
 
-This skill is read-only and observability-oriented. It does not manage the Tailscale account, ACLs, or auth keys — use the Tailscale admin console for those.
+This skill is primarily read-only and observability-oriented. For device removal and account management, use the Tailscale API (key at `~/.config/tailscale/.env`) or the admin console.
 
 ## Use this skill when
 
@@ -22,10 +22,25 @@ This skill is read-only and observability-oriented. It does not manage the Tails
 
 ## Do not use this skill for
 
-- Managing Tailscale ACLs, auth keys, or user permissions (use the admin console)
+- Managing Tailscale ACLs or user permissions (use the admin console)
 - Changing tailscale network configuration
 - Connecting or disconnecting the local node without explicit user confirmation
 - Any action that could disrupt the private network tunnel
+
+## Device removal via API
+
+API key is stored at `~/.config/tailscale/.env` (`TAILSCALE_API_KEY`).
+
+```bash
+source ~/.config/tailscale/.env
+
+# List all devices with IDs
+curl -s -u "$TAILSCALE_API_KEY:" "https://api.tailscale.com/api/v2/tailnet/-/devices" \
+  | python3 -c "import sys,json; [print(d['id'], d['hostname'], d['addresses']) for d in json.load(sys.stdin)['devices']]"
+
+# Remove a device by ID
+curl -s -X DELETE -u "$TAILSCALE_API_KEY:" "https://api.tailscale.com/api/v2/device/{deviceId}"
+```
 
 ## Safety rules
 
@@ -48,7 +63,7 @@ No auth config file needed — Tailscale uses its own daemon (`tailscaled`) and 
 
 ## Tailnet node inventory
 
-Current nodes as of 2026-04-04:
+Current nodes as of 2026-04-07:
 
 | Node | Tailscale IP | OS | Role | Status |
 |------|--------------|----|------|--------|
