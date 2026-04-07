@@ -28,7 +28,7 @@
 # after a config option, since it would be interpreted as part of the value.
 
 font-family = JetBrainsMono Nerd Font
-font-size = 14
+font-size = 13
 
 font-feature = calt,liga
 #font-feature = -calt,-liga,-dlig    # example: kill ligatures
