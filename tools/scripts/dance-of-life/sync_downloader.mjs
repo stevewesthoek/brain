@@ -182,8 +182,8 @@ async function crawl(page, syncId, parentRelPath, depth) {
 }
 
 // ─── DOWNLOAD ─────────────────────────────────────────────────────────────────
-async function downloadFile(page, folderSyncId, fileSyncId, destPath) {
-  // Navigate to parent folder
+async function captureDownloadUrl(page, folderSyncId, fileSyncId, attempt) {
+  // Re-navigate to parent folder on each attempt (fresh page state)
   await goTo(page, folderSyncId);
 
   // Scroll to make the row visible
@@ -191,7 +191,6 @@ async function downloadFile(page, folderSyncId, fileSyncId, destPath) {
     await page.locator(`tr[data-row-id="${fileSyncId}"]`).scrollIntoViewIfNeeded({ timeout: 5000 });
     await page.waitForTimeout(300);
   } catch {
-    // Scroll manually
     for (let i = 0; i < 5; i++) {
       const visible = await page.locator(`tr[data-row-id="${fileSyncId}"]`).isVisible().catch(() => false);
       if (visible) break;
@@ -200,38 +199,56 @@ async function downloadFile(page, folderSyncId, fileSyncId, destPath) {
     }
   }
 
-  // Set up URL capture
   let downloadUrl = null;
   await page.route('**syncusercontent**', async route => {
     const url = route.request().url();
     if (url.includes('/p/') && !url.includes('isup.txt')) {
       downloadUrl = url;
-      await route.abort(); // Don't let the browser download — curl handles it
+      await route.abort();
     } else {
       await route.continue();
     }
   });
 
   try {
-    // Click More button on this row
+    // Longer wait on retries to let the page settle
+    if (attempt > 1) await page.waitForTimeout(1000 * attempt);
+
     const row     = page.locator(`tr[data-row-id="${fileSyncId}"]`);
     const moreBtn = row.locator('button').last();
-    await moreBtn.click({ timeout: 5000 });
+    await moreBtn.click({ timeout: 8000 });
     await page.waitForTimeout(700);
 
-    // Click Download in popup
     const dlItem = page.locator('[role="menuitem"]').filter({ hasText: 'Download' });
-    await dlItem.click({ timeout: 5000 });
+    await dlItem.click({ timeout: 8000 });
 
-    // Wait for URL capture
     const deadline = Date.now() + 12_000;
     while (!downloadUrl && Date.now() < deadline) await page.waitForTimeout(200);
   } finally {
+    await page.keyboard.press('Escape').catch(() => {});
     await page.unroute('**syncusercontent**');
   }
 
+  return downloadUrl;
+}
+
+async function downloadFile(page, folderSyncId, fileSyncId, destPath) {
+  const MAX_ATTEMPTS = 3;
+  let downloadUrl = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      downloadUrl = await captureDownloadUrl(page, folderSyncId, fileSyncId, attempt);
+      if (downloadUrl) break;
+      log(`  ⚠️  No URL captured (attempt ${attempt}/${MAX_ATTEMPTS}): ${path.basename(destPath)}`);
+    } catch (err) {
+      const msg = err.message.split('\n')[0];
+      log(`  ⚠️  UI failed (attempt ${attempt}/${MAX_ATTEMPTS}): ${path.basename(destPath)} — ${msg}`);
+    }
+  }
+
   if (!downloadUrl) {
-    log(`  ⚠️  No URL captured for ${path.basename(destPath)}`);
+    log(`  ❌ Skipping after ${MAX_ATTEMPTS} attempts: ${path.basename(destPath)}`);
     return false;
   }
 
