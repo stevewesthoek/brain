@@ -229,7 +229,7 @@ Nodes without Tailscale:
 - `cloudpanel` (Hetzner) — uses Cloudflare Tunnel for SSH; no Tailscale installed
 
 Tag assignments:
-- `tagged-devices`: `dokploy`, `supabase`, `probot` — server nodes managed as tagged devices in the tailnet
+- `tagged-devices`: `dokploy`, `supabase` — server nodes managed as tagged devices in the tailnet
 
 ## Automation Interfaces
 
