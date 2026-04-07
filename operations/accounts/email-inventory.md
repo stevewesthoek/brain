@@ -5,7 +5,7 @@ Maintained in `brain/operations/accounts/email-inventory.md`.
 
 CLI access:
 - **Google Workspace accounts** → `gws-provisioner` / `gws-destroyer` (service account, domain-wide)
-- **Microsoft/Hotmail** → `m365 outlook mail list` (uses CLI for Microsoft 365)
+- **westhoek@hotmail.com** → `himalaya` (IMAP + app password) — setup pending
 
 ---
 
@@ -42,22 +42,30 @@ Entrypoints: `~/.local/bin/gws-provisioner`, `~/.local/bin/gws-destroyer`
 
 | Email | Type | Auth Status | Notes |
 |-------|------|-------------|-------|
-| westhoek@hotmail.com | Microsoft Personal (Hotmail/Live) | ⚠ Browser access only | CLI blocked — see below |
+| westhoek@hotmail.com | Microsoft Personal (Hotmail/Live) | ⚠ Pending setup | Himalaya + app password |
 
-### CLI access status: deferred
+### Setup (one-time)
 
-Two blockers encountered (2026-04-06):
+Free personal Hotmail accounts support standard IMAP — no app registration needed.
+Uses `himalaya` (terminal email client) with a Microsoft app password.
 
-1. **`az` CLI bug** — Azure CLI 2.84.0 crashes with `NoneType.get` when a personal account has no Azure subscriptions. Known upstream bug, unfixed as of this date.
-2. **`m365` CLI** — requires a custom Microsoft Entra app registration. Attempted but app ended up in wrong tenant ("Microsoft Services" instead of personal account tenant). Requires signing into `portal.azure.com` specifically as `westhoek@hotmail.com` to register the app correctly.
+1. Enable 2-step verification at `account.microsoft.com/security` (if not already on)
+2. Generate an app password: Security → Advanced security → App passwords
+3. Install himalaya: `brew install himalaya`
+4. Configure: `himalaya account configure` → IMAP host `outlook.office365.com:993`, login `westhoek@hotmail.com`, password: app password
 
-To unblock later:
-1. Open `portal.azure.com` in a private window, sign in as `westhoek@hotmail.com`
-2. App registrations → New registration → "Personal Microsoft accounts only" → Redirect URI: `http://localhost`
-3. Copy the App ID → run: `m365 login --appId <id> --authType browser`
-4. Save App ID: `m365 cli config set --key appId --value <id>`
+### Commands (once set up)
 
-For now: access `westhoek@hotmail.com` via browser/webmail at outlook.live.com.
+```bash
+# List inbox
+himalaya list
+
+# Read a message
+himalaya read <id>
+
+# Send email
+himalaya send
+```
 
 ---
 
@@ -73,4 +81,4 @@ For now: access `westhoek@hotmail.com` via browser/webmail at outlook.live.com.
 | Delete a user (non-client) | `gws-destroyer users delete <email>` |
 | Purge old emails | `gws-destroyer gmail purge <email> --query "older_than:1y"` |
 | List all domains | `gws-provisioner domains list` |
-| Read Hotmail inbox | `m365 outlook mail list` |
+| Read Hotmail inbox | `himalaya list` (setup pending — see above) |
