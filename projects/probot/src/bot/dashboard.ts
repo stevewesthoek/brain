@@ -131,59 +131,6 @@ async function getNRHealth(): Promise<NRHealth> {
 
 // ─── AI usage helpers ─────────────────────────────────────────────────────────
 
-interface BedrockCosts {
-  mtdUsd: number;
-  dailyUsd: number;
-  totalUsd: number;
-  monthResetDate: string;
-  error?: string;
-}
-
-async function getBedrockCosts(): Promise<BedrockCosts> {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-  const end   = now.toISOString().slice(0, 10);
-  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  // Use local date parts to avoid UTC offset shifting the day
-  const monthResetDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
-
-  // If start === end (first of month) cost explorer requires at least 1 day range
-  if (start === end) {
-    return { mtdUsd: 0, dailyUsd: 0, totalUsd: 0, monthResetDate };
-  }
-
-  try {
-    // Get MTD costs (all services, all accounts in organization)
-    const mtdCmd = `aws ce get-cost-and-usage --time-period Start=${start},End=${end} --granularity MONTHLY --metrics BlendedCost --output json`;
-    const mtdRes = await execAsync(mtdCmd, { timeout: 15_000 });
-    const mtdData = JSON.parse(mtdRes.stdout) as { ResultsByTime?: Array<{ Total?: { BlendedCost?: { Amount?: string } } }> };
-    const mtdAmount = parseFloat(mtdData.ResultsByTime?.[0]?.Total?.BlendedCost?.Amount ?? "0");
-
-    // Get daily costs (yesterday to today) - take the most recent day
-    const dailyCmd = `aws ce get-cost-and-usage --time-period Start=${yesterday},End=${end} --granularity DAILY --metrics BlendedCost --output json`;
-    const dailyRes = await execAsync(dailyCmd, { timeout: 15_000 });
-    const dailyData = JSON.parse(dailyRes.stdout) as { ResultsByTime?: Array<{ Total?: { BlendedCost?: { Amount?: string } } }> };
-    const dailyAmount = parseFloat(dailyData.ResultsByTime?.[dailyData.ResultsByTime.length - 1]?.Total?.BlendedCost?.Amount ?? "0");
-
-    // Get all-time total (last 12 months)
-    const allTimeStart = new Date(now.getFullYear() - 1, now.getMonth(), 1).toISOString().slice(0, 10);
-    const totalCmd = `aws ce get-cost-and-usage --time-period Start=${allTimeStart},End=${end} --granularity MONTHLY --metrics BlendedCost --output json`;
-    const totalRes = await execAsync(totalCmd, { timeout: 15_000 });
-    const totalData = JSON.parse(totalRes.stdout) as { ResultsByTime?: Array<{ Total?: { BlendedCost?: { Amount?: string } } }> };
-    const totalAmount = (totalData.ResultsByTime ?? []).reduce((sum, item) => sum + parseFloat(item.Total?.BlendedCost?.Amount ?? "0"), 0);
-
-    return {
-      mtdUsd: Math.round(mtdAmount * 100) / 100,
-      dailyUsd: Math.round(dailyAmount * 100) / 100,
-      totalUsd: Math.round(totalAmount * 100) / 100,
-      monthResetDate,
-    };
-  } catch (err) {
-    return { mtdUsd: 0, dailyUsd: 0, totalUsd: 0, monthResetDate, error: String(err) };
-  }
-}
-
 interface WindowUsage {
   remainingPercent: number;
   usedPercent: number;
@@ -266,13 +213,12 @@ async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
-  const [sessions, bedrock, nrHealth] = await Promise.all([
+  const [sessions, nrHealth] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
       app.config.codexSessionsDir,
       app.config.codexSessionIndex,
     ).catch(() => []),
-    getBedrockCosts(),
     getNRHealth(),
   ]);
   const codexUsage = getCodexUsage(app.config.codexSessionsDir);
@@ -290,7 +236,6 @@ async function getDashboardData(app: AppContext) {
       memTotalGB:  Math.round(memTotal / 1073741824 * 10) / 10,
       memPercent:  Math.round((memUsed / memTotal) * 100),
     },
-    bedrock,
     codexUsage,
     nrHealth,
     repos: getReposData(app),
@@ -536,27 +481,11 @@ function codexCard(label,w){
     +'<div class="ac-reset" style="margin-top:8px">'+fmtReset(w.resetsAt)+'</div>'
     +'</div>';
 }
-function renderAIUsage(bedrock,codex){
-  const bedrockErr=bedrock.error?'<div class="ac-err" title="'+esc(bedrock.error.slice(0,160))+'">⚠ '+esc(bedrock.error.slice(0,80))+'</div>':'';
-  const bedrockMtd='<div class="ac">'
-    +'<div class="ac-label">AWS Spend (MTD)</div>'
-    +'<div class="ac-value">'+(bedrock.error?'—':'$'+bedrock.mtdUsd.toFixed(2))+'</div>'
-    +(bedrockErr?bedrockErr:'<div class="ac-reset">Resets '+new Date(bedrock.monthResetDate+'T00:00:00').toLocaleDateString([],{month:'short',day:'numeric'})+'</div>')
-    +'</div>';
-  const bedrockDaily='<div class="ac">'
-    +'<div class="ac-label">AWS Spend (Daily)</div>'
-    +'<div class="ac-value">'+(bedrock.error?'—':'$'+bedrock.dailyUsd.toFixed(2))+'</div>'
-    +'<div class="ac-reset">latest 24h</div>'
-    +'</div>';
-  const bedrockTotal='<div class="ac">'
-    +'<div class="ac-label">AWS Spend (Total)</div>'
-    +'<div class="ac-value">'+(bedrock.error?'—':'$'+bedrock.totalUsd.toFixed(2))+'</div>'
-    +'<div class="ac-reset">last 12 months</div>'
-    +'</div>';
+function renderAIUsage(codex){
   const asOf=codex.asOf?'<div style="font-size:10px;color:var(--subtle);margin-top:4px">as of '+age(codex.asOf)+'</div>':'';
   return'<div class="sec-hd" style="margin-bottom:16px"><span class="sec-title">AI Usage</span>'
     +'<span class="sec-count" style="font-size:10px">'+asOf+'</span></div>'
-    +'<div class="ai-grid fade">'+bedrockMtd+bedrockDaily+bedrockTotal
+    +'<div class="ai-grid fade">'
     +codexCard('Codex · 5h Window',codex.fiveHour)
     +codexCard('Codex · 7d Window',codex.sevenDay)
     +'</div>';
@@ -620,7 +549,7 @@ function render(d){
   document.getElementById('host').textContent=d.meta.hostname;
   document.getElementById('upd').textContent='updated '+age(d.meta.updatedAt);
   document.getElementById('stats').innerHTML=renderStats(d.meta,d.machine);
-  document.getElementById('aiusage').innerHTML=renderAIUsage(d.bedrock,d.codexUsage);
+  document.getElementById('aiusage').innerHTML=renderAIUsage(d.codexUsage);
   document.getElementById('nrhealth').innerHTML=renderNRHealth(d.nrHealth);
   const rhtml=d.repos.length===0
     ?'<div class="empty">No repo aliases configured.</div>'
