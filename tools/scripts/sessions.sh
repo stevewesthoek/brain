@@ -219,50 +219,86 @@ from datetime import datetime, timezone
 gemini_dir = sys.argv[1]
 home = os.path.expanduser("~")
 
-# Gemini stores checkpoints under ~/.gemini/tmp/
-checkpoints_dir = os.path.join(gemini_dir, "tmp")
-sessions = []
+# Load project path → name mapping
+projects_file = os.path.join(gemini_dir, "projects.json")
+try:
+    with open(projects_file) as f:
+        projects_map = json.load(f).get("projects", {})  # {"/abs/path": "name"}
+except Exception:
+    projects_map = {}
 
-if not os.path.isdir(checkpoints_dir):
+# Invert to name → abs path
+name_to_path = {v: k for k, v in projects_map.items()}
+
+tmp_dir = os.path.join(gemini_dir, "tmp")
+all_sessions = []
+
+if not os.path.isdir(tmp_dir):
     sys.exit(0)
 
-for entry in sorted(os.listdir(checkpoints_dir)):
-    entry_path = os.path.join(checkpoints_dir, entry)
-    if not os.path.isdir(entry_path):
+for proj_name in os.listdir(tmp_dir):
+    chats_dir = os.path.join(tmp_dir, proj_name, "chats")
+    if not os.path.isdir(chats_dir):
         continue
 
-    meta_file = os.path.join(entry_path, "checkpoint.json")
-    if not os.path.exists(meta_file):
-        continue
+    proj_path = name_to_path.get(proj_name, "")
 
-    try:
-        with open(meta_file) as f:
-            meta = json.load(f)
-    except Exception:
-        continue
-
-    timestamp = meta.get("timestamp") or meta.get("created_at", "")
-    cwd = meta.get("cwd") or meta.get("workdir", "~")
-    summary = meta.get("description") or meta.get("summary") or entry
-
-    if not timestamp:
+    proj_sessions = []
+    for filename in os.listdir(chats_dir):
+        if not filename.endswith(".json"):
+            continue
+        filepath = os.path.join(chats_dir, filename)
         try:
-            mtime = os.path.getmtime(meta_file)
-            timestamp = datetime.fromtimestamp(mtime, timezone.utc).isoformat()
+            with open(filepath) as f:
+                data = json.load(f)
         except Exception:
             continue
 
-    sessions.append({
-        "id": entry,
-        "cwd": cwd,
-        "timestamp": timestamp,
-        "summary": str(summary)[:120].replace("\n", " "),
-    })
+        session_id = data.get("sessionId", filename[:-5])
+        timestamp = data.get("lastUpdated") or data.get("startTime", "")
+        if not timestamp:
+            try:
+                mtime = os.path.getmtime(filepath)
+                timestamp = datetime.fromtimestamp(mtime, timezone.utc).isoformat()
+            except Exception:
+                continue
 
-sessions.sort(key=lambda s: s["timestamp"], reverse=True)
+        # Extract first user message as summary
+        summary = ""
+        for msg in data.get("messages", []):
+            if msg.get("type") != "user":
+                continue
+            parts = msg.get("content", [])
+            if isinstance(parts, list):
+                text = " ".join(p.get("text", "") for p in parts if isinstance(p, dict)).strip()
+            elif isinstance(parts, str):
+                text = parts.strip()
+            else:
+                continue
+            if text and not text.startswith("<"):
+                summary = text[:120].replace("\n", " ")
+                break
+
+        if not summary:
+            summary = session_id
+
+        proj_sessions.append({
+            "session_id": session_id,
+            "cwd": proj_path or proj_name,
+            "timestamp": timestamp,
+            "summary": summary,
+        })
+
+    # Sort newest-first within project; resume index is 1-based position
+    proj_sessions.sort(key=lambda s: s["timestamp"], reverse=True)
+    for idx, s in enumerate(proj_sessions, start=1):
+        s["resume_index"] = idx
+        all_sessions.append(s)
+
+all_sessions.sort(key=lambda s: s["timestamp"], reverse=True)
 
 now = datetime.now(timezone.utc)
-for s in sessions:
+for s in all_sessions:
     try:
         ts = datetime.fromisoformat(s["timestamp"].replace("Z", "+00:00"))
         delta = now - ts
@@ -282,7 +318,8 @@ for s in sessions:
     parts = [p for p in cwd.split("/") if p]
     short_proj = "/".join(parts[-2:]) if len(parts) >= 2 else cwd
 
-    print(f"{age}\t{short_proj}\t{s['summary']}\t{s['cwd']}\t{s['id']}")
+    # Columns: age | project | summary | full_cwd | resume_index
+    print(f"{age}\t{short_proj}\t{s['summary']}\t{s['cwd']}\t{s['resume_index']}")
 PYEOF
 }
 
@@ -346,6 +383,6 @@ else
     2>/dev/null)
   [[ -z "$selected" ]] && exit 0
   selected_cwd=$(echo "$selected" | cut -f4)
-  selected_sid=$(echo "$selected" | cut -f5)
-  cd "$selected_cwd" && exec gemini --resume "$selected_sid"
+  selected_idx=$(echo "$selected" | cut -f5)
+  cd "$selected_cwd" && exec gemini --resume "$selected_idx"
 fi
