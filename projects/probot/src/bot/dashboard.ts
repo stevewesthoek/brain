@@ -129,6 +129,76 @@ async function getNRHealth(): Promise<NRHealth> {
   }
 }
 
+// ─── Night scheduler helpers ──────────────────────────────────────────────────
+
+const SCHEDULER_JOB_ORDER: Array<{ key: string; label: string }> = [
+  { key: "stb-pipeline-batch",    label: "STB Pipeline" },
+  { key: "n8n-backup",            label: "n8n Backup" },
+  { key: "claude-session-cleanup", label: "Claude Cleanup" },
+  { key: "dance-of-life-sync",    label: "Dance of Life Sync" },
+  { key: "gemini-cleanup",        label: "Gemini Cleanup" },
+];
+
+interface SchedulerJob {
+  key: string;
+  label: string;
+  status: "success" | "failed" | "timeout" | "never";
+  exitCode: number | null;
+  durationSeconds: number | null;
+  lastRunAt: string | null;   // ISO string
+  nextRunAt: string;          // ISO string — next 03:00 Lisbon
+}
+
+function nextSchedulerRun(): string {
+  // Next 03:00 Europe/Lisbon — compute by formatting current time in that tz
+  const now = new Date();
+  const lisbonStr = now.toLocaleString("en-CA", { timeZone: "Europe/Lisbon", hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  // lisbonStr: "YYYY-MM-DD, HH:MM"
+  const parts = lisbonStr.split(", ");
+  const datePart = parts[0] ?? "";
+  const timePart = parts[1] ?? "00:00";
+  const lisbonHour = parseInt(timePart.split(":")[0] ?? "0", 10);
+  const dateParts = datePart.split("-").map(Number);
+  const yyyy = dateParts[0] ?? 2026;
+  const mm   = dateParts[1] ?? 1;
+  const dd   = dateParts[2] ?? 1;
+  // If already past 03:00, next run is tomorrow
+  const candidate = new Date(Date.UTC(yyyy, mm - 1, lisbonHour >= 3 ? dd + 1 : dd, 3, 0, 0));
+  return candidate.toISOString();
+}
+
+function getNightScheduler(): SchedulerJob[] {
+  const stateDir = path.join(os.homedir(), ".local", "state", "office-scheduler");
+  const nextRun = nextSchedulerRun();
+
+  return SCHEDULER_JOB_ORDER.map(({ key, label }) => {
+    const stateFile = path.join(stateDir, `${key}.last`);
+    try {
+      const raw = fs.readFileSync(stateFile, "utf8");
+      const kv: Record<string, string> = {};
+      for (const line of raw.trim().split("\n")) {
+        const eq = line.indexOf("=");
+        if (eq !== -1) kv[line.slice(0, eq)] = line.slice(eq + 1);
+      }
+      const status = (kv["status"] ?? "failed") as SchedulerJob["status"];
+      const exitCode = kv["exit_code"] !== undefined ? parseInt(kv["exit_code"], 10) : null;
+      const durationSeconds = kv["duration_seconds"] !== undefined ? parseInt(kv["duration_seconds"], 10) : null;
+      // Parse "YYYY-MM-DD HH:MM:SS WEST/WET" — treat as Europe/Lisbon
+      let lastRunAt: string | null = null;
+      if (kv["updated_at_lisbon"]) {
+        const cleaned = kv["updated_at_lisbon"].replace(/ (WEST|WET|CEST|CET)$/, "");
+        const d = new Date(cleaned + " GMT+0000");
+        // approximate: Lisbon is UTC or UTC+1 — parse as UTC then note it's close enough
+        if (!isNaN(d.getTime())) lastRunAt = d.toISOString();
+      }
+      return { key, label, status, exitCode, durationSeconds, lastRunAt, nextRunAt: nextRun };
+    } catch {
+      return { key, label, status: "never" as const, exitCode: null, durationSeconds: null, lastRunAt: null, nextRunAt: nextRun };
+    }
+  });
+}
+
 // ─── AI usage helpers ─────────────────────────────────────────────────────────
 
 interface WindowUsage {
@@ -238,6 +308,7 @@ async function getDashboardData(app: AppContext) {
     },
     codexUsage,
     nrHealth,
+    scheduler: getNightScheduler(),
     repos: getReposData(app),
     sessions: sessions.slice(0, 8).map((s) => ({
       tool: s.tool, projectLabel: s.projectLabel,
@@ -348,6 +419,26 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
 .ac-err{font-size:11px;color:var(--red);margin-top:2px}
 .ac-row{display:flex;gap:6px;align-items:baseline}
 .ac-unit{font-size:13px;color:var(--muted);font-weight:400;font-family:var(--font)}
+/* night scheduler */
+.sched-table{width:100%;border-collapse:collapse;margin-bottom:36px}
+.sched-table th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--subtle);font-weight:500;text-align:left;padding:0 12px 8px}
+.sched-table th:last-child{text-align:right}
+.sched-row{background:var(--card);border-bottom:1px solid var(--border);transition:background .15s}
+.sched-row:first-of-type td:first-child{border-radius:10px 0 0 0}
+.sched-row:first-of-type td:last-child{border-radius:0 10px 0 0}
+.sched-row:last-of-type td:first-child{border-radius:0 0 0 10px}
+.sched-row:last-of-type td:last-child{border-radius:0 0 10px 0}
+.sched-row:last-of-type{border-bottom:none}
+.sched-row:hover{background:var(--card2)}
+.sched-row td{padding:12px 12px;font-size:13px;vertical-align:middle}
+.sched-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:3px 8px;border-radius:5px}
+.sched-ok{background:var(--green-d);color:var(--green);border:1px solid rgba(52,211,153,.2)}
+.sched-fail{background:var(--red-d);color:var(--red);border:1px solid rgba(248,113,113,.2)}
+.sched-timeout{background:var(--amber-d);color:var(--amber);border:1px solid rgba(251,191,36,.2)}
+.sched-never{background:var(--gray-d);color:var(--gray);border:1px solid rgba(75,85,99,.2)}
+.sched-name{font-weight:500;color:var(--text)}
+.sched-meta{font-size:11px;color:var(--subtle);font-family:var(--mono);margin-top:2px}
+.sched-dur{font-size:12px;font-family:var(--mono);color:var(--muted);text-align:right}
 /* loading */
 .loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--muted);font-size:13px;gap:10px}
 .spin{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
@@ -386,6 +477,7 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
   <div id="stats"><div class="loading"><div class="spin"></div>Loading...</div></div>
   <div id="aiusage"></div>
   <div id="nrhealth"></div>
+  <div id="scheduler"></div>
   <div id="repos"></div>
   <div id="sessions"></div>
 </main>
@@ -544,6 +636,34 @@ function sessionItem(s){
     +(s.activeInTmux?'<span class="tmux">tmux</span>':'')
     +'</div></div>';
 }
+function renderScheduler(jobs){
+  function statusBadge(j){
+    if(j.status==='success')return'<span class="sched-status sched-ok">✓ success</span>';
+    if(j.status==='timeout')return'<span class="sched-status sched-timeout">⏱ timeout</span>';
+    if(j.status==='failed')return'<span class="sched-status sched-fail">✗ failed'+(j.exitCode!==null?' ('+j.exitCode+')':\'\')+'</span>';
+    return'<span class="sched-status sched-never">— never run</span>';
+  }
+  function fmtDur(s){
+    if(s===null)return'—';
+    if(s<60)return s+'s';
+    if(s<3600)return Math.floor(s/60)+'m '+( s%60)+'s';
+    return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';
+  }
+  const rows=jobs.map(j=>'<tr class="sched-row">'
+    +'<td><div class="sched-name">'+esc(j.label)+'</div></td>'
+    +'<td>'+statusBadge(j)+'</td>'
+    +'<td><div class="sched-meta">'+(j.lastRunAt?age(j.lastRunAt):'—')+'</div></td>'
+    +'<td><div class="sched-meta">'+fmtReset(j.nextRunAt)+'</div></td>'
+    +'<td class="sched-dur">'+fmtDur(j.durationSeconds)+'</td>'
+    +'</tr>'
+  ).join('');
+  const ok=jobs.filter(j=>j.status==='success').length;
+  return'<div class="sec-hd" style="margin-bottom:12px"><span class="sec-title">Night Scheduler</span>'
+    +'<span class="sec-count">'+ok+'/'+jobs.length+'</span></div>'
+    +'<div class="fade"><table class="sched-table">'
+    +'<thead><tr><th>Job</th><th>Status</th><th>Last run</th><th>Next run</th><th style="text-align:right">Duration</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table></div>';
+}
 function render(d){
   _d=d;
   document.getElementById('host').textContent=d.meta.hostname;
@@ -551,6 +671,7 @@ function render(d){
   document.getElementById('stats').innerHTML=renderStats(d.meta,d.machine);
   document.getElementById('aiusage').innerHTML=renderAIUsage(d.codexUsage);
   document.getElementById('nrhealth').innerHTML=renderNRHealth(d.nrHealth);
+  document.getElementById('scheduler').innerHTML=renderScheduler(d.scheduler||[]);
   const rhtml=d.repos.length===0
     ?'<div class="empty">No repo aliases configured.</div>'
     :'<div class="repos fade">'+d.repos.map(repoCard).join('')+'</div>';

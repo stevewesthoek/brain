@@ -57,12 +57,3 @@ repos() {
 sessions() {
   bash ~/Repos/stevewesthoek/brain/tools/scripts/sessions.sh
 }
-
-# Multi-account Google Workspace CLI
-gwsa() {
-  bash ~/Repos/stevewesthoek/brain/tools/scripts/gwsa.sh "$@"
-}
-
-gwsa-login() {
-  bash ~/Repos/stevewesthoek/brain/tools/scripts/gwsa-login.sh "$@"
-}

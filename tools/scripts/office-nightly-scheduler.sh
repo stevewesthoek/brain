@@ -27,15 +27,19 @@ write_job_state() {
   local status="$2"
   local exit_code="$3"
   local duration_seconds="$4"
+  local error_message="${5:-}"
   local state_file="$STATE_DIR/${job_name}.last"
 
-  cat > "$state_file" <<EOF
-job_name=$job_name
-status=$status
-exit_code=$exit_code
-duration_seconds=$duration_seconds
-updated_at_lisbon=$(timestamp)
-EOF
+  {
+    printf 'job_name=%s\n' "$job_name"
+    printf 'status=%s\n' "$status"
+    printf 'exit_code=%s\n' "$exit_code"
+    printf 'duration_seconds=%s\n' "$duration_seconds"
+    printf 'updated_at_lisbon=%s\n' "$(timestamp)"
+    if [[ -n "$error_message" ]]; then
+      printf 'error_message=%s\n' "$error_message"
+    fi
+  } > "$state_file"
   chmod 600 "$state_file"
 }
 
@@ -65,10 +69,20 @@ except subprocess.TimeoutExpired:
 PY
 }
 
+_read_error_snippet() {
+  local log_file="$1"
+  local lines="${2:-3}"
+  if [[ -f "$log_file" ]]; then
+    # Last $lines non-empty lines, collapsed to one line, max 200 chars
+    grep -v '^\s*$' "$log_file" | tail -"$lines" | tr '\n' ' ' | cut -c1-200
+  fi
+}
+
 run_job() {
   local job_name="$1"
   local timeout_seconds="$2"
   local command="$3"
+  local error_log="${4:-}"   # optional: log file to read for error snippet on failure
 
   local started_at
   local ended_at
@@ -87,12 +101,16 @@ run_job() {
     local exit_code="$?"
     ended_at="$(date +%s)"
     duration_seconds="$((ended_at - started_at))"
+    local error_snippet=""
+    if [[ -n "$error_log" ]]; then
+      error_snippet="$(_read_error_snippet "$error_log")"
+    fi
 
     if [[ "$exit_code" -eq 124 ]]; then
-      write_job_state "$job_name" "timeout" "$exit_code" "$duration_seconds"
+      write_job_state "$job_name" "timeout" "$exit_code" "$duration_seconds" "$error_snippet"
       log "finished job=$job_name status=timeout duration=${duration_seconds}s"
     else
-      write_job_state "$job_name" "failed" "$exit_code" "$duration_seconds"
+      write_job_state "$job_name" "failed" "$exit_code" "$duration_seconds" "$error_snippet"
       log "finished job=$job_name status=failed exit_code=$exit_code duration=${duration_seconds}s"
     fi
 
@@ -133,7 +151,7 @@ run_stb_pipeline_batch() {
       "$batch_log"
   )
 
-  run_job "stb-pipeline-batch" "$timeout_seconds" "$command"
+  run_job "stb-pipeline-batch" "$timeout_seconds" "$command" "$batch_log"
 }
 
 run_n8n_backup() {
@@ -148,12 +166,13 @@ run_n8n_backup() {
       "$backup_log"
   )
 
-  run_job "n8n-backup" "$timeout_seconds" "$command"
+  run_job "n8n-backup" "$timeout_seconds" "$command" "$backup_log"
 }
 
 run_claude_session_cleanup() {
   local timeout_seconds="${CLAUDE_CLEANUP_TIMEOUT_SECONDS:-300}"
   local cleanup_script="${CLAUDE_CLEANUP_SCRIPT:-$HOME/.claude/cleanup-sessions.sh}"
+  local cleanup_log="$LOG_DIR/claude-cleanup.log"
   local command
 
   if [[ ! -x "$cleanup_script" ]]; then
@@ -161,8 +180,8 @@ run_claude_session_cleanup() {
     return 0
   fi
 
-  command="$(printf '%q' "$cleanup_script")"
-  run_job "claude-session-cleanup" "$timeout_seconds" "$command"
+  command="$(printf '%q >> %q 2>&1' "$cleanup_script" "$cleanup_log")"
+  run_job "claude-session-cleanup" "$timeout_seconds" "$command" "$cleanup_log"
 }
 
 run_dance_of_life_sync() {

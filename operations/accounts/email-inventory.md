@@ -36,14 +36,6 @@ Service account key: `~/.config/gws/service-account.json`
 Admin subject: `info@prochat.tools`
 Entrypoints: `~/.local/bin/gws-provisioner`, `~/.local/bin/gws-destroyer`
 
-### Deprecated: per-user OAuth (gwsa)
-
-`gwsa` and `gwsa-login` are deprecated for org accounts. The service account covers all current
-and future users without per-account browser logins.
-
-`~/.config/gws-accounts/` and `~/.config/gws/client_secret.json` are kept in place for the
-`gws` CLI tool (non-org personal use only) but no longer required for org operations.
-
 ---
 
 ## Microsoft / Personal Accounts

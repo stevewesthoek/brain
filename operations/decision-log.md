@@ -129,7 +129,7 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Decision: Replace per-user OAuth GWS access (gwsa) with a single service account with domain-wide delegation, following the provisioner/destroyer wrapper pattern used by AWS, Azure, and Cloudflare.
 - Context: The org has 17 domains and 20 users across yeshua.academy (primary), prochat.tools, and 15 additional domains including 6 client-owned domains. Per-user OAuth required a separate browser login per account and had no protection model.
 - Impact: `gws-provisioner` and `gws-destroyer` wrappers now provide org-wide access via `~/.config/gws/service-account.json`. Six client-domain accounts are hard-protected in the wrapper (exit 3 on any delete/suspend attempt). `gwsa` is deprecated for org accounts. `messaggerocristiano.it` domain scheduled for manual deletion (no users, no longer needed — requires `admin.directory.domain` write scope added to DWD first).
-- Rollback: Re-authenticate per-user accounts via `gwsa-login`, remove service account wrapper scripts from `operations/system-configs/bin/`, revert gws skill to per-user instructions.
+- Rollback: Remove service account wrapper scripts from `operations/system-configs/bin/`, remove `~/.config/gws/service-account.json`, revert gws skill to per-account OAuth instructions, and re-add `gwsa`/`gwsa-login` shell functions to `.zshrc` if per-user OAuth is needed again.
 
 - Date: 2026-04-06
 - Decision: Add Gemini CLI as a third AI engine (large-context preprocessor) in the unified system.

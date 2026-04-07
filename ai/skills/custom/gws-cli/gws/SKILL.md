@@ -107,23 +107,6 @@ Quick reference: `operations/accounts/email-inventory.md`
 
 ---
 
-## Deprecated: per-user OAuth (gwsa)
-
-`gwsa` and `gwsa-login` are deprecated for org accounts. The service account covers all current
-and future users without browser logins.
-
-```bash
-# OLD — deprecated, do not use for org accounts
-gwsa info@arkware.solutions gmail users messages list ...
-
-# NEW
-gws-provisioner gmail list info@arkware.solutions --max 10
-```
-
-`gwsa` may still be used for non-org personal Google accounts not part of the GWS org.
-
----
-
 ## Notes
 - Service account key: `~/.config/gws/service-account.json`
 - Admin subject (DWD impersonation): `info@prochat.tools`
