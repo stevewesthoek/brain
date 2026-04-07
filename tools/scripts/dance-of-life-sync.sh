@@ -23,12 +23,13 @@ if [[ ! -f "$DOWNLOADER" ]]; then
   exit 1
 fi
 
-# Require bun
-if ! command -v bun &>/dev/null; then
-  echo "ERROR: bun is not installed. Install it with: curl -fsSL https://bun.sh/install | bash" >&2
+# Locate bun (launchd has a minimal PATH, so check known install location too)
+BUN_BIN="$(command -v bun 2>/dev/null || echo "$HOME/.bun/bin/bun")"
+if [[ ! -x "$BUN_BIN" ]]; then
+  echo "ERROR: bun not found. Install it with: curl -fsSL https://bun.sh/install | bash" >&2
   exit 1
 fi
 
 export FORCE_RESCAN="${FORCE_RESCAN:-1}"
 
-exec bun "$DOWNLOADER"
+exec "$BUN_BIN" "$DOWNLOADER"
