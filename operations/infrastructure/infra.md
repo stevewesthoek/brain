@@ -245,6 +245,14 @@ These are the standard AI-agnostic interfaces both Claude and Codex should use:
 | CloudPanel | `~/.local/bin/cloudpanel-cli` | Production-scoped; confirm before mutations |
 | Tailscale | `~/.local/bin/tailscale-cli` | Network observability: node status, reachability checks, pre-flight pings before SSH |
 
+## Credentials
+
+All API keys, tokens, and credentials are indexed (no values, just metadata) at:
+
+- **`operations/accounts/credentials-index.md`** — service name, variable name, file path, purpose, rotation cadence, and regeneration URL for every credential on this machine.
+
+Run `sync-credentials` at any time to scan `~/.config/` for new `.env` files and append untracked entries. A PostToolUse hook fires automatically whenever Claude writes or edits a `.env` file.
+
 ## Recovery-Critical Notes
 
 - The n8n recovery path is already documented and automated; do not rely on the n8n UI as the only source of credential truth.

@@ -78,6 +78,12 @@ Local machine secrets that are intentionally not in-repo:
 - `~/.config/dokploy/.env`
 - `~/.config/n8n/.env`
 
+## Credentials
+
+All API keys, tokens, and credentials are indexed (no values) at `operations/accounts/credentials-index.md`.
+Run `sync-credentials` to scan `~/.config/` for new `.env` files and append untracked entries.
+A PostToolUse hook auto-runs `sync-credentials` whenever Claude writes or edits a `.env` file.
+
 ## Decision log
 
 The decision log for this repo lives at `operations/decision-log.md`.
