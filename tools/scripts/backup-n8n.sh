@@ -18,11 +18,9 @@ find_n8n_container() {
 
 CONTAINER="${N8N_DOCKER_CONTAINER:-}"
 
-# Tailscale pre-flight: verify node is reachable before SSH
-_ts="${TAILSCALE_BIN:-$HOME/.local/bin/tailscale-cli}"
-[[ -x "$_ts" ]] || _ts="$(command -v tailscale 2>/dev/null || true)"
-if [[ -n "$_ts" ]] && ! "$_ts" ping -c 1 --timeout 5s "$SSH_TARGET" >/dev/null 2>&1; then
-  echo "Pre-flight failed: Tailscale node '$SSH_TARGET' is unreachable. Aborting." >&2
+# Pre-flight: verify SSH is reachable before running backup
+if ! ssh -o ConnectTimeout=10 -o BatchMode=yes "$SSH_TARGET" true 2>/dev/null; then
+  echo "Pre-flight failed: SSH to '$SSH_TARGET' is unreachable. Aborting." >&2
   exit 1
 fi
 
