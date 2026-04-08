@@ -201,3 +201,6 @@ Entries detected by `sync-credentials` that are not yet categorized. Move each r
 | `PROBOT_REPO_ALIASES` | `~/.config/probot/.env` | 2026-04-07 |
 | `NEW_RELIC_USER_API_KEY` | `~/.config/probot/.env` | 2026-04-07 |
 | `NEW_RELIC_ACCOUNT_ID` | `~/.config/probot/.env` | 2026-04-07 |
+| `UMAMI_URL` | `~/.config/probot/.env` | 2026-04-08 |
+| `UMAMI_USERNAME` | `~/.config/probot/.env` | 2026-04-08 |
+| `UMAMI_PASSWORD` | `~/.config/probot/.env` | 2026-04-08 |
