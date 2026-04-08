@@ -285,6 +285,145 @@ async function getNRHealth(): Promise<NRHealth> {
   }
 }
 
+// ─── Umami helpers ────────────────────────────────────────────────────────────
+
+interface UmamiWebsiteStats {
+  pageviews: number;
+  visitors: number;
+  visits: number;
+  bounceRate: number;
+  avgDurationSeconds: number;
+}
+
+interface UmamiWebsite {
+  id: string;
+  name: string;
+  domain: string;
+  active: number;
+  stats: UmamiWebsiteStats | null;
+  error?: string;
+}
+
+interface UmamiData {
+  websites: UmamiWebsite[];
+  error?: string;
+}
+
+let _umamiToken: { value: string; expiresAt: number } | null = null;
+
+async function getUmamiData(): Promise<UmamiData> {
+  const baseUrl = (process.env.UMAMI_URL ?? "").replace(/\/$/, "");
+  if (!baseUrl) return { websites: [], error: "UMAMI_URL not configured" };
+
+  const apiKey   = process.env.UMAMI_API_KEY ?? "";
+  const username = process.env.UMAMI_USERNAME ?? "";
+  const password = process.env.UMAMI_PASSWORD ?? "";
+
+  if (!apiKey && (!username || !password)) {
+    return { websites: [], error: "No credentials — set UMAMI_API_KEY or UMAMI_USERNAME + UMAMI_PASSWORD" };
+  }
+
+  let bearerToken = "";
+  if (!apiKey) {
+    if (_umamiToken && Date.now() < _umamiToken.expiresAt) {
+      bearerToken = _umamiToken.value;
+    } else {
+      try {
+        const { stdout } = await execAsync(
+          `curl -s -X POST '${baseUrl}/api/auth/login' \
+            -H 'Content-Type: application/json' \
+            -d ${JSON.stringify(JSON.stringify({ username, password }))}`,
+          { timeout: 10_000 }
+        );
+        const resp = JSON.parse(stdout) as { token?: string };
+        if (!resp.token) throw new Error("Login failed — check credentials");
+        _umamiToken = { value: resp.token, expiresAt: Date.now() + 55 * 60_000 };
+        bearerToken = resp.token;
+      } catch (err) {
+        return { websites: [], error: `Auth failed: ${String(err)}` };
+      }
+    }
+  }
+
+  const authFlag = apiKey
+    ? `-H 'x-umami-api-key: ${apiKey}'`
+    : `-H 'Authorization: Bearer ${bearerToken}'`;
+
+  const startAt = new Date().setHours(0, 0, 0, 0); // start of today, local time
+  const endAt   = Date.now();
+
+  try {
+    const { stdout: listRaw } = await execAsync(
+      `curl -s '${baseUrl}/api/websites?pageSize=100' ${authFlag}`,
+      { timeout: 10_000 }
+    );
+    const listResp = JSON.parse(listRaw) as
+      | Array<{ id: string; name: string; domain: string }>
+      | { data?: Array<{ id: string; name: string; domain: string }> };
+    const list = Array.isArray(listResp) ? listResp : (listResp.data ?? []);
+
+    const websites: UmamiWebsite[] = await Promise.all(
+      list.slice(0, 25).map(async (site): Promise<UmamiWebsite> => {
+        try {
+          const [statsRaw, activeRaw] = await Promise.all([
+            execAsync(
+              `curl -s '${baseUrl}/api/websites/${site.id}/stats?startAt=${startAt}&endAt=${endAt}' ${authFlag}`,
+              { timeout: 10_000 }
+            ).then(({ stdout }) => stdout),
+            execAsync(
+              `curl -s '${baseUrl}/api/websites/${site.id}/active' ${authFlag}`,
+              { timeout: 10_000 }
+            ).then(({ stdout }) => stdout),
+          ]);
+
+          const s = JSON.parse(statsRaw) as {
+            pageviews?: { value?: number };
+            visitors?: { value?: number };
+            visits?: { value?: number };
+            bounces?: { value?: number };
+            totaltime?: { value?: number };
+          };
+          // Umami v1 returns { x: n }, v2 may return { visitors: n } or an array
+          const activeResp = JSON.parse(activeRaw) as
+            | { x?: number; visitors?: number }
+            | number
+            | Array<{ x?: number }>;
+          const active = typeof activeResp === "number"
+            ? activeResp
+            : Array.isArray(activeResp)
+              ? (activeResp[0]?.x ?? 0)
+              : (activeResp?.visitors ?? activeResp?.x ?? 0);
+
+          const visits = s.visits?.value ?? 0;
+          const bounceRate = visits > 0 ? Math.round(((s.bounces?.value ?? 0) / visits) * 100) : 0;
+          const avgDurationSeconds = visits > 0 ? Math.round((s.totaltime?.value ?? 0) / visits) : 0;
+
+          return {
+            id: site.id,
+            name: site.name,
+            domain: site.domain,
+            active,
+            stats: {
+              pageviews: s.pageviews?.value ?? 0,
+              visitors: s.visitors?.value ?? 0,
+              visits,
+              bounceRate,
+              avgDurationSeconds,
+            },
+          };
+        } catch {
+          return { id: site.id, name: site.name, domain: site.domain, active: 0, stats: null, error: "fetch failed" };
+        }
+      })
+    );
+
+    websites.sort((a, b) => (b.stats?.visitors ?? 0) - (a.stats?.visitors ?? 0));
+    return { websites };
+  } catch (err) {
+    return { websites: [], error: String(err) };
+  }
+}
+
 // ─── Night scheduler helpers ──────────────────────────────────────────────────
 
 const SCHEDULER_JOB_ORDER: Array<{ key: string; label: string }> = [
@@ -363,7 +502,7 @@ async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
-  const [sessions, continuationCards, nrHealth] = await Promise.all([
+  const [sessions, continuationCards, nrHealth, umami] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
       app.config.codexSessionsDir,
@@ -371,6 +510,7 @@ async function getDashboardData(app: AppContext) {
     ).catch(() => []),
     buildRecentContinuationCards(app.config, 8).catch(() => []),
     getNRHealth(),
+    getUmamiData(),
   ]);
   const codexUsage = await getCodexUsage({
     codexSessionsDir: app.config.codexSessionsDir,
@@ -392,6 +532,7 @@ async function getDashboardData(app: AppContext) {
     },
     codexUsage,
     nrHealth,
+    umami,
     scheduler: getNightScheduler(),
     repos: getReposData(app),
     sessions: sessions.slice(0, 8).map((s) => ({
@@ -546,6 +687,22 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .fade{animation:fade .3s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .empty{color:var(--subtle);font-size:12px;padding:24px;text-align:center;border:1px dashed var(--border);border-radius:8px}
+/* ── umami ── */
+.umami-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:1100px){.umami-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.umami-grid{grid-template-columns:minmax(0,1fr)}}
+.uc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 15px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s}
+.uc:hover{border-color:var(--border2)}
+.uc-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.uc-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.uc-name{font-weight:600;font-size:13px;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uc-domain{font-size:11px;font-family:var(--mono);color:var(--muted)}
+.uc-live{display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--green);flex-shrink:0}
+.uc-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green)}
+.uc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.uc-stat-val{font-size:16px;font-weight:600;font-family:var(--mono);letter-spacing:-.5px;line-height:1.2}
+.uc-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-top:2px}
+.uc-ft{display:flex;gap:14px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);font-family:var(--mono)}
 </style>
 </head>
 <body>
@@ -571,11 +728,13 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="repos">Repositories <span class="tab-count" id="cnt-repos"></span></button>
     <button class="tab-btn" data-tab="nr">New Relic</button>
     <button class="tab-btn" data-tab="scheduler">Scheduler <span class="tab-count" id="cnt-sched"></span></button>
+    <button class="tab-btn" data-tab="umami">Analytics <span class="tab-count" id="cnt-umami"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
   <div class="tab-panel" id="tab-repos"></div>
   <div class="tab-panel" id="tab-nr"></div>
   <div class="tab-panel" id="tab-scheduler"></div>
+  <div class="tab-panel" id="tab-umami"></div>
 </div>
 <script>
 let _d=null;
