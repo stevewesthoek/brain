@@ -285,6 +285,79 @@ async function getNRHealth(): Promise<NRHealth> {
   }
 }
 
+// ─── Cloudflare domains helpers ──────────────────────────────────────────────
+
+interface CloudflareDomain {
+  name: string;
+  status: string;
+  createdAt: string;
+  expiresAt: string | null;
+  daysUntilExpiry: number | null;
+}
+
+interface CloudflareDomainsData {
+  domains: CloudflareDomain[];
+  error?: string;
+  cachedAt?: string;
+}
+
+let _cfCache: { data: CloudflareDomainsData; ts: number } | null = null;
+
+async function getCloudflareDomains(): Promise<CloudflareDomainsData> {
+  if (_cfCache && Date.now() - _cfCache.ts < 60 * 60_000) return _cfCache.data;
+
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  if (!token) return { domains: [], error: "CLOUDFLARE_API_TOKEN not configured" };
+
+  try {
+    const { stdout: zonesRaw } = await execAsync(
+      `curl -sL 'https://api.cloudflare.com/client/v4/zones?per_page=100' \
+        -H 'Authorization: Bearer ${token}'`,
+      { timeout: 15_000 }
+    );
+    const zonesResp = JSON.parse(zonesRaw) as {
+      result?: Array<{ name: string; status: string; created_on: string }>;
+    };
+    const zones = zonesResp.result ?? [];
+
+    const domains: CloudflareDomain[] = await Promise.all(
+      zones.map(async (zone): Promise<CloudflareDomain> => {
+        let expiresAt: string | null = null;
+        try {
+          const { stdout: rdapRaw } = await execAsync(
+            `curl -sL --max-time 5 'https://rdap.org/domain/${zone.name}'`,
+            { timeout: 7_000 }
+          );
+          if (rdapRaw.trim()) {
+            const rdap = JSON.parse(rdapRaw) as { events?: Array<{ eventAction: string; eventDate: string }> };
+            expiresAt = rdap.events?.find((e) => e.eventAction === "expiration")?.eventDate ?? null;
+          }
+        } catch { /* best-effort */ }
+
+        const daysUntilExpiry = expiresAt
+          ? Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000)
+          : null;
+
+        return { name: zone.name, status: zone.status, createdAt: zone.created_on, expiresAt, daysUntilExpiry };
+      })
+    );
+
+    // Soonest expiry first; unknowns at end; alphabetical within group
+    domains.sort((a, b) => {
+      if (a.daysUntilExpiry !== null && b.daysUntilExpiry !== null) return a.daysUntilExpiry - b.daysUntilExpiry;
+      if (a.daysUntilExpiry !== null) return -1;
+      if (b.daysUntilExpiry !== null) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    const result: CloudflareDomainsData = { domains, cachedAt: new Date().toISOString() };
+    _cfCache = { data: result, ts: Date.now() };
+    return result;
+  } catch (err) {
+    return { domains: [], error: String(err) };
+  }
+}
+
 // ─── Umami helpers ────────────────────────────────────────────────────────────
 
 interface UmamiWebsiteStats {
@@ -503,7 +576,7 @@ async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
-  const [sessions, continuationCards, nrHealth, umami] = await Promise.all([
+  const [sessions, continuationCards, nrHealth, umami, domains] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
       app.config.codexSessionsDir,
@@ -512,6 +585,7 @@ async function getDashboardData(app: AppContext) {
     buildRecentContinuationCards(app.config, 8).catch(() => []),
     getNRHealth(),
     getUmamiData(),
+    getCloudflareDomains(),
   ]);
   const codexUsage = await getCodexUsage({
     codexSessionsDir: app.config.codexSessionsDir,
@@ -534,6 +608,7 @@ async function getDashboardData(app: AppContext) {
     codexUsage,
     nrHealth,
     umami,
+    domains,
     scheduler: getNightScheduler(),
     repos: getReposData(app),
     sessions: sessions.slice(0, 8).map((s) => ({
@@ -704,6 +779,16 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .uc-stat-val{font-size:16px;font-weight:600;font-family:var(--mono);letter-spacing:-.5px;line-height:1.2}
 .uc-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-top:2px}
 .uc-ft{display:flex;gap:14px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);font-family:var(--mono)}
+/* ── domains ── */
+.dom-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media(max-width:1200px){.dom-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:800px){.dom-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){.dom-grid{grid-template-columns:minmax(0,1fr)}}
+.dc{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gray);border-radius:8px;padding:12px 13px;display:flex;flex-direction:column;gap:3px}
+.dc-name{font-size:11px;font-weight:600;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:5px}
+.dc-days{font-size:28px;font-weight:700;font-family:var(--mono);letter-spacing:-1.5px;line-height:1}
+.dc-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:1px}
+.dc-date{font-size:10px;font-family:var(--mono);color:var(--subtle);margin-top:4px}
 </style>
 </head>
 <body>
@@ -730,12 +815,14 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="nr">New Relic</button>
     <button class="tab-btn" data-tab="scheduler">Scheduler <span class="tab-count" id="cnt-sched"></span></button>
     <button class="tab-btn" data-tab="umami">Analytics <span class="tab-count" id="cnt-umami"></span></button>
+    <button class="tab-btn" data-tab="domains">Domains <span class="tab-count" id="cnt-domains"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
   <div class="tab-panel" id="tab-repos"></div>
   <div class="tab-panel" id="tab-nr"></div>
   <div class="tab-panel" id="tab-scheduler"></div>
   <div class="tab-panel" id="tab-umami"></div>
+  <div class="tab-panel" id="tab-domains"></div>
 </div>
 <script>
 let _d=null;
@@ -935,6 +1022,39 @@ function renderUmami(data){
   return'<div class="sec-hd"><span class="sec-title">Analytics · Today</span><span class="sec-count">'+data.websites.length+'</span></div>'
     +'<div class="umami-grid fade">'+data.websites.map(umamiCard).join('')+'</div>';
 }
+function expiryStyle(days){
+  if(days===null)return{color:'var(--gray)',border:'#374151'};
+  if(days<30)return{color:'var(--red)',border:'var(--red)'};
+  if(days<90)return{color:'var(--amber)',border:'var(--amber)'};
+  if(days<180)return{color:'#86efac',border:'#86efac'};
+  return{color:'var(--green)',border:'var(--green)'};
+}
+function domainCard(d){
+  const s=expiryStyle(d.daysUntilExpiry);
+  const daysHtml=d.daysUntilExpiry!==null
+    ?'<div class="dc-days" style="color:'+s.color+'">'+d.daysUntilExpiry+'</div><div class="dc-lbl">days left</div>'
+    :'<div class="dc-days" style="color:var(--gray)">?</div><div class="dc-lbl">unknown</div>';
+  const dateHtml=d.expiresAt
+    ?'<div class="dc-date">expires '+d.expiresAt.slice(0,10)+'</div>'
+    :'<div class="dc-date">no expiry data</div>';
+  return'<div class="dc" style="border-left-color:'+s.border+'">'
+    +'<div class="dc-name">'+esc(d.name)+'</div>'
+    +daysHtml+dateHtml
+    +'</div>';
+}
+function renderDomains(data){
+  if(!data)return'<div class="nr-err">Cloudflare not configured.</div>';
+  if(data.error&&!data.domains.length)return'<div class="nr-err">Domains: '+esc(data.error)+'</div>';
+  if(!data.domains.length)return'<div class="empty">No domains found.</div>';
+  const urgent=data.domains.filter(d=>d.daysUntilExpiry!==null&&d.daysUntilExpiry<30).length;
+  const warning=data.domains.filter(d=>d.daysUntilExpiry!==null&&d.daysUntilExpiry>=30&&d.daysUntilExpiry<90).length;
+  let hd='<div class="sec-hd"><span class="sec-title">Domains</span><span class="sec-count">'+data.domains.length+'</span>';
+  if(urgent)hd+='<span class="badge b-old" style="margin-left:8px">'+urgent+' critical</span>';
+  if(warning)hd+='<span class="badge b-stale" style="margin-left:4px">'+warning+' renewing soon</span>';
+  if(data.cachedAt)hd+='<span style="font-size:10px;color:var(--subtle);margin-left:auto">cached '+age(data.cachedAt)+'</span>';
+  hd+='</div>';
+  return hd+'<div class="dom-grid fade">'+data.domains.map(domainCard).join('')+'</div>';
+}
 function render(d){
   _d=d;
   document.getElementById('host').textContent=d.meta.hostname;
@@ -960,6 +1080,9 @@ function render(d){
   const uw=d.umami&&d.umami.websites?d.umami.websites.length:0;
   document.getElementById('cnt-umami').textContent=uw?String(uw):'';
   document.getElementById('tab-umami').innerHTML=renderUmami(d.umami);
+  const dw=d.domains&&d.domains.domains?d.domains.domains.length:0;
+  document.getElementById('cnt-domains').textContent=dw?String(dw):'';
+  document.getElementById('tab-domains').innerHTML=renderDomains(d.domains);
 }
 async function fetchData(){
   try{

@@ -204,3 +204,4 @@ Entries detected by `sync-credentials` that are not yet categorized. Move each r
 | `UMAMI_URL` | `~/.config/probot/.env` | 2026-04-08 |
 | `UMAMI_USERNAME` | `~/.config/probot/.env` | 2026-04-08 |
 | `UMAMI_PASSWORD` | `~/.config/probot/.env` | 2026-04-08 |
+| `CLOUDFLARE_API_TOKEN` | `~/.config/probot/.env` | 2026-04-09 |
