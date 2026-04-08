@@ -1,12 +1,12 @@
 # ProBot
 
-ProBot is a lightweight, always-on local Telegram control plane for the Brain repo and the existing Claude/Codex workflow on this Mac.
+ProBot is a lightweight, always-on local Slack and Telegram control plane for the Brain repo and the existing Claude/Codex workflow on this Mac.
 
 It is intentionally not a general-purpose agent platform. The goal is fast remote access to trusted local workflows with a small, auditable codebase and low idle resource usage.
 
 ## Goals
 
-- Telegram-first remote access
+- Slack-first remote control with Telegram as a fallback
 - Brain-aware file and note workflows
 - Claude/Codex session overview and summarization
 - Safe local execution with allowlisted roots and confirmation gates
@@ -15,6 +15,7 @@ It is intentionally not a general-purpose agent platform. The goal is fast remot
 ## MVP Scope
 
 - Telegram bot via long polling
+- Slack bot via Socket Mode DM commands
 - User ID allowlist
 - Local SQLite state for approvals and event logging
 - Session overview for Claude and Codex
@@ -41,6 +42,61 @@ It is intentionally not a general-purpose agent platform. The goal is fast remot
 - `/find <query>` — search files by name and content
 - `/send <absolute-path>` — request approval to send a file
 
+Slack DM commands currently supported:
+
+- `help`
+- `status`
+- `sessions`
+- `repos`
+- `handoff <repo>`
+- `resume <repo>`
+- `dashboard`
+
+## Slack Integration Modes
+
+There are now two supported Slack paths on this machine:
+
+1. ProBot runtime via Slack API and Bolt
+2. Slack CLI for app management and scripted developer operations
+
+They are intentionally separate.
+
+### Primary path: Slack API runtime
+
+ProBot's actual Slack bot runs through Bolt with:
+
+- `SLACK_BOT_TOKEN`
+- `SLACK_APP_TOKEN`
+- `SLACK_ALLOWED_USER_IDS`
+
+This is the production path for remote control. It does not depend on the Slack CLI being installed.
+
+### Secondary path: Slack CLI
+
+The Slack CLI is installed locally as `slack` and is useful for:
+
+- logging into the workspace as a developer
+- inspecting auth state
+- creating or linking Slack app projects
+- installing or uninstalling app manifests
+- future scripted Slack app management
+
+It is not a replacement for the running ProBot bot.
+
+Important constraints:
+
+- the CLI uses its own login flow and is not automatically authenticated just because ProBot has bot/app tokens
+- Slack CLI is mainly developer tooling, not a remote-chat runtime
+- on Slack free, the CLI can still help manage apps, but some newer workflow-platform features are paid-plan oriented
+
+Useful commands:
+
+- `slack version`
+- `slack auth list`
+- `slack auth login`
+- `slack app link`
+- `slack app install`
+
 ## Local Run
 
 Preferred secret location:
@@ -53,8 +109,9 @@ Fallback for local development:
 
 1. Copy `.env.example` to `~/.config/probot/.env`
 2. Fill in your Telegram token and allowed user ID
-3. Run `npm install`
-4. Run `npm run dev`
+3. Optionally fill in Slack bot/app tokens and allowed user IDs
+4. Run `npm install`
+5. Run `npm run dev`
 
 ProBot will load env vars in this order:
 
@@ -62,11 +119,27 @@ ProBot will load env vars in this order:
 2. `~/.config/probot/.env`
 3. local `.env` in `projects/probot/`
 
+Slack behavior:
+
+- if `SLACK_BOT_TOKEN` and `SLACK_APP_TOKEN` are present, ProBot starts Slack Socket Mode
+- if they are missing, Slack is simply disabled and Telegram continues to work
+- this makes Telegram a safe fallback path while Slack is being iterated on
+
 ## Production Run
 
 - `npm run build`
 - `npm run start`
 - Install the launchd agent with `./scripts/install-launchd.sh`
+
+## Recommended Operating Model
+
+Use the channels for different jobs:
+
+- Slack: primary control plane for status, repo handoffs, approvals, and task triggers
+- Telegram: backup channel if Slack auth or workspace availability becomes a problem
+- SSH + `tmux` over Tailscale: real remote CLI continuation for Claude, Codex, and Gemini
+
+Do not try to turn Slack into a full terminal. Use it to orchestrate work, not to replace shell access.
 
 ## Dashboard AI Usage
 

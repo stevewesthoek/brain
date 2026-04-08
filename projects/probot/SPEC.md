@@ -2,7 +2,7 @@
 
 ## Product Positioning
 
-ProBot is a personal Telegram command center for the local Brain + Claude + Codex stack.
+ProBot is a personal Slack-first control plane, with Telegram fallback, for the local Brain + Claude + Codex stack.
 
 It is not a clone of OpenClaw (retired AWS VPS bridge, decommissioned 2026-04-04).
 
@@ -12,7 +12,7 @@ It exists to solve five practical problems:
 2. Fast capture of text and voice notes
 3. Fast access to Brain context and decisions
 4. Clear visibility into Claude and Codex session state
-5. Safe triggering of local workflows from Telegram
+5. Safe triggering of local workflows from chat channels
 
 ## Product Principles
 
@@ -34,6 +34,7 @@ One always-on Node.js daemon started by `launchd`.
 Responsibilities:
 
 - long-poll Telegram
+- maintain Slack Socket Mode when configured
 - authenticate sender
 - parse commands
 - route to local services
@@ -49,6 +50,13 @@ Work is only done when:
 - a local maintenance task is invoked
 
 There is no always-running model loop or indexer in MVP.
+
+The Slack runtime and the Slack CLI are separate concerns:
+
+- runtime: Bolt app using bot and app tokens
+- CLI: developer tooling for app management, auth, linking, and scripted setup
+
+The CLI does not replace the runtime.
 
 One narrow background monitor is allowed for dashboard correctness:
 
@@ -79,6 +87,7 @@ Bootstraps config, SQLite, services, and Telegram polling.
 ### `src/bot/*`
 
 - Telegram setup
+- Slack setup
 - command registration
 - callback approval handling
 - message formatting
@@ -131,7 +140,7 @@ Rules:
 
 ### Identity
 
-- only approved Telegram user IDs may interact
+- only approved Telegram and Slack user IDs may interact
 - everyone else is ignored
 
 ### Filesystem
