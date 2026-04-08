@@ -75,18 +75,53 @@ interface NRHost {
   name: string;
   alertSeverity: "NOT_ALERTING" | "NOT_CONFIGURED" | "CRITICAL" | "WARNING" | null;
   reporting: boolean;
+  online?: boolean;
+  alertConfigured?: boolean;
+  lastSeenAt?: string | null;
 }
 
 interface NRSynthetic {
   name: string;
   alertSeverity: string | null;
   reporting: boolean;
+  online?: boolean | null;
+  alertConfigured?: boolean;
+  lastCheckAt?: string | null;
+  lastResult?: string | null;
+  lastError?: string | null;
 }
 
 interface NRHealth {
   hosts: NRHost[];
   synthetics: NRSynthetic[];
   error?: string;
+}
+
+interface NRHostSample {
+  facet?: string;
+  hostname?: string;
+  "latest.timestamp"?: number;
+}
+
+interface NRSyntheticCheck {
+  facet?: string;
+  monitorName?: string;
+  "latest.result"?: string;
+  "latest.error"?: string;
+  "latest.timestamp"?: number;
+}
+
+function epochToIso(epochMs?: number): string | null {
+  if (!epochMs) return null;
+  return new Date(epochMs).toISOString();
+}
+
+function normalizeSyntheticError(err?: string | null): string | null {
+  if (!err) return null;
+  if (err.includes("DNS resolution failed")) return "DNS failure";
+  const httpMatch = err.match(/HTTP\s+(\d{3})/i) ?? err.match(/HTTPError:.*?(\d{3})/i);
+  if (httpMatch?.[1]) return `HTTP ${httpMatch[1]}`;
+  return err;
 }
 
 async function getNRHealth(): Promise<NRHealth> {
@@ -101,6 +136,14 @@ async function getNRHealth(): Promise<NRHealth> {
       }
       synthetics: entitySearch(query: "accountId = ${accountId} AND domain = 'SYNTH' AND type = 'MONITOR'") {
         results { entities { name reporting alertSeverity } }
+      }
+      account(id: ${accountId}) {
+        hostSamples: nrql(query: "SELECT latest(timestamp) FROM SystemSample FACET hostname SINCE 15 minutes ago LIMIT 100") {
+          results
+        }
+        syntheticChecks: nrql(query: "SELECT latest(result), latest(error), latest(timestamp) FROM SyntheticCheck FACET monitorName SINCE 1 day ago LIMIT 100") {
+          results
+        }
       }
     }
   }`;
@@ -118,12 +161,48 @@ async function getNRHealth(): Promise<NRHealth> {
         actor?: {
           hosts?: { results?: { entities?: NRHost[] } };
           synthetics?: { results?: { entities?: NRSynthetic[] } };
+          account?: {
+            hostSamples?: { results?: NRHostSample[] };
+            syntheticChecks?: { results?: NRSyntheticCheck[] };
+          };
         }
       }
     };
+    const hostSamples = data.data?.actor?.account?.hostSamples?.results ?? [];
+    const syntheticChecks = data.data?.actor?.account?.syntheticChecks?.results ?? [];
+    const hostLastSeen = new Map(
+      hostSamples
+        .filter((sample) => sample.facet && sample["latest.timestamp"])
+        .map((sample) => [sample.facet as string, sample["latest.timestamp"] as number])
+    );
+    const syntheticStatus = new Map(
+      syntheticChecks
+        .filter((check) => check.facet)
+        .map((check) => [check.facet as string, check])
+    );
     return {
-      hosts: data.data?.actor?.hosts?.results?.entities ?? [],
-      synthetics: data.data?.actor?.synthetics?.results?.entities ?? [],
+      hosts: (data.data?.actor?.hosts?.results?.entities ?? []).map((host) => {
+        const lastSeen = hostLastSeen.get(host.name);
+        const online = Boolean(lastSeen);
+        return {
+          ...host,
+          online,
+          alertConfigured: host.alertSeverity !== "NOT_CONFIGURED",
+          lastSeenAt: epochToIso(lastSeen),
+        };
+      }),
+      synthetics: (data.data?.actor?.synthetics?.results?.entities ?? []).map((synthetic) => {
+        const latest = syntheticStatus.get(synthetic.name);
+        const lastResult = latest?.["latest.result"] ?? null;
+        return {
+          ...synthetic,
+          online: lastResult === "SUCCESS" ? true : lastResult === "FAILED" ? false : null,
+          alertConfigured: synthetic.alertSeverity !== "NOT_CONFIGURED",
+          lastCheckAt: epochToIso(latest?.["latest.timestamp"]),
+          lastResult,
+          lastError: normalizeSyntheticError(latest?.["latest.error"]),
+        };
+      }),
     };
   } catch (err) {
     return { hosts: [], synthetics: [], error: String(err) };
@@ -136,8 +215,8 @@ const SCHEDULER_JOB_ORDER: Array<{ key: string; label: string }> = [
   { key: "stb-pipeline-batch",      label: "STB Pipeline" },
   { key: "n8n-backup",              label: "n8n Backup" },
   { key: "claude-session-cleanup",  label: "Claude Cleanup" },
-  { key: "dance-of-life-sync",      label: "Dance of Life Sync" },
-  { key: "bible-studies-pipeline",  label: "Bible Studies Pipeline" },
+  { key: "dance-of-life-sync",      label: "Dance of Life (1) Download" },
+  { key: "bible-studies-pipeline",  label: "Dance of Life (2) Transcribe" },
   { key: "gemini-cleanup",          label: "Gemini Cleanup" },
   { key: "skill-prune",             label: "Skill Prune" },
 ];
@@ -514,33 +593,37 @@ function renderAIUsage(codex){
     +codexCard('Codex · 7d Window',codex.sevenDay)
     +'</div>';
 }
-function nrDot(severity,reporting){
-  if(!reporting)return'var(--gray)';
-  if(severity==='CRITICAL')return'var(--red)';
-  if(severity==='WARNING')return'var(--amber)';
-  if(severity==='NOT_ALERTING')return'var(--green)';
-  return'var(--muted)';
+function nrDot(item){
+  if(typeof item.online==='boolean')return item.online?'var(--green)':'var(--red)';
+  if(item.reporting===false)return'var(--red)';
+  return'var(--gray)';
 }
-function nrLabel(severity,reporting){
-  if(!reporting)return'not reporting';
-  if(severity==='CRITICAL')return'critical';
-  if(severity==='WARNING')return'warning';
-  if(severity==='NOT_ALERTING')return'healthy';
-  return'no alerts set';
+function nrLabel(item){
+  const parts=[];
+  if(typeof item.online==='boolean'){
+    parts.push(item.online?'online':'offline');
+  }else{
+    parts.push('unknown');
+  }
+  if(item.lastError&&item.online===false)parts.push(item.lastError);
+  else if(item.alertSeverity==='CRITICAL'&&item.online!==false)parts.push('critical alert');
+  else if(item.alertSeverity==='WARNING'&&item.online!==false)parts.push('warning alert');
+  if(item.alertConfigured===false)parts.push('no alert policy');
+  return parts.join(' · ');
 }
 function renderNRHealth(nr){
   if(nr.error&&!nr.hosts.length&&!nr.synthetics.length){
     return'<div class="nr-err">New Relic: '+esc(nr.error)+'</div>';
   }
   const hostCards=nr.hosts.map(h=>{
-    const dot=nrDot(h.alertSeverity,h.reporting);
-    const lbl=nrLabel(h.alertSeverity,h.reporting);
+    const dot=nrDot(h);
+    const lbl=nrLabel(h);
     return'<div class="nr-card"><div class="nr-dot" style="background:'+dot+'"></div>'
       +'<div><div class="nr-name">'+esc(h.name)+'</div><div class="nr-sub">'+lbl+'</div></div></div>';
   }).join('');
   const synCards=nr.synthetics.map(s=>{
-    const dot=nrDot(s.alertSeverity,s.reporting);
-    const lbl=nrLabel(s.alertSeverity,s.reporting);
+    const dot=nrDot(s);
+    const lbl=nrLabel(s);
     return'<div class="nr-card"><div class="nr-dot" style="background:'+dot+'"></div>'
       +'<div><div class="nr-name">'+esc(s.name)+'</div><div class="nr-sub">'+lbl+'</div></div></div>';
   }).join('');
