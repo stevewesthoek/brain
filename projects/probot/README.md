@@ -18,6 +18,7 @@ It is intentionally not a general-purpose agent platform. The goal is fast remot
 - User ID allowlist
 - Local SQLite state for approvals and event logging
 - Session overview for Claude and Codex
+- Optional local dashboard with machine, session, scheduler, and AI usage status
 - Text note capture
 - Brain search
 - File search and approved file send
@@ -66,6 +67,19 @@ ProBot will load env vars in this order:
 - `npm run build`
 - `npm run start`
 - Install the launchd agent with `./scripts/install-launchd.sh`
+
+## Dashboard AI Usage
+
+When the local dashboard is enabled, the Codex usage cards are sourced from Codex's own local session-log `token_count.rate_limits` events rather than from a hard-coded estimate.
+
+Behavior:
+
+- ProBot passively reads the latest Codex rate-limit snapshot from `~/.codex/sessions/**/*.jsonl`
+- it caches the latest resolved 5-hour and 7-day windows in `projects/probot/data/codex-usage.json`
+- it runs a lightweight background refresh check every 5 minutes
+- it only forces a tiny Codex probe when the cached usage window has expired or there is no usable fresh snapshot
+
+This keeps the dashboard near real time without continuously spending tokens on synthetic prompts.
 
 ## Notes Storage
 

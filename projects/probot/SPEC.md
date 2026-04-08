@@ -48,7 +48,15 @@ Work is only done when:
 - a scheduled summary job runs
 - a local maintenance task is invoked
 
-There is no always-running model loop, indexer, or proactive heartbeat in MVP.
+There is no always-running model loop or indexer in MVP.
+
+One narrow background monitor is allowed for dashboard correctness:
+
+- a bounded Codex usage refresh task runs every 5 minutes
+- it first reads Codex's local session-log `token_count.rate_limits` events
+- it only triggers a minimal Codex probe when the cached 5-hour or 7-day window has expired, or when there is no usable fresh sample
+
+This monitor exists solely to keep the dashboard's Codex credit percentage aligned with the real reset windows while staying token-efficient.
 
 ## Resource Targets
 
@@ -83,6 +91,7 @@ Bootstraps config, SQLite, services, and Telegram polling.
 - `brain.ts`
 - `files.ts`
 - `intents.ts` — natural language router; maps plain-text messages to service calls without LLM (pattern matching only)
+- `codex-usage.ts` — resolves Codex 5h/7d remaining percentages from local session logs, caches snapshots, and performs bounded refresh probes only when needed for dashboard accuracy
 
 Future:
 
@@ -258,6 +267,30 @@ MVP data sources:
 Future additions:
 
 - snapshot summaries cached into SQLite
+
+## Dashboard Usage Strategy
+
+The optional local dashboard includes Codex AI usage cards for the 5-hour and 7-day windows.
+
+Source of truth:
+
+- Codex local session logs under `~/.codex/sessions/**/*.jsonl`
+- specifically `event_msg` entries where `payload.type = "token_count"` and `payload.rate_limits` is present
+
+Refresh strategy:
+
+- ProBot reads the newest available rate-limit event and writes a normalized cache to `projects/probot/data/codex-usage.json`
+- a 5-minute background monitor keeps the cache warm
+- if the cached reset timestamp has passed, or there is no usable sample, ProBot runs a tiny non-interactive Codex probe to force a fresh `token_count` event
+- the probe is cooldown-limited so the dashboard does not repeatedly spend tokens while waiting for the next reset
+
+Why this exists:
+
+- historical session-log parsing alone can go stale across reset boundaries
+- the bounded probe path fixes the stale-percentage problem without introducing a constant synthetic prompt loop
+
+Future additions:
+
 - daily and weekly digests
 - “stale session cleanup” recommendations
 - resume shortcuts

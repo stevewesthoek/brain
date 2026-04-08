@@ -75,6 +75,10 @@ Last completed Lisbon date: \`$last_completed_lisbon_date\`
 $(render_job_row "stb-pipeline-batch")
 $(render_job_row "n8n-backup")
 $(render_job_row "claude-session-cleanup")
+$(render_job_row "dance-of-life-sync")
+$(render_job_row "bible-studies-pipeline")
+$(render_job_row "gemini-cleanup")
+$(render_job_row "skill-prune")
 
 ## Latest Nightly Log Tail
 

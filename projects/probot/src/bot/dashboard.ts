@@ -133,11 +133,13 @@ async function getNRHealth(): Promise<NRHealth> {
 // ─── Night scheduler helpers ──────────────────────────────────────────────────
 
 const SCHEDULER_JOB_ORDER: Array<{ key: string; label: string }> = [
-  { key: "stb-pipeline-batch",    label: "STB Pipeline" },
-  { key: "n8n-backup",            label: "n8n Backup" },
-  { key: "claude-session-cleanup", label: "Claude Cleanup" },
-  { key: "dance-of-life-sync",    label: "Dance of Life Sync" },
-  { key: "gemini-cleanup",        label: "Gemini Cleanup" },
+  { key: "stb-pipeline-batch",      label: "STB Pipeline" },
+  { key: "n8n-backup",              label: "n8n Backup" },
+  { key: "claude-session-cleanup",  label: "Claude Cleanup" },
+  { key: "dance-of-life-sync",      label: "Dance of Life Sync" },
+  { key: "bible-studies-pipeline",  label: "Bible Studies Pipeline" },
+  { key: "gemini-cleanup",          label: "Gemini Cleanup" },
+  { key: "skill-prune",             label: "Skill Prune" },
 ];
 
 interface SchedulerJob {
