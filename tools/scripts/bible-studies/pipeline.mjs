@@ -5,12 +5,30 @@
  * Phases:
  *  1. Scan Bible Studies/ for new .mp4 / .mp3 files not yet transcribed
  *  2. Transcribe each with mlx-whisper (mlx-community/whisper-large-v3, max quality)
- *  3. Format transcript as Obsidian markdown with timestamps
- *  4. Write note to brain/personal/bible-studies/dance-of-life/[Series]/
+ *  3. Format transcript as Obsidian markdown with [HH:MM:SS] timestamped segments
+ *  4. Write note to brain/personal/bible-studies/dance-of-life/[Series]/[NN-of-TT] - Title.md
  *  5. Batch-sync new notes + series PDFs/RTFs to NotebookLM via `claude --print`
- *     (one notebook per series, named "DOL - [Series]")
+ *     (one notebook per series, named "DOL - [Series]"; auto-created on first encounter)
  *  6. Regenerate README.md index
  *  7. Git-commit new notes to brain repo
+ *
+ * Dynamic growth:
+ *  - New series folders in Bible Studies/ are auto-detected every run (logged as 🆕).
+ *  - New videos in existing series are auto-detected via relPath tracking in state.
+ *  - New sub-series subfolders are discovered via walkDir; organisational dirs
+ *    (Videos/, Resources/, etc.) are flattened; meaningful sub-series become subfolders.
+ *  - New NotebookLM notebooks are created automatically for new series.
+ *  - NLM sync failures are retried the next run (only confirmed-synced series
+ *    are marked in state; unconfirmed remain in the queue).
+ *
+ * State schema (~/.local/state/bible-studies/state.json):
+ *  {
+ *    transcribed:  string[]   // relPaths of successfully transcribed videos
+ *    nlmSynced:    string[]   // relPaths confirmed synced to NotebookLM
+ *    failed:       string[]   // relPaths that failed transcription (skipped until FORCE_RESCAN)
+ *    notebooks:    Record<series, notebookId>  // NotebookLM IDs per series
+ *    knownSeries:  string[]   // all series ever seen; new entries logged on discovery
+ *  }
  *
  * State: ~/.local/state/bible-studies/state.json
  * Log:   ~/Library/Logs/office-scheduler/bible-studies.log
@@ -270,12 +288,19 @@ function syncToNotebookLM(newNotesBySeries, resourcesBySeries, state) {
 
   // Process up to 5 series per claude call to keep prompts manageable
   const BATCH_SIZE = 5;
+  const syncedSeries = new Set();
   for (let i = 0; i < seriesToSync.length; i += BATCH_SIZE) {
     const batch = seriesToSync.slice(i, i + BATCH_SIZE);
-    syncBatch(batch, newNotesBySeries, resourcesBySeries, state);
+    const batchSynced = syncBatch(batch, newNotesBySeries, resourcesBySeries, state);
+    for (const s of batchSynced) syncedSeries.add(s);
   }
+  return syncedSeries; // caller uses this to mark only confirmed-synced videos
 }
 
+/**
+ * Syncs one batch of series to NotebookLM via `claude --print`.
+ * Returns the set of series that were successfully synced.
+ */
 function syncBatch(seriesList, newNotesBySeries, resourcesBySeries, state) {
   const instructions = seriesList.map(series => {
     const notebookName = `DOL - ${series}`;
@@ -314,7 +339,7 @@ When all operations are complete, output ONLY a valid JSON object (no other text
 
   if (result.status !== 0) {
     log(`  ⚠️  claude exited ${result.status}: ${(result.stderr || '').slice(0, 200)}`);
-    return;
+    return new Set(); // no series synced
   }
 
   // Parse notebook IDs from response
@@ -325,12 +350,14 @@ When all operations are complete, output ONLY a valid JSON object (no other text
       const parsed = JSON.parse(jsonMatch[0]);
       state.notebooks = { ...(state.notebooks || {}), ...parsed.notebooks };
       log(`  ✅ Notebook IDs updated: ${JSON.stringify(parsed.notebooks)}`);
+      return new Set(Object.keys(parsed.notebooks));
     } catch {
       log(`  ⚠️  Could not parse notebook IDs from response`);
     }
   } else {
     log(`  ⚠️  No JSON found in claude response (sync may still have succeeded)`);
   }
+  return new Set(); // conservatively assume no confirmed sync
 }
 
 // ─── README GENERATION ────────────────────────────────────────────────────────
@@ -446,6 +473,16 @@ async function main() {
   }
 
   const toTranscribe = allVideos.filter(v => !transcribedSet.has(v.relPath) && !failedSet.has(v.relPath));
+  // Detect newly appeared series (not in state before this run)
+  const knownSeries = new Set(state.knownSeries || []);
+  const newSeriesFound = allSeries.filter(s => !knownSeries.has(s));
+  if (newSeriesFound.length > 0) {
+    log(`\n🆕 New series detected: ${newSeriesFound.join(', ')}`);
+    for (const s of newSeriesFound) knownSeries.add(s);
+    state.knownSeries = [...knownSeries];
+    saveState(state);
+  }
+
   log(`\n📊 Status:`);
   log(`   Total videos:        ${allVideos.length}`);
   log(`   Already transcribed: ${transcribedSet.size}`);
@@ -528,11 +565,14 @@ async function main() {
     }
   }
 
-  syncToNotebookLM(newNotesBySeries, resourcesBySeries, state);
+  const confirmedSyncedSeries = syncToNotebookLM(newNotesBySeries, resourcesBySeries, state);
 
-  // Mark all synced notes as synced
+  // Only mark videos as NLM-synced for series where sync was confirmed.
+  // Unconfirmed series remain in the queue and will be retried on the next run.
   for (const v of allVideos) {
-    if (transcribedSet.has(v.relPath)) nlmSyncedSet.add(v.relPath);
+    if (transcribedSet.has(v.relPath) && confirmedSyncedSeries.has(v.series)) {
+      nlmSyncedSet.add(v.relPath);
+    }
   }
   state.nlmSynced = [...nlmSyncedSet];
   saveState(state);

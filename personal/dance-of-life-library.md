@@ -58,9 +58,11 @@ FORCE_RESCAN=1 bun ~/brain/tools/scripts/dance-of-life/sync_downloader.mjs
 
 ### Daily scheduler
 
-The job `dance-of-life-sync` runs automatically as the **last** (lowest priority) job in `office-nightly-scheduler.sh`. It uses `FORCE_RESCAN=1` so each day it rescans the source for new files but never re-downloads files already on Google Drive.
+The job `dance-of-life-sync` runs automatically as chain member **#4** in `office-nightly-scheduler.sh`. It uses `FORCE_RESCAN=1` so each day it rescans the source for new files but never re-downloads files already on Google Drive.
 
 Timeout: 6 hours per run. Timeout does not stop the scheduler chain — remaining files are picked up the next night.
+
+Immediately after `dance-of-life-sync`, the `bible-studies-pipeline` job (#5) runs to transcribe any newly downloaded videos. See [Transcription Pipeline](#transcription-pipeline) below.
 
 ## Disk space management
 
@@ -87,9 +89,40 @@ When the script pauses with "Only X.X GB free":
 |------|---------|
 | `brain/tools/scripts/dance-of-life/sync_downloader.mjs` | Main downloader (Playwright + curl) |
 | `brain/tools/scripts/dance-of-life-sync.sh` | Shell wrapper, called by nightly scheduler |
+| `brain/tools/scripts/bible-studies/pipeline.mjs` | Transcription pipeline (mlx-whisper + NotebookLM sync) |
+| `brain/tools/scripts/bible-studies-pipeline.sh` | Shell wrapper for transcription pipeline |
+
+## Transcription Pipeline
+
+Videos are transcribed nightly by the `bible-studies-pipeline` scheduler job, which runs immediately after `dance-of-life-sync` so newly downloaded videos are transcribed the same night.
+
+**How it works:**
+1. Scans `Bible Studies/` for `.mp4`/`.mp3` files not yet in state
+2. Transcribes each with `mlx-whisper` (`mlx-community/whisper-large-v3`, highest quality) — runs on Apple Silicon Neural Engine overnight
+3. Formats transcript as an Obsidian markdown note with `[HH:MM:SS]` timestamped segments
+4. Writes to `brain/personal/bible-studies/dance-of-life/[Series]/[NN-of-TT] - Title.md`
+5. Syncs notes + series PDFs/RTFs to NotebookLM via `claude --print` — one `DOL - [Series]` notebook per series, auto-created on first encounter
+6. Git-commits new notes so they appear in Obsidian immediately
+
+**Dynamic growth:** new series folders, new videos, and new sub-series are all detected automatically on every run. No manual reconfiguration needed.
+
+**State:** `~/.local/state/bible-studies/state.json`
+**Log:** `~/Library/Logs/office-scheduler/bible-studies.log`
+**Timeout:** 4 hours per night (idempotent — resumes from where it stopped)
 
 ## Obsidian / RAG usage
 
-The destination folder is indexed by Obsidian as a vault attachment source. PDFs and documents in `Bible Studies/` are available as RAG sources for Bible study queries. Video files are present but not indexed.
+Two complementary query layers, both reading from `brain/personal/bible-studies/dance-of-life/`:
 
-No AI tokens are consumed by the sync process — it is purely a local Playwright + curl pipeline.
+| Layer | How to use | Token cost |
+|-------|-----------|------------|
+| **Smart Connections** (Obsidian plugin) | Local semantic search — find notes by concept across all series | 0 tokens |
+| **NotebookLM** (`DOL - [Series]` notebooks) | Deep Q&A with citation — query via Claude Code CLI using `mcp__notebooklm__notebook_query` | ~200–500 tokens per question (not per document) |
+
+Query pattern from Claude Code CLI:
+```
+Ask the DOL - Synagogue of Satan notebook: what does the series say about the Council of Nicaea?
+```
+NotebookLM does the retrieval; Claude only pays for the question + answer, not the transcripts.
+
+No AI tokens are consumed by the sync process itself — it is purely a local Playwright + curl pipeline. The transcription pipeline uses local CPU/ANE (no API calls). Tokens are only used during the NotebookLM sync step (`claude --print`) and when querying notebooks.
