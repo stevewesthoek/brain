@@ -18,6 +18,21 @@ https://ln5.sync.com/dl/8cd2a10a0?sync_id=16714321270009#j6eaxvtw-p6bejis7-qpswi
 
 Folder structure mirrors the source exactly. Never delete, only add.
 
+## Architecture
+
+```
+sync.com (source)
+    ↓  Playwright + curl download
+Mac Mini (temporary intermediary — staging only)
+    ↓  Google Drive macOS app auto-uploads
+Google Drive (permanent destination)
+```
+
+The Mac is only a staging buffer. Files are downloaded temporarily, the Google Drive app uploads them to the cloud, and then the local copy can be offloaded ("Make available online only") to free disk space. Offloaded files appear as 0-byte stubs in the local Google Drive folder but remain fully intact in the cloud.
+
+**Comparison logic: source vs Google Drive, not source vs local disk.**
+The script detects files on Google Drive via the `com.google.drivefs.item-id` xattr that the Drive macOS app sets on every file it has uploaded — including offloaded stubs. A 0-byte stub with this xattr means "on Google Drive, offloaded locally" and is never re-downloaded.
+
 ## How it works
 
 The source is a sync.com shared folder with E2E encryption. File names are encrypted in API responses and only decrypted by the browser using the URL hash key. Direct API downloads are not possible without reimplementing sync.com's client-side crypto.
@@ -30,7 +45,8 @@ Key technical details:
 - `viewport: { width: 1280, height: 6000 }` — forces Angular CDK virtual scroller to render all rows at once
 - `page.route('**syncusercontent**')` — intercepts the signed download URL before the browser starts downloading
 - `curl -C -` — resumes partial downloads; handles files up to 4 hours
-- `com.google.drivefs.item-id` xattr — detects files already synced to Google Drive without Drive API
+- `com.google.drivefs.item-id` xattr — detects files on Google Drive (including offloaded 0-byte stubs)
+- Source availability check runs on every nightly run; if the sync.com link is unreachable or returns 0 items, the job fails immediately with a clear error visible in the ProBot dashboard
 
 ## Running it
 

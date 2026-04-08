@@ -440,7 +440,10 @@ async function main() {
   const failedSet      = new Set(state.failed      || []);
 
   if (process.env.FORCE_RESCAN === '1') {
-    log('🔄 FORCE_RESCAN=1 — will re-check all series for new videos');
+    log('🔄 FORCE_RESCAN=1 — clearing failed list so previously-failed videos are retried');
+    state.failed = [];
+    failedSet.clear();
+    saveState(state);
   }
 
   const allSeries = discoverSeries();

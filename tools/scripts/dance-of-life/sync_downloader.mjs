@@ -1,20 +1,49 @@
 #!/usr/bin/env bun
 /**
- * sync_downloader.mjs — Dance of Life Library downloader
+ * sync_downloader.mjs — Dance of Life Library sync: source → Google Drive
  *
- * Source:      https://ln5.sync.com/dl/8cd2a10a0?sync_id=16714321270009#j6eaxvtw-p6bejis7-qpswiw7h-9wbzk3vm
- * Destination: ./Bible Studies/  (inside the Google Drive folder)
+ * ARCHITECTURE (important — read before modifying):
+ *
+ *   Source:       sync.com shared folder (E2E encrypted, ~500 GB)
+ *   Intermediary: this Mac (temporary download staging only)
+ *   Destination:  Google Drive  ←  this is the permanent home of all files
+ *
+ *   Flow per file:
+ *     1. Download from sync.com → local Mac disk  (temporary)
+ *     2. Google Drive macOS app detects new file, uploads it to Google Drive
+ *     3. Once uploaded, you can offload the local copy via:
+ *        Finder → right-click → "Make available online only"
+ *        This frees local disk but keeps the file on Google Drive.
+ *        Offloaded files appear as 0-byte stubs locally, with the
+ *        `com.google.drivefs.item-id` xattr set by the Drive app.
+ *
+ * COMPARISON LOGIC:
+ *   Source (sync.com) is compared against GOOGLE DRIVE, not local disk.
+ *   A file is considered "done" when it is confirmed on Google Drive,
+ *   detected via the `com.google.drivefs.item-id` xattr on the local stub.
+ *   DO NOT treat 0-byte local stubs as missing — they are offloaded Drive files.
+ *
+ * NIGHTLY BEHAVIOUR (FORCE_RESCAN=1, the default):
+ *   - Rescans the source folder tree to detect new files added upstream.
+ *   - Compares source manifest against Google Drive.
+ *   - Downloads ONLY new files not yet on Google Drive.
+ *   - Never re-downloads files already on Google Drive, even if offloaded locally.
+ *   - Preserves all existing files on Google Drive (no deletes, ever).
+ *
+ * SOURCE AVAILABILITY:
+ *   If the sync.com link is unreachable, expired, or returns 0 items, the script
+ *   exits with a fatal error so the nightly scheduler marks the job as failed
+ *   and it surfaces in the ProBot dashboard.
  *
  * Usage:
  *   bun sync_downloader.mjs              # normal run / resume
- *   FORCE_RESCAN=1 bun sync_downloader.mjs  # rebuild manifest, skip already-done files
+ *   FORCE_RESCAN=1 bun sync_downloader.mjs  # rebuild source manifest (default for nightly)
  *
  * Called by:  ../dance-of-life-sync.sh  (which sets FORCE_RESCAN=1 by default)
  *
  * Disk management:
- *   - Pauses when free space < MIN_FREE_GB
- *   - To free space: right-click a file in Finder → "Make available online only"
- *   - Files with com.google.drivefs.item-id xattr are confirmed on Google Drive
+ *   - Script pauses when free space < MIN_FREE_GB (needed as staging buffer)
+ *   - To free space after upload: Finder → right-click file → "Make available online only"
  *
  * State:  ~/.local/state/dance-of-life/state.json  (persistent between runs)
  * Log:    ~/Library/Logs/office-scheduler/dance-of-life.log
@@ -67,12 +96,21 @@ async function waitForSpace() {
 
 function fileOnGDrive(p) {
   if (!fs.existsSync(p)) return false;
-  const size = fs.statSync(p).size;
-  if (size === 0) return false; // Empty = failed/incomplete download, retry
+
+  // Check for the Google Drive item ID xattr FIRST.
+  // Offloaded files ("Make available online only") have 0 bytes locally but keep this xattr.
+  // They ARE on Google Drive and must NEVER be re-downloaded.
   try {
-    execSync(`xattr -p com.google.drivefs.item-id "${p}" 2>/dev/null`, { encoding: 'utf8' });
-    return true; // Has Google Drive sync ID = in the cloud
-  } catch { return true; } // Has content but not yet synced — skip to avoid re-downloading
+    const id = execSync(`xattr -p com.google.drivefs.item-id "${p}" 2>/dev/null`, { encoding: 'utf8' }).trim();
+    if (id) return true; // Confirmed on Google Drive — may be fully local or offloaded (0 bytes)
+  } catch { /* xattr absent — not yet confirmed on Google Drive */ }
+
+  // No Drive ID yet. If a local copy exists (non-zero), the upload may still be in progress.
+  // Skip it to avoid re-downloading while the Drive app is uploading.
+  if (fs.statSync(p).size > 0) return true;
+
+  // 0 bytes + no Drive ID = genuinely incomplete download stub. Mark for re-download.
+  return false;
 }
 
 function loadState() {
@@ -306,6 +344,32 @@ async function main() {
   const page = await ctx.newPage();
 
   try {
+    // ── Verify source availability ──────────────────────────────────────────
+    // Do this every run before touching the manifest, so a dead/blocked/expired
+    // sync.com link surfaces as a scheduler failure in the ProBot dashboard.
+    log('');
+    log('🔍 Verifying source availability…');
+    await goTo(page, C.rootId);
+    const rootCheck = await apiPathList(page, C.rootId);
+    const rootItems = rootCheck.pathitems || [];
+    if (rootItems.length === 0) {
+      const pageText = await page.evaluate(() =>
+        (document.body?.innerText || '').slice(0, 400).replace(/\s+/g, ' ').trim()
+      );
+      const isErrorPage = /not found|expired|invalid|no longer|deleted|denied|blocked|unavailable/i.test(pageText);
+      const reason = isErrorPage
+        ? `page content: "${pageText.slice(0, 200)}"`
+        : 'root folder returned 0 items — link may be expired or account deleted';
+      throw new Error(
+        `SOURCE UNAVAILABLE — sync.com link is unreachable or empty.\n` +
+        `  URL:    ${C.baseUrl}?sync_id=${C.rootId}${C.key}\n` +
+        `  Reason: ${reason}\n` +
+        `  Action: Check the sync.com link manually. If the share was revoked or the\n` +
+        `          URL changed, update C.rootId and C.key in sync_downloader.mjs.`
+      );
+    }
+    log(`✅ Source accessible — ${rootItems.length} top-level items at root`);
+
     // ── Build manifest ──────────────────────────────────────────────────────
     if (!state.manifest?.length) {
       log('');

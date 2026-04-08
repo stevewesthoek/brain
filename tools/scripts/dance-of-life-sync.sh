@@ -8,7 +8,7 @@
 #   ./dance-of-life-sync.sh              # FORCE_RESCAN=1 (daily scheduler default)
 #   FORCE_RESCAN=0 ./dance-of-life-sync.sh  # continue initial bulk download without rescan
 #
-# Called by: office-nightly-scheduler.sh (last job in chain, lowest priority)
+# Called by: office-nightly-scheduler.sh (chain member #4, after maintenance jobs, before bible-studies-pipeline)
 # Script:    tools/scripts/dance-of-life/sync_downloader.mjs
 # State:     ~/.local/state/dance-of-life/state.json
 # Log:       ~/Library/Logs/office-scheduler/dance-of-life.log

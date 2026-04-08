@@ -84,6 +84,7 @@ interface NRSynthetic {
   name: string;
   alertSeverity: string | null;
   reporting: boolean;
+  monitorId?: string | null;
   online?: boolean | null;
   alertConfigured?: boolean;
   lastCheckAt?: string | null;
@@ -95,6 +96,17 @@ interface NRHealth {
   hosts: NRHost[];
   synthetics: NRSynthetic[];
   error?: string;
+}
+
+interface NRSyntheticCondition {
+  monitor_id?: string;
+  enabled?: boolean;
+}
+
+interface NRInfraCondition {
+  type?: string;
+  enabled?: boolean;
+  where_clause?: string;
 }
 
 interface NRHostSample {
@@ -135,7 +147,7 @@ async function getNRHealth(): Promise<NRHealth> {
         results { entities { name reporting alertSeverity } }
       }
       synthetics: entitySearch(query: "accountId = ${accountId} AND domain = 'SYNTH' AND type = 'MONITOR'") {
-        results { entities { name reporting alertSeverity } }
+        results { entities { name reporting alertSeverity ... on SyntheticMonitorEntityOutline { monitorId } } }
       }
       account(id: ${accountId}) {
         hostSamples: nrql(query: "SELECT latest(timestamp) FROM SystemSample FACET hostname SINCE 15 minutes ago LIMIT 100") {
@@ -168,8 +180,37 @@ async function getNRHealth(): Promise<NRHealth> {
         }
       }
     };
+    const [syntheticsConditionsRaw, infraConditionsRaw] = await Promise.all([
+      execAsync(
+        `curl -s -X GET 'https://api.eu.newrelic.com/v2/alerts_synthetics_conditions.json' \
+          -G --data-urlencode 'policy_id=1685919' \
+          -H 'X-Api-Key: ${apiKey}'`,
+        { timeout: 10_000 }
+      ).then(({ stdout }) => stdout).catch(() => ""),
+      execAsync(
+        `curl -s -X GET 'https://infra-api.eu.newrelic.com/v2/alerts/conditions' \
+          -G --data-urlencode 'policy_id=1685920' \
+          -H 'Api-Key: ${apiKey}'`,
+        { timeout: 10_000 }
+      ).then(({ stdout }) => stdout).catch(() => ""),
+    ]);
+
     const hostSamples = data.data?.actor?.account?.hostSamples?.results ?? [];
     const syntheticChecks = data.data?.actor?.account?.syntheticChecks?.results ?? [];
+    const syntheticsConditions = (() => {
+      try {
+        return (JSON.parse(syntheticsConditionsRaw) as { synthetics_conditions?: NRSyntheticCondition[] }).synthetics_conditions ?? [];
+      } catch {
+        return [];
+      }
+    })();
+    const infraConditions = (() => {
+      try {
+        return (JSON.parse(infraConditionsRaw) as { data?: NRInfraCondition[] }).data ?? [];
+      } catch {
+        return [];
+      }
+    })();
     const hostLastSeen = new Map(
       hostSamples
         .filter((sample) => sample.facet && sample["latest.timestamp"])
@@ -180,6 +221,16 @@ async function getNRHealth(): Promise<NRHealth> {
         .filter((check) => check.facet)
         .map((check) => [check.facet as string, check])
     );
+    const configuredSyntheticMonitorIds = new Set(
+      syntheticsConditions
+        .filter((condition) => condition.enabled && condition.monitor_id)
+        .map((condition) => condition.monitor_id as string)
+    );
+    const configuredHostNames = new Set(
+      infraConditions
+        .filter((condition) => condition.enabled && condition.type === "infra_host_not_reporting" && condition.where_clause)
+        .flatMap((condition) => Array.from((condition.where_clause ?? "").matchAll(/'([^']+)'/g)).map((match) => match[1]))
+    );
     return {
       hosts: (data.data?.actor?.hosts?.results?.entities ?? []).map((host) => {
         const lastSeen = hostLastSeen.get(host.name);
@@ -187,7 +238,7 @@ async function getNRHealth(): Promise<NRHealth> {
         return {
           ...host,
           online,
-          alertConfigured: host.alertSeverity !== "NOT_CONFIGURED",
+          alertConfigured: configuredHostNames.has(host.name),
           lastSeenAt: epochToIso(lastSeen),
         };
       }),
@@ -197,7 +248,7 @@ async function getNRHealth(): Promise<NRHealth> {
         return {
           ...synthetic,
           online: lastResult === "SUCCESS" ? true : lastResult === "FAILED" ? false : null,
-          alertConfigured: synthetic.alertSeverity !== "NOT_CONFIGURED",
+          alertConfigured: Boolean(synthetic.monitorId && configuredSyntheticMonitorIds.has(synthetic.monitorId)),
           lastCheckAt: epochToIso(latest?.["latest.timestamp"]),
           lastResult,
           lastError: normalizeSyntheticError(latest?.["latest.error"]),
