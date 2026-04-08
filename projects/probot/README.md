@@ -137,7 +137,7 @@ Do not try to turn Slack into a full terminal. Use it to orchestrate work, not t
 Recommended fast path from outside the house:
 
 1. `home` to see the latest active sessions, repo state, and pending approvals
-2. `recent` to get the best 5 resumable sessions in a phone-friendly numbered list with short intent tags
+2. `recent` to get the best 5 resumable sessions in a phone-friendly numbered list with short `intent · repo` tags and an explicit `Suggested next action`
 3. `continue 1` through `continue 5` to select the exact session you want
 4. `focus <repo>` if you want repo context before continuing
 5. `ssh <repo>` if you only need the Moshi-friendly SSH + tmux steps
@@ -147,7 +147,7 @@ The guided resume output now includes a one-command helper you can run after `ss
 
 - `~/Repos/stevewesthoek/brain/tools/scripts/probot-continue.sh "<repo-path>" auto`
 
-That helper creates or reattaches a stable tmux session per repo and resumes the latest Claude, Codex, or Gemini session it can find for that repo. When ProBot gives you a numbered `continue 1` style path, it also passes the exact resume target so you land in the intended session instead of the generic latest one. The numbered list is ranked to prefer live tmux sessions and repos with fresher handoffs before falling back to plain recency, and each candidate now includes a short intent tag such as `deploy`, `bugfix`, `docs`, or `ops`.
+That helper creates or reattaches a stable tmux session per repo and resumes the latest Claude, Codex, or Gemini session it can find for that repo. When ProBot gives you a numbered `continue 1` style path, it also passes the exact resume target so you land in the intended session instead of the generic latest one. The numbered list is ranked to prefer live tmux sessions and repos with fresher handoffs before falling back to plain recency, and each candidate now includes a short `intent · repo` tag such as `deploy · proofly`, `ops · probot`, or `analytics · brain`, plus an explicit `Suggested next action` line so it is obvious what ProBot recommends you do next.
 
 ## Dashboard AI Usage
 

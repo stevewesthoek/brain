@@ -70,8 +70,12 @@ Self-hosted on Dokploy (Ops project). UI: `https://umami.prochat.tools` · Versi
 | `UMAMI_URL` | `~/.config/umami/.env` | Base URL of the Umami instance (config, not secret) | Static | — |
 | `UMAMI_USERNAME` | `~/.config/umami/.env` | Admin username for login and API auth | No automatic expiry; change via Settings → Profile | `https://umami.prochat.tools/settings/profile` |
 | `UMAMI_PASSWORD` | `~/.config/umami/.env` | Admin password for login and API auth | No automatic expiry; change via Settings → Profile | `https://umami.prochat.tools/settings/profile` |
+| `UMAMI_WEBSITE_ID_PROCHAT` | `~/.config/umami/.env` | Tracking ID for prochat.tools | Static unless site is deleted and recreated | Umami UI → Websites |
+| `UMAMI_WEBSITE_ID_STB` | `~/.config/umami/.env` | Tracking ID for saysthe.bible | Static unless site is deleted and recreated | Umami UI → Websites |
+| `UMAMI_WEBSITE_ID_PROOFLY` | `~/.config/umami/.env` | Tracking ID for proofly.io | Static unless site is deleted and recreated | Umami UI → Websites |
+| `UMAMI_WEBSITE_ID_YESHUA_ACADEMY` | `~/.config/umami/.env` | Tracking ID for yeshua.academy | Static unless site is deleted and recreated | Umami UI → Websites |
 
-Note: Self-hosted Umami has no API key feature. Programmatic access uses `POST /api/auth/login` → Bearer token.
+Note: Self-hosted Umami v3 has no API key feature. Programmatic access uses `POST /api/auth/login` → Bearer token → `Authorization: Bearer <token>`.
 
 ## Dokploy
 

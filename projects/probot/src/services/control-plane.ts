@@ -100,6 +100,36 @@ function inferIntentLabel(session: SessionSummary, signal: RepoSignal): string {
   return "general";
 }
 
+function shortRepoName(projectLabel: string): string {
+  const parts = projectLabel.split("/").filter(Boolean);
+  return parts[parts.length - 1] ?? projectLabel;
+}
+
+function humanIntentLabel(intent: string, session: SessionSummary): string {
+  return `${intent} · ${shortRepoName(session.projectLabel)}`;
+}
+
+function repoAliasForSession(session: SessionSummary, config: Config): string {
+  for (const [alias, repoPath] of config.repoAliases) {
+    if (matchRepoPath(session, repoPath)) return alias;
+  }
+  return shortRepoName(session.projectLabel);
+}
+
+function suggestedNextAction(ranked: RankedSession, config: Config, selection?: number): string {
+  const repoRef = repoAliasForSession(ranked.session, config);
+  if (selection !== undefined) {
+    return `Suggested next action: continue ${selection}`;
+  }
+  if (ranked.session.activeInTmux) {
+    return `Suggested next action: continue ${repoRef}`;
+  }
+  if (ranked.signal.freshness === "fresh" || ranked.signal.freshness === "stale") {
+    return `Suggested next action: resume ${repoRef}`;
+  }
+  return `Suggested next action: focus ${repoRef}`;
+}
+
 function rankSessionsForContinuation(sessions: SessionSummary[], config: Config): RankedSession[] {
   return sessions
     .map((session) => {
@@ -115,7 +145,7 @@ function rankSessionsForContinuation(sessions: SessionSummary[], config: Config)
     .sort((a, b) => b.score - a.score || b.session.updatedAt.localeCompare(a.session.updatedAt));
 }
 
-function compactSessionLine(index: number, ranked: RankedSession): string {
+function compactSessionLine(index: number, ranked: RankedSession, config: Config): string {
   const { session, signal, intent } = ranked;
   const toolLabel = session.tool === "claude" ? "Claude" : session.tool === "codex" ? "Codex" : "Gemini";
   const tags = [];
@@ -123,9 +153,9 @@ function compactSessionLine(index: number, ranked: RankedSession): string {
   if (signal.freshness === "fresh") tags.push("fresh handoff");
   else if (signal.freshness === "stale") tags.push("stale handoff");
   else if (signal.freshness === "old") tags.push("old handoff");
-  tags.push(intent);
+  tags.push(humanIntentLabel(intent, session));
   const tagText = tags.length > 0 ? ` · ${tags.join(" · ")}` : "";
-  return `${index}. ${toolLabel} · ${session.projectLabel} · ${session.age}${tagText}\n   ${summarizeLine(session.headline, 54)}`;
+  return `${index}. ${toolLabel} · ${session.projectLabel} · ${session.age}${tagText}\n   ${summarizeLine(session.headline, 54)}\n   ${suggestedNextAction(ranked, config, index)}`;
 }
 
 export async function buildHomeOverview(config: Config, approvals: ApprovalStore): Promise<string> {
@@ -168,8 +198,9 @@ export async function buildHomeOverview(config: Config, approvals: ApprovalStore
   if (sessions.length === 0) {
     lines.push("- none detected");
   } else {
-    for (const ranked of rankedSessions.slice(0, 5)) {
-      lines.push(`- ${sessionLine(ranked.session)} · ${ranked.intent}`);
+    for (const [index, ranked] of rankedSessions.slice(0, 5).entries()) {
+      lines.push(`- ${sessionLine(ranked.session)} · ${humanIntentLabel(ranked.intent, ranked.session)}`);
+      lines.push(`  ${suggestedNextAction(ranked, config, index + 1)}`);
     }
   }
 
@@ -183,7 +214,7 @@ export async function buildHomeOverview(config: Config, approvals: ApprovalStore
   lines.push(
     "",
     "Recent picks:",
-    ...rankedSessions.slice(0, 5).map((ranked, index) => compactSessionLine(index + 1, ranked)),
+    ...rankedSessions.slice(0, 5).map((ranked, index) => compactSessionLine(index + 1, ranked, config)),
     "",
     "Fast path:",
     "- recent",
@@ -234,7 +265,14 @@ export async function buildRepoFocus(config: Config, repoName: string): Promise<
   } else {
     for (const session of matching) {
       const signal = deriveRepoSignal(session, config);
-      lines.push(`- ${sessionLine(session)} · ${inferIntentLabel(session, signal)}`);
+      const ranked = {
+        session,
+        signal,
+        intent: inferIntentLabel(session, signal),
+        score: scoreSession(session, signal),
+      };
+      lines.push(`- ${sessionLine(session)} · ${humanIntentLabel(ranked.intent, session)}`);
+      lines.push(`  ${suggestedNextAction(ranked, config)}`);
       if (session.activeInTmux) {
         lines.push(`  attach: tmux attach -t ${session.id}`);
       }
@@ -260,7 +298,7 @@ export async function buildRecentContinuations(config: Config, limit = 5): Promi
     return lines.join("\n");
   }
 
-  selected.forEach((ranked, index) => lines.push(compactSessionLine(index + 1, ranked)));
+  selected.forEach((ranked, index) => lines.push(compactSessionLine(index + 1, ranked, config)));
   lines.push("", "Use `continue <1-5>` or `resume <repo>`.");
   return lines.join("\n");
 }

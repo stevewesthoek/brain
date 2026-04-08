@@ -220,7 +220,7 @@ Returns:
 - repo path
 - handoff preview
 - matching recent sessions
-- intent-labeled matching sessions
+- `intent · repo` labeled matching sessions
 - direct `tmux attach` hints for active sessions
 - embedded SSH and resume guidance
 
@@ -232,7 +232,8 @@ Returns:
 - compact numbered lines optimized for a phone screen
 - one-line natural-language headlines so sessions are easy to distinguish quickly
 - smart ranking that prefers live tmux sessions and fresher repo handoffs before plain recency
-- one short intent label inferred from the session headline and repo handoff goal
+- one short `intent · repo` label inferred from the session headline and repo handoff goal
+- one explicit `Suggested next action` line that is clearly advisory and not yet executed
 
 ### `/status`
 
