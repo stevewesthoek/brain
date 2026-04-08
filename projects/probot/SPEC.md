@@ -51,13 +51,6 @@ Work is only done when:
 
 There is no always-running model loop or indexer in MVP.
 
-The Slack runtime and the Slack CLI are separate concerns:
-
-- runtime: Bolt app using bot and app tokens
-- CLI: developer tooling for app management, auth, linking, and scripted setup
-
-The CLI does not replace the runtime.
-
 One narrow background monitor is allowed for dashboard correctness:
 
 - a bounded Codex usage refresh task runs every 5 minutes

@@ -52,16 +52,9 @@ Slack DM commands currently supported:
 - `resume <repo>`
 - `dashboard`
 
-## Slack Integration Modes
+## Slack Integration
 
-There are now two supported Slack paths on this machine:
-
-1. ProBot runtime via Slack API and Bolt
-2. Slack CLI for app management and scripted developer operations
-
-They are intentionally separate.
-
-### Primary path: Slack API runtime
+### Supported path: Slack API runtime
 
 ProBot's actual Slack bot runs through Bolt with:
 
@@ -69,33 +62,7 @@ ProBot's actual Slack bot runs through Bolt with:
 - `SLACK_APP_TOKEN`
 - `SLACK_ALLOWED_USER_IDS`
 
-This is the production path for remote control. It does not depend on the Slack CLI being installed.
-
-### Secondary path: Slack CLI
-
-The Slack CLI is installed locally as `slack` and is useful for:
-
-- logging into the workspace as a developer
-- inspecting auth state
-- creating or linking Slack app projects
-- installing or uninstalling app manifests
-- future scripted Slack app management
-
-It is not a replacement for the running ProBot bot.
-
-Important constraints:
-
-- the CLI uses its own login flow and is not automatically authenticated just because ProBot has bot/app tokens
-- Slack CLI is mainly developer tooling, not a remote-chat runtime
-- on Slack free, the CLI can still help manage apps, but some newer workflow-platform features are paid-plan oriented
-
-Useful commands:
-
-- `slack version`
-- `slack auth list`
-- `slack auth login`
-- `slack app link`
-- `slack app install`
+This is the only supported Slack path for ProBot. It uses the existing Slack app and does not depend on the Slack CLI.
 
 ## Local Run
 
