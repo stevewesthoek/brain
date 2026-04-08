@@ -10,6 +10,7 @@ kanban-plugin: board
 - [ ] Make a Portuguese language app.
 - [ ] Make a family finance app.
 - [ ] Make a Yeshua Academy Finance Automation.
+- [ ] make a trip planning to holland
 
 
 ## 🔍 Scoped
