@@ -193,6 +193,35 @@ Purpose:
 
 ## Command Surface
 
+The preferred remote UX is:
+
+1. `home`
+2. `focus <repo>`
+3. `continue <repo>` or `resume <repo>`
+4. `ssh <repo>`
+
+This sequence is optimized for fast orientation in Slack and fast continuation in SSH + `tmux` from mobile.
+
+### `/home`
+
+Returns:
+
+- host and channel state
+- pending approval count
+- most recent sessions
+- repo handoff freshness
+- quick next commands for continuation
+
+### `/focus <repo>`
+
+Returns:
+
+- repo path
+- handoff preview
+- matching recent sessions
+- direct `tmux attach` hints for active sessions
+- embedded SSH and resume guidance
+
 ### `/status`
 
 Returns:
@@ -225,6 +254,51 @@ Returns:
 - compact “likely next” hints derived from recent session metadata
 
 This is intentionally heuristic in MVP, not LLM-generated.
+
+### `/jobs`
+
+Returns:
+
+- pending approvals
+- approval IDs
+- expiry timestamps
+
+### `/approve <id>` and `/reject <id>`
+
+Handles:
+
+- file-send approvals
+- bounded operational presets such as `restart-probot`
+
+### `/tail [target]`
+
+Returns:
+
+- recent local log lines for known targets only
+- initial supported targets:
+  - `probot`
+  - `probot-stdout`
+  - `probot-stderr`
+
+### `/run restart-probot`
+
+Behavior:
+
+- does not expose generic shell access
+- creates an approval-gated restart request
+- on approval, schedules a `launchctl kickstart` restart for the local ProBot agent
+
+### `/ssh [repo]`
+
+Returns:
+
+- `ssh office` continuation guidance
+- `tmux` attach instructions
+- repo-specific directory and suggested new-session name when a repo is provided
+
+### `/continue <repo>`
+
+Alias for `/resume <repo>` with the same guided continuation output.
 
 ### `/note <text>`
 

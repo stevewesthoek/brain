@@ -33,6 +33,9 @@ export async function getStatusSummary(config: Config): Promise<string> {
   return [
     `ProBot is live on ${config.hostname}.`,
     `Telegram: local polling active, ${config.telegramAllowedUserIds.length} allowed user(s)`,
+    config.slackBotToken && config.slackAppToken
+      ? `Slack: Socket Mode configured, ${config.slackAllowedUserIds.length || "all"} allowed user(s)`
+      : "Slack: disabled",
     `ProBot uptime: ${uptimeMinutes}m`,
     `Recent sessions: ${sessions.length} total, ${activeSessions.length} active in tmux`,
     latest ? `Latest thread: ${latest.tool} · ${latest.projectLabel} · ${latest.headline}` : "Latest thread: none detected",

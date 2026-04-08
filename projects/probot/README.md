@@ -34,9 +34,18 @@ It is intentionally not a general-purpose agent platform. The goal is fast remot
 ## Commands
 
 - `/help` — show command list
+- `/home` — unified remote-control overview
+- `/focus <repo>` — fast context and continuation view for one repo
 - `/status` — daemon health and machine summary
-- `/sessions` — recent Claude and Codex sessions
+- `/sessions [repo]` — recent Claude and Codex sessions, optionally filtered by repo
 - `/summary [today|week]` — compact session digest
+- `/jobs` — list pending approvals
+- `/approve <id>` — approve a pending action
+- `/reject <id>` — reject a pending action
+- `/tail [probot|probot-stdout|probot-stderr]` — inspect recent local logs
+- `/run restart-probot` — request an approval-gated local ProBot restart
+- `/ssh [repo]` — SSH + tmux continuation guidance
+- `/continue <repo>` — alias for the guided resume flow
 - `/note <text>` — save a text note
 - `/brain <query>` — search the Brain repo
 - `/find <query>` — search files by name and content
@@ -45,11 +54,20 @@ It is intentionally not a general-purpose agent platform. The goal is fast remot
 Slack DM commands currently supported:
 
 - `help`
+- `home`
+- `focus <repo>`
 - `status`
-- `sessions`
+- `sessions [repo]`
+- `summary [today|week]`
+- `jobs`
+- `approve <id>` / `reject <id>`
 - `repos`
 - `handoff <repo>`
 - `resume <repo>`
+- `continue <repo>`
+- `tail [probot|probot-stdout|probot-stderr]`
+- `run restart-probot`
+- `ssh [repo]`
 - `dashboard`
 
 ## Slack Integration
@@ -106,7 +124,18 @@ Use the channels for different jobs:
 - Telegram: backup channel if Slack auth or workspace availability becomes a problem
 - SSH + `tmux` over Tailscale: real remote CLI continuation for Claude, Codex, and Gemini
 
+Current bounded operational action:
+
+- `run restart-probot` creates an approval-gated restart request for the local `launchd` agent
+
 Do not try to turn Slack into a full terminal. Use it to orchestrate work, not to replace shell access.
+
+Recommended fast path from outside the house:
+
+1. `home` to see the latest active sessions, repo state, and pending approvals
+2. `focus <repo>` to get one repo's handoff plus tmux attach guidance
+3. `continue <repo>` or `resume <repo>` to get the exact continuation path
+4. `ssh <repo>` if you only need the Moshi-friendly SSH + tmux steps
 
 ## Dashboard AI Usage
 

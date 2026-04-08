@@ -14,6 +14,7 @@ export interface ApprovalRecord {
 export interface ApprovalStore {
   create(kind: string, payload: unknown, expiresAt: string): string;
   get(id: string): ApprovalRecord | undefined;
+  list(status?: ApprovalRecord["status"], limit?: number): ApprovalRecord[];
   updateStatus(id: string, status: ApprovalRecord["status"]): void;
   log(kind: string, payload: unknown): void;
 }
@@ -67,6 +68,21 @@ export function createApprovalStore(db: Database.Database): ApprovalStore {
     where id = ?
   `);
 
+  const listApprovalsByStatus = db.prepare(`
+    select id, kind, payload_json as payloadJson, status, created_at as createdAt, expires_at as expiresAt
+    from approvals
+    where status = ?
+    order by created_at desc
+    limit ?
+  `);
+
+  const listApprovals = db.prepare(`
+    select id, kind, payload_json as payloadJson, status, created_at as createdAt, expires_at as expiresAt
+    from approvals
+    order by created_at desc
+    limit ?
+  `);
+
   const insertEvent = db.prepare(`
     insert into events (kind, payload_json, created_at)
     values (?, ?, ?)
@@ -87,6 +103,12 @@ export function createApprovalStore(db: Database.Database): ApprovalStore {
     },
     get(id) {
       return selectApproval.get(id) as ApprovalRecord | undefined;
+    },
+    list(status, limit = 10) {
+      if (status) {
+        return listApprovalsByStatus.all(status, limit) as ApprovalRecord[];
+      }
+      return listApprovals.all(limit) as ApprovalRecord[];
     },
     updateStatus(id, status) {
       updateApproval.run(status, id);

@@ -6,6 +6,8 @@ import { HELP_TEXT } from "./commands.js";
 import { truncate } from "./format.js";
 import { getStatusSummary } from "../services/status.js";
 import { buildSessionOverview, buildTimeSummary, formatSessionOverview } from "../services/sessions.js";
+import { formatPendingApprovals, handleApprovalDecision } from "../services/approvals.js";
+import { buildHomeOverview, buildRepoFocus, filterSessionsByRepoName } from "../services/control-plane.js";
 import { appendNote } from "../services/notes.js";
 import { answerBrainQuery } from "../services/brain.js";
 import { assertSafeFilePath, formatFileHit, searchFiles } from "../services/files.js";
@@ -17,6 +19,13 @@ import {
   readCurrentHandoff,
   resolveRepoPath,
 } from "../services/handoff.js";
+import {
+  buildResumeGuide,
+  buildSshGuide,
+  describeRunPresets,
+  isValidRunPreset,
+  readTailTarget,
+} from "../services/operations.js";
 
 function isAuthorized(ctx: Context, app: AppContext): boolean {
   const userId = ctx.from?.id;
@@ -65,6 +74,19 @@ export function createTelegramBot(app: AppContext): Bot {
   bot.command("start", async (ctx) => ctx.reply(HELP_TEXT));
   bot.command("help", async (ctx) => ctx.reply(HELP_TEXT));
 
+  bot.command("home", async (ctx) => {
+    await ctx.reply(truncate(await buildHomeOverview(app.config, app.approvals)));
+  });
+
+  bot.command("focus", async (ctx) => {
+    const arg = parseArgument(ctx.msg?.text);
+    if (!arg) {
+      await ctx.reply("Usage: /focus <repo>\nUse /repos to list known repos.");
+      return;
+    }
+    await ctx.reply(truncate(await buildRepoFocus(app.config, arg)));
+  });
+
   bot.command("status", async (ctx) => {
     await ctx.reply(await getStatusSummary(app.config));
   });
@@ -75,8 +97,17 @@ export function createTelegramBot(app: AppContext): Bot {
       app.config.codexSessionsDir,
       app.config.codexSessionIndex,
     );
-
-    await ctx.reply(truncate(formatSessionOverview(sessions, 8)));
+    const arg = parseArgument(ctx.msg?.text);
+    if (!arg) {
+      await ctx.reply(truncate(formatSessionOverview(sessions, 8)));
+      return;
+    }
+    const filtered = filterSessionsByRepoName(sessions, app.config, arg);
+    if (filtered === null) {
+      await ctx.reply(`Unknown repo: ${arg}\nUse /repos to list known repos.`);
+      return;
+    }
+    await ctx.reply(truncate(filtered.length === 0 ? `No sessions found for ${arg}.` : formatSessionOverview(filtered, 8)));
   });
 
   bot.command("summary", async (ctx) => {
@@ -90,6 +121,33 @@ export function createTelegramBot(app: AppContext): Bot {
     );
 
     await ctx.reply(truncate(summary));
+  });
+
+  bot.command("jobs", async (ctx) => {
+    await ctx.reply(truncate(formatPendingApprovals(app, 6)));
+  });
+
+  bot.command("approve", async (ctx) => {
+    const approvalId = parseArgument(ctx.msg?.text);
+    if (!approvalId) {
+      await ctx.reply("Usage: /approve <approval-id>");
+      return;
+    }
+    const result = await handleApprovalDecision(app, approvalId, "approve", "telegram");
+    if (result.filePath) {
+      await ctx.replyWithDocument(result.filePath);
+    }
+    await ctx.reply(truncate(result.messageText));
+  });
+
+  bot.command("reject", async (ctx) => {
+    const approvalId = parseArgument(ctx.msg?.text);
+    if (!approvalId) {
+      await ctx.reply("Usage: /reject <approval-id>");
+      return;
+    }
+    const result = await handleApprovalDecision(app, approvalId, "reject", "telegram");
+    await ctx.reply(truncate(result.messageText));
   });
 
   bot.command("note", async (ctx) => {
@@ -179,6 +237,33 @@ export function createTelegramBot(app: AppContext): Bot {
     await ctx.reply(`Dashboard: ${url}`);
   });
 
+  bot.command("tail", async (ctx) => {
+    const target = parseArgument(ctx.msg?.text) || "probot";
+    await ctx.reply(truncate(readTailTarget(app.config, target)));
+  });
+
+  bot.command("run", async (ctx) => {
+    const preset = parseArgument(ctx.msg?.text);
+    if (!preset) {
+      await ctx.reply(`Available presets:\n${describeRunPresets()}`);
+      return;
+    }
+    if (!isValidRunPreset(preset)) {
+      await ctx.reply(`Unknown preset: ${preset}\n\nAvailable presets:\n${describeRunPresets()}`);
+      return;
+    }
+
+    const approvalId = app.approvals.create(
+      "run_preset",
+      { preset },
+      new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    );
+
+    await ctx.reply(
+      `Approval required for ${preset}.\nApproval ID: ${approvalId}\nUse /approve ${approvalId} or /reject ${approvalId}.`,
+    );
+  });
+
   bot.command("repos", async (ctx) => {
     const repos = listRepoHandoffs(app.config.repoAliases);
     if (repos.length === 0) {
@@ -236,8 +321,33 @@ export function createTelegramBot(app: AppContext): Bot {
     }
 
     const prompt = buildResumePrompt(repoPath);
-    const message = `Resume prompt for ${arg}:\n\n${prompt}\n\n---\nPaste this into your Claude session to resume.`;
+    const guide = await buildResumeGuide(app.config, arg);
+    const message = `Resume prompt for ${arg}:\n\n${prompt}\n\n---\n${guide}`;
     await ctx.reply(truncate(message));
+  });
+
+  bot.command("continue", async (ctx) => {
+    const arg = parseArgument(ctx.msg?.text);
+    if (!arg) {
+      await ctx.reply("Usage: /continue <repo>\nUse /repos to list known repos.");
+      return;
+    }
+
+    const repoPath = resolveRepoPath(arg, app.config.repoAliases);
+    if (!repoPath) {
+      await ctx.reply(`Unknown repo: ${arg}\nUse /repos to list known repos.`);
+      return;
+    }
+
+    const prompt = buildResumePrompt(repoPath);
+    const guide = await buildResumeGuide(app.config, arg);
+    const message = `Resume prompt for ${arg}:\n\n${prompt}\n\n---\n${guide}`;
+    await ctx.reply(truncate(message));
+  });
+
+  bot.command("ssh", async (ctx) => {
+    const arg = parseArgument(ctx.msg?.text);
+    await ctx.reply(truncate(buildSshGuide(app.config, arg || undefined)));
   });
 
   bot.callbackQuery(/^(approve|reject):/, async (ctx) => {
@@ -265,23 +375,17 @@ export function createTelegramBot(app: AppContext): Bot {
       return;
     }
 
-    if (decision === "reject") {
-      app.approvals.updateStatus(approvalId, "rejected");
-      await ctx.editMessageText("Request rejected.");
-      await ctx.answerCallbackQuery({ text: "Rejected." });
-      return;
+    const result = await handleApprovalDecision(
+      app,
+      approvalId,
+      decision === "approve" ? "approve" : "reject",
+      "telegram",
+    );
+    if (result.filePath) {
+      await ctx.replyWithDocument(result.filePath);
     }
-
-    if (record.kind === "send_file") {
-      const payload = JSON.parse(record.payloadJson) as { path: string };
-      await ctx.replyWithDocument(payload.path);
-      app.approvals.updateStatus(approvalId, "approved");
-      await ctx.editMessageText(`Sent file:\n${payload.path}`);
-      await ctx.answerCallbackQuery({ text: "Approved." });
-      return;
-    }
-
-    await ctx.answerCallbackQuery({ text: "Unknown approval action." });
+    await ctx.editMessageText(result.messageText);
+    await ctx.answerCallbackQuery({ text: result.statusText });
   });
 
   bot.on("message:text", async (ctx) => {

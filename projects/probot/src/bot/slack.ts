@@ -2,6 +2,8 @@ import { App, LogLevel } from "@slack/bolt";
 import type { AppContext } from "../types/app.js";
 import { getStatusSummary } from "../services/status.js";
 import { buildSessionOverview, formatSessionOverview } from "../services/sessions.js";
+import { formatPendingApprovals, handleApprovalDecision } from "../services/approvals.js";
+import { buildHomeOverview, buildRepoFocus, filterSessionsByRepoName } from "../services/control-plane.js";
 import {
   buildResumePrompt,
   formatHandoffSummary,
@@ -9,12 +11,31 @@ import {
   readCurrentHandoff,
   resolveRepoPath,
 } from "../services/handoff.js";
+import {
+  buildResumeGuide,
+  buildSshGuide,
+  describeRunPresets,
+  describeTailTargets,
+  isValidRunPreset,
+  listRunPresets,
+  readTailTarget,
+} from "../services/operations.js";
+import { buildTimeSummary } from "../services/sessions.js";
 
 const HELP_TEXT = `ProBot commands:
+• \`home\` — unified remote-control overview
+• \`focus <repo>\` — fast continuation context for one repo
 • \`status\` — machine and session overview
+• \`summary [today|week]\` — compact work digest
+• \`sessions [repo]\` — recent sessions, optionally filtered by repo
 • \`repos\` — list repos and handoff status
 • \`handoff <repo>\` — read current handoff
-• \`resume <repo>\` — get resume prompt
+• \`resume <repo>\` / \`continue <repo>\` — get resume prompt plus tmux/SSH guidance
+• \`ssh [repo]\` — SSH + tmux continuation instructions
+• \`tail [target]\` — recent local logs (${["probot", "probot-stdout", "probot-stderr"].join(", ")})
+• \`jobs\` — list pending approvals
+• \`run <preset>\` — request a bounded operational action
+• \`approve <id>\` / \`reject <id>\` — handle a pending approval
 • \`help\` — this message`;
 
 function parseCommand(text: string): { command: string; arg: string } {
@@ -56,19 +77,58 @@ export function createSlackBot(app: AppContext): App {
 
     try {
       switch (command) {
+        case "home": {
+          const result = await buildHomeOverview(app.config, app.approvals);
+          await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
+          break;
+        }
+
+        case "focus": {
+          if (!arg) {
+            await say("Usage: `focus <repo>`. Use `repos` to list known repos.");
+            break;
+          }
+          const result = await buildRepoFocus(app.config, arg);
+          await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
+          break;
+        }
+
         case "status": {
           const result = await getStatusSummary(app.config);
           await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
           break;
         }
 
-        case "sessions": {
-          const sessions = await buildSessionOverview(
+        case "summary": {
+          const period = arg.toLowerCase() === "week" ? "week" : "today";
+          const result = await buildTimeSummary(
+            period,
             app.config.claudeProjectsDir,
             app.config.codexSessionsDir,
             app.config.codexSessionIndex,
           );
-          await say({ blocks: [slackBlock(`\`\`\`${formatSessionOverview(sessions, 8)}\`\`\``)] });
+          await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
+          break;
+        }
+
+        case "sessions": {
+          const allSessions = await buildSessionOverview(
+            app.config.claudeProjectsDir,
+            app.config.codexSessionsDir,
+            app.config.codexSessionIndex,
+          );
+          if (!arg) {
+            await say({ blocks: [slackBlock(`\`\`\`${formatSessionOverview(allSessions, 8)}\`\`\``)] });
+            break;
+          }
+          const filtered = filterSessionsByRepoName(allSessions, app.config, arg);
+          if (filtered === null) {
+            await say(`Unknown repo: \`${arg}\`. Use \`repos\` to list known repos.`);
+            break;
+          }
+          await say({
+            blocks: [slackBlock(`\`\`\`${filtered.length === 0 ? `No sessions found for ${arg}.` : formatSessionOverview(filtered, 8)}\`\`\``)],
+          });
           break;
         }
 
@@ -114,9 +174,10 @@ export function createSlackBot(app: AppContext): App {
           break;
         }
 
-        case "resume": {
+        case "resume":
+        case "continue": {
           if (!arg) {
-            await say("Usage: `resume <repo>`. Use `repos` to list known repos.");
+            await say(`Usage: \`${command} <repo>\`. Use \`repos\` to list known repos.`);
             break;
           }
           const repoPath = resolveRepoPath(arg, app.config.repoAliases);
@@ -125,12 +186,67 @@ export function createSlackBot(app: AppContext): App {
             break;
           }
           const prompt = buildResumePrompt(repoPath);
+          const guide = await buildResumeGuide(app.config, arg);
           await say({
             blocks: [
               slackBlock(`*Resume prompt for \`${arg}\`:*\n\`\`\`${prompt}\`\`\``),
-              slackBlock("_Paste this into your Claude session to resume._"),
+              slackBlock(`\`\`\`${guide}\`\`\``),
             ],
           });
+          break;
+        }
+
+        case "ssh": {
+          const result = buildSshGuide(app.config, arg || undefined);
+          await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
+          break;
+        }
+
+        case "tail": {
+          const result = readTailTarget(app.config, arg || "probot");
+          await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
+          break;
+        }
+
+        case "jobs": {
+          const result = formatPendingApprovals(app, 6);
+          await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
+          break;
+        }
+
+        case "run": {
+          if (!arg) {
+            await say({ blocks: [slackBlock(`Available presets:\n${describeRunPresets()}`)] });
+            break;
+          }
+          if (!isValidRunPreset(arg)) {
+            await say({ blocks: [slackBlock(`Unknown preset: ${arg}\n\nAvailable presets:\n${describeRunPresets()}`)] });
+            break;
+          }
+          const approvalId = app.approvals.create(
+            "run_preset",
+            { preset: arg },
+            new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+          );
+          await say(
+            `Approval required for \`${arg}\`.\nApproval ID: \`${approvalId}\`\nReply with \`approve ${approvalId}\` or \`reject ${approvalId}\`.`,
+          );
+          break;
+        }
+
+        case "approve":
+        case "reject": {
+          if (!arg) {
+            await say(`Usage: \`${command} <approval-id>\`.`);
+            break;
+          }
+          const result = await handleApprovalDecision(
+            app,
+            arg,
+            command === "approve" ? "approve" : "reject",
+            "slack",
+          );
+          await say(result.messageText);
           break;
         }
 
