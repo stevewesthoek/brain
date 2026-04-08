@@ -305,10 +305,10 @@ Dokploy UI: `https://dokploy.prochat.tools`
 | `n8n.prochat.tools` | n8n | Ops | Online | Workflow automation |
 | `studio.prochat.tools` | Supabase Studio | Ops | Online | Supabase admin UI (proxied through Dokploy host) |
 | `yeshua.academy` | Yeshua Academy | Web | Online | — |
-| `openfund.pt` | Open Fund | Web | Online | — |
+| `openfund.yeshua.academy` | Open Fund | Web | Online | — |
 | `prochat.tools` | ProChat | Web | Online | — |
 | `saysthebible.com` | Says the Bible | Web | Online | — |
-| `cedula.pt` | Cedula | Web | Online | — |
+| `cedula.prochat.tools` | Cedula | Web | Online | — |
 | `olivetoorganizing.com` | Olive to Organizing | Clients | Online | — |
 | `jpvbootcamp.com` | JPV Bootcamp | Clients | Online | — |
 | `jccp-management.pro` | JCCP Holdings | Clients | Online | Added to Dokploy tunnel 2026-04-04 |
@@ -316,7 +316,7 @@ Dokploy UI: `https://dokploy.prochat.tools`
 | `arkware.solutions` | — | TBD | Parked | Added to Dokploy tunnel 2026-04-04; domain repurposed, new project not yet created |
 | `viadieden.com` | Via di Eden | Clients | Online | — |
 | `xgrow.io` | xGrow | SaaS | Error | xGrow app was in error state as of 2026-04-03 |
-| `statuslink.io` | Status Link | SaaS | Online | — |
+| `onestatus.link` | Status Link | SaaS | Online | `statuslink.io` currently points to an unrelated Framer site and returns 404 |
 | `proofly.io` | Proofly | SaaS | Online | — |
 
 > Domain names for some Dokploy apps (ProChat Accountant, Egg Cooker, Free Resend, ProKit, SaaSKit boilerplates, kutt, umami) are not yet confirmed — verify via Dokploy UI or `/dokploy` skill.

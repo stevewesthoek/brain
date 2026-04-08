@@ -53,12 +53,12 @@ APM data appears after first deploy of each app.
 |---------|-----|
 | ProChat | https://prochat.tools |
 | Says the Bible | https://saysthe.bible |
-| Cedula | https://cedula.pt |
-| Yeshua Academy | https://yeshuaacademy.org |
-| Open Fund | https://openfund.pt |
+| Cedula | https://cedula.prochat.tools |
+| Yeshua Academy | https://yeshua.academy |
+| Open Fund | https://openfund.yeshua.academy |
 | Olive to Organizing | https://olivetoorganizing.com |
 | JPV Bootcamp | https://jpvbootcamp.com |
-| Status Link | https://statuslink.io |
+| Status Link | https://onestatus.link |
 | Proofly | https://proofly.xyz |
 | n8n | https://n8n.prochat.tools |
 | Dokploy | https://dokploy.prochat.tools |
