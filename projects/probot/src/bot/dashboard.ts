@@ -376,14 +376,15 @@ async function getUmamiData(): Promise<UmamiData> {
             ).then(({ stdout }) => stdout),
           ]);
 
-          const s = JSON.parse(statsRaw) as {
-            pageviews?: { value?: number };
-            visitors?: { value?: number };
-            visits?: { value?: number };
-            bounces?: { value?: number };
-            totaltime?: { value?: number };
+          // v3 returns flat numbers; v1/v2 return { value: N } — handle both
+          const s = JSON.parse(statsRaw) as Record<string, number | { value?: number } | unknown>;
+          const sv = (k: string): number => {
+            const v = s[k];
+            if (typeof v === "number") return v;
+            if (v && typeof v === "object" && "value" in v) return (v as { value?: number }).value ?? 0;
+            return 0;
           };
-          // Umami v1 returns { x: n }, v2 may return { visitors: n } or an array
+          // v3 returns { visitors: N }; v1 returns { x: N }; array form also seen in v1
           const activeResp = JSON.parse(activeRaw) as
             | { x?: number; visitors?: number }
             | number
@@ -394,9 +395,9 @@ async function getUmamiData(): Promise<UmamiData> {
               ? (activeResp[0]?.x ?? 0)
               : (activeResp?.visitors ?? activeResp?.x ?? 0);
 
-          const visits = s.visits?.value ?? 0;
-          const bounceRate = visits > 0 ? Math.round(((s.bounces?.value ?? 0) / visits) * 100) : 0;
-          const avgDurationSeconds = visits > 0 ? Math.round((s.totaltime?.value ?? 0) / visits) : 0;
+          const visits = sv("visits");
+          const bounceRate = visits > 0 ? Math.round((sv("bounces") / visits) * 100) : 0;
+          const avgDurationSeconds = visits > 0 ? Math.round(sv("totaltime") / visits) : 0;
 
           return {
             id: site.id,
@@ -404,8 +405,8 @@ async function getUmamiData(): Promise<UmamiData> {
             domain: site.domain,
             active,
             stats: {
-              pageviews: s.pageviews?.value ?? 0,
-              visitors: s.visitors?.value ?? 0,
+              pageviews: sv("pageviews"),
+              visitors: sv("visitors"),
               visits,
               bounceRate,
               avgDurationSeconds,
@@ -911,6 +912,29 @@ function renderScheduler(jobs){
     +'<thead><tr><th>Job</th><th>Status</th><th>Last run</th><th>Next run</th><th style="text-align:right">Duration</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div>';
 }
+function fmtN(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'k';return String(n);}
+function fmtDur(s){if(!s||s===0)return'0s';if(s<60)return s+'s';return Math.floor(s/60)+'m '+(s%60)+'s';}
+function umamiCard(site){
+  const s=site.stats;
+  if(!s)return'<div class="uc"><div class="uc-hd"><div class="uc-info"><div class="uc-name">'+esc(site.name)+'</div><div class="uc-domain">'+esc(site.domain)+'</div></div></div><div style="font-size:11px;color:var(--red)">'+esc(site.error||'Failed to load')+'</div></div>';
+  const liveHtml=site.active>0?'<div class="uc-live"><div class="uc-live-dot"></div>'+site.active+' now</div>':'';
+  return'<div class="uc">'
+    +'<div class="uc-hd"><div class="uc-info"><div class="uc-name">'+esc(site.name)+'</div><div class="uc-domain">'+esc(site.domain)+'</div></div>'+liveHtml+'</div>'
+    +'<div class="uc-stats">'
+    +'<div><div class="uc-stat-val">'+fmtN(s.pageviews)+'</div><div class="uc-stat-lbl">Pageviews</div></div>'
+    +'<div><div class="uc-stat-val">'+fmtN(s.visitors)+'</div><div class="uc-stat-lbl">Visitors</div></div>'
+    +'<div><div class="uc-stat-val">'+fmtN(s.visits)+'</div><div class="uc-stat-lbl">Visits</div></div>'
+    +'</div>'
+    +'<div class="uc-ft"><span>'+s.bounceRate+'% bounce</span><span>'+fmtDur(s.avgDurationSeconds)+' avg session</span></div>'
+    +'</div>';
+}
+function renderUmami(data){
+  if(!data)return'<div class="nr-err">Umami not configured.</div>';
+  if(data.error&&!data.websites.length)return'<div class="nr-err">Umami: '+esc(data.error)+'</div>';
+  if(!data.websites.length)return'<div class="empty">No websites found in Umami.</div>';
+  return'<div class="sec-hd"><span class="sec-title">Analytics · Today</span><span class="sec-count">'+data.websites.length+'</span></div>'
+    +'<div class="umami-grid fade">'+data.websites.map(umamiCard).join('')+'</div>';
+}
 function render(d){
   _d=d;
   document.getElementById('host').textContent=d.meta.hostname;
@@ -933,6 +957,9 @@ function render(d){
   document.getElementById('tab-scheduler').innerHTML=sj.length===0
     ?'<div class="empty">No scheduler jobs configured.</div>'
     :renderScheduler(sj);
+  const uw=d.umami&&d.umami.websites?d.umami.websites.length:0;
+  document.getElementById('cnt-umami').textContent=uw?String(uw):'';
+  document.getElementById('tab-umami').innerHTML=renderUmami(d.umami);
 }
 async function fetchData(){
   try{
