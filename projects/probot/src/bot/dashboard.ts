@@ -78,14 +78,18 @@ function isLocalDashboardRequest(req: http.IncomingMessage): boolean {
 async function openGhosttyWithPreparedCommand(command: string): Promise<void> {
   const safeCommand = command.replace(/\r?\n/g, " ").trim();
   if (!safeCommand) throw new Error("Command is empty.");
+  // Copy to clipboard
   await execAsync(`printf %s ${JSON.stringify(safeCommand)} | pbcopy`);
-  await execAsync(`osascript <<'APPLESCRIPT'
-tell application "Ghostty" to activate
-delay 0.25
-tell application "System Events"
-  keystroke "v" using command down
-end tell
-APPLESCRIPT`);
+  // Open Ghostty — find by path first, fall back to open -a
+  const ghosttyPath = [
+    "/Applications/Ghostty.app",
+    path.join(os.homedir(), "Applications/Ghostty.app"),
+  ].find((p) => fs.existsSync(p));
+  if (ghosttyPath) {
+    await execAsync(`open "${ghosttyPath}"`);
+  } else {
+    await execAsync(`open -a Ghostty`);
+  }
 }
 
 // ─── New Relic helpers ────────────────────────────────────────────────────────
@@ -474,7 +478,9 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
 .btn-copy:hover{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
 .btn-copy.ok{background:var(--green-d);border-color:var(--green);color:var(--green)}
 /* sessions */
-.slist{display:flex;flex-direction:column;gap:8px}
+.slist{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:1100px){.slist{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.slist{grid-template-columns:1fr}}
 .si{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s}
 .si:hover{border-color:var(--border2)}
 .si-top{display:flex;align-items:center;gap:12px}
@@ -733,7 +739,15 @@ function toolClass(tool){
   return'si-tg';
 }
 function copyCommand(btn,command){
-  navigator.clipboard.writeText(command).then(()=>{
+  const doCopy=()=>{
+    if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(command);
+    const ta=document.createElement('textarea');ta.value=command;
+    Object.assign(ta.style,{position:'fixed',top:'0',left:'-9999px',width:'1px',height:'1px',opacity:'0'});
+    document.body.appendChild(ta);ta.focus();ta.select();
+    try{const ok=document.execCommand('copy');document.body.removeChild(ta);return ok?Promise.resolve():Promise.reject();}
+    catch(e){document.body.removeChild(ta);return Promise.reject(e);}
+  };
+  doCopy().then(()=>{
     const o=btn.textContent;btn.textContent='✓ Copied';btn.classList.add('ok');
     setTimeout(()=>{btn.textContent=o;btn.classList.remove('ok');},2000);
   }).catch(()=>{btn.textContent='Failed';setTimeout(()=>{btn.textContent='Copy command';},2000);});
@@ -766,7 +780,7 @@ function continuationItem(s){
     +'<div class="si-actions">'
     +'<button class="btn-action primary" onclick="openGhostty(this,'+JSON.stringify(s.suggestedCommand)+')">Open in Ghostty</button>'
     +'<button class="btn-copy" onclick="copyCommand(this,'+JSON.stringify(s.suggestedCommand)+')">Copy command</button>'
-    +(isLocalHost?'<span class="local-note">Command is pasted only. It is not executed.</span>':'<span class="local-note">Ghostty action is available only on localhost.</span>')
+    +(isLocalHost?'<span class="local-note">Ghostty opens · command copied · press ⌘V to paste.</span>':'<span class="local-note">Open Ghostty action is localhost-only.</span>')
     +'</div></div>';
 }
 function renderScheduler(jobs){

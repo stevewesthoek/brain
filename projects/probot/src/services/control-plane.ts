@@ -317,6 +317,54 @@ export async function buildRecentContinuations(config: Config, limit = 5): Promi
   return lines.join("\n");
 }
 
+type SlackBlock =
+  | { type: "section"; text: { type: "mrkdwn"; text: string } }
+  | { type: "divider" }
+  | { type: "context"; elements: Array<{ type: "mrkdwn"; text: string }> };
+
+export async function buildHomeSlackBlocks(
+  config: Config,
+  approvals: ApprovalStore,
+): Promise<SlackBlock[]> {
+  const sessions = await buildSessionOverview(
+    config.claudeProjectsDir,
+    config.codexSessionsDir,
+    config.codexSessionIndex,
+  );
+  const rankedSessions = rankSessionsForContinuation(sessions, config);
+  const pendingCount = approvals.list("pending", 20).length;
+  const top5 = rankedSessions.slice(0, 5);
+
+  const headerParts = [`*ProBot · ${config.hostname}*`];
+  if (pendingCount > 0) headerParts.push(`:warning: ${pendingCount} pending approval${pendingCount > 1 ? "s" : ""}`);
+
+  const blocks: SlackBlock[] = [
+    { type: "section", text: { type: "mrkdwn", text: headerParts.join("  ·  ") } },
+  ];
+
+  if (top5.length === 0) {
+    blocks.push({ type: "section", text: { type: "mrkdwn", text: "_No recent sessions._" } });
+  } else {
+    blocks.push({ type: "divider" });
+    for (const [i, ranked] of top5.entries()) {
+      const s = ranked.session;
+      const toolLabel = s.tool === "claude" ? "Claude" : s.tool === "codex" ? "Codex" : "Gemini";
+      const hl = summarizeLine(s.headline, 72);
+      const cmd = suggestedCommand(ranked, config, i + 1);
+      const line = `*${i + 1}. ${toolLabel}* · \`${s.projectLabel}\` · _${humanIntentLabel(ranked.intent, s)}_ · ${s.age}\n${hl}\n→ \`${cmd}\``;
+      blocks.push({ type: "section", text: { type: "mrkdwn", text: line } });
+    }
+  }
+
+  blocks.push({ type: "divider" });
+  blocks.push({
+    type: "context",
+    elements: [{ type: "mrkdwn", text: "`continue <1-5>` · `focus <repo>` · `recent` · `repos` · `help`" }],
+  });
+
+  return blocks;
+}
+
 export async function buildRecentContinuationCards(config: Config, limit = 5): Promise<ContinuationCard[]> {
   const sessions = await buildSessionOverview(
     config.claudeProjectsDir,

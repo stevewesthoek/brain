@@ -4,7 +4,7 @@ import { getStatusSummary } from "../services/status.js";
 import { buildSessionOverview, formatSessionOverview } from "../services/sessions.js";
 import { formatPendingApprovals, handleApprovalDecision } from "../services/approvals.js";
 import {
-  buildHomeOverview,
+  buildHomeSlackBlocks,
   buildRecentContinuations,
   buildRepoFocus,
   buildSelectedRecentContinuation,
@@ -87,8 +87,8 @@ export function createSlackBot(app: AppContext): App {
     try {
       switch (command) {
         case "home": {
-          const result = await buildHomeOverview(app.config, app.approvals);
-          await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
+          const blocks = await buildHomeSlackBlocks(app.config, app.approvals);
+          await say({ blocks });
           break;
         }
 
