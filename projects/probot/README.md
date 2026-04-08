@@ -35,9 +35,10 @@ It is intentionally not a general-purpose agent platform. The goal is fast remot
 
 - `/help` — show command list
 - `/home` — unified remote-control overview
+- `/recent` — last 5 resumable sessions, optimized for a small screen
 - `/focus <repo>` — fast context and continuation view for one repo
 - `/status` — daemon health and machine summary
-- `/sessions [repo]` — recent Claude and Codex sessions, optionally filtered by repo
+- `/sessions [repo]` — recent Claude, Codex, and Gemini sessions, optionally filtered by repo
 - `/summary [today|week]` — compact session digest
 - `/jobs` — list pending approvals
 - `/approve <id>` — approve a pending action
@@ -46,7 +47,7 @@ It is intentionally not a general-purpose agent platform. The goal is fast remot
 - `/report [scheduler]` — read the latest local scheduler report
 - `/run restart-probot` — request an approval-gated local ProBot restart
 - `/ssh [repo]` — SSH + tmux continuation guidance
-- `/continue <repo>` — alias for the guided resume flow
+- `/continue <repo|1-5>` — guided continuation by repo or recent-session number
 - `/note <text>` — save a text note
 - `/brain <query>` — search the Brain repo
 - `/find <query>` — search files by name and content
@@ -56,6 +57,7 @@ Slack DM commands currently supported:
 
 - `help`
 - `home`
+- `recent`
 - `focus <repo>`
 - `status`
 - `sessions [repo]`
@@ -66,7 +68,7 @@ Slack DM commands currently supported:
 - `repos`
 - `handoff <repo>`
 - `resume <repo>`
-- `continue <repo>`
+- `continue <repo|1-5>`
 - `tail [target]`
 - `run restart-probot`
 - `ssh [repo]`
@@ -135,16 +137,17 @@ Do not try to turn Slack into a full terminal. Use it to orchestrate work, not t
 Recommended fast path from outside the house:
 
 1. `home` to see the latest active sessions, repo state, and pending approvals
-2. `focus <repo>` to get one repo's handoff plus tmux attach guidance
-3. `continue <repo>` or `resume <repo>` to get the exact continuation path
-4. `ssh <repo>` if you only need the Moshi-friendly SSH + tmux steps
-5. `report scheduler` or `tail scheduler` if you need runtime observability before attaching
+2. `recent` to get the last 5 resumable sessions in a phone-friendly numbered list
+3. `continue 1` through `continue 5` to select the exact session you want
+4. `focus <repo>` if you want repo context before continuing
+5. `ssh <repo>` if you only need the Moshi-friendly SSH + tmux steps
+6. `report scheduler` or `tail scheduler` if you need runtime observability before attaching
 
 The guided resume output now includes a one-command helper you can run after `ssh office`:
 
 - `~/Repos/stevewesthoek/brain/tools/scripts/probot-continue.sh "<repo-path>" auto`
 
-That helper creates or reattaches a stable tmux session per repo and resumes the latest Claude, Codex, or Gemini session it can find for that repo.
+That helper creates or reattaches a stable tmux session per repo and resumes the latest Claude, Codex, or Gemini session it can find for that repo. When ProBot gives you a numbered `continue 1` style path, it also passes the exact resume target so you land in the intended session instead of the generic latest one.
 
 ## Dashboard AI Usage
 

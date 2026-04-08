@@ -3,7 +3,13 @@ import type { AppContext } from "../types/app.js";
 import { getStatusSummary } from "../services/status.js";
 import { buildSessionOverview, formatSessionOverview } from "../services/sessions.js";
 import { formatPendingApprovals, handleApprovalDecision } from "../services/approvals.js";
-import { buildHomeOverview, buildRepoFocus, filterSessionsByRepoName } from "../services/control-plane.js";
+import {
+  buildHomeOverview,
+  buildRecentContinuations,
+  buildRepoFocus,
+  buildSelectedRecentContinuation,
+  filterSessionsByRepoName,
+} from "../services/control-plane.js";
 import {
   buildResumePrompt,
   formatHandoffSummary,
@@ -25,13 +31,14 @@ import { buildTimeSummary } from "../services/sessions.js";
 
 const HELP_TEXT = `ProBot commands:
 • \`home\` — unified remote-control overview
+• \`recent\` — last 5 resumable sessions for a small screen
 • \`focus <repo>\` — fast continuation context for one repo
 • \`status\` — machine and session overview
 • \`summary [today|week]\` — compact work digest
 • \`sessions [repo]\` — recent sessions, optionally filtered by repo
 • \`repos\` — list repos and handoff status
 • \`handoff <repo>\` — read current handoff
-• \`resume <repo>\` / \`continue <repo>\` — get resume prompt plus tmux/SSH guidance
+• \`resume <repo>\` / \`continue <repo|1-5>\` — guided continuation by repo or recent-session number
 • \`ssh [repo]\` — SSH + tmux continuation instructions
 • \`tail [target]\` — recent local logs (${describeTailTargets()})
 • \`report [target]\` — read a local runtime report (${describeReportTargets()})
@@ -91,6 +98,12 @@ export function createSlackBot(app: AppContext): App {
             break;
           }
           const result = await buildRepoFocus(app.config, arg);
+          await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
+          break;
+        }
+
+        case "recent": {
+          const result = await buildRecentContinuations(app.config, 5);
           await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
           break;
         }
@@ -180,6 +193,11 @@ export function createSlackBot(app: AppContext): App {
         case "continue": {
           if (!arg) {
             await say(`Usage: \`${command} <repo>\`. Use \`repos\` to list known repos.`);
+            break;
+          }
+          if (/^\d+$/.test(arg)) {
+            const result = await buildSelectedRecentContinuation(app.config, Number(arg));
+            await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
             break;
           }
           const repoPath = resolveRepoPath(arg, app.config.repoAliases);

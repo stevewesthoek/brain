@@ -3,6 +3,7 @@ ProBot commands:
 
 /help
 /home
+/recent
 /focus <repo>
 /status
 /sessions [repo]
@@ -21,6 +22,6 @@ ProBot commands:
 /repos
 /handoff [repo]
 /resume <repo>
-/continue <repo>
+/continue <repo|1-5>
 /dashboard
 `.trim();

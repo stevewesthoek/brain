@@ -196,9 +196,10 @@ Purpose:
 The preferred remote UX is:
 
 1. `home`
-2. `focus <repo>`
-3. `continue <repo>` or `resume <repo>`
-4. `ssh <repo>`
+2. `recent`
+3. `continue <1-5>` when choosing among the last five sessions
+4. `focus <repo>` or `resume <repo>`
+5. `ssh <repo>`
 
 This sequence is optimized for fast orientation in Slack and fast continuation in SSH + `tmux` from mobile.
 
@@ -222,6 +223,14 @@ Returns:
 - direct `tmux attach` hints for active sessions
 - embedded SSH and resume guidance
 
+### `/recent`
+
+Returns:
+
+- the last five resumable sessions across Claude, Codex, and Gemini
+- compact numbered lines optimized for a phone screen
+- one-line natural-language headlines so sessions are easy to distinguish quickly
+
 ### `/status`
 
 Returns:
@@ -239,6 +248,7 @@ Returns:
 
 - recent Claude sessions
 - recent Codex sessions
+- recent Gemini sessions
 - age
 - repo path summary
 - first meaningful prompt / session name
@@ -275,10 +285,24 @@ Handles:
 Returns:
 
 - recent local log lines for known targets only
-- initial supported targets:
+- supported targets:
   - `probot`
   - `probot-stdout`
   - `probot-stderr`
+  - `scheduler`
+  - `scheduler-error`
+  - `n8n-backup`
+  - `dance-of-life`
+  - `dance-of-life-sync`
+  - `claude-cleanup`
+
+### `/report [scheduler]`
+
+Returns:
+
+- the latest rendered runtime report for known report targets
+- initial supported target:
+  - `scheduler`
 
 ### `/run restart-probot`
 
@@ -299,6 +323,14 @@ Returns:
 ### `/continue <repo>`
 
 Alias for `/resume <repo>` with the same guided continuation output.
+
+### `/continue <1-5>`
+
+Behavior:
+
+- resolves against the current top-five recent-session list
+- returns the exact continuation path for that selected session
+- includes the one-command `probot-continue.sh` invocation plus direct tool resume command
 
 ### `/note <text>`
 

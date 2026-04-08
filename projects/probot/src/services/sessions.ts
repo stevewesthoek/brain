@@ -117,6 +117,7 @@ export async function listClaudeSessions(claudeProjectsDir: string): Promise<Ses
         updatedAt: firstEntry.timestamp,
         headline: extractClaudeHeadline(entries),
         activeInTmux: tmuxSessions.has(sessionId),
+        resumeTarget: sessionId,
       });
     }
   }
@@ -176,15 +177,124 @@ export async function listCodexSessions(
     if (!updatedAt) continue;
 
     const headline = indexed?.thread_name || "(unnamed)";
-    summaries.push({
-      tool: "codex",
-      id: sessionId,
-      projectLabel: shortProjectLabel(meta.payload.cwd),
-      cwd: meta.payload.cwd,
-      age: formatAge(updatedAt),
-      updatedAt,
-      headline,
-      activeInTmux: tmuxSessions.has(sessionId),
+      summaries.push({
+        tool: "codex",
+        id: sessionId,
+        projectLabel: shortProjectLabel(meta.payload.cwd),
+        cwd: meta.payload.cwd,
+        age: formatAge(updatedAt),
+        updatedAt,
+        headline,
+        activeInTmux: tmuxSessions.has(sessionId),
+        resumeTarget: sessionId,
+      });
+  }
+
+  return summaries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6);
+}
+
+export async function listGeminiSessions(geminiDir: string): Promise<SessionSummary[]> {
+  const tmuxSessions = await listTmuxSessions();
+  const projectsFile = path.join(geminiDir, "projects.json");
+  const tmpDir = path.join(geminiDir, "tmp");
+  const summaries: SessionSummary[] = [];
+
+  if (!fs.existsSync(tmpDir)) {
+    return summaries;
+  }
+
+  let projectsMap: Record<string, string> = {};
+  try {
+    const parsed = JSON.parse(fs.readFileSync(projectsFile, "utf8")) as { projects?: Record<string, string> };
+    projectsMap = parsed.projects ?? {};
+  } catch {
+    projectsMap = {};
+  }
+
+  const pathByProjectName = new Map<string, string>();
+  for (const [cwd, name] of Object.entries(projectsMap)) {
+    if (typeof name === "string" && name.trim()) {
+      pathByProjectName.set(name, cwd);
+    }
+  }
+
+  for (const projectName of fs.readdirSync(tmpDir)) {
+    const chatsDir = path.join(tmpDir, projectName, "chats");
+    if (!fs.existsSync(chatsDir) || !fs.statSync(chatsDir).isDirectory()) continue;
+
+    const cwd = pathByProjectName.get(projectName) ?? projectName;
+    const projectSessions: SessionSummary[] = [];
+
+    for (const filename of fs.readdirSync(chatsDir)) {
+      if (!filename.endsWith(".json")) continue;
+      const filePath = path.join(chatsDir, filename);
+      let data: Record<string, unknown>;
+      try {
+        data = JSON.parse(fs.readFileSync(filePath, "utf8")) as Record<string, unknown>;
+      } catch {
+        continue;
+      }
+
+      let timestamp =
+        (typeof data.lastUpdated === "string" && data.lastUpdated) ||
+        (typeof data.startTime === "string" && data.startTime) ||
+        "";
+
+      if (!timestamp) {
+        try {
+          timestamp = new Date(fs.statSync(filePath).mtime).toISOString();
+        } catch {
+          continue;
+        }
+      }
+
+      let headline = "";
+      const messages = Array.isArray(data.messages) ? data.messages as Record<string, unknown>[] : [];
+      for (const message of messages) {
+        if (message.type !== "user") continue;
+        const content = message.content;
+        if (typeof content === "string" && content.trim()) {
+          headline = content.trim().replace(/\s+/g, " ").slice(0, 120);
+          break;
+        }
+        if (Array.isArray(content)) {
+          const text = content
+            .map((part) => {
+              if (!part || typeof part !== "object") return "";
+              const block = part as Record<string, unknown>;
+              return typeof block.text === "string" ? block.text : "";
+            })
+            .join(" ")
+            .trim()
+            .replace(/\s+/g, " ");
+          if (text) {
+            headline = text.slice(0, 120);
+            break;
+          }
+        }
+      }
+
+      if (!headline) {
+        headline = typeof data.sessionId === "string" ? data.sessionId : filename.slice(0, -5);
+      }
+
+      projectSessions.push({
+        tool: "gemini",
+        id: typeof data.sessionId === "string" ? data.sessionId : filename.slice(0, -5),
+        projectLabel: shortProjectLabel(cwd),
+        cwd,
+        age: formatAge(timestamp),
+        updatedAt: timestamp,
+        headline,
+        activeInTmux: tmuxSessions.has(projectName),
+        resumeTarget: "0", // placeholder; assigned after per-project sorting
+      });
+    }
+
+    projectSessions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    projectSessions.forEach((session, index) => {
+      session.resumeTarget = String(index + 1);
+      summaries.push(session);
     });
   }
 
@@ -196,17 +306,19 @@ export async function buildSessionOverview(
   codexSessionsDir: string,
   codexSessionIndex: string,
 ): Promise<SessionSummary[]> {
-  const [claude, codex] = await Promise.all([
+  const geminiDir = path.join(os.homedir(), ".gemini");
+  const [claude, codex, gemini] = await Promise.all([
     listClaudeSessions(claudeProjectsDir),
     listCodexSessions(codexSessionsDir, codexSessionIndex),
+    listGeminiSessions(geminiDir),
   ]);
 
-  return [...claude, ...codex].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return [...claude, ...codex, ...gemini].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export function formatSessionOverview(sessions: SessionSummary[], limit = 8): string {
   if (sessions.length === 0) {
-    return "No Claude or Codex sessions found.";
+    return "No Claude, Codex, or Gemini sessions found.";
   }
 
   return sessions

@@ -7,7 +7,13 @@ import { truncate } from "./format.js";
 import { getStatusSummary } from "../services/status.js";
 import { buildSessionOverview, buildTimeSummary, formatSessionOverview } from "../services/sessions.js";
 import { formatPendingApprovals, handleApprovalDecision } from "../services/approvals.js";
-import { buildHomeOverview, buildRepoFocus, filterSessionsByRepoName } from "../services/control-plane.js";
+import {
+  buildHomeOverview,
+  buildRecentContinuations,
+  buildRepoFocus,
+  buildSelectedRecentContinuation,
+  filterSessionsByRepoName,
+} from "../services/control-plane.js";
 import { appendNote } from "../services/notes.js";
 import { answerBrainQuery } from "../services/brain.js";
 import { assertSafeFilePath, formatFileHit, searchFiles } from "../services/files.js";
@@ -77,6 +83,10 @@ export function createTelegramBot(app: AppContext): Bot {
 
   bot.command("home", async (ctx) => {
     await ctx.reply(truncate(await buildHomeOverview(app.config, app.approvals)));
+  });
+
+  bot.command("recent", async (ctx) => {
+    await ctx.reply(truncate(await buildRecentContinuations(app.config, 5)));
   });
 
   bot.command("focus", async (ctx) => {
@@ -319,6 +329,10 @@ export function createTelegramBot(app: AppContext): Bot {
       await ctx.reply("Usage: /resume <repo>\nUse /repos to list known repos.");
       return;
     }
+    if (/^\d+$/.test(arg)) {
+      await ctx.reply(truncate(await buildSelectedRecentContinuation(app.config, Number(arg))));
+      return;
+    }
 
     const repoPath = resolveRepoPath(arg, app.config.repoAliases);
     if (!repoPath) {
@@ -335,7 +349,11 @@ export function createTelegramBot(app: AppContext): Bot {
   bot.command("continue", async (ctx) => {
     const arg = parseArgument(ctx.msg?.text);
     if (!arg) {
-      await ctx.reply("Usage: /continue <repo>\nUse /repos to list known repos.");
+      await ctx.reply("Usage: /continue <repo|1-5>\nUse /recent or /repos to choose.");
+      return;
+    }
+    if (/^\d+$/.test(arg)) {
+      await ctx.reply(truncate(await buildSelectedRecentContinuation(app.config, Number(arg))));
       return;
     }
 

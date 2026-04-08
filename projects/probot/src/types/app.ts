@@ -9,7 +9,7 @@ export interface AppContext {
 }
 
 export interface SessionSummary {
-  tool: "claude" | "codex";
+  tool: "claude" | "codex" | "gemini";
   id: string;
   projectLabel: string;
   cwd: string;
@@ -17,6 +17,7 @@ export interface SessionSummary {
   updatedAt: string;
   headline: string;
   activeInTmux: boolean;
+  resumeTarget: string;
 }
 
 export interface SearchHit {

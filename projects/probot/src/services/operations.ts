@@ -127,6 +127,10 @@ function buildContinueCommand(repoPath: string, preferredTool = "auto"): string 
   return `${CONTINUE_HELPER_PATH} ${JSON.stringify(repoPath)} ${preferredTool}`;
 }
 
+function buildExplicitContinueCommand(session: SessionSummary): string {
+  return `${CONTINUE_HELPER_PATH} ${JSON.stringify(session.cwd)} ${session.tool} ${JSON.stringify(session.resumeTarget)}`;
+}
+
 export function listRunPresets(): RunPreset[] {
   return RUN_PRESETS;
 }
@@ -234,6 +238,35 @@ export async function buildResumeGuide(config: Config, repoName: string): Promis
   lines.push("");
   lines.push("Resume prompt:");
   lines.push(prompt);
+
+  return lines.join("\n");
+}
+
+export function buildSessionResumeGuide(session: SessionSummary): string {
+  const directResume =
+    session.tool === "claude"
+      ? `claude --resume ${session.resumeTarget}`
+      : session.tool === "codex"
+        ? `codex resume ${session.resumeTarget}`
+        : `gemini --resume ${session.resumeTarget}`;
+
+  const lines = [
+    `Continue session`,
+    "",
+    `Tool: ${session.tool}`,
+    `Repo: ${session.projectLabel}`,
+    `Path: ${session.cwd}`,
+    `Age: ${session.age}`,
+    `Headline: ${session.headline}`,
+    session.activeInTmux ? `Active tmux session detected: ${session.id}` : "No active tmux session detected for this exact session.",
+    "",
+    "From outside the office:",
+    "1. ssh office",
+    `2. ${buildExplicitContinueCommand(session)}`,
+    "",
+    "Direct resume command after cd:",
+    directResume,
+  ];
 
   return lines.join("\n");
 }

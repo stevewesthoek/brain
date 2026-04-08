@@ -3,7 +3,7 @@ import type { Config } from "../config.js";
 import type { SessionSummary } from "../types/app.js";
 import { listRepoHandoffs, readCurrentHandoff, resolveRepoPath } from "./handoff.js";
 import { buildSessionOverview } from "./sessions.js";
-import { buildResumeGuide, buildSshGuide, readSchedulerSummary } from "./operations.js";
+import { buildResumeGuide, buildSessionResumeGuide, buildSshGuide, readSchedulerSummary } from "./operations.js";
 
 function freshnessLabel(updatedAt: string | null): string {
   if (!updatedAt) return "no handoff";
@@ -25,6 +25,12 @@ function repoSessions(sessions: SessionSummary[], repoPath: string): SessionSumm
 
 function sessionLine(session: SessionSummary): string {
   return `${session.tool} · ${session.projectLabel} · ${session.age}${session.activeInTmux ? " · tmux" : ""} · ${summarizeLine(session.headline, 70)}`;
+}
+
+function compactSessionLine(index: number, session: SessionSummary): string {
+  const toolLabel = session.tool === "claude" ? "Claude" : session.tool === "codex" ? "Codex" : "Gemini";
+  const active = session.activeInTmux ? " · tmux" : "";
+  return `${index}. ${toolLabel} · ${session.projectLabel} · ${session.age}${active}\n   ${summarizeLine(session.headline, 54)}`;
 }
 
 export async function buildHomeOverview(config: Config, approvals: ApprovalStore): Promise<string> {
@@ -80,8 +86,13 @@ export async function buildHomeOverview(config: Config, approvals: ApprovalStore
 
   lines.push(
     "",
+    "Recent picks:",
+    ...sessions.slice(0, 5).map((session, index) => compactSessionLine(index + 1, session)),
+    "",
     "Fast path:",
+    "- recent",
     "- focus <repo>",
+    "- continue <1-5>",
     "- resume <repo>",
     "- sessions <repo>",
     "- ssh <repo>",
@@ -135,6 +146,46 @@ export async function buildRepoFocus(config: Config, repoName: string): Promise<
 
   lines.push("", "SSH path:", sshGuide, "", "Resume path:", resumeGuide);
   return lines.join("\n");
+}
+
+export async function buildRecentContinuations(config: Config, limit = 5): Promise<string> {
+  const sessions = await buildSessionOverview(
+    config.claudeProjectsDir,
+    config.codexSessionsDir,
+    config.codexSessionIndex,
+  );
+
+  const lines = ["Recent continuations", ""];
+  const selected = sessions.slice(0, limit);
+  if (selected.length === 0) {
+    lines.push("No recent sessions found.");
+    return lines.join("\n");
+  }
+
+  selected.forEach((session, index) => lines.push(compactSessionLine(index + 1, session)));
+  lines.push("", "Use `continue <1-5>` or `resume <repo>`.");
+  return lines.join("\n");
+}
+
+export async function resolveRecentSessionSelection(
+  config: Config,
+  selection: number,
+): Promise<SessionSummary | null> {
+  if (!Number.isInteger(selection) || selection < 1) return null;
+  const sessions = await buildSessionOverview(
+    config.claudeProjectsDir,
+    config.codexSessionsDir,
+    config.codexSessionIndex,
+  );
+  return sessions[selection - 1] ?? null;
+}
+
+export async function buildSelectedRecentContinuation(config: Config, selection: number): Promise<string> {
+  const session = await resolveRecentSessionSelection(config, selection);
+  if (!session) {
+    return `No recent session found for selection ${selection}. Run \`recent\` or \`home\` first.`;
+  }
+  return buildSessionResumeGuide(session);
 }
 
 export function filterSessionsByRepoName(

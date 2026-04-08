@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage: probot-continue.sh <repo-path> [auto|claude|codex|gemini]" >&2
+  echo "Usage: probot-continue.sh <repo-path> [auto|claude|codex|gemini] [resume-target]" >&2
   exit 1
 fi
 
@@ -12,6 +12,7 @@ print(os.path.realpath(sys.argv[1]))
 PY
 )"
 TOOL="${2:-auto}"
+RESUME_TARGET="${3:-}"
 
 if [[ ! -d "$REPO_PATH" ]]; then
   echo "Repo path does not exist: $REPO_PATH" >&2
@@ -30,12 +31,13 @@ if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
   exec tmux attach -t "$SESSION_NAME"
 fi
 
-LAUNCH_CMD="$(python3 - "$REPO_PATH" "$TOOL" <<'PY'
+LAUNCH_CMD="$(python3 - "$REPO_PATH" "$TOOL" "$RESUME_TARGET" <<'PY'
 import json, os, shlex, sys
 from datetime import datetime, timezone
 
 repo_path = os.path.realpath(sys.argv[1])
 wanted_tool = sys.argv[2].lower()
+resume_target = sys.argv[3]
 home = os.path.expanduser("~")
 
 def parse_iso(ts):
@@ -188,6 +190,16 @@ def latest_gemini():
     return ("gemini", rows[0][0], "1")
 
 options = []
+if resume_target and wanted_tool in ("claude", "codex", "gemini"):
+    if wanted_tool == "claude":
+        cmd = f"cd {shlex.quote(repo_path)} && claude --resume {shlex.quote(resume_target)}"
+    elif wanted_tool == "codex":
+        cmd = f"cd {shlex.quote(repo_path)} && codex resume {shlex.quote(resume_target)}"
+    else:
+        cmd = f"cd {shlex.quote(repo_path)} && gemini --resume {shlex.quote(resume_target)}"
+    print(cmd)
+    raise SystemExit(0)
+
 if wanted_tool in ("auto", "claude"):
     item = latest_claude()
     if item:
