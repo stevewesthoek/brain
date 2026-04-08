@@ -6,6 +6,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import type { AppContext } from "../types/app.js";
 import { buildSessionOverview } from "../services/sessions.js";
+import { getCodexUsage } from "../services/codex-usage.js";
 
 const execAsync = promisify(exec);
 
@@ -201,86 +202,6 @@ function getNightScheduler(): SchedulerJob[] {
   });
 }
 
-// ─── AI usage helpers ─────────────────────────────────────────────────────────
-
-interface WindowUsage {
-  remainingPercent: number;
-  usedPercent: number;
-  resetsAt: string | null;
-}
-
-interface CodexUsage {
-  fiveHour: WindowUsage;
-  sevenDay: WindowUsage;
-  asOf: string | null; // timestamp of the token_count event we parsed
-}
-
-function walkJsonl(dir: string, out: string[]): void {
-  try {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walkJsonl(full, out);
-      else if (entry.name.endsWith(".jsonl")) out.push(full);
-    }
-  } catch { /* skip unreadable dirs */ }
-}
-
-interface RateLimitWindow { used_percent: number; window_minutes: number; resets_at: number }
-interface TokenCountPayload { primary?: RateLimitWindow; secondary?: RateLimitWindow }
-
-function getCodexUsage(codexSessionsDir: string): CodexUsage {
-  const fallback: CodexUsage = {
-    fiveHour: { remainingPercent: 100, usedPercent: 0, resetsAt: null },
-    sevenDay:  { remainingPercent: 100, usedPercent: 0, resetsAt: null },
-    asOf: null,
-  };
-
-  // Only scan files modified in the last 7 days to keep it fast
-  const sevenDayCutoff = Date.now() - 7 * 24 * 60 * 60 * 1_000;
-  const files: string[] = [];
-  walkJsonl(codexSessionsDir, files);
-
-  // Find the most recent token_count event across all recent sessions
-  let bestTs = 0;
-  let bestPrimary: RateLimitWindow | null = null;
-  let bestSecondary: RateLimitWindow | null = null;
-
-  for (const f of files) {
-    try {
-      if (fs.statSync(f).mtimeMs < sevenDayCutoff) continue;
-      const lines = fs.readFileSync(f, "utf8").split("\n");
-      for (const line of lines) {
-        if (!line.includes("token_count")) continue;
-        try {
-          const obj = JSON.parse(line) as { timestamp?: string; type?: string; payload?: { type?: string; rate_limits?: TokenCountPayload } };
-          if (obj.type !== "event_msg" || obj.payload?.type !== "token_count") continue;
-          const ts = obj.timestamp ? new Date(obj.timestamp).getTime() : 0;
-          if (ts <= bestTs) continue;
-          const rl = obj.payload.rate_limits;
-          if (!rl?.primary) continue;
-          bestTs = ts;
-          bestPrimary   = rl.primary   ?? null;
-          bestSecondary = rl.secondary ?? null;
-        } catch { /* malformed line */ }
-      }
-    } catch { /* unreadable file */ }
-  }
-
-  if (!bestPrimary) return fallback;
-
-  const toWindow = (w: RateLimitWindow): WindowUsage => ({
-    usedPercent:      Math.round(w.used_percent),
-    remainingPercent: Math.round(Math.max(0, 100 - w.used_percent)),
-    resetsAt:         new Date(w.resets_at * 1000).toISOString(),
-  });
-
-  return {
-    fiveHour: toWindow(bestPrimary),
-    sevenDay: bestSecondary ? toWindow(bestSecondary) : fallback.sevenDay,
-    asOf: new Date(bestTs).toISOString(),
-  };
-}
-
 async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
@@ -293,7 +214,10 @@ async function getDashboardData(app: AppContext) {
     ).catch(() => []),
     getNRHealth(),
   ]);
-  const codexUsage = getCodexUsage(app.config.codexSessionsDir);
+  const codexUsage = await getCodexUsage({
+    codexSessionsDir: app.config.codexSessionsDir,
+    dataDir: app.config.dataDir,
+  });
 
   return {
     meta: {

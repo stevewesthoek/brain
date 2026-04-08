@@ -199,6 +199,21 @@ run_dance_of_life_sync() {
   run_job "dance-of-life-sync" "$timeout_seconds" "$command" "$sync_log"
 }
 
+run_bible_studies_pipeline() {
+  local timeout_seconds="${BIBLE_STUDIES_TIMEOUT_SECONDS:-14400}"  # 4 hours
+  local pipeline_script="${BIBLE_STUDIES_PIPELINE_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bible-studies-pipeline.sh}"
+  local pipeline_log="$LOG_DIR/bible-studies-pipeline.log"
+  local command
+
+  if [[ ! -x "$pipeline_script" ]]; then
+    log "skipping job=bible-studies-pipeline reason=missing_script path=$pipeline_script"
+    return 0
+  fi
+
+  command="$(printf '%q >> %q 2>&1' "$pipeline_script" "$pipeline_log")"
+  run_job "bible-studies-pipeline" "$timeout_seconds" "$command" "$pipeline_log"
+}
+
 run_skill_prune() {
   local day_of_month
   day_of_month="$(TZ=Europe/Lisbon date +%-d)"
@@ -340,6 +355,21 @@ main() {
         # Not stopping chain — this job is lowest priority, timeout is expected during bulk download
       else
         log "continuing after dance-of-life-sync failure exit_code=$rc"
+      fi
+    fi
+  fi
+
+  # Bible Studies transcription pipeline — runs after dance-of-life-sync (new videos first),
+  # never stops chain, lowest priority content job, 4-hour timeout
+  if [[ "$stop_chain" -eq 0 ]]; then
+    if run_bible_studies_pipeline; then
+      :
+    else
+      local rc="$?"
+      if [[ "$rc" -eq 124 ]]; then
+        log "continuing after bible-studies-pipeline timeout exit_code=$rc"
+      else
+        log "continuing after bible-studies-pipeline failure exit_code=$rc"
       fi
     fi
   fi

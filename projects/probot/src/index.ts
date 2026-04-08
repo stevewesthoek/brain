@@ -6,6 +6,7 @@ import { createApprovalStore, openDatabase } from "./store/db.js";
 import { startInactivityMonitor } from "./services/inactivity.js";
 import { createSlackBot } from "./bot/slack.js";
 import { createDashboardServer } from "./bot/dashboard.js";
+import { startCodexUsageMonitor } from "./services/codex-usage.js";
 import type { AppContext } from "./types/app.js";
 
 async function main(): Promise<void> {
@@ -20,6 +21,11 @@ async function main(): Promise<void> {
     db,
     approvals,
   };
+
+  startCodexUsageMonitor({
+    codexSessionsDir: config.codexSessionsDir,
+    dataDir: config.dataDir,
+  });
 
   const bot = createTelegramBot(app);
 

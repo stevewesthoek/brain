@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# bible-studies-pipeline.sh — Nightly transcription + NotebookLM sync for Dance of Life Bible Studies
+#
+# Phases:
+#   1. Scan Bible Studies/ for new audio/video files
+#   2. Transcribe each with mlx-whisper (large-v3, max quality)
+#   3. Format transcript as Obsidian markdown note
+#   4. Write note to brain/personal/bible-studies/dance-of-life/
+#   5. Sync notes + resources to NotebookLM (one notebook per series: "DOL - [Series]")
+#   6. Regenerate README index
+#   7. Git commit new notes to brain repo
+#
+# Called by: office-nightly-scheduler.sh (last content job, after dance-of-life-sync)
+# Script:    tools/scripts/bible-studies/pipeline.mjs
+# State:     ~/.local/state/bible-studies/state.json
+# Log:       ~/Library/Logs/office-scheduler/bible-studies.log
+#
+# Usage:
+#   ./bible-studies-pipeline.sh              # normal nightly run
+#   FORCE_RESCAN=1 ./bible-studies-pipeline.sh  # recheck all videos (skip already-transcribed)
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PIPELINE="$SCRIPT_DIR/bible-studies/pipeline.mjs"
+
+if [[ ! -f "$PIPELINE" ]]; then
+  echo "ERROR: pipeline not found at $PIPELINE" >&2
+  exit 1
+fi
+
+# Locate bun
+BUN_BIN="$(command -v bun 2>/dev/null || echo "$HOME/.bun/bin/bun")"
+if [[ ! -x "$BUN_BIN" ]]; then
+  echo "ERROR: bun not found. Install it with: curl -fsSL https://bun.sh/install | bash" >&2
+  exit 1
+fi
+
+# Locate mlx_whisper (launchd has minimal PATH; pipx installs to ~/.local/bin)
+MLX_BIN="$(command -v mlx_whisper 2>/dev/null || echo "$HOME/.local/bin/mlx_whisper")"
+if [[ ! -x "$MLX_BIN" ]]; then
+  echo "ERROR: mlx_whisper not found." >&2
+  echo "  Install with: brew install pipx && pipx install mlx-whisper" >&2
+  exit 1
+fi
+export MLX_WHISPER_BIN="$MLX_BIN"
+
+export FORCE_RESCAN="${FORCE_RESCAN:-0}"
+
+exec "$BUN_BIN" "$PIPELINE"
