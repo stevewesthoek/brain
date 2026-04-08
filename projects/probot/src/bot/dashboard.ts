@@ -6,6 +6,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import type { AppContext } from "../types/app.js";
 import { buildSessionOverview } from "../services/sessions.js";
+import { buildRecentContinuationCards } from "../services/control-plane.js";
 import { getCodexUsage } from "../services/codex-usage.js";
 
 const execAsync = promisify(exec);
@@ -67,6 +68,24 @@ function getReposData(app: AppContext) {
     });
   }
   return repos;
+}
+
+function isLocalDashboardRequest(req: http.IncomingMessage): boolean {
+  const host = (req.headers.host ?? "").toLowerCase().split(":")[0] ?? "";
+  return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+}
+
+async function openGhosttyWithPreparedCommand(command: string): Promise<void> {
+  const safeCommand = command.replace(/\r?\n/g, " ").trim();
+  if (!safeCommand) throw new Error("Command is empty.");
+  await execAsync(`printf %s ${JSON.stringify(safeCommand)} | pbcopy`);
+  await execAsync(`osascript <<'APPLESCRIPT'
+tell application "Ghostty" to activate
+delay 0.25
+tell application "System Events"
+  keystroke "v" using command down
+end tell
+APPLESCRIPT`);
 }
 
 // ─── New Relic helpers ────────────────────────────────────────────────────────
@@ -338,12 +357,13 @@ async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
-  const [sessions, nrHealth] = await Promise.all([
+  const [sessions, continuationCards, nrHealth] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
       app.config.codexSessionsDir,
       app.config.codexSessionIndex,
     ).catch(() => []),
+    buildRecentContinuationCards(app.config, 8).catch(() => []),
     getNRHealth(),
   ]);
   const codexUsage = await getCodexUsage({
@@ -372,6 +392,7 @@ async function getDashboardData(app: AppContext) {
       tool: s.tool, projectLabel: s.projectLabel,
       age: s.age, headline: s.headline, activeInTmux: s.activeInTmux,
     })),
+    continuations: continuationCards,
   };
 }
 
@@ -454,17 +475,29 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
 .btn-copy.ok{background:var(--green-d);border-color:var(--green);color:var(--green)}
 /* sessions */
 .slist{display:flex;flex-direction:column;gap:8px}
-.si{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;transition:border-color .15s}
+.si{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s}
 .si:hover{border-color:var(--border2)}
+.si-top{display:flex;align-items:center;gap:12px}
 .si-tool{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:4px;flex-shrink:0}
 .si-tc{background:var(--accent-d);color:var(--accent)}
 .si-tx{background:rgba(14,165,233,.1);color:#38bdf8}
+.si-tg{background:rgba(34,197,94,.1);color:#4ade80}
 .si-info{flex:1;min-width:0}
 .si-repo{font-size:12px;font-weight:500;font-family:var(--mono)}
 .si-hl{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .si-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .si-age{font-size:11px;color:var(--subtle);font-family:var(--mono)}
 .tmux{font-size:10px;padding:1px 6px;border-radius:3px;background:var(--green-d);color:var(--green);border:1px solid rgba(52,211,153,.2)}
+.si-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.si-tag{font-size:10px;padding:2px 7px;border-radius:999px;background:rgba(124,90,240,.1);color:#b7a6ff;border:1px solid rgba(124,90,240,.18)}
+.si-suggest{font-size:12px;color:var(--text)}
+.si-suggest strong{color:var(--muted);font-weight:500}
+.si-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn-action{font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.btn-action:hover{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
+.btn-action.primary{background:var(--accent-d);border-color:rgba(124,90,240,.35);color:#c4b5fd}
+.btn-action.primary:hover{background:rgba(124,90,240,.22);border-color:var(--accent);color:#ddd6fe}
+.local-note{font-size:11px;color:var(--subtle)}
 /* ai usage */
 .ai-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:36px}
 @media(max-width:1200px){.ai-grid{grid-template-columns:repeat(3,1fr)}}
@@ -545,6 +578,7 @@ main{padding:28px 24px 80px;max-width:1320px;margin:0 auto}
 </main>
 <script>
 let _d=null;
+const isLocalHost=['localhost','127.0.0.1','[::1]'].includes(window.location.hostname);
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function age(iso){
   if(!iso)return'never';
@@ -693,13 +727,46 @@ function copyResume(btn,p){
     setTimeout(()=>{btn.textContent=o;btn.classList.remove('ok');},2000);
   }).catch(()=>{btn.textContent='Failed';setTimeout(()=>{btn.textContent='Copy resume';},2000);});
 }
-function sessionItem(s){
-  const tc=s.tool==='claude'?'si-tc':'si-tx';
-  return'<div class="si"><span class="si-tool '+tc+'">'+s.tool+'</span>'
+function toolClass(tool){
+  if(tool==='claude')return'si-tc';
+  if(tool==='codex')return'si-tx';
+  return'si-tg';
+}
+function copyCommand(btn,command){
+  navigator.clipboard.writeText(command).then(()=>{
+    const o=btn.textContent;btn.textContent='✓ Copied';btn.classList.add('ok');
+    setTimeout(()=>{btn.textContent=o;btn.classList.remove('ok');},2000);
+  }).catch(()=>{btn.textContent='Failed';setTimeout(()=>{btn.textContent='Copy command';},2000);});
+}
+async function openGhostty(btn,command){
+  if(!isLocalHost){
+    btn.textContent='Local only';
+    setTimeout(()=>{btn.textContent='Open in Ghostty';},1500);
+    return;
+  }
+  const old=btn.textContent;
+  btn.textContent='Opening…';
+  try{
+    const r=await fetch('/api/local/ghostty',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    btn.textContent='Ready in Ghostty';
+  }catch(e){
+    btn.textContent='Failed';
+  }
+  setTimeout(()=>{btn.textContent=old;},2000);
+}
+function continuationItem(s){
+  return'<div class="si">'
+    +'<div class="si-top"><span class="si-tool '+toolClass(s.tool)+'">'+esc(s.tool)+'</span>'
     +'<div class="si-info"><div class="si-repo">'+esc(s.projectLabel)+'</div>'
     +'<div class="si-hl">'+esc(s.headline)+'</div></div>'
-    +'<div class="si-meta"><span class="si-age">'+s.age+'</span>'
-    +(s.activeInTmux?'<span class="tmux">tmux</span>':'')
+    +'<div class="si-meta"><span class="si-age">'+esc(s.age)+'</span>'+(s.activeInTmux?'<span class="tmux">tmux</span>':'')+'</div></div>'
+    +'<div class="si-tags"><span class="si-tag">'+esc(s.intentLabel)+'</span></div>'
+    +'<div class="si-suggest"><strong>Suggested next action:</strong> <code>'+esc(s.suggestedCommand)+'</code></div>'
+    +'<div class="si-actions">'
+    +'<button class="btn-action primary" onclick="openGhostty(this,'+JSON.stringify(s.suggestedCommand)+')">Open in Ghostty</button>'
+    +'<button class="btn-copy" onclick="copyCommand(this,'+JSON.stringify(s.suggestedCommand)+')">Copy command</button>'
+    +(isLocalHost?'<span class="local-note">Command is pasted only. It is not executed.</span>':'<span class="local-note">Ghostty action is available only on localhost.</span>')
     +'</div></div>';
 }
 function renderScheduler(jobs){
@@ -747,11 +814,11 @@ function render(d){
     :'<div class="repos fade">'+d.repos.map(repoCard).join('')+'</div>';
   document.getElementById('repos').innerHTML=
     '<div class="sec-hd"><span class="sec-title">Repositories</span><span class="sec-count">'+d.repos.length+'</span></div>'+rhtml;
-  const shtml=d.sessions.length===0
+  const shtml=d.continuations.length===0
     ?'<div class="empty">No recent sessions found.</div>'
-    :'<div class="slist fade">'+d.sessions.map(sessionItem).join('')+'</div>';
+    :'<div class="slist fade">'+d.continuations.map(continuationItem).join('')+'</div>';
   document.getElementById('sessions').innerHTML=
-    '<div class="sec-hd" style="margin-top:36px"><span class="sec-title">Recent Sessions</span><span class="sec-count">'+d.sessions.length+'</span></div>'+shtml;
+    '<div class="sec-hd" style="margin-top:36px"><span class="sec-title">Best Next Sessions</span><span class="sec-count">'+d.continuations.length+'</span></div>'+shtml;
 }
 async function fetchData(){
   try{
@@ -778,6 +845,31 @@ fetchData();
 export function createDashboardServer(app: AppContext): http.Server {
   return http.createServer(async (req, res) => {
     const url = req.url ?? "/";
+
+    if (req.method === "POST" && url === "/api/local/ghostty") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Ghostty actions are only enabled on localhost." }));
+        return;
+      }
+      try {
+        let body = "";
+        for await (const chunk of req) body += chunk;
+        const parsed = JSON.parse(body) as { command?: string };
+        if (!parsed.command || typeof parsed.command !== "string") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Missing command." }));
+          return;
+        }
+        await openGhosttyWithPreparedCommand(parsed.command);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(err) }));
+      }
+      return;
+    }
 
     if (url === "/api/data") {
       try {

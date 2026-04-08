@@ -156,6 +156,13 @@ The suggestion format is now intentionally standardized:
 
 That way the command shape stays predictable and you do not need to think about which verb to use in each context.
 
+The dashboard now reuses the same continuation ranking and suggestion logic:
+
+- the desktop session list is shown as `Best Next Sessions`
+- each row includes the same `intent · repo` label and `Suggested next action`
+- on `localhost`, the dashboard can open Ghostty and paste the suggested command without executing it
+- on non-local dashboard hosts, the command can still be copied, but the Ghostty action stays disabled for safety
+
 ## Dashboard AI Usage
 
 When the local dashboard is enabled, the Codex usage cards are sourced from Codex's own local session-log `token_count.rate_limits` events rather than from a hard-coded estimate.

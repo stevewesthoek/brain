@@ -40,6 +40,19 @@ interface RankedSession {
   intent: string;
 }
 
+export interface ContinuationCard {
+  selection: number;
+  tool: SessionSummary["tool"];
+  projectLabel: string;
+  cwd: string;
+  age: string;
+  headline: string;
+  activeInTmux: boolean;
+  intentLabel: string;
+  suggestedActionLabel: string;
+  suggestedCommand: string;
+}
+
 function matchRepoPath(session: SessionSummary, repoPath: string): boolean {
   return session.cwd === repoPath || session.cwd.startsWith(`${repoPath}/`);
 }
@@ -122,6 +135,13 @@ function suggestedNextAction(ranked: RankedSession, config: Config, selection?: 
   }
   const repoRef = repoAliasForSession(ranked.session, config);
   return `Suggested next action: resume ${repoRef}`;
+}
+
+function suggestedCommand(ranked: RankedSession, config: Config, selection?: number): string {
+  if (selection !== undefined) {
+    return `continue ${selection}`;
+  }
+  return `resume ${repoAliasForSession(ranked.session, config)}`;
 }
 
 function rankSessionsForContinuation(sessions: SessionSummary[], config: Config): RankedSession[] {
@@ -295,6 +315,28 @@ export async function buildRecentContinuations(config: Config, limit = 5): Promi
   selected.forEach((ranked, index) => lines.push(compactSessionLine(index + 1, ranked, config)));
   lines.push("", "Use `continue <1-5>` or `resume <repo>`.");
   return lines.join("\n");
+}
+
+export async function buildRecentContinuationCards(config: Config, limit = 5): Promise<ContinuationCard[]> {
+  const sessions = await buildSessionOverview(
+    config.claudeProjectsDir,
+    config.codexSessionsDir,
+    config.codexSessionIndex,
+  );
+  return rankSessionsForContinuation(sessions, config)
+    .slice(0, limit)
+    .map((ranked, index) => ({
+      selection: index + 1,
+      tool: ranked.session.tool,
+      projectLabel: ranked.session.projectLabel,
+      cwd: ranked.session.cwd,
+      age: ranked.session.age,
+      headline: ranked.session.headline,
+      activeInTmux: ranked.session.activeInTmux,
+      intentLabel: humanIntentLabel(ranked.intent, ranked.session),
+      suggestedActionLabel: suggestedNextAction(ranked, config, index + 1),
+      suggestedCommand: suggestedCommand(ranked, config, index + 1),
+    }));
 }
 
 export async function resolveRecentSessionSelection(

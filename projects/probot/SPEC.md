@@ -237,6 +237,15 @@ Returns:
 - one explicit `Suggested next action` line that is clearly advisory and not yet executed
 - standardized advisory suggestion as `continue <n>`
 
+### Dashboard continuation UX
+
+Behavior:
+
+- reuses the same ranked continuation candidates as `home` and `recent`
+- shows `intent · repo` labels and explicit advisory `Suggested next action` text
+- adds a desktop-only Ghostty handoff button that pastes, but does not execute, the suggested command
+- enables the Ghostty button only on `localhost` dashboard access to avoid exposing local OS actions on remote dashboard hosts
+
 ### `/status`
 
 Returns:
