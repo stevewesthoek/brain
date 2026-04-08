@@ -205,13 +205,13 @@ This sequence is optimized for fast orientation in Slack and fast continuation i
 
 ### `/home`
 
-Returns:
+Returns (Slack Block Kit formatted, not a plain text code block):
 
-- host and channel state
-- pending approval count
-- most recent sessions
-- repo handoff freshness
-- quick next commands for continuation
+- header with host and pending approval count
+- top-5 continuation candidates, one block each: tool, repo, intent label, age, truncated headline, suggested `continue N` command
+- context footer with quick-access commands (`continue`, `focus`, `recent`, `repos`, `help`)
+
+Renders cleanly on mobile without horizontal scrolling.
 
 ### `/focus <repo>`
 
@@ -239,12 +239,18 @@ Returns:
 
 ### Dashboard continuation UX
 
+Layout:
+
+- **Metrics bar** — always-visible, single-row: CPU, Memory, Uptime, Host, Codex 5h, Codex 7d
+- **Tabs** — Sessions | Repositories | New Relic | Scheduler; one panel visible at a time, no full-page scroll
+- **Sessions tab** — 3-column card grid (same breakpoints as Repositories); each card shows tool badge, repo, intent label, age, truncated headline, suggested command, Copy and Open in Ghostty buttons
+
 Behavior:
 
 - reuses the same ranked continuation candidates as `home` and `recent`
 - shows `intent · repo` labels and explicit advisory `Suggested next action` text
-- adds a desktop-only Ghostty handoff button that pastes, but does not execute, the suggested command
-- enables the Ghostty button only on `localhost` dashboard access to avoid exposing local OS actions on remote dashboard hosts
+- **Open in Ghostty** — copies the command to clipboard and opens Ghostty via `open -a Ghostty`; enabled whenever the incoming TCP connection originates from 127.0.0.1 (covers direct localhost and Cloudflare tunnel / reverse proxy access from the same machine); returns `Desktop only` for genuinely remote connections
+- **Copy** — copies the command to clipboard; uses `navigator.clipboard` on secure contexts and falls back to `execCommand('copy')` on plain HTTP
 
 ### `/status`
 

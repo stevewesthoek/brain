@@ -149,19 +149,23 @@ The guided resume output now includes a one-command helper you can run after `ss
 
 That helper creates or reattaches a stable tmux session per repo and resumes the latest Claude, Codex, or Gemini session it can find for that repo. When ProBot gives you a numbered `continue 1` style path, it also passes the exact resume target so you land in the intended session instead of the generic latest one. The numbered list is ranked to prefer live tmux sessions and repos with fresher handoffs before falling back to plain recency, and each candidate now includes a short `intent · repo` tag such as `deploy · proofly`, `ops · probot`, or `analytics · brain`, plus an explicit `Suggested next action` line so it is obvious what ProBot recommends you do next.
 
-The suggestion format is now intentionally standardized:
+The suggestion format is intentionally standardized:
 
 - ranked lists like `home` and `recent` suggest `continue <n>`
 - repo-focused views like `focus <repo>` suggest `resume <repo>`
 
 That way the command shape stays predictable and you do not need to think about which verb to use in each context.
 
-The dashboard now reuses the same continuation ranking and suggestion logic:
+The `home` Slack command returns structured Block Kit messages rather than a plain text code block: a status header, one section per top-5 session with tool/repo/intent/age and the suggested command, and a footer with quick-access commands. This renders cleanly on mobile without horizontal scrolling.
 
-- the desktop session list is shown as `Best Next Sessions`
-- each row includes the same `intent · repo` label and `Suggested next action`
-- on `localhost`, the dashboard can open Ghostty and paste the suggested command without executing it
-- on non-local dashboard hosts, the command can still be copied, but the Ghostty action stays disabled for safety
+The dashboard reuses the same continuation ranking and suggestion logic, with a tab-based layout:
+
+- **Metrics bar** — always-visible top row: CPU, Memory, Uptime, Host, Codex 5h, Codex 7d in one compact row
+- **Tabs** — Sessions | Repositories | New Relic | Scheduler; one section visible at a time, no full-page scroll
+- **Sessions tab** — best next sessions as a 3-column card grid (same layout as Repositories)
+- each card shows the tool badge, repo, intent label, age, truncated headline, and the suggested `continue N` command
+- **Open in Ghostty** copies the command to clipboard and opens Ghostty; uses TCP socket address detection so it works when the dashboard is accessed through a Cloudflare tunnel or reverse proxy as well as direct localhost
+- **Copy** copies the suggested command to clipboard; works on HTTPS and HTTP contexts
 
 ## Dashboard AI Usage
 
