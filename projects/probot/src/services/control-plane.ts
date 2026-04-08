@@ -117,17 +117,11 @@ function repoAliasForSession(session: SessionSummary, config: Config): string {
 }
 
 function suggestedNextAction(ranked: RankedSession, config: Config, selection?: number): string {
-  const repoRef = repoAliasForSession(ranked.session, config);
   if (selection !== undefined) {
     return `Suggested next action: continue ${selection}`;
   }
-  if (ranked.session.activeInTmux) {
-    return `Suggested next action: continue ${repoRef}`;
-  }
-  if (ranked.signal.freshness === "fresh" || ranked.signal.freshness === "stale") {
-    return `Suggested next action: resume ${repoRef}`;
-  }
-  return `Suggested next action: focus ${repoRef}`;
+  const repoRef = repoAliasForSession(ranked.session, config);
+  return `Suggested next action: resume ${repoRef}`;
 }
 
 function rankSessionsForContinuation(sessions: SessionSummary[], config: Config): RankedSession[] {

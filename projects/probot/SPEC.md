@@ -223,6 +223,7 @@ Returns:
 - `intent · repo` labeled matching sessions
 - direct `tmux attach` hints for active sessions
 - embedded SSH and resume guidance
+- standardized advisory suggestion as `resume <repo>`
 
 ### `/recent`
 
@@ -234,6 +235,7 @@ Returns:
 - smart ranking that prefers live tmux sessions and fresher repo handoffs before plain recency
 - one short `intent · repo` label inferred from the session headline and repo handoff goal
 - one explicit `Suggested next action` line that is clearly advisory and not yet executed
+- standardized advisory suggestion as `continue <n>`
 
 ### `/status`
 
