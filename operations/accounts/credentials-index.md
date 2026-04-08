@@ -61,6 +61,18 @@ Account for `prochat.tools` and related domains.
 | `CLOUDFLARE_EMAIL` | `~/.config/cloudflare-ai/credentials/prochat-destroyer.env` | Account email (config) | Static | — |
 | `CLOUDFLARE_API_TOKEN` | `~/.config/cloudflare-ai/credentials/prochat-destroyer.env` | API token — destroyer role | No automatic expiry; rotate if compromised | [Cloudflare → My Profile → API Tokens](https://dash.cloudflare.com/profile/api-tokens) |
 
+## Umami
+
+Self-hosted on Dokploy (Ops project). UI: `https://umami.prochat.tools` · Version: 3.0.3
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `UMAMI_URL` | `~/.config/umami/.env` | Base URL of the Umami instance (config, not secret) | Static | — |
+| `UMAMI_USERNAME` | `~/.config/umami/.env` | Admin username for login and API auth | No automatic expiry; change via Settings → Profile | `https://umami.prochat.tools/settings/profile` |
+| `UMAMI_PASSWORD` | `~/.config/umami/.env` | Admin password for login and API auth | No automatic expiry; change via Settings → Profile | `https://umami.prochat.tools/settings/profile` |
+
+Note: Self-hosted Umami has no API key feature. Programmatic access uses `POST /api/auth/login` → Bearer token.
+
 ## Dokploy
 
 Self-hosted on Azure VM `vm-dokploy`. UI: `https://dokploy.prochat.tools`

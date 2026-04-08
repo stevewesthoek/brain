@@ -27,10 +27,105 @@ function sessionLine(session: SessionSummary): string {
   return `${session.tool} · ${session.projectLabel} · ${session.age}${session.activeInTmux ? " · tmux" : ""} · ${summarizeLine(session.headline, 70)}`;
 }
 
-function compactSessionLine(index: number, session: SessionSummary): string {
+interface RepoSignal {
+  freshness: "fresh" | "stale" | "old" | "none";
+  hasHandoff: boolean;
+  goal: string | null;
+}
+
+interface RankedSession {
+  session: SessionSummary;
+  score: number;
+  signal: RepoSignal;
+  intent: string;
+}
+
+function matchRepoPath(session: SessionSummary, repoPath: string): boolean {
+  return session.cwd === repoPath || session.cwd.startsWith(`${repoPath}/`);
+}
+
+function deriveRepoSignal(session: SessionSummary, config: Config): RepoSignal {
+  for (const repo of listRepoHandoffs(config.repoAliases)) {
+    if (!matchRepoPath(session, repo.path)) continue;
+    return {
+      freshness: freshnessLabel(repo.updatedAt) as RepoSignal["freshness"],
+      hasHandoff: repo.exists,
+      goal: repo.goal,
+    };
+  }
+  return { freshness: "none", hasHandoff: false, goal: null };
+}
+
+function recencyScore(updatedAt: string): number {
+  const ageMs = Date.now() - new Date(updatedAt).getTime();
+  if (!Number.isFinite(ageMs) || ageMs < 0) return 0;
+  const ageMinutes = ageMs / 60_000;
+  if (ageMinutes <= 30) return 80;
+  if (ageMinutes <= 120) return 60;
+  if (ageMinutes <= 12 * 60) return 40;
+  if (ageMinutes <= 24 * 60) return 25;
+  if (ageMinutes <= 3 * 24 * 60) return 10;
+  return 0;
+}
+
+function scoreSession(session: SessionSummary, signal: RepoSignal): number {
+  let score = recencyScore(session.updatedAt);
+  if (session.activeInTmux) score += 120;
+  if (signal.freshness === "fresh") score += 70;
+  else if (signal.freshness === "stale") score += 35;
+  else if (signal.freshness === "old") score += 10;
+  if (signal.hasHandoff) score += 10;
+  if (session.headline === "(unnamed)" || session.headline === "(no summary)") score -= 5;
+  return score;
+}
+
+function inferIntentLabel(session: SessionSummary, signal: RepoSignal): string {
+  const haystack = `${session.headline} ${signal.goal ?? ""}`.toLowerCase();
+  const rules: Array<{ label: string; keywords: string[] }> = [
+    { label: "deploy", keywords: ["deploy", "release", "ship", "prod", "production", "vercel", "dokploy"] },
+    { label: "ops", keywords: ["monitor", "uptime", "alert", "new relic", "infra", "server", "ssh", "tmux", "scheduler"] },
+    { label: "analytics", keywords: ["analytics", "tracking", "umami", "new relic", "telemetry", "metrics"] },
+    { label: "bugfix", keywords: ["bug", "fix", "broken", "error", "failing", "issue", "debug", "investigate"] },
+    { label: "review", keywords: ["review", "pr", "pull request", "diff", "comments", "second opinion"] },
+    { label: "docs", keywords: ["docs", "readme", "spec", "documentation", "handoff"] },
+    { label: "design", keywords: ["design", "ui", "ux", "visual", "layout", "polish"] },
+    { label: "auth", keywords: ["auth", "oauth", "token", "login", "slack", "telegram"] },
+    { label: "data", keywords: ["migration", "database", "sql", "schema", "supabase", "postgres"] },
+    { label: "research", keywords: ["research", "notebooklm", "investigate", "analyze", "strategy"] },
+  ];
+
+  for (const rule of rules) {
+    if (rule.keywords.some((keyword) => haystack.includes(keyword))) return rule.label;
+  }
+  return "general";
+}
+
+function rankSessionsForContinuation(sessions: SessionSummary[], config: Config): RankedSession[] {
+  return sessions
+    .map((session) => {
+      const signal = deriveRepoSignal(session, config);
+      const intent = inferIntentLabel(session, signal);
+      return {
+        session,
+        signal,
+        score: scoreSession(session, signal),
+        intent,
+      };
+    })
+    .sort((a, b) => b.score - a.score || b.session.updatedAt.localeCompare(a.session.updatedAt));
+}
+
+function compactSessionLine(index: number, ranked: RankedSession): string {
+  const { session, signal, intent } = ranked;
   const toolLabel = session.tool === "claude" ? "Claude" : session.tool === "codex" ? "Codex" : "Gemini";
-  const active = session.activeInTmux ? " · tmux" : "";
-  return `${index}. ${toolLabel} · ${session.projectLabel} · ${session.age}${active}\n   ${summarizeLine(session.headline, 54)}`;
+  const tags = [];
+  if (session.activeInTmux) tags.push("live");
+  if (signal.freshness === "fresh") tags.push("fresh handoff");
+  else if (signal.freshness === "stale") tags.push("stale handoff");
+  else if (signal.freshness === "old") tags.push("old handoff");
+  tags.push(intent);
+  const tagText = tags.length > 0 ? ` · ${tags.join(" · ")}` : "";
+  return `${index}. ${toolLabel} · ${session.projectLabel} · ${session.age}${tagText}\n   ${summarizeLine(session.headline, 54)}`;
 }
 
 export async function buildHomeOverview(config: Config, approvals: ApprovalStore): Promise<string> {
@@ -39,6 +134,7 @@ export async function buildHomeOverview(config: Config, approvals: ApprovalStore
     config.codexSessionsDir,
     config.codexSessionIndex,
   );
+  const rankedSessions = rankSessionsForContinuation(sessions, config);
   const pendingCount = approvals.list("pending", 20).length;
   const repoRows = listRepoHandoffs(config.repoAliases)
     .map((repo) => {
@@ -67,13 +163,13 @@ export async function buildHomeOverview(config: Config, approvals: ApprovalStore
     lines.push(`Scheduler: ${schedulerSummary}`);
   }
 
-  lines.push("", "Recent sessions:");
+  lines.push("", "Best continuation candidates:");
 
   if (sessions.length === 0) {
     lines.push("- none detected");
   } else {
-    for (const session of sessions.slice(0, 5)) {
-      lines.push(`- ${sessionLine(session)}`);
+    for (const ranked of rankedSessions.slice(0, 5)) {
+      lines.push(`- ${sessionLine(ranked.session)} · ${ranked.intent}`);
     }
   }
 
@@ -87,7 +183,7 @@ export async function buildHomeOverview(config: Config, approvals: ApprovalStore
   lines.push(
     "",
     "Recent picks:",
-    ...sessions.slice(0, 5).map((session, index) => compactSessionLine(index + 1, session)),
+    ...rankedSessions.slice(0, 5).map((ranked, index) => compactSessionLine(index + 1, ranked)),
     "",
     "Fast path:",
     "- recent",
@@ -137,7 +233,8 @@ export async function buildRepoFocus(config: Config, repoName: string): Promise<
     lines.push("- none detected");
   } else {
     for (const session of matching) {
-      lines.push(`- ${sessionLine(session)}`);
+      const signal = deriveRepoSignal(session, config);
+      lines.push(`- ${sessionLine(session)} · ${inferIntentLabel(session, signal)}`);
       if (session.activeInTmux) {
         lines.push(`  attach: tmux attach -t ${session.id}`);
       }
@@ -154,15 +251,16 @@ export async function buildRecentContinuations(config: Config, limit = 5): Promi
     config.codexSessionsDir,
     config.codexSessionIndex,
   );
+  const rankedSessions = rankSessionsForContinuation(sessions, config);
 
   const lines = ["Recent continuations", ""];
-  const selected = sessions.slice(0, limit);
+  const selected = rankedSessions.slice(0, limit);
   if (selected.length === 0) {
     lines.push("No recent sessions found.");
     return lines.join("\n");
   }
 
-  selected.forEach((session, index) => lines.push(compactSessionLine(index + 1, session)));
+  selected.forEach((ranked, index) => lines.push(compactSessionLine(index + 1, ranked)));
   lines.push("", "Use `continue <1-5>` or `resume <repo>`.");
   return lines.join("\n");
 }
@@ -177,7 +275,7 @@ export async function resolveRecentSessionSelection(
     config.codexSessionsDir,
     config.codexSessionIndex,
   );
-  return sessions[selection - 1] ?? null;
+  return rankSessionsForContinuation(sessions, config)[selection - 1]?.session ?? null;
 }
 
 export async function buildSelectedRecentContinuation(config: Config, selection: number): Promise<string> {

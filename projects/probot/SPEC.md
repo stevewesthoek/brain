@@ -220,6 +220,7 @@ Returns:
 - repo path
 - handoff preview
 - matching recent sessions
+- intent-labeled matching sessions
 - direct `tmux attach` hints for active sessions
 - embedded SSH and resume guidance
 
@@ -230,6 +231,8 @@ Returns:
 - the last five resumable sessions across Claude, Codex, and Gemini
 - compact numbered lines optimized for a phone screen
 - one-line natural-language headlines so sessions are easy to distinguish quickly
+- smart ranking that prefers live tmux sessions and fresher repo handoffs before plain recency
+- one short intent label inferred from the session headline and repo handoff goal
 
 ### `/status`
 
@@ -329,6 +332,7 @@ Alias for `/resume <repo>` with the same guided continuation output.
 Behavior:
 
 - resolves against the current top-five recent-session list
+- that top-five list is ranked by continuation likelihood, not just raw recency
 - returns the exact continuation path for that selected session
 - includes the one-command `probot-continue.sh` invocation plus direct tool resume command
 
