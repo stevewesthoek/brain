@@ -4,11 +4,11 @@ Master map of all API keys, tokens, and credentials used across the brain infras
 
 **Rules:**
 - No actual values are stored here — this is a lookup guide only.
-- Actual values live in the `File` column paths (all under `~/.config/`).
+- Actual values live in the `File` column paths. Most are under `~/.config/`; some tool-managed auth caches live under the tool's own home directory.
 - Run `sync-credentials` to scan `~/.config/` for new `.env` files and append untracked entries to the Pending section below.
 - When a new entry lands in Pending, move it to the right section and fill in Purpose, Rotation, and Regenerate.
 
-Last synced: 2026-04-07
+Last synced: 2026-04-08
 
 ---
 
@@ -141,6 +141,15 @@ Config values in the same file (not secrets — listed so `sync-credentials` doe
 | `CODEX_SESSION_INDEX` | `~/.config/probot/.env` | Path to Codex session index file |
 | `NEW_RELIC_USER_API_KEY` | `~/.config/probot/.env` | Cross-ref — same key as in New Relic section; canonical file is `~/.config/newrelic/.env` |
 | `NEW_RELIC_ACCOUNT_ID` | `~/.config/probot/.env` | Cross-ref — same value as in New Relic section; canonical file is `~/.config/newrelic/.env` |
+
+## Slack CLI
+
+Developer tooling for scripted Slack app management on `Office`. This is separate from the ProBot runtime tokens above.
+
+| Variable / File | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `credentials.json` | `~/.slack/credentials.json` | Slack CLI local auth cache after `slack auth login` | Session can expire or be revoked; re-authenticate when stale | Run `slack auth login` |
+| `config.json` | `~/.slack/config.json` | Slack CLI local configuration (non-secret) | Static unless CLI config changes | Recreated automatically by Slack CLI |
 
 ## Stripe
 
