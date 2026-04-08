@@ -24,6 +24,7 @@ import {
   buildSshGuide,
   describeRunPresets,
   isValidRunPreset,
+  readReportTarget,
   readTailTarget,
 } from "../services/operations.js";
 
@@ -240,6 +241,11 @@ export function createTelegramBot(app: AppContext): Bot {
   bot.command("tail", async (ctx) => {
     const target = parseArgument(ctx.msg?.text) || "probot";
     await ctx.reply(truncate(readTailTarget(app.config, target)));
+  });
+
+  bot.command("report", async (ctx) => {
+    const target = parseArgument(ctx.msg?.text) || "scheduler";
+    await ctx.reply(truncate(readReportTarget(target)));
   });
 
   bot.command("run", async (ctx) => {

@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import type { Config } from "../config.js";
@@ -17,6 +18,11 @@ const RUN_PRESETS: RunPreset[] = [
     description: "Restart the local ProBot launchd agent on this Mac.",
   },
 ];
+
+const BRAIN_ROOT = path.resolve(import.meta.dirname, "..", "..", "..");
+const OFFICE_LOG_DIR = path.join(os.homedir(), "Library", "Logs", "office-scheduler");
+const SCHEDULER_REPORT_PATH = path.join(BRAIN_ROOT, "runtime", "local", "office-scheduler", "latest-run.md");
+const CONTINUE_HELPER_PATH = path.join(BRAIN_ROOT, "tools", "scripts", "probot-continue.sh");
 
 const TAIL_TARGETS = new Map<string, { label: string; filePath: (config: Config) => string }>([
   [
@@ -38,6 +44,48 @@ const TAIL_TARGETS = new Map<string, { label: string; filePath: (config: Config)
     {
       label: "ProBot stdout",
       filePath: (config) => path.join(config.projectRoot, "logs", "stdout.log"),
+    },
+  ],
+  [
+    "scheduler",
+    {
+      label: "Office scheduler nightly log",
+      filePath: () => path.join(OFFICE_LOG_DIR, "nightly.log"),
+    },
+  ],
+  [
+    "scheduler-error",
+    {
+      label: "Office scheduler error log",
+      filePath: () => path.join(OFFICE_LOG_DIR, "nightly.error.log"),
+    },
+  ],
+  [
+    "n8n-backup",
+    {
+      label: "Office scheduler n8n-backup log",
+      filePath: () => path.join(OFFICE_LOG_DIR, "n8n-backup.log"),
+    },
+  ],
+  [
+    "dance-of-life",
+    {
+      label: "Office scheduler dance-of-life log",
+      filePath: () => path.join(OFFICE_LOG_DIR, "dance-of-life.log"),
+    },
+  ],
+  [
+    "dance-of-life-sync",
+    {
+      label: "Office scheduler dance-of-life-sync log",
+      filePath: () => path.join(OFFICE_LOG_DIR, "dance-of-life-sync.log"),
+    },
+  ],
+  [
+    "claude-cleanup",
+    {
+      label: "Office scheduler claude cleanup log",
+      filePath: () => path.join(OFFICE_LOG_DIR, "claude-cleanup.log"),
     },
   ],
 ]);
@@ -75,6 +123,10 @@ function repoSessionName(repo: string): string {
     .slice(0, 24) || "work";
 }
 
+function buildContinueCommand(repoPath: string, preferredTool = "auto"): string {
+  return `${CONTINUE_HELPER_PATH} ${JSON.stringify(repoPath)} ${preferredTool}`;
+}
+
 export function listRunPresets(): RunPreset[] {
   return RUN_PRESETS;
 }
@@ -91,6 +143,10 @@ export function describeTailTargets(): string {
   return [...new Set(TAIL_TARGETS.keys())].sort().join(", ");
 }
 
+export function describeReportTargets(): string {
+  return "scheduler";
+}
+
 export function readTailTarget(config: Config, rawTarget: string, lines = 40): string {
   const target = rawTarget.trim().toLowerCase() || "probot";
   const spec = TAIL_TARGETS.get(target);
@@ -101,6 +157,39 @@ export function readTailTarget(config: Config, rawTarget: string, lines = 40): s
   const filePath = spec.filePath(config);
   const content = tailLines(filePath, lines).join("\n");
   return `${spec.label}\n${filePath}\n\n${content}`;
+}
+
+export function readReportTarget(rawTarget: string): string {
+  const target = rawTarget.trim().toLowerCase() || "scheduler";
+  if (target !== "scheduler") {
+    return `Unknown report target: ${rawTarget || "(empty)"}\nAvailable reports: ${describeReportTargets()}`;
+  }
+
+  if (!fs.existsSync(SCHEDULER_REPORT_PATH)) {
+    return `Report not found.\n${SCHEDULER_REPORT_PATH}`;
+  }
+
+  const content = fs.readFileSync(SCHEDULER_REPORT_PATH, "utf8").trim();
+  return `Office scheduler report\n${SCHEDULER_REPORT_PATH}\n\n${content}`;
+}
+
+export function readSchedulerSummary(): string | null {
+  if (!fs.existsSync(SCHEDULER_REPORT_PATH)) return null;
+  try {
+    const content = fs.readFileSync(SCHEDULER_REPORT_PATH, "utf8");
+    const lines = content.split("\n").map((line) => line.trim()).filter(Boolean);
+    const generated = lines.find((line) => line.startsWith("Generated at:"));
+    const failures = lines.filter((line) => line.includes("| `failed` |"));
+    if (generated && failures.length === 0) {
+      return `${generated.replace("Generated at: ", "")} · no failed scheduler jobs`;
+    }
+    if (generated) {
+      return `${generated.replace("Generated at: ", "")} · failures: ${failures.length}`;
+    }
+    return "scheduler report present";
+  } catch {
+    return "scheduler report unreadable";
+  }
 }
 
 export async function buildResumeGuide(config: Config, repoName: string): Promise<string> {
@@ -141,6 +230,7 @@ export async function buildResumeGuide(config: Config, repoName: string): Promis
   }
 
   lines.push(`cd ${repoPath}`);
+  lines.push(`One-command continuation after SSH: ${buildContinueCommand(repoPath)}`);
   lines.push("");
   lines.push("Resume prompt:");
   lines.push(prompt);
@@ -168,6 +258,7 @@ export function buildSshGuide(config: Config, repoName?: string): string {
       const suggestedTmux = repoSessionName(repoName);
       lines.push(`- cd ${repoPath}`);
       lines.push(`- tmux new -As ${suggestedTmux}`);
+      lines.push(`- ${buildContinueCommand(repoPath)}`);
     }
   }
 

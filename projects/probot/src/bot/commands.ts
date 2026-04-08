@@ -10,7 +10,8 @@ ProBot commands:
 /jobs
 /approve <id>
 /reject <id>
-/tail [probot|probot-stdout|probot-stderr]
+/tail [target]
+/report [scheduler]
 /run <preset>
 /ssh [repo]
 /note <text>
@@ -20,5 +21,6 @@ ProBot commands:
 /repos
 /handoff [repo]
 /resume <repo>
+/continue <repo>
 /dashboard
 `.trim();

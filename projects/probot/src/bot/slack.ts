@@ -14,10 +14,11 @@ import {
 import {
   buildResumeGuide,
   buildSshGuide,
+  describeReportTargets,
   describeRunPresets,
   describeTailTargets,
   isValidRunPreset,
-  listRunPresets,
+  readReportTarget,
   readTailTarget,
 } from "../services/operations.js";
 import { buildTimeSummary } from "../services/sessions.js";
@@ -32,7 +33,8 @@ const HELP_TEXT = `ProBot commands:
 • \`handoff <repo>\` — read current handoff
 • \`resume <repo>\` / \`continue <repo>\` — get resume prompt plus tmux/SSH guidance
 • \`ssh [repo]\` — SSH + tmux continuation instructions
-• \`tail [target]\` — recent local logs (${["probot", "probot-stdout", "probot-stderr"].join(", ")})
+• \`tail [target]\` — recent local logs (${describeTailTargets()})
+• \`report [target]\` — read a local runtime report (${describeReportTargets()})
 • \`jobs\` — list pending approvals
 • \`run <preset>\` — request a bounded operational action
 • \`approve <id>\` / \`reject <id>\` — handle a pending approval
@@ -204,6 +206,12 @@ export function createSlackBot(app: AppContext): App {
 
         case "tail": {
           const result = readTailTarget(app.config, arg || "probot");
+          await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
+          break;
+        }
+
+        case "report": {
+          const result = readReportTarget(arg || "scheduler");
           await say({ blocks: [slackBlock(`\`\`\`${result}\`\`\``)] });
           break;
         }

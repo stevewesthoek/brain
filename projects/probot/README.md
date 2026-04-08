@@ -42,7 +42,8 @@ It is intentionally not a general-purpose agent platform. The goal is fast remot
 - `/jobs` — list pending approvals
 - `/approve <id>` — approve a pending action
 - `/reject <id>` — reject a pending action
-- `/tail [probot|probot-stdout|probot-stderr]` — inspect recent local logs
+- `/tail [target]` — inspect recent local logs, including ProBot and scheduler logs
+- `/report [scheduler]` — read the latest local scheduler report
 - `/run restart-probot` — request an approval-gated local ProBot restart
 - `/ssh [repo]` — SSH + tmux continuation guidance
 - `/continue <repo>` — alias for the guided resume flow
@@ -61,11 +62,12 @@ Slack DM commands currently supported:
 - `summary [today|week]`
 - `jobs`
 - `approve <id>` / `reject <id>`
+- `report [scheduler]`
 - `repos`
 - `handoff <repo>`
 - `resume <repo>`
 - `continue <repo>`
-- `tail [probot|probot-stdout|probot-stderr]`
+- `tail [target]`
 - `run restart-probot`
 - `ssh [repo]`
 - `dashboard`
@@ -136,6 +138,13 @@ Recommended fast path from outside the house:
 2. `focus <repo>` to get one repo's handoff plus tmux attach guidance
 3. `continue <repo>` or `resume <repo>` to get the exact continuation path
 4. `ssh <repo>` if you only need the Moshi-friendly SSH + tmux steps
+5. `report scheduler` or `tail scheduler` if you need runtime observability before attaching
+
+The guided resume output now includes a one-command helper you can run after `ssh office`:
+
+- `~/Repos/stevewesthoek/brain/tools/scripts/probot-continue.sh "<repo-path>" auto`
+
+That helper creates or reattaches a stable tmux session per repo and resumes the latest Claude, Codex, or Gemini session it can find for that repo.
 
 ## Dashboard AI Usage
 

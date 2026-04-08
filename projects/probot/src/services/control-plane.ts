@@ -3,7 +3,7 @@ import type { Config } from "../config.js";
 import type { SessionSummary } from "../types/app.js";
 import { listRepoHandoffs, readCurrentHandoff, resolveRepoPath } from "./handoff.js";
 import { buildSessionOverview } from "./sessions.js";
-import { buildResumeGuide, buildSshGuide } from "./operations.js";
+import { buildResumeGuide, buildSshGuide, readSchedulerSummary } from "./operations.js";
 
 function freshnessLabel(updatedAt: string | null): string {
   if (!updatedAt) return "no handoff";
@@ -54,9 +54,14 @@ export async function buildHomeOverview(config: Config, approvals: ApprovalStore
     `Slack: ${config.slackBotToken && config.slackAppToken ? "on" : "off"}`,
     `Telegram: on (${config.telegramAllowedUserIds.length} user(s))`,
     `Pending approvals: ${pendingCount}`,
-    "",
-    "Recent sessions:",
   ];
+
+  const schedulerSummary = readSchedulerSummary();
+  if (schedulerSummary) {
+    lines.push(`Scheduler: ${schedulerSummary}`);
+  }
+
+  lines.push("", "Recent sessions:");
 
   if (sessions.length === 0) {
     lines.push("- none detected");
@@ -81,6 +86,7 @@ export async function buildHomeOverview(config: Config, approvals: ApprovalStore
     "- sessions <repo>",
     "- ssh <repo>",
     "- tail probot",
+    "- report scheduler",
   );
 
   return lines.join("\n");
