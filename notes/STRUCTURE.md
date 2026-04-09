@@ -1,139 +1,297 @@
-# Notes Structure — Simple & Clean
+# Notes Structure & Workflow
 
-**The entire system fits in 8 folders. That's it.**
+**Your personal knowledge system using Obsidian + n8n automation + Kanban board.**
 
 ---
 
-## The 8 Folders
+## The 8 Numbered Folders
+
+Folders are numbered for ordering. Files come after folders (Obsidian limitation):
 
 ```
-notes/
-├── inbox/          # Raw captures from ChatGPT (Gemini-classified)
-├── strategy/       # Strategic decisions you've committed to
-├── projects/       # Active projects (folder per project)
-├── tasks/          # Atomic executable work
-├── areas/          # Ongoing areas (health, finance, ministry)
-├── resources/      # Reference material
-├── archive/        # Completed work (query-able)
-└── templates/      # Templates (don't touch, just reference)
+01-inbox/          ← Raw captures from ChatGPT (Gemini-classified)
+02-strategy/       ← Strategic decisions you've committed to
+03-projects/       ← Active projects
+04-tasks/          ← Atomic executable work
+05-areas/          ← Ongoing areas (health, finance, ministry, business)
+06-resources/      ← Reference material, frameworks, how-to
+07-templates/      ← Copy these when creating notes (don't edit)
+08-archive/        ← Completed work (query-able)
+
+home.md            ← Dashboard (start here)
+kanban.canvas      ← Working board (you work here)
+STRUCTURE.md       ← This file
 ```
 
 ---
 
-## The Flow (Simple)
+## The Flow (Simple End-to-End)
 
-### You dump text into ChatGPT
-→ Capture and save to brain via shortcut
+### Step 1: Capture from ChatGPT
+You're in ChatGPT. You have an idea or decision.
+- Save text via macOS shortcut
+- Sends to webhook: `https://n8n.prochat.tools/webhook/brain-inbox`
 
-### Webhook receives it
-→ Gemini classifies (PARA + signal quality score)
-→ Lands in `notes/inbox/`
+### Step 2: Gemini Classifies
+n8n receives it. Gemini scores:
+- `confidence` (0-1): How sure about PARA type (project/area/resource)?
+- `signal_quality` (0-1): How actionable/valuable is this?
 
-### You review the inbox note
-→ Read the summary, key points
-→ Decide: Keep or delete?
+### Step 3: Lands in Inbox
+Auto-generated note appears in `01-inbox/` with:
+- Frontmatter: title, para_type, confidence, signal_quality
+- Auto-generated summary, key points, action items
 
-### If keep: Create strategy
-→ Move to `notes/strategy/`
-→ Write: Why? What? Success criteria?
-→ Mark `status: committed` when decided
+### Step 4: You Review
+- Open `home.md` → see unprocessed inbox count
+- Read the capture note in Obsidian
+- Decide: Keep or delete?
 
-### Create project
-→ New folder in `notes/projects/[project-name]/`
-→ Create a README.md with overview
-→ Create one task file per phase: `tasks-01-research.md`, `tasks-02-design.md`, etc.
+### Step 5: Create Strategy (if keeping)
+- Copy template: `07-templates/strategy.md` → `02-strategy/[title].md`
+- Fill in: Why? Decision? Constraints? Success criteria?
+- Mark `status: committed` when done
 
-### Create tasks
-→ Each task is ONE file in `notes/tasks/`
-→ One atomic action per file
-→ Assign to `you` or `ai`
-→ Link to related project
+### Step 6: Create Project
+- Create folder: `03-projects/[project-name]/`
+- Copy template: `07-templates/project.md` → `03-projects/[project-name]/README.md`
+- List what needs to happen (phases/steps)
 
-### View on Kanban
-→ Open `kanban.canvas`
-→ Drag tasks between columns (To Do → Doing → Done)
-→ Done tasks move to `notes/archive/`
+### Step 7: Create Tasks
+- Create files in `04-tasks/` (one per atomic action)
+- Copy template: `07-templates/task.md` → `04-tasks/[task-name].md`
+- Fill in: What to do? Acceptance criteria? Who does it (you or ai)?
+- Link to parent project
+
+### Step 8: Work on Kanban Board
+- Open `kanban.canvas` in Obsidian
+- Drag tasks: To Do → Doing → Done
+- That's where you do the work
+
+### Step 9: Archive When Done
+- Move completed task to `08-archive/`
+- Or manually move entire project folder when finished
 
 ---
 
-## Frontmatter (Metadata)
+## File Types & Frontmatter
 
-**All notes have minimal frontmatter:**
+### Capture (auto-generated from ChatGPT)
 
 ```yaml
 ---
-type: capture|strategy|project|task|area|resource
-status: [varies by type]
+type: capture
+source: chatgpt
+para_type: project|area|resource|inbox
+confidence: 0.0-1.0
+signal_quality: 0.0-1.0
+created: YYYY-MM-DD
+tags: []
+---
+```
+
+**Read-only.** Just review and decide if it's valuable.
+
+### Strategy (your decision point)
+
+```yaml
+---
+type: strategy
+status: draft|committed|on-hold|archived
 priority: 1-5
 created: YYYY-MM-DD
 tags: []
 ---
 ```
 
-**That's it. No 20-field schemas.**
+**Your strategic thinking.** Why? What? Constraints? Success?
+
+### Project (container for work)
+
+```yaml
+---
+type: project
+status: in-progress|blocked|completed
+priority: 1-5
+start_date: YYYY-MM-DD
+target_end_date: YYYY-MM-DD
+tags: []
+---
+```
+
+**Work container.** What's the goal? Timeline? What needs to happen?
+
+### Task (atomic action)
+
+```yaml
+---
+type: task
+assigned_to: you|ai
+status: ready|in-progress|done
+priority: 1-5
+due_date: YYYY-MM-DD
+project: [[03-projects/project-name/README]]
+tags: []
+---
+```
+
+**One action.** One file. Specific acceptance criteria. Assignee is you or AI.
+
+### Area (ongoing responsibility)
+
+```yaml
+---
+type: area
+tags: []
+---
+```
+
+**Ongoing.** No end date. Health, finance, ministry, business operations.
+
+### Resource (reference)
+
+```yaml
+---
+type: resource
+tags: []
+---
+```
+
+**Reference only.** How-to, frameworks, learning material.
 
 ---
 
-## Types & Status
+## Your Daily Workflow (5 minutes)
 
-| Type | Status | Purpose |
-|------|--------|---------|
-| **capture** | (no status) | Raw from ChatGPT, read-only |
-| **strategy** | draft → committed → archived | Your decision |
-| **project** | in-progress → completed | Active work container |
-| **task** | ready → in-progress → done | Actionable work |
-| **area** | (no status) | Ongoing responsibility |
-| **resource** | (no status) | Reference only |
+1. **Open `home.md`** — See today's focus, blockers, unprocessed inbox
+2. **Open `kanban.canvas`** — See your To Do, Doing, Done columns
+3. **Pick 1-3 tasks** from "To Do"
+4. **Drag to "Doing"** when you start
+5. **Work on it**
+6. **Drag to "Done"** when finished
+7. **Optional:** At end of day, move done tasks to `08-archive/`
 
----
-
-## Your Daily Workflow
-
-1. **Morning (2 min):** Open `kanban.canvas`
-2. **Pick 1-3 tasks** from "To Do" column
-3. **Drag to "Doing"** when you start
-4. **Drag to "Done"** when finished
-5. **End of day:** Optionally archive done tasks
-
-**That's all you interact with.** Everything else is automation or reference.
+**That's it. Everything else is reference or automation.**
 
 ---
 
-## What NOT to Do
+## Weekly Review (20 minutes)
 
-❌ Don't create numbered folders (00-, 01-, etc.)
-❌ Don't create task management systems outside this
-❌ Don't overthink templates — use them as-is
-❌ Don't dive into more than 8 folders
-
----
-
-## How Gemini Helps
-
-When you send a capture, Gemini returns:
-- `confidence` (0-1): How sure about the PARA classification?
-- `signal_quality` (0-1): How actionable/valuable?
-
-**High signal (> 0.7)?** → Show it to you first.
-**Low signal (< 0.4)?** → Auto-delete after 30 days.
+1. **Check `01-inbox/`** — Any captures waiting?
+2. **Check `02-strategy/`** — Any draft decisions ready to commit?
+3. **Check `03-projects/`** — Any blocked projects? Any complete?
+4. **Archive done tasks** from `04-tasks/` to `08-archive/`
+5. **Check `05-areas/`** — Any ongoing areas need attention?
 
 ---
 
-## Templates
+## What Each Template Is For
 
-- `capture.md` — Auto-generated by Gemini, read-only
-- `strategy.md` — Copy this when you decide to commit
-- `project.md` — Copy when creating a project
-- `task.md` — Copy for each task
-- `area.md` — Copy for ongoing areas
-- `resource.md` — Copy for reference material
+**In `07-templates/`:**
+
+- `capture.md` — Auto-generated by Gemini. Reference only.
+- `strategy.md` — Copy this when committing to a decision.
+- `project.md` — Copy this when starting a project.
+- `task.md` — Copy this for each task you create.
+- `area.md` — Copy this for ongoing responsibilities.
+- `resource.md` — Copy this for reference material.
+
+**Don't edit templates.** Copy them, fill them in, create new files.
 
 ---
 
-## That's It
+## The Kanban Board (kanban.canvas)
 
-No phases, no brainstorm layers, no multiple kanban files.
+Your **only working interface** for day-to-day execution:
 
-**One kanban board. Eight folders. You work on tasks.**
+```
+Backlog    →    To Do    →    Doing    →    Done
+(all ready)   (pick 1-3)   (keep < 2)   (end of day)
+```
 
-If you're confused, you have too many folders open.
+**That's it.** Drag cards between columns. Click cards to edit task files.
+
+---
+
+## Avoiding Confusion
+
+❌ **Don't:**
+- Create tasks outside `04-tasks/`
+- Put strategy notes in `01-inbox/`
+- Keep multiple kanban files (one: `kanban.canvas`)
+- Edit templates (copy them instead)
+- Overthink folder structure (it's fixed, use it as-is)
+
+✅ **Do:**
+- Use one kanban board per day
+- Link tasks to projects
+- Archive completed work weekly
+- Trust the numbering (01-08 = folders only)
+
+---
+
+## How Automation Helps (Future)
+
+When Step 4 automation is live:
+- High-signal captures → auto-move to strategy
+- Committed strategies → auto-create project + task templates
+- Done tasks → auto-archive
+
+For now, manual. Same result, just hand-operated.
+
+---
+
+## Gemini Scoring (Inbox Auto-Classification)
+
+Captures arrive with two scores:
+
+- **Confidence (0-1):** How sure is Gemini about PARA type?
+  - 0.9 = definitely a project
+  - 0.5 = unclear, might be project or resource
+  - 0.2 = probably junk
+
+- **Signal Quality (0-1):** How actionable/valuable?
+  - 0.9 = specific, linked to business goal, has next steps
+  - 0.5 = interesting but vague
+  - 0.1 = generic motivation or wisdom
+
+**High both?** Worth keeping.  
+**Low either?** Probably delete.
+
+---
+
+## Example: Full Flow
+
+**You capture:** "We should implement usage-based pricing for StatusLink to improve margins"
+
+**Gemini classifies:** confidence=0.9, signal=0.85, para_type=project
+
+**Lands in:** `01-inbox/2026-04-10-implement-usage-based-pricing.md`
+
+**You read it, keep it** → Copy to `02-strategy/StatusLink-Pricing-Strategy.md`
+
+**You write:** Why we're doing this, constraints, success criteria
+
+**Mark status: committed** → Move to `03-projects/statuslink-pricing/README.md`
+
+**Create tasks:**
+- `04-tasks/research-stripe-usage-based-api.md` (assigned: ai)
+- `04-tasks/design-pricing-calculator-ui.md` (assigned: you)
+- `04-tasks/create-customer-migration-plan.md` (assigned: you)
+
+**Tasks appear on kanban.canvas** → You drag them through To Do → Doing → Done
+
+**Done** → Archive to `08-archive/`
+
+---
+
+## That's the System
+
+- Numbered folders (order + reference structure)
+- Files at the bottom (Obsidian sorts folders first)
+- One kanban board (your workspace)
+- Minimal templates (copy, don't edit)
+- Automation helps when Step 4 is live
+- Everything else is reference
+
+**You work on the kanban board. That's your only daily interface.**
