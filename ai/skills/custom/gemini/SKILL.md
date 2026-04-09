@@ -29,7 +29,7 @@ Do not use Gemini for:
 
 | Tier | Model | Free tier | When |
 |------|-------|-----------|------|
-| **flash** (default) | gemini-2.0-flash | ~1500 RPD, ~1M TPM | Everything — default tier |
+| **flash** (default) | gemini-2.5-flash | ~1500 RPD, ~1M TPM | Everything — default tier |
 | **pro** | gemini-2.5-pro | ~50 RPD | Only when Flash reasoning is insufficient |
 
 Always default to Flash. Pro free tier is limited (~50 RPD) — conserve it.

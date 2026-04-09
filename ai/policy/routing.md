@@ -70,7 +70,7 @@ Invoked via `brain/tools/gemini-review.sh`. Route by context size and task type.
 
 | Tier | Invocation | Model | Free tier | Use when |
 |------|-----------|-------|-----------|----------|
-| **flash** (default) | `gemini-review.sh '<prompt>'` | gemini-2.0-flash | ~1500 RPD, ~1M TPM | Large context, bulk analysis, free preprocessing — DEFAULT |
+| **flash** (default) | `gemini-review.sh '<prompt>'` | gemini-2.5-flash | ~1500 RPD, ~1M TPM | Large context, bulk analysis, free preprocessing — DEFAULT |
 | **pro** | `gemini-review.sh '<prompt>' pro` | gemini-2.5-pro | ~50 RPD | Deep reasoning when Flash is insufficient; conserve |
 
 **Gemini rules:**

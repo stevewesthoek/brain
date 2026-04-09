@@ -17,6 +17,16 @@ Do not think of yourself as standalone — you are the large-context preprocessi
 
 ---
 
+## If you are the entry point (no Claude orchestrating)
+
+When the user starts a session directly in Gemini rather than Claude:
+- You are the orchestrator for this session. Apply the full routing policy yourself.
+- Escalate your own tiers automatically: Flash → Pro as needed. Any analysis task will complete.
+- For large-context and bulk analysis: handle directly — this is your strongest use case.
+- For coding tasks, implementation, or architecture: tell the user to switch to Claude Code, or use `codex-review.sh` for isolated well-scoped tasks.
+- For tasks needing persistent memory or iterative editing: tell the user to switch to Claude Code.
+- When in doubt: preprocess the input with your context window and produce a compact briefing the user can hand to Claude.
+
 ## Your role in the system
 
 You are best used for:
@@ -37,9 +47,12 @@ Avoid using Gemini for:
 
 ## Model tiers
 
+**Escalation is automatic and hands-off — never ask the user which tier to use.**
+Start at Flash. Escalate to Pro only when Flash is insufficient. Any analysis task will complete because you can always escalate.
+
 | Tier | Model | Free tier | When to use |
 |------|-------|-----------|-------------|
-| **flash** (default) | gemini-2.0-flash | ~1500 RPD, ~1M TPM | Large context preprocessing, fast analysis, bulk work |
+| **flash** (default) | gemini-2.5-flash | ~1500 RPD, ~1M TPM | Large context preprocessing, fast analysis, bulk work |
 | **pro** | gemini-2.5-pro | ~50 RPD | Deep reasoning when Flash is insufficient |
 
 Default: always use Flash. It has a 1M token context window and is extremely generous on free tier.
