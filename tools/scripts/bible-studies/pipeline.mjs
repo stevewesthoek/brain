@@ -4,7 +4,7 @@
  *
  * Phases:
  *  1. Scan Bible Studies/ for new .mp4 / .mp3 files not yet transcribed
- *  2. Transcribe each with mlx-whisper (mlx-community/whisper-large-v3, max quality)
+ *  2. Transcribe each with mlx-whisper (mlx-community/whisper-large-v3-mlx, max quality)
  *  3. Format transcript as Obsidian markdown with [HH:MM:SS] timestamped segments
  *  4. Write note to brain/personal/bible-studies/dance-of-life/[Series]/[NN-of-TT] - Title.md
  *  5. Batch-sync new notes + series PDFs/RTFs to NotebookLM via `claude --print`
@@ -46,7 +46,7 @@ const C = {
   brainRoot:  '/Users/Office/Repos/stevewesthoek/brain',
   stateFile:  path.join(os.homedir(), '.local/state/bible-studies/state.json'),
   logFile:    path.join(os.homedir(), 'Library/Logs/office-scheduler/bible-studies.log'),
-  model:      'mlx-community/whisper-large-v3',
+  model:      'mlx-community/whisper-large-v3-mlx',
   mlxBin:     process.env.MLX_WHISPER_BIN || process.env.HOME + '/.local/bin/mlx_whisper',
   claudeBin:  process.env.CLAUDE_BIN || 'claude',
   // Subdirectory names that are organisational (flatten into parent series notes)

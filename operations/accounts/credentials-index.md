@@ -8,7 +8,7 @@ Master map of all API keys, tokens, and credentials used across the brain infras
 - Run `sync-credentials` to scan `~/.config/` for new `.env` files and append untracked entries to the Pending section below.
 - When a new entry lands in Pending, move it to the right section and fill in Purpose, Rotation, and Regenerate.
 
-Last synced: 2026-04-08
+Last synced: 2026-04-09
 
 ---
 
@@ -97,6 +97,16 @@ These are JSON files, not `.env` — not auto-detected by `sync-credentials`. Tr
 | Service account JSON key | `~/.config/gws/service-account.json` | Domain-wide delegation for GWS admin operations (email, calendar, Drive, users) | No automatic expiry; rotate if compromised or if SA key is revoked | [GCP → IAM → Service Accounts → brain-workspace-admin-sa → Keys](https://console.cloud.google.com/iam-admin/serviceaccounts?project=brain-workspace-admin) |
 | OAuth client secret | `~/.config/gws/client_secret.json` | OAuth 2.0 installed-app client for user-delegated access | Static unless app is deleted | [GCP → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials?project=brain-workspace-admin) |
 | Token cache | `~/.config/gws/token_cache.json` | Auto-refreshed OAuth access/refresh token (auto-generated) | Auto-refreshes; delete and re-auth if stale | Run `gws` CLI to re-authenticate |
+
+## HuggingFace
+
+Personal account for model downloads (mlx_whisper, etc.).
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| HF token | `~/.cache/huggingface/token` | Read-only access token for downloading models (e.g. `mlx-community/whisper-large-v3`) | No automatic expiry; rotate if compromised | [HuggingFace → Settings → Access Tokens](https://huggingface.co/settings/tokens) |
+
+Note: Written by `huggingface-cli login` or directly. Picked up automatically by `transformers`, `huggingface_hub`, and `mlx_whisper`.
 
 ## Hetzner Cloud
 
