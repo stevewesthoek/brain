@@ -12,6 +12,24 @@
  *  6. Regenerate README.md index
  *  7. Git-commit new notes to brain repo
  *
+ * Robustness & crash-safety:
+ *  - MEMORY GATE: before each transcription, available RAM is checked. If below 4 GB,
+ *    the pipeline waits (checking every 30 s, max 30 min) before spawning mlx_whisper.
+ *    This prevents swap exhaustion and the kernel watchdog panic that would otherwise
+ *    result from loading the 3 GB model 282 times back-to-back without recovery pauses.
+ *  - NICE: mlx_whisper runs at nice 10 so critical system services stay responsive.
+ *  - COOLDOWN: 5-second sleep after each transcription gives macOS time to fully
+ *    reclaim the subprocess memory before the next spawn.
+ *  - AUTO-RESUME: successfully transcribed videos are written to state immediately after
+ *    each file completes. If the process is interrupted (crash, power loss, nightly
+ *    timeout), the next run picks up exactly where it left off — skipping any video
+ *    already in state.transcribed.
+ *  - FAILED LIST: videos that fail transcription are added to state.failed and skipped
+ *    on subsequent runs. Re-run with FORCE_RESCAN=1 to clear the failed list and retry.
+ *  - NIGHTLY SCHEDULE: triggered automatically by office-nightly-scheduler.sh after
+ *    dance-of-life-sync completes (new videos first, then transcribe). The nightly job
+ *    has a 4-hour timeout; any remaining videos are picked up the following night.
+ *
  * Dynamic growth:
  *  - New series folders in Bible Studies/ are auto-detected every run (logged as 🆕).
  *  - New videos in existing series are auto-detected via relPath tracking in state.
@@ -187,11 +205,49 @@ function buildNoteFilename(indexInSeries, totalInSeries, title) {
   return `${nn}-of-${tt} - ${safeTitle}.md`;
 }
 
+// ─── MEMORY GATE ─────────────────────────────────────────────────────────────
+// Returns available memory in GB: free + speculative + purgeable + 50% inactive.
+// We don't count all inactive pages because the OS may need them; taking half is
+// a conservative estimate of what macOS can reclaim without thrashing swap.
+function getAvailableMemoryGB() {
+  const vmstat = spawnSync('vm_stat', [], { encoding: 'utf8' }).stdout;
+  const PAGE = 16384; // 16 KB pages on Apple Silicon
+  const parse = (label) =>
+    parseInt(vmstat.match(new RegExp(label + '\\s+(\\d+)'))?.[1] ?? '0');
+  const free       = parse('Pages free:');
+  const speculative= parse('Pages speculative:');
+  const purgeable  = parse('Pages purgeable:');
+  const inactive   = parse('Pages inactive:');
+  const bytes = (free + speculative + purgeable + Math.floor(inactive * 0.5)) * PAGE;
+  return bytes / (1024 ** 3);
+}
+
+// Waits until at least `requiredGB` GB of memory is available, checking every
+// `intervalMs` ms. Logs a warning each time it has to wait. Hard caps at
+// `maxWaitMs` total (default 30 min) so a stuck system doesn't hang forever.
+async function waitForMemory(requiredGB = 4, intervalMs = 30_000, maxWaitMs = 1_800_000) {
+  const deadline = Date.now() + maxWaitMs;
+  while (true) {
+    const avail = getAvailableMemoryGB();
+    if (avail >= requiredGB) return;
+    if (Date.now() >= deadline) {
+      log(`   ⚠️  Memory wait exceeded ${maxWaitMs / 60_000} min (${avail.toFixed(1)} GB available) — proceeding anyway`);
+      return;
+    }
+    log(`   ⏳ Memory pressure: ${avail.toFixed(1)} GB available, need ${requiredGB} GB — waiting ${intervalMs / 1000}s`);
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+}
+
 // ─── TRANSCRIPTION ────────────────────────────────────────────────────────────
 function transcribeVideo(videoPath) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'whisper-'));
   try {
-    const result = spawnSync(C.mlxBin, [
+    // Run mlx_whisper at reduced CPU priority (nice 10) so critical system
+    // services stay responsive and the watchdog does not lose heartbeats.
+    const result = spawnSync('nice', [
+      '-n', '10',
+      C.mlxBin,
       videoPath,
       '--model', C.model,
       '--output-format', 'json',
@@ -508,8 +564,14 @@ async function main() {
 
     let transcript;
     try {
+      // Wait until enough RAM is free before loading the model.
+      // The large-v3 model needs ~3 GB; we require 4 GB headroom.
+      await waitForMemory(4);
       log('   🎙️  Transcribing…');
       transcript = transcribeVideo(v.absPath);
+      // Give macOS time to fully reclaim the memory the subprocess just freed
+      // before we spin up the next mlx_whisper process.
+      await new Promise(r => setTimeout(r, 5_000));
     } catch (err) {
       log(`   ❌ Transcription failed: ${err.message}`);
       failedSet.add(v.relPath);
