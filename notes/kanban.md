@@ -6,7 +6,6 @@ kanban-plugin: board
 
 ## 📥 Inbox
 
-- [ ] Add hotmail to the brain.
 - [ ] Make a Portuguese language app.
 - [ ] Make a family finance app.
 - [ ] Make a Yeshua Academy Finance Automation.
@@ -27,6 +26,7 @@ kanban-plugin: board
 
 ## ✅ Done
 
+- [x] Add hotmail to the brain. ✅ 2026-04-09
 
 
 
