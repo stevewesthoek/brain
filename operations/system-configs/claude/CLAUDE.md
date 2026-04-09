@@ -99,20 +99,23 @@ Canonical policy: `brain/ai/policy/routing.md`. Both Claude and Codex read this 
 Run `/model-router` to re-prime full routing awareness.
 
 Route tasks to agents by cost and complexity. Do not ask the user which model to use — route automatically.
+**Start at the cheapest tier. Escalate only when the current tier struggles.**
 
 | Agent | Model/Tool | Cost | Use when |
 |-------|------------|------|----------|
 | `gemini-flash` | Gemini Flash | **Free** | Large context preprocessing (>100k tokens), bulk analysis, free-tier summarization |
-| `cheap-prep` | Haiku | Cheapest paid | Summarization, file triage, context compaction, commit drafting |
-| `coder-default` | Sonnet | Mid paid | All normal coding (default) |
-| `deep-architect` | Opus | Expensive | Complex architecture, high blast radius, repeated failures |
-| `codex` | Codex CLI | Paid subscription | Parallel load balancing, code review, second opinion, well-scoped isolated tasks |
+| `cheap-prep` | Haiku | Cheapest paid | **DEFAULT for all tasks** — coding, triage, commits, fixes, reviews |
+| `coder-default` | Sonnet | Mid paid | Escalate from Haiku: complex coding, multi-file, deeper reasoning |
+| `deep-architect` | Opus | Expensive | Escalate from Sonnet: architecture, high blast radius, repeated failures |
+| `codex` | Codex CLI (low) | Paid subscription | Parallel load, code review, second opinion; default tier = low |
 
-Codex tiers: `codex-review.sh '<prompt>' mini|standard|max` — route by task weight (mini=fast/cheap, standard=default, max=high-stakes).
-Gemini tiers: `gemini-review.sh '<prompt>' [flash|pro]` — flash=free/1M-context (default), pro=deep reasoning (conserve).
-Before escalating to Opus: run Gemini Flash or `cheap-prep` to compact context first.
-When running 3+ parallel agents: route tasks to Gemini Flash and/or Codex for engine diversity and cost savings.
-Large context (>100k tokens): always run Gemini Flash preprocessing first, then work in Claude on the compact summary.
+**Claude escalation:** Haiku → Sonnet → Opus. Try each tier before escalating.
+**Codex escalation:** low → standard → max. Default is `low` (gpt-5.4, low effort).
+**Gemini escalation:** Flash (free, default) → Pro (conserve, deep reasoning only).
+Codex tiers: `codex-review.sh '<prompt>' [low|mini|standard|max]` — default is `low`.
+Gemini tiers: `gemini-review.sh '<prompt>' [flash|pro]` — flash=free/1M-context (default).
+Before escalating to Opus: always compact context with Gemini Flash or `cheap-prep` first.
+Large context (>100k tokens): always run Gemini Flash preprocessing first.
 
 # Guardrails
 

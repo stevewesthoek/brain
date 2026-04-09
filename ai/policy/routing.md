@@ -19,7 +19,7 @@ Three AI engines work together. Claude always orchestrates — route sub-tasks b
 | **Codex** | Reviewer / Parallel executor | Isolated well-scoped tasks, code review, second opinions, fast parallel checks |
 | **Gemini Flash** | Preprocessor | Large context ingestion (1M tokens), bulk analysis, free-tier summarization |
 
-**Cost priority:** Gemini Flash (free) > Haiku (cheapest paid) > Codex mini > Sonnet > Codex standard > Opus / Codex max
+**Cost priority:** Gemini Flash (free) > Haiku (cheapest paid) > Codex low > Codex mini > Sonnet > Codex standard > Opus / Codex max
 
 ---
 
@@ -27,14 +27,16 @@ Three AI engines work together. Claude always orchestrates — route sub-tasks b
 
 | Agent | Model | Use when |
 |-------|-------|----------|
-| `cheap-prep` | Haiku | Summarization, triage, context compaction, commit drafting, lightweight classification |
-| `coder-default` | Sonnet | All normal coding — features, bugs, refactors, tests (default for everything) |
-| `deep-architect` | Opus | Complex architecture, major migrations, high blast radius, repeated Sonnet failures |
+| `cheap-prep` | Haiku | **DEFAULT** — all tasks start here: coding, summarization, triage, commits, fixes, reviews |
+| `coder-default` | Sonnet | Escalate from Haiku when: task needs multi-file reasoning, Haiku struggled, or complexity is clearly high |
+| `deep-architect` | Opus | Escalate from Sonnet when: major architecture ambiguity, high blast radius (prod/auth/migrations), or Sonnet failed 2+ times |
 
-**Escalation rules:**
-- Default to Sonnet. Do not escalate out of impatience.
-- Before escalating to Opus: use Gemini Flash or `cheap-prep` (Haiku) to compact context first. Never pass raw conversation history to Opus.
-- Escalate to Opus only when: major design ambiguity spans multiple systems, blast radius is high (prod data, auth, migrations), or Sonnet has failed 2+ times.
+**Escalation ladder (start cheap, escalate when struggling):**
+1. Start at Haiku (`cheap-prep`) for every task — including coding.
+2. Escalate to Sonnet (`coder-default`) when: Haiku output is insufficient, task clearly spans many files, or problem requires deeper reasoning.
+3. Escalate to Opus (`deep-architect`) only when: Sonnet failed 2+ attempts, blast radius is high (prod data, auth, migrations), or design ambiguity spans multiple systems.
+4. Before escalating to Opus: always compact context with Gemini Flash or Haiku first. Never pass raw history to Opus.
+5. Do not escalate out of impatience — attempt the cheaper tier first.
 
 **Cost ratios (rough):** Haiku ~25× cheaper than Opus. Sonnet ~5× cheaper than Opus.
 
@@ -42,20 +44,23 @@ Three AI engines work together. Claude always orchestrates — route sub-tasks b
 
 ## Codex model tiers
 
-Invoked via `brain/tools/codex-review.sh`. Route by task weight.
+Invoked via `brain/tools/codex-review.sh`. Start low, escalate when struggling.
 
 | Tier | Invocation | Model | Effort | Use when |
 |------|-----------|-------|--------|----------|
-| **mini** | `codex-review.sh '<prompt>' mini` | codex-mini-latest | low | Quick sanity check, obvious issue scan, fast parallel filler |
-| **standard** | `codex-review.sh '<prompt>'` | config default (gpt-5.4) | high | Normal second opinion, parallel task execution, typical code review |
-| **max** | `codex-review.sh '<prompt>' max` | config default (gpt-5.4) | xhigh | High-stakes review (auth, migrations, prod-touching), deep critique |
+| **low** | `codex-review.sh '<prompt>'` | gpt-5.4 | low | **DEFAULT** — start here for all Codex tasks |
+| **mini** | `codex-review.sh '<prompt>' mini` | codex-mini-latest | low | Fast parallel filler only (small, isolated sanity checks) |
+| **standard** | `codex-review.sh '<prompt>' standard` | gpt-5.4 | medium | Escalate when low is insufficient; normal code review |
+| **max** | `codex-review.sh '<prompt>' max` | gpt-5.4 | xhigh | Escalate for auth, migrations, prod-touching, deep critique |
 
-**Codex rules:**
-- Always compress context before calling — prompt must stay under 12k chars.
-- Treat Codex output as advisory, not authoritative — integrate only the useful parts.
-- Max 1–2 Codex calls per task; do not chain without clear value.
-- Do not use for tasks needing full repo context or interactive file editing.
-- Codex runs on a paid subscription (ChatGPT Plus) — use deliberately, not freely.
+**Codex escalation rules:**
+1. Default to `low`. Most tasks complete fine here.
+2. Escalate to `standard` when: low output is insufficient or task needs deeper reasoning.
+3. Escalate to `max` only when: auth, migrations, prod-touching, or standard failed.
+4. Always compress context before calling — prompt must stay under 12k chars.
+5. Treat Codex output as advisory — integrate only the useful parts.
+6. Max 1–2 Codex calls per task; do not chain without clear value.
+7. Codex runs on a paid subscription (ChatGPT Plus) — use deliberately, not freely.
 
 ---
 
@@ -80,6 +85,7 @@ Invoked via `brain/tools/gemini-review.sh`. Route by context size and task type.
 ## Automatic routing
 
 Route automatically on every task — never ask the user which model to use.
+**Start at the cheapest tier. Escalate only when the cheaper tier struggles or clearly cannot handle the task.**
 
 **Decompose into sub-agents when ALL of these are true:**
 - The task has 3+ distinct subtasks that can be worked independently, OR involves 6+ files across different concerns
@@ -98,13 +104,13 @@ Route automatically on every task — never ask the user which model to use.
 
 ## Cross-engine routing rules
 
-1. **Default**: Claude Sonnet handles the task alone.
-2. **Large context input** (>100k tokens of raw files, logs, or docs): run Gemini Flash first to produce a compact briefing, then work in Claude on the summary.
+1. **Default**: Claude Haiku handles the task alone. Escalate to Sonnet if struggling, then Opus if still insufficient.
+2. **Large context input** (>100k tokens of raw files, logs, or docs): run Gemini Flash first to produce a compact briefing, then work in Claude Haiku (or Sonnet if needed) on the summary.
 3. **Bulk preprocessing**: use Gemini Flash to summarize many files or a large codebase before Claude analyzes or acts.
-4. **Parallel load (3+ sub-agents)**: route 1–2 self-contained tasks to Codex and/or Gemini Flash to spread load and cut cost.
-5. **Second opinion on code/logic**: call Codex standard (not Gemini) — Codex is stronger at code review.
+4. **Parallel load (3+ sub-agents)**: route 1–2 self-contained tasks to Codex low and/or Gemini Flash to spread load and cut cost.
+5. **Second opinion on code/logic**: call Codex low (not Gemini) — escalate to Codex standard only if the low result is insufficient.
 6. **Context budget exhausted**: use Gemini Flash (free) or `cheap-prep` (Haiku) to compact before handing to any engine.
-7. **Hard architecture**: compact with Gemini Flash or `cheap-prep`, then escalate to Claude Opus.
+7. **Hard architecture**: compact with Gemini Flash or `cheap-prep`, then escalate to Claude Sonnet; if still insufficient, escalate to Opus.
 8. **Free-tier first**: for pure analysis/summarization with no code quality requirement, prefer Gemini Flash (free) over Haiku (paid).
 
 ---

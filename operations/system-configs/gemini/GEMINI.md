@@ -53,20 +53,22 @@ When handing work back to Claude or reasoning about what Claude should do:
 
 | Tier | Model | Use when |
 |------|-------|----------|
-| cheap-prep | Haiku | Summarization, triage, context compaction |
-| coder-default | Sonnet | All normal coding (default) |
-| deep-architect | Opus | Complex architecture, high blast radius, repeated failures |
+| cheap-prep | Haiku | **DEFAULT** — all tasks start here, including coding |
+| coder-default | Sonnet | Escalate from Haiku: complex coding, multi-file, deeper reasoning |
+| deep-architect | Opus | Escalate from Sonnet: architecture, high blast radius, repeated failures |
+
+Claude escalation ladder: Haiku → Sonnet → Opus. Try each tier before escalating.
 
 ---
 
 ## Cross-engine routing
 
-1. Default: Claude Sonnet handles tasks alone.
-2. Large context (>100k tokens): Gemini Flash preprocesses first → compact summary → Claude acts.
-3. Bulk analysis (many files, large logs): Gemini Flash processes the bulk, Claude acts on the findings.
-4. Parallel load: spread self-contained subtasks across Gemini Flash and Codex.
-5. Second opinion on code/logic: Codex (not Gemini) — Codex is stronger at code review.
-6. Hard architecture: compact with Gemini Flash or Haiku, escalate to Claude Opus.
+1. Default: Claude Haiku handles tasks alone. Escalate to Sonnet if struggling, then Opus if still insufficient.
+2. Large context (>100k tokens): Gemini Flash preprocesses first → compact summary → Claude Haiku acts (escalate if needed).
+3. Bulk analysis (many files, large logs): Gemini Flash processes the bulk, Claude Haiku acts on the findings.
+4. Parallel load: spread self-contained subtasks across Gemini Flash and Codex low.
+5. Second opinion on code/logic: Codex low first (not Gemini); escalate to standard if insufficient.
+6. Hard architecture: compact with Gemini Flash or Haiku, escalate to Claude Sonnet; then Opus if still insufficient.
 
 ---
 

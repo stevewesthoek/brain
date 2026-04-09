@@ -36,13 +36,17 @@ Avoid using Codex for:
 
 ## Model tiers (your own)
 
+Start at `low`. Escalate only when the current tier struggles.
+
 | Tier | When to use | Effort |
 |------|-------------|--------|
-| **mini** (codex-mini-latest) | Quick checks, parallel filler, obvious issue scan | low |
-| **standard** (default, gpt-5.4) | Normal code review, second opinion, parallel tasks | medium |
-| **max** (default, gpt-5.4) | Auth, migrations, prod-touching, high-stakes review | xhigh |
+| **low** (gpt-5.4) | **DEFAULT** — start here for all tasks | low |
+| **mini** (codex-mini-latest) | Fast parallel filler, small isolated sanity checks | low |
+| **standard** (gpt-5.4) | Escalate from low: deeper reasoning, more complex review | medium |
+| **max** (gpt-5.4) | Escalate for auth, migrations, prod-touching, high-stakes | xhigh |
 
-Default config: `model = "gpt-5.4"`, `model_reasoning_effort = "medium"`.
+Default config: `model = "gpt-5.4"`, `model_reasoning_effort = "low"`.
+Escalation ladder: low → standard → max.
 
 ---
 
@@ -52,19 +56,21 @@ When handing work back to Claude or reasoning about what Claude should do:
 
 | Tier | Model | Use when |
 |------|-------|----------|
-| cheap-prep | Haiku | Summarization, triage, context compaction |
-| coder-default | Sonnet | All normal coding (default) |
-| deep-architect | Opus | Complex architecture, high blast radius, repeated failures |
+| cheap-prep | Haiku | **DEFAULT** — all tasks start here, including coding |
+| coder-default | Sonnet | Escalate from Haiku: complex coding, multi-file, deeper reasoning |
+| deep-architect | Opus | Escalate from Sonnet: architecture, high blast radius, repeated failures |
+
+Claude escalation ladder: Haiku → Sonnet → Opus. Try each tier before escalating.
 
 ---
 
 ## Cross-engine routing
 
-1. Default: Claude Sonnet handles tasks alone.
-2. Large context input (>100k tokens): Gemini Flash preprocesses first → compact summary → Claude acts.
-3. Parallel load (3+ sub-agents): 1–2 self-contained tasks come to Codex and/or Gemini Flash.
-4. Second opinion on code/logic: Codex standard when confidence is low or bug persists after 1–2 Claude attempts.
-5. Code review: Codex standard for normal diffs; Codex max for auth, migrations, high-stakes code.
+1. Default: Claude Haiku handles tasks alone. Escalate to Sonnet if struggling, then Opus if still insufficient.
+2. Large context input (>100k tokens): Gemini Flash preprocesses first → compact summary → Claude Haiku acts (escalate if needed).
+3. Parallel load (3+ sub-agents): 1–2 self-contained tasks come to Codex low and/or Gemini Flash.
+4. Second opinion on code/logic: Codex low first; escalate to standard if the result is insufficient.
+5. Code review: Codex low for normal diffs; standard when low is insufficient; max for auth, migrations, high-stakes.
 6. Context exhausted: compact with Gemini Flash (free) or Haiku, then route to appropriate engine.
 
 ---

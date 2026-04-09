@@ -15,12 +15,17 @@ This skill loads and applies the full unified routing policy for the current ses
 | Agent | Model/Tool | Cost | Use when |
 |-------|------------|------|----------|
 | `gemini-flash` | Gemini Flash | **Free** | Large context preprocessing (>100k tokens), bulk analysis, free-tier summarization |
-| `cheap-prep` | Haiku | Cheapest paid | Summarization, file triage, context compaction, commit messages, lightweight classification |
-| `coder-default` | Sonnet | Mid paid | All normal coding: features, bugs, refactors, tests (default) |
-| `deep-architect` | Opus | Expensive | Complex architecture, major migrations, high-blast-radius changes, repeated Sonnet failures |
-| `codex` | Codex CLI | Paid subscription | Parallel task delegation, code review, advisory second opinion, well-scoped isolated tasks |
+| `cheap-prep` | Haiku | Cheapest paid | **DEFAULT for all tasks** — coding, triage, commits, fixes, reviews; escalate if struggling |
+| `coder-default` | Sonnet | Mid paid | Escalate from Haiku: multi-file tasks, deeper reasoning, complex coding |
+| `deep-architect` | Opus | Expensive | Escalate from Sonnet: architecture, high blast radius (prod/auth/migrations), repeated failures |
+| `codex` | Codex CLI (low) | Paid subscription | Parallel task delegation, code review, advisory second opinion; default tier = low |
 
-**Cost priority:** Gemini Flash (free) > Haiku > Codex mini > Sonnet > Codex standard > Opus / Codex max
+**Cost priority:** Gemini Flash (free) > Haiku > Codex low > Codex mini > Sonnet > Codex standard > Opus / Codex max
+
+**Escalation ladders:**
+- **Claude**: Haiku → Sonnet → Opus (try each tier; only escalate when the current tier struggles)
+- **Codex**: low → standard → max (try each tier; only escalate when the current tier struggles)
+- **Gemini**: Flash → Pro (Flash is free and handles almost everything; Pro only for deep reasoning)
 
 ---
 
@@ -45,21 +50,21 @@ Route automatically on every task — do not ask the user which model to use.
 
 ## Routing rules
 
-1. **Default to `coder-default`** (Sonnet) for all coding tasks.
-2. **Large context first**: when input is >100k tokens (many files, large logs, big diffs), run `gemini-review.sh` (Flash) first to produce a compact briefing. Then work in Claude on the summary. This is free and saves significant Sonnet tokens.
-3. **Free-tier preference**: for pure analysis/summarization tasks, prefer Gemini Flash (free) over Haiku (paid).
-4. **Use `cheap-prep`** (Haiku) for moderate context compaction where Gemini overhead isn't worth it.
-5. **Escalate to `deep-architect`** (Opus) only when:
+1. **Default to `cheap-prep`** (Haiku) for all tasks — including coding. Start cheap; escalate only when struggling.
+2. **Escalate to `coder-default`** (Sonnet) when: Haiku output is insufficient, task clearly spans many files, or deeper reasoning is needed.
+3. **Escalate to `deep-architect`** (Opus) only when:
+   - Sonnet has failed or produced unsatisfactory results after 2+ attempts
    - Major design ambiguity spans multiple systems
    - Blast radius is high (prod data, shared infrastructure, auth, migrations)
-   - `coder-default` has failed or produced unsatisfactory results after 2+ attempts
    - The decision will be load-bearing for future architecture
-6. **Before escalating to Opus**: run Gemini Flash or `cheap-prep` to compact context into a concise briefing first.
-7. **Delegate to `codex`** for parallel load or second opinion:
-   - Running 3+ agents in parallel (route 1–2 self-contained tasks to Codex)
+4. **Before escalating to Opus**: always run Gemini Flash or `cheap-prep` to compact context first.
+5. **Large context first**: when input is >100k tokens, run `gemini-review.sh` (Flash) first to produce a compact briefing. This is free.
+6. **Free-tier preference**: for pure analysis/summarization tasks, prefer Gemini Flash (free) over Haiku (paid).
+7. **Delegate to `codex`** for parallel load or second opinion — default tier is `low`:
+   - Running 3+ agents in parallel (route 1–2 self-contained tasks to Codex low)
    - Well-scoped task needing code review or diff analysis
-   - Second opinion alongside a main coding agent
-   - Note: Codex is on a paid subscription — use deliberately.
+   - Escalate Codex to `standard` when low is insufficient; `max` for high-stakes only
+   - Codex is on a paid subscription — use deliberately.
 
 ---
 
@@ -67,11 +72,13 @@ Route automatically on every task — do not ask the user which model to use.
 
 | Tier | Invocation | When to use |
 |------|-----------|-------------|
-| **mini** | `codex-review.sh '<prompt>' mini` | Quick sanity check, obvious issue scan, fast parallel filler |
-| **standard** | `codex-review.sh '<prompt>'` | Normal second opinion, parallel execution, typical code review (default) |
-| **max** | `codex-review.sh '<prompt>' max` | High-stakes review (auth, migrations, prod-touching), deep critique |
+| **low** | `codex-review.sh '<prompt>'` | **DEFAULT** — start here for all Codex tasks (gpt-5.4, low effort) |
+| **mini** | `codex-review.sh '<prompt>' mini` | Fast parallel filler — small isolated sanity checks (codex-mini-latest) |
+| **standard** | `codex-review.sh '<prompt>' standard` | Escalate when low is insufficient; normal code review (gpt-5.4, medium effort) |
+| **max** | `codex-review.sh '<prompt>' max` | Escalate for auth, migrations, prod-touching, deep critique (gpt-5.4, xhigh effort) |
 
 Prompt limit: 12k chars. Compress before calling. Paid subscription — use deliberately.
+Escalation ladder: low → standard → max. Try low first.
 
 ---
 
@@ -99,9 +106,9 @@ After significant work, produce a compact summary (5 bullets or fewer) for:
 ## Cost ratios (rough)
 
 Gemini Flash: **free** — first choice for any preprocessing or large-context task.
-Haiku: ~25× cheaper than Opus. Use freely for moderate context compaction.
-Sonnet: ~5× cheaper than Opus. Use for almost everything.
+Haiku: ~25× cheaper than Opus. **New default for all Claude tasks.**
+Sonnet: ~5× cheaper than Opus. Escalation from Haiku for complex coding.
 Opus: reserve for genuinely hard problems. Do not escalate out of impatience.
-Codex mini: fast — use for quick parallel passes (paid, use deliberately).
-Codex standard: balanced — default for second opinions and parallel tasks.
-Codex max / Gemini Pro: reserve for high-stakes reviews only.
+Codex low: **new default** — gpt-5.4 at low effort. Most tasks complete here.
+Codex standard: escalate from low when insufficient.
+Codex max / Gemini Pro: reserve for high-stakes only.
