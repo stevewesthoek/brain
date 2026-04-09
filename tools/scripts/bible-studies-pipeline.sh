@@ -25,12 +25,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PIPELINE="$SCRIPT_DIR/bible-studies/pipeline.mjs"
 
 # ── Concurrency lock ─────────────────────────────────────────────────────────
-# Prevents a second nightly scheduler run from spawning a concurrent mlx_whisper
-# process on top of a still-running transcription session (which would exhaust
-# memory and trigger a kernel watchdog panic).
+# The lock is managed by pipeline.mjs itself (not here) because `exec` replaces
+# this bash process without triggering the EXIT trap. Bun writes its own PID to
+# ~/.local/state/bible-studies/pipeline.lock and cleans it up via process.on('exit').
+# We only need a pre-flight check here to fast-exit before even starting bun.
 LOCK_FILE="${HOME}/.local/state/bible-studies/pipeline.lock"
-mkdir -p "$(dirname "$LOCK_FILE")"
-
 if [[ -f "$LOCK_FILE" ]]; then
   EXISTING_PID="$(cat "$LOCK_FILE" 2>/dev/null || echo '')"
   if [[ -n "$EXISTING_PID" ]] && kill -0 "$EXISTING_PID" 2>/dev/null; then
@@ -41,9 +40,6 @@ if [[ -f "$LOCK_FILE" ]]; then
     rm -f "$LOCK_FILE"
   fi
 fi
-
-printf '%s\n' "$$" > "$LOCK_FILE"
-trap 'rm -f "$LOCK_FILE"' EXIT
 
 if [[ ! -f "$PIPELINE" ]]; then
   echo "ERROR: pipeline not found at $PIPELINE" >&2

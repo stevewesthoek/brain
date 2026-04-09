@@ -513,7 +513,7 @@ const SCHEDULER_JOB_ORDER: Array<{ key: string; label: string }> = [
 interface SchedulerJob {
   key: string;
   label: string;
-  status: "success" | "failed" | "timeout" | "never";
+  status: "success" | "failed" | "timeout" | "never" | "running";
   exitCode: number | null;
   durationSeconds: number | null;
   lastRunAt: string | null;   // ISO string
@@ -540,9 +540,44 @@ function nextSchedulerRun(): string {
   return candidate.toISOString();
 }
 
+/** Returns the key of the job currently running, or null if nothing is active. */
+function getRunningJob(): string | null {
+  // 1. bible-studies-pipeline manages its own lock (can run outside the nightly chain)
+  const bibleLock = path.join(os.homedir(), ".local", "state", "bible-studies", "pipeline.lock");
+  try {
+    const pid = parseInt(fs.readFileSync(bibleLock, "utf8").trim(), 10);
+    if (!isNaN(pid)) {
+      try { process.kill(pid, 0); return "bible-studies-pipeline"; } catch {}
+    }
+  } catch {}
+
+  // 2. Nightly scheduler chain lock — find which job via nightly.log
+  const lockPidFile = path.join(os.homedir(), ".local", "state", "office-scheduler", "nightly.lock", "pid");
+  try {
+    const pid = parseInt(fs.readFileSync(lockPidFile, "utf8").trim(), 10);
+    if (isNaN(pid)) return null;
+    try { process.kill(pid, 0); } catch { return null; } // stale lock
+    // Scheduler is live — find the last unfinished job in today's nightly.log
+    const logFile = path.join(os.homedir(), "Library", "Logs", "office-scheduler", "nightly.log");
+    const lines = fs.readFileSync(logFile, "utf8").trim().split("\n");
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const m = lines[i]?.match(/starting job=(\S+)/);
+      if (m) {
+        const jobKey = m[1];
+        const finished = lines.slice(i + 1).some(l => l.includes(`finished job=${jobKey}`));
+        if (!finished) return jobKey ?? null;
+        break;
+      }
+    }
+  } catch {}
+
+  return null;
+}
+
 function getNightScheduler(): SchedulerJob[] {
   const stateDir = path.join(os.homedir(), ".local", "state", "office-scheduler");
   const nextRun = nextSchedulerRun();
+  const runningKey = getRunningJob();
 
   return SCHEDULER_JOB_ORDER.map(({ key, label }) => {
     const stateFile = path.join(stateDir, `${key}.last`);
@@ -565,9 +600,11 @@ function getNightScheduler(): SchedulerJob[] {
         if (!isNaN(d.getTime())) lastRunAt = d.toISOString();
       }
       const errorMessage = kv["error_message"]?.trim() || null;
-      return { key, label, status, exitCode, durationSeconds, lastRunAt, nextRunAt: nextRun, errorMessage };
+      const effectiveStatus = (runningKey === key ? "running" : status) as SchedulerJob["status"];
+      return { key, label, status: effectiveStatus, exitCode, durationSeconds, lastRunAt, nextRunAt: nextRun, errorMessage };
     } catch {
-      return { key, label, status: "never" as const, exitCode: null, durationSeconds: null, lastRunAt: null, nextRunAt: nextRun, errorMessage: null };
+      const effectiveStatus = (runningKey === key ? "running" : "never") as SchedulerJob["status"];
+      return { key, label, status: effectiveStatus, exitCode: null, durationSeconds: null, lastRunAt: null, nextRunAt: nextRun, errorMessage: null };
     }
   });
 }
@@ -751,6 +788,8 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .sched-fail{background:var(--red-d);color:var(--red);border:1px solid rgba(248,113,113,.2)}
 .sched-timeout{background:var(--amber-d);color:var(--amber);border:1px solid rgba(251,191,36,.2)}
 .sched-never{background:var(--gray-d);color:var(--gray);border:1px solid rgba(75,85,99,.2)}
+.sched-running{background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.3);animation:pulse-run 2s ease-in-out infinite}
+@keyframes pulse-run{0%,100%{opacity:1}50%{opacity:.5}}
 .sched-name{font-weight:500;color:var(--text);font-size:12px}
 .sched-meta{font-size:10px;color:var(--subtle);font-family:var(--mono)}
 .sched-dur{font-size:11px;font-family:var(--mono);color:var(--muted);text-align:right}
@@ -977,6 +1016,7 @@ function renderNRHealth(nr){
 }
 function renderScheduler(jobs){
   function sb(j){
+    if(j.status==='running')return'<span class="sched-status sched-running">● running</span>';
     if(j.status==='success')return'<span class="sched-status sched-ok">✓ success</span>';
     if(j.status==='timeout')return'<span class="sched-status sched-timeout">⏱ timeout</span>';
     if(j.status==='failed')return'<span class="sched-status sched-fail">✗ failed'+(j.exitCode!==null?' ('+j.exitCode+')':\'\')+'</span>';

@@ -480,8 +480,23 @@ function gitCommit(count) {
   }
 }
 
+// ─── LOCK FILE ────────────────────────────────────────────────────────────────
+// Managed here (not in the bash wrapper) because `exec` in bash replaces the
+// shell without triggering its EXIT trap, so any lock written by the wrapper
+// would never be cleaned up. Bun's process.on('exit') fires reliably.
+const LOCK_FILE = path.join(os.homedir(), '.local/state/bible-studies/pipeline.lock');
+
+function acquireLock() {
+  fs.mkdirSync(path.dirname(LOCK_FILE), { recursive: true });
+  fs.writeFileSync(LOCK_FILE, String(process.pid));
+  process.on('exit',    () => { try { fs.unlinkSync(LOCK_FILE); } catch {} });
+  process.on('SIGINT',  () => process.exit(130));
+  process.on('SIGTERM', () => process.exit(143));
+}
+
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 async function main() {
+  acquireLock();
   log('');
   log('═══════════════════════════════════════════════════════════');
   log('📖 Dance of Life Bible Studies — transcription pipeline');
