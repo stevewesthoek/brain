@@ -1,285 +1,139 @@
-# Notes Folder Structure — The Information Funnel
+# Notes Structure — Simple & Clean
 
-**Status:** ✅ Live  
-**Version:** 1.0  
-**Last Updated:** 2026-04-09
+**The entire system fits in 8 folders. That's it.**
 
 ---
 
-## The Funnel Concept
+## The 8 Folders
 
 ```
-💧 Wide at top (fuzzy input) → 🔻 Narrow at bottom (sharp output)
-
-Inbox        → Brainstorm → Strategy → Projects → Phases → Tasks → Kanban
-(Dump)    (Explore)     (Decide)     (Commit)    (Schedule) (Execute) (Focus)
-                                                  
-High signal: flows down
-Low signal: filtered out
-Noise: never reaches you
+notes/
+├── inbox/          # Raw captures from ChatGPT (Gemini-classified)
+├── strategy/       # Strategic decisions you've committed to
+├── projects/       # Active projects (folder per project)
+├── tasks/          # Atomic executable work
+├── areas/          # Ongoing areas (health, finance, ministry)
+├── resources/      # Reference material
+├── archive/        # Completed work (query-able)
+└── templates/      # Templates (don't touch, just reference)
 ```
 
 ---
 
-## Seven Layers (00–06)
+## The Flow (Simple)
 
-| Layer | Folder | Status | Input | Output | You do |
-|-------|--------|--------|-------|--------|--------|
-| **00** | `00-inbox/` | Capture & Stream | Raw text | Para + Signal | Dump (don't think) |
-| **01** | `01-brainstorm/` | Elaboration | High-value captures | Contextualized ideas | Optionally read + elaborate |
-| **02** | `02-strategy/` | Decision | Reviewed brainstorms | Strategic decisions | Write strategy (1-3 hrs) |
-| **03** | `03-projects/` | Commitment | Committed strategies | Project scope + phases | Define phases & timeline |
-| **04** | `04-phases/` | Breakdown | Projects | Phase milestones + deliverables | Set dates & deliverables |
-| **05** | `05-tasks/` | Granularity | Phase deliverables | Atomic executable tasks | Assign to you or AI |
-| **06** | `06-kanban/` | Today's Focus | Active tasks | Daily board | Pick 1-3 tasks, execute |
+### You dump text into ChatGPT
+→ Capture and save to brain via shortcut
 
----
+### Webhook receives it
+→ Gemini classifies (PARA + signal quality score)
+→ Lands in `notes/inbox/`
 
-## Three Streams in Inbox (00)
+### You review the inbox note
+→ Read the summary, key points
+→ Decide: Keep or delete?
 
-Everything captured goes into one of three streams:
+### If keep: Create strategy
+→ Move to `notes/strategy/`
+→ Write: Why? What? Success criteria?
+→ Mark `status: committed` when decided
 
-### 🟢 high-value/
-- **Confidence:** > 0.80
-- **Signal:** > 0.70
-- **Route:** Auto-promotes to 01-brainstorm/
-- **You:** Ignore. Automation handles it.
+### Create project
+→ New folder in `notes/projects/[project-name]/`
+→ Create a README.md with overview
+→ Create one task file per phase: `tasks-01-research.md`, `tasks-02-design.md`, etc.
 
-### 🟡 review-queue/
-- **Confidence:** 0.50–0.80
-- **Signal:** 0.40–0.70
-- **Route:** Stays here. Optional weekly review (5 min).
-- **You:** Review once a week or ignore.
+### Create tasks
+→ Each task is ONE file in `notes/tasks/`
+→ One atomic action per file
+→ Assign to `you` or `ai`
+→ Link to related project
 
-### 🔴 junk/
-- **Confidence:** < 0.50
-- **Signal:** < 0.40
-- **Route:** Auto-invisible. Auto-delete after 30 days.
-- **You:** Forget this folder exists.
+### View on Kanban
+→ Open `kanban.canvas`
+→ Drag tasks between columns (To Do → Doing → Done)
+→ Done tasks move to `notes/archive/`
 
 ---
 
-## Supporting Folders (Not in Funnel)
+## Frontmatter (Metadata)
 
-| Folder | Purpose |
-|--------|---------|
-| `areas/` | Ongoing responsibilities (health, finance, ministry, etc). Not time-bound. |
-| `resources/` | Reference, templates, how-to, frameworks. Mostly read-only. |
-| `daily/` | Ephemeral daily notes. Auto-purge weekly. |
-| `archive/` | Completed projects, old notes. Query-able historical record. |
-
----
-
-## Metadata Schema (Frontmatter)
-
-Every note has:
+**All notes have minimal frontmatter:**
 
 ```yaml
 ---
-type: capture|brainstorm|strategy|project|phase|task|area|resource
-status: [layer-specific values]
-confidence: 0.0–1.0          # How sure about PARA classification?
-signal_quality: 0.0–1.0      # How actionable/valuable?
-stream: high-value|review-queue|junk  # (inbox only)
-priority: 1|2|3|4|5
-assigned_to: you|ai|[person]  # (tasks only)
-tags: [domain, category]
+type: capture|strategy|project|task|area|resource
+status: [varies by type]
+priority: 1-5
+created: YYYY-MM-DD
+tags: []
 ---
 ```
 
----
-
-## Daily Workflow (5 minutes)
-
-1. **Open kanban** (06)
-2. **Check Blocked column** — escalate if critical
-3. **Pick 1-3 tasks** from To Do
-4. **Work**
-5. **Move to Done**
-
-**That's all you see.** Nothing else.
+**That's it. No 20-field schemas.**
 
 ---
 
-## Weekly Workflow (30 minutes)
+## Types & Status
 
-1. **Archive done tasks**
-2. **Review blockers** — still stuck? Deprioritize or escalate
-3. **Check review-queue** (optional) — promote good ones, delete rest
-4. **Look ahead** — prep for next phase
-
----
-
-## Monthly Workflow (2 hours)
-
-1. **Review strategy** — are we still committed to active projects?
-2. **Check metrics** — how many tasks/projects completed?
-3. **Identify patterns in junk** — do we see repeated low-signal items? (e.g., "productivity tips")
-4. **Brainstorm on hold** — anything ready to move to strategy?
+| Type | Status | Purpose |
+|------|--------|---------|
+| **capture** | (no status) | Raw from ChatGPT, read-only |
+| **strategy** | draft → committed → archived | Your decision |
+| **project** | in-progress → completed | Active work container |
+| **task** | ready → in-progress → done | Actionable work |
+| **area** | (no status) | Ongoing responsibility |
+| **resource** | (no status) | Reference only |
 
 ---
 
-## How Automation Flows
+## Your Daily Workflow
 
-### Capture → Stream (Inbox)
-```
-1. Raw text arrives via webhook
-2. Gemini scores: confidence + signal_quality
-3. Auto-route to stream:
-   - high-value → (starts auto-promotion cycle)
-   - review-queue → (sits, optional review)
-   - junk → (invisible, auto-purged)
-```
+1. **Morning (2 min):** Open `kanban.canvas`
+2. **Pick 1-3 tasks** from "To Do" column
+3. **Drag to "Doing"** when you start
+4. **Drag to "Done"** when finished
+5. **End of day:** Optionally archive done tasks
 
-### High-Value → Brainstorm
-```
-1. (Nightly job)
-2. Scan: high-value/ with status=new
-3. Move to 01-brainstorm/ + set status=new
-4. (If you mark status=reviewed → automation suggests move to strategy)
-```
-
-### Strategy → Project
-```
-1. (When you mark: status=committed)
-2. Automation creates project folder + template
-3. Suggests phase structure (Research, Design, Build, Launch, Learn)
-```
-
-### Project → Phases → Tasks
-```
-1. (When you fill in phase dates)
-2. Automation creates phase folders + templates
-3. (When you write task bullets)
-4. Automation creates atomic tasks
-```
-
-### Tasks → Kanban
-```
-1. (Every morning)
-2. Automation queries: due_date<=today OR (assigned_to=you AND status=in-progress)
-3. Populates 06-kanban/ board
-4. Highlights blockers in red
-```
+**That's all you interact with.** Everything else is automation or reference.
 
 ---
 
-## What You Never See
+## What NOT to Do
 
-❌ **Daily notes** (unless you explicitly open them)  
-❌ **Archive** (unless searching for something old)  
-❌ **Junk** (invisible, auto-deleted)  
-❌ **Low-confidence brainstorms** (stays in review-queue)  
-❌ **Next week's tasks** (only today matters)  
-❌ **Completed projects** (unless historical query)  
+❌ Don't create numbered folders (00-, 01-, etc.)
+❌ Don't create task management systems outside this
+❌ Don't overthink templates — use them as-is
+❌ Don't dive into more than 8 folders
 
 ---
 
-## What You Always See
+## How Gemini Helps
 
-✅ **Today's kanban** (5 active tasks, max)  
-✅ **Blockers** (highlighted in red, always visible)  
-✅ **AI tasks awaiting review** (in review column)  
-✅ **Command Center home** (your dashboard)  
+When you send a capture, Gemini returns:
+- `confidence` (0-1): How sure about the PARA classification?
+- `signal_quality` (0-1): How actionable/valuable?
 
----
-
-## Best Practices
-
-### Capture / Inbox (00)
-- **Dump everything.** Don't filter. Don't think. Let automation sort it.
-- **Include context.** "From ChatGPT about pricing" helps Gemini understand.
-- **Add title if you can.** But not required.
-
-### Brainstorm (01)
-- **Don't overthink.** 80/20 is enough.
-- **Add one link** to related ideas if you think of it.
-- **Mark status: reviewed** when decided (automation will help next steps).
-
-### Strategy (02)
-- **Write for clarity, not perfection.** 1-3 hours max per strategy.
-- **Use the template.** Don't reinvent.
-- **Explain reasoning.** Why this, not that?
-
-### Projects (03)
-- **Set realistic dates.** Projects expand to fill time; cap it.
-- **Assign phase owner** (maybe you, maybe delegate).
-- **Revisit monthly.** Are we still committed?
-
-### Phases (04)
-- **Define deliverables clearly.** "What does done look like?"
-- **Set 2-week boundaries.** Shorter phases = faster feedback.
-- **Flag blockers early.** Don't pretend they'll solve themselves.
-
-### Tasks (05)
-- **One task = one session.** If > 1 session, break it down.
-- **Assign to AI when possible.** Review output, move on.
-- **Write acceptance criteria.** No ambiguous tasks.
-
-### Kanban (06)
-- **Check once daily.** No exceptions.
-- **Keep < 5 items.** More = moving too slow or tasks too big.
-- **Move blockers up.** Never leave a blocker sitting.
+**High signal (> 0.7)?** → Show it to you first.
+**Low signal (< 0.4)?** → Auto-delete after 30 days.
 
 ---
 
-## Queries & Dashboards
+## Templates
 
-### Command Center (home.md)
-- 🔴 Overdue tasks
-- 📅 Today's focus
-- ⚡ Active projects
-- 📥 Unprocessed inbox (high-value only)
-- 📊 All projects by phase
-- 🗄 All areas
-
-### Weekly Review
-```dataview
-TABLE status, phase, priority
-FROM "notes"
-WHERE status = "blocked" OR status = "in-review"
-```
-
-### Monthly Metrics
-```dataview
-TABLE count(rows) as "Completed"
-FROM "notes/archive"
-WHERE type = "task" AND completed_at >= date(today) - duration(30 days)
-GROUP BY assigned_to
-```
+- `capture.md` — Auto-generated by Gemini, read-only
+- `strategy.md` — Copy this when you decide to commit
+- `project.md` — Copy when creating a project
+- `task.md` — Copy for each task
+- `area.md` — Copy for ongoing areas
+- `resource.md` — Copy for reference material
 
 ---
 
-## Related Docs
+## That's It
 
-- **Automation:** `operations/runbooks/n8n-brain-inbox.md` — how the webhook works
-- **Memory:** Auto-memory has PARA context and signal scoring rules
-- **Decision log:** `operations/decision-log.md` — confirmed architecture decisions
+No phases, no brainstorm layers, no multiple kanban files.
 
----
+**One kanban board. Eight folders. You work on tasks.**
 
-## Troubleshooting
-
-**Q: My brainstorm isn't auto-promoting to strategy.**  
-A: Mark `status: reviewed` in 01-brainstorm/. Automation looks for that signal.
-
-**Q: Kanban is too full.**  
-A: Your tasks are too big. Break them down to < 1-session size.
-
-**Q: I keep adding things to the review-queue but never reviewing it.**  
-A: That's OK. Weekly auto-archives will clean it up. Don't force it.
-
-**Q: I see too much junk on inbox.**  
-A: Junk is invisible (should be in junk/ stream). If you're seeing it, check confidence/signal scoring.
-
-**Q: What if I want to override the automation?**  
-A: You can manually move notes between folders. Automation is a guide, not a cage.
-
----
-
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | 2026-04-09 | Initial structure + automation scaffolding |
-
+If you're confused, you have too many folders open.

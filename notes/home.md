@@ -4,86 +4,65 @@ type: dashboard
 
 # Command Center
 
-> The single place to start every day. Everything else lives one click away.
+**Check these first. Everything else is reference.**
 
 ---
 
-## 🔴 Overdue
-
-```tasks
-not done
-due before today
-sort by due
-limit 5
-```
-
----
-
-## 📅 Today
-
-```tasks
-not done
-due today
-sort by priority
-```
-
----
-
-## ⚡ Active Projects
+## 🎯 Today's Focus
 
 ```dataview
-TABLE status, phase, priority, file.mtime AS "Updated"
-FROM "notes/projects"
-WHERE type = "project" AND status = "active"
-SORT priority ASC, file.mtime DESC
+TABLE priority, assigned_to, due_date
+FROM "notes/tasks"
+WHERE status = "ready" OR status = "in-progress"
+AND due_date = dateformat(now, "yyyy-MM-dd")
+SORT priority ASC
+LIMIT 5
 ```
 
 ---
 
-## 📥 Inbox  *(unprocessed)*
-
-```dataview
-LIST file.mtime AS "Captured"
-FROM "notes/inbox"
-WHERE file.name != ".gitkeep"
-SORT file.mtime DESC
-LIMIT 10
-```
-
----
-
-## 🗓 Upcoming  *(next 7 days)*
-
-```tasks
-not done
-due after today
-due before in 7 days
-sort by due
-limit 10
-```
-
----
-
-## 📊 All Projects by Phase
-
-```dataview
-TABLE status, phase, area
-FROM "notes/projects"
-WHERE type = "project"
-SORT phase ASC, status ASC
-```
-
----
-
-## 🗄 Areas
+## ⚠️ Blocked
 
 ```dataview
 LIST
-FROM "notes/areas"
-WHERE type = "area"
-SORT file.name ASC
+FROM "notes/tasks"
+WHERE status = "blocked"
+LIMIT 5
+```
+
+**⚠️ If anything here, escalate immediately.**
+
+---
+
+## 📥 Unprocessed Inbox
+
+```dataview
+LIST file.mtime
+FROM "notes/inbox"
+SORT file.mtime DESC
+LIMIT 5
 ```
 
 ---
 
-*→ [[kanban|Kanban Board]]  ·  [[strategy|Strategy]]  ·  [[notes/inbox/|Inbox]]*
+## 🚀 Active Projects
+
+```dataview
+LIST status, target_end_date
+FROM "notes/projects"
+WHERE status = "in-progress"
+SORT target_end_date ASC
+```
+
+---
+
+## Quick Links
+
+- [[kanban]] — Drag tasks between columns
+- [[strategy]] — Strategic decisions
+- [[areas]] — Ongoing areas
+- STRUCTURE.md — How this works
+
+---
+
+*Last updated: {{date:YYYY-MM-DD HH:mm}}*
