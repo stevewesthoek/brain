@@ -24,6 +24,27 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PIPELINE="$SCRIPT_DIR/bible-studies/pipeline.mjs"
 
+# ── Concurrency lock ─────────────────────────────────────────────────────────
+# Prevents a second nightly scheduler run from spawning a concurrent mlx_whisper
+# process on top of a still-running transcription session (which would exhaust
+# memory and trigger a kernel watchdog panic).
+LOCK_FILE="${HOME}/.local/state/bible-studies/pipeline.lock"
+mkdir -p "$(dirname "$LOCK_FILE")"
+
+if [[ -f "$LOCK_FILE" ]]; then
+  EXISTING_PID="$(cat "$LOCK_FILE" 2>/dev/null || echo '')"
+  if [[ -n "$EXISTING_PID" ]] && kill -0 "$EXISTING_PID" 2>/dev/null; then
+    echo "[$(date '+%H:%M:%S')] Pipeline already running (pid $EXISTING_PID) — skipping this invocation" >&2
+    exit 0
+  else
+    echo "[$(date '+%H:%M:%S')] Stale lock found (pid $EXISTING_PID) — clearing and continuing" >&2
+    rm -f "$LOCK_FILE"
+  fi
+fi
+
+printf '%s\n' "$$" > "$LOCK_FILE"
+trap 'rm -f "$LOCK_FILE"' EXIT
+
 if [[ ! -f "$PIPELINE" ]]; then
   echo "ERROR: pipeline not found at $PIPELINE" >&2
   exit 1
