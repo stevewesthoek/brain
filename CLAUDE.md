@@ -46,6 +46,7 @@ When working across repos, treat each Git repo independently. Do not apply one r
 - `ai/skills/` — skill management (active symlinks, vendors, custom)
 - `tools/scripts/` — utility and workflow scripts
   - `brain-auto-router.py` — Auto-Router automation (runs every 1 minute via cron; routes inbox notes based on decision tree). See `operations/runbooks/brain-auto-router.md` for full docs.
+  - `brain-project-decomposer.py` — Project Decomposer automation (runs every 5 minutes via cron; uses Gemini to decompose projects into atomic tasks). See `operations/runbooks/brain-project-decomposer.md` for full docs.
   - `brain-automate-verify.sh` — Post-reboot/reinstall verification script (run after OS updates to confirm all systems are working)
   - `repos.sh` — unified repo picker (`repos` shell command): pick Claude or Codex, then pick a repo to open
   - `sessions.sh` — unified session picker (`sessions` shell command): pick Claude or Codex, then resume a session
@@ -54,6 +55,7 @@ When working across repos, treat each Git repo independently. Do not apply one r
 - `operations/system-configs/` — global tool configs, all symlinked from home directory
 - `operations/runbooks/` — documentation for key tools and workflows
   - `brain-auto-router.md` — Python Auto-Router script, cron scheduling, decision tree logic, troubleshooting
+  - `brain-project-decomposer.md` — Python Project Decomposer script, Gemini integration, task creation, cron scheduling
   - `playwright.md` — Playwright CLI usage, patterns, and nightly scheduler integration
   - `notebooklm.md` — NotebookLM CLI v0.3.4, research workflows, batch operations, nightly scheduler integration
 - `operations/decision-log.md` — confirmed decisions for the brain repo itself
