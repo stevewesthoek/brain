@@ -1,14 +1,18 @@
 ---
-type: capture
-source: shortcut
+type: project
 title: "X Playbook: Becoming a Full-Time Creator"
-para_type: project
-confidence: 0.85
-signal_quality: 0.92
-created: 2026-04-10
-status: ready-for-review
+status: in-progress
+priority: 4
+start_date: 2026-04-10
+target_end_date: 2026-08-10
+tags: ["creator", "playbook", "full-time", "content creation", "monetization", "X", "social media"]
+decomposed: true
+source_capture: 2026-04-10-x-playbook-becoming-a-full-time-creator.md
 ---
+## Goal
+Become a full-time creator within four months by implementing the X playbook strategies for niche selection, content creation, audience engagement, and monetization.
 
+## What Needs to Happen
 # X Playbook: Becoming a Full-Time Creator
 
 ## Summary
@@ -186,3 +190,168 @@ Save this to become a full-time creator in less than 4 months.
 
 ---
 *Captured 2026-04-10 · 85% confidence · 92% signal · project*
+
+## Related Tasks
+- [[notes/04-tasks/---
+type: task
+title: "Select Creator Niche"
+assigned_to: you
+status: ready
+priority: 5
+effort: small
+project: [[notes/03-projects/2026-04-10-x-playbook-becoming-a-full-time-creator]]
+---
+## What to Do
+Identify and select a specific niche, focusing on 'writing' or a similar area that offers faster growth, learning, and monetization opportunities.
+
+## Acceptance Criteria
+- [ ] Niche clearly defined (e.g., 'writing').
+- [ ] Rationale for niche selection documented.
+]]
+- [[notes/04-tasks/---
+type: task
+title: "Optimize Social Profile (X/Twitter)"
+assigned_to: you
+status: ready
+priority: 4
+effort: small
+project: [[notes/03-projects/2026-04-10-x-playbook-becoming-a-full-time-creator]]
+---
+## What to Do
+Update your social media profile (specifically X/Twitter) to clearly communicate what you do, how you help, and who you help. Integrate any available social proof.
+
+## Acceptance Criteria
+- [ ] Profile bio concisely explains value proposition.
+- [ ] Social proof (if applicable) visibly integrated into profile.
+]]
+- [[notes/04-tasks/---
+type: task
+title: "Implement 'Build in Public' Strategy"
+assigned_to: you
+status: ready
+priority: 3
+effort: medium
+project: [[notes/03-projects/2026-04-10-x-playbook-becoming-a-full-time-creator]]
+---
+## What to Do
+Regularly share your journey, including wins, losses, and milestones, to give your audience a transparent look behind the scenes of your creator process.
+
+## Acceptance Criteria
+- [ ] Consistent sharing of journey updates initiated (e.g., weekly update posts, daily micro-updates).
+]]
+- [[notes/04-tasks/---
+type: task
+title: "Active Audience Engagement on X"
+assigned_to: you
+status: ready
+priority: 5
+effort: large
+project: [[notes/03-projects/2026-04-10-x-playbook-becoming-a-full-time-creator]]
+---
+## What to Do
+Utilize pro.x.com to create an engagement list, filter out non-essential interactions (RTs, likes, quotes), and commit to leaving 20+ meaningful comments 3 times daily.
+
+## Acceptance Criteria
+- [ ] pro.x.com custom column for engagement list set up.
+- [ ] Daily engagement target (60+ comments total) consistently met.
+]]
+- [[notes/04-tasks/---
+type: task
+title: "Consistent Daily Content Creation"
+assigned_to: you
+status: ready
+priority: 5
+effort: large
+project: [[notes/03-projects/2026-04-10-x-playbook-becoming-a-full-time-creator]]
+---
+## What to Do
+Produce and publish content every day. Aim for 2-3 pieces per day if currently under 1000 followers. Implement batch production techniques to optimize time.
+
+## Acceptance Criteria
+- [ ] Daily content creation schedule established and adhered to.
+- [ ] Content batch production workflow implemented.
+- [ ] Target number of daily posts consistently met.
+]]
+- [[notes/04-tasks/---
+type: task
+title: "Leverage Borrowed Authority"
+assigned_to: you
+status: ready
+priority: 3
+effort: medium
+project: [[notes/03-projects/2026-04-10-x-playbook-becoming-a-full-time-creator]]
+---
+## What to Do
+Create content that references and discusses established figures, popular courses, or social hacking tactics that your target audience already recognizes and cares about.
+
+## Acceptance Criteria
+- [ ] List of authoritative figures/topics identified for content creation.
+- [ ] At least 3 pieces of content leveraging 'borrowed authority' created and published.
+]]
+- [[notes/04-tasks/---
+type: task
+title: "Develop and Offer Lead Magnets"
+assigned_to: you
+status: ready
+priority: 4
+effort: medium
+project: [[notes/03-projects/2026-04-10-x-playbook-becoming-a-full-time-creator]]
+---
+## What to Do
+Design and create valuable lead magnets (e.g., free guides, templates, mini-courses). Plan and execute giveaways once you reach 500 followers to grow your audience and build authority.
+
+## Acceptance Criteria
+- [ ] Lead magnet concept defined and material created.
+- [ ] Strategy for lead magnet distribution and giveaways planned.
+- [ ] Giveaway initiated upon reaching 500 followers.
+]]
+- [[notes/04-tasks/---
+type: task
+title: "Execute One Free Case Study Project"
+assigned_to: you
+status: ready
+priority: 3
+effort: medium
+project: [[notes/03-projects/2026-04-10-x-playbook-becoming-a-full-time-creator]]
+---
+## What to Do
+Offer your services for free to one client to gain practical experience, refine your skills, identify client problems, and generate a strong case study to showcase your abilities.
+
+## Acceptance Criteria
+- [ ] One free client project completed successfully.
+- [ ] Client testimonial or detailed case study documented and prepared for marketing.
+]]
+- [[notes/04-tasks/---
+type: task
+title: "Create and Launch Low-Ticket Course"
+assigned_to: you
+status: ready
+priority: 4
+effort: large
+project: [[notes/03-projects/2026-04-10-x-playbook-becoming-a-full-time-creator]]
+---
+## What to Do
+Develop and launch a low-priced digital course that is easy to sell, provides high value, and can generate passive income while serving as an entry point to higher-priced offerings.
+
+## Acceptance Criteria
+- [ ] Low-ticket course curriculum outlined and content created.
+- [ ] Course platform selected and course uploaded.
+- [ ] Course launched and available for purchase.
+]]
+- [[notes/04-tasks/---
+type: task
+title: "Offer High-Ticket Service"
+assigned_to: you
+status: ready
+priority: 4
+effort: medium
+project: [[notes/03-projects/2026-04-10-x-playbook-becoming-a-full-time-creator]]
+---
+## What to Do
+Define and establish a high-ticket service (e.g., consulting, copywriting, ghostwriting) that can allow you to achieve full-time income with only 1-3 clients.
+
+## Acceptance Criteria
+- [ ] Specific high-ticket service defined and packaged.
+- [ ] Pricing structure for high-ticket service established.
+- [ ] Sales strategy and outreach plan for high-ticket service developed.
+]]
