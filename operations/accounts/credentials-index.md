@@ -108,6 +108,14 @@ Personal account for model downloads (mlx_whisper, etc.).
 
 Note: Written by `huggingface-cli login` or directly. Picked up automatically by `transformers`, `huggingface_hub`, and `mlx_whisper`.
 
+## GitHub
+
+Personal account: `stevewesthoek`
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `GITHUB_PAT` | `~/.config/github/.env` | Fine-grained Personal Access Token — brain repo only (Contents: read + write) | No automatic expiry; manually rotate if compromised | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens?type=beta) |
+
 ## Hetzner Cloud
 
 Project hosting the `cloudpanel` server.
