@@ -98,6 +98,16 @@ These are JSON files, not `.env` — not auto-detected by `sync-credentials`. Tr
 | OAuth client secret | `~/.config/gws/client_secret.json` | OAuth 2.0 installed-app client for user-delegated access | Static unless app is deleted | [GCP → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials?project=brain-workspace-admin) |
 | Token cache | `~/.config/gws/token_cache.json` | Auto-refreshed OAuth access/refresh token (auto-generated) | Auto-refreshes; delete and re-auth if stale | Run `gws` CLI to re-authenticate |
 
+## Google AI Studio
+
+Personal Google account (`stevewesthoek` / prochat.tools identity). Free tier — 1,500 requests/day, 15 req/min on Gemini 2.0 Flash.
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `GEMINI_API_KEY` | `~/.config/google-ai/.env` | Gemini API key for AI Studio — used by n8n for PARA classification in Brain Inbox workflow | No automatic expiry; rotate if compromised | [AI Studio → Get API key](https://aistudio.google.com/apikey) |
+
+Note: This is separate from the Gemini CLI (`~/.gemini/`) which uses OAuth personal auth. The CLI and API key have independent quota pools.
+
 ## HuggingFace
 
 Personal account for model downloads (mlx_whisper, etc.).
