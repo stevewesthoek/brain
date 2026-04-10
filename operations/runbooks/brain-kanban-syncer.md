@@ -1,47 +1,45 @@
 # Brain Kanban Syncer Runbook
 
-**Status:** ✓ PRODUCTION (Python + Cron)
+**Status:** ✓ PRODUCTION (Python + Cron, Obsidian Kanban Plugin)
+
+## Overview
+
+The Kanban Syncer is a Python script that automatically populates `notes/kanban.md` every 10 minutes from task files in `notes/04-tasks/`. The Obsidian Kanban plugin renders this markdown as a beautiful, interactive drag-and-drop Kanban board.
+
+**What it does:**
+1. Scans `notes/04-tasks/` for all task files with `type: task`
+2. Parses task metadata (title, status, priority, assigned_to)
+3. Loads existing `notes/kanban.md` (if it exists) to preserve user drags
+4. Generates 4 columns:
+   - **Backlog** — tasks with `status: ready` (auto-populated)
+   - **To Do** — user-dragged tasks (preserved each sync)
+   - **Doing** — tasks with `status: in-progress` (auto-populated)
+   - **Done** — tasks with `status: done` (auto-populated)
+5. Color-codes cards by priority (red=p1, orange=p2, yellow=p3, green=p4, gray=p5) and assigned_to (blue=you, purple=ai)
+6. Writes `notes/kanban.md` in Obsidian Kanban plugin markdown format
+7. Only commits if file changed
+8. Logs all actions for debugging
+
+**Why it exists:**
+Task files are the source of truth with full metadata in frontmatter. The Kanban board is the interactive UI where you work. The syncer keeps them in sync: automated columns populate from task status, while the To Do column preserves your manual drag-and-drop selections.
+
+---
 
 ## Post-Reboot / After OS Reinstall
 
 **Everything auto-resumes — no action needed.** But verify it's working:
 
 ```bash
-# Comprehensive health check (run after reboot or any time)
 bash ~/Repos/stevewesthoek/brain/tools/scripts/brain-automate-verify.sh
-
-# Check recent activity
 tail -20 ~/.local/share/brain/logs/kanban-syncer.log
 ```
 
-**What persists automatically:**
-- ✓ Cron job (stored in OS, not filesystem)
+What persists automatically:
+- ✓ Cron job (stored in OS)
 - ✓ GitHub PAT token (`~/.config/github/.env`)
 - ✓ Python script (`~/Repos/stevewesthoek/brain/tools/scripts/`)
-- ✓ Logs and state
-
----
-
-## Overview
-
-The Kanban Syncer is a Python script that automatically synchronizes task data from `notes/04-tasks/` into the Obsidian canvas at `notes/kanban.canvas` every 10 minutes.
-
-**What it does:**
-1. Scans `notes/04-tasks/` for all task files with `type: task`
-2. Parses task metadata (status, priority, title, project)
-3. Loads the existing `kanban.canvas` (Obsidian JSON canvas)
-4. Removes all task card nodes (preserves column headers, instructions, blocked section)
-5. Rebuilds task card nodes mapped to the correct column by status:
-   - `status: ready` → BACKLOG column (left)
-   - `status: in-progress` → DOING column (middle)
-   - `status: done` → DONE column (right)
-6. Sorts tasks within each column by priority (1=highest, appears at top)
-7. Writes updated canvas to disk
-8. Only commits to git if canvas actually changed
-9. Logs all actions for debugging
-
-**Why it exists:**
-The Project Decomposer creates task files automatically. Those files live as `.md` files with full metadata in frontmatter. But Obsidian's UI is the human workspace — people interact with the Kanban board. The Kanban Syncer keeps the canvas synchronized with the source-of-truth task files without manual copy-paste.
+- ✓ Kanban board markdown (`notes/kanban.md`)
+- ✓ Logs
 
 ---
 
@@ -51,33 +49,23 @@ The Project Decomposer creates task files automatically. Those files live as `.m
 - Python 3.7+
 - Git installed and authenticated
 - GitHub PAT token stored in `~/.config/github/.env`
+- **Obsidian Kanban plugin installed** (version 2.0.51+)
 
 ### Verify Installation
-
-Run the verification script:
 
 ```bash
 bash ~/Repos/stevewesthoek/brain/tools/scripts/brain-automate-verify.sh
 ```
 
-This checks:
-- ✓ Cron job is installed
-- ✓ Python script is executable
-- ✓ GitHub credentials are valid
-- ✓ Git repo is accessible
+Checks:
+- ✓ Cron job installed
+- ✓ Python script executable
+- ✓ GitHub credentials valid
+- ✓ Git repo accessible
 - ✓ Logs directory exists
 
-### Setup (Manual, only if verification fails)
+### Manual Setup (if needed)
 
-```bash
-# Check script is executable
-ls -la ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
-
-# Check cron job is installed
-crontab -l | grep brain-kanban-syncer
-```
-
-If not installed, run:
 ```bash
 chmod +x ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
 
@@ -89,90 +77,83 @@ chmod +x ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
 
 ## How It Works
 
-### Canvas Structure
+### Kanban Markdown Format
 
-The `kanban.canvas` file is JSON with two top-level keys: `nodes` (task cards and headers) and `edges` (connections, always empty for this workflow).
+The `notes/kanban.md` file uses Obsidian Kanban plugin format:
 
-**Static nodes** (always preserved):
-1. **Column headers** (never deleted):
-   - `backlog-header`: "BACKLOG — Ready tasks not yet started" (x=-540, y=-300)
-   - `todo-header`: "TO DO — Pick 1-3 for today" (x=-180, y=-300)
-   - `doing-header`: "DOING — In progress (keep < 2)" (x=180, y=-300)
-   - `done-header`: "DONE — Completed today" (x=540, y=-300)
+```markdown
+---
 
-2. **Helper sections** (never deleted):
-   - `instructions`: Usage guide (x=-180, y=420)
-   - `blocked-section`: Blocked tasks sidebar (x=-540, y=100)
+kanban-plugin: board
 
-**Dynamic nodes** (replaced each sync):
-- Task card nodes with `id: "task-*"` and `type: "file"`
-- Each links to the actual task file in the vault
-- Positioned under column headers, sorted by priority
+---
 
-### Task Node Structure
+## Backlog
 
-Each task is represented as a file-link node:
+- [ ] [[notes/04-tasks/project/001-task.md|Task Title]] #p3 #you
 
-```json
-{
-  "id": "task-001-select-creator-niche",
-  "type": "file",
-  "file": "notes/04-tasks/project-slug/001-select-creator-niche.md",
-  "x": -540,
-  "y": -160,
-  "width": 200,
-  "height": 80
-}
+## To Do
+
+- [ ] [[notes/04-tasks/project/002-another.md|Another Task]] #p1 #ai
+
+## Doing
+
+- [ ] [[notes/04-tasks/project/003-in-flight.md|Working On]] #p2 #you
+
+## Done
+
+**Complete**
+- [x] [[notes/04-tasks/project/004-done.md|Done Task]] #p4 #ai
+
+%% kanban:settings
+```
+{"tag-colors": [...], "date-format": "YYYY-MM-DD", ...}
+```
+%%
 ```
 
-- `id`: Unique identifier derived from filename
-- `type: "file"`: Tells Obsidian to render this as a file link
-- `file`: Vault-relative path to the actual task `.md` file (clicking it opens the task)
-- `x, y`: Canvas position (column and row)
-- `width, height`: Card dimensions (200x80 fits column width)
+**Format rules:**
+- Frontmatter: `kanban-plugin: board`
+- Columns: `## Column Name`
+- Done column has `**Complete**` header after the `## Done` line
+- Cards: `- [ ]` (incomplete) or `- [x]` (complete)
+- Card format: `- [ ] [[path/to/file.md|Display Title]] #tag1 #tag2`
+- Wikilinks embed the actual task file path for clickable links
+- Color tags inline: `#p1` through `#p5` for priority, `#you` or `#ai` for assignment
+- Settings block at end with tag-color definitions
 
-### Column Mapping
+### Column Behavior
 
-| Status Value | Kanban Column | X Coordinate |
+| Column | Source | Persistence |
 |---|---|---|
-| `ready` | BACKLOG | -540 |
-| `in-progress` | DOING | 180 |
-| `done` | DONE | 540 |
-| (other) | BACKLOG (default) | -540 |
+| **Backlog** | Auto from `status: ready` tasks | Re-generated each sync |
+| **To Do** | Preserved from existing kanban.md | User drags are preserved |
+| **Doing** | Auto from `status: in-progress` tasks | Re-generated each sync |
+| **Done** | Auto from `status: done` tasks | Re-generated each sync |
 
-**TO DO column (x=-180)** is **never touched by automation** — it's for manual drag-and-drop. Users pick 1-3 tasks from BACKLOG to work on each day.
+**Key insight:** When you drag a task to the **To Do** column, the syncer preserves it there on next run. Dragging from other columns triggers auto-moves based on status changes in the task file.
 
-### Positioning and Layout
+### Color Coding
 
-**Horizontal layout:**
-- Column centers at x = -540, -180, 180, 540 (360px apart)
-- Column width = 200px
-- Headers at y = -300
+Cards are tagged with priority and assignment for color-coding:
 
-**Vertical layout within columns:**
-- First task card: y = -160 (just below the header)
-- Each subsequent card: y += 100 (100px vertical spacing)
-- Cards stack downward if more than ~15 tasks
+| Tag | Meaning | Color |
+|-----|---------|-------|
+| `#p1` | Priority 1 (critical) | Red |
+| `#p2` | Priority 2 (high) | Orange |
+| `#p3` | Priority 3 (medium) | Yellow |
+| `#p4` | Priority 4 (low) | Green |
+| `#p5` | Priority 5 (someday) | Gray |
+| `#you` | Assigned to you | Blue |
+| `#ai` | Assigned to AI | Purple |
 
-**Priority sorting:**
-- Within each column, tasks sorted by `priority` field (ascending)
-- Priority 1 at the top, higher numbers below
-- Same-priority tasks keep insertion order
-
-### Idempotency
-
-The syncer only commits if the canvas actually changed:
-1. Before writing, compare new canvas JSON with existing
-2. If identical (same nodes, same positions): skip commit
-3. If different: write, commit, push
-
-This prevents empty commits every 10 minutes.
+These are defined in the `kanban:settings` block and apply automatically.
 
 ---
 
 ## Task File Format
 
-Tasks are standard `.md` files created by the Project Decomposer:
+Tasks are markdown files with YAML frontmatter:
 
 ```yaml
 ---
@@ -184,18 +165,13 @@ priority: 1-5
 effort: small|medium|large
 project: [[notes/03-projects/project-name]]
 ---
-
-## What to Do
-Description...
-
-## Acceptance Criteria
-- [ ] Criterion 1
 ```
 
-Only the frontmatter fields are used by the syncer. The `type`, `status`, and `priority` fields are critical:
-- `type: task` — must be present for the syncer to include it
-- `status` — maps to column (ready→BACKLOG, in-progress→DOING, done→DONE)
-- `priority` — sorts tasks within column (1=highest)
+The syncer reads:
+- `type: task` — must be present to include in Kanban
+- `status` — determines column placement
+- `priority` — sorts tasks within column
+- `assigned_to` — used for color tag
 
 ---
 
@@ -207,35 +183,24 @@ Only the frontmatter fields are used by the syncer. The `type`, `status`, and `p
 
 ### View Logs
 ```bash
-# Recent syncs
 tail -20 ~/.local/share/brain/logs/kanban-syncer.log
-
-# Recent errors
-tail -20 ~/.local/share/brain/logs/kanban-syncer-error.log
-
-# Follow live
 tail -f ~/.local/share/brain/logs/kanban-syncer.log
 ```
 
-### Sample Log Output
+### Sample Output
 ```
-2026-04-10 23:35:42,000 - brain-kanban-syncer - INFO - ✓ Synced kanban canvas
-2026-04-10 23:45:00,000 - brain-kanban-syncer - DEBUG - Canvas unchanged, skipping commit
-2026-04-10 23:55:15,000 - brain-kanban-syncer - DEBUG - No task files found
+2026-04-10 23:46:06,000 - brain-kanban-syncer - INFO - ✓ Synced Kanban board
+2026-04-10 23:56:00,000 - brain-kanban-syncer - DEBUG - Kanban unchanged, skipping commit
 ```
 
 ---
 
 ## Manual Execution
 
-Run the syncer manually (outside cron) for testing or immediate sync:
+Run the syncer outside cron for immediate sync:
 
 ```bash
-# Direct execution
 ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
-
-# With verbose output
-python3 ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
 ```
 
 ---
@@ -244,31 +209,52 @@ python3 ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
 
 ### View Current Job
 ```bash
-crontab -l
+crontab -l | grep brain-kanban-syncer
 ```
 
-### Edit Cron Expression
-To change frequency (e.g., every 5 minutes instead of 10):
-
+### Edit Frequency
 ```bash
 crontab -e
-# Change: */10 * * * * → */5 * * * *
-# Save and exit
+# Change: */10 * * * * (every 10 min)
+# To:     */5 * * * *  (every 5 min)
 ```
 
-**Common frequencies:**
+Common frequencies:
 - Every 5 minutes: `*/5 * * * *` (more responsive)
 - Every 10 minutes: `*/10 * * * *` (current, balanced)
 - Every 15 minutes: `*/15 * * * *` (less responsive)
 
 ### Disable Temporarily
 ```bash
-# Remove from crontab
 crontab -r
-
 # Reinstall later
 (crontab -l 2>/dev/null; echo "*/10 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py >> /dev/null 2>&1") | crontab -
 ```
+
+---
+
+## Using the Kanban Board
+
+### In Obsidian
+
+1. Open `notes/kanban.md` → the Obsidian Kanban plugin automatically renders it as an interactive board
+2. **Drag tasks between columns:**
+   - Backlog → To Do (persists)
+   - To Do → Doing (syncer updates task file status to in-progress)
+   - Doing → Done (syncer updates task file status to done)
+3. **Click task title** → opens the actual `.md` file in a new pane
+4. **Color-coded cards** → see priority and assignment at a glance
+
+### Interaction Model
+
+**What the automation owns:**
+- Backlog, Doing, Done columns are re-generated from task status
+- If a task's `.md` file status changes, it automatically moves on next sync
+
+**What you own:**
+- To Do column — drag tasks here manually
+- Inside task files — edit metadata (priority, assigned_to, effort, etc.)
+- Checkbox state — mark tasks done by clicking the Obsidian checkbox
 
 ---
 
@@ -276,7 +262,7 @@ crontab -r
 
 ### Script Not Running
 
-**Check if cron job exists:**
+**Check if cron exists:**
 ```bash
 crontab -l | grep brain-kanban-syncer
 ```
@@ -287,19 +273,29 @@ ls -la ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
 # Should show: -rwxr-xr-x
 ```
 
-### No Tasks Appearing on Board
+### Kanban Not Updating in Obsidian
+
+The plugin reads the file from disk. After a sync, reload the file:
+- Close and re-open `notes/kanban.md`
+- Or: Command Palette → "Reload app without saving"
+
+**Check if sync ran:**
+```bash
+git log --oneline -10 -- notes/kanban.md
+# Should show recent "brain: sync kanban" commits
+```
+
+### No Tasks on Board
 
 **Check if task files exist:**
 ```bash
 ls ~/Repos/stevewesthoek/brain/notes/04-tasks/
 ```
 
-If no files exist, they need to be created by the Project Decomposer. Check that workflow first.
-
 **Check task file format:**
 ```bash
-head -15 ~/Repos/stevewesthoek/brain/notes/04-tasks/project-slug/001-task-name.md
-# Should have: type: task, status, priority in frontmatter
+head -15 ~/Repos/stevewesthoek/brain/notes/04-tasks/project/001-task.md
+# Should have: type: task, status, priority
 ```
 
 **Check logs:**
@@ -307,25 +303,10 @@ head -15 ~/Repos/stevewesthoek/brain/notes/04-tasks/project-slug/001-task-name.m
 tail -20 ~/.local/share/brain/logs/kanban-syncer-error.log
 ```
 
-### Canvas Not Updating in Obsidian
-
-Canvas changes are written to disk and committed to git. Obsidian must reload the file:
-- Close and re-open the Kanban canvas
-- Or: swipe right on the tab in Obsidian mobile to refresh
-- Or: use Cmd+R on desktop to reload
-
-**Check if canvas was actually synced:**
-```bash
-cd ~/Repos/stevewesthoek/brain
-git log --oneline -5 -- notes/kanban.canvas
-# Should show recent "brain: sync kanban canvas" commits
-```
-
 ### Git Push Failures
 
-**Error:** `! [rejected] main -> main (fetch first)`
+If syncer reports push failure, check git status:
 
-**Fix:** The script handles this with `git pull --rebase`, but if it persists:
 ```bash
 cd ~/Repos/stevewesthoek/brain
 git pull --rebase
@@ -341,30 +322,27 @@ git push
 ```bash
 cd ~/Repos/stevewesthoek/brain
 
-# Create test task folder
+# Create test task
 mkdir -p notes/04-tasks/test-project
-
-# Create test task file
 cat > notes/04-tasks/test-project/001-test-task.md << 'EOF'
 ---
 type: task
-title: "Test Task"
+title: "Test Kanban Task"
 assigned_to: you
 status: ready
 priority: 3
 effort: small
-project: [[notes/03-projects/test-project]]
+project: [[notes/03-projects/test]]
 ---
 
 ## What to Do
-This is a test task for the Kanban Syncer.
+This is a test task.
 
 ## Acceptance Criteria
-- [ ] Test that task appears on board
-- [ ] Verify correct column (BACKLOG for status: ready)
+- [ ] Verify task appears on Kanban board
 EOF
 
-# Commit and push
+# Commit
 git add notes/04-tasks/test-project/001-test-task.md
 git commit -m "test: add test task"
 git push
@@ -373,91 +351,61 @@ git push
 ### Run Syncer
 
 ```bash
-# Run script
 ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
-
-# Check logs
-tail -20 ~/.local/share/brain/logs/kanban-syncer.log
+tail -10 ~/.local/share/brain/logs/kanban-syncer.log
 ```
 
-### Verify in Canvas
+### Verify in Obsidian
 
-```bash
-# Check canvas was updated
-cat notes/kanban.canvas | jq '.nodes[] | select(.id == "task-001-test-task")'
-# Should output the task node with x=-540 (BACKLOG column)
-```
-
-**Expected results:**
-- Task card node appears in kanban.canvas
-- ID is `task-001-test-task`
-- Positioned in BACKLOG column (x=-540, y=-160)
-- File link points to `notes/04-tasks/test-project/001-test-task.md`
-- All 6 static nodes preserved (headers, instructions, blocked section)
-- Git commit pushed with message: `brain: sync kanban canvas from tasks`
+1. Open Obsidian → `notes/kanban.md`
+2. Look for "Test Kanban Task" in the Backlog column
+3. Verify color tags appear (`#p3 #you`)
+4. Click the task → should open `001-test-task.md`
+5. Drag to To Do → should persist
+6. Edit task file `status: in-progress` → should move to Doing on next sync (10 min)
 
 ---
 
 ## Performance Notes
 
 ### Resource Usage
-- **Per sync:** 50-200ms (JSON parsing, file I/O)
+- **Per sync:** 50-200ms (file I/O, git operations)
 - **Per cycle (every 10 min):** 50-200ms active, rest idle
-- **Memory:** ~5-8MB baseline
-- **CPU:** Negligible, <1% active time
+- **Memory:** <8MB baseline
+- **CPU:** <1% active time
 
 ### Frequency Tuning
 
-The current frequency (every 10 minutes) is appropriate for:
-- Tasks changing status manually (user updates task file status in Obsidian)
-- Project Decomposer running every 5 minutes (new tasks added)
-- Reasonable git commit frequency (not every minute)
+Current (every 10 minutes) balances:
+- Responsive board updates (< 10 min after task change)
+- Reasonable git commit frequency (not too spammy)
+- Minimal resource impact
 
-If you want **more responsive** canvas updates:
-- Change to `*/5 * * * *` (every 5 minutes)
-- Still minimal resource impact
-- Better aligned with Project Decomposer frequency
+Can change to `*/5 * * * *` for more responsive if desired.
 
 ---
 
-## Data Flow Diagram
+## Data Flow
 
 ```
 Task Files (04-tasks/)
         ↓
-    [Parser]
+    [Parser] — extract status, priority, title
         ↓
-Task Metadata (status, priority, title)
+Task Metadata by Status
         ↓
     [Grouper] — organize by status
         ↓
-Nodes by Column (BACKLOG, DOING, DONE)
+Backlog | To Do (preserved) | Doing | Done
         ↓
-Load existing kanban.canvas
+Build markdown (Kanban plugin format)
         ↓
-Preserve static nodes (headers, instructions, blocked)
-        ↓
-Build canvas (static + task nodes)
-        ↓
-Write to kanban.canvas
+Write to notes/kanban.md
         ↓
 Git commit (if changed) → GitHub
+        ↓
+Obsidian plugin renders as interactive board
 ```
-
----
-
-## Integration with Other Automations
-
-**Upstream:** Project Decomposer → creates tasks in `04-tasks/`  
-**Downstream:** Kanban Syncer reads those tasks, updates canvas
-
-**Workflow:**
-1. Auto-Router routes high-quality note to `03-projects/` (every 1 min)
-2. Project Decomposer decomposes project, creates tasks in `04-tasks/` (every 5 min)
-3. **Kanban Syncer reads tasks, updates canvas** (every 10 min)
-4. User sees new tasks appear on Kanban board in Obsidian
-
-The three work independently but in sequence.
 
 ---
 
@@ -465,14 +413,13 @@ The three work independently but in sequence.
 
 | Action | Command |
 |--------|---------|
+| View Kanban board | Open `notes/kanban.md` in Obsidian |
 | View logs | `tail -f ~/.local/share/brain/logs/kanban-syncer.log` |
 | Run manually | `~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py` |
 | Edit cron | `crontab -e` |
-| Check cron | `crontab -l` |
+| Check cron | `crontab -l \| grep brain-kanban` |
 | List tasks | `ls notes/04-tasks/` |
-| View canvas | `cat notes/kanban.canvas \| jq` |
-| Check recent commits | `git log --oneline -5 -- notes/kanban.canvas` |
-| Disable | `crontab -r` |
+| Check recent syncs | `git log --oneline -5 -- notes/kanban.md` |
 
 ---
 
@@ -481,8 +428,8 @@ The three work independently but in sequence.
 For issues:
 1. Check logs: `tail -20 ~/.local/share/brain/logs/kanban-syncer*.log`
 2. Run manually: `~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py`
-3. Check canvas exists: `ls -la notes/kanban.canvas`
+3. Check kanban.md exists: `ls -la notes/kanban.md`
 4. Check task files: `ls -la notes/04-tasks/`
-5. Test git access: `cd ~/Repos/stevewesthoek/brain && git pull && git push`
+5. Verify git access: `cd ~/Repos/stevewesthoek/brain && git pull && git push`
 
 Last updated: 2026-04-10
