@@ -60,6 +60,24 @@
             "command": "bash /Users/Office/.claude/hooks/sync-env-hook.sh"
           }
         ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/gemini-preprocess-hook.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/gemini-preprocess-hook.sh"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
