@@ -150,16 +150,16 @@
     },
     {
       "parameters": {
-        "resource": "file",
-        "operation": "get",
-        "owner": "stevewesthoek",
-        "repository": "brain",
-        "filePath": "={{ $json.filepath }}"
+        "method": "GET",
+        "url": "=https://api.github.com/repos/stevewesthoek/brain/contents/{{ $json.filepath }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
       },
       "id": "node-github-get-sha",
       "name": "GitHub — Get SHA",
-      "type": "n8n-nodes-base.github",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [1340, 80],
       "credentials": {
         "githubApi": {
@@ -170,36 +170,31 @@
     },
     {
       "id": "node-merge-sha",
-      "name": "Attach SHA",
+      "name": "Build Update Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1560, 80],
       "parameters": {
-        "jsCode": "const classified = $('Build Classified Note').first().json;\nconst fileInfo = $input.first().json;\nconst sha = fileInfo.sha;\nif (!sha) {\n  throw new Error(`SHA missing for ${classified.filepath} — cannot update file`);\n}\nreturn [{\n  json: {\n    filepath: classified.filepath,\n    filename: classified.filename,\n    classifiedContent: classified.classifiedContent,\n    title: classified.title,\n    para_type: classified.para_type,\n    confidence: classified.confidence,\n    sha\n  }\n}];"
+        "jsCode": "const classified = $('Build Classified Note').first().json;\nconst fileInfo = $input.first().json;\nconst sha = fileInfo.sha;\nif (!sha) {\n  throw new Error(`SHA missing for ${classified.filepath} — GitHub response keys: ${Object.keys(fileInfo).join(',')}`);\n}\n// Base64 encode the classified content for GitHub API\nconst contentBase64 = Buffer.from(classified.classifiedContent, 'utf8').toString('base64');\nreturn [{\n  json: {\n    filepath: classified.filepath,\n    title: classified.title,\n    para_type: classified.para_type,\n    confidence: classified.confidence,\n    putBody: JSON.stringify({\n      message: `brain: classified — ${classified.title} (${classified.para_type})`,\n      content: contentBase64,\n      sha\n    })\n  }\n}];"
       }
     },
     {
       "parameters": {
-        "resource": "file",
-        "operation": "edit",
-        "owner": "stevewesthoek",
-        "repository": "brain",
-        "filePath": "={{ $json.filepath }}",
-        "fileContent": "={{ $json.classifiedContent }}",
-        "commitMessage": "=brain: classified — {{ $json.title }} ({{ $json.para_type }})",
-        "additionalParameters": {
-          "parameters": [
-            {
-              "name": "sha",
-              "value": "={{ $json.sha }}"
-            }
-          ]
-        }
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/stevewesthoek/brain/contents/{{ $json.filepath }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "string",
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.putBody }}",
+        "options": {}
       },
       "id": "node-github-update",
       "name": "GitHub — Update Classified",
-      "type": "n8n-nodes-base.github",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [1780, 80],
       "credentials": {
         "githubApi": {
@@ -235,9 +230,9 @@
       "main": [[{ "node": "GitHub — Get SHA", "type": "main", "index": 0 }]]
     },
     "GitHub — Get SHA": {
-      "main": [[{ "node": "Attach SHA", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Build Update Payload", "type": "main", "index": 0 }]]
     },
-    "Attach SHA": {
+    "Build Update Payload": {
       "main": [[{ "node": "GitHub — Update Classified", "type": "main", "index": 0 }]]
     }
   },
