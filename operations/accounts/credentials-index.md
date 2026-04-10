@@ -215,3 +215,6 @@ Entries detected by `sync-credentials` that are not yet categorized. Move each r
 | `UMAMI_USERNAME` | `~/.config/probot/.env` | 2026-04-08 |
 | `UMAMI_PASSWORD` | `~/.config/probot/.env` | 2026-04-08 |
 | `CLOUDFLARE_API_TOKEN` | `~/.config/probot/.env` | 2026-04-09 |
+| `ING_USERNAME` | `~/.config/ing/.env` | 2026-04-10 |
+| `ING_PASSWORD` | `~/.config/ing/.env` | 2026-04-10 |
+| `ING_NTFY_TOPIC` | `~/.config/ing/.env` | 2026-04-10 |
