@@ -3,7 +3,7 @@
   "newFileFolderPath": "notes/inbox",
   "attachmentFolderPath": "notes/resources/attachments",
   "trashOption": "local",
-  "promptDelete": true,
+  "promptDelete": false,
   "defaultViewMode": "source",
   "foldHeading": false
 }
