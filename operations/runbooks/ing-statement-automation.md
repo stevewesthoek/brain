@@ -1,238 +1,248 @@
 # ING Bank Statement Automation — Runbook
 
-**Purpose:** Automated monthly download of CSV bank statements from ING Business Banking (mijnzakelijk.ing.nl).
-
 **Status:** ✅ Active  
-**Deployed:** n8n (self-hosted on Dokploy)  
-**Frequency:** 1st of each month, 9:00 AM Lisbon time  
-**Contact:** Steve Westhoek (steve@prochat.tools)
+**Deployed:** Nightly Scheduler (LaunchAgent)  
+**Frequency:** 1st of each month (runs at 3:00 AM Lisbon time via nightly scheduler)  
+**Scripts:** 
+- `brain/tools/scripts/bank-statement-login.js` (Playwright automation)
+- `brain/tools/scripts/run-ing-bank-statement-download.sh` (Scheduler wrapper)
+- `brain/tools/scripts/office-nightly-scheduler.sh` (Main nightly scheduler)
 
 ---
 
-## What This Does
+## Overview
 
-1. **Monthly trigger** — n8n wakes up on the 1st at 9 AM Lisbon time
-2. **Logs in** — Playwright script logs into ING Business Banking
-3. **Handles 2FA** — Sends you iOS push notification to approve on your phone
-4. **Downloads statements** — Retrieves CSV files (semicolon-separated) for:
-   - Checking Account 1
-   - Checking Account 2
-   - Savings Account
-5. **Stores locally** — Files saved to `~/Downloads/` with original filenames
-6. **Retry logic** — If you don't respond:
-   - Retry 3x (every 10 minutes)
-   - Then retry 6x (once per hour)
-   - After 6 failures: email fallback link to info@prochat.tools
+**Purpose:** Automatically download monthly bank statements from ING Business Banking.
+
+**Accounts downloaded:**
+1. **Yeshua Academy** (Current Account) — NL89 INGB 0006 3699 60
+2. **Yeshua Academy** (Current Account) — NL21 INGB 0113 0903 90
+3. **Savings Account** (Savings) — [configured via UI]
+
+**Output format:**
+- File type: CSV
+- Delimiter: Semicolon-separated values
+- Period: Last calendar month
+- Location: `~/Downloads/`
+
+**Flow:**
+1. Nightly scheduler runs at 3 AM Lisbon time (every night)
+2. Checks if today is the 1st of the month
+3. If yes: launches Playwright script
+4. Script logs in, handles 2FA via iOS notification
+5. Downloads statements from all 3 accounts
+6. Logs out and exits
 
 ---
 
 ## Architecture
 
 ```
-n8n scheduled trigger (1st of month, 9 AM Lisbon)
-  ↓
-n8n Execute Command node
-  ↓
-Playwright script (~/Downloads/bank-statement-login.js)
-  ├─ Login to mijnzakelijk.ing.nl
-  ├─ Detect 2FA screen
-  ├─ Send iOS notification (ntfy.sh)
-  ├─ Poll for approval (max 10 min)
-  └─ Download statements OR timeout
-  ↓
-n8n workflow continues
-  ├─ If success: log, store filenames
-  ├─ If timeout: increment retry counter
-  └─ If 6 failures: send email with fallback link
+LaunchAgent (macOS)
+    ↓
+office-nightly-scheduler.sh (every night, 3 AM Lisbon)
+    ├─ Checks: Is it the 1st of the month?
+    ├─ YES → run-ing-bank-statement-download.sh
+    │         ├─ Validates credentials and script
+    │         └─ Calls bank-statement-login.js
+    │             ├─ Chromium browser (headless=false)
+    │             ├─ Logs in to mijnzakelijk.ing.nl
+    │             ├─ Waits for 2FA approval on phone
+    │             ├─ Downloads statements (CSV, last month, all 3 accounts)
+    │             └─ Logs out
+    └─ NO → skips (logs: "not first of month")
 ```
 
 ---
 
 ## Setup
 
-### 1. Create Credentials File
+### 1. Credentials File
 
-Store your ING Business Banking credentials securely:
+Create `~/.config/ing/.env`:
 
 ```bash
 mkdir -p ~/.config/ing
 ```
 
-Create `~/.config/ing/.env`:
-
+**File:** `~/.config/ing/.env`
 ```env
 ING_USERNAME=your_username_here
 ING_PASSWORD=your_password_here
 ING_NTFY_TOPIC=stevewesthoek-bank-approval
 ```
 
-**Never commit this file.** It's already in `.gitignore`.
+**Security:**
+- Local file only (not in git, in `.gitignore`)
+- Never commit credentials
+- File permissions: `600` (read/write owner only)
 
-### 2. Install Playwright Script
+### 2. iOS Notifications (ntfy.sh)
 
-Copy the script to a permanent location (not Downloads):
+Subscribe on your iPhone:
 
-```bash
-cp ~/Downloads/bank-statement-login.js ~/tools/scripts/bank-statement-login.js
-chmod +x ~/tools/scripts/bank-statement-login.js
-```
-
-Verify it runs locally first:
-
-```bash
-source ~/.config/ing/.env
-TIMEOUT_SECONDS=120 POLL_INTERVAL_MS=5000 NTFY_TOPIC=$ING_NTFY_TOPIC \
-  node ~/tools/scripts/bank-statement-login.js
-```
-
-### 3. Set Up iOS Notifications (ntfy.sh)
-
-ntfy.sh is a free, no-account-needed notification service with native iOS support.
-
-**On iOS:**
-1. Open Safari
+1. Open **Safari**
 2. Visit: `https://ntfy.sh/stevewesthoek-bank-approval`
-3. Tap the share button → Add to Home Screen (or bookmark)
-4. Or: Install the [ntfy iOS app](https://apps.apple.com/us/app/ntfy/id1625396347)
-5. Subscribe to: `stevewesthoek-bank-approval`
+3. Tap **Share** → **Add to Home Screen** (or use ntfy iOS app)
+4. When automation runs, you'll get a push notification to approve 2FA
 
-From now on, when the automation sends a notification to this topic, you'll get an iOS push.
+**No account needed** — ntfy.sh is free and public.
 
-### 4. Add Credentials to n8n
+### 3. Playwright Script
 
-In n8n, create a new **Credentials** entry:
+Already in place: `~/tools/scripts/bank-statement-login.js`
 
-1. Go to n8n UI: `https://n8n.prochat.tools`
-2. Settings → Credentials → New → Generic Credentials
-3. Fill in:
-   - **Name:** `ING Business (Personal)`
-   - **Username:** (same as `ING_USERNAME` in `.env`)
-   - **Password:** (same as `ING_PASSWORD` in `.env`)
-4. Save
+Playwright is installed via n8n dependencies.
 
-This keeps credentials encrypted within n8n, not in git.
+### 4. Nightly Scheduler
 
-### 5. Import n8n Workflow
-
-See: `brain/operations/workflows/ing-statement-monthly.json`
-
-Steps:
-1. In n8n, click the folder icon in the top-left
-2. Select "Import Workflow"
-3. Paste the JSON from `ing-statement-monthly.json`
-4. Update the **ING Business (Personal)** credential reference if needed
-5. Enable the workflow
+Already integrated:
+- LaunchAgent: `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` (symlink → brain)
+- Runs nightly at 3 AM Lisbon time
+- Executes `brain/tools/scripts/office-nightly-scheduler.sh`
+- ING download runs **only on the 1st of the month**
 
 ---
 
-## How to Test Locally
+## Logs & Monitoring
 
-**Manual test (without scheduling):**
+### Nightly Scheduler Logs
 
 ```bash
-# 1. Load credentials
+tail -f ~/Library/Logs/office-scheduler/nightly.log
+```
+
+Shows:
+- Which jobs ran, which skipped
+- Exit codes and durations
+- Errors and warnings
+
+### ING Download-Specific Logs
+
+```bash
+tail -f ~/Library/Logs/office-scheduler/ing-bank-statement-download.log
+```
+
+Shows:
+- Login status
+- 2FA approval detection
+- Downloaded filenames
+- Exit codes (0=success, 1=login failed, 2=2FA timeout, 3=no downloads, 4=config error)
+
+### State Files
+
+```bash
+cat ~/.local/state/office-scheduler/ing-bank-statement-download.last
+```
+
+Shows:
+- Last run status (success/failed/timeout)
+- Exit code and duration
+- Timestamp
+
+---
+
+## Manual Testing
+
+### Test the Playwright Script
+
+Run locally with a short timeout:
+
+```bash
 source ~/.config/ing/.env
-
-# 2. Run the script with a short timeout (2 minutes)
-TIMEOUT_SECONDS=120 POLL_INTERVAL_MS=5000 NTFY_TOPIC=$ING_NTFY_TOPIC \
-  node ~/tools/scripts/bank-statement-login.js
-
-# 3. Immediately go to your phone and approve the login in the ING app
-# You should see the iOS notification within 10 seconds
+TIMEOUT_SECONDS=120 node ~/tools/scripts/bank-statement-login.js
 ```
 
-**If you get exit code 2:** Timeout — the script didn't detect your phone approval. Check:
-- Is the notification reaching your phone?
-- Did you tap the ING app link in time?
-- Is your network stable?
+Expected behavior:
+1. Chromium window opens
+2. Logs into ING
+3. Prompts for 2FA (you see iOS notification)
+4. You approve on phone
+5. Downloads statements
+6. Closes browser
 
-**If you get exit code 3:** No download buttons found. The ING website structure may have changed — contact Steve.
+Exit codes:
+- **0** = Success
+- **1** = Login failed
+- **2** = 2FA timeout
+- **3** = Download failed
+- **4** = Config error
 
----
+### Test the Wrapper Script
 
-## Retry Logic (n8n Workflow)
-
-If the Playwright script exits with code 2 (timeout):
-
-1. **Wait 10 minutes** → Attempt 1 of 3
-2. **Wait 10 minutes** → Attempt 2 of 3
-3. **Wait 10 minutes** → Attempt 3 of 3
-4. **Wait 1 hour** → Attempt 1 of 6 (hourly, until 6 AM next day)
-5. ... (continue hourly)
-6. **After 6 hourly attempts:** Email to `info@prochat.tools` with approval link
-
-The email includes a unique webhook link. Click it to re-trigger the workflow without waiting.
-
----
-
-## File Storage
-
-Downloaded statements are saved to: `~/Downloads/`
-
-**Filename format:** Unchanged from ING (e.g., `statement_20260401_20260430.csv`)
-
-After download, you can:
-- Move them to a Cloud Drive (Dropbox, OneDrive, etc.)
-- Archive them in a local folder structure
-- Import them into accounting software
-
----
-
-## Monitoring
-
-### Check if workflow is enabled:
 ```bash
-curl -H "Authorization: Bearer $N8N_API_KEY" \
-  https://n8n.prochat.tools/api/v1/workflows | jq '.data[] | select(.name | contains("ING"))'
+bash ~/Repos/stevewesthoek/brain/tools/scripts/run-ing-bank-statement-download.sh
 ```
 
-### View recent executions:
-In n8n UI → Workflows → ING Statement Monthly → Executions tab
+### Test the Full Nightly Scheduler
+
+Force the nightly scheduler to run:
+
+```bash
+FORCE_RUN=1 bash ~/Repos/stevewesthoek/brain/tools/scripts/office-nightly-scheduler.sh
+```
+
+Check logs:
+```bash
+tail -f ~/Library/Logs/office-scheduler/nightly.log
+```
 
 ---
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| "Notification sent but no iOS alert" | Check if Safari tab/app is active; notifications only work in background. Try the ntfy app instead. |
-| "2FA times out even though I approved" | Playwright may not detect the page change. ING's DOM structure may have changed — check the script's selectors. |
-| "Downloads don't appear in ~/Downloads" | Check file permissions on Downloads folder: `chmod 755 ~/Downloads` |
-| "Script works locally but fails in n8n" | n8n may run in a sandboxed environment. Check n8n's working directory and environment variables. |
-| "Wrong filename format in downloads" | ING's filename format changes sometimes. Adjust the script's download handler if needed. |
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| "Credentials file not found" | `~/.config/ing/.env` missing | Create credentials file (see Setup section) |
+| "2FA timeout" | You didn't approve in time | Check iOS notifications, try manual run |
+| "Exit code 1: Login failed" | Wrong credentials or network issue | Verify username/password, check internet |
+| "No download buttons found" | ING UI changed | Update Playwright selectors in script |
+| Nightly scheduler doesn't run | LaunchAgent not loaded | Check: `launchctl list \| grep nightly` |
+| Nightly scheduler runs but skips ING | Not the 1st of month | Job only runs on the 1st; check logs |
+| Files not in Downloads | Script error or wrong path | Check logs and Playwright output |
 
 ---
 
-## Credentials Index
+## File Locations
 
-This automation uses credentials tracked in:
-- **File:** `~/.config/ing/.env`
-- **Index:** `brain/operations/accounts/credentials-index.md` (ING entry)
-- **Rotation:** Manual (change password in ING UI, then update `~/.config/ing/.env`)
+### Scripts
+- `brain/tools/scripts/bank-statement-login.js` — Main Playwright automation
+- `brain/tools/scripts/run-ing-bank-statement-download.sh` — Scheduler wrapper
+- `brain/tools/scripts/office-nightly-scheduler.sh` — Main nightly scheduler
 
-To rotate ING credentials:
-1. Change password in mijnzakelijk.ing.nl
-2. Update `~/.config/ing/.env`
-3. Update n8n credentials (Settings → Credentials → ING Business)
-4. Run a manual test
+### Configuration
+- `~/.config/ing/.env` — Credentials (local, not in git)
+
+### Credentials Index
+- `brain/operations/accounts/credentials-index.md` — Reference
+
+### Logs
+- `~/Library/Logs/office-scheduler/nightly.log` — Main scheduler log
+- `~/Library/Logs/office-scheduler/ing-bank-statement-download.log` — ING-specific log
+
+### State
+- `~/.local/state/office-scheduler/ing-bank-statement-download.last` — Last run status
+
+### Downloads
+- `~/Downloads/*.csv` — Downloaded statements (semicolon-separated, last month)
 
 ---
 
 ## Decision Log
 
-See: `brain/operations/decision-log.md`
-
-Key decisions:
-- **ntfy.sh over Telegram/Slack:** Free, no account needed, native iOS support, iOS deep link capability
-- **Playwright over Puppeteer:** Better cross-browser support, built-in 2FA handling
-- **Session persistence rejected:** 2FA defeats session caching; polling is the only reliable option
-- **n8n over standalone cron:** Centralized visibility, built-in retry logic, webhook fallback
+Key decisions made:
+1. **Nightly scheduler vs. n8n:** Using nightly scheduler because it's lightweight, runs locally, and handles monthly scheduling elegantly via simple date check
+2. **No n8n workflow:** ING automation is too simple (single script) and too frequent-per-month-specific (1st only) for n8n overhead
+3. **Playwright over RPA:** Playwright handles modern web components, JavaScript rendering, and shadow DOM better than older tools
+4. **JavaScript evaluation for form interaction:** ING uses web components with shadow DOM; can't use Locator API; JavaScript evaluation is the fallback
+5. **headless=false:** Headless browsers are easier to detect as bots; showing the browser window makes automation more human-like
+6. **Hard timeout:** 10 minutes per login attempt prevents infinite loops and resource waste
 
 ---
 
 ## Related
 
+- Credentials Index: `brain/operations/accounts/credentials-index.md`
+- Nightly Scheduler: `brain/tools/scripts/office-nightly-scheduler.sh`
+- LaunchAgent Config: `brain/operations/system-configs/launchagents/com.office.nightly-scheduler.plist`
 - Decision Log: `brain/operations/decision-log.md`
-- n8n workflow: `brain/operations/workflows/ing-statement-monthly.json`
-- Credentials index: `brain/operations/accounts/credentials-index.md`
-- Playwright script: `~/tools/scripts/bank-statement-login.js`

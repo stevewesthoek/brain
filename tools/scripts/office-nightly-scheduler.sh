@@ -214,6 +214,34 @@ run_bible_studies_pipeline() {
   run_job "bible-studies-pipeline" "$timeout_seconds" "$command" "$pipeline_log"
 }
 
+run_ing_bank_statement_download() {
+  local day_of_month
+  day_of_month="$(TZ=Europe/Lisbon date +%-d)"
+
+  if [[ "$day_of_month" -ne 1 ]]; then
+    log "skipping job=ing-bank-statement-download reason=not_first_of_month day=$day_of_month"
+    return 0
+  fi
+
+  local timeout_seconds="${ING_DOWNLOAD_TIMEOUT_SECONDS:-900}"  # 15 minutes
+  local download_script="${ING_DOWNLOAD_SCHEDULE_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/run-ing-bank-statement-download.sh}"
+  local download_log="$LOG_DIR/ing-bank-statement-download.log"
+  local command
+
+  if [[ ! -x "$download_script" ]]; then
+    log "skipping job=ing-bank-statement-download reason=missing_script path=$download_script"
+    return 0
+  fi
+
+  command=$(
+    printf '%q >> %q 2>&1' \
+      "$download_script" \
+      "$download_log"
+  )
+
+  run_job "ing-bank-statement-download" "$timeout_seconds" "$command" "$download_log"
+}
+
 run_skill_prune() {
   local day_of_month
   day_of_month="$(TZ=Europe/Lisbon date +%-d)"
@@ -376,6 +404,9 @@ main() {
 
   # Gemini tmp/history cleanup — never stops chain
   run_gemini_cleanup || log "warning gemini-cleanup failed but chain continues"
+
+  # ING Bank Statement download — runs on the 1st of each month, never stops chain
+  run_ing_bank_statement_download || log "warning ing-bank-statement-download failed but chain continues"
 
   # Skill library pruning — runs on the 7th of each month only, never stops chain
   run_skill_prune || log "warning skill-prune failed but chain continues"
