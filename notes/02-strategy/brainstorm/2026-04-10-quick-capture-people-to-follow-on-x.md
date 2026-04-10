@@ -6,7 +6,7 @@ para_type: resource
 confidence: 0.9
 signal_quality: 0.95
 created: 2026-04-10
-status: unrouted
+status: ready-for-review
 ---
 
 # Quick capture: People to follow on X
