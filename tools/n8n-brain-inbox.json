@@ -38,7 +38,12 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "retry": {
+            "maxRetries": 3,
+            "retryOn": ["503", "429", "500", "502"]
+          }
+        }
       },
       "id": "1b4a7692-1dda-4cff-9ae8-a91db5958d23",
       "name": "Gemini Flash \u2014 Classify",
