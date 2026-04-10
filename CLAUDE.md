@@ -46,6 +46,7 @@ When working across repos, treat each Git repo independently. Do not apply one r
 - `ai/skills/` — skill management (active symlinks, vendors, custom)
 - `tools/scripts/` — utility and workflow scripts
   - `brain-auto-router.py` — Auto-Router automation (runs every 1 minute via cron; routes inbox notes based on decision tree). See `operations/runbooks/brain-auto-router.md` for full docs.
+  - `brain-automate-verify.sh` — Post-reboot/reinstall verification script (run after OS updates to confirm all systems are working)
   - `repos.sh` — unified repo picker (`repos` shell command): pick Claude or Codex, then pick a repo to open
   - `sessions.sh` — unified session picker (`sessions` shell command): pick Claude or Codex, then resume a session
   - `backup-n8n.sh` — server-side export of live n8n credentials/workflows into the gitignored local backup folder

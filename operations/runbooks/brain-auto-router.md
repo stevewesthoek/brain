@@ -2,6 +2,31 @@
 
 **Status:** ✓ PRODUCTION (Replaced n8n scheduled workflows 2026-04-10)
 
+## Post-Reboot / After OS Reinstall
+
+**Everything auto-resumes — no action needed.** But verify it's working:
+
+```bash
+# Comprehensive health check (run after reboot or any time)
+bash ~/Repos/stevewesthoek/brain/tools/scripts/brain-automate-verify.sh
+
+# Check recent activity
+tail -20 ~/.local/share/brain/logs/auto-router.log
+```
+
+**What persists automatically:**
+- ✓ Cron job (stored in OS, not filesystem)
+- ✓ GitHub PAT token (`~/.config/github/.env`)
+- ✓ Python script (`~/Repos/stevewesthoek/brain/tools/scripts/`)
+- ✓ Logs and state
+
+**If you reinstall macOS:**
+- Keep your home directory path the same → Everything works
+- Move the brain repo → Update crontab path (see "Cron Job Management" below)
+- Change GitHub PAT → Update `~/.config/github/.env`
+
+---
+
 ## Overview
 
 The Auto-Router is a Python script that automatically routes inbox notes through the Brain GTD system. It runs every 1 minute via OS-level cron and intelligently categorizes notes based on confidence and signal_quality scores.
@@ -25,9 +50,24 @@ Previously, Auto-Router was a scheduled n8n workflow. The n8n scheduler has reli
 - Git installed and authenticated
 - GitHub PAT token stored in `~/.config/github/.env`
 
-### Setup
+### Verify Installation
 
-The system is already installed. Verify:
+Run the verification script to confirm everything is set up:
+
+```bash
+bash ~/Repos/stevewesthoek/brain/tools/scripts/brain-automate-verify.sh
+```
+
+This checks:
+- ✓ Cron job is installed
+- ✓ Python script is executable
+- ✓ GitHub credentials are valid
+- ✓ Git repo is accessible
+- ✓ Logs directory exists
+
+### Setup (Manual, only if verification fails)
+
+The system is already installed. But if you need to reinstall:
 
 ```bash
 # Check cron job is installed
