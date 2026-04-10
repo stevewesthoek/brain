@@ -387,11 +387,8 @@ def main():
 
     # Get task files
     task_files = get_task_files()
-    if not task_files:
-        logger.debug("No task files found")
-        return
 
-    # Build task nodes organized by column
+    # Build task nodes organized by column (even if empty, to clear stale nodes)
     task_nodes_by_column = build_task_nodes(task_files)
 
     # Load existing canvas
