@@ -10,6 +10,12 @@ It is the canonical home for Claude Code global config. Files here are loaded by
 - `claude.json.template` — safe MCP registration template (the live `claude.json` is NOT symlinked — it contains secrets and lives only on this machine)
 - `settings.json` — Claude Code settings (hooks, permissions, etc.)
 - `hooks/` — lightweight global preflight scripts used by Claude Code hooks
+  - `gemini-preprocess-hook.sh` — Automatically compresses large inputs (>5k tokens) with Gemini Flash (free) before Claude processes them. Saves 70-80% on input tokens. Triggers on Read/WebFetch. See `brain/operations/runbooks/gemini-preprocessing-hook.md` for full docs.
+  - `check-risky-command.sh` — PreToolUse safety check for Bash commands
+  - `check-sensitive-edit.sh` — PreToolUse check for sensitive file edits
+  - `sync-env-hook.sh` — PostToolUse sync of `.env` files to credentials index
+  - `inject-handoff.sh` — UserPromptSubmit hook for session handoff injection
+  - `auto-handoff.sh` — Stop hook for automatic session compression
 - Any other `.md` files that document Claude behavior or memory
 
 ### What's machine state (not canonical)
