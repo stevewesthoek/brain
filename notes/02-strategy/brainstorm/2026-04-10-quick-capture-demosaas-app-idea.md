@@ -6,7 +6,7 @@ para_type: inbox
 confidence: 0.9
 signal_quality: 0.85
 created: 2026-04-10
-status: unrouted
+status: ready-for-review
 ---
 
 # Quick capture: DemoSaaS App Idea
