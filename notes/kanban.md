@@ -6,6 +6,132 @@ kanban-plugin: board
 
 ## Backlog
 
+- [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0347-put-review-jon-cris-on-funnel.md|Put review Jon & Cris on funnel]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0348-extend-the-presentation-with-the-other-plans.md|Extend the Presentation with the other plans]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0349-check-hoe-databar-werkt.md|Check hoe Databar werkt]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0350-make-a-simple-page-with-shortened-link-to-put-ever.md|make a simple page with shortened link to put everywhere on social media to promote my business.]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0351-make-3-custom-workflows-for-focus-hyptoheken.md|Make 3 custom workflows for Focus Hyptoheken]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0352-todo-before-launch.md|Todo before launch]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0353-put-lanbot-on-a-single-page-vincent.md|Put Lanbot on a single page Vincent]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0354-update-bot-vincent.md|Update bot Vincent]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0355-prospecting.md|Prospecting]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0356-make-a-brochurepresentation-to-send-to-clients.md|Make a brochure/presentation to send to clients]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0357-add-some-of-the-promo-videos-in-the-prochat-linktr.md|Add some of the promo video's in the ProChat linktree on the website]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0358-website-verbeteren-freek.md|Website verbeteren Freek]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0359-put-css-color-and-font-files-for-your-whole-websit.md|Put CSS color and font files for your whole website]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0360-check-wardrop-re-software-for-focus.md|Check Wardrop RE software for Focus]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0361-check-website-mm-for-joe.md|Check website MM for Joe]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0362-ask-ai-deep-research-and-notebooklm-how-to-make-ap.md|Ask Ai, deep research and NotebookLM how to make apps for Portuguese real estates]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0363-make-a-productivity-schedule-with-gemini.md|Make a productivity schedule with Gemini]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0364-make-a-pilates-timer.md|Make a Pilates timer]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0365-check-out-ai-profit-boardroom-skool.md|Check out AI profit boardroom skool]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0366-app-ideas.md|App ideas]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0367-install-mautic-leapnew-and-check-out-curateddesign.md|Install Mautic + Leap.new and check out curated.design + polar.sh + encore for staging dev]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0368-seo-improve-prochat.md|SEO improve ProChat]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0594-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0700-put-review-jon-cris-on-funnel.md|Put review Jon & Cris on funnel]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0701-extend-the-presentation-with-the-other-plans.md|Extend the Presentation with the other plans]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0702-check-hoe-databar-werkt.md|Check hoe Databar werkt]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0703-make-a-simple-page-with-shortened-link-to-put-ever.md|make a simple page with shortened link to put everywhere on social media to promote my business.]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0704-make-3-custom-workflows-for-focus-hyptoheken.md|Make 3 custom workflows for Focus Hyptoheken]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0705-todo-before-launch.md|Todo before launch]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0706-put-lanbot-on-a-single-page-vincent.md|Put Lanbot on a single page Vincent]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0707-update-bot-vincent.md|Update bot Vincent]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0708-prospecting.md|Prospecting]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0709-make-a-brochurepresentation-to-send-to-clients.md|Make a brochure/presentation to send to clients]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0710-add-some-of-the-promo-videos-in-the-prochat-linktr.md|Add some of the promo video's in the ProChat linktree on the website]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0711-website-verbeteren-freek.md|Website verbeteren Freek]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0712-put-css-color-and-font-files-for-your-whole-websit.md|Put CSS color and font files for your whole website]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0713-check-wardrop-re-software-for-focus.md|Check Wardrop RE software for Focus]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0714-check-website-mm-for-joe.md|Check website MM for Joe]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0715-ask-ai-deep-research-and-notebooklm-how-to-make-ap.md|Ask Ai, deep research and NotebookLM how to make apps for Portuguese real estates]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0716-make-a-productivity-schedule-with-gemini.md|Make a productivity schedule with Gemini]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0717-make-a-pilates-timer.md|Make a Pilates timer]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0718-check-out-ai-profit-boardroom-skool.md|Check out AI profit boardroom skool]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0719-app-ideas.md|App ideas]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0720-install-mautic-leapnew-and-check-out-curateddesign.md|Install Mautic + Leap.new and check out curated.design + polar.sh + encore for staging dev]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0721-seo-improve-prochat.md|SEO improve ProChat]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0226-printer.md|Printer]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0227-led-rear-lights.md|LED rear lights]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0228-led-headlights.md|LED headlights]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0229-carplay.md|Carplay]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0230-new-motor-for-right-mirror.md|New motor for right mirror]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0231-rear-camera-for-in-license-plate-light.md|Rear camera for in license plate light]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0240-amazon-to-buy-list.md|Amazon To Buy List]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0728-printer.md|Printer]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0729-led-rear-lights.md|LED rear lights]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0730-led-headlights.md|LED headlights]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0731-carplay.md|Carplay]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0732-new-motor-for-right-mirror.md|New motor for right mirror]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0733-rear-camera-for-in-license-plate-light.md|Rear camera for in license plate light]] #p3 #you
+- [ ] [[notes/04-tasks/buy/0742-amazon-to-buy-list.md|Amazon To Buy List]] #p3 #you
+- [ ] [[notes/04-tasks/family-tasks/0001-aangifte-omzetbelasting-einde-maand.md|Aangifte omzetbelasting einde maand]] #p3 #you
+- [ ] [[notes/04-tasks/family-tasks/0007-send-blood-test-to-doctor-again-yellow-book.md|Send blood test to doctor again + yellow book]] #p3 #you
+- [ ] [[notes/04-tasks/family-tasks/0369-aangifte-omzetbelasting-einde-maand.md|Aangifte omzetbelasting einde maand]] #p3 #you
+- [ ] [[notes/04-tasks/family-tasks/0375-send-blood-test-to-doctor-again-yellow-book.md|Send blood test to doctor again + yellow book]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0008-clean-up-notes-and-put-into-clickup.md|Clean up Notes and put into ClickUp]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0009-reorganise-contacts-steve-macos.md|Reorganise contacts Steve macOS]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0010-renew-adobe-express-sub.md|Renew Adobe Express sub]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0011-spotify-family-yearly-payment.md|Spotify family yearly payment]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0012-logos-free-e-book-2x-audio-book.md|Logos free E-book (2x) & Audio book]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0200-maak-een-mix-van-carrot-and-lemon-tegen-gas.md|Maak een mix van carrot and lemon tegen gas]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0201-goodje-over-mijn-geloof-vertellen.md|Goodje over mijn geloof vertellen]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0202-crypto-portfolio-updaten.md|Crypto portfolio updaten]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0203-arc-bookmarks-favourites-opruimen.md|Arc bookmarks & favourites opruimen]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0204-kleren-opruimen-kast.md|Kleren opruimen kast]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0205-make-an-automation-for-posting-prochat-posts-on-so.md|Make an automation for posting ProChat posts on Social Media with ProChat Automations]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0206-make-kitchen-led-strip-yellow.md|Make kitchen led strip yellow]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0207-update-family-plan-schedule.md|Update family plan & schedule]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0208-set-wi-fi-washing-machine.md|Set Wi-Fi washing machine]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0209-find-a-social-project-in-vila-do-conde-area.md|Find a social project in Vila do Conde area]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0210-empty-out-email-inbox-temp-notes.md|Empty out email inbox & temp notes]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0211-vragen-voor-fernando.md|Vragen voor Fernando]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0212-authy-opruimen.md|Authy opruimen]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0213-maak-bijbel-studie-for-pilar.md|Maak Bijbel studie for Pilar]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0214-check-how-to-get-niss.md|Check how to get NISS]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0215-filip.md|Filip]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0216-lower-price-nas.md|Lower price NAS]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0217-book-dentist.md|Book dentist]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0218-rebuild-cledeslys-websites.md|Rebuild cledeslys websites]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0219-rebuild-tims-avigdor-funnel.md|Rebuild Tim's Avigdor funnel]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0220-rebuild-jons-israel-funnel.md|Rebuild Jon's Israel funnel]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0221-ya-financial-admin.md|YA Financial Admin]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0222-tek-now.md|Tek 'Now]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0223-research-best-way-to-learn-portuguese.md|Research best way to learn Portuguese]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0224-find-osteopata.md|Find osteopata]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0225-emtpy-the-video-cassettes-miro.md|Emtpy the video cassette's Miro]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0376-clean-up-notes-and-put-into-clickup.md|Clean up Notes and put into ClickUp]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0377-reorganise-contacts-steve-macos.md|Reorganise contacts Steve macOS]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0378-renew-adobe-express-sub.md|Renew Adobe Express sub]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0379-spotify-family-yearly-payment.md|Spotify family yearly payment]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0380-logos-free-e-book-2x-audio-book.md|Logos free E-book (2x) & Audio book]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0568-maak-een-mix-van-carrot-and-lemon-tegen-gas.md|Maak een mix van carrot and lemon tegen gas]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0569-goodje-over-mijn-geloof-vertellen.md|Goodje over mijn geloof vertellen]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0570-crypto-portfolio-updaten.md|Crypto portfolio updaten]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0571-arc-bookmarks-favourites-opruimen.md|Arc bookmarks & favourites opruimen]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0572-kleren-opruimen-kast.md|Kleren opruimen kast]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0573-make-an-automation-for-posting-prochat-posts-on-so.md|Make an automation for posting ProChat posts on Social Media with ProChat Automations]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0574-make-kitchen-led-strip-yellow.md|Make kitchen led strip yellow]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0575-update-family-plan-schedule.md|Update family plan & schedule]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0576-set-wi-fi-washing-machine.md|Set Wi-Fi washing machine]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0577-find-a-social-project-in-vila-do-conde-area.md|Find a social project in Vila do Conde area]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0578-empty-out-email-inbox-temp-notes.md|Empty out email inbox & temp notes]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0579-vragen-voor-fernando.md|Vragen voor Fernando]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0580-authy-opruimen.md|Authy opruimen]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0581-maak-bijbel-studie-for-pilar.md|Maak Bijbel studie for Pilar]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0582-check-how-to-get-niss.md|Check how to get NISS]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0583-filip.md|Filip]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0584-lower-price-nas.md|Lower price NAS]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0585-book-dentist.md|Book dentist]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0586-rebuild-cledeslys-websites.md|Rebuild cledeslys websites]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0587-rebuild-tims-avigdor-funnel.md|Rebuild Tim's Avigdor funnel]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0588-rebuild-jons-israel-funnel.md|Rebuild Jon's Israel funnel]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0589-ya-financial-admin.md|YA Financial Admin]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0590-tek-now.md|Tek 'Now]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0591-research-best-way-to-learn-portuguese.md|Research best way to learn Portuguese]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0592-find-osteopata.md|Find osteopata]] #p3 #you
+- [ ] [[notes/04-tasks/personal-tasks/0593-emtpy-the-video-cassettes-miro.md|Emtpy the video cassette's Miro]] #p3 #you
 
 ## To Do
 
@@ -17,6 +143,622 @@ kanban-plugin: board
 
 **Complete**
 
+- [x] [[notes/04-tasks/business-tasks/0259-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
+- [x] [[notes/04-tasks/business-tasks/0612-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
+- [x] [[notes/04-tasks/personal-tasks/0083-pay-phone-bill-wintre.md|Pay phone bill WinTre]] #p2 #you
+- [x] [[notes/04-tasks/personal-tasks/0085-sergio-jarig.md|Sergio Jarig]] #p2 #you
+- [x] [[notes/04-tasks/personal-tasks/0451-pay-phone-bill-wintre.md|Pay phone bill WinTre]] #p2 #you
+- [x] [[notes/04-tasks/personal-tasks/0453-sergio-jarig.md|Sergio Jarig]] #p2 #you
+- [x] [[notes/04-tasks/business-tasks/0242-maak-vragenlijst-voor-henk.md|Maak vragenlijst voor Henk]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0243-make-logo-for-suriname-groeit.md|Make logo for Suriname Groeit]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0244-react-to-telnyx.md|React to Telnyx]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0245-cancel-blush.md|Cancel Blush]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0246-send-out-invoices-tdp.md|Send out invoices TDP]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0247-contact-suzanne-login-stripe.md|Contact Suzanne login Stripe]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0248-make-6-promotion-video-animations-suriname-groeit.md|Make 6 promotion video animations Suriname Groeit]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0249-make-first-draft-youtube-plan-and-present-to-cris-.md|Make first draft YouTube plan and present to Cris, Joe & Giacomo]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0250-finish-website-suzys-catering.md|Finish website Suzy's Catering]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0251-make-kow-check-ing-logo.md|Make K'ow check ing logo]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0252-kow-check-ing-3d-animatie.md|K'ow check ing 3d animatie]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0253-make-audio-voice-radio-commercial.md|Make audio voice radio commercial]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0254-make-sg-logo-3-dimensional.md|Make SG logo 3 dimensional]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0255-make-free-essentials-guide-yt-channel.md|Make free essentials guide YT channel]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0256-call-accountant-register-prochat-company-in-portug.md|Call Accountant: Register ProChat company in Portugal]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0257-update-prochat-logo.md|Update ProChat logo]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0258-make-social-media-plan-royalties-voor-iedereen.md|Make Social Media Plan - Royalties voor iedereen]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0260-focus-op-magazijnbedrijven-met-veel-producten.md|Focus op magazijnbedrijven met veel producten]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0261-make-an-onboarding-scripts.md|Make an onboarding scripts]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0262-call-ghl-and-get-questions-answered.md|Call GHL and get questions answered]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0263-volg-de-dakdekkers-website-op.md|Volg de dakdekkers website op]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0264-make-the-prochat-business-logo-in-the-right-ghl-fo.md|Make the ProChat business logo in the right GHL format]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0265-make-a-retention-strategy.md|Make a Retention Strategy]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0266-make-a-footer-with-all-the-important-links-at-the-.md|Make a footer with all the important links at the bottom]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0267-make-a-kpi-review-checklist.md|Make a KPI review checklist]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0268-daily-prospecting.md|Daily prospecting]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0269-make-a-list-of-handy-links-to-keep-close-by-hand-f.md|Make a list of handy links to keep close by hand for sharing with clients]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0270-make-a-arkware-website-initial-one-page-draft.md|Make a ArkWare website initial one page draft]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0271-plaats-een-review-element-op-prochat.md|Plaats een review element op ProChat]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0272-maak-een-offer-voor-magazijnbedrijven.md|Maak een offer voor magazijnbedrijven]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0273-make-an-ascension-strategy.md|Make an Ascension Strategy]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0274-check-out-these-companies-and-research-them-as-the.md|Check out these companies and research them as they are your competitors]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0275-kow-check-ing-taken.md|Kow Check Ing taken]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0276-make-free-guide-gre-with-gammaapp.md|Make free guide GRE with gamma.app]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0277-factuur-opmaken-voor-freek.md|Factuur opmaken voor Freek]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0278-cancel-ai-employee.md|Cancel AI Employee]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0279-downgrade-ghl.md|Downgrade GHL]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0280-update-buon-seme.md|Update Buon Seme]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0281-maak-eerste-draft-funnel-cledeslys.md|Maak eerste draft funnel Cledeslys]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0282-call-radhamesh.md|Call Radhamesh]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0283-contact-opnemen-met-jasper.md|Contact opnemen met Jasper]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0284-renew-feelgoodwithana-yeshuaacademy.md|Renew Feelgoodwithana & yeshua.academy]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0285-contact-a-lead-warm-up-a-prospect.md|Contact a lead & warm up a prospect]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0286-add-playstore-and-appstore-logos-in-footer-just-li.md|Add Playstore and Appstore logos in footer just like Birdeye]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0287-contact-3-prospects-warm-up-3-inner-circle.md|Contact 3 prospects & warm up 3 inner circle]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0288-maak-een-link-in-bio-page-voor-prochat.md|Maak een link in bio page voor ProChat]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0289-contact-opnemen-met-contact-freek.md|Contact opnemen met contact Freek]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0290-finish-automation-jon.md|Finish automation Jon]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0291-maak-whatsapp-automation.md|Maak WhatsApp automation]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0292-make-hypotheek-calculator.md|Make Hypotheek calculator]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0293-add-picture-mc-for-bea.md|Add picture MC for Bea]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0294-make-a-loom-video-for-marlies.md|Make a Loom video for Marlies]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0295-voorbereiden-werk-klant-freek-webshop.md|Voorbereiden werk klant Freek webshop]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0296-check-and-reply-video-thiago.md|Check and reply video Thiago]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0297-call-daniel-santos.md|Call Daniel Santos]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0298-a2p-cledeslys.md|A2P Cledeslys]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0299-pilot-makelaar-automatisering.md|Pilot makelaar automatisering]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0300-send-google-review-requests.md|Send Google Review requests]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0301-make-certificate-for-neurad.md|Make certificate for NeurAD]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0302-installeer-suzys-catering-woocommerce.md|Installeer Suzy's Catering Woocommerce]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0303-fix-scroll-to-top.md|Fix scroll to top]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0304-change-button-mockup-message-homepage.md|Change button mockup message homepage]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0305-santos-pitch-mailen.md|Santos pitch mailen]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0306-afspraak-boeken-booking-agency-voor-maandag.md|Afspraak boeken booking agency voor maandag]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0307-contact-ghl-lower-subscription.md|Contact GHL lower subscription]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0308-put-payment-reminder-nbs-website-hosting.md|Put payment reminder NBS website hosting]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0309-maak-prochat-account-voor-z.md|Maak ProChat account voor Zé]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0310-set-up-tdp-prochat-acount.md|Set up TDP ProChat acount]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0311-meeting-met-jasper-voorbereiden.md|Meeting met Jasper voorbereiden]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0312-update-website-vincent.md|Update website Vincent]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0313-bel-anna-voor-potentieel-werk.md|Bel Anna voor potentieel werk]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0314-plan-predemo-webshop-with-suzanne.md|Plan predemo webshop with Suzanne]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0315-put-tracking-links.md|Put tracking links]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0316-cancel-adobe-stock.md|Cancel Adobe Stock]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0317-contactemail-list-building-functionality.md|Contact/Email list building functionality]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0318-react-to-telnyx-email-grant.md|React to Telnyx email grant]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0319-send-my-mother-photos-house.md|Send my mother photos house]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0320-put-real-estate-prospect-in-pipeline-prochat.md|Put Real Estate prospect in pipeline prochat]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0321-neuroad-project-asis-billboard-2-animatie.md|NeuroAD - Project Asis, billboard 2 + animatie]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0322-remove-the-creditcard-from-the-free-trial.md|Remove the creditcard from the free trial]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0323-book-meeting-with-vincent-for-next-week-afternoon-.md|Book meeting with Vincent for next week afternoon US time]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0324-neuroad-project-asis-billboard-1-animatie.md|NeuroAD - Project Asis, billboard 1 + animatie]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0325-apply-for-a-vapi-grant-with-jccproperties.md|Apply for a Vapi grant with JCCProperties]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0326-neuroad-maak-website-voor-asis-ajadien.md|NeuroAD - Maak website voor Asis Ajadien]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0327-maak-factuur-voor-tim-nav-werk-prochat.md|Maak factuur voor Tim nav werk ProChat]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0328-maak-website-voor-neuroad.md|Maak website voor NeuroAD]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0329-voorbereiding-call-athina.md|Voorbereiding call Athina]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0330-help-joe-with-his-questions.md|Help Joe with his questions]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0331-cancel-and-renew-awaz.md|Cancel and renew Awaz]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0332-contact-athena-for-prospects.md|Contact Athena for prospects]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0333-checkout-firebase.md|Checkout firebase]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0334-check-out-boltnew.md|Check out bolt.new]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0335-checkout-qwen-3-ai.md|Checkout Qwen 3 AI]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0336-maak-loom-video-marlies.md|Maak Loom video Marlies]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0337-update-proposal-jcc-properties.md|Update Proposal JCC Properties]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0338-maak-footer-mooi-kow-checking.md|Maak footer mooi Kow Checking]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0339-kow-check-ing-aanpassingen.md|Kow Check Ing aanpassingen]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0340-use-notebook-lm-for-bible-studies.md|Use notebook Lm for Bible studies]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0341-try-kirodev.md|Try Kiro.dev]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0342-verstuur-factuur-tdp.md|Verstuur factuur TDP]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0343-add-cursor-rules.md|Add cursor rules]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0344-transfer-ya-hosting.md|Transfer YA hosting]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0345-redesign-prochat-website.md|Redesign ProChat Website]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0346-finish-webshop-functionality-tdp.md|Finish webshop functionality TDP]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0595-maak-vragenlijst-voor-henk.md|Maak vragenlijst voor Henk]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0596-make-logo-for-suriname-groeit.md|Make logo for Suriname Groeit]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0597-react-to-telnyx.md|React to Telnyx]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0598-cancel-blush.md|Cancel Blush]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0599-send-out-invoices-tdp.md|Send out invoices TDP]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0600-contact-suzanne-login-stripe.md|Contact Suzanne login Stripe]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0601-make-6-promotion-video-animations-suriname-groeit.md|Make 6 promotion video animations Suriname Groeit]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0602-make-first-draft-youtube-plan-and-present-to-cris-.md|Make first draft YouTube plan and present to Cris, Joe & Giacomo]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0603-finish-website-suzys-catering.md|Finish website Suzy's Catering]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0604-make-kow-check-ing-logo.md|Make K'ow check ing logo]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0605-kow-check-ing-3d-animatie.md|K'ow check ing 3d animatie]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0606-make-audio-voice-radio-commercial.md|Make audio voice radio commercial]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0607-make-sg-logo-3-dimensional.md|Make SG logo 3 dimensional]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0608-make-free-essentials-guide-yt-channel.md|Make free essentials guide YT channel]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0609-call-accountant-register-prochat-company-in-portug.md|Call Accountant: Register ProChat company in Portugal]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0610-update-prochat-logo.md|Update ProChat logo]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0611-make-social-media-plan-royalties-voor-iedereen.md|Make Social Media Plan - Royalties voor iedereen]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0613-focus-op-magazijnbedrijven-met-veel-producten.md|Focus op magazijnbedrijven met veel producten]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0614-make-an-onboarding-scripts.md|Make an onboarding scripts]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0615-call-ghl-and-get-questions-answered.md|Call GHL and get questions answered]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0616-volg-de-dakdekkers-website-op.md|Volg de dakdekkers website op]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0617-make-the-prochat-business-logo-in-the-right-ghl-fo.md|Make the ProChat business logo in the right GHL format]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0618-make-a-retention-strategy.md|Make a Retention Strategy]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0619-make-a-footer-with-all-the-important-links-at-the-.md|Make a footer with all the important links at the bottom]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0620-make-a-kpi-review-checklist.md|Make a KPI review checklist]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0621-daily-prospecting.md|Daily prospecting]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0622-make-a-list-of-handy-links-to-keep-close-by-hand-f.md|Make a list of handy links to keep close by hand for sharing with clients]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0623-make-a-arkware-website-initial-one-page-draft.md|Make a ArkWare website initial one page draft]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0624-plaats-een-review-element-op-prochat.md|Plaats een review element op ProChat]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0625-maak-een-offer-voor-magazijnbedrijven.md|Maak een offer voor magazijnbedrijven]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0626-make-an-ascension-strategy.md|Make an Ascension Strategy]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0627-check-out-these-companies-and-research-them-as-the.md|Check out these companies and research them as they are your competitors]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0628-kow-check-ing-taken.md|Kow Check Ing taken]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0629-make-free-guide-gre-with-gammaapp.md|Make free guide GRE with gamma.app]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0630-factuur-opmaken-voor-freek.md|Factuur opmaken voor Freek]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0631-cancel-ai-employee.md|Cancel AI Employee]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0632-downgrade-ghl.md|Downgrade GHL]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0633-update-buon-seme.md|Update Buon Seme]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0634-maak-eerste-draft-funnel-cledeslys.md|Maak eerste draft funnel Cledeslys]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0635-call-radhamesh.md|Call Radhamesh]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0636-contact-opnemen-met-jasper.md|Contact opnemen met Jasper]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0637-renew-feelgoodwithana-yeshuaacademy.md|Renew Feelgoodwithana & yeshua.academy]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0638-contact-a-lead-warm-up-a-prospect.md|Contact a lead & warm up a prospect]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0639-add-playstore-and-appstore-logos-in-footer-just-li.md|Add Playstore and Appstore logos in footer just like Birdeye]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0640-contact-3-prospects-warm-up-3-inner-circle.md|Contact 3 prospects & warm up 3 inner circle]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0641-maak-een-link-in-bio-page-voor-prochat.md|Maak een link in bio page voor ProChat]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0642-contact-opnemen-met-contact-freek.md|Contact opnemen met contact Freek]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0643-finish-automation-jon.md|Finish automation Jon]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0644-maak-whatsapp-automation.md|Maak WhatsApp automation]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0645-make-hypotheek-calculator.md|Make Hypotheek calculator]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0646-add-picture-mc-for-bea.md|Add picture MC for Bea]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0647-make-a-loom-video-for-marlies.md|Make a Loom video for Marlies]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0648-voorbereiden-werk-klant-freek-webshop.md|Voorbereiden werk klant Freek webshop]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0649-check-and-reply-video-thiago.md|Check and reply video Thiago]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0650-call-daniel-santos.md|Call Daniel Santos]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0651-a2p-cledeslys.md|A2P Cledeslys]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0652-pilot-makelaar-automatisering.md|Pilot makelaar automatisering]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0653-send-google-review-requests.md|Send Google Review requests]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0654-make-certificate-for-neurad.md|Make certificate for NeurAD]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0655-installeer-suzys-catering-woocommerce.md|Installeer Suzy's Catering Woocommerce]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0656-fix-scroll-to-top.md|Fix scroll to top]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0657-change-button-mockup-message-homepage.md|Change button mockup message homepage]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0658-santos-pitch-mailen.md|Santos pitch mailen]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0659-afspraak-boeken-booking-agency-voor-maandag.md|Afspraak boeken booking agency voor maandag]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0660-contact-ghl-lower-subscription.md|Contact GHL lower subscription]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0661-put-payment-reminder-nbs-website-hosting.md|Put payment reminder NBS website hosting]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0662-maak-prochat-account-voor-z.md|Maak ProChat account voor Zé]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0663-set-up-tdp-prochat-acount.md|Set up TDP ProChat acount]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0664-meeting-met-jasper-voorbereiden.md|Meeting met Jasper voorbereiden]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0665-update-website-vincent.md|Update website Vincent]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0666-bel-anna-voor-potentieel-werk.md|Bel Anna voor potentieel werk]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0667-plan-predemo-webshop-with-suzanne.md|Plan predemo webshop with Suzanne]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0668-put-tracking-links.md|Put tracking links]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0669-cancel-adobe-stock.md|Cancel Adobe Stock]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0670-contactemail-list-building-functionality.md|Contact/Email list building functionality]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0671-react-to-telnyx-email-grant.md|React to Telnyx email grant]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0672-send-my-mother-photos-house.md|Send my mother photos house]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0673-put-real-estate-prospect-in-pipeline-prochat.md|Put Real Estate prospect in pipeline prochat]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0674-neuroad-project-asis-billboard-2-animatie.md|NeuroAD - Project Asis, billboard 2 + animatie]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0675-remove-the-creditcard-from-the-free-trial.md|Remove the creditcard from the free trial]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0676-book-meeting-with-vincent-for-next-week-afternoon-.md|Book meeting with Vincent for next week afternoon US time]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0677-neuroad-project-asis-billboard-1-animatie.md|NeuroAD - Project Asis, billboard 1 + animatie]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0678-apply-for-a-vapi-grant-with-jccproperties.md|Apply for a Vapi grant with JCCProperties]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0679-neuroad-maak-website-voor-asis-ajadien.md|NeuroAD - Maak website voor Asis Ajadien]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0680-maak-factuur-voor-tim-nav-werk-prochat.md|Maak factuur voor Tim nav werk ProChat]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0681-maak-website-voor-neuroad.md|Maak website voor NeuroAD]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0682-voorbereiding-call-athina.md|Voorbereiding call Athina]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0683-help-joe-with-his-questions.md|Help Joe with his questions]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0684-cancel-and-renew-awaz.md|Cancel and renew Awaz]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0685-contact-athena-for-prospects.md|Contact Athena for prospects]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0686-checkout-firebase.md|Checkout firebase]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0687-check-out-boltnew.md|Check out bolt.new]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0688-checkout-qwen-3-ai.md|Checkout Qwen 3 AI]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0689-maak-loom-video-marlies.md|Maak Loom video Marlies]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0690-update-proposal-jcc-properties.md|Update Proposal JCC Properties]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0691-maak-footer-mooi-kow-checking.md|Maak footer mooi Kow Checking]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0692-kow-check-ing-aanpassingen.md|Kow Check Ing aanpassingen]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0693-use-notebook-lm-for-bible-studies.md|Use notebook Lm for Bible studies]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0694-try-kirodev.md|Try Kiro.dev]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0695-verstuur-factuur-tdp.md|Verstuur factuur TDP]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0696-add-cursor-rules.md|Add cursor rules]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0697-transfer-ya-hosting.md|Transfer YA hosting]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0698-redesign-prochat-website.md|Redesign ProChat Website]] #p3 #you
+- [x] [[notes/04-tasks/business-tasks/0699-finish-webshop-functionality-tdp.md|Finish webshop functionality TDP]] #p3 #you
+- [x] [[notes/04-tasks/buy/0232-buy-door-bell-u-profile.md|Buy door bell & u-profile]] #p3 #you
+- [x] [[notes/04-tasks/buy/0233-uk-us-converter-power-plugs.md|UK & US converter power plugs]] #p3 #you
+- [x] [[notes/04-tasks/buy/0234-buy-led-strip-bed-check-office-light.md|Buy LED strip bed & check office light]] #p3 #you
+- [x] [[notes/04-tasks/buy/0235-accu-voor-ups.md|Accu voor UPS]] #p3 #you
+- [x] [[notes/04-tasks/buy/0236-polish-machine.md|Polish machine]] #p3 #you
+- [x] [[notes/04-tasks/buy/0237-repair-car-damage.md|Repair car damage]] #p3 #you
+- [x] [[notes/04-tasks/buy/0238-device-to-get-out-the-dents-of-the-car.md|Device to get out the dents of the car]] #p3 #you
+- [x] [[notes/04-tasks/buy/0239-bumperrubber-black-polish.md|Bumper/rubber black polish]] #p3 #you
+- [x] [[notes/04-tasks/buy/0734-buy-door-bell-u-profile.md|Buy door bell & u-profile]] #p3 #you
+- [x] [[notes/04-tasks/buy/0735-uk-us-converter-power-plugs.md|UK & US converter power plugs]] #p3 #you
+- [x] [[notes/04-tasks/buy/0736-buy-led-strip-bed-check-office-light.md|Buy LED strip bed & check office light]] #p3 #you
+- [x] [[notes/04-tasks/buy/0737-accu-voor-ups.md|Accu voor UPS]] #p3 #you
+- [x] [[notes/04-tasks/buy/0738-polish-machine.md|Polish machine]] #p3 #you
+- [x] [[notes/04-tasks/buy/0739-repair-car-damage.md|Repair car damage]] #p3 #you
+- [x] [[notes/04-tasks/buy/0740-device-to-get-out-the-dents-of-the-car.md|Device to get out the dents of the car]] #p3 #you
+- [x] [[notes/04-tasks/buy/0741-bumperrubber-black-polish.md|Bumper/rubber black polish]] #p3 #you
+- [x] [[notes/04-tasks/church-tasks/0722-aangifte-omzetbelasting-einde-maand.md|Aangifte omzetbelasting einde maand]] #p3 #you
+- [x] [[notes/04-tasks/church-tasks/0723-aangifte-omzetbelasting-einde-maand.md|Aangifte omzetbelasting einde maand]] #p3 #you
+- [x] [[notes/04-tasks/church-tasks/0724-transfer-buonseme-mc-domains.md|Transfer buonseme & mc domains]] #p3 #you
+- [x] [[notes/04-tasks/church-tasks/0725-check-of-bea-mc-wilt-verlengen.md|Check of Bea MC wilt verlengen]] #p3 #you
+- [x] [[notes/04-tasks/church-tasks/0726-nbs-website-overdragen.md|NBS website overdragen]] #p3 #you
+- [x] [[notes/04-tasks/church-tasks/0727-aangifte-omzetbelasting-einde-maand.md|Aangifte omzetbelasting einde maand]] #p3 #you
+- [x] [[notes/04-tasks/family-tasks/0002-make-new-invoice-for-freek.md|Make new invoice for Freek]] #p3 #you
+- [x] [[notes/04-tasks/family-tasks/0003-vliegticket-boeken-moeders.md|Vliegticket boeken moeders]] #p3 #you
+- [x] [[notes/04-tasks/family-tasks/0004-opmaken-factuur-suzanne-voor-freek.md|Opmaken factuur Suzanne voor Freek]] #p3 #you
+- [x] [[notes/04-tasks/family-tasks/0005-prepare-bijbelstudie-radhames.md|Prepare bijbelstudie Radhames]] #p3 #you
+- [x] [[notes/04-tasks/family-tasks/0006-aangifte-omzetbelasting-einde-maand.md|Aangifte omzetbelasting einde maand]] #p3 #you
+- [x] [[notes/04-tasks/family-tasks/0370-make-new-invoice-for-freek.md|Make new invoice for Freek]] #p3 #you
+- [x] [[notes/04-tasks/family-tasks/0371-vliegticket-boeken-moeders.md|Vliegticket boeken moeders]] #p3 #you
+- [x] [[notes/04-tasks/family-tasks/0372-opmaken-factuur-suzanne-voor-freek.md|Opmaken factuur Suzanne voor Freek]] #p3 #you
+- [x] [[notes/04-tasks/family-tasks/0373-prepare-bijbelstudie-radhames.md|Prepare bijbelstudie Radhames]] #p3 #you
+- [x] [[notes/04-tasks/family-tasks/0374-aangifte-omzetbelasting-einde-maand.md|Aangifte omzetbelasting einde maand]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0013-vraag-google-grant-aan-yeshua-academy.md|Vraag Google Grant aan Yeshua Academy]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0014-transfer-money-franco-certificate-valenza.md|Transfer money Franco certificate Valenza]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0015-charge-car.md|Charge car]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0016-antwoord-easy-kantoor.md|Antwoord Easy Kantoor]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0017-ask-joe-is-he-needs-help.md|Ask Joe is he needs help]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0018-send-octo-identifier-franco.md|Send Octo identifier Franco]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0019-make-gdrive-laptop-ana.md|Make Gdrive laptop Ana]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0020-ask-pedro-if-he-knows-someone-to-help-jon-w-digita.md|Ask Pedro if he knows someone to help Jon w/ digital nomad visa's]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0021-yeshua-academy-administratie.md|Yeshua Academy Administratie]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0022-yeshua-academy-administratie.md|Yeshua Academy Administratie]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0023-henk-bellen.md|Henk bellen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0024-fix-kitchen-island-light-wire-new-black-damaged-on.md|Fix kitchen island light wire (new black damaged one)]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0025-spotify-family-yearly-payment.md|Spotify family yearly payment]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0026-anbi-aanvraag-heropvoeren.md|ANBI aanvraag heropvoeren]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0027-cancel-prime.md|Cancel Prime]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0028-app-roos.md|App Roos]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0029-timemachine-on-google-drive.md|Timemachine on Google Drive]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0030-make-ii-tech-newsletter-form.md|Make II Tech Newsletter form]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0031-timemachine-on-google-drive-for-ana.md|Timemachine on Google Drive for Ana]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0032-clean-office.md|Clean office]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0033-download-logos-free-2-x-e-books-1-x-audio-book.md|Download Logos free 2 x e-books & 1 x audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0034-logos-free-e-book-2x-audio-book.md|Logos free E-book (2x) & Audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0035-logos-free-e-book-2x-audio-book.md|Logos free E-book (2x) & Audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0036-email-account-rechttrekkens-en-opruimen-chemicloud.md|Email account rechttrekkens en opruimen Chemicloud/Hostinger]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0037-yeshua-academy-administratie.md|Yeshua Academy Administratie]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0038-send-ana-answers-questions.md|Send Ana answers questions]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0039-opa-bellen.md|Opa bellen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0040-call-roos.md|Call Roos]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0041-onderteken-toestemmingsverklaring-kvk-huren-arkwar.md|Onderteken toestemmingsverklaring KvK huren ArkWare solutions adres Portugal (Ana printen & ondertekenen)]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0042-respond-to-cris.md|Respond to Cris]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0043-call-moeders.md|Call Moeders]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0044-buy-tv.md|Buy TV]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0045-maak-een-solano-wallet-aan.md|Maak een Solano wallet aan]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0046-ask-kitchen-guy-for-update.md|Ask kitchen guy for update]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0047-yeshua-academy-administratie.md|Yeshua Academy Administratie]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0048-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0049-go-through-all-the-documents-of-pavel.md|Go through all the documents of Pavel]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0050-update-my-linkedin-profile.md|Update my LinkedIn profile]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0051-check-linkedin-review-tim.md|Check LinkedIn review Tim]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0052-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0053-contact-3-prospects.md|Contact 3 prospects]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0054-call-someone.md|Call someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0055-make-a-way-in-clickup-that-reminds-me-of-the-main-.md|Make a way in ClickUp that reminds me of the main focus]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0056-check-for-jon-saar-fb-pages.md|Check for Jon Saar fb pages]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0057-uitzoeken-anbi.md|Uitzoeken ANBI]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0058-call-someone.md|Call someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0059-maak-het-huiswerk-verder-af-van-de-saaspreneur-tra.md|Maak het huiswerk verder af van de Saaspreneur training]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0060-contact-3-prospects.md|Contact 3 prospects]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0061-google-accounts-rechttrekken.md|Google accounts rechttrekken]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0062-renato-bellen.md|Renato bellen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0063-contact-daniel.md|Contact Daniel]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0064-check-esta.md|Check esta]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0065-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0066-prepare-account-of-vincent.md|Prepare account of Vincent]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0067-wat-moet-ik-allemaal-doen-aan-administratie-en-hoe.md|Wat moet ik allemaal doen aan administratie en hoe vaak?]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0068-koop-producten-in-vodafone-webshop.md|Koop producten in Vodafone webshop]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0069-buy-present-for-ana.md|Buy present for Ana]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0070-download-logos-free-2-x-e-books-1-x-audio-book.md|Download Logos free 2 x e-books & 1 x audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0071-call-someone.md|Call someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0072-send-mom-whats-app-fotos-franco.md|Send mom what’s app fotos Franco]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0073-take-car-to-garage-put-gas.md|Take car to garage & put gas]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0074-find-plastic-cover-for-wood.md|Find plastic cover for wood]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0075-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0076-time-machine-cloud-solutions.md|Time machine cloud solutions]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0077-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0078-bring-12-extra-for-january-gym.md|Bring €12 extra for January (gym)]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0079-yeshua-academy-administratie.md|Yeshua Academy Administratie]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0080-hang-the-dinner-table-lights.md|Hang the dinner table lights]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0081-return-wifi-router.md|Return wifi router]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0082-logos-free-e-book-2x-audio-book.md|Logos free E-book (2x) & Audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0084-check-for-a-laptop-for-ana.md|Check for a laptop for Ana]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0086-fix-of-retourneer-miner-cable.md|Fix of retourneer miner cable]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0087-book-appointment-with-imtcustoms-online.md|Book appointment with IMT/Customs online]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0088-check-suit-tie-and-shoes.md|Check suit, tie and shoes]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0089-check-out-the-lights-ana-send-me.md|Check out the lights Ana send me]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0090-clean-toilets-and-fix-odor.md|Clean toilets and fix odor]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0091-mix-the-ashes-and-remove-metal.md|Mix the ashes and remove metal]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0092-respond-franco.md|Respond Franco]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0093-close-air-vents-both-toilets.md|Close air vents both toilets]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0094-burn-paper.md|Burn paper]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0095-crush-cabinets.md|Crush cabinets]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0096-wc-brillen-monteren.md|WC brillen monteren]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0097-clean-terras.md|Clean terras]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0098-make-payment-link-ing.md|Make payment link ING]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0099-download-logos-free-2-x-e-books-1-x-audio-book.md|Download Logos free 2 x e-books & 1 x audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0100-put-anbi-info-on-ya.md|Put ANBI info on YA]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0101-download-logos-free-2-x-e-books-1-x-audio-book.md|Download Logos free 2 x e-books & 1 x audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0102-schrijf-anbi-beleidsplan.md|Schrijf ANBI beleidsplan]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0103-make-boston-calculations.md|Make Boston calculations]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0104-hoe-vervangen-we-freek-als-kerkbestuurder.md|Hoe vervangen we Freek als kerkbestuurder?]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0105-check-in-flights.md|Check-in Flights]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0106-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0107-google-reacted-ya-domain-workspace.md|Google reacted YA domain workspace?]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0108-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0109-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0110-auto-inpakken-spullen-gang.md|Auto inpakken spullen gang]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0111-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0112-make-menu-place-video-via-di-eden.md|Make menu + place video Via di Eden]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0113-find-parts-supplier-washing-machine.md|Find parts supplier washing machine]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0114-body-shave-after-gym.md|Body shave after gym]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0115-check-voor-netflix-abonnement.md|Check voor Netflix abonnement]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0116-cancel-logos.md|Cancel Logos]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0117-clean-the-office.md|Clean the office]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0118-put-wifi-miners-home-network.md|Put wifi Miners home network]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0119-keys.md|Keys]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0120-kabel-miro-zoeken.md|Kabel Miro zoeken]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0121-contact-radhamess.md|Contact Radhames’s]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0122-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0123-send-ana-expenses-of-america.md|Send Ana expenses of America]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0124-measure-o-ring-ventilator-and-send-to-gomes.md|Measure O ring ventilator and send to Gomes]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0125-bill-joe-for-mm.md|Bill Joe for MM]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0126-cancel-amazon.md|Cancel Amazon]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0127-research-this-guy-and-his-company.md|Research this guy and his company]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0128-videos-miro-opnieuw-doen.md|Video’s Miro opnieuw doen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0129-connect-wifi-temperature-device.md|Connect Wifi temperature device]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0130-read-anas-reaction-to-my-bps.md|Read Ana's reaction to my BPS]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0131-check-car-battery-and-let-franco-know.md|Check car battery and let Franco know]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0132-check-1-gaia-serie-voor-richard.md|Check 1 Gaia serie voor Richard]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0133-tim-bellen.md|Tim bellen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0134-check-deur-koelkast.md|Check deur koelkast]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0135-boodschappen-doen.md|Boodschappen doen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0136-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0137-charge-the-car.md|Charge the car]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0138-calculate-ing-total-and-send-to-joah.md|Calculate ING total and send to Joah]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0139-bring-car-to-garage-for-battery.md|Bring car to garage for battery]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0140-contact-oma.md|Contact Oma]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0141-remove-doorstop.md|Remove doorstop]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0142-ask-gomes-santos-for-fire-place-heat-protection.md|Ask Gomes & Santos for fire place heat protection]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0143-arkware-ld-pc-one-en-youtube-kanaal-inrichten.md|ArkWare, LD, PC, ONE en YouTube kanaal inrichten]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0144-cancel-amazon-prime-es.md|Cancel Amazon Prime ES]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0145-maak-wxm-coins-over-freek.md|Maak WXM coins over Freek]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0146-book-barber.md|Book barber]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0147-moeders-bellen.md|Moeders bellen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0148-boodschappen.md|Boodschappen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0149-cancel-amazon-prime-us.md|Cancel Amazon Prime US]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0150-neem-handschoenen-mee-gym.md|Neem handschoenen mee gym]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0151-cancel-apple-music-apple-tv.md|Cancel Apple Music & Apple TV+]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0152-disconnect-octo.md|Disconnect Octo]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0153-did-ana-check-separate-bank-account.md|Did Ana check separate bank account?]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0154-prepare-bible-study-radhamesh.md|Prepare bible study Radhamesh]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0155-check-for-rnato.md|Check for Rénato]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0156-bel-moeders.md|Bel moeders]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0157-reconfigure-home-wifi-network.md|Reconfigure home WiFi network]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0158-yeshua-academy-admin.md|Yeshua Academy Admin]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0159-bel-moeders.md|Bel moeders]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0160-plan-visit-moeders-and-propose-date.md|Plan visit moeders and propose date]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0161-make-a-house-church-app.md|Make a house church app]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0162-today-todo.md|Today todo]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0163-march-10-end-of-italian-car-insurance.md|March 10 end of Italian car insurance]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0164-migrate-away-from-prochat.md|Migrate away from ProChat]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0165-make-bible-study-marriage-for-veronica-z.md|Make bible study marriage for Veronica & Zé]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0166-make-bible-study-for-albert.md|Make bible study for Albert]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0167-make-a-new-letter-with-proofs-for-taxes-car.md|Make a new letter with proofs for taxes car]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0168-reageer-op-donat.md|Reageer op Donat]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0169-send-santos-pictures-night-stand-ask-sofa-bed.md|Send Santos pictures night stand & ask sofa bed]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0170-bereid-gesprek-athina-voor.md|Bereid gesprek Athina voor]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0171-yeshua-academy-admin.md|Yeshua Academy Admin]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0172-bel-raymond.md|Bel Raymond]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0173-doe-ib-aangifte.md|Doe IB aangifte]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0174-clean-windows.md|Clean windows]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0175-laat-ana-vodafone-betalen.md|Laat Ana Vodafone betalen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0176-call-rnato.md|Call Rénato]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0177-check-with-ana-gomes.md|Check with Ana Gomes]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0178-fix-email-suzanne.md|Fix email Suzanne]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0179-finish-website-gold-real-estate.md|Finish website Gold Real Estate]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0180-logos-free-e-book-2x-audio-book.md|Logos free E-book (2x) & Audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0181-prepare-oplevering-marlies.md|Prepare oplevering Marlies]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0182-contact-norbert.md|Contact Norbert]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0183-ya-financial-admin.md|YA Financial Admin]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0184-prepare-birthday-ana.md|Prepare Birthday Ana]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0185-ya-financial-admin-aug-sep.md|YA Financial Admin Aug + Sep]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0186-make-a-financial-administration-for-prochat.md|Make a financial administration for ProChat]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0187-prepare-questions-pedro.md|Prepare questions Pedro]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0188-call-albert.md|Call Albert]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0189-make-invoice-tdp.md|Make invoice TDP]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0190-secure-data-cledeslys-avigdor-teknow.md|Secure data Cledeslys, Avigdor & Tek'Now]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0191-make-2-recurring-invoices-for-joe.md|Make 2 recurring invoices for Joe]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0192-which-denomination-beliefs-what-things.md|Which denomination beliefs what things?]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0193-research-name-daughter.md|Research name daughter]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0194-check-for-portugese-bank-account.md|Check for Portugese bank account]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0195-social-media-toevoegen-tdp.md|Social Media toevoegen TDP]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0196-prepare-overdracht-jon.md|Prepare overdracht Jon]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0197-buy-a-drill.md|Buy a drill]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0198-fix-the-double-agenda-points.md|Fix the double agenda points]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0199-self-host-microsaasfast.md|Self Host MicroSaasFast]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0381-vraag-google-grant-aan-yeshua-academy.md|Vraag Google Grant aan Yeshua Academy]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0382-transfer-money-franco-certificate-valenza.md|Transfer money Franco certificate Valenza]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0383-charge-car.md|Charge car]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0384-antwoord-easy-kantoor.md|Antwoord Easy Kantoor]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0385-ask-joe-is-he-needs-help.md|Ask Joe is he needs help]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0386-send-octo-identifier-franco.md|Send Octo identifier Franco]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0387-make-gdrive-laptop-ana.md|Make Gdrive laptop Ana]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0388-ask-pedro-if-he-knows-someone-to-help-jon-w-digita.md|Ask Pedro if he knows someone to help Jon w/ digital nomad visa's]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0389-yeshua-academy-administratie.md|Yeshua Academy Administratie]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0390-yeshua-academy-administratie.md|Yeshua Academy Administratie]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0391-henk-bellen.md|Henk bellen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0392-fix-kitchen-island-light-wire-new-black-damaged-on.md|Fix kitchen island light wire (new black damaged one)]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0393-spotify-family-yearly-payment.md|Spotify family yearly payment]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0394-anbi-aanvraag-heropvoeren.md|ANBI aanvraag heropvoeren]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0395-cancel-prime.md|Cancel Prime]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0396-app-roos.md|App Roos]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0397-timemachine-on-google-drive.md|Timemachine on Google Drive]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0398-make-ii-tech-newsletter-form.md|Make II Tech Newsletter form]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0399-timemachine-on-google-drive-for-ana.md|Timemachine on Google Drive for Ana]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0400-clean-office.md|Clean office]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0401-download-logos-free-2-x-e-books-1-x-audio-book.md|Download Logos free 2 x e-books & 1 x audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0402-logos-free-e-book-2x-audio-book.md|Logos free E-book (2x) & Audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0403-logos-free-e-book-2x-audio-book.md|Logos free E-book (2x) & Audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0404-email-account-rechttrekkens-en-opruimen-chemicloud.md|Email account rechttrekkens en opruimen Chemicloud/Hostinger]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0405-yeshua-academy-administratie.md|Yeshua Academy Administratie]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0406-send-ana-answers-questions.md|Send Ana answers questions]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0407-opa-bellen.md|Opa bellen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0408-call-roos.md|Call Roos]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0409-onderteken-toestemmingsverklaring-kvk-huren-arkwar.md|Onderteken toestemmingsverklaring KvK huren ArkWare solutions adres Portugal (Ana printen & ondertekenen)]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0410-respond-to-cris.md|Respond to Cris]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0411-call-moeders.md|Call Moeders]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0412-buy-tv.md|Buy TV]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0413-maak-een-solano-wallet-aan.md|Maak een Solano wallet aan]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0414-ask-kitchen-guy-for-update.md|Ask kitchen guy for update]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0415-yeshua-academy-administratie.md|Yeshua Academy Administratie]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0416-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0417-go-through-all-the-documents-of-pavel.md|Go through all the documents of Pavel]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0418-update-my-linkedin-profile.md|Update my LinkedIn profile]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0419-check-linkedin-review-tim.md|Check LinkedIn review Tim]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0420-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0421-contact-3-prospects.md|Contact 3 prospects]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0422-call-someone.md|Call someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0423-make-a-way-in-clickup-that-reminds-me-of-the-main-.md|Make a way in ClickUp that reminds me of the main focus]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0424-check-for-jon-saar-fb-pages.md|Check for Jon Saar fb pages]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0425-uitzoeken-anbi.md|Uitzoeken ANBI]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0426-call-someone.md|Call someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0427-maak-het-huiswerk-verder-af-van-de-saaspreneur-tra.md|Maak het huiswerk verder af van de Saaspreneur training]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0428-contact-3-prospects.md|Contact 3 prospects]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0429-google-accounts-rechttrekken.md|Google accounts rechttrekken]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0430-renato-bellen.md|Renato bellen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0431-contact-daniel.md|Contact Daniel]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0432-check-esta.md|Check esta]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0433-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0434-prepare-account-of-vincent.md|Prepare account of Vincent]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0435-wat-moet-ik-allemaal-doen-aan-administratie-en-hoe.md|Wat moet ik allemaal doen aan administratie en hoe vaak?]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0436-koop-producten-in-vodafone-webshop.md|Koop producten in Vodafone webshop]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0437-buy-present-for-ana.md|Buy present for Ana]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0438-download-logos-free-2-x-e-books-1-x-audio-book.md|Download Logos free 2 x e-books & 1 x audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0439-call-someone.md|Call someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0440-send-mom-whats-app-fotos-franco.md|Send mom what’s app fotos Franco]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0441-take-car-to-garage-put-gas.md|Take car to garage & put gas]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0442-find-plastic-cover-for-wood.md|Find plastic cover for wood]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0443-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0444-time-machine-cloud-solutions.md|Time machine cloud solutions]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0445-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0446-bring-12-extra-for-january-gym.md|Bring €12 extra for January (gym)]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0447-yeshua-academy-administratie.md|Yeshua Academy Administratie]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0448-hang-the-dinner-table-lights.md|Hang the dinner table lights]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0449-return-wifi-router.md|Return wifi router]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0450-logos-free-e-book-2x-audio-book.md|Logos free E-book (2x) & Audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0452-check-for-a-laptop-for-ana.md|Check for a laptop for Ana]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0454-fix-of-retourneer-miner-cable.md|Fix of retourneer miner cable]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0455-book-appointment-with-imtcustoms-online.md|Book appointment with IMT/Customs online]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0456-check-suit-tie-and-shoes.md|Check suit, tie and shoes]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0457-check-out-the-lights-ana-send-me.md|Check out the lights Ana send me]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0458-clean-toilets-and-fix-odor.md|Clean toilets and fix odor]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0459-mix-the-ashes-and-remove-metal.md|Mix the ashes and remove metal]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0460-respond-franco.md|Respond Franco]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0461-close-air-vents-both-toilets.md|Close air vents both toilets]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0462-burn-paper.md|Burn paper]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0463-crush-cabinets.md|Crush cabinets]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0464-wc-brillen-monteren.md|WC brillen monteren]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0465-clean-terras.md|Clean terras]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0466-make-payment-link-ing.md|Make payment link ING]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0467-download-logos-free-2-x-e-books-1-x-audio-book.md|Download Logos free 2 x e-books & 1 x audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0468-put-anbi-info-on-ya.md|Put ANBI info on YA]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0469-download-logos-free-2-x-e-books-1-x-audio-book.md|Download Logos free 2 x e-books & 1 x audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0470-schrijf-anbi-beleidsplan.md|Schrijf ANBI beleidsplan]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0471-make-boston-calculations.md|Make Boston calculations]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0472-hoe-vervangen-we-freek-als-kerkbestuurder.md|Hoe vervangen we Freek als kerkbestuurder?]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0473-check-in-flights.md|Check-in Flights]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0474-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0475-google-reacted-ya-domain-workspace.md|Google reacted YA domain workspace?]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0476-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0477-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0478-auto-inpakken-spullen-gang.md|Auto inpakken spullen gang]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0479-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0480-make-menu-place-video-via-di-eden.md|Make menu + place video Via di Eden]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0481-find-parts-supplier-washing-machine.md|Find parts supplier washing machine]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0482-body-shave-after-gym.md|Body shave after gym]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0483-check-voor-netflix-abonnement.md|Check voor Netflix abonnement]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0484-cancel-logos.md|Cancel Logos]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0485-clean-the-office.md|Clean the office]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0486-put-wifi-miners-home-network.md|Put wifi Miners home network]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0487-keys.md|Keys]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0488-kabel-miro-zoeken.md|Kabel Miro zoeken]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0489-contact-radhamess.md|Contact Radhames’s]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0490-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0491-send-ana-expenses-of-america.md|Send Ana expenses of America]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0492-measure-o-ring-ventilator-and-send-to-gomes.md|Measure O ring ventilator and send to Gomes]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0493-bill-joe-for-mm.md|Bill Joe for MM]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0494-cancel-amazon.md|Cancel Amazon]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0495-research-this-guy-and-his-company.md|Research this guy and his company]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0496-videos-miro-opnieuw-doen.md|Video’s Miro opnieuw doen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0497-connect-wifi-temperature-device.md|Connect Wifi temperature device]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0498-read-anas-reaction-to-my-bps.md|Read Ana's reaction to my BPS]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0499-check-car-battery-and-let-franco-know.md|Check car battery and let Franco know]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0500-check-1-gaia-serie-voor-richard.md|Check 1 Gaia serie voor Richard]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0501-tim-bellen.md|Tim bellen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0502-check-deur-koelkast.md|Check deur koelkast]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0503-boodschappen-doen.md|Boodschappen doen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0504-contact-someone.md|Contact someone]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0505-charge-the-car.md|Charge the car]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0506-calculate-ing-total-and-send-to-joah.md|Calculate ING total and send to Joah]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0507-bring-car-to-garage-for-battery.md|Bring car to garage for battery]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0508-contact-oma.md|Contact Oma]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0509-remove-doorstop.md|Remove doorstop]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0510-ask-gomes-santos-for-fire-place-heat-protection.md|Ask Gomes & Santos for fire place heat protection]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0511-arkware-ld-pc-one-en-youtube-kanaal-inrichten.md|ArkWare, LD, PC, ONE en YouTube kanaal inrichten]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0512-cancel-amazon-prime-es.md|Cancel Amazon Prime ES]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0513-maak-wxm-coins-over-freek.md|Maak WXM coins over Freek]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0514-book-barber.md|Book barber]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0515-moeders-bellen.md|Moeders bellen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0516-boodschappen.md|Boodschappen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0517-cancel-amazon-prime-us.md|Cancel Amazon Prime US]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0518-neem-handschoenen-mee-gym.md|Neem handschoenen mee gym]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0519-cancel-apple-music-apple-tv.md|Cancel Apple Music & Apple TV+]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0520-disconnect-octo.md|Disconnect Octo]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0521-did-ana-check-separate-bank-account.md|Did Ana check separate bank account?]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0522-prepare-bible-study-radhamesh.md|Prepare bible study Radhamesh]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0523-check-for-rnato.md|Check for Rénato]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0524-bel-moeders.md|Bel moeders]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0525-reconfigure-home-wifi-network.md|Reconfigure home WiFi network]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0526-yeshua-academy-admin.md|Yeshua Academy Admin]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0527-bel-moeders.md|Bel moeders]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0528-plan-visit-moeders-and-propose-date.md|Plan visit moeders and propose date]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0529-make-a-house-church-app.md|Make a house church app]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0530-today-todo.md|Today todo]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0531-march-10-end-of-italian-car-insurance.md|March 10 end of Italian car insurance]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0532-migrate-away-from-prochat.md|Migrate away from ProChat]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0533-make-bible-study-marriage-for-veronica-z.md|Make bible study marriage for Veronica & Zé]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0534-make-bible-study-for-albert.md|Make bible study for Albert]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0535-make-a-new-letter-with-proofs-for-taxes-car.md|Make a new letter with proofs for taxes car]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0536-reageer-op-donat.md|Reageer op Donat]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0537-send-santos-pictures-night-stand-ask-sofa-bed.md|Send Santos pictures night stand & ask sofa bed]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0538-bereid-gesprek-athina-voor.md|Bereid gesprek Athina voor]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0539-yeshua-academy-admin.md|Yeshua Academy Admin]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0540-bel-raymond.md|Bel Raymond]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0541-doe-ib-aangifte.md|Doe IB aangifte]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0542-clean-windows.md|Clean windows]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0543-laat-ana-vodafone-betalen.md|Laat Ana Vodafone betalen]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0544-call-rnato.md|Call Rénato]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0545-check-with-ana-gomes.md|Check with Ana Gomes]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0546-fix-email-suzanne.md|Fix email Suzanne]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0547-finish-website-gold-real-estate.md|Finish website Gold Real Estate]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0548-logos-free-e-book-2x-audio-book.md|Logos free E-book (2x) & Audio book]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0549-prepare-oplevering-marlies.md|Prepare oplevering Marlies]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0550-contact-norbert.md|Contact Norbert]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0551-ya-financial-admin.md|YA Financial Admin]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0552-prepare-birthday-ana.md|Prepare Birthday Ana]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0553-ya-financial-admin-aug-sep.md|YA Financial Admin Aug + Sep]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0554-make-a-financial-administration-for-prochat.md|Make a financial administration for ProChat]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0555-prepare-questions-pedro.md|Prepare questions Pedro]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0556-call-albert.md|Call Albert]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0557-make-invoice-tdp.md|Make invoice TDP]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0558-secure-data-cledeslys-avigdor-teknow.md|Secure data Cledeslys, Avigdor & Tek'Now]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0559-make-2-recurring-invoices-for-joe.md|Make 2 recurring invoices for Joe]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0560-which-denomination-beliefs-what-things.md|Which denomination beliefs what things?]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0561-research-name-daughter.md|Research name daughter]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0562-check-for-portugese-bank-account.md|Check for Portugese bank account]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0563-social-media-toevoegen-tdp.md|Social Media toevoegen TDP]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0564-prepare-overdracht-jon.md|Prepare overdracht Jon]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0565-buy-a-drill.md|Buy a drill]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0566-fix-the-double-agenda-points.md|Fix the double agenda points]] #p3 #you
+- [x] [[notes/04-tasks/personal-tasks/0567-self-host-microsaasfast.md|Self Host MicroSaasFast]] #p3 #you
 
 
 %% kanban:settings
