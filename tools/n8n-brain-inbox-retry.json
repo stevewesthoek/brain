@@ -136,28 +136,33 @@
       }
     },
     {
+      "id": "node-retry-build-payload",
+      "name": "Build Update Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 0],
       "parameters": {
-        "resource": "file",
-        "operation": "edit",
-        "owner": "stevewesthoek",
-        "repository": "brain",
-        "filePath": "={{ $json.filepath }}",
-        "fileContent": "={{ $json.classifiedContent }}",
-        "commitMessage": "=brain: classified (retry) — {{ $json.title }} ({{ $json.para_type }})",
-        "additionalParameters": {
-          "parameters": [
-            {
-              "name": "sha",
-              "value": "={{ $json.sha }}"
-            }
-          ]
-        }
+        "jsCode": "const classified = $input.first().json;\nconst sha = classified.sha;\nif (!sha) {\n  throw new Error(`SHA missing for ${classified.filepath}`);\n}\nconst contentBase64 = Buffer.from(classified.classifiedContent, 'utf8').toString('base64');\nreturn [{\n  json: {\n    filepath: classified.filepath,\n    title: classified.title,\n    para_type: classified.para_type,\n    putBody: JSON.stringify({\n      message: `brain: classified (retry) — ${classified.title} (${classified.para_type})`,\n      content: contentBase64,\n      sha\n    })\n  }\n}];"
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/stevewesthoek/brain/contents/{{ $json.filepath }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "string",
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.putBody }}",
+        "options": {}
       },
       "id": "node-retry-github-update",
       "name": "GitHub — Update Classified",
-      "type": "n8n-nodes-base.github",
-      "typeVersion": 1,
-      "position": [1540, 0],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 0],
       "credentials": {
         "githubApi": {
           "id": "hb7xeHwPFTy8kTy4",
@@ -189,6 +194,9 @@
       ]
     },
     "Build Classified Note": {
+      "main": [[{ "node": "Build Update Payload", "type": "main", "index": 0 }]]
+    },
+    "Build Update Payload": {
       "main": [[{ "node": "GitHub — Update Classified", "type": "main", "index": 0 }]]
     }
   },
