@@ -6,7 +6,7 @@ para_type: resource
 confidence: 1
 signal_quality: 0.95
 created: 2026-04-10
-status: unrouted
+status: ready-for-review
 ---
 
 # Website General Styles
