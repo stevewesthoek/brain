@@ -44,13 +44,15 @@ When working across repos, treat each Git repo independently. Do not apply one r
 ## Brain repo structure
 
 - `ai/skills/` — skill management (active symlinks, vendors, custom)
-- `tools/scripts/` — utility and workflow scripts (boilerplate sync, cleanup helpers, etc.)
+- `tools/scripts/` — utility and workflow scripts
+  - `brain-auto-router.py` — Auto-Router automation (runs every 1 minute via cron; routes inbox notes based on decision tree). See `operations/runbooks/brain-auto-router.md` for full docs.
   - `repos.sh` — unified repo picker (`repos` shell command): pick Claude or Codex, then pick a repo to open
   - `sessions.sh` — unified session picker (`sessions` shell command): pick Claude or Codex, then resume a session
   - `backup-n8n.sh` — server-side export of live n8n credentials/workflows into the gitignored local backup folder
-- `tools/n8n-api.sh` — wrapper for the live `n8n.prochat.tools` Public API
+- `tools/n8n-api.sh` — wrapper for the live `n8n.prochat.tools` Public API (for manual n8n workflow management)
 - `operations/system-configs/` — global tool configs, all symlinked from home directory
 - `operations/runbooks/` — documentation for key tools and workflows
+  - `brain-auto-router.md` — Python Auto-Router script, cron scheduling, decision tree logic, troubleshooting
   - `playwright.md` — Playwright CLI usage, patterns, and nightly scheduler integration
   - `notebooklm.md` — NotebookLM CLI v0.3.4, research workflows, batch operations, nightly scheduler integration
 - `operations/decision-log.md` — confirmed decisions for the brain repo itself
