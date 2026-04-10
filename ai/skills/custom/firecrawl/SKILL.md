@@ -5,7 +5,7 @@ description: Default tool for ALL web data tasks — searching the internet, scr
 
 # /firecrawl — Self-Hosted Web Data API
 
-**Default web research tool.** Self-hosted Firecrawl API at `https://firecrawl.prochat.tools` for token-efficient, structured web scraping and search.
+**Default web research tool for Claude Code, Codex, and Gemini.** Self-hosted Firecrawl API on Tailscale (`http://100.83.38.48:3002`) for token-efficient, structured web scraping and search.
 
 - **Token efficiency**: 75–90% reduction vs raw HTML (returns clean markdown)
 - **AI-agnostic**: Works with Claude Code, Codex, Gemini Flash
@@ -33,13 +33,14 @@ description: Default tool for ALL web data tasks — searching the internet, scr
 
 ## API Endpoints
 
-**Base URL:** `https://firecrawl.prochat.tools`  
+**Tailscale Endpoint:** `http://100.83.38.48:3002`  
+**Auth:** None (self-hosted, authentication disabled)  
 **Auth:** None (self-hosted, `USE_DB_AUTHENTICATION=false`)
 
 ### Search the Web
 
 ```bash
-curl -X POST https://firecrawl.prochat.tools/v1/search \
+curl -X POST http://100.83.38.48:3002/v1/search \
   -H 'Content-Type: application/json' \
   -d '{
     "query": "your search query",
@@ -66,7 +67,7 @@ curl -X POST https://firecrawl.prochat.tools/v1/search \
 ### Scrape a Single URL
 
 ```bash
-curl -X POST https://firecrawl.prochat.tools/v1/scrape \
+curl -X POST http://100.83.38.48:3002/v1/scrape \
   -H 'Content-Type: application/json' \
   -d '{
     "url": "https://example.com/page",
@@ -90,7 +91,7 @@ curl -X POST https://firecrawl.prochat.tools/v1/scrape \
 
 ```bash
 # Start crawl
-curl -X POST https://firecrawl.prochat.tools/v1/crawl \
+curl -X POST http://100.83.38.48:3002/v1/crawl \
   -H 'Content-Type: application/json' \
   -d '{
     "url": "https://example.com",
@@ -104,7 +105,7 @@ curl -X POST https://firecrawl.prochat.tools/v1/crawl \
 # }
 
 # Check status (poll)
-curl https://firecrawl.prochat.tools/v1/crawl/crawl-12345 \
+curl http://100.83.38.48:3002/v1/crawl/crawl-12345 \
   -H 'Content-Type: application/json' \
   -d '{}'
 
@@ -133,7 +134,7 @@ curl https://firecrawl.prochat.tools/v1/crawl/crawl-12345 \
 
 ```bash
 # Search
-result=$(curl -s -X POST https://firecrawl.prochat.tools/v1/search \
+result=$(curl -s -X POST http://100.83.38.48:3002/v1/search \
   -H 'Content-Type: application/json' \
   -d '{
     "query": "best React design systems 2026",
@@ -153,7 +154,8 @@ Add to your project's `AGENTS.md`:
 ## Web Research
 
 Use Firecrawl for all web search and scraping:
-- **Base URL:** `https://firecrawl.prochat.tools`
+- **Tailscale Endpoint:** `http://100.83.38.48:3002`  
+**Auth:** None (self-hosted, authentication disabled)
 - **No auth required**
 - **Endpoints:**
   - `POST /v1/search` — web search + scrape top results
@@ -162,7 +164,7 @@ Use Firecrawl for all web search and scraping:
 
 Example:
 \`\`\`bash
-curl -X POST https://firecrawl.prochat.tools/v1/search \
+curl -X POST http://100.83.38.48:3002/v1/search \
   -H 'Content-Type: application/json' \
   -d '{"query": "...", "limit": 5, "scrape": true}' | jq '.[].markdown'
 \`\`\`
@@ -172,7 +174,7 @@ curl -X POST https://firecrawl.prochat.tools/v1/search \
 
 ```bash
 # Fetch search results
-results=$(curl -s -X POST https://firecrawl.prochat.tools/v1/search \
+results=$(curl -s -X POST http://100.83.38.48:3002/v1/search \
   -H 'Content-Type: application/json' \
   -d '{"query": "topic", "limit": 10, "scrape": true}')
 
@@ -230,7 +232,7 @@ Check `"success": true` before proceeding. If false, log the error and retry wit
 
 ## Admin & Monitoring
 
-**Admin Queue UI:** `https://firecrawl.prochat.tools/admin/<BULL_AUTH_KEY>/queues`  
+**Admin Queue UI:** `http://100.83.38.48:3002/admin/<BULL_AUTH_KEY>/queues`  
 (Replace `<BULL_AUTH_KEY>` with the actual key from Dokploy env vars)
 
 - Useful for: monitoring crawl jobs, inspecting failed requests, checking queue depth
@@ -239,7 +241,7 @@ Check `"success": true` before proceeding. If false, log the error and retry wit
 **Health check:**
 
 ```bash
-curl -s https://firecrawl.prochat.tools/health || echo "Firecrawl is down"
+curl -s http://100.83.38.48:3002/health || echo "Firecrawl is down"
 ```
 
 ---
@@ -297,7 +299,7 @@ ssh dokploy 'docker compose -f /path/to/firecrawl/docker-compose.yml restart'
 
 ## Status
 
-- **Live:** `https://firecrawl.prochat.tools` (deployed to Dokploy 2026-04-10)
+- **Live:** `http://100.83.38.48:3002` (deployed to Dokploy 2026-04-10)
 - **Database:** PostgreSQL in Docker volume (persistent)
 - **Replaced:** `/browse` skill, WebFetch (for research)
 - **Maintained by:** Claude Code, Codex, Gemini Flash research workflows

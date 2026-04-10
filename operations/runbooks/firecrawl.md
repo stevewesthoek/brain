@@ -1,31 +1,33 @@
 # Firecrawl Runbook
 
-Self-hosted web scraping & search API. Deployed on Dokploy at `firecrawl.prochat.tools`.
+Self-hosted web scraping & search API. Deployed on Dokploy, accessible via Tailscale at `http://100.83.38.48:3002`.
 
 ## Service Details
 
 | Aspect | Value |
 |--------|-------|
-| **Public URL** | `https://firecrawl.prochat.tools` |
+| **Tailscale Endpoint** | `http://100.83.38.48:3002` |
+| **Tailscale Node** | `dokploy` (100.83.38.48) |
 | **Deployment** | Dokploy (Azure `vm-dokploy`) |
 | **Docker Compose** | `brain/operations/deploy/firecrawl/docker-compose.yml` |
 | **Database** | PostgreSQL in Docker volume `firecrawl_pgdata` |
 | **Port (internal)** | 3002 |
-| **Cloudflare tunnel** | `Dokploy` (ID: `dc7bb87e-6a4d-4e3e-8e7d-71a091fcdf3b`) |
-| **DNS** | `firecrawl.prochat.tools` → tunnel → Traefik → api:3002 |
+| **Access** | Private Tailscale network only (no internet exposure) |
 
 ---
 
 ## Verify Health
 
 ```bash
-# Quick health check
-curl -s https://firecrawl.prochat.tools/v1/scrape \
+# Quick health check (via Tailscale)
+curl -s http://100.83.38.48:3002/v1/scrape \
   -H 'Content-Type: application/json' \
   -d '{"url":"https://example.com","formats":["markdown"]}' | jq '.success'
 
-# If true — service is healthy
-# If false or connection timeout — service is down
+# Expected response: true (service is healthy)
+
+# Or direct on dokploy server:
+ssh dokploy 'curl -s http://localhost:3002/health'
 ```
 
 ---
@@ -72,14 +74,14 @@ If Firecrawl service becomes unresponsive:
 
 5. **Verify from outside:**
    ```bash
-   curl -s https://firecrawl.prochat.tools/health
+   curl -s https://100.83.38.48:3002/health
    ```
 
 ---
 
 ## Admin Queue UI
 
-**URL:** `https://firecrawl.prochat.tools/admin/<BULL_AUTH_KEY>/queues`  
+**URL:** `http://100.83.38.48:3002/admin/<BULL_AUTH_KEY>/queues` (via Tailscale)  
 (Replace `<BULL_AUTH_KEY>` with value from Dokploy environment settings)
 
 **Use for:**
@@ -146,9 +148,9 @@ If Firecrawl deployment breaks irreparably:
 
 2. **Verify Dokploy UI shows Firecrawl as offline**
 
-3. **Delete Cloudflare DNS entry:**
+3. **Remove symlink (Firecrawl skill disabled):**
    ```bash
-   ~/.local/bin/cloudflare-prochat-provisioner dns delete prochat.tools firecrawl.prochat.tools
+   rm brain/ai/skills/active/firecrawl
    ```
 
 4. **Remove Docker volume (if starting fresh):**
@@ -209,7 +211,7 @@ To update Firecrawl to latest version:
    ```bash
    docker compose pull && docker compose up -d
    ```
-3. Verify health: `curl -s https://firecrawl.prochat.tools/health`
+3. Verify health: `curl -s http://100.83.38.48:3002/health`
 
 ---
 
@@ -218,8 +220,8 @@ To update Firecrawl to latest version:
 **Complete service loss:**
 
 1. Redeploy compose stack to Dokploy
-2. Recreate DNS CNAME via `~/.local/bin/cloudflare-prochat-provisioner`
-3. Database volume persists — data is not lost
+2. Database volume persists — data is not lost
+3. Tailscale endpoint remains available: `http://100.83.38.48:3002`
 4. Service should be online within 5 minutes
 
 **Data loss (volume deleted):**

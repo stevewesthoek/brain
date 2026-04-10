@@ -99,6 +99,10 @@ Known service URLs:
 - n8n: `https://n8n.prochat.tools`
 - CloudPanel SSH ingress: `ssh_cp.prochat.tools`
 
+Tailscale private services (no internet exposure):
+- Firecrawl API: `http://100.83.38.48:3002` (web scraping & search)
+- Firecrawl admin queue: `http://100.83.38.48:3002/admin/<BULL_AUTH_KEY>/queues`
+
 Retired infrastructure:
 - The old OpenClaw / ProBot AWS Lightsail host was decommissioned on `2026-04-04` after Telegram cutover to the local `ProBot` daemon on the `Office` Mac.
 
@@ -150,6 +154,7 @@ Projects and workloads verified through the Dokploy API on 2026-04-03:
 - Compose: `kutt`
 - Compose: `umami`
 - Compose: `n8n`
+- Compose: `firecrawl`
 
 `Boilerplates`
 - App: `ProKit Dev`
@@ -167,6 +172,25 @@ Notable statuses seen in Dokploy:
 - `xGrow` was in `error`
 - `JCCP Holdings` was in `idle`
 - `kutt` was in `idle`
+
+### Firecrawl
+
+Runtime location:
+- Docker Compose workload on the Dokploy host (project: `Ops`)
+
+Live endpoints:
+- Tailscale private: `http://100.83.38.48:3002` (via Tailscale network)
+- Internal (on dokploy): `http://localhost:3002`
+- Admin queue UI: `http://100.83.38.48:3002/admin/<BULL_AUTH_KEY>/queues`
+
+Service details:
+- **Purpose**: Self-hosted web scraping & search API (default web research tool for Claude Code, Codex, Gemini)
+- **Containers**: api, playwright-service, redis, rabbitmq, nuq-postgres
+- **Database**: PostgreSQL in persistent Docker volume `firecrawl_pgdata`
+- **Access**: Private Tailscale network only (no internet exposure)
+- **Token efficiency**: Returns clean markdown (75–90% reduction vs raw HTML)
+- **Skill documentation**: `brain/ai/skills/custom/firecrawl/SKILL.md`
+- **Operations runbook**: `brain/operations/runbooks/firecrawl.md`
 
 ### n8n
 

@@ -1,6 +1,8 @@
 # gstack
 
-Use the `/firecrawl` skill for all web search, scraping, and research. Never use `mcp__claude-in-chrome__*` tools.
+**DEFAULT WEB RESEARCH TOOL:** Use `/firecrawl` (Tailscale: `http://100.83.38.48:3002`) for ALL web search, scraping, and research. It replaces `/browse` and `WebFetch`. Works with Claude Code, Codex, and Gemini.
+
+Never use `mcp__claude-in-chrome__*` tools or raw `WebFetch` for research.
 Canonical guardrails policy: `brain/ai/policy/guardrails.md`.
 
 Available skills: `/design-system`, `/autoresearch`, `/model-router`, `/gemini`, `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/design-consultation`, `/review`, `/ship`, `/land-and-deploy`, `/canary`, `/benchmark`, `/firecrawl`, `/qa`, `/qa-only`, `/design-review`, `/setup-browser-cookies`, `/setup-deploy`, `/retro`, `/investigate`, `/document-release`, `/codex`, `/cso`, `/autoplan`, `/careful`, `/freeze`, `/guard`, `/unfreeze`, `/gstack-upgrade`, `/stb-pipeline`, `/notebooklm`, `/output-skill`, `/redesign-skill`, `/soft-skill`, `/taste-skill`, `/ui-ux-pro-max`, `/web-design`, `/stripe`, `/ffmpeg`, `/gh`, `/dokploy`, `/supabase`, `/gws`, `/cloudflare`, `/n8n`, `/azure`, `/hetzner`, `/tailscale`, `/forge`

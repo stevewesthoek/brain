@@ -102,18 +102,28 @@ Route automatically on every task — never ask the user which model to use.
 
 ## Web Data / Research
 
-**Firecrawl is the default for all web data tasks.** It provides:
+**Firecrawl is the ONLY default for all web data tasks.** It provides:
 - Web search (returns full markdown content from top results)
 - Single URL scraping to clean markdown (75–90% token savings vs raw HTML)
 - Async batch crawling of entire sites
-- No auth required (self-hosted at `https://firecrawl.prochat.tools`)
+- No auth required (self-hosted, private Tailscale network at `http://100.83.38.48:3002`)
+- AI-agnostic: works with Claude Code, Codex, and Gemini Flash
+
+**Always use `/firecrawl` for:**
+- Research, competitive analysis, web searches
+- Scraping any URL to markdown
+- Crawling entire websites
+- Any task that needs web content
 
 **Pattern:**
-1. Use `/firecrawl` skill to search or scrape URLs
+1. Use `/firecrawl` skill to search or scrape URLs → get clean markdown
 2. For large results (10k+ tokens), preprocess with Gemini Flash (free tier) to extract key findings
-3. Claude synthesizes findings into final output
+3. Claude/Codex/Gemini synthesizes findings into final output
 
-Never use raw `WebFetch` for research — it returns verbose HTML. Always use Firecrawl for markdown output.
+**NEVER use:**
+- Raw `WebFetch` (returns verbose HTML, wastes tokens)
+- `/browse` (retired, QA-focused)
+- Ad-hoc web searching without Firecrawl
 
 **After completing any task that used multiple agents:** report which agents/models were used (one line: "Used: Sonnet + Gemini Flash preprocessing + Codex mini").
 

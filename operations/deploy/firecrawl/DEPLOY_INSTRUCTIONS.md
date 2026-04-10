@@ -1,6 +1,8 @@
-# Firecrawl Deployment to Dokploy — Manual Setup
+# Firecrawl Deployment to Dokploy — Manual Setup (Reference)
 
-This document guides you through deploying Firecrawl to Dokploy via the dashboard. API-based deployment is complex; manual setup is more reliable.
+**Current status:** ✅ Firecrawl is already deployed and running at `http://100.83.38.48:3002` (Tailscale).
+
+This document is a **reference guide** for future redeployment via Dokploy dashboard. It is NOT current deployment instructions.
 
 ## Step 1: Access Dokploy Dashboard
 
@@ -53,7 +55,9 @@ LOGGING_LEVEL=warn
 - Replace `BULL_AUTH_KEY` and `POSTGRES_PASSWORD` with values from the earlier command output
 - Paste all of these into the environment variables section
 
-## Step 6: Add Custom Domain
+## Step 6: Add Custom Domain (Optional — not currently used)
+
+⚠️ **Note:** The public domain `firecrawl.prochat.tools` is not currently configured due to Traefik routing issues. Firecrawl is accessible via Tailscale private network instead.
 
 1. After creating the Compose deployment, click **Settings**
 2. Click **Add Domain**
@@ -77,14 +81,14 @@ LOGGING_LEVEL=warn
 
 ## Step 8: Verify Deployment
 
-Once deployed, test from your Mac:
+Once deployed, test from your Mac (via Tailscale):
 
 ```bash
 # Health check
-curl -s https://firecrawl.prochat.tools/health
+curl -s http://100.83.38.48:3002/health
 
 # Test scrape
-curl -X POST https://firecrawl.prochat.tools/v1/scrape \
+curl -X POST http://100.83.38.48:3002/v1/scrape \
   -H 'Content-Type: application/json' \
   -d '{
     "url": "https://example.com",
@@ -98,11 +102,11 @@ If both return `true`, Firecrawl is live!
 
 ## Step 9: Verify Admin UI
 
-Test the admin queue UI:
+Test the admin queue UI (via Tailscale):
 
 ```bash
 # Replace with your actual BULL_AUTH_KEY
-curl -s https://firecrawl.prochat.tools/admin/98bee5d87a681f63b8fb800f4f18ff0cc97f5ec279cc347429edc93a954888cd/queues
+curl -s http://100.83.38.48:3002/admin/<YOUR_BULL_AUTH_KEY>/queues
 ```
 
 Should return the admin UI HTML (not an error).
@@ -122,21 +126,22 @@ Should return the admin UI HTML (not an error).
 
 ### API returns 503 or timeout
 
-**Symptom:** `curl https://firecrawl.prochat.tools/v1/scrape` returns error
+**Symptom:** `curl http://100.83.38.48:3002/v1/scrape` returns error
 
 **Solution:**
 1. Wait 60 seconds for API container to fully initialize (there's a 60s healthcheck delay)
 2. Check Docker logs: `ssh dokploy` then `docker logs firecrawl_api_1 --tail 50`
 3. Restart containers via Dokploy dashboard: **Deploy** button again
 
-### Cloudflare DNS not working
+### Tailscale connectivity issues
 
-**Symptom:** `firecrawl.prochat.tools` doesn't resolve
+**Symptom:** `http://100.83.38.48:3002` returns connection refused or timeout
 
 **Solution:**
-1. DNS CNAME was already created in Phase 2
-2. Verify: `~/.local/bin/cloudflare-prochat-provisioner dns list prochat.tools | grep firecrawl`
-3. If missing, add it again: `~/.local/bin/cloudflare-prochat-provisioner dns upsert prochat.tools CNAME firecrawl dc7bb87e-6a4d-4e3e-8e7d-71a091fcdf3b.cfargotunnel.com --ttl 1 --proxied true`
+1. Verify dokploy is reachable: `~/.local/bin/tailscale-cli ping dokploy`
+2. Check Firecrawl containers: `ssh dokploy 'docker ps | grep firecrawl'`
+3. Test locally on dokploy: `ssh dokploy 'curl -s http://localhost:3002/health'`
+4. If containers are down, restart: `ssh dokploy 'docker compose up -d'` (in the compose directory)
 
 ## Environment Variable Reference
 
