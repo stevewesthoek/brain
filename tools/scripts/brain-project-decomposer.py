@@ -298,8 +298,7 @@ def build_project_content(frontmatter: dict, body: str, decomposition: Dict, ori
     if tasks_filenames:
         body_parts.append("\n\n## Related Tasks\n")
         for task_file in tasks_filenames:
-            task_path = f"notes/04-tasks/{task_file}"
-            body_parts.append(f"- [[{task_path}]]\n")
+            body_parts.append(f"- [[{task_file}]]\n")
 
     return "\n".join(fm_lines) + "".join(body_parts)
 
@@ -454,8 +453,8 @@ def main():
             task_filename = f"{project_slug}/{idx:03d}-{task_slug}.md"
             task_content = build_task_content(task_data, title, original_filename, idx)
             tasks_data.append((task_filename, task_content))
-            # Store the path without .md for the related tasks section
-            tasks_filenames.append(f"{TASKS_PATH}/{task_filename.replace('.md', '')}")
+            # Store the path for the related tasks section (without .md extension)
+            tasks_filenames.append(f"{TASKS_PATH}/{task_filename}".replace('.md', ''))
         project_content = build_project_content(frontmatter, extract_body(content), decomposition, original_filename, tasks_filenames)
 
         # Commit everything
