@@ -504,6 +504,7 @@ const SCHEDULER_JOB_ORDER: Array<{ key: string; label: string }> = [
   { key: "stb-pipeline-batch",      label: "STB Pipeline" },
   { key: "n8n-backup",              label: "n8n Backup" },
   { key: "claude-session-cleanup",  label: "Claude Cleanup" },
+  { key: "ing-bank-statement-download", label: "ING Bank Statement" },
   { key: "dance-of-life-sync",      label: "Dance of Life (1) Download" },
   { key: "bible-studies-pipeline",  label: "Dance of Life (2) Transcribe" },
   { key: "gemini-cleanup",          label: "Gemini Cleanup" },
