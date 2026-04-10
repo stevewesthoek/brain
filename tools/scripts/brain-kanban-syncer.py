@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-Brain Kanban Syncer: Automated Kanban board synchronization.
+Brain Kanban Syncer: Obsidian Kanban Plugin markdown synchronization.
 
 This script runs every 10 minutes (via cron) and:
-1. Scans notes/04-tasks/ for all task files
-2. Parses task metadata (status, priority, assigned_to)
-3. Loads notes/kanban.canvas (Obsidian canvas JSON)
-4. Removes all task nodes (type: "file", id: "task-*")
-5. Rebuilds task nodes mapped to correct columns by status
-6. Writes updated canvas back to disk
-7. Commits if canvas changed
-8. Logs all actions to ~/.local/share/brain/logs/kanban-syncer.log
+1. Reads all task files from notes/04-tasks/
+2. Parses task metadata (title, status, priority, assigned_to)
+3. Loads existing notes/kanban.md (if it exists)
+4. Preserves the To Do column (user drags)
+5. Auto-generates Backlog, Doing, Done from task file status
+6. Writes updated notes/kanban.md in Obsidian Kanban plugin format
+7. Only commits if kanban.md changed
 
 Cron Schedule: Every 10 minutes
   */10 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
@@ -35,7 +34,7 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Dict, List, Set, Tuple
 import subprocess
 
 # Configuration
@@ -43,7 +42,7 @@ REPO_USER = "stevewesthoek"
 REPO_NAME = "brain"
 REPO_BRANCH = "main"
 TASKS_PATH = "notes/04-tasks"
-CANVAS_PATH = "notes/kanban.canvas"
+KANBAN_PATH = "notes/kanban.md"
 LOG_DIR = Path.home() / ".local" / "share" / "brain" / "logs"
 
 # Setup logging
@@ -111,7 +110,6 @@ def get_task_files() -> list:
         for line in output.split("\n"):
             if not line:
                 continue
-            # Format: 100644 blob <sha> <path>
             parts = line.split()
             if len(parts) >= 4 and parts[1] == "blob" and parts[3].endswith(".md"):
                 files.append(parts[3])
@@ -161,191 +159,218 @@ def extract_frontmatter(content: str) -> dict:
     return data
 
 
-def slug_from_filepath(filepath: str) -> str:
-    """Generate a slug from a filepath for the node ID."""
-    # Extract just the filename without extension
-    filename = filepath.split("/")[-1].replace(".md", "")
-    # Slugify: lowercase, keep alphanumeric and dashes
-    slug = re.sub(r'[^a-z0-9-]', '', filename.lower())
-    return slug[:60]
-
-
-def get_status_column(status: str) -> Tuple[int, str]:
-    """Map status to canvas column x-coordinate and column name."""
-    status_lower = status.lower() if status else "ready"
-
-    if status_lower == "in-progress":
-        return 180, "DOING"
-    elif status_lower == "done":
-        return 540, "DONE"
-    else:  # ready or any other status defaults to BACKLOG
-        return -540, "BACKLOG"
-
-
-def build_task_nodes(task_files: List[str]) -> Dict[str, List[Dict]]:
+def parse_kanban_md(kanban_content: str) -> Dict[str, Set[str]]:
     """
-    Build task nodes organized by column, sorted by priority.
-    Returns dict: {column_name: [node, node, ...]}
+    Parse kanban.md and return dict of column_name -> set of file paths.
+    Extracts file paths from wikilinks: [[path/to/file.md|Display Title]]
     """
-    # Group tasks by column
     columns = {
-        "BACKLOG": [],
-        "DOING": [],
-        "DONE": []
+        "Backlog": set(),
+        "To Do": set(),
+        "Doing": set(),
+        "Done": set()
     }
 
-    for filepath in task_files:
-        content = get_file_content(filepath)
-        if not content:
+    current_column = None
+    in_archive = False
+
+    for line in kanban_content.split("\n"):
+        line = line.strip()
+
+        # Skip settings block
+        if "%%" in line:
+            in_archive = True
+            continue
+        if in_archive:
             continue
 
-        frontmatter = extract_frontmatter(content)
+        # Detect column heading
+        if line.startswith("## "):
+            heading = line.replace("## ", "").strip()
+            # Remove WIP limit like "(5)"
+            heading = re.sub(r"\s*\(\d+\)\s*$", "", heading).strip()
 
-        # Only process task files
-        if frontmatter.get("type") != "task":
+            if heading in columns:
+                current_column = heading
+            elif heading == "Archive":
+                current_column = "Archive"
             continue
 
-        status = frontmatter.get("status", "ready")
-        priority = frontmatter.get("priority", 3)
-        title = frontmatter.get("title", "Untitled Task")
+        # Extract file paths from checklist items
+        if line.startswith("- [") and current_column:
+            # Format: - [ ] [[path/to/file.md|Title]] #tags
+            # Extract the wikilink
+            match = re.search(r"\[\[([^\]]+?)\|", line)
+            if match:
+                filepath = match.group(1).strip()
+                if current_column in columns:
+                    columns[current_column].add(filepath)
 
-        # Map to column
-        x_coord, column_name = get_status_column(status)
-
-        # Create node
-        node_id = f"task-{slug_from_filepath(filepath)}"
-        node = {
-            "id": node_id,
-            "type": "file",
-            "file": filepath,
-            "x": x_coord,
-            "y": -160,  # Will be adjusted when stacking
-            "width": 200,
-            "height": 80
-        }
-
-        # Store with priority for sorting
-        columns[column_name].append((priority, node))
-
-    # Sort each column by priority (lower number = higher priority)
-    # and adjust y coordinates
-    result = {}
-    for column_name, tasks_with_priority in columns.items():
-        tasks_with_priority.sort(key=lambda x: x[0])  # Sort by priority
-        nodes = [node for _, node in tasks_with_priority]
-
-        # Adjust y coordinates
-        y_pos = -160
-        for node in nodes:
-            node["y"] = y_pos
-            y_pos += 100  # 100px spacing between cards
-
-        result[column_name] = nodes
-
-    return result
+    return columns
 
 
-def load_canvas() -> Dict:
-    """Load existing kanban.canvas from disk."""
+def load_kanban_md() -> Optional[str]:
+    """Load existing kanban.md from disk."""
     repo_path = Path.home() / "Repos" / REPO_USER / REPO_NAME
-    canvas_file = repo_path / CANVAS_PATH
+    kanban_file = repo_path / KANBAN_PATH
 
-    if not canvas_file.exists():
-        logger.error(f"Canvas file not found: {canvas_file}")
-        return {"nodes": [], "edges": []}
+    if not kanban_file.exists():
+        return None
 
     try:
-        with open(canvas_file, "r") as f:
-            return json.load(f)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse canvas JSON: {e}")
-        return {"nodes": [], "edges": []}
+        with open(kanban_file, "r") as f:
+            return f.read()
+    except Exception as e:
+        logger.error(f"Failed to read kanban.md: {e}")
+        return None
 
 
-def preserve_static_nodes(canvas: Dict) -> List[Dict]:
-    """
-    Extract and return the static nodes that should never be touched.
-    Removes and returns all non-task nodes.
-    """
-    static_ids = {
-        "backlog-header", "todo-header", "doing-header", "done-header",
-        "instructions", "blocked-section"
+def priority_to_tag(priority: int) -> str:
+    """Convert priority number to tag."""
+    priority = max(1, min(5, priority))
+    return f"#p{priority}"
+
+
+def assigned_to_tag(assigned: str) -> str:
+    """Convert assigned_to to tag."""
+    assigned_lower = assigned.lower() if assigned else "you"
+    if "ai" in assigned_lower:
+        return "#ai"
+    return "#you"
+
+
+def build_kanban_content(
+    backlog_tasks: List[Tuple[str, dict]],
+    todo_tasks: List[Tuple[str, dict]],
+    doing_tasks: List[Tuple[str, dict]],
+    done_tasks: List[Tuple[str, dict]]
+) -> str:
+    """Build kanban.md markdown content."""
+    lines = [
+        "---",
+        "",
+        "kanban-plugin: board",
+        "",
+        "---",
+        "",
+        "## Backlog",
+        ""
+    ]
+
+    # Backlog column
+    for filepath, task_data in backlog_tasks:
+        title = task_data["title"]
+        priority = task_data.get("priority", 3)
+        assigned = task_data.get("assigned_to", "you")
+        priority_tag = priority_to_tag(priority)
+        assigned_tag = assigned_to_tag(assigned)
+        lines.append(f'- [ ] [[{filepath}|{title}]] {priority_tag} {assigned_tag}')
+
+    lines.extend(["", "## To Do", ""])
+
+    # To Do column
+    for filepath, task_data in todo_tasks:
+        title = task_data["title"]
+        priority = task_data.get("priority", 3)
+        assigned = task_data.get("assigned_to", "you")
+        priority_tag = priority_to_tag(priority)
+        assigned_tag = assigned_to_tag(assigned)
+        lines.append(f'- [ ] [[{filepath}|{title}]] {priority_tag} {assigned_tag}')
+
+    lines.extend(["", "## Doing", ""])
+
+    # Doing column
+    for filepath, task_data in doing_tasks:
+        title = task_data["title"]
+        priority = task_data.get("priority", 3)
+        assigned = task_data.get("assigned_to", "you")
+        priority_tag = priority_to_tag(priority)
+        assigned_tag = assigned_to_tag(assigned)
+        lines.append(f'- [ ] [[{filepath}|{title}]] {priority_tag} {assigned_tag}')
+
+    lines.extend(["", "## Done", "", "**Complete**", ""])
+
+    # Done column
+    for filepath, task_data in done_tasks:
+        title = task_data["title"]
+        priority = task_data.get("priority", 3)
+        assigned = task_data.get("assigned_to", "you")
+        priority_tag = priority_to_tag(priority)
+        assigned_tag = assigned_to_tag(assigned)
+        lines.append(f'- [x] [[{filepath}|{title}]] {priority_tag} {assigned_tag}')
+
+    # Add settings block
+    lines.extend(["", "", "%% kanban:settings"])
+    settings = {
+        "tag-colors": [
+            {"tagKey": "#p1", "color": "#fff", "backgroundColor": "#c0392b"},
+            {"tagKey": "#p2", "color": "#fff", "backgroundColor": "#e67e22"},
+            {"tagKey": "#p3", "color": "#000", "backgroundColor": "#f1c40f"},
+            {"tagKey": "#p4", "color": "#000", "backgroundColor": "#2ecc71"},
+            {"tagKey": "#p5", "color": "#fff", "backgroundColor": "#95a5a6"},
+            {"tagKey": "#you", "color": "#fff", "backgroundColor": "#2980b9"},
+            {"tagKey": "#ai", "color": "#fff", "backgroundColor": "#8e44ad"}
+        ],
+        "date-format": "YYYY-MM-DD",
+        "time-format": "HH:mm",
+        "link-date-to-daily-note": True
     }
+    lines.append("```")
+    lines.append(json.dumps(settings))
+    lines.append("```")
+    lines.append("%%")
 
-    static_nodes = []
-    task_nodes = []
-
-    for node in canvas.get("nodes", []):
-        node_id = node.get("id", "")
-        if node_id in static_ids or not node_id.startswith("task-"):
-            static_nodes.append(node)
-        else:
-            # This is a task node we'll replace
-            pass
-
-    return static_nodes
+    return "\n".join(lines)
 
 
-def build_canvas(static_nodes: List[Dict], task_nodes_by_column: Dict[str, List[Dict]]) -> Dict:
-    """Build the final canvas JSON with static and task nodes."""
-    all_task_nodes = []
-    for column_name in ["BACKLOG", "DOING", "DONE"]:
-        all_task_nodes.extend(task_nodes_by_column.get(column_name, []))
-
-    return {
-        "nodes": static_nodes + all_task_nodes,
-        "edges": []
-    }
-
-
-def write_canvas(canvas: Dict) -> bool:
-    """Write canvas to disk. Return True if changed, False if no change."""
+def write_kanban_md(content: str) -> bool:
+    """Write kanban.md to disk. Return True if changed."""
     repo_path = Path.home() / "Repos" / REPO_USER / REPO_NAME
-    canvas_file = repo_path / CANVAS_PATH
+    kanban_file = repo_path / KANBAN_PATH
 
-    # Load current canvas to compare
+    # Load current to compare
     try:
-        with open(canvas_file, "r") as f:
-            current = json.load(f)
+        with open(kanban_file, "r") as f:
+            current = f.read()
     except:
         current = None
 
-    # Check if anything changed
-    if current and json.dumps(current, sort_keys=True) == json.dumps(canvas, sort_keys=True):
-        logger.debug("Canvas unchanged, skipping commit")
+    # Check if changed
+    if current and current == content:
+        logger.debug("Kanban unchanged, skipping commit")
         return False
 
-    # Write new canvas
+    # Write new kanban
     try:
-        with open(canvas_file, "w") as f:
-            json.dump(canvas, f, indent=2)
+        with open(kanban_file, "w") as f:
+            f.write(content)
         return True
     except Exception as e:
-        logger.error(f"Failed to write canvas: {e}")
+        logger.error(f"Failed to write kanban.md: {e}")
         return False
 
 
-def commit_canvas(token: str) -> bool:
-    """Commit and push the canvas if it changed."""
+def commit_kanban(token: str) -> bool:
+    """Commit and push kanban.md if it changed."""
     try:
         repo_path = Path.home() / "Repos" / REPO_USER / REPO_NAME
 
         # Check if there are changes
         result = subprocess.run(
-            ["git", "-C", str(repo_path), "status", "--porcelain", CANVAS_PATH],
+            ["git", "-C", str(repo_path), "status", "--porcelain", KANBAN_PATH],
             capture_output=True,
             text=True
         )
 
         if not result.stdout.strip():
-            logger.debug("Canvas not changed, skipping commit")
+            logger.debug("Kanban not changed in git")
             return True
 
         # Stage
-        subprocess.run(["git", "-C", str(repo_path), "add", CANVAS_PATH], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(repo_path), "add", KANBAN_PATH], check=True, capture_output=True)
 
         # Commit
-        commit_msg = "brain: sync kanban canvas from tasks"
+        commit_msg = "brain: sync kanban board from tasks"
         subprocess.run(
             ["git", "-C", str(repo_path), "commit", "-m", commit_msg],
             check=True,
@@ -366,14 +391,14 @@ def commit_canvas(token: str) -> bool:
             capture_output=True
         )
 
-        logger.info("✓ Synced kanban canvas")
+        logger.info("✓ Synced Kanban board")
         return True
 
     except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to commit canvas: {e.stderr.decode() if e.stderr else str(e)}")
+        logger.error(f"Failed to commit kanban: {e.stderr.decode() if e.stderr else str(e)}")
         return False
     except Exception as e:
-        logger.error(f"Failed to commit canvas: {e}")
+        logger.error(f"Failed to commit kanban: {e}")
         return False
 
 
@@ -388,22 +413,73 @@ def main():
     # Get task files
     task_files = get_task_files()
 
-    # Build task nodes organized by column (even if empty, to clear stale nodes)
-    task_nodes_by_column = build_task_nodes(task_files)
+    # Parse existing kanban to get To Do column contents
+    existing_kanban = load_kanban_md()
+    current_columns = {}
+    if existing_kanban:
+        current_columns = parse_kanban_md(existing_kanban)
 
-    # Load existing canvas
-    canvas = load_canvas()
+    to_do_paths = current_columns.get("To Do", set())
 
-    # Preserve static nodes
-    static_nodes = preserve_static_nodes(canvas)
+    # Read all task files and organize by status
+    all_tasks: Dict[str, dict] = {}
 
-    # Build new canvas
-    new_canvas = build_canvas(static_nodes, task_nodes_by_column)
+    for filepath in task_files:
+        content = get_file_content(filepath)
+        if not content:
+            continue
 
-    # Write canvas
-    if write_canvas(new_canvas):
+        frontmatter = extract_frontmatter(content)
+
+        # Only process task files
+        if frontmatter.get("type") != "task":
+            continue
+
+        title = frontmatter.get("title", "Untitled")
+        status = frontmatter.get("status", "ready")
+        priority = frontmatter.get("priority", 3)
+        assigned_to = frontmatter.get("assigned_to", "you")
+
+        all_tasks[filepath] = {
+            "title": title,
+            "status": status,
+            "priority": priority,
+            "assigned_to": assigned_to
+        }
+
+    # Sort tasks by priority within each column
+    backlog_tasks = []
+    todo_tasks = []
+    doing_tasks = []
+    done_tasks = []
+
+    for filepath, task_data in all_tasks.items():
+        status = task_data["status"]
+        priority = task_data["priority"]
+
+        # Determine column
+        if status == "done":
+            done_tasks.append((filepath, task_data))
+        elif status == "in-progress":
+            doing_tasks.append((filepath, task_data))
+        elif filepath in to_do_paths:
+            # Preserve To Do column (user drags)
+            todo_tasks.append((filepath, task_data))
+        else:
+            # Ready or other → Backlog
+            backlog_tasks.append((filepath, task_data))
+
+    # Sort each by priority
+    for task_list in [backlog_tasks, todo_tasks, doing_tasks, done_tasks]:
+        task_list.sort(key=lambda x: x[1]["priority"])
+
+    # Build kanban
+    kanban_content = build_kanban_content(backlog_tasks, todo_tasks, doing_tasks, done_tasks)
+
+    # Write kanban
+    if write_kanban_md(kanban_content):
         # Commit if changed
-        commit_canvas(token)
+        commit_kanban(token)
 
 
 if __name__ == "__main__":
