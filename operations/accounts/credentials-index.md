@@ -8,7 +8,7 @@ Master map of all API keys, tokens, and credentials used across the brain infras
 - Run `sync-credentials` to scan `~/.config/` for new `.env` files and append untracked entries to the Pending section below.
 - When a new entry lands in Pending, move it to the right section and fill in Purpose, Rotation, and Regenerate.
 
-Last synced: 2026-04-09
+Last synced: 2026-04-10
 
 ---
 
@@ -112,9 +112,13 @@ Note: Written by `huggingface-cli login` or directly. Picked up automatically by
 
 Personal account: `stevewesthoek`
 
-| Variable | File | Purpose | Rotation | Regenerate |
-|----------|------|---------|----------|-----------|
-| `GITHUB_PAT` | `~/.config/github/.env` | Fine-grained Personal Access Token — brain repo only (Contents: read + write) | No automatic expiry; manually rotate if compromised | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens?type=beta) |
+| Token Name | Storage | Purpose | Expiry | Rotation | Regenerate |
+|------------|---------|---------|--------|----------|-----------|
+| `n8n-github-brain` | `~/.config/github/.env` | Fine-grained PAT — brain repo only (Contents: read + write) · Used by n8n workflows | No expiration | Manually rotate if compromised | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens?type=beta) |
+| SaaSKit Customer Access | GitHub only (no local storage) | Organization-scoped PAT for SaaSKit repos · Last used within 2 months | Wed, Feb 10 2027 | Rotate before Feb 10 2027 via GitHub UI | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens?type=beta) |
+| ProKit Customer Access | GitHub only (no local storage) | Organization-scoped PAT for ProKit repos · Last used within 2 months | Wed, Feb 10 2027 | Rotate before Feb 10 2027 via GitHub UI | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens?type=beta) |
+
+**Note:** SaaSKit and ProKit tokens are managed only in GitHub — not stored locally in `.config/`. They're organization-scoped tokens. If these need to be used programmatically in workflows, store them in environment variables when needed.
 
 ## Hetzner Cloud
 
