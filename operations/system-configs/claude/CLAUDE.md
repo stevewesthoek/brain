@@ -80,7 +80,7 @@ Global skills are available in every session — only note the ones relevant to 
 - n8n: [yes/no] — use `/n8n` for self-hosted CLI ops (workflow export/import, audit, recovery commands)
 - Azure: [yes/no] — use `/azure` for Azure CLI account, subscription, and resource discovery or management
 - Hetzner: [yes/no] — use `/hetzner` for Hetzner Cloud CLI infrastructure discovery or management
-- NotebookLM: [yes/no] — use `/notebooklm` for research, source synthesis, and briefing docs
+- NotebookLM: [yes] — CLI v0.3.4 via pipx; use `/notebooklm` for research, source synthesis, and content generation (audio, video, slides, quizzes, data tables); full batch export and programmatic control; runbook at `brain/operations/runbooks/notebooklm.md`
 - Codex: [yes/no] — use `/codex` for AI-assisted code review and adversarial challenge mode
 - Gemini: [yes/no] — use `/gemini` for large-context preprocessing and free-tier Flash analysis
 - Handoff: [yes/no] — use `/handoff` for session start/end compressed handoffs and `.ai/` memory system setup
