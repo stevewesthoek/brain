@@ -6,7 +6,7 @@ para_type: project
 confidence: 0.85
 signal_quality: 0.92
 created: 2026-04-10
-status: ready-for-review
+status: unrouted
 ---
 
 # X Playbook: Becoming a Full-Time Creator
