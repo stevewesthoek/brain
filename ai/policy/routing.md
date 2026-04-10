@@ -98,6 +98,23 @@ Route automatically on every task — never ask the user which model to use.
 - Estimated savings are under 20%
 - You're already inside a sub-agent
 
+---
+
+## Web Data / Research
+
+**Firecrawl is the default for all web data tasks.** It provides:
+- Web search (returns full markdown content from top results)
+- Single URL scraping to clean markdown (75–90% token savings vs raw HTML)
+- Async batch crawling of entire sites
+- No auth required (self-hosted at `https://firecrawl.prochat.tools`)
+
+**Pattern:**
+1. Use `/firecrawl` skill to search or scrape URLs
+2. For large results (10k+ tokens), preprocess with Gemini Flash (free tier) to extract key findings
+3. Claude synthesizes findings into final output
+
+Never use raw `WebFetch` for research — it returns verbose HTML. Always use Firecrawl for markdown output.
+
 **After completing any task that used multiple agents:** report which agents/models were used (one line: "Used: Sonnet + Gemini Flash preprocessing + Codex mini").
 
 ---
@@ -126,6 +143,7 @@ Common task types and the skills that compose well together.
 | Analyze large codebase | `/gemini` (Flash preprocessing) → Claude acts on summary |
 | New repo setup | `/handoff setup` → build → `/review` → `/ship` |
 | Infrastructure change | `/hetzner` or `/azure` → `/careful` (if destructive) → `/handoff pause` |
+| Web research / scraping | `/firecrawl` (search/scrape to markdown) → `/gemini` (Flash preprocess if large) → synthesize |
 | Research → build | `/notebooklm` → `/office-hours` → `/plan-eng-review` → build |
 | Large log/doc analysis | `gemini-review.sh` (Flash) → Claude acts on findings |
 | End of any session | `/handoff pause` → `/learner` (if warranted) |

@@ -10,6 +10,11 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Rollback:
 
 ## Entries
+- Date: 2026-04-10
+- Decision: Deploy self-hosted Firecrawl on Dokploy as the default AI-agnostic web data tool, replacing `/browse` (QA tool, retired) and raw WebFetch usage (token-heavy HTML).
+- Context: Firecrawl provides 75–90% token savings by returning clean markdown instead of raw HTML. It supports search, scrape, and batch crawl. Self-hosted means no API cost, full control, and data privacy. Replaces gstack `/browse` (which is a QA/dogfooding tool not web search) and ad-hoc WebFetch calls for research.
+- Impact: (1) `/browse` skill removed from `ai/skills/active/`; (2) new `/firecrawl` skill at `https://firecrawl.prochat.tools` becomes default for all web research; (3) Dokploy gains Firecrawl service using 5GB api + 2GB playwright (mem-limited for Dokploy's 15GB RAM); (4) Firecrawl works with Claude Code, Codex, and Gemini Flash; (5) integration documented in routing.md and brain skill.md files.
+- Rollback: (1) Delete Firecrawl Dokploy app; (2) remove DNS CNAME via `~/.local/bin/cloudflare-prochat-provisioner dns delete prochat.tools firecrawl.prochat.tools`; (3) restore `/browse` symlink from `vendors/gstack/browse/`; (4) revert CLAUDE.md skills list; (5) delete `/firecrawl` skill files.
 - Date: 2026-04-03
 - Decision: Centralize AI safety rules in `ai/policy/guardrails.md` and reference that file from both Claude and Codex global configs.
 - Context: Both agents are configured for high autonomy and may run with reduced permission prompts or broad access.

@@ -303,6 +303,7 @@ Dokploy UI: `https://dokploy.prochat.tools`
 |--------|-----|---------|--------|-------|
 | `dokploy.prochat.tools` | — | Ops | Online | Dokploy UI |
 | `n8n.prochat.tools` | n8n | Ops | Online | Workflow automation |
+| `firecrawl.prochat.tools` | Firecrawl | Ops | Online | Web scraping & search API; PostgreSQL in Docker volume `firecrawl_pgdata`; replaces `/browse` and WebFetch for research |
 | `studio.prochat.tools` | Supabase Studio | Ops | Online | Supabase admin UI (proxied through Dokploy host) |
 | `yeshua.academy` | Yeshua Academy | Web | Online | — |
 | `openfund.yeshua.academy` | Open Fund | Web | Online | — |
