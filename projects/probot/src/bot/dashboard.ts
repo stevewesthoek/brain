@@ -148,6 +148,20 @@ interface NRSyntheticCheck {
   "latest.timestamp"?: number;
 }
 
+const NR_ENTITY_LABEL_OVERRIDES: Array<{ match: RegExp; replace: string }> = [
+  { match: /\bopenfund\.yeshua\.academy\b/gi, replace: "finance.yeshua.academy" },
+  { match: /\bopen\s*fund\b/gi, replace: "Yeshua Academy Finance" },
+  { match: /\bopenfund\b/gi, replace: "Yeshua Academy Finance" },
+];
+
+function normalizeNREntityLabel(value?: string | null): string {
+  if (!value) return "";
+  return NR_ENTITY_LABEL_OVERRIDES.reduce(
+    (current, rule) => current.replace(rule.match, rule.replace),
+    value,
+  );
+}
+
 function epochToIso(epochMs?: number): string | null {
   if (!epochMs) return null;
   return new Date(epochMs).toISOString();
@@ -262,8 +276,9 @@ async function getNRHealth(): Promise<NRHealth> {
         const online = Boolean(lastSeen);
         return {
           ...host,
+          name: normalizeNREntityLabel(host.name),
           online,
-          alertConfigured: configuredHostNames.has(host.name),
+          alertConfigured: configuredHostNames.has(host.name) || configuredHostNames.has(normalizeNREntityLabel(host.name)),
           lastSeenAt: epochToIso(lastSeen),
         };
       }),
@@ -272,11 +287,12 @@ async function getNRHealth(): Promise<NRHealth> {
         const lastResult = latest?.["latest.result"] ?? null;
         return {
           ...synthetic,
+          name: normalizeNREntityLabel(synthetic.name),
           online: lastResult === "SUCCESS" ? true : lastResult === "FAILED" ? false : null,
           alertConfigured: Boolean(synthetic.monitorId && configuredSyntheticMonitorIds.has(synthetic.monitorId)),
           lastCheckAt: epochToIso(latest?.["latest.timestamp"]),
           lastResult,
-          lastError: normalizeSyntheticError(latest?.["latest.error"]),
+          lastError: normalizeNREntityLabel(normalizeSyntheticError(latest?.["latest.error"])),
         };
       }),
     };
