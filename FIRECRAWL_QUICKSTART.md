@@ -17,10 +17,12 @@ Firecrawl is your new default tool for **all web research, searching, and scrapi
 
 ## Using Firecrawl in Claude Code
 
+**Endpoint:** `http://100.83.38.48:3002` (Tailscale private network)
+
 ### Search + Get Full Content
 
 ```bash
-curl -X POST https://firecrawl.prochat.tools/v1/search \
+curl -X POST http://100.83.38.48:3002/v1/search \
   -H 'Content-Type: application/json' \
   -d '{
     "query": "best React design systems 2026",
@@ -34,7 +36,7 @@ curl -X POST https://firecrawl.prochat.tools/v1/search \
 ### Scrape a Single Page
 
 ```bash
-curl -X POST https://firecrawl.prochat.tools/v1/scrape \
+curl -X POST http://100.83.38.48:3002/v1/scrape \
   -H 'Content-Type: application/json' \
   -d '{
     "url": "https://example.com/article",
@@ -48,13 +50,13 @@ curl -X POST https://firecrawl.prochat.tools/v1/scrape \
 
 ```bash
 # Start crawl
-curl -X POST https://firecrawl.prochat.tools/v1/crawl \
+curl -X POST http://100.83.38.48:3002/v1/crawl \
   -H 'Content-Type: application/json' \
   -d '{"url": "https://example.com", "scrapeOptions": {"formats": ["markdown"]}}' \
   | jq '.id'
 
 # Check status (replace CRAWL_ID)
-curl https://firecrawl.prochat.tools/v1/crawl/CRAWL_ID \
+curl http://100.83.38.48:3002/v1/crawl/CRAWL_ID \
   -H 'Content-Type: application/json' -d '{}' | jq '.status'
 ```
 
@@ -93,7 +95,7 @@ For large research tasks, preprocess results with Gemini Flash (free) before pas
 
 ```bash
 # 1. Search with Firecrawl
-results=$(curl -s -X POST https://firecrawl.prochat.tools/v1/search \
+results=$(curl -s -X POST http://100.83.38.48:3002/v1/search \
   -H 'Content-Type: application/json' \
   -d '{"query": "competitive analysis SaaS pricing", "limit": 10, "scrape": true}')
 
@@ -117,7 +119,7 @@ echo "Research summary: $summary"
 ```bash
 # Step 1: Search with Firecrawl
 echo "🔍 Searching for design systems..."
-results=$(curl -s -X POST https://firecrawl.prochat.tools/v1/search \
+results=$(curl -s -X POST http://100.83.38.48:3002/v1/search \
   -H 'Content-Type: application/json' \
   -d '{
     "query": "Linear Stripe Vercel design systems 2026",
@@ -157,12 +159,12 @@ echo "$insights"
 
 | Endpoint | Method | Use | Response |
 |----------|--------|-----|----------|
-| `/v1/search` | POST | Web search | Array of results with `markdown` field |
-| `/v1/scrape` | POST | Scrape URL | Object with `data.markdown` field |
-| `/v1/crawl` | POST | Start async crawl | Object with `id` field |
-| `/v1/crawl/:id` | GET | Check crawl status | Object with `status` and `data` fields |
-| `/health` | GET | Health check | 200 OK if running |
-| `/admin/<BULL_AUTH_KEY>/queues` | GET | Admin UI | Dashboard HTML |
+| `http://100.83.38.48:3002/v1/search` | POST | Web search | Array of results with `markdown` field |
+| `http://100.83.38.48:3002/v1/scrape` | POST | Scrape URL | Object with `data.markdown` field |
+| `http://100.83.38.48:3002/v1/crawl` | POST | Start async crawl | Object with `id` field |
+| `http://100.83.38.48:3002/v1/crawl/:id` | GET | Check crawl status | Object with `status` and `data` fields |
+| `http://100.83.38.48:3002/health` | GET | Health check | 200 OK if running |
+| `http://100.83.38.48:3002/admin/<BULL_AUTH_KEY>/queues` | GET | Admin UI | Dashboard HTML |
 
 **Common request:**
 ```json
@@ -208,10 +210,10 @@ echo "$insights"
 
 ## Troubleshooting
 
-**Can't reach `https://firecrawl.prochat.tools`?**
-- Check DNS: `dig firecrawl.prochat.tools`
-- Check Dokploy: `ssh dokploy 'docker ps | grep firecrawl'`
-- Verify tunnel: `~/.local/bin/cloudflare-prochat-provisioner tunnels info Dokploy`
+**Can't reach Firecrawl?**
+- Verify Tailscale connectivity: `~/.local/bin/tailscale-cli ping dokploy`
+- Check Dokploy containers: `ssh dokploy 'docker ps | grep firecrawl'`
+- Test directly on server: `ssh dokploy 'curl http://localhost:3002/health'`
 
 **API returns empty markdown?**
 - Page might be JS-heavy (Firecrawl retries with Playwright)
