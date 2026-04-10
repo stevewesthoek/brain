@@ -11,10 +11,14 @@
             "id": "8992b09278c749ce",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "markdown",
+              "state": {
+                "file": "dance-of-life/Forbidden Fruit - The Greatest Lie Ever Told/01-of-02 - Forbidden Fruit - The Greatest Lie Ever Told.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "01-of-02 - Forbidden Fruit - The Greatest Lie Ever Told"
             }
           }
         ]
@@ -176,11 +180,14 @@
       "bases:Create new base": false
     }
   },
-  "active": "04d1b420ef09b26a",
+  "active": "8992b09278c749ce",
   "lastOpenFiles": [
+    "Untitled.base",
+    "2026-04-10.md",
+    "Untitled 1.canvas",
+    "Untitled.canvas",
     "dance-of-life/Salvation/06-of-43 - The Monergistic Gospel.md",
     "dance-of-life/Salvation/05-of-43 - The Importance of High Christology in Understanding the Gospel.md",
-    "2026-04-10.md",
     "dance-of-life/26 Reasons Why Catholicism & Orthodoxy Have NOTHING To Do With the Early Church/02-of-02 - 14 Reasons Why Catholicism & Orthodoxy Have NOTHING To Do With the Early Church.md"
   ]
 }
