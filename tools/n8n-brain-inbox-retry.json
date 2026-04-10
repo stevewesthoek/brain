@@ -1,0 +1,200 @@
+{
+  "name": "Brain Inbox — Retry Unprocessed",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "node-schedule",
+      "name": "Daily at 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/stevewesthoek/brain/git/trees/main?recursive=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "id": "node-list-tree",
+      "name": "GitHub — List Tree",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "credentials": {
+        "githubApi": {
+          "id": "hb7xeHwPFTy8kTy4",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "id": "node-filter-inbox",
+      "name": "Filter Inbox Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0],
+      "parameters": {
+        "jsCode": "const tree = $input.first().json.tree || [];\n// Get all markdown files in notes/01-inbox/\nconst inboxFiles = tree\n  .filter(item => item.type === 'blob' && item.path.startsWith('notes/01-inbox/') && item.path.endsWith('.md'))\n  .map(item => ({ json: { filepath: item.path, sha: item.sha } }));\n\nconsole.log(`[brain-inbox-retry] Found ${inboxFiles.length} files in inbox`);\nreturn inboxFiles;"
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/stevewesthoek/brain/contents/{{ $json.filepath }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "id": "node-get-file",
+      "name": "GitHub — Get File Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "credentials": {
+        "githubApi": {
+          "id": "hb7xeHwPFTy8kTy4",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "id": "node-check-unprocessed",
+      "name": "Check If Unprocessed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0],
+      "parameters": {
+        "jsCode": "const fileData = $input.first().json;\nconst filepath = fileData.path;\nconst sha = fileData.sha;\n\n// Decode base64 content\nconst raw = Buffer.from(fileData.content, 'base64').toString('utf8');\n\n// Check if status: unprocessed is in frontmatter\nif (!raw.includes('status: unprocessed')) {\n  // Already processed or no status field — skip\n  return [];\n}\n\n// Extract fields from frontmatter for Gemini prompt\nconst frontmatterMatch = raw.match(/^---([\\s\\S]*?)---/);\nconst frontmatter = frontmatterMatch ? frontmatterMatch[1] : '';\n\nconst titleMatch = frontmatter.match(/title:\\s*\"?([^\"\\n]+)\"?/);\nconst sourceMatch = frontmatter.match(/source:\\s*(.+)/);\nconst createdMatch = frontmatter.match(/created:\\s*(.+)/);\n\nconst title = titleMatch ? titleMatch[1].trim() : 'Untitled';\nconst source = sourceMatch ? sourceMatch[1].trim() : 'chatgpt';\nconst created = createdMatch ? createdMatch[1].trim().slice(0, 10) : new Date().toISOString().slice(0, 10);\n\n// Check age — only retry files older than 1 hour\nconst createdMs = new Date(created).getTime();\nconst ageMs = Date.now() - createdMs;\nif (ageMs < 3600000) {\n  console.log(`[brain-inbox-retry] ${filepath} is less than 1 hour old — skipping`);\n  return [];\n}\n\n// Extract body content (after frontmatter)\nconst bodyAfterFrontmatter = raw.replace(/^---[\\s\\S]*?---/, '').trim();\n\n// Build Gemini prompt\nconst promptText = [\n  'You are processing a captured note for a personal knowledge management system using the PARA method.',\n  '\\n\\nPARA definitions:',\n  '\\n- project: has a clear finish line (SaaS app, automation, specific deliverable)',\n  '\\n- area: ongoing responsibility, no end date (health, finance, business, personal development, ministry)',\n  '\\n- resource: reference material, research, learning, frameworks, how-to knowledge',\n  '\\n- inbox: unclear, mixed, needs more context',\n  '\\n\\nContext about the owner:',\n  '\\n- Builds SaaS apps and business automations',\n  '\\n- Manages prochattools business (statuslink, xgrow, prochat, says-the-bible, probot)',\n  '\\n- Has Yeshua Academy (ministry work)',\n  '\\n- Goal: automate everything, optimise costs, work efficiently',\n  `\\n\\nTitle hint: ${title}`,\n  `\\n\\nContent to classify:\\n${bodyAfterFrontmatter}`,\n  '\\n\\nRespond ONLY with valid JSON (no markdown fences, no extra text):\\n{\\n  \"title\": \"concise title max 6 words\",\\n  \"para_type\": \"project|area|resource|inbox\",\\n  \"confidence\": 0.0,\\n  \"area_hint\": \"which life or business area\",\\n  \"tags\": [\"tag1\", \"tag2\"],\\n  \"summary\": \"2-3 sentence summary of the key insight or decision\",\\n  \"key_points\": [\"point 1\", \"point 2\", \"point 3\"],\\n  \"action_items\": [\"actionable task if any\"],\\n  \"note_content\": \"full structured markdown body for the note, without frontmatter\"\\n}'\n].join('');\n\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: promptText }] }]\n});\n\nconsole.log(`[brain-inbox-retry] Retrying classification for ${filepath}`);\n\nreturn [{\n  json: {\n    filepath,\n    sha,\n    title,\n    source,\n    date: created,\n    geminiBody\n  }\n}];"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "string",
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.geminiBody }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": {
+          "retry": {
+            "maxRetries": 3,
+            "retryOn": ["503", "429", "500", "502"]
+          }
+        }
+      },
+      "id": "node-retry-gemini",
+      "name": "Gemini Flash — Retry Classify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gY06G27CkEeq8oYE",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "node-retry-gemini-failed",
+      "name": "Retry Gemini Failed — Skip",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 140],
+      "parameters": {
+        "jsCode": "const fileData = $('Check If Unprocessed').first().json;\nconsole.log(`[brain-inbox-retry] Gemini still failing for ${fileData.filepath} — will retry tomorrow`);\nreturn [];"
+      }
+    },
+    {
+      "id": "node-retry-build-classified",
+      "name": "Build Classified Note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0],
+      "parameters": {
+        "jsCode": "const geminiResponse = $input.first().json;\nconst fileData = $('Check If Unprocessed').first().json;\n\nconst rawText = geminiResponse?.candidates?.[0]?.content?.parts?.[0]?.text;\nif (!rawText) { return []; }\n\nconst stripped = rawText\n  .replace(/^```json\\s*/m, '')\n  .replace(/^```\\s*/m, '')\n  .replace(/\\s*```$/m, '')\n  .trim();\n\nfunction sanitizeJsonString(str) {\n  let result = '';\n  let inString = false;\n  let escaped = false;\n  for (let i = 0; i < str.length; i++) {\n    const c = str[i];\n    if (escaped) { result += c; escaped = false; }\n    else if (c === '\\\\' && inString) { result += c; escaped = true; }\n    else if (c === '\"') { result += c; inString = !inString; }\n    else if (inString && c === '\\n') { result += '\\\\n'; }\n    else if (inString && c === '\\r') { result += '\\\\r'; }\n    else if (inString && c === '\\t') { result += '\\\\t'; }\n    else if (inString && c.charCodeAt(0) < 32) {\n      result += '\\\\u' + c.charCodeAt(0).toString(16).padStart(4, '0');\n    } else { result += c; }\n  }\n  return result;\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(sanitizeJsonString(stripped));\n} catch (e) {\n  console.log(`[brain-inbox-retry] JSON parse failed for ${fileData.filepath}: ${e.message}`);\n  return [];\n}\n\nconst date = fileData.date;\nconst source = fileData.source;\n\nconst tagsYaml = (parsed.tags || ['capture'])\n  .map(t => `  - ${t}`).join('\\n');\n\nconst frontmatter = [\n  '---',\n  'type: capture',\n  `source: ${source}`,\n  `title: \"${parsed.title || fileData.title}\"`,\n  `para_type: ${parsed.para_type || 'inbox'}`,\n  `confidence: ${parsed.confidence ?? 0}`,\n  `area: ${parsed.area_hint || ''}`,\n  `created: ${date}`,\n  'status: processed',\n  'tags:',\n  tagsYaml,\n  '---'\n].join('\\n');\n\nconst keyPoints = (parsed.key_points || []).map(p => `- ${p}`).join('\\n') || '-';\nconst actionItems = (parsed.action_items || []).map(a => `- [ ] ${a}`).join('\\n');\nconst confidence = Math.round((parsed.confidence ?? 0) * 100);\n\nconst noteBody = [\n  frontmatter,\n  '',\n  `# ${parsed.title || fileData.title}`,\n  '',\n  '## Summary',\n  parsed.summary || '',\n  '',\n  '## Key Points',\n  keyPoints,\n  '',\n  actionItems ? `## Action Items\\n${actionItems}\\n` : '',\n  '## Notes',\n  parsed.note_content || '',\n  '',\n  '---',\n  `*${source} capture · ${date} · ${confidence}% confidence · suggested: ${parsed.para_type}*`,\n  `*Classified by retry job · Review in [[home|Command Center]]*`\n].join('\\n');\n\nreturn [{\n  json: {\n    filepath: fileData.filepath,\n    sha: fileData.sha,\n    classifiedContent: noteBody,\n    title: parsed.title || fileData.title,\n    para_type: parsed.para_type,\n    confidence: parsed.confidence\n  }\n}];"
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": "stevewesthoek",
+        "repository": "brain",
+        "filePath": "={{ $json.filepath }}",
+        "fileContent": "={{ $json.classifiedContent }}",
+        "commitMessage": "=brain: classified (retry) — {{ $json.title }} ({{ $json.para_type }})",
+        "additionalParameters": {
+          "parameters": [
+            {
+              "name": "sha",
+              "value": "={{ $json.sha }}"
+            }
+          ]
+        }
+      },
+      "id": "node-retry-github-update",
+      "name": "GitHub — Update Classified",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [1540, 0],
+      "credentials": {
+        "githubApi": {
+          "id": "hb7xeHwPFTy8kTy4",
+          "name": "GitHub account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily at 09:00": {
+      "main": [[{ "node": "GitHub — List Tree", "type": "main", "index": 0 }]]
+    },
+    "GitHub — List Tree": {
+      "main": [[{ "node": "Filter Inbox Files", "type": "main", "index": 0 }]]
+    },
+    "Filter Inbox Files": {
+      "main": [[{ "node": "GitHub — Get File Content", "type": "main", "index": 0 }]]
+    },
+    "GitHub — Get File Content": {
+      "main": [[{ "node": "Check If Unprocessed", "type": "main", "index": 0 }]]
+    },
+    "Check If Unprocessed": {
+      "main": [[{ "node": "Gemini Flash — Retry Classify", "type": "main", "index": 0 }]]
+    },
+    "Gemini Flash — Retry Classify": {
+      "main": [
+        [{ "node": "Build Classified Note", "type": "main", "index": 0 }],
+        [{ "node": "Retry Gemini Failed — Skip", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Classified Note": {
+      "main": [[{ "node": "GitHub — Update Classified", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}
