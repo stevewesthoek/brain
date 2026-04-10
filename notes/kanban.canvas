@@ -53,15 +53,6 @@
       "y": 100,
       "width": 200,
       "height": 120
-    },
-    {
-      "id": "task-001-test-task",
-      "type": "file",
-      "file": "notes/04-tasks/test-project/001-test-task.md",
-      "x": -540,
-      "y": -160,
-      "width": 200,
-      "height": 80
     }
   ],
   "edges": []
