@@ -448,14 +448,14 @@ def main():
 
         # Build task filenames and contents
         tasks_data = []
+        tasks_filenames = []
         for idx, task_data in enumerate(tasks_list, 1):
             task_slug = slug_from_title(task_data.get("title", f"task-{idx}"))
             task_filename = f"{project_slug}/{idx:03d}-{task_slug}.md"
             task_content = build_task_content(task_data, title, original_filename, idx)
             tasks_data.append((task_filename, task_content))
-
-        # Build new project content
-        tasks_filenames = [filename.replace(".md", "") for _, filename in tasks_data]
+            # Store the path without .md for the related tasks section
+            tasks_filenames.append(f"{TASKS_PATH}/{task_filename.replace('.md', '')}")
         project_content = build_project_content(frontmatter, extract_body(content), decomposition, original_filename, tasks_filenames)
 
         # Commit everything
