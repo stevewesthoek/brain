@@ -240,3 +240,4 @@ Entries detected by `sync-credentials` that are not yet categorized. Move each r
 | `ING_USERNAME` | `~/.config/ing/.env` | 2026-04-10 |
 | `ING_PASSWORD` | `~/.config/ing/.env` | 2026-04-10 |
 | `ING_NTFY_TOPIC` | `~/.config/ing/.env` | 2026-04-10 |
+| `GITHUB_PAT` | `~/.config/github/.env` | 2026-04-11 |
