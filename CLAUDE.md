@@ -50,6 +50,8 @@ When working across repos, treat each Git repo independently. Do not apply one r
   - `backup-n8n.sh` — server-side export of live n8n credentials/workflows into the gitignored local backup folder
 - `tools/n8n-api.sh` — wrapper for the live `n8n.prochat.tools` Public API
 - `operations/system-configs/` — global tool configs, all symlinked from home directory
+- `operations/runbooks/` — documentation for key tools and workflows
+  - `playwright.md` — Playwright CLI usage, patterns, and nightly scheduler integration
 - `operations/decision-log.md` — confirmed decisions for the brain repo itself
 
 ### Per-repo AI memory (not in brain itself)
