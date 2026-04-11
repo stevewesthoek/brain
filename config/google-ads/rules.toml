@@ -24,3 +24,12 @@ open_report_when_sources_change = true
 spend_threshold_usd = 20.0
 lookback_days = 30
 match_type = "BROAD"
+
+[approval_gates]
+# Auto-approve recommendations with HIGH priority and impact > threshold
+auto_approve_high_impact = true
+high_impact_threshold_usd = 500.0
+
+# Require manual approval for medium/low priority
+require_manual_medium = true
+require_manual_low = true

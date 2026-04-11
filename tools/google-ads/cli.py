@@ -871,6 +871,33 @@ def cmd_negatives(args: argparse.Namespace) -> int:
     return 0 if error_count == 0 else 1
 
 
+def should_auto_approve_mutation(mutation: dict, rules: dict) -> bool:
+    """
+    Check if a mutation should be auto-approved based on approval gates.
+
+    Args:
+        mutation: Pending mutation dict with payload/priority/impact
+        rules: Loaded rules.toml dict
+
+    Returns:
+        True if mutation meets auto-approval criteria
+    """
+    gates = rules.get("approval_gates", {})
+    if not gates.get("auto_approve_high_impact", False):
+        return False
+
+    # Extract priority and impact from payload
+    try:
+        payload = json.loads(mutation.get("payload", "{}")) if isinstance(mutation.get("payload"), str) else mutation.get("payload", {})
+        priority = payload.get("priority", "MEDIUM")
+        impact = float(payload.get("impact_estimate", 0) or 0)
+        threshold = gates.get("high_impact_threshold_usd", 500.0)
+
+        return priority == "HIGH" and impact >= threshold
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return False
+
+
 def cmd_recommendations(args: argparse.Namespace) -> int:
     """
     Queue pending Google Ads recommendations for approval and application.
@@ -879,11 +906,13 @@ def cmd_recommendations(args: argparse.Namespace) -> int:
     1. Query recommendations table for entries without associated mutations
     2. Group by type (KEYWORD, BID_ADJUSTMENT, AD_COPY, etc.)
     3. Queue each as a pending_mutation
-    4. Print queue for review
+    4. Auto-approve high-impact recommendations if gates enabled
+    5. Print queue for review
 
     Safety invariants:
     - No mutations applied without explicit approval
     - Each recommendation queued as individual mutation
+    - Auto-approval respects approval_gates configuration
     - All changes logged to change_events
     """
     rules = load_toml(CONFIG_DIR / "rules.toml")
@@ -934,12 +963,16 @@ def cmd_recommendations(args: argparse.Namespace) -> int:
                     "impact_estimate": rec["impact_estimate"],
                 }
 
+                # Check if should auto-approve
+                auto_approve = should_auto_approve_mutation(payload, rules)
+                initial_status = "approved" if auto_approve else "pending"
+
                 # Insert into pending_mutations
                 conn.execute(
                     """
                     INSERT INTO pending_mutations
-                        (mutation_type, campaign_id, resource_type, resource_id, payload, rule_source, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        (mutation_type, campaign_id, resource_type, resource_id, payload, status, rule_source, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         "apply_recommendation",
@@ -947,6 +980,7 @@ def cmd_recommendations(args: argparse.Namespace) -> int:
                         "recommendation",
                         str(rec["id"]),
                         json.dumps(payload),
+                        initial_status,
                         "recommendations_cmd",
                         utc_now_iso(),
                         utc_now_iso(),
@@ -954,6 +988,7 @@ def cmd_recommendations(args: argparse.Namespace) -> int:
                 )
 
                 # Log to change_events
+                event_type = "recommendation_auto_approved" if auto_approve else "recommendation_queued"
                 conn.execute(
                     """
                     INSERT INTO change_events (change_date, change_type, resource_type, resource_id, details, created_at)
@@ -961,19 +996,21 @@ def cmd_recommendations(args: argparse.Namespace) -> int:
                     """,
                     (
                         today,
-                        "recommendation_queued",
+                        event_type,
                         "recommendation",
                         str(rec["id"]),
                         json.dumps({
                             "type": rec["recommendation_type"],
                             "impact": rec["impact_estimate"],
                             "priority": rec["priority"],
+                            "auto_approved": auto_approve,
                         }),
                         utc_now_iso(),
                     ),
                 )
 
-                print(f"  ✓ {rec['recommendation_type']:20s} impact=${rec['impact_estimate']:8.2f} ({rec['priority']})")
+                status_str = "→ approved" if auto_approve else "→ pending"
+                print(f"  ✓ {rec['recommendation_type']:20s} impact=${rec['impact_estimate']:8.2f} ({rec['priority']:6s}) {status_str}")
                 queued += 1
 
             except Exception as err:
@@ -1070,6 +1107,68 @@ def cmd_mutations(args: argparse.Namespace) -> int:
         )
 
     log_run("mutations", "ok", f"listed={len(mutations)}")
+    return 0
+
+
+def cmd_auto_approve(args: argparse.Namespace) -> int:
+    """
+    Auto-approve pending mutations that meet approval gate thresholds.
+
+    This allows high-impact recommendations to be approved automatically
+    without manual intervention, while still requiring manual approval for
+    lower-impact or lower-priority items.
+
+    Gates are defined in rules.toml[approval_gates].
+    """
+    rules = load_toml(CONFIG_DIR / "rules.toml")
+    gates = rules.get("approval_gates", {})
+
+    if not gates.get("auto_approve_high_impact", False):
+        print("Auto-approval is disabled in rules.toml[approval_gates]")
+        log_run("auto-approve", "skipped", "disabled")
+        return 0
+
+    with connect_db() as conn:
+        # Find pending mutations that should be auto-approved
+        mutations = conn.execute(
+            """
+            SELECT * FROM pending_mutations
+            WHERE status = 'pending'
+            ORDER BY id
+            """
+        ).fetchall()
+
+        approved_count = 0
+        for mut in mutations:
+            if should_auto_approve_mutation(mut, rules):
+                conn.execute(
+                    """
+                    UPDATE pending_mutations
+                    SET status = 'approved', updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (utc_now_iso(), mut["id"]),
+                )
+
+                conn.execute(
+                    """
+                    INSERT INTO change_events (change_date, change_type, resource_type, resource_id, details, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        datetime.now().strftime("%Y-%m-%d"),
+                        "mutation_auto_approved",
+                        mut["resource_type"],
+                        mut["resource_id"],
+                        json.dumps({"mutation_type": mut["mutation_type"]}),
+                        utc_now_iso(),
+                    ),
+                )
+
+                approved_count += 1
+
+    print(f"Auto-approved: {approved_count}")
+    log_run("auto-approve", "ok", f"approved={approved_count}")
     return 0
 
 
@@ -1479,6 +1578,9 @@ def build_parser() -> argparse.ArgumentParser:
     mutations.add_argument("--type", help="Filter by mutation type (add_negative_keywords, apply_recommendation)")
     mutations.add_argument("--stats", action="store_true", help="Show mutation pipeline statistics")
     mutations.set_defaults(func=cmd_mutations)
+
+    auto_approve = subparsers.add_parser("auto-approve", help="Auto-approve pending mutations meeting approval gates.")
+    auto_approve.set_defaults(func=cmd_auto_approve)
 
     approve = subparsers.add_parser("approve", help="Approve pending mutations.")
     approve_group = approve.add_mutually_exclusive_group(required=True)
