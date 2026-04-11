@@ -180,6 +180,28 @@ Behavior:
 
 This keeps the dashboard near real time without continuously spending tokens on synthetic prompts.
 
+## Dashboard Stripe Model
+
+The ProBot dashboard's Stripe work should follow the canonical runbook:
+
+- `operations/runbooks/stripe-cli-and-probot.md`
+
+Key rule:
+
+- ProBot should inspect Stripe by local CLI profile, not by assuming one main Stripe account can enumerate every other dashboard-visible account.
+
+In this workspace:
+
+- each live Stripe account can have both live and test access in the same CLI profile
+- a separate sandbox profile only exists when Stripe exposes one explicitly
+- the current profile and account inventory is indexed at `operations/accounts/credentials-index.md`
+
+For implementation and debugging:
+
+- verify the account context with `stripe get /v1/account -p <profile>`
+- inspect configured profiles via `~/.config/stripe/config.toml`
+- preserve the existing `default` Says the Bible profile unless explicitly told to change it
+
 ## Notes Storage
 
 By default, notes are written under:

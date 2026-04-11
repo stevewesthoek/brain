@@ -194,16 +194,16 @@ Config values in the same file (not secrets — listed so `sync-credentials` doe
 
 CLI auth via browser OAuth — no persistent API key file. Account IDs stored in `~/.config/stripe/config.toml`.
 
-| Account | Account ID | Profile | Notes |
-|---------|-----------|---------|-------|
-| ProChat Studio (main) | `acct_1SxE7KDmzmvnZunZ` | `prochat-main` | Main Stripe account authenticated locally via separate CLI profile; intended read-only inventory profile |
-| Says the Bible (live) | `acct_1T5EojLzAX9y8uTj` | `default` | Existing live Stripe account wired to the Says the Bible website; do not interrupt |
-| Says the Bible (sandbox) | `acct_1T5EoqL7t8amqhMU` | `says the bible sandbox` | Sandbox/test account |
-| Feel Good with Ana | `acct_1NIqSdDns7UgqVkf` | `feel-good-with-ana` | CLI-verified on 2026-04-11; standard account; dashboard timezone `Europe/Rome`; country `IT` |
-| JPV Bootcamp | `acct_1Sed9ULQNsjxBhGB` | `jpv-bootcamp` | CLI-verified on 2026-04-11; standard account; default currency `GBP`; dashboard timezone `Europe/London`; country `GB` |
-| ProChat (legacy) | _pending_ | _not authenticated separately_ | Visible in ProChat Studio dashboard account switcher; likely older ProChat Stripe account |
-| Vila Solidária | _pending_ | _not authenticated separately_ | Visible in ProChat Studio dashboard account switcher; likely client-owned or delegated-access account |
-| Yeshua Academy | _pending_ | _not authenticated separately_ | Visible in ProChat Studio dashboard account switcher; likely client-owned or delegated-access account |
+| Account | Live Account ID | Profile | Test Access | Notes |
+|---------|-----------------|---------|-------------|-------|
+| ProChat Studio (main) | `acct_1SxE7KDmzmvnZunZ` | `prochat-main` | Same profile has test mode | Main Stripe account authenticated locally via separate CLI profile; intended read-only inventory profile |
+| Says the Bible (live) | `acct_1T5EojLzAX9y8uTj` | `default` | Same profile has test mode | Existing live Stripe account wired to the Says the Bible website; do not interrupt |
+| Says the Bible (sandbox) | _n/a_ | `says the bible sandbox` | Separate test-only profile | Distinct Stripe sandbox/test account profile with its own test key set |
+| Feel Good with Ana | `acct_1NIqSdDns7UgqVkf` | `feel-good-with-ana` | Same profile has test mode | CLI-verified on 2026-04-11; standard account; dashboard timezone `Europe/Rome`; country `IT` |
+| JPV Bootcamp | `acct_1Sed9ULQNsjxBhGB` | `jpv-bootcamp` | Same profile has test mode | CLI-verified on 2026-04-11; standard account; default currency `GBP`; dashboard timezone `Europe/London`; country `GB` |
+| ProChat (legacy) | `acct_1M5yY0BnBpi6ElVO` | `prochat-legacy` | Same profile has test mode | CLI-verified on 2026-04-11; standard account; company account; dashboard timezone `Europe/Lisbon`; country `NL` |
+| Vila Solidária | `acct_1S4gIHGuhwwbZ1l7` | `vila-solidaria` | Same profile has test mode | CLI-verified on 2026-04-11; standard account; non-profit business type; dashboard timezone `Europe/Lisbon`; country `PT` |
+| Yeshua Academy | `acct_1FIyIjBfXlZVNl8d` | `yeshua-academy` | Same profile has test mode | CLI-verified on 2026-04-11; standard account; non-profit business type; dashboard timezone `Europe/Lisbon`; country `NL` |
 
 Re-authenticate: `stripe login` (opens browser). Switch profiles: `stripe login --profile "says the bible sandbox"`.
 
@@ -211,12 +211,10 @@ Re-authenticate: `stripe login` (opens browser). Switch profiles: `stripe login 
 
 - The `prochat-main` CLI profile now resolves to `ProChat Studio` and is separate from the existing `default` Says the Bible profile.
 - `stripe get /v1/accounts -p prochat-main` returned an empty list, so the other dashboard-visible accounts are not exposed as Connect subaccounts through this API credential.
-- The roster above combines:
-  - CLI-verified accounts with confirmed account IDs
-  - dashboard-visible accounts captured from the Stripe account switcher screenshot on 2026-04-11
-- To fully enrich the pending rows with account IDs, ownership status, and API-level metadata, each account will need either:
-  - direct authentication into a dedicated Stripe CLI profile, or
-  - manual account ID capture from the Stripe dashboard UI
+- All authenticated live profiles now also have test-mode API keys in the same Stripe CLI profile.
+- In Stripe terms, test mode is usually not a separate sandbox account ID; it is the same account with separate test credentials.
+- The one explicit exception in local CLI config is `says the bible sandbox`, which is a distinct test-only profile rather than just the test half of the live account.
+- All live dashboard-visible accounts have now been authenticated into dedicated local Stripe CLI profiles on 2026-04-11, and all of those profiles include test access.
 
 ## Google Ads — Yeshua Academy (Ad Grants)
 

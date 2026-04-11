@@ -110,6 +110,23 @@ Thin wrappers around local commands and file paths:
 - Codex session storage
 - Brain repo search
 - future Google/n8n connectors
+- future Stripe profile connector for per-account dashboard aggregation
+
+## Stripe dashboard model
+
+Stripe integration in ProBot should use the local Stripe CLI profile registry as the account boundary.
+
+Canonical operational reference:
+
+- `operations/runbooks/stripe-cli-and-probot.md`
+
+Rules:
+
+1. Do not assume a main Stripe account can enumerate every other dashboard-visible account.
+2. Use one local Stripe CLI profile per account when required.
+3. Treat live and test mode as separate contexts of the same profile unless there is an explicit separate sandbox profile.
+4. Keep the existing `default` Says the Bible profile stable unless a user explicitly asks to change it.
+5. Dashboard reads should remain read-only.
 
 ### `src/store/*`
 

@@ -103,6 +103,9 @@ Local machine secrets that are intentionally not in-repo:
 ## Credentials
 
 All API keys, tokens, and credentials are indexed (no values) at `operations/accounts/credentials-index.md`.
+
+Canonical Stripe operations and ProBot dashboard model live at `operations/runbooks/stripe-cli-and-probot.md`.
+Use that runbook for Stripe CLI auth, profile handling, and live/test account semantics across the AI system.
 Run `sync-credentials` to scan `~/.config/` for new `.env` files and append untracked entries.
 A PostToolUse hook auto-runs `sync-credentials` whenever Claude writes or edits a `.env` file.
 

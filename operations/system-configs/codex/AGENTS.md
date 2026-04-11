@@ -149,6 +149,7 @@ Config symlinks: `~/.codex` → `brain/operations/system-configs/codex/`, `~/.ge
 
 Shared AI-agnostic skills live in `brain/ai/skills/`. For self-hosted n8n CLI work, use the shared `/n8n` skill at `brain/ai/skills/custom/n8n/n8n-cli/`. For Azure CLI work, use the shared `/azure` skill at `brain/ai/skills/custom/azure/azure-cli/`. For Google Cloud CLI work, use the shared `/gcp` skill at `brain/ai/skills/custom/gcp/gcp-cli/`. For Hetzner Cloud CLI work, use the shared `/hetzner` skill at `brain/ai/skills/custom/hetzner/hetzner-cli/`. For Tailscale network inspection and pre-flight checks, use the shared `/tailscale` skill at `brain/ai/skills/custom/tailscale/tailscale/`.
 For Yeshua Academy nonprofit Google Ads automation, use the shared `/google-ads` skill at `brain/ai/skills/custom/google-ads/google-ads-automation/`. This stack is Ad Grants-only until the docs say otherwise.
+For Stripe CLI auth, profile handling, and ProBot dashboard semantics, use the canonical runbook at `brain/operations/runbooks/stripe-cli-and-probot.md`.
 
 ---
 

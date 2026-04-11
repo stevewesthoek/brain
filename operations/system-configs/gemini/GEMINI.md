@@ -149,6 +149,7 @@ Local repos live at `~/Repos/` organized by GitHub account:
 Config symlinks: `~/.gemini` → `brain/operations/system-configs/gemini/`
 
 Shared AI-agnostic skills live in `brain/ai/skills/`. For Google Cloud CLI work, use the shared `/gcp` skill at `brain/ai/skills/custom/gcp/gcp-cli/`. Use the `/gemini` skill for routing guidance.
+For Stripe CLI auth, profile handling, and ProBot dashboard semantics, use the canonical runbook at `brain/operations/runbooks/stripe-cli-and-probot.md`.
 
 ---
 
