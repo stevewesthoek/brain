@@ -1362,6 +1362,139 @@ def cmd_compliance_check(args: argparse.Namespace) -> int:
         return 0
 
 
+def cmd_health(_: argparse.Namespace) -> int:
+    """
+    System health check for monitoring and alerting integrations.
+
+    Outputs JSON for easy parsing by monitoring systems:
+    - System status (connectivity, API, database)
+    - Pipeline health (pending, approved, applied counts)
+    - Pacing health (spend vs target)
+    - Alert count (escalations, high-risk)
+    - Last sync age
+
+    Usage:
+      health              # JSON output
+      health 2>/dev/null  # Quiet (for scripts)
+    """
+    rules = load_toml(CONFIG_DIR / "rules.toml")
+    goals = load_toml(CONFIG_DIR / "goals.toml")
+
+    health_status = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "system": {
+            "api_available": False,
+            "database_available": False,
+            "last_sync_age_seconds": None,
+        },
+        "pipeline": {
+            "pending": 0,
+            "approved": 0,
+            "applied": 0,
+            "rejected": 0,
+            "failed": 0,
+        },
+        "pacing": {
+            "actual_spend": 0.0,
+            "target_spend": 0.0,
+            "pacing_pct": 0,
+            "status": "unknown",
+        },
+        "alerts": {
+            "escalations": 0,
+            "high_risk": 0,
+            "compliance_warnings": 0,
+        },
+        "health_score": 0,  # 0-100
+        "status": "unknown",
+    }
+
+    try:
+        # Check database
+        with connect_db() as conn:
+            health_status["system"]["database_available"] = True
+
+            # Get pipeline counts
+            pipeline = conn.execute(
+                "SELECT status, COUNT(*) as count FROM pending_mutations GROUP BY status"
+            ).fetchall()
+            for row in pipeline:
+                health_status["pipeline"][row["status"]] = row["count"]
+
+            # Check pacing
+            now = datetime.now()
+            month_prefix = f"{now.year:04d}-{now.month:02d}"
+            pacing = get_pacing_health(conn)
+            health_status["pacing"] = {
+                "actual_spend": pacing["actual_spend"],
+                "target_spend": pacing["target_spend"],
+                "pacing_pct": round(pacing["pacing_pct"], 1),
+                "status": "red" if pacing["pacing_pct"] < 50 else "yellow" if pacing["pacing_pct"] < 80 else "green" if pacing["pacing_pct"] <= 120 else "yellow" if pacing["pacing_pct"] <= 150 else "red",
+            }
+
+            # Count alerts
+            mutations = conn.execute(
+                "SELECT * FROM pending_mutations WHERE status = 'pending'"
+            ).fetchall()
+            for mut in mutations:
+                risk_score = calculate_risk_score(mut, rules)
+                if should_escalate_mutation(mut, rules):
+                    health_status["alerts"]["escalations"] += 1
+                elif risk_score["level"] in ["high", "urgent"]:
+                    health_status["alerts"]["high_risk"] += 1
+
+            # Last sync
+            last_sync = conn.execute(
+                "SELECT created_at FROM runs WHERE command = 'sync' ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+            if last_sync:
+                sync_time = datetime.fromisoformat(last_sync["created_at"].replace("Z", "+00:00"))
+                age = (datetime.now(timezone.utc) - sync_time).total_seconds()
+                health_status["system"]["last_sync_age_seconds"] = int(age)
+
+            # Check API (try test_connectivity)
+            try:
+                api = get_api_client()
+                api.test_connectivity()
+                health_status["system"]["api_available"] = True
+            except SystemExit:
+                # API unavailable is ok in mock mode
+                pass
+
+    except Exception as err:
+        health_status["error"] = str(err)
+
+    # Calculate overall health score
+    score = 100
+    if not health_status["system"]["database_available"]:
+        score -= 50
+    if not health_status["system"]["api_available"]:
+        score -= 25
+    if health_status["system"]["last_sync_age_seconds"] and health_status["system"]["last_sync_age_seconds"] > 86400:
+        score -= 15  # More than 24h old
+    if health_status["alerts"]["escalations"] > 0:
+        score -= min(30, health_status["alerts"]["escalations"] * 10)
+    if health_status["pacing"]["status"] == "red":
+        score -= 20
+
+    health_status["health_score"] = max(0, score)
+
+    # Determine status
+    if score >= 90:
+        health_status["status"] = "healthy"
+    elif score >= 70:
+        health_status["status"] = "degraded"
+    elif score >= 50:
+        health_status["status"] = "unhealthy"
+    else:
+        health_status["status"] = "critical"
+
+    # Output JSON
+    print(json.dumps(health_status, indent=2))
+    log_run("health", health_status["status"], f"score={score}")
+    return 0 if score >= 70 else 1
+
+
 def cmd_alerts(args: argparse.Namespace) -> int:
     """
     Show pending alerts and escalations that need human attention.
@@ -2353,6 +2486,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = subparsers.add_parser("status", help="Show automation pipeline status and health.")
     status.set_defaults(func=cmd_status)
+
+    health = subparsers.add_parser("health", help="Output system health as JSON for monitoring.")
+    health.set_defaults(func=cmd_health)
 
     negatives = subparsers.add_parser("negatives", help="Apply negative keyword automation.")
     negatives.set_defaults(func=cmd_negatives)
