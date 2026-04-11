@@ -9,7 +9,7 @@ Every session follows this flow — know where you are in it at all times:
 
 1. **Start** — Check for `.ai/current.md` in the target repo. If it exists, run `/handoff resume` to restore goal, status, files touched, and next steps without re-reading everything.
 2. **Work** — Route by task weight (Haiku → Sonnet → Opus → Codex). Track what's done and what's pending. Prefer surgical changes; don't widen scope.
-3. **End** — Run `/handoff pause` to compress session state. If something non-obvious was solved (tricky bug, codebase gotcha, workaround), run `/learner` to extract it as a reusable skill.
+3. **End** — Run `/handoff pause` to compress session state. If something non-obvious was solved (tricky bug, codebase gotcha, workaround), run the shared `/learner` skill to extract it as a reusable skill for Claude, Codex, and Gemini.
 
 **Resilience:** `.ai/current.md` is the recovery point if a session breaks mid-task. The Stop hook writes it automatically — no manual action needed.
 **Cross-device continuity:** `.ai/current.md` is ephemeral and gitignored in this repo — it's auto-regenerated each session. `decision-log.md` is durable and in git; commit it before switching devices.

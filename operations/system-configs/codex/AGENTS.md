@@ -167,7 +167,7 @@ Codex
 |------|-------|
 | Confirmed architecture/workflow decision | `decision-log.md` — append |
 | Stable global convention | `AGENTS.md` or `CLAUDE.md` |
-| Hard-won codebase-specific pattern | Note it — Claude can run `/learner` next session |
+| Hard-won codebase-specific pattern | Run the shared `/learner` skill and save it in `brain/ai/skills/custom/learned/` |
 | Everything else | `.ai/current.md` only — ephemeral |
 
 ---

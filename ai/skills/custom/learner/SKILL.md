@@ -1,11 +1,13 @@
 ---
 name: learner
-description: Extract hard-won problem-solving patterns from the current session and save them as reusable skills in brain/ai/skills/custom/learned/. Use this skill when the user says "learn this", "save this as a skill", "extract this pattern", "remember how we fixed this", or when wrapping up a session where something tricky was solved. Also trigger proactively at the end of sessions where non-obvious debugging, workarounds, or codebase-specific knowledge was discovered — the kind of thing that would take real effort to rediscover. Do NOT trigger for generic code patterns, refactoring, or anything a junior dev could Google.
+description: Extract hard-won problem-solving patterns from the current session and save them as reusable skills in brain/ai/skills/custom/learned/. Shared across Claude, Codex, and Gemini. Use this skill when the user says "learn this", "save this as a skill", "extract this pattern", "remember how we fixed this", or when wrapping up a session where something tricky was solved. Also trigger proactively at the end of sessions where non-obvious debugging, workarounds, or codebase-specific knowledge was discovered — the kind of thing that would take real effort to rediscover. Do NOT trigger for generic code patterns, refactoring, or anything a junior dev could Google.
 ---
 
 # Learner
 
 Captures hard-won, session-specific knowledge and turns it into a reusable skill.
+
+This is a shared AI-agnostic skill. Claude, Codex, and Gemini should all use the same extraction bar, the same destination folder, and the same skill format so the learned pattern is available regardless of which engine discovered it.
 
 The goal is not to document what happened — it's to distill *why it was hard* and *what to think next time* so future sessions skip the painful rediscovery.
 
@@ -129,7 +131,7 @@ If they want changes, revise before saving.
 
 **User-level** (this system) — save to `brain/ai/skills/custom/learned/`. Applies across all repos.
 
-**Project-level** — if the knowledge is too repo-specific to generalize, note it in the CLAUDE.md or decision-log of that repo instead. Don't create a skill for a one-repo gotcha unless the pattern will recur.
+**Project-level** — if the knowledge is too repo-specific to generalize, note it in the repo's local instructions file (`CLAUDE.md`, `AGENTS.md`, or `GEMINI.md`) or `decision-log.md` instead. Don't create a skill for a one-repo gotcha unless the pattern will recur.
 
 ## What not to save as a skill
 

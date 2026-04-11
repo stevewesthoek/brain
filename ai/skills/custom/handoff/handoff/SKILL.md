@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Use when starting or ending a Claude/Codex work session — writes compressed handoff to .ai/current.md, loads minimal context on resume, or sets up the .ai/ memory system in a repo.
+description: Use when starting or ending a Claude/Codex/Gemini work session — writes compressed handoff to .ai/current.md, loads minimal context on resume, or sets up the .ai/ memory system in a repo.
 ---
 
 # Session Handoffs
@@ -38,7 +38,7 @@ This skill helps pause work at the end of a session with a compressed handoff, r
 3. **Token optimization first.** Compress aggressively — `.ai/current.md` should be 200–500 tokens, not thousands.
 4. **Decisions are append-only.** `decision-log.md` never gets rewritten; new entries append with timestamps.
 5. **Secrets stay out.** Never write API keys, tokens, credentials, or auth information to `.ai/` files.
-6. **This skill applies to both Claude and Codex.**
+6. **This skill applies to Claude, Codex, and Gemini.**
 
 ## Handoff commands
 
@@ -112,7 +112,7 @@ End a meaningful session and write compressed state to `.ai/current.md`.
 ```
 
 9. Optionally, save a timestamped copy to `.ai/handoffs/YYYY-MM-DD-HH-MM-SS.md` (archive)
-10. **Learner check:** Before closing, ask: "Did anything non-obvious get solved this session — a tricky bug, a workaround, a codebase-specific gotcha?" If yes, prompt: "Run `/learner` to extract it as a reusable skill before you go."
+10. **Learner check:** Before closing, ask: "Did anything non-obvious get solved this session — a tricky bug, a workaround, a codebase-specific gotcha?" If yes, prompt: "Run the shared `/learner` skill to extract it as a reusable skill before you go."
 
 ### `/handoff resume`
 
