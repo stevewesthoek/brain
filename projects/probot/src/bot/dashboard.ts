@@ -1469,6 +1469,23 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .stripe-json details{border:1px solid var(--border);border-radius:8px;background:var(--surface)}
 .stripe-json summary{padding:9px 11px;cursor:pointer;font-size:11px;color:var(--muted);font-family:var(--mono)}
 .stripe-json pre{margin:0;padding:0 11px 11px;font-size:10px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;font-family:var(--mono)}
+/* ── xgrow ── */
+.xgrow-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.xgrow-stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.xgrow-stats{grid-template-columns:1fr}}
+.xgrow-stat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.xgrow-stat-val{font-size:24px;font-weight:700;font-family:var(--mono);letter-spacing:-1px}
+.xgrow-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:6px}
+.xgrow-btns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.xgrow-btn{padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;color:var(--text);transition:all .15s}
+.xgrow-btn:hover{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
+.xgrow-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:1000px){.xgrow-grid{grid-template-columns:1fr}}
+.xgrow-section{display:flex;flex-direction:column;gap:8px}
+.xgrow-section h3{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+.xgrow-list{background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:300px;overflow-y:auto}
+.xgrow-item{padding:8px 10px;border-bottom:1px solid var(--border);font-size:10px;font-family:var(--mono)}
+.xgrow-item:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -1499,6 +1516,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="stripe">Stripe <span class="tab-count" id="cnt-stripe"></span></button>
     <button class="tab-btn" data-tab="mutations">Mutations <span class="tab-count" id="cnt-mutations"></span></button>
     <button class="tab-btn" data-tab="domains">Domains <span class="tab-count" id="cnt-domains"></span></button>
+    <button class="tab-btn" data-tab="xgrow">xgrow <span class="tab-count" id="cnt-xgrow"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
   <div class="tab-panel" id="tab-repos"></div>
@@ -1509,6 +1527,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
   <div class="tab-panel" id="tab-stripe"></div>
   <div class="tab-panel" id="tab-mutations"></div>
   <div class="tab-panel" id="tab-domains"></div>
+  <div class="tab-panel" id="tab-xgrow"></div>
 </div>
 <script>
 let _d=null;
@@ -1906,6 +1925,25 @@ function renderDomains(data){
   hd+='</div>';
   return hd+'<div class="dom-grid fade">'+data.domains.map(domainCard).join('')+'</div>';
 }
+function renderXgrow(data){
+  if(!data){return'<div class="empty">xgrow data unavailable</div>';}
+  if(data.error){return'<div class="nr-err">'+esc(data.error)+'</div>';}
+  const s=data.stats||{};
+  let h='<div class="xgrow-stats fade">';
+  h+='<div class="xgrow-stat"><div class="xgrow-stat-val">'+String(s.postsToday||0)+'/'+String(s.maxPostsPerDay||5)+'</div><div class="xgrow-stat-lbl">Posts Today</div></div>';
+  h+='<div class="xgrow-stat"><div class="xgrow-stat-val">'+String(s.postsRemaining||0)+'</div><div class="xgrow-stat-lbl">Remaining</div></div>';
+  h+='<div class="xgrow-stat"><div class="xgrow-stat-val">'+String(s.pendingPostsCount||0)+'</div><div class="xgrow-stat-lbl">Pending</div></div>';
+  h+='</div>';
+  h+='<div class="xgrow-btns fade"><button class="xgrow-btn" onclick="xgrowAction(\'scan\')">Scan</button><button class="xgrow-btn" onclick="xgrowAction(\'process\')">Process</button><button class="xgrow-btn" onclick="xgrowAction(\'pause\')">Pause</button><button class="xgrow-btn" onclick="xgrowAction(\'resume\')">Resume</button></div>';
+  h+='<div class="xgrow-grid fade">';
+  h+='<div class="xgrow-section"><h3>Logs</h3><div class="xgrow-list">';
+  if(data.logs.length===0){h+='<div class="xgrow-item">No logs</div>';}else{data.logs.slice(0,5).forEach(l=>{h+='<div class="xgrow-item">'+age(l.createdAt)+' - '+l.status+'</div>';});}
+  h+='</div></div>';
+  h+='<div class="xgrow-section"><h3>Pending Posts</h3><div class="xgrow-list">';
+  if(data.posts.length===0){h+='<div class="xgrow-item">No pending posts</div>';}else{data.posts.slice(0,5).forEach(p=>{h+='<div class="xgrow-item">@'+esc(p.authorUsername)+': '+esc((p.content||'').substring(0,40))+'...</div>';});}
+  h+='</div></div></div>';
+  return h;
+}
 function render(d){
   _d=d;
   document.getElementById('host').textContent=d.meta.hostname;
@@ -1943,6 +1981,11 @@ function render(d){
   const dw=d.domains&&d.domains.domains?d.domains.domains.length:0;
   document.getElementById('cnt-domains').textContent=dw?String(dw):'';
   document.getElementById('tab-domains').innerHTML=renderDomains(d.domains);
+  if(d.xgrow){
+    const xp=d.xgrow.stats?d.xgrow.stats.pendingPostsCount:0;
+    document.getElementById('cnt-xgrow').textContent=xp?String(xp):'';
+    document.getElementById('tab-xgrow').innerHTML=renderXgrow(d.xgrow);
+  }
 }
 async function fetchData(){
   try{
