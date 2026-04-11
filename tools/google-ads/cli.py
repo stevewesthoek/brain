@@ -40,6 +40,9 @@ CONFIG_DIR = ROOT / "config" / "google-ads"
 DATA_DIR = ROOT / "data" / "google-ads"
 REPORTS_DIR = ROOT / "reports" / "google-ads"
 DB_PATH = DATA_DIR / "google_ads.sqlite3"
+LOCAL_CONFIG_DIR = Path.home() / ".config" / "google-ads"
+LOCAL_ENV_PATH = LOCAL_CONFIG_DIR / "brain-google-ads.env"
+ADC_PATH = Path.home() / ".config" / "gcloud" / "application_default_credentials.json"
 
 
 REQUIRED_SECRET_ENV_VARS = [
@@ -60,6 +63,42 @@ class DoctorState:
     gcloud_active_config: str | None
     gcloud_configs: list[dict[str, Any]]
     env_status: dict[str, bool]
+    adc_status: dict[str, bool]
+    local_env_exists: bool
+
+
+def load_local_env() -> dict[str, str]:
+    values: dict[str, str] = {}
+    if not LOCAL_ENV_PATH.exists():
+        return values
+
+    for raw_line in LOCAL_ENV_PATH.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip()
+    return values
+
+
+def adc_status() -> dict[str, bool]:
+    status = {
+        "adc_file": ADC_PATH.exists(),
+        "client_id": False,
+        "client_secret": False,
+        "refresh_token": False,
+    }
+    if not ADC_PATH.exists():
+        return status
+    try:
+        data = json.loads(ADC_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return status
+
+    status["client_id"] = bool(data.get("client_id"))
+    status["client_secret"] = bool(data.get("client_secret"))
+    status["refresh_token"] = bool(data.get("refresh_token"))
+    return status
 
 
 def load_toml(path: Path) -> dict[str, Any]:
@@ -144,6 +183,7 @@ def collect_doctor_state() -> DoctorState:
     account_cfg = load_toml(CONFIG_DIR / "account.toml")
     auth_list = run_gcloud_json(["auth", "list", "--format=json"])
     config_list = run_gcloud_json(["config", "configurations", "list", "--format=json"])
+    local_env = load_local_env()
 
     active_account = None
     for account in auth_list:
@@ -157,7 +197,9 @@ def collect_doctor_state() -> DoctorState:
             active_config = config.get("name")
             break
 
-    env_status = {name: bool(os.environ.get(name)) for name in REQUIRED_SECRET_ENV_VARS}
+    env_status = {
+        name: bool(os.environ.get(name) or local_env.get(name)) for name in REQUIRED_SECRET_ENV_VARS
+    }
     return DoctorState(
         canonical_email=account_cfg["canonical_google_ads_account_email"],
         canonical_config=account_cfg["canonical_gcloud_config"],
@@ -165,6 +207,8 @@ def collect_doctor_state() -> DoctorState:
         gcloud_active_config=active_config,
         gcloud_configs=config_list,
         env_status=env_status,
+        adc_status=adc_status(),
+        local_env_exists=LOCAL_ENV_PATH.exists(),
     )
 
 
@@ -180,6 +224,14 @@ def cmd_doctor(_: argparse.Namespace) -> int:
     account_match = state.gcloud_active_account == state.canonical_email
     print(f"- Config boundary OK: {'yes' if config_match else 'no'}")
     print(f"- Account boundary OK: {'yes' if account_match else 'no'}")
+    print(f"- Local env file present: {'yes' if state.local_env_exists else 'no'}")
+    print(
+        "- ADC status: "
+        f"file={'yes' if state.adc_status['adc_file'] else 'no'}, "
+        f"client_id={'yes' if state.adc_status['client_id'] else 'no'}, "
+        f"client_secret={'yes' if state.adc_status['client_secret'] else 'no'}, "
+        f"refresh_token={'yes' if state.adc_status['refresh_token'] else 'no'}"
+    )
 
     print("- Secret readiness:")
     for key, present in state.env_status.items():

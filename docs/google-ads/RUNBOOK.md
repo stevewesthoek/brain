@@ -14,6 +14,12 @@
 python3 tools/google-ads/cli.py doctor
 ```
 
+The doctor command checks:
+- active `gcloud` config/account boundary
+- local-only env file presence
+- ADC refresh-token readiness
+- expected Google Ads runtime variables
+
 3. Refresh Google documentation awareness:
 
 ```bash
@@ -49,6 +55,19 @@ Required secrets that must remain local-only:
 
 Store them outside git and inject them via shell environment or a local-only env loader.
 
+Current local-only runtime file:
+
+```text
+~/.config/google-ads/brain-google-ads.env
+```
+
+Current OAuth artifacts:
+
+```text
+~/.config/google-ads/yeshua-google-ads-oauth.json
+~/.config/gcloud/application_default_credentials.json
+```
+
 ### Developer token onboarding
 
 The developer token is created in the Google Ads Manager UI, not in `gcloud`.
@@ -59,12 +78,13 @@ Current required path:
 
 1. Sign into Google Ads as `steve@yeshua.academy`
 2. Use manager account `935-769-8503`
-3. From that MCC, send a manager link invitation to client account `592-920-2435`
-4. Accept that invitation from the client account
-5. Open `https://ads.google.com/aw/apicenter` from manager account `935-769-8503`
-6. Complete the API Access form
-7. Record the resulting token locally, never in git
-8. Update `config/google-ads/account.toml` statuses from `missing` to the real state
+3. Ensure manager account `935-769-8503` is linked to client account `592-920-2435`
+4. Open `https://ads.google.com/aw/apicenter` from manager account `935-769-8503`
+5. Complete the API Access form
+6. Record the resulting token locally, never in git
+7. Create the OAuth desktop client in Google Cloud
+8. Generate ADC credentials with the `adwords` scope
+9. Write the local-only runtime env file
 
 Official references:
 

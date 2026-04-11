@@ -177,3 +177,5 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - `steve@yeshua.academy` is the only approved Google account for Google Ads Manager access, Google Ads API setup, OAuth client creation, and Google Cloud work related to Google Ads.
 - The canonical local `gcloud` config for Google Ads work is `google-ads-nonprofit`.
 - The automation architecture is AI-agnostic: Claude, Codex, and Gemini must all use the same docs, config, CLI, local SQLite state, and markdown reports.
+- The customer-owned manager account is `Yeshua Academy Google Ads Manager (935-769-8503)`, linked to client account `592-920-2435`.
+- Google Ads secrets live only in local files under `~/.config/google-ads/` and ADC under `~/.config/gcloud/`; the repo stores only status and file-path conventions.

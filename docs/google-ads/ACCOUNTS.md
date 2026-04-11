@@ -46,7 +46,7 @@ A customer-owned Google Ads manager account now exists:
 
 Current state:
 - the manager account exists
-- it still needs to be linked to client account `592-920-2435`
+- it is linked to client account `592-920-2435`
 - after that, API Center should be accessed from manager account `935-769-8503`
 
 ## GCP config mapping
@@ -71,11 +71,9 @@ Current bootstrap project:
 
 The following Google Ads API prerequisites are still missing and must be created under `steve@yeshua.academy`:
 
-1. A manager-to-client link invitation from MCC `935-769-8503` to `592-920-2435`
-2. Acceptance of that manager link from the client account
-3. Google Ads API developer token from manager account `935-769-8503`
-4. OAuth client for the automation system
-5. Refresh token for the automation runtime
+1. A first live API connectivity test from the local runtime
+2. Wiring the CLI from scaffold mode into the live Google Ads API
+3. Expanding sync/report logic onto real account objects and metrics
 
 Until those are provisioned, the repo supports governance, documentation awareness, pacing, and reporting scaffolding, but not live API mutation.
 
@@ -101,3 +99,13 @@ The intended developer-token source is now:
 
 - `Yeshua Academy Google Ads Manager`
 - customer ID `935-769-8503`
+
+## Local-only credential files
+
+The Google Ads runtime secrets are stored locally only:
+
+- `~/.config/google-ads/brain-google-ads.env`
+- `~/.config/google-ads/yeshua-google-ads-oauth.json`
+- `~/.config/gcloud/application_default_credentials.json`
+
+These files must never be committed to git.

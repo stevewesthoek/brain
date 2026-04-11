@@ -35,7 +35,7 @@ Current real-world shape:
 Required future shape:
 - client account remains `592-920-2435`
 - customer-owned manager account `935-769-8503` is controlled by `steve@yeshua.academy`
-- link manager account `935-769-8503` to client account `592-920-2435`
+- manager account `935-769-8503` is linked to client account `592-920-2435`
 - use manager account `935-769-8503` for API Center and developer token management
 
 ## Control plane
@@ -78,6 +78,16 @@ All three AIs use the same:
 5. `report`
 - writes operator-facing markdown reports
 - combines account state, pacing, and policy-watch findings
+
+## Local credential runtime
+
+The current runtime uses local-only files outside the repo:
+
+- `~/.config/google-ads/brain-google-ads.env`
+- `~/.config/google-ads/yeshua-google-ads-oauth.json`
+- `~/.config/gcloud/application_default_credentials.json`
+
+The repo stores status and paths only, never secret values.
 
 ## State model
 
