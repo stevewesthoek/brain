@@ -292,6 +292,21 @@ run_gemini_cleanup() {
   run_job "gemini-cleanup" "$timeout_seconds" "$command"
 }
 
+run_google_ads_sync() {
+  local timeout_seconds="${GOOGLE_ADS_SYNC_TIMEOUT_SECONDS:-600}"  # 10 minutes
+  local sync_script="${GOOGLE_ADS_SYNC_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/google-ads-sync-schedule.sh}"
+  local sync_log="$LOG_DIR/google-ads-sync.log"
+  local command
+
+  if [[ ! -x "$sync_script" ]]; then
+    log "skipping job=google-ads-sync reason=missing_script path=$sync_script"
+    return 0
+  fi
+
+  command="$(printf '%q >> %q 2>&1' "$sync_script" "$sync_log")"
+  run_job "google-ads-sync" "$timeout_seconds" "$command" "$sync_log"
+}
+
 render_runtime_report() {
   if [[ -x "$REPORT_SCRIPT" ]]; then
     OFFICE_SCHEDULER_STATE_DIR="$STATE_DIR" \
@@ -404,6 +419,9 @@ main() {
 
   # Gemini tmp/history cleanup — never stops chain
   run_gemini_cleanup || log "warning gemini-cleanup failed but chain continues"
+
+  # Google Ads daily sync — never stops chain, lightweight (< 2 minutes typically)
+  run_google_ads_sync || log "warning google-ads-sync failed but chain continues"
 
   # ING Bank Statement download — runs on the 1st of each month, never stops chain
   run_ing_bank_statement_download || log "warning ing-bank-statement-download failed but chain continues"

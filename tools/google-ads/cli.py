@@ -333,7 +333,7 @@ def cmd_sync(_: argparse.Namespace) -> int:
         # Import API module
         try:
             from api import GoogleAdsAPI, GoogleAdsAPIError
-        except ImportError as e:
+        except (ImportError, TypeError) as e:
             detail = f"Failed to import API module: {e}. Ensure google-ads package is installed."
             print(detail)
             log_run("sync", "error", detail)
@@ -472,12 +472,12 @@ def cmd_sync(_: argparse.Namespace) -> int:
         log_run("sync", "ok", detail)
         return 0
 
-    except GoogleAdsAPIError as e:
-        detail = f"Google Ads API error: {e}"
-        print(detail)
-        log_run("sync", "error", detail)
-        return 1
     except Exception as e:
+        # Handle both GoogleAdsAPIError and other exceptions
+        if "GoogleAdsAPIError" in str(type(e).__name__):
+            detail = f"Google Ads API error: {e}"
+        else:
+            detail = f"Sync error: {e}"
         detail = f"Unexpected error during sync: {e}"
         print(detail)
         log_run("sync", "error", detail)
