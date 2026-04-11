@@ -2,6 +2,7 @@ import http from "node:http";
 import os from "node:os";
 import fs from "node:fs";
 import path from "node:path";
+import sqlite3 from "sqlite3";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import type { AppContext } from "../types/app.js";
@@ -648,11 +649,127 @@ function getNightScheduler(): SchedulerJob[] {
   });
 }
 
+// ─── Google Ads helpers ──────────────────────────────────────────────────────
+
+interface GoogleAdsMetrics {
+  error?: string;
+  status: "ready" | "no_data" | "error";
+  lastSync?: string | null;
+  doctorStatus?: string | null;
+  metrics: {
+    dailyBudgetUSD: number;
+    targetBudgetUSD: number;
+    percentOfTarget: number;
+    dayOfMonth: number;
+    daysInMonth: number;
+    lastMetricsDate?: string | null;
+  };
+  policyWatchStatus?: {
+    sourcesChecked: number;
+    sourcesChanged: number;
+    lastCheck?: string | null;
+  };
+}
+
+async function getGoogleAdsMetrics(): Promise<GoogleAdsMetrics> {
+  const googleAdsDbPath = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "data", "google-ads", "google_ads.sqlite3");
+
+  if (!fs.existsSync(googleAdsDbPath)) {
+    return {
+      status: "no_data",
+      error: "Google Ads database not found",
+      metrics: { dailyBudgetUSD: 0, targetBudgetUSD: 10000, percentOfTarget: 0, dayOfMonth: 0, daysInMonth: 30 },
+    };
+  }
+
+  return new Promise((resolve) => {
+    const db = new sqlite3.Database(googleAdsDbPath, "r", (err) => {
+      if (err) {
+        resolve({
+          status: "error",
+          error: `Database error: ${err.message}`,
+          metrics: { dailyBudgetUSD: 0, targetBudgetUSD: 10000, percentOfTarget: 0, dayOfMonth: 0, daysInMonth: 30 },
+        });
+        return;
+      }
+
+      Promise.all([
+        // Get latest metrics snapshot
+        new Promise<{ date: string; spend: number } | null>((res) => {
+          db.get(
+            "SELECT snapshot_date, spend_usd FROM metrics_snapshots ORDER BY id DESC LIMIT 1",
+            (err, row: { snapshot_date: string; spend_usd: number } | undefined) => {
+              res(row ?? null);
+            }
+          );
+        }),
+        // Get policy watch status
+        new Promise<{ checked: number; changed: number; lastCheck: string } | null>((res) => {
+          db.get(
+            "SELECT COUNT(*) as checked, SUM(CASE WHEN changed = 1 THEN 1 ELSE 0 END) as changed, MAX(fetched_at) as lastCheck FROM policy_snapshots",
+            (err, row: { checked: number; changed: number; lastCheck: string } | undefined) => {
+              res(row ?? null);
+            }
+          );
+        }),
+        // Get latest doctor status
+        new Promise<{ command: string; status: string; created_at: string } | null>((res) => {
+          db.get(
+            "SELECT command, status, created_at FROM runs WHERE command = 'doctor' ORDER BY id DESC LIMIT 1",
+            (err, row: { command: string; status: string; created_at: string } | undefined) => {
+              res(row ?? null);
+            }
+          );
+        }),
+      ])
+        .then(([latestMetrics, policyWatch, doctorRun]) => {
+          db.close();
+          const now = new Date();
+          const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+          const dayOfMonth = now.getDate();
+          const targetMonthlyUSD = 10000;
+          const targetDailyUSD = targetMonthlyUSD / daysInMonth;
+          const dailySpendUSD = latestMetrics?.spend ?? 0;
+          const percentOfTarget = dailySpendUSD > 0 ? Math.round((dailySpendUSD / targetDailyUSD) * 100) : 0;
+
+          resolve({
+            status: "ready",
+            lastSync: latestMetrics?.date ?? null,
+            doctorStatus: doctorRun?.status ?? null,
+            metrics: {
+              dailyBudgetUSD: dailySpendUSD,
+              targetBudgetUSD: targetDailyUSD,
+              percentOfTarget,
+              dayOfMonth,
+              daysInMonth,
+              lastMetricsDate: latestMetrics?.date ?? null,
+            },
+            policyWatchStatus: policyWatch
+              ? {
+                  sourcesChecked: policyWatch.checked,
+                  sourcesChanged: policyWatch.changed,
+                  lastCheck: policyWatch.lastCheck,
+                }
+              : undefined,
+          });
+        })
+        .catch((err) => {
+          db.close();
+          resolve({
+            status: "error",
+            error: `Query error: ${err.message}`,
+            metrics: { dailyBudgetUSD: 0, targetBudgetUSD: 10000, percentOfTarget: 0, dayOfMonth: 0, daysInMonth: 30 },
+          });
+        });
+    });
+  });
+}
+
 async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
-  const [sessions, continuationCards, nrHealth, umami, domains] = await Promise.all([
+  const [sessions, continuationCards, nrHealth, umami, domains, googleAds] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
       app.config.codexSessionsDir,
@@ -662,6 +779,7 @@ async function getDashboardData(app: AppContext) {
     getNRHealth(),
     getUmamiData(),
     getCloudflareDomains(),
+    getGoogleAdsMetrics(),
   ]);
   const codexUsage = await getCodexUsage({
     codexSessionsDir: app.config.codexSessionsDir,
@@ -685,6 +803,7 @@ async function getDashboardData(app: AppContext) {
     nrHealth,
     umami,
     domains,
+    googleAds,
     scheduler: getNightScheduler(),
     repos: getReposData(app),
     sessions: sessions.slice(0, 8).map((s) => ({
@@ -894,6 +1013,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="nr">New Relic</button>
     <button class="tab-btn" data-tab="scheduler">Scheduler <span class="tab-count" id="cnt-sched"></span></button>
     <button class="tab-btn" data-tab="umami">Analytics <span class="tab-count" id="cnt-umami"></span></button>
+    <button class="tab-btn" data-tab="google-ads">Google Ads</button>
     <button class="tab-btn" data-tab="domains">Domains <span class="tab-count" id="cnt-domains"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
@@ -901,6 +1021,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
   <div class="tab-panel" id="tab-nr"></div>
   <div class="tab-panel" id="tab-scheduler"></div>
   <div class="tab-panel" id="tab-umami"></div>
+  <div class="tab-panel" id="tab-google-ads"></div>
   <div class="tab-panel" id="tab-domains"></div>
 </div>
 <script>
@@ -1122,6 +1243,40 @@ function domainCard(d){
     +daysHtml+dateHtml
     +'</div>';
 }
+function renderGoogleAds(data){
+  if(!data)return'<div class="nr-err">Google Ads not configured.</div>';
+  if(data.status==='no_data')return'<div class="nr-err">'+esc(data.error||'Google Ads database not found')+'</div>';
+  if(data.status==='error')return'<div class="nr-err">Google Ads Error: '+esc(data.error||'Unknown error')+'</div>';
+  const m=data.metrics;
+  const pct=m.percentOfTarget;
+  const pctColor=pct>100?'var(--amber)':pct>50?'var(--green)':'var(--red)';
+  const statusBadge=pct<50?'b-old':pct<100?'b-stale':'b-live';
+  let html='<div class="sec-hd"><span class="sec-title">Google Ads (Nonprofit)</span>';
+  html+='<span class="badge '+statusBadge+'" style="margin-left:8px">'+pct+'% of daily target</span>';
+  if(data.lastSync)html+='<span style="font-size:10px;color:var(--subtle);margin-left:auto">last metrics '+age(data.lastSync)+'</span>';
+  html+='</div>';
+  html+='<div class="ga-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px">';
+  html+='<div class="mc"><div class="mc-label">Daily Spend (USD)</div><div class="mc-value" style="color:'+pctColor+'">$'+m.dailyBudgetUSD.toFixed(2)+'</div><div class="mc-sub">Target: $'+m.targetBudgetUSD.toFixed(2)+'/day</div></div>';
+  html+='<div class="mc"><div class="mc-label">Day of Month</div><div class="mc-value">'+m.dayOfMonth+'/'+m.daysInMonth+'</div><div class="mc-sub">'+Math.round((m.dayOfMonth/m.daysInMonth)*100)+'% through month</div></div>';
+  if(data.doctorStatus)html+='<div class="mc"><div class="mc-label">System Status</div><div class="mc-value">'+esc(data.doctorStatus)+'</div><div class="mc-sub">CLI health check</div></div>';
+  html+='</div>';
+  if(data.policyWatchStatus){
+    const pw=data.policyWatchStatus;
+    html+='<div class="sec-hd" style="margin-top:20px"><span class="sec-title">Policy Monitoring</span></div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px">';
+    html+='<div class="mc"><div class="mc-label">Sources Tracked</div><div class="mc-value">'+pw.sourcesChecked+'</div><div class="mc-sub">Official Google docs</div></div>';
+    const changeColor=pw.sourcesChanged>0?'var(--amber)':'var(--green)';
+    html+='<div class="mc"><div class="mc-label">Changes Detected</div><div class="mc-value" style="color:'+changeColor+'">'+pw.sourcesChanged+'</div><div class="mc-sub">Ad Grants documentation</div></div>';
+    if(pw.lastCheck)html+='<div class="mc"><div class="mc-label">Last Check</div><div class="mc-value" style="font-size:11px">'+age(pw.lastCheck)+'</div><div class="mc-sub">Policy watch</div></div>';
+    html+='</div>';
+  }
+  html+='<div style="font-size:11px;color:var(--muted);margin-top:12px;padding:8px;background:var(--card);border-radius:4px;border:1px solid var(--border)">';
+  html+='<strong>Next phase:</strong> Live API integration will populate real campaign metrics, search terms, and recommendations once credentials are provisioned.<br/>';
+  html+='<strong>Account:</strong> Vila Solidária (592-920-2435) · Manager: Yeshua Academy Google Ads Manager (935-769-8503)<br/>';
+  html+='<strong>Program:</strong> Google Ad Grants (nonprofit) · Monthly budget: $10,000 USD';
+  html+='</div>';
+  return html;
+}
 function renderDomains(data){
   if(!data)return'<div class="nr-err">Cloudflare not configured.</div>';
   if(data.error&&!data.domains.length)return'<div class="nr-err">Domains: '+esc(data.error)+'</div>';
@@ -1160,6 +1315,7 @@ function render(d){
   const uw=d.umami&&d.umami.websites?d.umami.websites.length:0;
   document.getElementById('cnt-umami').textContent=uw?String(uw):'';
   document.getElementById('tab-umami').innerHTML=renderUmami(d.umami);
+  document.getElementById('tab-google-ads').innerHTML=renderGoogleAds(d.googleAds);
   const dw=d.domains&&d.domains.domains?d.domains.domains.length:0;
   document.getElementById('cnt-domains').textContent=dw?String(dw):'';
   document.getElementById('tab-domains').innerHTML=renderDomains(d.domains);
