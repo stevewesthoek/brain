@@ -34,7 +34,7 @@ except ModuleNotFoundError:  # pragma: no cover
     print("Python 3.11+ is required for tomllib support.", file=sys.stderr)
     raise
 
-# Import notifications module (same directory)
+# Import notifications and analytics modules (same directory)
 import sys as _sys
 _sys.path.insert(0, str(Path(__file__).parent))
 from notifications import (
@@ -42,6 +42,14 @@ from notifications import (
     calculate_risk_score,
     should_escalate_mutation,
     get_escalation_message,
+)
+from analytics import (
+    create_analysis_schema,
+    record_baseline_metrics,
+    analyze_applied_mutations,
+    get_insights,
+    suggest_gate_adjustments,
+    export_analysis_csv,
 )
 
 
@@ -255,6 +263,10 @@ def connect_db() -> sqlite3.Connection:
         );
         """
     )
+
+    # Create analytics schema (Phase 4G)
+    create_analysis_schema(conn)
+
     return conn
 
 
@@ -2307,6 +2319,10 @@ def cmd_apply(args: argparse.Namespace) -> int:
                             utc_now_iso(),
                         ),
                     )
+
+                    # Record baseline metrics for analysis (Phase 4G)
+                    record_baseline_metrics(conn, mutation["id"], campaign_id)
+
                     applied_count += 1
                     print(f"Applied mutation {mutation['id']} ({mutation_type})")
                 else:
@@ -2450,6 +2466,77 @@ def assert_live_allowed(args: argparse.Namespace, api: "GoogleAdsAPI") -> None:
         print("[DRY RUN] No changes will be made. Pass --live to execute real mutations.")
 
 
+def cmd_analyze(args: argparse.Namespace) -> int:
+    """Analyze mutations: measure impact vs predicted (Phase 4G)."""
+    with connect_db() as conn:
+        analyzed = analyze_applied_mutations(conn)
+        print(f"✓ Analyzed {analyzed} mutations")
+        if analyzed > 0:
+            print("  Run 'insights' to view results")
+        log_run("analyze", "ok", f"analyzed={analyzed}")
+    return 0
+
+
+def cmd_insights(args: argparse.Namespace) -> int:
+    """Show mutation effectiveness insights (Phase 4G)."""
+    with connect_db() as conn:
+        insights = get_insights(conn)
+
+        if not insights.get("accuracy_overall"):
+            print("No mutation analysis data yet. Run 'analyze' after mutations have been applied for 48+ hours.")
+            return 0
+
+        # Overall accuracy
+        accuracy = insights["accuracy_overall"]
+        print("\n📊 Overall Accuracy")
+        print(f"   Total mutations analyzed: {accuracy.get('total', 0)}")
+        print(f"   Accurate: {accuracy.get('accurate_pct', 0):.0f}%")
+        print(f"   Underestimated: {accuracy.get('underestimated_pct', 0):.0f}%")
+        print(f"   Overestimated: {accuracy.get('overestimated_pct', 0):.0f}%")
+
+        # By type
+        if insights["by_mutation_type"]:
+            print("\n💡 By Mutation Type")
+            for mt in insights["by_mutation_type"]:
+                print(f"   {mt['type']:30s} count={mt['count']:2d} lift={mt['avg_conversion_lift']:+.1f}% cpa={mt['avg_cpa_change']:+.1f}%")
+
+        # By risk level
+        if insights["by_risk_level"]:
+            print("\n🎯 By Risk Level")
+            for rl in insights["by_risk_level"]:
+                print(f"   {rl['risk_level']:8s} count={rl['count']:2d} effective={rl['effectiveness']:.0f}% lift={rl['avg_conversion_lift']:+.1f}%")
+
+        # Export to CSV if requested
+        if args.export == "csv":
+            output_path = DATA_DIR / "mutation_analysis.csv"
+            if export_analysis_csv(conn, str(output_path)):
+                print(f"\n✓ Exported to {output_path}")
+
+    return 0
+
+
+def cmd_suggest_gate_adjustments(args: argparse.Namespace) -> int:
+    """Suggest approval gate adjustments based on insights (Phase 4G)."""
+    rules = load_toml(CONFIG_DIR / "rules.toml")
+
+    with connect_db() as conn:
+        insights = get_insights(conn)
+        suggestions = suggest_gate_adjustments(insights, rules)
+
+        if not suggestions:
+            print("✓ Approval gates are well-calibrated. No adjustments suggested.")
+            return 0
+
+        print(f"\n💡 Suggested Adjustments ({len(suggestions)} recommendations)")
+        for idx, sug in enumerate(suggestions, 1):
+            print(f"\n{idx}. {sug['type'].upper()}")
+            print(f"   Reason: {sug['reason']}")
+            print(f"   Suggestion: {sug['suggestion']}")
+            print(f"   Priority: {sug['priority']}")
+
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="AI-agnostic Google Ads automation CLI for the nonprofit Ad Grants stack.",
@@ -2553,6 +2640,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     report = subparsers.add_parser("report", help="Write a markdown status report.")
     report.set_defaults(func=cmd_report)
+
+    # Phase 4G: Analytics
+    analyze = subparsers.add_parser("analyze", help="Analyze mutations: measure impact vs predicted.")
+    analyze.set_defaults(func=cmd_analyze)
+
+    insights = subparsers.add_parser("insights", help="Show mutation effectiveness insights.")
+    insights.add_argument("--by-type", action="store_true", help="Show insights by mutation type.")
+    insights.add_argument("--export", choices=["csv"], help="Export to CSV.")
+    insights.set_defaults(func=cmd_insights)
+
+    suggest = subparsers.add_parser(
+        "suggest-gate-adjustments", help="Suggest approval gate adjustments based on insights."
+    )
+    suggest.set_defaults(func=cmd_suggest_gate_adjustments)
+
     return parser
 
 
