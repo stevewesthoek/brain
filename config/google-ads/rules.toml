@@ -20,6 +20,43 @@ require_mission_alignment = true
 watch_official_sources = true
 open_report_when_sources_change = true
 
+[notifications]
+# Enable notification system
+enabled = true
+
+# Webhook endpoint for alerts (e.g., n8n, Make, Zapier)
+webhook_url = ""  # Set in environment: GOOGLE_ADS_WEBHOOK_URL
+
+# Notification channels
+slack_enabled = false
+slack_webhook_url = ""  # Environment: GOOGLE_ADS_SLACK_WEBHOOK
+
+email_enabled = false
+email_recipients = []  # ["ops@example.com", "budget@example.com"]
+
+# Alert triggers
+notify_on_pending_mutations = true
+notify_on_auto_approved = false  # Too noisy if true
+notify_on_batch_operation = true
+notify_on_compliance_warning = true
+notify_on_high_risk = true  # Bid adjustments, budget changes
+notify_on_applied_mutations = true
+
+[escalation]
+# Route mutations to human reviewer if risky
+enabled = true
+
+# Risk scoring thresholds
+high_impact_threshold = 1000.0       # Impact > $1000 = risky
+high_risk_recommendation_types = ["BID_ADJUSTMENT", "CAMPAIGN_BUDGET"]
+require_manual_for_bid_changes = true
+require_manual_for_budget_changes = true
+
+# Escalation contacts
+escalation_slack_channel = "#google-ads-mutations"  # Or DM @user:id
+escalation_email = ""  # "budget-lead@example.com"
+escalation_urgency_threshold = 2000.0  # URGENT if > this
+
 [negative_keywords]
 spend_threshold_usd = 20.0
 lookback_days = 30

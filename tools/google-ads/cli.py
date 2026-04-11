@@ -34,6 +34,16 @@ except ModuleNotFoundError:  # pragma: no cover
     print("Python 3.11+ is required for tomllib support.", file=sys.stderr)
     raise
 
+# Import notifications module (same directory)
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).parent))
+from notifications import (
+    send_notifications,
+    calculate_risk_score,
+    should_escalate_mutation,
+    get_escalation_message,
+)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = ROOT / "config" / "google-ads"
@@ -104,6 +114,12 @@ def adc_status() -> dict[str, bool]:
 def load_toml(path: Path) -> dict[str, Any]:
     with path.open("rb") as handle:
         return tomllib.load(handle)
+
+
+def utc_now_iso_with_offset(seconds: int) -> str:
+    """Return UTC ISO timestamp offset by N seconds."""
+    now = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+    return now.isoformat().replace("+00:00", "Z")
 
 
 def utc_now_iso() -> str:
@@ -1086,6 +1102,42 @@ def cmd_recommendations(args: argparse.Namespace) -> int:
     if errors:
         print(f"Errors: {errors}")
 
+    # Send notifications for queued/approved recommendations
+    with connect_db() as conn:
+        new_mutations = conn.execute(
+            """
+            SELECT * FROM pending_mutations
+            WHERE resource_type = 'recommendation'
+              AND created_at >= ?
+            ORDER BY id
+            """,
+            (utc_now_iso_with_offset(-5),),  # Last 5 seconds
+        ).fetchall()
+
+        for mut in new_mutations:
+            event_type = "recommendation_auto_approved" if mut["status"] == "approved" else "recommendation_queued"
+            payload = json.loads(mut["payload"])
+
+            # Calculate risk for escalation
+            risk_score = calculate_risk_score(mut, rules)
+
+            # Send notifications
+            send_notifications(
+                event_type=event_type,
+                details={
+                    "mutation_type": mut["mutation_type"],
+                    "resource_type": mut["resource_type"],
+                    "resource_id": mut["resource_id"],
+                    "impact": payload.get("impact_estimate", 0),
+                },
+                rules=rules,
+                risk_score=risk_score if risk_score["score"] > 30 else None,
+            )
+
+            # Check if needs escalation
+            if should_escalate_mutation(mut, rules):
+                print(f"\n  🚨 ESCALATION REQUIRED for ID {mut['id']}")
+
     log_run("recommendations", "ok" if errors == 0 else "partial", f"queued={queued} errors={errors}")
     return 0 if errors == 0 else 1
 
@@ -1308,6 +1360,96 @@ def cmd_compliance_check(args: argparse.Namespace) -> int:
         print("All mutations passed compliance checks.")
         log_run("compliance-check", "ok", f"passed={passed} warnings={warnings}")
         return 0
+
+
+def cmd_alerts(args: argparse.Namespace) -> int:
+    """
+    Show pending alerts and escalations that need human attention.
+
+    Displays:
+    - Pending mutations requiring escalation
+    - High-risk mutations in pipeline
+    - Compliance warnings
+    - Recommendation queue
+
+    Usage:
+      alerts              # Show all alerts
+      alerts --high-risk  # Show only high-risk mutations
+      alerts --escalate   # Show only mutations requiring escalation
+    """
+    rules = load_toml(CONFIG_DIR / "rules.toml")
+    escalation = rules.get("escalation", {})
+
+    show_high_risk = getattr(args, "high_risk", False)
+    show_escalate = getattr(args, "escalate", False)
+
+    with connect_db() as conn:
+        # Find pending mutations
+        mutations = conn.execute(
+            "SELECT * FROM pending_mutations WHERE status = 'pending' ORDER BY id"
+        ).fetchall()
+
+    if not mutations:
+        print("No pending alerts")
+        log_run("alerts", "ok", "no_alerts")
+        return 0
+
+    print("PENDING ALERTS")
+    print("=" * 100)
+    print()
+
+    escalated = []
+    high_risk = []
+    normal = []
+
+    for mut in mutations:
+        risk_score = calculate_risk_score(mut, rules)
+        needs_escalation = should_escalate_mutation(mut, rules)
+
+        if needs_escalation:
+            escalated.append((mut, risk_score))
+        elif risk_score["level"] in ["high", "urgent"]:
+            high_risk.append((mut, risk_score))
+        else:
+            normal.append((mut, risk_score))
+
+    # Display escalated mutations
+    if escalated:
+        print(f"🚨 REQUIRING ESCALATION ({len(escalated)})")
+        print("-" * 100)
+        for mut, risk_score in escalated:
+            payload = json.loads(mut["payload"])
+            print(f"ID {mut['id']:3d} | {mut['mutation_type']:25s} | Risk: {risk_score['level'].upper():6s}")
+            print(f"  Resource: {mut['resource_type']}:{mut['resource_id']}")
+            print(f"  Impact: ${payload.get('impact_estimate', 0):.2f}")
+            print(f"  Reasons: {', '.join(risk_score['reasons'][:2])}")
+            print()
+
+    # Display high-risk mutations
+    if high_risk and not show_escalate:
+        print(f"⚠️  HIGH-RISK MUTATIONS ({len(high_risk)})")
+        print("-" * 100)
+        for mut, risk_score in high_risk[:5]:
+            payload = json.loads(mut["payload"])
+            print(f"ID {mut['id']:3d} | {mut['mutation_type']:25s} | Risk: {risk_score['level'].upper():6s}")
+            if len(high_risk) > 5:
+                print(f"... and {len(high_risk) - 5} more high-risk mutations")
+            print()
+
+    # Display normal mutations
+    if normal and not (show_high_risk or show_escalate):
+        print(f"ℹ️  NORMAL MUTATIONS ({len(normal)})")
+        print(f"Ready for approval: {len(normal)} mutations")
+
+    print("=" * 100)
+    print(f"\nSummary: {len(escalated)} escalations, {len(high_risk)} high-risk, {len(normal)} normal")
+    print()
+
+    if escalated:
+        print("ACTION REQUIRED: Review escalated mutations before proceeding")
+
+    log_run("alerts", "ok", f"escalations={len(escalated)} high_risk={len(high_risk)}")
+    return 0 if not escalated else 1
 
 
 def cmd_status(_: argparse.Namespace) -> int:
@@ -2244,6 +2386,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     compliance_check = subparsers.add_parser("compliance-check", help="Check pending mutations for compliance.")
     compliance_check.set_defaults(func=cmd_compliance_check)
+
+    alerts = subparsers.add_parser("alerts", help="Show pending alerts and escalations.")
+    alerts.add_argument("--high-risk", action="store_true", help="Show only high-risk mutations")
+    alerts.add_argument("--escalate", action="store_true", help="Show only escalations")
+    alerts.set_defaults(func=cmd_alerts)
 
     approve = subparsers.add_parser("approve", help="Approve pending mutations.")
     approve_group = approve.add_mutually_exclusive_group(required=True)
