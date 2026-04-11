@@ -135,7 +135,7 @@ Projects and workloads verified through the Dokploy API on 2026-04-03:
 
 `Web`
 - App: `Yeshua Academy`
-- App: `Open Fund`
+- App: `Yeshua Academy Finance`
 - App: `ProChat`
 - App: `Says the Bible`
 - App: `Cedula`
@@ -330,7 +330,7 @@ Dokploy UI: `https://dokploy.prochat.tools`
 | `firecrawl.prochat.tools` | Firecrawl | Ops | Online | Web scraping & search API; PostgreSQL in Docker volume `firecrawl_pgdata`; replaces `/browse` and WebFetch for research |
 | `studio.prochat.tools` | Supabase Studio | Ops | Online | Supabase admin UI (proxied through Dokploy host) |
 | `yeshua.academy` | Yeshua Academy | Web | Online | — |
-| `openfund.yeshua.academy` | Open Fund | Web | Online | — |
+| `finance.yeshua.academy` | Yeshua Academy Finance | Web | Online | — |
 | `prochat.tools` | ProChat | Web | Online | — |
 | `saysthebible.com` | Says the Bible | Web | Online | — |
 | `cedula.prochat.tools` | Cedula | Web | Online | — |

@@ -286,10 +286,14 @@ async function getNRHealth(): Promise<NRHealth> {
       synthetics: (data.data?.actor?.synthetics?.results?.entities ?? []).map((synthetic) => {
         const latest = syntheticStatus.get(synthetic.name);
         const lastResult = latest?.["latest.result"] ?? null;
+        const online = lastResult === "SUCCESS" ? true : lastResult === "FAILED" ? false : null;
         return {
           ...synthetic,
           name: normalizeNREntityLabel(synthetic.name),
-          online: lastResult === "SUCCESS" ? true : lastResult === "FAILED" ? false : null,
+          // Synthetic alert severity can lag after a recovered check. Prefer the
+          // latest check result so the dashboard reflects current health.
+          alertSeverity: online === true ? null : synthetic.alertSeverity,
+          online,
           alertConfigured: Boolean(synthetic.monitorId && configuredSyntheticMonitorIds.has(synthetic.monitorId)),
           lastCheckAt: epochToIso(latest?.["latest.timestamp"]),
           lastResult,

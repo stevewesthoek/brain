@@ -44,7 +44,7 @@ All 12 Dokploy apps have:
 - `NODE_OPTIONS=--require newrelic` set in Dokploy env
 - `NEW_RELIC_APP_NAME` and `NEW_RELIC_LICENSE_KEY` set in Dokploy env
 
-Apps: ProChat, Says the Bible, Cedula, Yeshua Academy, Open Fund, Olive to Organizing, JPV Bootcamp, JCCP Holdings, Via di Eden, Status Link, Proofly, xGrow.
+Apps: ProChat, Says the Bible, Cedula, Yeshua Academy, Yeshua Academy Finance, Olive to Organizing, JPV Bootcamp, JCCP Holdings, Via di Eden, Status Link, Proofly, xGrow.
 
 APM data appears after first deploy of each app.
 
@@ -55,7 +55,7 @@ APM data appears after first deploy of each app.
 | Says the Bible | https://saysthe.bible |
 | Cedula | https://cedula.prochat.tools |
 | Yeshua Academy | https://yeshua.academy |
-| Open Fund | https://openfund.yeshua.academy |
+| Yeshua Academy Finance | https://finance.yeshua.academy |
 | Olive to Organizing | https://olivetoorganizing.com |
 | JPV Bootcamp | https://jpvbootcamp.com |
 | Status Link | https://onestatus.link |
