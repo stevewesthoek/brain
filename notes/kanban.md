@@ -6,7 +6,6 @@ kanban-plugin: board
 
 ## Backlog
 
-- [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0347-put-review-jon-cris-on-funnel.md|Put review Jon & Cris on funnel]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0348-extend-the-presentation-with-the-other-plans.md|Extend the Presentation with the other plans]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0349-check-hoe-databar-werkt.md|Check hoe Databar werkt]] #p3 #you
@@ -135,6 +134,7 @@ kanban-plugin: board
 
 ## To Do
 
+- [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
 
 ## Doing
 
