@@ -15,6 +15,16 @@ Every session follows this flow — know where you are in it at all times:
 **Cross-device continuity:** `.ai/current.md` is ephemeral and gitignored in this repo — it's auto-regenerated each session. `decision-log.md` is durable and in git; commit it before switching devices.
 **Skills:** Only use a skill if it adds clear value. If two skills overlap, merge or delete. No skill for the sake of a skill.
 
+## Mandatory: Universal capability installation
+
+**Before installing ANY new capability (skill, CLI, or MCP server), use `/brain-universal-capability-install`.**
+
+This is non-negotiable. The pattern: Install once globally, configure all three engines (CLAUDE.md, AGENTS.md, GEMINI.md) simultaneously, commit together.
+
+Why: NotebookLM was installed in Codex config but not Claude. This prevents asymmetric capabilities where one engine has a tool but the others don't.
+
+When: Whenever you hear "install X", "add Y skill", "set up Z MCP", immediately ask to run the skill first.
+
 ---
 
 ## Workspace rules
