@@ -1,0 +1,4 @@
+2026-04-11 15:22:02,922 [INFO] Starting HTTP server on localhost:8001
+2026-04-11 15:22:02,923 [INFO] Endpoints: /approve, /reject, /apply, /status
+2026-04-11 15:22:04,890 [INFO] 127.0.0.1 - code 400, message Missing mutation_id
+2026-04-11 15:22:04,890 [INFO] 127.0.0.1 - "POST /status HTTP/1.1" 400 -
