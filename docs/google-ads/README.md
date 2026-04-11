@@ -13,6 +13,7 @@ Canonical files:
 - `ACCOUNTS.md` — account boundary and access rules
 - `RUNBOOK.md` — operator workflow
 - `COMPLIANCE.md` — Ad Grants program assumptions and documentation-watch model
+- `PROBOT-DASHBOARD.md` — ProBot dashboard integration and metrics display
 
 Primary CLI:
 
@@ -21,4 +22,20 @@ python3 tools/google-ads/cli.py doctor
 python3 tools/google-ads/cli.py pace
 python3 tools/google-ads/cli.py report
 python3 tools/google-ads/cli.py policy-watch
+```
+
+## Dashboard
+
+All Google Ads metrics are centralized in the **ProBot dashboard** under the **Google Ads** tab. This provides:
+
+- Real-time pacing against the monthly grant budget
+- Policy monitoring status (official Google sources)
+- System health checks
+- Account and program information
+
+See `PROBOT-DASHBOARD.md` for details.
+
+Every 30 seconds, the dashboard pulls the latest metrics from:
+```
+data/google-ads/google_ads.sqlite3
 ```

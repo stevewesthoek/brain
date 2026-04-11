@@ -2,7 +2,7 @@ import http from "node:http";
 import os from "node:os";
 import fs from "node:fs";
 import path from "node:path";
-import sqlite3 from "sqlite3";
+import Database from "better-sqlite3";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import type { AppContext } from "../types/app.js";
@@ -667,11 +667,11 @@ interface GoogleAdsMetrics {
   policyWatchStatus?: {
     sourcesChecked: number;
     sourcesChanged: number;
-    lastCheck?: string | null;
-  };
+    lastCheck: string;
+  } | null;
 }
 
-async function getGoogleAdsMetrics(): Promise<GoogleAdsMetrics> {
+function getGoogleAdsMetrics(): GoogleAdsMetrics {
   const googleAdsDbPath = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "data", "google-ads", "google_ads.sqlite3");
 
   if (!fs.existsSync(googleAdsDbPath)) {
@@ -682,94 +682,69 @@ async function getGoogleAdsMetrics(): Promise<GoogleAdsMetrics> {
     };
   }
 
-  return new Promise((resolve) => {
-    const db = new sqlite3.Database(googleAdsDbPath, "r", (err) => {
-      if (err) {
-        resolve({
-          status: "error",
-          error: `Database error: ${err.message}`,
-          metrics: { dailyBudgetUSD: 0, targetBudgetUSD: 10000, percentOfTarget: 0, dayOfMonth: 0, daysInMonth: 30 },
-        });
-        return;
-      }
+  try {
+    const db = new Database(googleAdsDbPath, { readonly: true });
 
-      Promise.all([
-        // Get latest metrics snapshot
-        new Promise<{ date: string; spend: number } | null>((res) => {
-          db.get(
-            "SELECT snapshot_date, spend_usd FROM metrics_snapshots ORDER BY id DESC LIMIT 1",
-            (err, row: { snapshot_date: string; spend_usd: number } | undefined) => {
-              res(row ?? null);
-            }
-          );
-        }),
-        // Get policy watch status
-        new Promise<{ checked: number; changed: number; lastCheck: string } | null>((res) => {
-          db.get(
-            "SELECT COUNT(*) as checked, SUM(CASE WHEN changed = 1 THEN 1 ELSE 0 END) as changed, MAX(fetched_at) as lastCheck FROM policy_snapshots",
-            (err, row: { checked: number; changed: number; lastCheck: string } | undefined) => {
-              res(row ?? null);
-            }
-          );
-        }),
-        // Get latest doctor status
-        new Promise<{ command: string; status: string; created_at: string } | null>((res) => {
-          db.get(
-            "SELECT command, status, created_at FROM runs WHERE command = 'doctor' ORDER BY id DESC LIMIT 1",
-            (err, row: { command: string; status: string; created_at: string } | undefined) => {
-              res(row ?? null);
-            }
-          );
-        }),
-      ])
-        .then(([latestMetrics, policyWatch, doctorRun]) => {
-          db.close();
-          const now = new Date();
-          const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-          const dayOfMonth = now.getDate();
-          const targetMonthlyUSD = 10000;
-          const targetDailyUSD = targetMonthlyUSD / daysInMonth;
-          const dailySpendUSD = latestMetrics?.spend ?? 0;
-          const percentOfTarget = dailySpendUSD > 0 ? Math.round((dailySpendUSD / targetDailyUSD) * 100) : 0;
+    // Get latest metrics snapshot
+    const latestMetricsRow = db.prepare(
+      "SELECT snapshot_date, spend_usd FROM metrics_snapshots ORDER BY id DESC LIMIT 1"
+    ).get() as { snapshot_date: string; spend_usd: number } | undefined;
 
-          resolve({
-            status: "ready",
-            lastSync: latestMetrics?.date ?? null,
-            doctorStatus: doctorRun?.status ?? null,
-            metrics: {
-              dailyBudgetUSD: dailySpendUSD,
-              targetBudgetUSD: targetDailyUSD,
-              percentOfTarget,
-              dayOfMonth,
-              daysInMonth,
-              lastMetricsDate: latestMetrics?.date ?? null,
-            },
-            policyWatchStatus: policyWatch
-              ? {
-                  sourcesChecked: policyWatch.checked,
-                  sourcesChanged: policyWatch.changed,
-                  lastCheck: policyWatch.lastCheck,
-                }
-              : undefined,
-          });
-        })
-        .catch((err) => {
-          db.close();
-          resolve({
-            status: "error",
-            error: `Query error: ${err.message}`,
-            metrics: { dailyBudgetUSD: 0, targetBudgetUSD: 10000, percentOfTarget: 0, dayOfMonth: 0, daysInMonth: 30 },
-          });
-        });
-    });
-  });
+    // Get policy watch status
+    const policyWatchRow = db.prepare(
+      "SELECT COUNT(*) as checked, SUM(CASE WHEN changed = 1 THEN 1 ELSE 0 END) as changed, MAX(fetched_at) as lastCheck FROM policy_snapshots"
+    ).get() as { checked: number; changed: number; lastCheck: string } | undefined;
+
+    // Get latest doctor status
+    const doctorRunRow = db.prepare(
+      "SELECT command, status, created_at FROM runs WHERE command = 'doctor' ORDER BY id DESC LIMIT 1"
+    ).get() as { command: string; status: string; created_at: string } | undefined;
+
+    db.close();
+
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dayOfMonth = now.getDate();
+    const targetMonthlyUSD = 10000;
+    const targetDailyUSD = targetMonthlyUSD / daysInMonth;
+    const dailySpendUSD = latestMetricsRow?.spend_usd ?? 0;
+    const percentOfTarget = dailySpendUSD > 0 ? Math.round((dailySpendUSD / targetDailyUSD) * 100) : 0;
+
+    return {
+      status: "ready",
+      lastSync: latestMetricsRow?.snapshot_date ?? null,
+      doctorStatus: doctorRunRow?.status ?? null,
+      metrics: {
+        dailyBudgetUSD: dailySpendUSD,
+        targetBudgetUSD: targetDailyUSD,
+        percentOfTarget,
+        dayOfMonth,
+        daysInMonth,
+        lastMetricsDate: latestMetricsRow?.snapshot_date ?? null,
+      },
+      policyWatchStatus: policyWatchRow
+        ? {
+            sourcesChecked: policyWatchRow.checked,
+            sourcesChanged: policyWatchRow.changed,
+            lastCheck: policyWatchRow.lastCheck,
+          }
+        : null,
+    };
+  } catch (err) {
+    return {
+      status: "error",
+      error: `Query error: ${err instanceof Error ? err.message : String(err)}`,
+      metrics: { dailyBudgetUSD: 0, targetBudgetUSD: 10000, percentOfTarget: 0, dayOfMonth: 0, daysInMonth: 30 },
+    };
+  }
 }
 
 async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
-  const [sessions, continuationCards, nrHealth, umami, domains, googleAds] = await Promise.all([
+  const googleAds = getGoogleAdsMetrics();
+  const [sessions, continuationCards, nrHealth, umami, domains] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
       app.config.codexSessionsDir,
@@ -779,7 +754,6 @@ async function getDashboardData(app: AppContext) {
     getNRHealth(),
     getUmamiData(),
     getCloudflareDomains(),
-    getGoogleAdsMetrics(),
   ]);
   const codexUsage = await getCodexUsage({
     codexSessionsDir: app.config.codexSessionsDir,
