@@ -24,6 +24,19 @@ Excluded for now:
 - unsupported UI-only Google Ads features
 - unattended strategic expansion without review
 
+## Current external dependency
+
+The repo currently does not control a Google Ads manager account yet.
+
+Current real-world shape:
+- client account: `592-920-2435` (`Vila Solidária`)
+- upstream Google-managed manager: `715-717-3541` (`Ad Grants Netherlands`)
+
+Required future shape:
+- client account remains `592-920-2435`
+- add a customer-owned manager account controlled by `steve@yeshua.academy`
+- use that customer-owned manager account for API Center and developer token management
+
 ## Control plane
 
 The AI is not the execution layer.

@@ -53,19 +53,25 @@ Store them outside git and inject them via shell environment or a local-only env
 
 The developer token is created in the Google Ads Manager UI, not in `gcloud`.
 
+Because the current account `592-920-2435` is a client account, this workflow starts with creating or accessing a customer-owned manager account first.
+
 Current required path:
 
-1. Sign into the Google Ads Manager account as `steve@yeshua.academy`
-2. Open `https://ads.google.com/aw/apicenter`
-3. Complete the API Access form
-4. Record the resulting token locally, never in git
-5. Update `config/google-ads/account.toml` statuses from `missing` to the real state
+1. Sign into Google Ads as `steve@yeshua.academy`
+2. Create a new Google Ads manager account (MCC) that we control
+3. From that MCC, send a manager link invitation to client account `592-920-2435`
+4. Accept that invitation from the client account
+5. Open `https://ads.google.com/aw/apicenter` from the customer-owned MCC
+6. Complete the API Access form
+7. Record the resulting token locally, never in git
+8. Update `config/google-ads/account.toml` statuses from `missing` to the real state
 
 Official references:
 
 - `https://developers.google.com/google-ads/api/docs/get-started/dev-token`
 - `https://developers.google.com/google-ads/api/docs/oauth/overview`
 - `https://developers.google.com/google-ads/api/docs/oauth/cloud-project`
+- `https://developers.google.com/google-ads/api/docs/account-management/linking-manager-accounts`
 
 ## Reporting cadence
 

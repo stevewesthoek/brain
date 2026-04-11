@@ -6,6 +6,8 @@ This repo currently assumes:
 - the account is a Google Ad Grants nonprofit account
 - the monthly in-kind budget target is `$10,000 USD`
 - the program is operated through `steve@yeshua.academy`
+- the ad-serving account is `592-920-2435`
+- the current upstream Google-managed manager is `715-717-3541`
 - the automation system should prioritize compliance and mission fit over aggressive expansion
 
 ## Documentation-awareness policy
