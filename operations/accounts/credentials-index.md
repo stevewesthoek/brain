@@ -196,10 +196,27 @@ CLI auth via browser OAuth — no persistent API key file. Account IDs stored in
 
 | Account | Account ID | Profile | Notes |
 |---------|-----------|---------|-------|
-| Says the Bible (live) | `acct_1T5EojLzAX9y8uTj` | `default` | Primary live Stripe account |
+| ProChat Studio (main) | `acct_1SxE7KDmzmvnZunZ` | `prochat-main` | Main Stripe account authenticated locally via separate CLI profile; intended read-only inventory profile |
+| Says the Bible (live) | `acct_1T5EojLzAX9y8uTj` | `default` | Existing live Stripe account wired to the Says the Bible website; do not interrupt |
 | Says the Bible (sandbox) | `acct_1T5EoqL7t8amqhMU` | `says the bible sandbox` | Sandbox/test account |
+| Feel Good with Ana | `acct_1NIqSdDns7UgqVkf` | `feel-good-with-ana` | CLI-verified on 2026-04-11; standard account; dashboard timezone `Europe/Rome`; country `IT` |
+| JPV Bootcamp | `acct_1Sed9ULQNsjxBhGB` | `jpv-bootcamp` | CLI-verified on 2026-04-11; standard account; default currency `GBP`; dashboard timezone `Europe/London`; country `GB` |
+| ProChat (legacy) | _pending_ | _not authenticated separately_ | Visible in ProChat Studio dashboard account switcher; likely older ProChat Stripe account |
+| Vila Solidária | _pending_ | _not authenticated separately_ | Visible in ProChat Studio dashboard account switcher; likely client-owned or delegated-access account |
+| Yeshua Academy | _pending_ | _not authenticated separately_ | Visible in ProChat Studio dashboard account switcher; likely client-owned or delegated-access account |
 
 Re-authenticate: `stripe login` (opens browser). Switch profiles: `stripe login --profile "says the bible sandbox"`.
+
+### Stripe inventory notes
+
+- The `prochat-main` CLI profile now resolves to `ProChat Studio` and is separate from the existing `default` Says the Bible profile.
+- `stripe get /v1/accounts -p prochat-main` returned an empty list, so the other dashboard-visible accounts are not exposed as Connect subaccounts through this API credential.
+- The roster above combines:
+  - CLI-verified accounts with confirmed account IDs
+  - dashboard-visible accounts captured from the Stripe account switcher screenshot on 2026-04-11
+- To fully enrich the pending rows with account IDs, ownership status, and API-level metadata, each account will need either:
+  - direct authentication into a dedicated Stripe CLI profile, or
+  - manual account ID capture from the Stripe dashboard UI
 
 ## Google Ads — Yeshua Academy (Ad Grants)
 
