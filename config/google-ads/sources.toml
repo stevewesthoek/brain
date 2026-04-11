@@ -1,0 +1,44 @@
+[[sources]]
+key = "google_ad_grants_overview"
+url = "https://www.google.com/grants/"
+kind = "program"
+
+[[sources]]
+key = "google_ad_grants_faq"
+url = "https://www.google.com/grants/faq/"
+kind = "program"
+
+[[sources]]
+key = "google_ads_api_quickstart"
+url = "https://developers.google.com/google-ads/api/docs/get-started/select-account"
+kind = "api"
+
+[[sources]]
+key = "google_ads_api_developer_token"
+url = "https://developers.google.com/google-ads/api/docs/get-started/dev-token"
+kind = "api"
+
+[[sources]]
+key = "google_ads_api_oauth_overview"
+url = "https://developers.google.com/google-ads/api/docs/oauth/overview"
+kind = "api"
+
+[[sources]]
+key = "google_ads_api_cloud_project"
+url = "https://developers.google.com/google-ads/api/docs/oauth/cloud-project"
+kind = "api"
+
+[[sources]]
+key = "google_ads_api_recommendations"
+url = "https://developers.google.com/google-ads/api/docs/recommendations"
+kind = "api"
+
+[[sources]]
+key = "google_ads_api_change_event"
+url = "https://developers.google.com/google-ads/api/docs/change-event"
+kind = "api"
+
+[[sources]]
+key = "google_ads_scripts_start"
+url = "https://developers.google.com/google-ads/scripts/docs/start"
+kind = "scripts"

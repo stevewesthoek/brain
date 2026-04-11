@@ -171,3 +171,9 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Reference: `ai/design-systems/README.md` (AI-agnostic guide), `ai/design-systems/library.md` (full catalog), `ai/skills/custom/design-system/SKILL.md` (Claude Code skill).
 - Impact: New `/autoresearch` skill added at `ai/skills/custom/autoresearch/SKILL.md`. New runbook at `operations/runbooks/autoresearch-strategy.md` with full domain catalog (6 domains), per-domain templates, cost structure, and integration with brain's model-routing system. Skill is live in Claude Code (symlinked to active/). Available in any session for any optimization task that has a metric and a scope. Becomes the standard framework for continuous improvement across all systems.
 - Rollback: Remove `ai/skills/active/autoresearch` symlink, delete `ai/skills/custom/autoresearch/SKILL.md`, delete `operations/runbooks/autoresearch-strategy.md`, remove `/autoresearch` from CLAUDE.md available skills list.
+## 2026-04-11 — Google Ads nonprofit account boundary and control plane
+
+- The `brain` Google Ads automation system is nonprofit-only for now and is scoped to the Yeshua Academy Google Ad Grants account.
+- `steve@yeshua.academy` is the only approved Google account for Google Ads Manager access, Google Ads API setup, OAuth client creation, and Google Cloud work related to Google Ads.
+- The canonical local `gcloud` config for Google Ads work is `google-ads-nonprofit`.
+- The automation architecture is AI-agnostic: Claude, Codex, and Gemini must all use the same docs, config, CLI, local SQLite state, and markdown reports.

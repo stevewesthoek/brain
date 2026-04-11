@@ -167,6 +167,7 @@ Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
 - `/azure` — Azure resource discovery/management
 - `/cloudflare` — DNS record management
 - `/gcp` — Google Cloud project/resource discovery and management via `gcloud`
+- `/google-ads` — Yeshua Academy Google Ad Grants automation via the shared CLI and docs in `docs/google-ads/`
 - `/gws` — Google Workspace calendar, drive, admin operations
 - `/hetzner` — Hetzner Cloud infrastructure management
 - `/gh` — GitHub operations (PR, issue, release management)

@@ -1,0 +1,19 @@
+currency = "USD"
+program = "google_ad_grants"
+monthly_grant_budget_usd = 10000.0
+target_daily_budget_usd = 329.0
+
+[pacing]
+green_min_daily_usd = 290.0
+green_max_daily_usd = 340.0
+yellow_min_daily_usd = 260.0
+red_min_daily_usd = 220.0
+
+[scope]
+commercial_paid_media_enabled = false
+search_campaigns_only = true
+mission_only_keywords = true
+
+[reporting]
+timezone = "Europe/Lisbon"
+default_report_period_days = 30

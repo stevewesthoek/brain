@@ -1,0 +1,15 @@
+canonical_google_ads_account_email = "steve@yeshua.academy"
+canonical_gcloud_config = "google-ads-nonprofit"
+gcloud_project_id = "project-d63f458f-8fba-450e-acf"
+mode = "nonprofit_ad_grants_only"
+google_ads_manager_login_email = "steve@yeshua.academy"
+google_ads_manager_customer_id = ""
+google_ads_customer_id = ""
+developer_token_status = "missing"
+oauth_client_status = "missing"
+refresh_token_status = "missing"
+notes = """
+This file defines the canonical account boundary for Google Ads work in brain.
+Only steve@yeshua.academy is allowed for Google Ads Manager, Google Ads API,
+OAuth client setup, and gcloud work related to Google Ads.
+"""

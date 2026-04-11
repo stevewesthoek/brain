@@ -1,0 +1,21 @@
+[automation]
+default_mode = "safe"
+allow_structural_auto_apply = false
+allow_new_campaign_auto_create = false
+allow_new_ad_group_auto_create = false
+allow_new_keyword_theme_auto_apply = false
+
+[safe_auto_apply]
+negative_keywords = true
+labels = true
+broken_url_flagging = true
+low_risk_recommendation_whitelist = true
+
+[quality]
+require_two_active_ads_per_ad_group = true
+require_landing_page_for_new_keywords = true
+require_mission_alignment = true
+
+[compliance]
+watch_official_sources = true
+open_report_when_sources_change = true
