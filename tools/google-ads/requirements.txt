@@ -1,0 +1,4 @@
+setuptools<70
+protobuf>=4.21.0,<5.0.0
+grpcio>=1.50.0,<2.0.0
+google-ads>=19.0.0,<21.0.0

@@ -3,12 +3,12 @@
 AI-agnostic Google Ads automation CLI for the Yeshua Academy Ad Grants account.
 
 Current phase:
-- account boundary enforcement
-- documentation awareness
-- pacing/reporting scaffold
-- local state persistence
+- live Google Ads API integration
+- campaign and metrics ingestion
+- search term harvesting
+- recommendation tracking
 
-Live Google Ads API sync is intentionally blocked until credentials are provisioned.
+All credentials provisioned and ready for production.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ import sys
 import textwrap
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -151,6 +151,65 @@ def connect_db() -> sqlite3.Connection:
             last_modified TEXT,
             fetched_at TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS campaigns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            google_campaign_id TEXT NOT NULL UNIQUE,
+            campaign_name TEXT NOT NULL,
+            status TEXT NOT NULL,
+            budget_usd REAL,
+            campaign_type TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS daily_metrics_detail (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            metrics_date TEXT NOT NULL,
+            campaign_id TEXT,
+            clicks INTEGER DEFAULT 0,
+            impressions INTEGER DEFAULT 0,
+            spend_usd REAL DEFAULT 0,
+            conversions REAL DEFAULT 0,
+            conversion_value REAL DEFAULT 0,
+            fetch_timestamp TEXT NOT NULL,
+            UNIQUE(metrics_date, campaign_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS search_terms (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            search_term TEXT NOT NULL,
+            campaign_id TEXT,
+            clicks INTEGER DEFAULT 0,
+            impressions INTEGER DEFAULT 0,
+            conversions REAL DEFAULT 0,
+            spend_usd REAL DEFAULT 0,
+            status TEXT,
+            fetch_date TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS recommendations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            recommendation_type TEXT NOT NULL,
+            campaign_id TEXT,
+            priority TEXT,
+            description TEXT,
+            impact_estimate REAL,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS change_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            change_date TEXT NOT NULL,
+            change_type TEXT NOT NULL,
+            resource_type TEXT,
+            resource_id TEXT,
+            details TEXT,
+            created_at TEXT NOT NULL
+        );
         """
     )
     return conn
@@ -244,24 +303,185 @@ def cmd_doctor(_: argparse.Namespace) -> int:
 
 
 def cmd_sync(_: argparse.Namespace) -> int:
+    """Fetch live data from Google Ads API and store in SQLite."""
     state = collect_doctor_state()
     missing = [key for key, present in state.env_status.items() if not present]
     if missing:
-        detail = (
-            "Google Ads API sync is blocked until credentials exist. "
-            f"Missing: {', '.join(missing)}"
-        )
+        detail = f"Missing credentials: {', '.join(missing)}"
         print(detail)
         log_run("sync", "blocked", detail)
         return 2
 
-    detail = (
-        "Credential presence is confirmed, but live Google Ads API sync is not yet "
-        "implemented in this scaffold."
-    )
-    print(detail)
-    log_run("sync", "blocked", detail)
-    return 2
+    # Load credentials from environment or local env file
+    try:
+        # First try environment variables
+        local_env = load_local_env()
+
+        dev_token = os.environ.get("GOOGLE_ADS_DEVELOPER_TOKEN") or local_env.get("GOOGLE_ADS_DEVELOPER_TOKEN") or ""
+        login_cust_id = os.environ.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID") or local_env.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID") or ""
+        cust_id = os.environ.get("GOOGLE_ADS_CUSTOMER_ID") or local_env.get("GOOGLE_ADS_CUSTOMER_ID") or ""
+        client_id = os.environ.get("GOOGLE_ADS_OAUTH_CLIENT_ID") or local_env.get("GOOGLE_ADS_OAUTH_CLIENT_ID") or ""
+        client_secret = os.environ.get("GOOGLE_ADS_OAUTH_CLIENT_SECRET") or local_env.get("GOOGLE_ADS_OAUTH_CLIENT_SECRET") or ""
+        refresh_token = os.environ.get("GOOGLE_ADS_REFRESH_TOKEN") or local_env.get("GOOGLE_ADS_REFRESH_TOKEN") or ""
+
+        if not all([dev_token, login_cust_id, cust_id, client_id, client_secret, refresh_token]):
+            detail = "Credentials present in env check but missing values"
+            print(detail)
+            log_run("sync", "error", detail)
+            return 1
+
+        # Import API module
+        try:
+            from api import GoogleAdsAPI, GoogleAdsAPIError
+        except ImportError as e:
+            detail = f"Failed to import API module: {e}. Ensure google-ads package is installed."
+            print(detail)
+            log_run("sync", "error", detail)
+            return 1
+
+        # Initialize API client
+        api = GoogleAdsAPI(
+            developer_token=dev_token,
+            customer_id=cust_id,
+            login_customer_id=login_cust_id,
+            oauth_client_id=client_id,
+            oauth_client_secret=client_secret,
+            refresh_token=refresh_token,
+        )
+
+        # Test connectivity
+        print("Testing API connectivity...")
+        try:
+            api.test_connectivity()
+            print("✓ API connectivity OK")
+        except GoogleAdsAPIError as e:
+            detail = f"API connectivity failed: {e}"
+            print(detail)
+            log_run("sync", "error", detail)
+            return 1
+
+        # Fetch campaigns
+        print("Fetching campaigns...")
+        campaigns = api.fetch_campaigns()
+        print(f"✓ Fetched {len(campaigns)} campaigns")
+
+        # Fetch today's metrics
+        today = datetime.now().strftime("%Y-%m-%d")
+        print(f"Fetching metrics for {today}...")
+        metrics = api.fetch_daily_metrics(today)
+        print(f"✓ Fetched metrics: ${metrics.spend_usd:.2f} spend, {metrics.clicks} clicks")
+
+        # Fetch search terms from last 7 days
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        start_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+        print(f"Fetching search terms ({start_date} to {end_date})...")
+        search_terms = api.fetch_search_terms(start_date, end_date, limit=500)
+        print(f"✓ Fetched {len(search_terms)} search terms")
+
+        # Fetch recommendations
+        print("Fetching recommendations...")
+        recommendations = api.fetch_recommendations()
+        print(f"✓ Fetched {len(recommendations)} recommendations")
+
+        # Store in database
+        print("Storing data in database...")
+        with connect_db() as conn:
+            # Store campaigns
+            for campaign in campaigns:
+                conn.execute(
+                    """
+                    INSERT OR REPLACE INTO campaigns
+                    (google_campaign_id, campaign_name, status, budget_usd, campaign_type, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        campaign.google_campaign_id,
+                        campaign.campaign_name,
+                        campaign.status,
+                        campaign.budget_usd,
+                        campaign.campaign_type,
+                        utc_now_iso(),
+                        utc_now_iso(),
+                    ),
+                )
+
+            # Store daily metrics
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO daily_metrics_detail
+                (metrics_date, campaign_id, clicks, impressions, spend_usd, conversions, conversion_value, fetch_timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    metrics.metrics_date,
+                    None,
+                    metrics.clicks,
+                    metrics.impressions,
+                    metrics.spend_usd,
+                    metrics.conversions,
+                    metrics.conversion_value,
+                    utc_now_iso(),
+                ),
+            )
+
+            # Store search terms
+            for st in search_terms:
+                conn.execute(
+                    """
+                    INSERT INTO search_terms
+                    (search_term, campaign_id, clicks, impressions, conversions, spend_usd, status, fetch_date, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        st.search_term,
+                        st.campaign_id,
+                        st.clicks,
+                        st.impressions,
+                        st.conversions,
+                        st.spend_usd,
+                        st.status,
+                        today,
+                        utc_now_iso(),
+                    ),
+                )
+
+            # Store recommendations
+            for rec in recommendations:
+                conn.execute(
+                    """
+                    INSERT INTO recommendations
+                    (recommendation_type, campaign_id, priority, description, impact_estimate, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        rec.recommendation_type,
+                        rec.campaign_id,
+                        rec.priority,
+                        rec.description,
+                        rec.impact_estimate,
+                        rec.status,
+                        utc_now_iso(),
+                        utc_now_iso(),
+                    ),
+                )
+
+            conn.commit()
+
+        detail = f"campaigns={len(campaigns)} metrics=1 search_terms={len(search_terms)} recommendations={len(recommendations)}"
+        print(f"✓ Sync complete: {detail}")
+        log_run("sync", "ok", detail)
+        return 0
+
+    except GoogleAdsAPIError as e:
+        detail = f"Google Ads API error: {e}"
+        print(detail)
+        log_run("sync", "error", detail)
+        return 1
+    except Exception as e:
+        detail = f"Unexpected error during sync: {e}"
+        print(detail)
+        log_run("sync", "error", detail)
+        return 1
 
 
 def latest_month_spend(conn: sqlite3.Connection, month_prefix: str) -> float:
