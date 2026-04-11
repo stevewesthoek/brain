@@ -871,6 +871,208 @@ def cmd_negatives(args: argparse.Namespace) -> int:
     return 0 if error_count == 0 else 1
 
 
+def cmd_recommendations(args: argparse.Namespace) -> int:
+    """
+    Queue pending Google Ads recommendations for approval and application.
+
+    Workflow:
+    1. Query recommendations table for entries without associated mutations
+    2. Group by type (KEYWORD, BID_ADJUSTMENT, AD_COPY, etc.)
+    3. Queue each as a pending_mutation
+    4. Print queue for review
+
+    Safety invariants:
+    - No mutations applied without explicit approval
+    - Each recommendation queued as individual mutation
+    - All changes logged to change_events
+    """
+    rules = load_toml(CONFIG_DIR / "rules.toml")
+
+    # Check if feature is enabled (use same gate as negatives for now)
+    if not rules.get("safe_auto_apply", {}).get("negative_keywords", False):
+        print("Recommendations automation is disabled")
+        log_run("recommendations", "skipped", "disabled")
+        return 0
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    with connect_db() as conn:
+        # Find recommendations that don't have associated mutations yet
+        recommendations = conn.execute(
+            """
+            SELECT r.id, r.recommendation_type, r.campaign_id, r.priority, r.description, r.impact_estimate
+            FROM recommendations r
+            WHERE r.status = 'pending'
+              AND NOT EXISTS (
+                SELECT 1 FROM pending_mutations
+                WHERE resource_type = 'recommendation'
+                  AND resource_id = CAST(r.id AS TEXT)
+              )
+            ORDER BY r.impact_estimate DESC
+            """
+        ).fetchall()
+
+        if not recommendations:
+            print("No pending recommendations found")
+            log_run("recommendations", "ok", "count=0")
+            return 0
+
+        print(f"Found {len(recommendations)} pending recommendations")
+        print("\nQueuing for approval:")
+
+        queued = 0
+        errors = 0
+
+        for rec in recommendations:
+            try:
+                # Build mutation payload
+                payload = {
+                    "recommendation_type": rec["recommendation_type"],
+                    "campaign_id": rec["campaign_id"],
+                    "priority": rec["priority"],
+                    "description": rec["description"],
+                    "impact_estimate": rec["impact_estimate"],
+                }
+
+                # Insert into pending_mutations
+                conn.execute(
+                    """
+                    INSERT INTO pending_mutations
+                        (mutation_type, campaign_id, resource_type, resource_id, payload, rule_source, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "apply_recommendation",
+                        rec["campaign_id"],
+                        "recommendation",
+                        str(rec["id"]),
+                        json.dumps(payload),
+                        "recommendations_cmd",
+                        utc_now_iso(),
+                        utc_now_iso(),
+                    ),
+                )
+
+                # Log to change_events
+                conn.execute(
+                    """
+                    INSERT INTO change_events (change_date, change_type, resource_type, resource_id, details, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        today,
+                        "recommendation_queued",
+                        "recommendation",
+                        str(rec["id"]),
+                        json.dumps({
+                            "type": rec["recommendation_type"],
+                            "impact": rec["impact_estimate"],
+                            "priority": rec["priority"],
+                        }),
+                        utc_now_iso(),
+                    ),
+                )
+
+                print(f"  ✓ {rec['recommendation_type']:20s} impact=${rec['impact_estimate']:8.2f} ({rec['priority']})")
+                queued += 1
+
+            except Exception as err:
+                errors += 1
+                print(f"  ✗ Error queuing recommendation {rec['id']}: {err}", file=sys.stderr)
+
+    print(f"\nQueued: {queued}")
+    if errors:
+        print(f"Errors: {errors}")
+
+    log_run("recommendations", "ok" if errors == 0 else "partial", f"queued={queued} errors={errors}")
+    return 0 if errors == 0 else 1
+
+
+def cmd_mutations(args: argparse.Namespace) -> int:
+    """
+    List pending, approved, and applied mutations with optional filtering.
+
+    Usage:
+      mutations                  # Show all pending mutations
+      mutations --status approved # Show approved mutations
+      mutations --type negative_keywords  # Filter by mutation type
+      mutations --stats          # Show mutation pipeline statistics
+    """
+    status_filter = getattr(args, "status", None)
+    type_filter = getattr(args, "type", None)
+    show_stats = getattr(args, "stats", False)
+
+    with connect_db() as conn:
+        if show_stats:
+            # Show pipeline statistics
+            stats = conn.execute(
+                """
+                SELECT
+                  status,
+                  COUNT(*) as count,
+                  mutation_type
+                FROM pending_mutations
+                GROUP BY status, mutation_type
+                ORDER BY status DESC, mutation_type
+                """
+            ).fetchall()
+
+            print("Mutation Pipeline Statistics")
+            print("─" * 60)
+
+            status_totals = {}
+            for row in stats:
+                status = row["status"]
+                count = row["count"]
+                mtype = row["mutation_type"]
+                status_totals[status] = status_totals.get(status, 0) + count
+                print(f"{status:12s} {mtype:30s} {count:6d}")
+
+            print("─" * 60)
+            for status, total in status_totals.items():
+                print(f"{status:12s} {'TOTAL':30s} {total:6d}")
+
+            total = sum(status_totals.values())
+            print(f"{'':12s} {'GRAND TOTAL':30s} {total:6d}")
+            log_run("mutations", "ok", f"pipeline_stats: {json.dumps(status_totals)}")
+            return 0
+
+        # Build query with filters
+        query = "SELECT * FROM pending_mutations WHERE 1=1"
+        params = []
+
+        if status_filter:
+            query += " AND status = ?"
+            params.append(status_filter)
+        else:
+            query += " AND status = 'pending'"
+
+        if type_filter:
+            query += " AND mutation_type = ?"
+            params.append(type_filter)
+
+        query += " ORDER BY id"
+
+        mutations = conn.execute(query, params).fetchall()
+
+    if not mutations:
+        print("No mutations found")
+        return 0
+
+    print(f"Mutations ({len(mutations)} total)")
+    print("─" * 100)
+    print(f"{'ID':4s} {'Status':12s} {'Type':25s} {'Resource':25s} {'Created':19s}")
+    print("─" * 100)
+
+    for m in mutations:
+        print(
+            f"{m['id']:4d} {m['status']:12s} {m['mutation_type']:25s} {(m['resource_type'] + ':' + (m['resource_id'] or 'N/A'))[:25]:25s} {m['created_at'][:19]}"
+        )
+
+    log_run("mutations", "ok", f"listed={len(mutations)}")
+    return 0
+
+
 def cmd_approve(args: argparse.Namespace) -> int:
     """
     Approve pending mutations for later application.
@@ -1268,6 +1470,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     negatives = subparsers.add_parser("negatives", help="Apply negative keyword automation.")
     negatives.set_defaults(func=cmd_negatives)
+
+    recommendations = subparsers.add_parser("recommendations", help="Queue recommendations for approval.")
+    recommendations.set_defaults(func=cmd_recommendations)
+
+    mutations = subparsers.add_parser("mutations", help="View and manage pending mutations.")
+    mutations.add_argument("--status", help="Filter by mutation status (pending, approved, rejected, applied, failed)")
+    mutations.add_argument("--type", help="Filter by mutation type (add_negative_keywords, apply_recommendation)")
+    mutations.add_argument("--stats", action="store_true", help="Show mutation pipeline statistics")
+    mutations.set_defaults(func=cmd_mutations)
 
     approve = subparsers.add_parser("approve", help="Approve pending mutations.")
     approve_group = approve.add_mutually_exclusive_group(required=True)
