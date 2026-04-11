@@ -201,6 +201,20 @@ CLI auth via browser OAuth — no persistent API key file. Account IDs stored in
 
 Re-authenticate: `stripe login` (opens browser). Switch profiles: `stripe login --profile "says the bible sandbox"`.
 
+## Google Ads — Yeshua Academy (Ad Grants)
+
+Nonprofit account: `Vila Solidária` (592-920-2435) · Manager account: `Yeshua Academy Google Ads Manager` (935-769-8503) · GCP project: `project-d63f458f-8fba-450e-acf`
+
+| Credential | File | Purpose | Rotation | Regenerate |
+|------------|------|---------|----------|-----------|
+| Developer token | `~/.config/google-ads/brain-google-ads.env` | Google Ads API developer token (Explorer access level) | No automatic expiry; rotate if compromised or access level changed | [Google Ads Manager → API Center](https://ads.google.com/aw/apicenter) under `steve@yeshua.academy` |
+| OAuth client JSON | `~/.config/google-ads/yeshua-google-ads-oauth.json` | OAuth 2.0 desktop app credentials from Google Cloud Console | Static unless client is deleted/recreated | [GCP Credentials → OAuth 2.0 Client IDs](https://console.cloud.google.com/apis/credentials?project=project-d63f458f-8fba-450e-acf) |
+| ADC (refresh token) | `~/.config/gcloud/application_default_credentials.json` | Application Default Credentials with adwords scope (auto-generated) | Auto-refreshes; delete and re-auth if stale | Run `~/.local/bin/gcp-cli auth application-default login --scopes=https://www.googleapis.com/auth/adwords` |
+| Login customer ID | `~/.config/google-ads/brain-google-ads.env` | Google Ads manager account customer ID without hyphens (935769850 from 935-769-8503) | Static | From manager account header or `config/google-ads/account.toml` |
+| Customer ID | `~/.config/google-ads/brain-google-ads.env` | Google Ads nonprofit client account ID without hyphens (592920243 from 592-920-2435) | Static | From client account context or `config/google-ads/account.toml` |
+
+**Note:** Google Ads credentials are injected via local-only env file; the repo stores only status and paths in `config/google-ads/account.toml`. All secret values stay outside git.
+
 ## Tailscale
 
 Tailnet for this infrastructure. Admin: `https://login.tailscale.com/admin`
