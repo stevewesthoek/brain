@@ -704,7 +704,6 @@ const HTML = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProBot</title>
 <link rel="icon" href="/favicon.svg?v=20260411-2" type="image/svg+xml">
-<link rel="shortcut icon" href="/favicon.svg?v=20260411-2" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1228,7 +1227,7 @@ export function createDashboardServer(app: AppContext): http.Server {
       return;
     }
 
-    if ((req.method === "GET" || req.method === "HEAD") && (url.startsWith("/favicon.svg") || url === "/favicon.ico")) {
+    if ((req.method === "GET" || req.method === "HEAD") && url.startsWith("/favicon.svg")) {
       res.writeHead(200, {
         "Content-Type": "image/svg+xml; charset=utf-8",
         "Cache-Control": "public, max-age=3600",
