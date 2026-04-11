@@ -12,6 +12,7 @@ Verification status:
 
 Related local control-plane inventory:
 - `operations/infrastructure/scheduler-inventory.md` — canonical scheduler and LaunchAgent inventory for the `Office` Mac
+- `operations/infrastructure/PYTHON-VERSIONS.md` — Python version strategy (dual versions, migration path, upstream tracking)
 
 ## Control Plane
 
