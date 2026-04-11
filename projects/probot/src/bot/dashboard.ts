@@ -685,9 +685,11 @@ function getGoogleAdsMetrics(): GoogleAdsMetrics {
   try {
     const db = new Database(googleAdsDbPath, { readonly: true });
 
-    // Get latest metrics snapshot
+    // Get latest metrics snapshot from daily_metrics_detail (account-level rollup)
     const latestMetricsRow = db.prepare(
-      "SELECT snapshot_date, spend_usd FROM metrics_snapshots ORDER BY id DESC LIMIT 1"
+      "SELECT metrics_date as snapshot_date, SUM(spend_usd) as spend_usd FROM daily_metrics_detail " +
+      "WHERE campaign_id IS NULL AND metrics_date LIKE strftime('%Y-%m', 'now') || '%' " +
+      "GROUP BY metrics_date ORDER BY metrics_date DESC LIMIT 1"
     ).get() as { snapshot_date: string; spend_usd: number } | undefined;
 
     // Get policy watch status

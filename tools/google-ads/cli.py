@@ -485,15 +485,31 @@ def cmd_sync(_: argparse.Namespace) -> int:
 
 
 def latest_month_spend(conn: sqlite3.Connection, month_prefix: str) -> float:
+    """
+    Fetch actual month-to-date spend from daily_metrics_detail.
+    Reads account-level rollup rows (campaign_id IS NULL) that sync populates.
+    """
     row = conn.execute(
         """
         SELECT COALESCE(SUM(spend_usd), 0)
-        FROM metrics_snapshots
-        WHERE snapshot_date LIKE ?
+        FROM daily_metrics_detail
+        WHERE metrics_date LIKE ? AND campaign_id IS NULL
         """,
         (f"{month_prefix}%",),
     ).fetchone()
     return float(row[0] or 0.0)
+
+
+def pace_band(daily_avg: float, bands: dict) -> str:
+    """
+    Determine pacing status based on daily average spend vs bands from goals.toml[pacing].
+    Returns 'green', 'yellow', or 'red'.
+    """
+    if daily_avg >= bands.get("green_min_daily_usd", 0) and daily_avg <= bands.get("green_max_daily_usd", float("inf")):
+        return "green"
+    if daily_avg >= bands.get("yellow_min_daily_usd", 0):
+        return "yellow"
+    return "red"
 
 
 def cmd_pace(_: argparse.Namespace) -> int:
@@ -509,6 +525,10 @@ def cmd_pace(_: argparse.Namespace) -> int:
     monthly_budget = float(goals["monthly_grant_budget_usd"])
     target_to_date = monthly_budget * (day_index / days_in_month)
     delta = actual_spend - target_to_date
+    daily_avg = actual_spend / day_index if day_index > 0 else 0.0
+
+    bands = goals.get("pacing", {})
+    band = pace_band(daily_avg, bands)
 
     print("Google Ads pacing")
     print(f"- Month budget: ${monthly_budget:,.2f}")
@@ -516,8 +536,39 @@ def cmd_pace(_: argparse.Namespace) -> int:
     print(f"- Target spend to date: ${target_to_date:,.2f}")
     print(f"- Actual spend to date: ${actual_spend:,.2f}")
     print(f"- Delta: ${delta:,.2f}")
+    print(f"- Pacing status: {band.upper()}")
+    print(f"- Daily average: ${daily_avg:,.2f}")
+    if bands:
+        print(f"  green: ${bands.get('green_min_daily_usd', '?'):,.2f} – ${bands.get('green_max_daily_usd', '?'):,.2f}/day")
+        print(f"  yellow: >${bands.get('yellow_min_daily_usd', '?'):,.2f}/day")
+        print(f"  red: <${bands.get('yellow_min_daily_usd', '?'):,.2f}/day")
 
-    detail = f"target_to_date={target_to_date:.2f} actual={actual_spend:.2f} delta={delta:.2f}"
+    # Log pacing alert to change_events if off pace
+    if band in ("yellow", "red"):
+        print(f"WARNING: pacing is {band.upper()}", file=sys.stderr)
+        with connect_db() as conn:
+            conn.execute(
+                """
+                INSERT INTO change_events
+                (change_date, change_type, resource_type, resource_id, details, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    now.strftime("%Y-%m-%d"),
+                    "pacing_alert",
+                    "account",
+                    None,
+                    json.dumps({
+                        "band": band,
+                        "daily_avg": daily_avg,
+                        "target_daily": bands.get("target_daily_budget_usd", monthly_budget / days_in_month),
+                        "pacing_min": bands.get("yellow_min_daily_usd", 0),
+                    }),
+                    utc_now_iso(),
+                ),
+            )
+
+    detail = f"target_to_date={target_to_date:.2f} actual={actual_spend:.2f} delta={delta:.2f} band={band}"
     log_run("pace", "ok", detail)
     return 0
 
