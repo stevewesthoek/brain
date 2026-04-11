@@ -538,3 +538,168 @@ class GoogleAdsAPI:
             return True
         except Exception as err:
             raise GoogleAdsQueryError(f"Connectivity test failed: {err}")
+
+    def add_negative_keywords(
+        self,
+        campaign_id: str,
+        keywords: List[str],
+        match_type: str = "BROAD",
+        dry_run: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Add negative keywords to a campaign.
+
+        Args:
+            campaign_id: Google Ads campaign ID (without hyphens)
+            keywords: List of keyword strings to add as negatives
+            match_type: Keyword match type (BROAD, PHRASE, EXACT)
+            dry_run: If True, returns plan without making API calls
+
+        Returns:
+            Dict with keys: added, skipped, errors, dry_run
+            - added: List of successfully added keywords
+            - skipped: List of keywords skipped (e.g., already exist)
+            - errors: List of error messages
+            - dry_run: Boolean indicating if this was a dry run
+        """
+        if self.use_mock:
+            # Mock mode: simulate successful adds
+            return {
+                "added": keywords,
+                "skipped": [],
+                "errors": [],
+                "dry_run": dry_run,
+                "simulated": True,
+            }
+
+        if dry_run:
+            # Dry run: just plan without API calls
+            return {
+                "added": keywords,
+                "skipped": [],
+                "errors": [],
+                "dry_run": True,
+                "simulated": False,
+            }
+
+        try:
+            customer_service = self.client.get_service("CustomerService")
+            cc_service = self.client.get_service("CampaignCriterionService")
+
+            # Build negative keyword mutations
+            operations = []
+            for keyword in keywords:
+                negative_keyword = self.client.get_type("NegativeKeyword")
+                negative_keyword.text = keyword
+                negative_keyword.match_type = getattr(
+                    self.client.enums.KeywordMatchTypeEnum, f"KeywordMatchType.{match_type}"
+                )
+
+                campaign_criterion = self.client.get_type("CampaignCriterion")
+                campaign_criterion.campaign = customer_service.campaign_path(
+                    self.customer_id, campaign_id
+                )
+                campaign_criterion.negative_keyword = negative_keyword
+                campaign_criterion.type_ = self.client.enums.CriterionTypeEnum.NEGATIVE_KEYWORD
+
+                operation = self.client.get_type("CampaignCriterionOperation")
+                operation.create = campaign_criterion
+
+                operations.append(operation)
+
+            # Execute mutation
+            response = cc_service.mutate_campaign_criteria(
+                customer_id=self.customer_id,
+                operations=operations,
+            )
+
+            added = []
+            errors = []
+            for result in response.results:
+                if result.resource_name:
+                    added.append(result.resource_name)
+                else:
+                    errors.append("Failed to add keyword")
+
+            return {
+                "added": added,
+                "skipped": [],
+                "errors": errors,
+                "dry_run": False,
+                "simulated": False,
+            }
+        except Exception as err:
+            return {
+                "added": [],
+                "skipped": [],
+                "errors": [f"API error: {err}"],
+                "dry_run": False,
+                "simulated": False,
+            }
+
+    def apply_recommendation(
+        self,
+        recommendation_resource_name: str,
+        dry_run: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Apply a Google Ads recommendation.
+
+        Args:
+            recommendation_resource_name: Full resource name of the recommendation
+            dry_run: If True, returns plan without making API calls
+
+        Returns:
+            Dict with keys: applied, resource_name, error, dry_run
+            - applied: Boolean indicating success
+            - resource_name: The resource name if successful
+            - error: Error message if failed
+            - dry_run: Boolean indicating if this was a dry run
+        """
+        if self.use_mock:
+            # Mock mode: simulate successful apply
+            return {
+                "applied": True,
+                "resource_name": recommendation_resource_name,
+                "error": None,
+                "dry_run": dry_run,
+                "simulated": True,
+            }
+
+        if dry_run:
+            # Dry run: just plan without API call
+            return {
+                "applied": True,
+                "resource_name": recommendation_resource_name,
+                "error": None,
+                "dry_run": True,
+                "simulated": False,
+            }
+
+        try:
+            rec_service = self.client.get_service("RecommendationService")
+
+            response = rec_service.apply_recommendation(
+                customer_id=self.customer_id,
+                operations=[
+                    {
+                        "apply": recommendation_resource_name,
+                    }
+                ],
+            )
+
+            return {
+                "applied": True,
+                "resource_name": recommendation_resource_name,
+                "error": None,
+                "dry_run": False,
+                "simulated": False,
+            }
+        except Exception as err:
+            return {
+                "applied": False,
+                "resource_name": recommendation_resource_name,
+                "error": f"API error: {err}",
+                "dry_run": False,
+                "simulated": False,
+            }

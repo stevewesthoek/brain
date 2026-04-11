@@ -19,3 +19,8 @@ require_mission_alignment = true
 [compliance]
 watch_official_sources = true
 open_report_when_sources_change = true
+
+[negative_keywords]
+spend_threshold_usd = 20.0
+lookback_days = 30
+match_type = "BROAD"

@@ -210,6 +210,33 @@ def connect_db() -> sqlite3.Connection:
             details TEXT,
             created_at TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS pending_mutations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            mutation_type TEXT NOT NULL,
+            campaign_id TEXT,
+            resource_type TEXT NOT NULL,
+            resource_id TEXT,
+            payload TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            rule_source TEXT,
+            proposed_by TEXT NOT NULL DEFAULT 'auto',
+            reviewed_by TEXT,
+            applied_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS negative_keywords (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            campaign_id TEXT NOT NULL,
+            keyword_text TEXT NOT NULL,
+            match_type TEXT NOT NULL DEFAULT 'BROAD',
+            google_resource_name TEXT,
+            source TEXT NOT NULL DEFAULT 'auto',
+            created_at TEXT NOT NULL,
+            UNIQUE(campaign_id, keyword_text, match_type)
+        );
         """
     )
     return conn
@@ -268,6 +295,40 @@ def collect_doctor_state() -> DoctorState:
         env_status=env_status,
         adc_status=adc_status(),
         local_env_exists=LOCAL_ENV_PATH.exists(),
+    )
+
+
+def get_api_client() -> "GoogleAdsAPI":
+    """
+    Load credentials and return an initialized GoogleAdsAPI client.
+    Raises SystemExit if credentials are missing.
+    """
+    local_env = load_local_env()
+
+    dev_token = os.environ.get("GOOGLE_ADS_DEVELOPER_TOKEN") or local_env.get("GOOGLE_ADS_DEVELOPER_TOKEN") or ""
+    login_cust_id = os.environ.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID") or local_env.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID") or ""
+    cust_id = os.environ.get("GOOGLE_ADS_CUSTOMER_ID") or local_env.get("GOOGLE_ADS_CUSTOMER_ID") or ""
+    client_id = os.environ.get("GOOGLE_ADS_OAUTH_CLIENT_ID") or local_env.get("GOOGLE_ADS_OAUTH_CLIENT_ID") or ""
+    client_secret = os.environ.get("GOOGLE_ADS_OAUTH_CLIENT_SECRET") or local_env.get("GOOGLE_ADS_OAUTH_CLIENT_SECRET") or ""
+    refresh_token = os.environ.get("GOOGLE_ADS_REFRESH_TOKEN") or local_env.get("GOOGLE_ADS_REFRESH_TOKEN") or ""
+
+    if not all([dev_token, login_cust_id, cust_id, client_id, client_secret, refresh_token]):
+        print("ERROR: Missing Google Ads credentials", file=sys.stderr)
+        raise SystemExit(1)
+
+    try:
+        from api import GoogleAdsAPI
+    except (ImportError, TypeError) as e:
+        print(f"ERROR: Failed to import API module: {e}", file=sys.stderr)
+        raise SystemExit(1)
+
+    return GoogleAdsAPI(
+        developer_token=dev_token,
+        customer_id=cust_id,
+        login_customer_id=login_cust_id,
+        oauth_client_id=client_id,
+        oauth_client_secret=client_secret,
+        refresh_token=refresh_token,
     )
 
 
@@ -586,6 +647,182 @@ def fetch_url(url: str) -> tuple[int, bytes, dict[str, str]]:
         return response.status, payload, headers
 
 
+def cmd_negatives(args: argparse.Namespace) -> int:
+    """
+    Apply negative keyword automation with safety rules enforcement.
+
+    Workflow:
+    1. Check if safe_auto_apply.negative_keywords is enabled
+    2. Query search terms without conversions exceeding spend threshold
+    3. Compare against existing negatives to avoid duplicates
+    4. Print candidates for review
+    5. On --live: apply via API and record in change_events
+
+    Safety invariants:
+    - Default: dry-run (no API calls)
+    - Requires explicit --live flag to mutate
+    - Rejects --live if API in mock mode
+    - All changes logged to change_events
+    """
+    rules = load_toml(CONFIG_DIR / "rules.toml")
+
+    # Check if feature is enabled
+    if not rules.get("safe_auto_apply", {}).get("negative_keywords", False):
+        print("negative_keywords is disabled in rules.toml[safe_auto_apply]")
+        log_run("negatives", "skipped", "disabled")
+        return 0
+
+    # Load thresholds
+    config = rules.get("negative_keywords", {})
+    spend_threshold_usd = config.get("spend_threshold_usd", 20.0)
+    lookback_days = config.get("lookback_days", 30)
+    match_type = config.get("match_type", "BROAD")
+
+    # Compute date range
+    today = datetime.now().strftime("%Y-%m-%d")
+    start_date = (datetime.now() - timedelta(days=lookback_days)).strftime("%Y-%m-%d")
+
+    print("Google Ads Negative Keywords Automation")
+    print(f"- Lookback period: {start_date} to {today}")
+    print(f"- Spend threshold: ${spend_threshold_usd}")
+    print(f"- Match type: {match_type}")
+
+    with connect_db() as conn:
+        # Find search terms without conversions exceeding spend threshold
+        candidates = conn.execute(
+            """
+            SELECT DISTINCT campaign_id, search_term, spend_usd
+            FROM search_terms
+            WHERE metrics_date >= ?
+              AND metrics_date <= ?
+              AND conversions = 0
+              AND spend_usd > ?
+            ORDER BY spend_usd DESC
+            """,
+            (start_date, today, spend_threshold_usd),
+        ).fetchall()
+
+        # Check for existing negatives
+        existing = conn.execute(
+            """
+            SELECT campaign_id, keyword_text
+            FROM negative_keywords
+            WHERE match_type = ?
+            """,
+            (match_type,),
+        ).fetchall()
+        existing_set = {(row["campaign_id"], row["keyword_text"]) for row in existing}
+
+        # Deduplicate
+        to_apply = [
+            (row["campaign_id"], row["search_term"], row["spend_usd"])
+            for row in candidates
+            if (row["campaign_id"], row["search_term"]) not in existing_set
+        ]
+
+    print(f"\nCandidates found: {len(candidates)}")
+    print(f"Already negated: {len(candidates) - len(to_apply)}")
+    print(f"Ready to apply: {len(to_apply)}")
+
+    if to_apply:
+        print("\nTop candidates:")
+        for campaign_id, keyword, spend in to_apply[:10]:
+            print(f"  - {keyword} (campaign={campaign_id}, spent=${spend:.2f})")
+
+    # Get API client to check if we should proceed
+    try:
+        api = get_api_client()
+    except SystemExit:
+        # Credentials missing, fall back to mock or error
+        api = None
+
+    # Dry-run or live-run check
+    if api:
+        assert_live_allowed(args, api)
+
+    if not args.live:
+        # Dry run: just log and exit
+        with connect_db() as conn:
+            conn.execute(
+                """
+                INSERT INTO change_events (change_date, change_type, resource_type, resource_id, details, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    today,
+                    "negative_keyword_dry_run",
+                    "account",
+                    None,
+                    json.dumps({"candidates": len(to_apply), "total_checked": len(candidates)}),
+                    utc_now_iso(),
+                ),
+            )
+        log_run("negatives", "dry_run", f"candidates={len(to_apply)}")
+        return 0
+
+    # Live run: apply via API
+    if not api:
+        print("ERROR: Failed to initialize API client. Cannot apply mutations.", file=sys.stderr)
+        return 1
+    applied_count = 0
+    error_count = 0
+
+    with connect_db() as conn:
+        # Group by campaign
+        by_campaign: dict[str, list[str]] = {}
+        for campaign_id, keyword, _ in to_apply:
+            if campaign_id not in by_campaign:
+                by_campaign[campaign_id] = []
+            by_campaign[campaign_id].append(keyword)
+
+        # Apply per campaign
+        for campaign_id, keywords in by_campaign.items():
+            result = api.add_negative_keywords(
+                campaign_id=campaign_id,
+                keywords=keywords,
+                match_type=match_type,
+                dry_run=False,
+            )
+
+            if result.get("errors"):
+                error_count += len(result["errors"])
+                for error in result["errors"]:
+                    print(f"  ERROR for campaign {campaign_id}: {error}", file=sys.stderr)
+            else:
+                applied_count += len(result.get("added", []))
+                # Record each application
+                for keyword in keywords:
+                    conn.execute(
+                        """
+                        INSERT INTO negative_keywords
+                            (campaign_id, keyword_text, match_type, source, created_at)
+                        VALUES (?, ?, ?, ?, ?)
+                        ON CONFLICT (campaign_id, keyword_text, match_type) DO NOTHING
+                        """,
+                        (campaign_id, keyword, match_type, "auto", utc_now_iso()),
+                    )
+                    conn.execute(
+                        """
+                        INSERT INTO change_events
+                            (change_date, change_type, resource_type, resource_id, details, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            today,
+                            "negative_keyword_added",
+                            "campaign_criterion",
+                            f"{campaign_id}:{keyword}",
+                            json.dumps({"match_type": match_type}),
+                            utc_now_iso(),
+                        ),
+                    )
+
+    print(f"\nApplied: {applied_count}")
+    print(f"Errors: {error_count}")
+    log_run("negatives", "ok" if error_count == 0 else "partial", f"applied={applied_count} errors={error_count}")
+    return 0 if error_count == 0 else 1
+
+
 def cmd_policy_watch(_: argparse.Namespace) -> int:
     sources = load_toml(CONFIG_DIR / "sources.toml")["sources"]
     changed_count = 0
@@ -698,6 +935,21 @@ def cmd_report(_: argparse.Namespace) -> int:
     return 0
 
 
+def assert_live_allowed(args: argparse.Namespace, api: "GoogleAdsAPI") -> None:
+    """
+    Validate that a mutation command can proceed with --live flag.
+    Raises SystemExit if mutation is unsafe.
+    """
+    if api.use_mock and args.live:
+        print("ERROR: --live was passed but the API client is in mock mode.", file=sys.stderr)
+        print("       Mock mode means no real Google Ads connection is available.", file=sys.stderr)
+        print("       Credentials may be expired or invalid.", file=sys.stderr)
+        print("       Fix credentials and retry.", file=sys.stderr)
+        raise SystemExit(2)
+    if not args.live:
+        print("[DRY RUN] No changes will be made. Pass --live to execute real mutations.")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="AI-agnostic Google Ads automation CLI for the nonprofit Ad Grants stack.",
@@ -712,6 +964,15 @@ def build_parser() -> argparse.ArgumentParser:
             """
         ),
     )
+
+    # Global flag for mutations (inherited by all subcommands)
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        default=False,
+        help="Execute real mutations to Google Ads account. Default: dry-run (no changes made).",
+    )
+
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     doctor = subparsers.add_parser("doctor", help="Check account boundary and credential readiness.")
@@ -722,6 +983,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     pace = subparsers.add_parser("pace", help="Compute pacing against the nonprofit grant budget.")
     pace.set_defaults(func=cmd_pace)
+
+    negatives = subparsers.add_parser("negatives", help="Apply negative keyword automation.")
+    negatives.set_defaults(func=cmd_negatives)
 
     policy_watch = subparsers.add_parser(
         "policy-watch",
