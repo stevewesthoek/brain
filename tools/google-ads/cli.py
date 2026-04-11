@@ -51,6 +51,14 @@ from analytics import (
     suggest_gate_adjustments,
     export_analysis_csv,
 )
+from rollback import (
+    create_rollback_schema,
+    arm_rollback_monitor,
+    check_mutations_for_rollback,
+    override_rollback,
+    get_rollback_status,
+    export_rollback_csv,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -266,6 +274,9 @@ def connect_db() -> sqlite3.Connection:
 
     # Create analytics schema (Phase 4G)
     create_analysis_schema(conn)
+
+    # Create rollback schema (Phase 4H)
+    create_rollback_schema(conn)
 
     return conn
 
@@ -2321,7 +2332,15 @@ def cmd_apply(args: argparse.Namespace) -> int:
                     )
 
                     # Record baseline metrics for analysis (Phase 4G)
+                    baseline_metrics = {
+                        "spend": 0,  # Would fetch from daily_metrics_detail
+                        "cpa": 0,
+                        "conversions": 0,
+                    }
                     record_baseline_metrics(conn, mutation["id"], campaign_id)
+
+                    # Arm rollback monitor (Phase 4H)
+                    arm_rollback_monitor(conn, mutation["id"], campaign_id, baseline_metrics)
 
                     applied_count += 1
                     print(f"Applied mutation {mutation['id']} ({mutation_type})")
@@ -2537,6 +2556,74 @@ def cmd_suggest_gate_adjustments(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_monitor_rollbacks(args: argparse.Namespace) -> int:
+    """Monitor mutations for auto-revert (Phase 4H). Run every 4 hours via cron."""
+    rules = load_toml(CONFIG_DIR / "rules.toml")
+
+    with connect_db() as conn:
+        checked, reverted = check_mutations_for_rollback(conn, rules)
+        print(f"✓ Monitored {checked} mutations for rollback")
+        if reverted > 0:
+            print(f"  🔄 Auto-reverted {reverted} mutations due to performance regression")
+        log_run("monitor-rollbacks", "ok", f"checked={checked} reverted={reverted}")
+
+    return 0
+
+
+def cmd_rollback_status(args: argparse.Namespace) -> int:
+    """Show rollback status: at-risk mutations, recent reversions, manual overrides (Phase 4H)."""
+    with connect_db() as conn:
+        status = get_rollback_status(conn)
+
+        # Status counts
+        print("\n📊 Rollback Monitor Status")
+        counts = status["status_counts"]
+        print(f"   Pending: {counts.get('pending', 0)}")
+        print(f"   Reverted: {counts.get('reverted', 0)}")
+        print(f"   Manual overrides: {counts.get('manual_override', 0)}")
+
+        # At-risk
+        if status["at_risk"]:
+            print("\n⚠️  At-Risk Mutations (approaching thresholds)")
+            for m in status["at_risk"]:
+                print(f"   ID {m['id']}: {m['type']}")
+                print(f"     CPA: {m['cpa_delta']:+.1f}%  Conv: {m['conversions_delta']:+.1f}%  Spend: {m['spend_delta']:+.1f}%")
+
+        # Recently reverted
+        if status["recently_reverted"]:
+            print("\n🔄 Recently Reverted (last 7 days)")
+            for m in status["recently_reverted"]:
+                print(f"   ID {m['id']}: {m['type']}")
+                print(f"     Reason: {m['reason']}")
+
+        # Manual overrides
+        if status["manual_overrides"]:
+            print("\n👤 Manual Overrides (user disagreed with revert)")
+            for m in status["manual_overrides"]:
+                print(f"   ID {m['id']}: {m['type']}")
+                print(f"     Would have reverted: {m['would_have_reverted']}")
+                print(f"     User override: {m['override_reason']}")
+
+    return 0
+
+
+def cmd_override_rollback(args: argparse.Namespace) -> int:
+    """Manually override auto-revert decision for a mutation (Phase 4H)."""
+    if not args.id or not args.reason:
+        print("ERROR: --id and --reason required", file=sys.stderr)
+        return 1
+
+    with connect_db() as conn:
+        if override_rollback(conn, args.id, args.reason):
+            print(f"✓ Overridden rollback for mutation {args.id}")
+            print(f"  Reason: {args.reason}")
+            log_run("override-rollback", "ok", f"id={args.id}")
+            return 0
+        else:
+            print(f"ERROR: Failed to override rollback for mutation {args.id}", file=sys.stderr)
+            return 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="AI-agnostic Google Ads automation CLI for the nonprofit Ad Grants stack.",
@@ -2654,6 +2741,18 @@ def build_parser() -> argparse.ArgumentParser:
         "suggest-gate-adjustments", help="Suggest approval gate adjustments based on insights."
     )
     suggest.set_defaults(func=cmd_suggest_gate_adjustments)
+
+    # Phase 4H: Rollback
+    monitor = subparsers.add_parser("monitor-rollbacks", help="Monitor mutations for auto-revert (run every 4h).")
+    monitor.set_defaults(func=cmd_monitor_rollbacks)
+
+    rb_status = subparsers.add_parser("rollback-status", help="Show rollback status and at-risk mutations.")
+    rb_status.set_defaults(func=cmd_rollback_status)
+
+    override = subparsers.add_parser("override-rollback", help="Manually override auto-revert decision.")
+    override.add_argument("--id", type=int, required=True, help="Mutation ID")
+    override.add_argument("--reason", required=True, help="Override reason")
+    override.set_defaults(func=cmd_override_rollback)
 
     return parser
 
