@@ -3,7 +3,7 @@ import os from "node:os";
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
-import { exec } from "node:child_process";
+import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { AppContext } from "../types/app.js";
 import { buildSessionOverview } from "../services/sessions.js";
@@ -11,6 +11,7 @@ import { buildRecentContinuationCards } from "../services/control-plane.js";
 import { getCodexUsage } from "../services/codex-usage.js";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const FAVICON_SVG = `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="lobster-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
