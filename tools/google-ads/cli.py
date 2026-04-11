@@ -823,6 +823,240 @@ def cmd_negatives(args: argparse.Namespace) -> int:
     return 0 if error_count == 0 else 1
 
 
+def cmd_approve(args: argparse.Namespace) -> int:
+    """
+    Approve pending mutations for later application.
+
+    Usage:
+      approve <id>       # Approve a specific mutation
+      approve --all      # Approve all pending mutations
+    """
+    if not args.id and not args.all:
+        print("ERROR: Specify mutation ID or use --all", file=sys.stderr)
+        return 1
+
+    with connect_db() as conn:
+        if args.all:
+            conn.execute(
+                """
+                UPDATE pending_mutations
+                SET status = 'approved', updated_at = ?
+                WHERE status = 'pending'
+                """,
+                (utc_now_iso(),),
+            )
+            result = conn.execute("SELECT changes()").fetchone()
+            count = result[0] if result else 0
+            print(f"Approved {count} mutations")
+            log_run("approve", "ok", f"approved={count}")
+        else:
+            conn.execute(
+                """
+                UPDATE pending_mutations
+                SET status = 'approved', updated_at = ?
+                WHERE id = ? AND status = 'pending'
+                """,
+                (utc_now_iso(), args.id),
+            )
+            result = conn.execute("SELECT changes()").fetchone()
+            count = result[0] if result else 0
+            if count == 0:
+                print(f"No pending mutation found with ID {args.id}", file=sys.stderr)
+                return 1
+            print(f"Approved mutation {args.id}")
+            log_run("approve", "ok", f"id={args.id}")
+
+    return 0
+
+
+def cmd_reject(args: argparse.Namespace) -> int:
+    """
+    Reject a pending mutation.
+
+    Usage:
+      reject <id> [--reason "reason text"]
+    """
+    if not args.id:
+        print("ERROR: Specify mutation ID to reject", file=sys.stderr)
+        return 1
+
+    reason = getattr(args, "reason", None)
+
+    with connect_db() as conn:
+        # Get existing payload
+        row = conn.execute(
+            "SELECT payload FROM pending_mutations WHERE id = ? AND status = 'pending'",
+            (args.id,),
+        ).fetchone()
+
+        if not row:
+            print(f"No pending mutation found with ID {args.id}", file=sys.stderr)
+            return 1
+
+        # Update with reason if provided
+        if reason:
+            payload = json.loads(row["payload"] or "{}")
+            payload["rejected_reason"] = reason
+            payload_str = json.dumps(payload)
+        else:
+            payload_str = row["payload"]
+
+        conn.execute(
+            """
+            UPDATE pending_mutations
+            SET status = 'rejected', payload = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (payload_str, utc_now_iso(), args.id),
+        )
+
+        print(f"Rejected mutation {args.id}")
+        if reason:
+            print(f"Reason: {reason}")
+        log_run("reject", "ok", f"id={args.id}")
+
+    return 0
+
+
+def cmd_apply(args: argparse.Namespace) -> int:
+    """
+    Apply approved mutations to Google Ads account.
+
+    Usage:
+      apply --id N         # Apply a specific mutation (must be approved)
+      apply --all-approved # Apply all approved mutations
+      apply --live         # Execute real mutations (default is dry-run)
+    """
+    if not args.id and not args.all_approved:
+        print("ERROR: Specify --id or --all-approved", file=sys.stderr)
+        return 1
+
+    # Get or create API client
+    try:
+        api = get_api_client()
+    except SystemExit:
+        api = None
+
+    # Check live flag safety
+    if api:
+        assert_live_allowed(args, api)
+    elif args.live:
+        print("ERROR: --live passed but API credentials unavailable", file=sys.stderr)
+        return 1
+
+    applied_count = 0
+    error_count = 0
+
+    with connect_db() as conn:
+        # Fetch mutations to apply
+        if args.id:
+            mutations = conn.execute(
+                """
+                SELECT * FROM pending_mutations
+                WHERE id = ? AND status = 'approved'
+                """,
+                (args.id,),
+            ).fetchall()
+        else:
+            mutations = conn.execute(
+                """
+                SELECT * FROM pending_mutations
+                WHERE status = 'approved'
+                ORDER BY id
+                """
+            ).fetchall()
+
+        if not mutations:
+            msg = f"mutation {args.id}" if args.id else "approved mutations"
+            print(f"No {msg} found")
+            return 0
+
+        for mutation in mutations:
+            mutation_type = mutation["mutation_type"]
+            campaign_id = mutation["campaign_id"]
+            resource_type = mutation["resource_type"]
+            resource_id = mutation["resource_id"]
+            payload = json.loads(mutation["payload"])
+
+            # Simulate or apply based on --live
+            if not args.live:
+                # Dry run
+                print(f"[DRY RUN] Would apply {mutation_type} to {resource_type} {resource_id}")
+                continue
+
+            # Live run
+            if not api:
+                error_count += 1
+                print(f"ERROR: Cannot apply mutation {mutation['id']} without API client", file=sys.stderr)
+                continue
+
+            success = False
+            try:
+                if mutation_type == "add_negative_keywords":
+                    keywords = payload.get("keywords", [])
+                    match_type = payload.get("match_type", "BROAD")
+                    result = api.add_negative_keywords(
+                        campaign_id=campaign_id,
+                        keywords=keywords,
+                        match_type=match_type,
+                        dry_run=False,
+                    )
+                    success = len(result.get("errors", [])) == 0
+
+                elif mutation_type == "apply_recommendation":
+                    resource_name = payload.get("resource_name")
+                    result = api.apply_recommendation(
+                        recommendation_resource_name=resource_name,
+                        dry_run=False,
+                    )
+                    success = result.get("applied", False)
+
+                else:
+                    print(f"ERROR: Unknown mutation type {mutation_type}", file=sys.stderr)
+                    error_count += 1
+                    continue
+
+                if success:
+                    # Mark as applied
+                    conn.execute(
+                        """
+                        UPDATE pending_mutations
+                        SET status = 'applied', applied_at = ?, updated_at = ?
+                        WHERE id = ?
+                        """,
+                        (utc_now_iso(), utc_now_iso(), mutation["id"]),
+                    )
+                    conn.execute(
+                        """
+                        INSERT INTO change_events
+                            (change_date, change_type, resource_type, resource_id, details, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            datetime.now().strftime("%Y-%m-%d"),
+                            f"mutation_applied_{mutation_type}",
+                            resource_type,
+                            resource_id,
+                            json.dumps(payload),
+                            utc_now_iso(),
+                        ),
+                    )
+                    applied_count += 1
+                    print(f"Applied mutation {mutation['id']} ({mutation_type})")
+                else:
+                    error_count += 1
+                    print(f"ERROR: Failed to apply mutation {mutation['id']}", file=sys.stderr)
+
+            except Exception as err:
+                error_count += 1
+                print(f"ERROR applying mutation {mutation['id']}: {err}", file=sys.stderr)
+
+    print(f"\nApplied: {applied_count}")
+    print(f"Errors: {error_count}")
+    log_run("apply", "ok" if error_count == 0 else "partial", f"applied={applied_count} errors={error_count}")
+    return 0 if error_count == 0 else 1
+
+
 def cmd_policy_watch(_: argparse.Namespace) -> int:
     sources = load_toml(CONFIG_DIR / "sources.toml")["sources"]
     changed_count = 0
@@ -986,6 +1220,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     negatives = subparsers.add_parser("negatives", help="Apply negative keyword automation.")
     negatives.set_defaults(func=cmd_negatives)
+
+    approve = subparsers.add_parser("approve", help="Approve pending mutations.")
+    approve_group = approve.add_mutually_exclusive_group(required=True)
+    approve_group.add_argument("id", nargs="?", type=int, help="Mutation ID to approve")
+    approve_group.add_argument("--all", action="store_true", help="Approve all pending mutations")
+    approve.set_defaults(func=cmd_approve)
+
+    reject = subparsers.add_parser("reject", help="Reject a pending mutation.")
+    reject.add_argument("id", type=int, help="Mutation ID to reject")
+    reject.add_argument("--reason", help="Reason for rejection")
+    reject.set_defaults(func=cmd_reject)
+
+    apply = subparsers.add_parser("apply", help="Apply approved mutations to Google Ads.")
+    apply_group = apply.add_mutually_exclusive_group(required=True)
+    apply_group.add_argument("--id", type=int, help="Apply specific mutation ID")
+    apply_group.add_argument("--all-approved", action="store_true", help="Apply all approved mutations")
+    apply.set_defaults(func=cmd_apply)
 
     policy_watch = subparsers.add_parser(
         "policy-watch",
