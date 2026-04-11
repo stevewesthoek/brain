@@ -1,6 +1,6 @@
 ---
 name: firecrawl
-description: Default tool for ALL web data tasks — searching the internet, scraping URLs to clean markdown, crawling entire websites. Replaces /browse and WebFetch for research. AI-agnostic: works with Claude Code, Codex, and Gemini Flash. Use whenever you need to fetch web content, search the web, or research online.
+description: "Default tool for ALL web data tasks — searching the internet, scraping URLs to clean markdown, crawling entire websites. Replaces /browse and WebFetch for research. AI-agnostic: works with Claude Code, Codex, and Gemini Flash. Use whenever you need to fetch web content, search the web, or research online."
 ---
 
 # /firecrawl — Self-Hosted Web Data API

@@ -1,6 +1,6 @@
 ---
 name: autoresearch
-description: Use when optimizing any bounded system — skills, apps, UI, workflows, marketing, business metrics. Autonomous loop: define scope + metric → iterate → keep improvements. Works for anything measurable.
+description: "Use when optimizing any bounded system — skills, apps, UI, workflows, marketing, business metrics. Autonomous loop: define scope + metric → iterate → keep improvements. Works for anything measurable."
 ---
 
 # /autoresearch — Autonomous Optimization

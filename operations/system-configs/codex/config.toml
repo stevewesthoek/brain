@@ -7,7 +7,7 @@ approval_policy = "never"
 sandbox_mode = "danger-full-access"
 
 [mcp_servers.notebooklm]
-command = "/Users/Office/.local/bin/notebooklm-mcp"
+command = "/Users/Office/.local/bin/notebooklm-mcp-server"
 
 [mcp_servers.stitch]
 command = "npx"
@@ -48,4 +48,7 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/Users/Office/Repos/yeshuaacademy/web/openfund"]
+trust_level = "trusted"
+
+[projects."/Users/Office/Repos/stevewesthoek/Brain"]
 trust_level = "trusted"
