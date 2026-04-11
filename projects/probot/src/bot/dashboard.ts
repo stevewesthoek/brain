@@ -755,11 +755,78 @@ function getGoogleAdsMetrics(): GoogleAdsMetrics {
   }
 }
 
+// ─── Mutations helpers ───────────────────────────────────────────────────────
+
+interface MutationRecord {
+  id: number;
+  mutation_type: string;
+  campaign_id: string | null;
+  resource_type: string;
+  resource_id: string | null;
+  status: string;
+  created_at: string;
+  payload: any;
+}
+
+interface MutationsData {
+  error?: string;
+  status: "ready" | "no_data" | "error";
+  mutations: MutationRecord[];
+  statsByStatus: Record<string, number>;
+}
+
+function getMutationsData(): MutationsData {
+  const googleAdsDbPath = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "data", "google-ads", "google_ads.sqlite3");
+
+  if (!fs.existsSync(googleAdsDbPath)) {
+    return {
+      status: "no_data",
+      error: "Google Ads database not found",
+      mutations: [],
+      statsByStatus: {},
+    };
+  }
+
+  try {
+    const db = new Database(googleAdsDbPath);
+
+    // Fetch mutations ordered by id desc, limit to recent 50
+    const mutations = db
+      .prepare("SELECT id, mutation_type, campaign_id, resource_type, resource_id, status, created_at, payload FROM pending_mutations ORDER BY id DESC LIMIT 50")
+      .all() as MutationRecord[];
+
+    // Count by status
+    const statsByStatus = db
+      .prepare("SELECT status, COUNT(*) as cnt FROM pending_mutations GROUP BY status")
+      .all()
+      .reduce((acc: Record<string, number>, row: any) => {
+        acc[row.status] = row.cnt;
+        return acc;
+      }, {});
+
+    db.close();
+
+    return {
+      status: "ready",
+      mutations,
+      statsByStatus,
+    };
+  } catch (err) {
+    return {
+      status: "error",
+      error: `Query error: ${err instanceof Error ? err.message : String(err)}`,
+      mutations: [],
+      statsByStatus: {},
+    };
+  }
+}
+
 async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
   const googleAds = getGoogleAdsMetrics();
+  const mutations = getMutationsData();
   const [sessions, continuationCards, nrHealth, umami, domains] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
@@ -794,6 +861,7 @@ async function getDashboardData(app: AppContext) {
     umami,
     domains,
     googleAds,
+    mutations,
     scheduler: getNightScheduler(),
     repos: getReposData(app),
     sessions: sessions.slice(0, 8).map((s) => ({
@@ -1004,6 +1072,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="scheduler">Scheduler <span class="tab-count" id="cnt-sched"></span></button>
     <button class="tab-btn" data-tab="umami">Analytics <span class="tab-count" id="cnt-umami"></span></button>
     <button class="tab-btn" data-tab="google-ads">Google Ads <span class="tab-count" id="cnt-google-ads"></span></button>
+    <button class="tab-btn" data-tab="mutations">Mutations <span class="tab-count" id="cnt-mutations"></span></button>
     <button class="tab-btn" data-tab="domains">Domains <span class="tab-count" id="cnt-domains"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
@@ -1012,6 +1081,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
   <div class="tab-panel" id="tab-scheduler"></div>
   <div class="tab-panel" id="tab-umami"></div>
   <div class="tab-panel" id="tab-google-ads"></div>
+  <div class="tab-panel" id="tab-mutations"></div>
   <div class="tab-panel" id="tab-domains"></div>
 </div>
 <script>
@@ -1060,6 +1130,50 @@ function applyBtnCopy(btn,text){
 }
 function copyCmd(btn,text){applyBtnCopy(btn,text);}
 function copyResume(btn,text){applyBtnCopy(btn,text);}
+/* mutations — approve, reject, apply */
+function getSelectedMutationIds(){
+  const cbs=document.querySelectorAll('.mutation-cb:checked');
+  return Array.from(cbs).map(cb=>parseInt(cb.value,10)).filter(id=>!isNaN(id));
+}
+function toggleMutationSelect(chk){
+  document.querySelectorAll('.mutation-cb').forEach(cb=>cb.checked=chk.checked);
+}
+async function approveMutation(btn){
+  const ids=getSelectedMutationIds();
+  if(!ids.length){alert('Select mutations first');return;}
+  btn.disabled=true;btn.textContent='Approving...';
+  try{
+    const r=await fetch('/api/mutations/batch-approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    fetchData();
+  }catch(e){alert('Error: '+e.message);}
+  btn.disabled=false;btn.textContent='Approve Selected';
+}
+async function rejectMutation(btn){
+  const ids=getSelectedMutationIds();
+  if(!ids.length){alert('Select mutations first');return;}
+  const reason=prompt('Rejection reason:');
+  if(!reason)return;
+  btn.disabled=true;btn.textContent='Rejecting...';
+  try{
+    const r=await fetch('/api/mutations/batch-reject',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids,reason})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    fetchData();
+  }catch(e){alert('Error: '+e.message);}
+  btn.disabled=false;btn.textContent='Reject Selected';
+}
+async function applyMutation(btn){
+  const ids=getSelectedMutationIds();
+  if(!ids.length){alert('Select mutations first');return;}
+  btn.disabled=true;btn.textContent='Applying...';
+  try{
+    const r=await fetch('/api/mutations/batch-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids,live:true})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    alert('Mutations applied successfully');
+    fetchData();
+  }catch(e){alert('Error: '+e.message);}
+  btn.disabled=false;btn.textContent='Apply Selected';
+}
 /* ghostty — no client-side localhost check; server handles auth via socket address */
 async function openGhostty(btn,cmd){
   const old=btn.textContent;btn.textContent='Opening…';
@@ -1268,6 +1382,33 @@ function renderGoogleAds(data){
   html+='</div>';
   return html;
 }
+function renderMutations(data){
+  if(!data)return'<div class="nr-err">Mutations not available.</div>';
+  if(data.status==='no_data')return'<div class="nr-err">'+esc(data.error||'Google Ads database not found')+'</div>';
+  if(data.status==='error')return'<div class="nr-err">Mutations Error: '+esc(data.error||'Unknown error')+'</div>';
+  if(!data.mutations||data.mutations.length===0)return'<div class="empty">No mutations found. <br/><small style="color:var(--muted)">Mutations will appear here after recommendations are queued and approved.</small></div>';
+  const statuses=Object.entries(data.statsByStatus||{}).map(([s,c])=>'<span class="badge b-stale" style="margin-left:4px">'+esc(s)+': '+c+'</span>').join('');
+  let html='<div class="sec-hd"><span class="sec-title">Pending Mutations</span><span class="sec-count">'+data.mutations.length+'</span>'+statuses+'</div>';
+  html+='<div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap">';
+  html+='<button class="btn" onclick="approveMutation(this)" style="padding:6px 12px;font-size:11px;background:var(--green);color:white;border:none;border-radius:4px;cursor:pointer">Approve Selected</button>';
+  html+='<button class="btn" onclick="rejectMutation(this)" style="padding:6px 12px;font-size:11px;background:var(--amber);color:white;border:none;border-radius:4px;cursor:pointer">Reject Selected</button>';
+  html+='<button class="btn" onclick="applyMutation(this)" style="padding:6px 12px;font-size:11px;background:var(--accent);color:white;border:none;border-radius:4px;cursor:pointer">Apply Selected</button>';
+  html+='</div>';
+  html+='<div style="overflow-x:auto;margin-bottom:16px">';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  html+='<thead style="background:var(--card);border-bottom:1px solid var(--border)">';
+  html+='<tr><th style="padding:8px;text-align:left"><input type="checkbox" onchange="toggleMutationSelect(this)" style="cursor:pointer"/></th><th style="padding:8px;text-align:left">Type</th><th style="padding:8px;text-align:left">Campaign</th><th style="padding:8px;text-align:left">Status</th><th style="padding:8px;text-align:left">Created</th></tr>';
+  html+='</thead><tbody>';
+  for(const m of data.mutations.slice(0,20)){
+    html+='<tr style="border-bottom:1px solid var(--border);hover:background:var(--card)"><td style="padding:8px"><input type="checkbox" class="mutation-cb" value="'+m.id+'" style="cursor:pointer"/></td>';
+    html+='<td style="padding:8px"><strong>'+esc(m.mutation_type)+'</strong></td>';
+    html+='<td style="padding:8px;color:var(--muted);font-size:10px">'+esc(m.campaign_id||'N/A')+'</td>';
+    html+='<td style="padding:8px"><span class="badge '+(m.status==='pending'?'b-old':m.status==='approved'?'b-stale':'b-live')+'">'+esc(m.status)+'</span></td>';
+    html+='<td style="padding:8px;color:var(--muted);font-size:10px">'+age(m.created_at)+'</td></tr>';
+  }
+  html+='</tbody></table></div>';
+  return html;
+}
 function renderDomains(data){
   if(!data)return'<div class="nr-err">Cloudflare not configured.</div>';
   if(data.error&&!data.domains.length)return'<div class="nr-err">Domains: '+esc(data.error)+'</div>';
@@ -1309,6 +1450,9 @@ function render(d){
   const gaPending=d.googleAds&&d.googleAds.pendingMutations?d.googleAds.pendingMutations:0;
   document.getElementById('cnt-google-ads').textContent=gaPending?String(gaPending):'';
   document.getElementById('tab-google-ads').innerHTML=renderGoogleAds(d.googleAds);
+  const mutCount=d.mutations&&d.mutations.mutations?d.mutations.mutations.length:0;
+  document.getElementById('cnt-mutations').textContent=mutCount?String(mutCount):'';
+  document.getElementById('tab-mutations').innerHTML=renderMutations(d.mutations);
   const dw=d.domains&&d.domains.domains?d.domains.domains.length:0;
   document.getElementById('cnt-domains').textContent=dw?String(dw):'';
   document.getElementById('tab-domains').innerHTML=renderDomains(d.domains);
@@ -1357,6 +1501,66 @@ export function createDashboardServer(app: AppContext): http.Server {
         await openGhosttyWithPreparedCommand(parsed.command);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(err) }));
+      }
+      return;
+    }
+
+    // ─── Mutation API endpoints ───────────────────────────────────────────────
+    if (req.method === "POST" && url.startsWith("/api/mutations/")) {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Mutation actions are only enabled on localhost." }));
+        return;
+      }
+      const googleAdsDbPath = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "data", "google-ads", "google_ads.sqlite3");
+      try {
+        let body = "";
+        for await (const chunk of req) body += chunk;
+        const payload = JSON.parse(body) as { ids?: number[]; reason?: string; live?: boolean };
+
+        if (url === "/api/mutations/batch-approve" && payload.ids && Array.isArray(payload.ids)) {
+          const db = new Database(googleAdsDbPath);
+          const stmt = db.prepare("UPDATE pending_mutations SET status = 'approved', updated_at = ? WHERE id = ?");
+          for (const id of payload.ids) {
+            stmt.run(new Date().toISOString(), id);
+          }
+          db.close();
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, approved: payload.ids.length }));
+          return;
+        }
+
+        if (url === "/api/mutations/batch-reject" && payload.ids && Array.isArray(payload.ids)) {
+          const db = new Database(googleAdsDbPath);
+          const stmt = db.prepare("UPDATE pending_mutations SET status = 'rejected', updated_at = ?, payload = json_set(payload, '$.rejection_reason', ?) WHERE id = ?");
+          for (const id of payload.ids) {
+            stmt.run(new Date().toISOString(), payload.reason || "No reason provided", id);
+          }
+          db.close();
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, rejected: payload.ids.length }));
+          return;
+        }
+
+        if (url === "/api/mutations/batch-apply" && payload.ids && Array.isArray(payload.ids)) {
+          const db = new Database(googleAdsDbPath);
+          const stmt = db.prepare("UPDATE pending_mutations SET status = 'applied', applied_at = ?, updated_at = ? WHERE id = ? AND status = 'approved'");
+          let applied = 0;
+          for (const id of payload.ids) {
+            const result = stmt.run(new Date().toISOString(), new Date().toISOString(), id);
+            if (result.changes > 0) applied++;
+          }
+          db.close();
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, applied, note: "Only approved mutations can be applied" }));
+          return;
+        }
+
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Endpoint not found" }));
       } catch (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: String(err) }));
