@@ -656,6 +656,7 @@ interface GoogleAdsMetrics {
   status: "ready" | "no_data" | "error";
   lastSync?: string | null;
   doctorStatus?: string | null;
+  pendingMutations?: number;
   metrics: {
     dailyBudgetUSD: number;
     targetBudgetUSD: number;
@@ -702,6 +703,18 @@ function getGoogleAdsMetrics(): GoogleAdsMetrics {
       "SELECT command, status, created_at FROM runs WHERE command = 'doctor' ORDER BY id DESC LIMIT 1"
     ).get() as { command: string; status: string; created_at: string } | undefined;
 
+    // Get pending mutations count
+    let pendingMutationsCount = 0;
+    try {
+      const pendingMutationsRow = db.prepare(
+        "SELECT COUNT(*) as count FROM pending_mutations WHERE status = 'pending'"
+      ).get() as { count: number } | undefined;
+      pendingMutationsCount = pendingMutationsRow?.count ?? 0;
+    } catch {
+      // Table may not exist in older databases
+      pendingMutationsCount = 0;
+    }
+
     db.close();
 
     const now = new Date();
@@ -716,6 +729,7 @@ function getGoogleAdsMetrics(): GoogleAdsMetrics {
       status: "ready",
       lastSync: latestMetricsRow?.snapshot_date ?? null,
       doctorStatus: doctorRunRow?.status ?? null,
+      pendingMutations: pendingMutationsCount,
       metrics: {
         dailyBudgetUSD: dailySpendUSD,
         targetBudgetUSD: targetDailyUSD,
@@ -989,7 +1003,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="nr">New Relic</button>
     <button class="tab-btn" data-tab="scheduler">Scheduler <span class="tab-count" id="cnt-sched"></span></button>
     <button class="tab-btn" data-tab="umami">Analytics <span class="tab-count" id="cnt-umami"></span></button>
-    <button class="tab-btn" data-tab="google-ads">Google Ads</button>
+    <button class="tab-btn" data-tab="google-ads">Google Ads <span class="tab-count" id="cnt-google-ads"></span></button>
     <button class="tab-btn" data-tab="domains">Domains <span class="tab-count" id="cnt-domains"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
@@ -1229,6 +1243,7 @@ function renderGoogleAds(data){
   const statusBadge=pct<50?'b-old':pct<100?'b-stale':'b-live';
   let html='<div class="sec-hd"><span class="sec-title">Google Ads (Nonprofit)</span>';
   html+='<span class="badge '+statusBadge+'" style="margin-left:8px">'+pct+'% of daily target</span>';
+  if(data.pendingMutations&&data.pendingMutations>0)html+='<span class="badge b-old" style="margin-left:4px">'+data.pendingMutations+' pending</span>';
   if(data.lastSync)html+='<span style="font-size:10px;color:var(--subtle);margin-left:auto">last metrics '+age(data.lastSync)+'</span>';
   html+='</div>';
   html+='<div class="ga-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px">';
@@ -1291,6 +1306,8 @@ function render(d){
   const uw=d.umami&&d.umami.websites?d.umami.websites.length:0;
   document.getElementById('cnt-umami').textContent=uw?String(uw):'';
   document.getElementById('tab-umami').innerHTML=renderUmami(d.umami);
+  const gaPending=d.googleAds&&d.googleAds.pendingMutations?d.googleAds.pendingMutations:0;
+  document.getElementById('cnt-google-ads').textContent=gaPending?String(gaPending):'';
   document.getElementById('tab-google-ads').innerHTML=renderGoogleAds(d.googleAds);
   const dw=d.domains&&d.domains.domains?d.domains.domains.length:0;
   document.getElementById('cnt-domains').textContent=dw?String(dw):'';
