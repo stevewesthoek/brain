@@ -1025,6 +1025,109 @@ def cmd_recommendations(args: argparse.Namespace) -> int:
     return 0 if errors == 0 else 1
 
 
+def cmd_status(_: argparse.Namespace) -> int:
+    """
+    Show comprehensive status of the Google Ads automation pipeline.
+
+    Displays:
+    - System health (API connectivity, data freshness)
+    - Pacing status (daily spend vs targets)
+    - Mutation pipeline (pending, approved, applied, rejected counts)
+    - Recent events (last 5 changes)
+    - Recommendations queue
+    """
+    goals = load_toml(CONFIG_DIR / "goals.toml")
+    rules = load_toml(CONFIG_DIR / "rules.toml")
+
+    print("=" * 80)
+    print("GOOGLE ADS AUTOMATION STATUS")
+    print("=" * 80)
+
+    # System health
+    print("\n[SYSTEM HEALTH]")
+    with connect_db() as conn:
+        # Last sync
+        last_sync = conn.execute(
+            "SELECT created_at FROM runs WHERE command = 'sync' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        sync_age = "unknown" if not last_sync else age(last_sync["created_at"])
+        print(f"Last sync: {sync_age}")
+
+        # Doctor status
+        last_doctor = conn.execute(
+            "SELECT status FROM runs WHERE command = 'doctor' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        doctor_status = last_doctor["status"] if last_doctor else "unknown"
+        print(f"API status: {doctor_status}")
+
+        # Pacing
+        now = datetime.now()
+        month_prefix = f"{now.year:04d}-{now.month:02d}"
+        actual_spend = latest_month_spend(conn, month_prefix)
+        monthly_budget = float(goals.get("monthly_grant_budget_usd", 10000))
+        target_to_date = monthly_budget * (now.day / calendar.monthrange(now.year, now.month)[1])
+        delta = actual_spend - target_to_date
+        pacing_pct = int((actual_spend / target_to_date * 100) if target_to_date > 0 else 0)
+
+        print(f"\n[PACING]")
+        print(f"Month: {now.year}-{now.month:02d}")
+        print(f"Day of month: {now.day}/{ calendar.monthrange(now.year, now.month)[1]}")
+        print(f"Actual spend: ${actual_spend:,.2f}")
+        print(f"Target spend: ${target_to_date:,.2f}")
+        print(f"Delta: ${delta:+,.2f} ({pacing_pct}%)")
+
+        # Mutation pipeline
+        pipeline = conn.execute(
+            """
+            SELECT
+              status,
+              COUNT(*) as count
+            FROM pending_mutations
+            GROUP BY status
+            """
+        ).fetchall()
+
+        print(f"\n[MUTATION PIPELINE]")
+        pipeline_dict = {row["status"]: row["count"] for row in pipeline}
+        print(f"Pending:   {pipeline_dict.get('pending', 0):3d}")
+        print(f"Approved:  {pipeline_dict.get('approved', 0):3d}")
+        print(f"Applied:   {pipeline_dict.get('applied', 0):3d}")
+        print(f"Rejected:  {pipeline_dict.get('rejected', 0):3d}")
+        print(f"Failed:    {pipeline_dict.get('failed', 0):3d}")
+        total = sum(pipeline_dict.values())
+        print(f"Total:     {total:3d}")
+
+        # Recent events
+        recent = conn.execute(
+            """
+            SELECT change_date, change_type, resource_id, created_at
+            FROM change_events
+            ORDER BY id DESC
+            LIMIT 5
+            """
+        ).fetchall()
+
+        print(f"\n[RECENT EVENTS]")
+        if recent:
+            for event in recent:
+                print(f"  {event['created_at'][:16]} {event['change_type']:30s} {(event['resource_id'] or 'account')[:20]}")
+        else:
+            print("  No events yet")
+
+        # Recommendations queue
+        rec_queue = conn.execute(
+            """
+            SELECT COUNT(*) as count FROM recommendations WHERE status = 'pending'
+            """
+        ).fetchone()
+        print(f"\n[RECOMMENDATIONS]")
+        print(f"Pending recommendations: {rec_queue['count']}")
+
+    print("=" * 80)
+    log_run("status", "ok", "status_report_generated")
+    return 0
+
+
 def cmd_mutations(args: argparse.Namespace) -> int:
     """
     List pending, approved, and applied mutations with optional filtering.
@@ -1566,6 +1669,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     pace = subparsers.add_parser("pace", help="Compute pacing against the nonprofit grant budget.")
     pace.set_defaults(func=cmd_pace)
+
+    status = subparsers.add_parser("status", help="Show automation pipeline status and health.")
+    status.set_defaults(func=cmd_status)
 
     negatives = subparsers.add_parser("negatives", help="Apply negative keyword automation.")
     negatives.set_defaults(func=cmd_negatives)
