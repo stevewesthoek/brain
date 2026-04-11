@@ -161,7 +161,7 @@ The `home` Slack command returns structured Block Kit messages rather than a pla
 The dashboard reuses the same continuation ranking and suggestion logic, with a tab-based layout:
 
 - **Metrics bar** — always-visible top row: CPU, Memory, Uptime, Host, Codex 5h, Codex 7d in one compact row
-- **Tabs** — Sessions | Repositories | New Relic | Scheduler; one section visible at a time, no full-page scroll
+- **Tabs** — Sessions | Repositories | New Relic | Scheduler | Stripe; one section visible at a time, no full-page scroll
 - **Sessions tab** — best next sessions as a 3-column card grid (same layout as Repositories)
 - each card shows the tool badge, repo, intent label, age, truncated headline, and the suggested `continue N` command
 - **Open in Ghostty** copies the command to clipboard and opens Ghostty; uses TCP socket address detection so it works when the dashboard is accessed through a Cloudflare tunnel or reverse proxy as well as direct localhost
@@ -196,9 +196,18 @@ In this workspace:
 - a separate sandbox profile only exists when Stripe exposes one explicitly
 - the current profile and account inventory is indexed at `operations/accounts/credentials-index.md`
 
+Current dashboard behavior:
+
+- the Stripe tab renders one account card per indexed Stripe profile/account
+- each card shows live, test, and optional dedicated sandbox contexts separately
+- each context includes balances, recent successful charge totals, refund totals, product count, price count, subscription count, customer count, top products, and subscription status breakdown
+- raw Stripe account and balance payloads are available behind collapsible debug sections for inspection
+- data is cached briefly inside ProBot to avoid re-querying Stripe on every dashboard refresh
+
 For implementation and debugging:
 
-- verify the account context with `stripe get /v1/account -p <profile>`
+- verify the account context with `stripe get /v1/account -p <profile> --live` for live mode
+- verify test mode with `stripe get /v1/account --api-key <test_mode_api_key>`
 - inspect configured profiles via `~/.config/stripe/config.toml`
 - preserve the existing `default` Says the Bible profile unless explicitly told to change it
 

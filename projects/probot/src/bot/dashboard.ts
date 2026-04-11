@@ -1145,7 +1145,7 @@ async function getStripeDashboardData(): Promise<StripeDashboardData> {
       deduped.set(key, profile);
       continue;
     }
-    if (existing.profileName === "default" && profile.profileName !== "default") {
+    if (profile.profileName === "default") {
       deduped.set(key, profile);
     }
   }

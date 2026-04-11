@@ -110,7 +110,7 @@ Thin wrappers around local commands and file paths:
 - Codex session storage
 - Brain repo search
 - future Google/n8n connectors
-- future Stripe profile connector for per-account dashboard aggregation
+- Stripe profile-backed dashboard aggregation for multi-account reporting
 
 ## Stripe dashboard model
 
@@ -127,6 +127,15 @@ Rules:
 3. Treat live and test mode as separate contexts of the same profile unless there is an explicit separate sandbox profile.
 4. Keep the existing `default` Says the Bible profile stable unless a user explicitly asks to change it.
 5. Dashboard reads should remain read-only.
+
+Current implementation:
+
+- parse the local Stripe CLI config at `~/.config/stripe/config.toml`
+- dedupe profiles by Stripe account id and prefer a working `default` profile when the same account is also stored under a duplicate alias
+- use `stripe get ... --live -p <profile>` for live reads
+- use `stripe get ... --api-key <test_mode_api_key>` for test reads
+- render one dashboard card per account with separate live, test, and optional dedicated sandbox sections
+- cache the aggregated Stripe response for a short period to avoid slow repeated refreshes
 
 ### `src/store/*`
 
@@ -259,8 +268,9 @@ Returns:
 Layout:
 
 - **Metrics bar** — always-visible, single-row: CPU, Memory, Uptime, Host, Codex 5h, Codex 7d
-- **Tabs** — Sessions | Repositories | New Relic | Scheduler; one panel visible at a time, no full-page scroll
+- **Tabs** — Sessions | Repositories | New Relic | Scheduler | Stripe; one panel visible at a time, no full-page scroll
 - **Sessions tab** — 3-column card grid (same breakpoints as Repositories); each card shows tool badge, repo, intent label, age, truncated headline, suggested command, Copy and Open in Ghostty buttons
+- **Stripe tab** — one card per Stripe account; each card shows live/test/sandbox metrics, top products, subscription status mix, and collapsible raw account/balance JSON
 
 Behavior:
 
