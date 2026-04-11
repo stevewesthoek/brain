@@ -871,31 +871,95 @@ def cmd_negatives(args: argparse.Namespace) -> int:
     return 0 if error_count == 0 else 1
 
 
-def should_auto_approve_mutation(mutation: dict, rules: dict) -> bool:
+def get_pacing_health(conn: sqlite3.Connection) -> dict:
+    """
+    Calculate current pacing health (actual spend vs target).
+
+    Returns dict with:
+    - actual_spend: Current month-to-date spend
+    - target_spend: Target for day of month
+    - delta: Difference
+    - pacing_pct: Percentage of target
+    """
+    goals = load_toml(CONFIG_DIR / "goals.toml")
+    now = datetime.now()
+    month_prefix = f"{now.year:04d}-{now.month:02d}"
+
+    actual_spend = latest_month_spend(conn, month_prefix)
+    monthly_budget = float(goals.get("monthly_grant_budget_usd", 10000))
+    days_in_month = calendar.monthrange(now.year, now.month)[1]
+    target_to_date = monthly_budget * (now.day / days_in_month)
+
+    pacing_pct = (actual_spend / target_to_date * 100) if target_to_date > 0 else 0
+
+    return {
+        "actual_spend": actual_spend,
+        "target_spend": target_to_date,
+        "delta": actual_spend - target_to_date,
+        "pacing_pct": pacing_pct,
+    }
+
+
+def should_auto_approve_mutation(mutation: dict, rules: dict, conn: sqlite3.Connection = None) -> tuple[bool, str]:
     """
     Check if a mutation should be auto-approved based on approval gates.
 
     Args:
         mutation: Pending mutation dict with payload/priority/impact
         rules: Loaded rules.toml dict
+        conn: SQLite connection for budget checks (optional)
 
     Returns:
-        True if mutation meets auto-approval criteria
+        Tuple of (approved: bool, reason: str)
     """
     gates = rules.get("approval_gates", {})
     if not gates.get("auto_approve_high_impact", False):
-        return False
+        return False, "Auto-approval disabled"
 
     # Extract priority and impact from payload
     try:
         payload = json.loads(mutation.get("payload", "{}")) if isinstance(mutation.get("payload"), str) else mutation.get("payload", {})
         priority = payload.get("priority", "MEDIUM")
         impact = float(payload.get("impact_estimate", 0) or 0)
+        campaign_id = mutation.get("campaign_id")
+
         threshold = gates.get("high_impact_threshold_usd", 500.0)
 
-        return priority == "HIGH" and impact >= threshold
-    except (json.JSONDecodeError, ValueError, TypeError):
-        return False
+        # Check priority and impact
+        if priority != "HIGH" or impact < threshold:
+            return False, f"Priority {priority} + impact ${impact:.2f} < threshold"
+
+        # Check budget health if enabled
+        if gates.get("enable_budget_checks", False) and conn:
+            pacing = get_pacing_health(conn)
+            min_pacing = gates.get("min_pacing_pct_for_approval", 80.0)
+            max_pacing = gates.get("max_pacing_pct_for_approval", 120.0)
+
+            if pacing["pacing_pct"] < min_pacing:
+                return False, f"Underspending: {pacing['pacing_pct']:.1f}% < {min_pacing:.1f}% minimum"
+            if pacing["pacing_pct"] > max_pacing:
+                return False, f"Overspending: {pacing['pacing_pct']:.1f}% > {max_pacing:.1f}% maximum"
+
+        # Check campaign type restrictions if defined
+        campaign_types = gates.get("campaign_types", {})
+        if campaign_types and conn and campaign_id:
+            campaign = conn.execute(
+                "SELECT campaign_type FROM campaigns WHERE google_campaign_id = ? LIMIT 1",
+                (campaign_id,),
+            ).fetchone()
+
+            if campaign:
+                camp_type = campaign.get("campaign_type", "")
+                type_rules = campaign_types.get(camp_type, {})
+                if isinstance(type_rules, dict):
+                    min_impact = type_rules.get("min_impact", 0)
+                    if impact < min_impact:
+                        return False, f"Campaign type {camp_type} requires impact >= ${min_impact:.2f}"
+
+        return True, "Approved: HIGH priority + impact meets threshold + budget healthy"
+
+    except (json.JSONDecodeError, ValueError, TypeError) as err:
+        return False, f"Error evaluating mutation: {err}"
 
 
 def cmd_recommendations(args: argparse.Namespace) -> int:
@@ -963,8 +1027,8 @@ def cmd_recommendations(args: argparse.Namespace) -> int:
                     "impact_estimate": rec["impact_estimate"],
                 }
 
-                # Check if should auto-approve
-                auto_approve = should_auto_approve_mutation(payload, rules)
+                # Check if should auto-approve (pass connection for budget checks)
+                auto_approve, approval_reason = should_auto_approve_mutation(payload, rules, conn)
                 initial_status = "approved" if auto_approve else "pending"
 
                 # Insert into pending_mutations
@@ -1004,6 +1068,7 @@ def cmd_recommendations(args: argparse.Namespace) -> int:
                             "impact": rec["impact_estimate"],
                             "priority": rec["priority"],
                             "auto_approved": auto_approve,
+                            "reason": approval_reason,
                         }),
                         utc_now_iso(),
                     ),
@@ -1222,6 +1287,11 @@ def cmd_auto_approve(args: argparse.Namespace) -> int:
     lower-impact or lower-priority items.
 
     Gates are defined in rules.toml[approval_gates].
+
+    Checks:
+    - HIGH priority + impact >= threshold
+    - Budget health (optional): pacing between min/max thresholds
+    - Campaign type rules (optional): minimum impact per campaign type
     """
     rules = load_toml(CONFIG_DIR / "rules.toml")
     gates = rules.get("approval_gates", {})
@@ -1242,8 +1312,15 @@ def cmd_auto_approve(args: argparse.Namespace) -> int:
         ).fetchall()
 
         approved_count = 0
+        held_count = 0
+
+        print("Scanning pending mutations for auto-approval...")
+        print()
+
         for mut in mutations:
-            if should_auto_approve_mutation(mut, rules):
+            approved, reason = should_auto_approve_mutation(mut, rules, conn)
+
+            if approved:
                 conn.execute(
                     """
                     UPDATE pending_mutations
@@ -1263,16 +1340,258 @@ def cmd_auto_approve(args: argparse.Namespace) -> int:
                         "mutation_auto_approved",
                         mut["resource_type"],
                         mut["resource_id"],
-                        json.dumps({"mutation_type": mut["mutation_type"]}),
+                        json.dumps({"mutation_type": mut["mutation_type"], "reason": reason}),
                         utc_now_iso(),
                     ),
                 )
 
+                print(f"  ✓ ID {mut['id']:3d} approved: {reason}")
                 approved_count += 1
+            else:
+                held_count += 1
+                print(f"  ⊘ ID {mut['id']:3d} held: {reason}")
 
+    print()
     print(f"Auto-approved: {approved_count}")
-    log_run("auto-approve", "ok", f"approved={approved_count}")
+    print(f"Held for manual review: {held_count}")
+    log_run("auto-approve", "ok", f"approved={approved_count} held={held_count}")
     return 0
+
+
+def cmd_batch_approve(args: argparse.Namespace) -> int:
+    """
+    Approve multiple mutations with visual confirmation and grouping.
+
+    Usage:
+      batch-approve                   # Show pending, ask for confirmation
+      batch-approve --type negative_keywords  # Approve all of a type
+      batch-approve --auto            # Auto-approve + confirm all
+    """
+    mutation_type = getattr(args, "type", None)
+    auto_confirm = getattr(args, "auto", False)
+
+    with connect_db() as conn:
+        # Fetch pending mutations
+        query = "SELECT * FROM pending_mutations WHERE status = 'pending'"
+        params = []
+
+        if mutation_type:
+            query += " AND mutation_type = ?"
+            params.append(mutation_type)
+
+        query += " ORDER BY id"
+        mutations = conn.execute(query, params).fetchall()
+
+    if not mutations:
+        print("No pending mutations to approve")
+        return 0
+
+    # Display mutations grouped by type
+    print(f"Pending mutations to approve: {len(mutations)}")
+    print("=" * 80)
+
+    by_type = {}
+    for m in mutations:
+        mtype = m["mutation_type"]
+        if mtype not in by_type:
+            by_type[mtype] = []
+        by_type[mtype].append(m)
+
+    for mtype in sorted(by_type.keys()):
+        group = by_type[mtype]
+        print(f"\n{mtype} ({len(group)} mutations):")
+        for m in group[:5]:  # Show first 5 per type
+            res_id = (m["resource_id"] or "account")[:30]
+            print(f"  ID {m['id']:4d} | {m['resource_type']:20s} | {res_id}")
+        if len(group) > 5:
+            print(f"  ... and {len(group) - 5} more")
+
+    print("\n" + "=" * 80)
+
+    if not auto_confirm:
+        response = input(f"Approve all {len(mutations)} mutations? (yes/no): ").strip().lower()
+        if response not in ["yes", "y"]:
+            print("Cancelled")
+            return 0
+
+    # Approve all
+    with connect_db() as conn:
+        for m in mutations:
+            conn.execute(
+                """
+                UPDATE pending_mutations
+                SET status = 'approved', updated_at = ?
+                WHERE id = ?
+                """,
+                (utc_now_iso(), m["id"]),
+            )
+
+            conn.execute(
+                """
+                INSERT INTO change_events (change_date, change_type, resource_type, resource_id, details, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    datetime.now().strftime("%Y-%m-%d"),
+                    "mutation_batch_approved",
+                    m["resource_type"],
+                    m["resource_id"],
+                    json.dumps({"batch_size": len(mutations)}),
+                    utc_now_iso(),
+                ),
+            )
+
+    print(f"✓ Approved {len(mutations)} mutations")
+    log_run("batch-approve", "ok", f"approved={len(mutations)}")
+    return 0
+
+
+def cmd_batch_apply(args: argparse.Namespace) -> int:
+    """
+    Apply approved mutations in batches with safety checks and visual confirmation.
+
+    Usage:
+      batch-apply                  # Show approved, ask for confirmation
+      batch-apply --live           # Apply for real (default is dry-run)
+      batch-apply --type negative_keywords --live
+    """
+    mutation_type = getattr(args, "type", None)
+    live = getattr(args, "live", False)
+
+    with connect_db() as conn:
+        # Fetch approved mutations
+        query = "SELECT * FROM pending_mutations WHERE status = 'approved'"
+        params = []
+
+        if mutation_type:
+            query += " AND mutation_type = ?"
+            params.append(mutation_type)
+
+        query += " ORDER BY id"
+        mutations = conn.execute(query, params).fetchall()
+
+    if not mutations:
+        print("No approved mutations to apply")
+        return 0
+
+    # Display mutations grouped by type
+    print(f"Approved mutations ready to apply: {len(mutations)}")
+    print("=" * 80)
+
+    by_type = {}
+    for m in mutations:
+        mtype = m["mutation_type"]
+        if mtype not in by_type:
+            by_type[mtype] = []
+        by_type[mtype].append(m)
+
+    for mtype in sorted(by_type.keys()):
+        group = by_type[mtype]
+        print(f"\n{mtype} ({len(group)} mutations):")
+        for m in group[:5]:
+            res_id = (m["resource_id"] or "account")[:30]
+            print(f"  ID {m['id']:4d} | {m['resource_type']:20s} | {res_id}")
+        if len(group) > 5:
+            print(f"  ... and {len(group) - 5} more")
+
+    print("\n" + "=" * 80)
+
+    if not live:
+        print("[DRY RUN] Use --live to apply these mutations for real")
+        response = input("Continue with dry-run preview? (yes/no): ").strip().lower()
+    else:
+        response = input(f"Apply {len(mutations)} mutations (LIVE)? Type 'confirm' to proceed: ").strip().lower()
+        if response != "confirm":
+            print("Cancelled")
+            return 0
+
+    # Try to get API client
+    try:
+        api = get_api_client()
+    except SystemExit:
+        api = None
+
+    if live and api:
+        assert_live_allowed(argparse.Namespace(live=True), api)
+
+    applied = 0
+    errors = 0
+
+    for m in mutations:
+        try:
+            mutation_type = m["mutation_type"]
+            payload = json.loads(m["payload"])
+
+            if not live:
+                print(f"[DRY RUN] Would apply {mutation_type} to {m['resource_type']}")
+                continue
+
+            if not api:
+                print(f"ERROR: Cannot apply without API client", file=sys.stderr)
+                errors += 1
+                continue
+
+            # Apply mutation
+            success = False
+            if mutation_type == "add_negative_keywords":
+                result = api.add_negative_keywords(
+                    campaign_id=m["campaign_id"],
+                    keywords=payload.get("keywords", []),
+                    match_type=payload.get("match_type", "BROAD"),
+                    dry_run=False,
+                )
+                success = len(result.get("errors", [])) == 0
+
+            elif mutation_type == "apply_recommendation":
+                result = api.apply_recommendation(
+                    recommendation_resource_name=payload.get("resource_name"),
+                    dry_run=False,
+                )
+                success = result.get("applied", False)
+
+            if success:
+                with connect_db() as conn:
+                    conn.execute(
+                        """
+                        UPDATE pending_mutations
+                        SET status = 'applied', applied_at = ?, updated_at = ?
+                        WHERE id = ?
+                        """,
+                        (utc_now_iso(), utc_now_iso(), m["id"]),
+                    )
+                    conn.execute(
+                        """
+                        INSERT INTO change_events (change_date, change_type, resource_type, resource_id, details, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            datetime.now().strftime("%Y-%m-%d"),
+                            f"mutation_batch_applied_{mutation_type}",
+                            m["resource_type"],
+                            m["resource_id"],
+                            json.dumps({"batch_size": len(mutations)}),
+                            utc_now_iso(),
+                        ),
+                    )
+                applied += 1
+                print(f"✓ Applied {m['id']}: {mutation_type}")
+            else:
+                errors += 1
+                print(f"✗ Failed {m['id']}: {mutation_type}", file=sys.stderr)
+
+        except Exception as err:
+            errors += 1
+            print(f"✗ Error applying {m['id']}: {err}", file=sys.stderr)
+
+    print()
+    if not live:
+        print(f"Dry-run preview: {len(mutations)} mutations would be applied")
+    else:
+        print(f"Applied: {applied}")
+        print(f"Errors: {errors}")
+
+    log_run("batch-apply", "ok" if errors == 0 else "partial", f"applied={applied} errors={errors}")
+    return 0 if errors == 0 else 1
 
 
 def cmd_approve(args: argparse.Namespace) -> int:
@@ -1687,6 +2006,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     auto_approve = subparsers.add_parser("auto-approve", help="Auto-approve pending mutations meeting approval gates.")
     auto_approve.set_defaults(func=cmd_auto_approve)
+
+    batch_approve = subparsers.add_parser("batch-approve", help="Batch approve multiple mutations with confirmation.")
+    batch_approve.add_argument("--type", help="Filter by mutation type before approving")
+    batch_approve.add_argument("--auto", action="store_true", help="Auto-confirm without prompting")
+    batch_approve.set_defaults(func=cmd_batch_approve)
+
+    batch_apply = subparsers.add_parser("batch-apply", help="Batch apply approved mutations with safety checks.")
+    batch_apply.add_argument("--type", help="Filter by mutation type before applying")
+    batch_apply.add_argument("--live", action="store_true", help="Apply for real (default: dry-run)")
+    batch_apply.set_defaults(func=cmd_batch_apply)
 
     approve = subparsers.add_parser("approve", help="Approve pending mutations.")
     approve_group = approve.add_mutually_exclusive_group(required=True)

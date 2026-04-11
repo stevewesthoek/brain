@@ -33,3 +33,14 @@ high_impact_threshold_usd = 500.0
 # Require manual approval for medium/low priority
 require_manual_medium = true
 require_manual_low = true
+
+# Budget-aware approval: hold mutations if pacing poorly
+enable_budget_checks = true
+min_pacing_pct_for_approval = 80.0  # Don't approve if we're < 80% of target (underspending)
+max_pacing_pct_for_approval = 120.0 # Don't approve if we're > 120% of target (overspending)
+
+# Campaign type conditions: different approval thresholds per campaign type
+[approval_gates.campaign_types]
+SEARCH = { min_impact = 300.0, max_daily_spend = 150.0 }
+DISPLAY = { min_impact = 200.0, max_daily_spend = 100.0 }
+VIDEO = { min_impact = 400.0, max_daily_spend = 200.0 }
