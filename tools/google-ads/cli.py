@@ -446,9 +446,36 @@ def cmd_sync(_: argparse.Namespace) -> int:
 
         # Store in database
         print("Storing data in database...")
+        today = datetime.now().strftime("%Y-%m-%d")
         with connect_db() as conn:
-            # Store campaigns
+            # Store campaigns and detect status changes
             for campaign in campaigns:
+                # Check for previous status
+                previous = conn.execute(
+                    "SELECT status FROM campaigns WHERE google_campaign_id = ?",
+                    (campaign.google_campaign_id,),
+                ).fetchone()
+
+                # Record status change
+                if previous and previous["status"] != campaign.status:
+                    conn.execute(
+                        """
+                        INSERT INTO change_events (change_date, change_type, resource_type, resource_id, details, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            today,
+                            "campaign_status_changed",
+                            "campaign",
+                            campaign.google_campaign_id,
+                            json.dumps({
+                                "previous_status": previous["status"],
+                                "new_status": campaign.status,
+                            }),
+                            utc_now_iso(),
+                        ),
+                    )
+
                 conn.execute(
                     """
                     INSERT OR REPLACE INTO campaigns
@@ -525,6 +552,27 @@ def cmd_sync(_: argparse.Namespace) -> int:
                         utc_now_iso(),
                     ),
                 )
+
+            # Record sync completion event
+            conn.execute(
+                """
+                INSERT INTO change_events (change_date, change_type, resource_type, resource_id, details, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    today,
+                    "sync_completed",
+                    "account",
+                    None,
+                    json.dumps({
+                        "campaigns": len(campaigns),
+                        "search_terms": len(search_terms),
+                        "recommendations": len(recommendations),
+                        "metrics_date": today,
+                    }),
+                    utc_now_iso(),
+                ),
+            )
 
             conn.commit()
 
