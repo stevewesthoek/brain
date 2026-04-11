@@ -846,13 +846,385 @@ function getMutationsData(): MutationsData {
   }
 }
 
+// ─── Stripe helpers ──────────────────────────────────────────────────────────
+
+interface StripeCliProfile {
+  profileName: string;
+  displayName: string;
+  accountId?: string;
+  liveModeApiKey?: string;
+  testModeApiKey?: string;
+}
+
+interface StripeModeSummary {
+  mode: "live" | "test" | "sandbox";
+  accountId: string | null;
+  currency: string | null;
+  availableAmount: number;
+  pendingAmount: number;
+  recentGrossAmount: number;
+  recentNetAmount: number;
+  recentChargeCount: number;
+  recentRefundAmount: number;
+  productsCount: number;
+  pricesCount: number;
+  subscriptionsCount: number;
+  customersCount: number;
+  topProducts: string[];
+  statusBreakdown: Record<string, number>;
+  sampledChargeWindowDays: number;
+  sampledObjects: {
+    charges: number;
+    customers: number;
+    subscriptions: number;
+    products: number;
+    prices: number;
+  };
+  raw: {
+    account: Record<string, unknown>;
+    balance: Record<string, unknown>;
+  };
+}
+
+interface StripeAccountCard {
+  key: string;
+  displayName: string;
+  liveProfile: string;
+  separateSandboxProfile: string | null;
+  ownership: "workspace" | "delegated";
+  live: StripeModeSummary | null;
+  test: StripeModeSummary | null;
+  sandbox: StripeModeSummary | null;
+  notes: string[];
+  error?: string;
+}
+
+interface StripeDashboardData {
+  status: "ready" | "no_data" | "error";
+  accounts: StripeAccountCard[];
+  error?: string;
+  cachedAt?: string;
+}
+
+interface StripeListResponse<T> {
+  object: string;
+  data: T[];
+  has_more?: boolean;
+}
+
+interface StripeCharge {
+  amount?: number;
+  amount_captured?: number;
+  amount_refunded?: number;
+  created?: number;
+  currency?: string;
+  paid?: boolean;
+  refunded?: boolean;
+  status?: string;
+}
+
+interface StripeSubscription {
+  status?: string;
+}
+
+interface StripeProduct {
+  id?: string;
+  name?: string;
+  active?: boolean;
+}
+
+interface StripePrice {
+  active?: boolean;
+  currency?: string;
+  product?: string | { id?: string; name?: string };
+  recurring?: Record<string, unknown> | null;
+}
+
+interface StripeCustomer {
+  id?: string;
+}
+
+const STRIPE_CONFIG_PATH = path.join(os.homedir(), ".config", "stripe", "config.toml");
+const STRIPE_SAMPLE_LIMIT = 100;
+const STRIPE_CACHE_MS = 5 * 60_000;
+let _stripeCache: { data: StripeDashboardData; ts: number } | null = null;
+
+function parseStripeConfig(): StripeCliProfile[] {
+  if (!fs.existsSync(STRIPE_CONFIG_PATH)) return [];
+  const content = fs.readFileSync(STRIPE_CONFIG_PATH, "utf8");
+  const profiles: StripeCliProfile[] = [];
+  let current: StripeCliProfile | null = null;
+
+  const pushCurrent = () => {
+    if (!current || !current.displayName) return;
+    profiles.push(current);
+  };
+
+  for (const rawLine of content.split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+
+    const sectionMatch = line.match(/^\[(.+)\]$/);
+    if (sectionMatch) {
+      pushCurrent();
+      const section = sectionMatch[1]?.replace(/^['"]|['"]$/g, "") ?? "";
+      current = { profileName: section, displayName: "" };
+      continue;
+    }
+
+    if (!current) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    const value = line.slice(eq + 1).trim().replace(/^['"]|['"]$/g, "");
+    if (key === "profile_name") current.profileName = value;
+    if (key === "display_name") current.displayName = value;
+    if (key === "account_id") current.accountId = value;
+    if (key === "live_mode_api_key") current.liveModeApiKey = value;
+    if (key === "test_mode_api_key") current.testModeApiKey = value;
+  }
+
+  pushCurrent();
+  return profiles.filter((profile) => profile.profileName !== "color" && profile.profileName !== "project-name");
+}
+
+function getStripeOwnership(displayName: string): "workspace" | "delegated" {
+  const ownAccounts = new Set([
+    "ProChat Studio",
+    "ProChat (legacy)",
+    "Says the Bible",
+  ]);
+  return ownAccounts.has(displayName) ? "workspace" : "delegated";
+}
+
+function formatCurrencyAmount(amountMinor: number): number {
+  return Math.round((amountMinor / 100) * 100) / 100;
+}
+
+async function stripeJson(
+  pathOrQuery: string,
+  options: { profileName?: string; apiKey?: string; live?: boolean }
+): Promise<Record<string, unknown>> {
+  const args = ["get", pathOrQuery];
+  if (options.profileName) args.push("-p", options.profileName);
+  if (options.apiKey) args.push("--api-key", options.apiKey);
+  if (options.live) args.push("--live");
+  const { stdout } = await execFileAsync("stripe", args, {
+    env: process.env,
+    timeout: 20_000,
+    maxBuffer: 8 * 1024 * 1024,
+  });
+  return JSON.parse(stdout) as Record<string, unknown>;
+}
+
+async function getStripeModeSummary(params: {
+  mode: "live" | "test" | "sandbox";
+  profileName?: string;
+  apiKey?: string;
+}): Promise<StripeModeSummary> {
+  const [account, balance, charges, products, prices, subscriptions, customers] = await Promise.all([
+    stripeJson("/v1/account", { ...params, live: params.mode === "live" }),
+    stripeJson("/v1/balance", { ...params, live: params.mode === "live" }),
+    stripeJson(`/v1/charges?limit=${STRIPE_SAMPLE_LIMIT}`, { ...params, live: params.mode === "live" }),
+    stripeJson(`/v1/products?limit=${STRIPE_SAMPLE_LIMIT}&active=true`, { ...params, live: params.mode === "live" }),
+    stripeJson(`/v1/prices?limit=${STRIPE_SAMPLE_LIMIT}&active=true`, { ...params, live: params.mode === "live" }),
+    stripeJson(`/v1/subscriptions?limit=${STRIPE_SAMPLE_LIMIT}&status=all`, { ...params, live: params.mode === "live" }),
+    stripeJson(`/v1/customers?limit=${STRIPE_SAMPLE_LIMIT}`, { ...params, live: params.mode === "live" }),
+  ]);
+
+  const chargesList = ((charges as unknown) as StripeListResponse<StripeCharge>).data ?? [];
+  const productsList = ((products as unknown) as StripeListResponse<StripeProduct>).data ?? [];
+  const pricesList = ((prices as unknown) as StripeListResponse<StripePrice>).data ?? [];
+  const subscriptionsList = ((subscriptions as unknown) as StripeListResponse<StripeSubscription>).data ?? [];
+  const customersList = ((customers as unknown) as StripeListResponse<StripeCustomer>).data ?? [];
+  const now = Date.now();
+  const sampleWindowMs = 30 * 24 * 60 * 60 * 1000;
+
+  const recentCharges = chargesList.filter((charge) => {
+    const createdMs = (charge.created ?? 0) * 1000;
+    return createdMs >= now - sampleWindowMs && charge.paid && charge.status === "succeeded";
+  });
+
+  const topProducts = new Map<string, number>();
+  const productNames = new Map(
+    productsList
+      .filter((product) => product.id)
+      .map((product) => [product.id as string, product.name ?? product.id ?? "Unnamed product"])
+  );
+
+  for (const price of pricesList) {
+    const productField = price.product;
+    const productId =
+      typeof productField === "string"
+        ? productField
+        : typeof productField === "object" && productField !== null
+          ? (productField.id ?? productField.name ?? "")
+          : "";
+    if (!productId) continue;
+    topProducts.set(productId, (topProducts.get(productId) ?? 0) + 1);
+  }
+
+  const subscriptionStatuses = subscriptionsList.reduce((acc: Record<string, number>, subscription) => {
+    const status = subscription.status ?? "unknown";
+    acc[status] = (acc[status] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const available =
+    ((balance.available as Array<{ amount?: number; currency?: string }> | undefined) ?? []).reduce(
+      (sum, entry) => sum + (entry.amount ?? 0),
+      0
+    );
+  const pending =
+    ((balance.pending as Array<{ amount?: number; currency?: string }> | undefined) ?? []).reduce(
+      (sum, entry) => sum + (entry.amount ?? 0),
+      0
+    );
+
+  return {
+    mode: params.mode,
+    accountId: (account.id as string | undefined) ?? null,
+    currency: (account.default_currency as string | undefined) ?? null,
+    availableAmount: formatCurrencyAmount(available),
+    pendingAmount: formatCurrencyAmount(pending),
+    recentGrossAmount: formatCurrencyAmount(
+      recentCharges.reduce((sum, charge) => sum + (charge.amount_captured ?? charge.amount ?? 0), 0)
+    ),
+    recentNetAmount: formatCurrencyAmount(
+      recentCharges.reduce(
+        (sum, charge) => sum + ((charge.amount_captured ?? charge.amount ?? 0) - (charge.amount_refunded ?? 0)),
+        0
+      )
+    ),
+    recentChargeCount: recentCharges.length,
+    recentRefundAmount: formatCurrencyAmount(
+      recentCharges.reduce((sum, charge) => sum + (charge.amount_refunded ?? 0), 0)
+    ),
+    productsCount: productsList.length,
+    pricesCount: pricesList.length,
+    subscriptionsCount: subscriptionsList.length,
+    customersCount: customersList.length,
+    topProducts: Array.from(topProducts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([productId]) => productNames.get(productId) ?? productId),
+    statusBreakdown: subscriptionStatuses,
+    sampledChargeWindowDays: 30,
+    sampledObjects: {
+      charges: chargesList.length,
+      customers: customersList.length,
+      subscriptions: subscriptionsList.length,
+      products: productsList.length,
+      prices: pricesList.length,
+    },
+    raw: {
+      account,
+      balance,
+    },
+  };
+}
+
+async function getStripeDashboardData(): Promise<StripeDashboardData> {
+  if (_stripeCache && Date.now() - _stripeCache.ts < STRIPE_CACHE_MS) return _stripeCache.data;
+
+  const profiles = parseStripeConfig();
+  if (!profiles.length) {
+    return { status: "no_data", accounts: [], error: "Stripe CLI profiles not found" };
+  }
+
+  const liveProfiles = profiles.filter((profile) => profile.liveModeApiKey && profile.displayName);
+  if (!liveProfiles.length) {
+    return { status: "no_data", accounts: [], error: "No Stripe live profiles configured" };
+  }
+
+  const deduped = new Map<string, StripeCliProfile>();
+  for (const profile of liveProfiles) {
+    const key = profile.accountId ?? profile.displayName;
+    const existing = deduped.get(key);
+    if (!existing) {
+      deduped.set(key, profile);
+      continue;
+    }
+    if (existing.profileName === "default" && profile.profileName !== "default") {
+      deduped.set(key, profile);
+    }
+  }
+
+  const accounts = await Promise.all(
+    Array.from(deduped.values())
+      .sort((a, b) => a.displayName.localeCompare(b.displayName))
+      .map(async (profile): Promise<StripeAccountCard> => {
+        const separateSandbox = profiles.find((candidate) => {
+          return (
+            !candidate.liveModeApiKey &&
+            candidate.testModeApiKey &&
+            candidate.displayName.toLowerCase() === `${profile.displayName.toLowerCase()} sandbox`
+          );
+        }) ?? null;
+
+        try {
+          const [live, test, sandbox] = await Promise.all([
+            profile.profileName
+              ? getStripeModeSummary({ mode: "live", profileName: profile.profileName })
+              : Promise.resolve(null),
+            profile.testModeApiKey
+              ? getStripeModeSummary({ mode: "test", apiKey: profile.testModeApiKey })
+              : Promise.resolve(null),
+            separateSandbox?.testModeApiKey
+              ? getStripeModeSummary({ mode: "sandbox", apiKey: separateSandbox.testModeApiKey })
+              : Promise.resolve(null),
+          ]);
+
+          const notes = [
+            `${profile.profileName} profile`,
+            getStripeOwnership(profile.displayName) === "workspace" ? "workspace-owned" : "delegated-access",
+          ];
+          if (separateSandbox) notes.push(`dedicated sandbox profile: ${separateSandbox.profileName}`);
+
+          return {
+            key: profile.accountId ?? profile.displayName,
+            displayName: profile.displayName,
+            liveProfile: profile.profileName,
+            separateSandboxProfile: separateSandbox?.profileName ?? null,
+            ownership: getStripeOwnership(profile.displayName),
+            live,
+            test,
+            sandbox,
+            notes,
+          };
+        } catch (err) {
+          return {
+            key: profile.accountId ?? profile.displayName,
+            displayName: profile.displayName,
+            liveProfile: profile.profileName,
+            separateSandboxProfile: separateSandbox?.profileName ?? null,
+            ownership: getStripeOwnership(profile.displayName),
+            live: null,
+            test: null,
+            sandbox: null,
+            notes: [`${profile.profileName} profile`],
+            error: String(err),
+          };
+        }
+      })
+  );
+
+  const data: StripeDashboardData = {
+    status: "ready",
+    accounts,
+    cachedAt: new Date().toISOString(),
+  };
+  _stripeCache = { data, ts: Date.now() };
+  return data;
+}
+
 async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
   const googleAds = getGoogleAdsMetrics();
   const mutations = getMutationsData();
-  const [sessions, continuationCards, nrHealth, umami, domains] = await Promise.all([
+  const [sessions, continuationCards, nrHealth, umami, domains, stripe] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
       app.config.codexSessionsDir,
@@ -862,6 +1234,7 @@ async function getDashboardData(app: AppContext) {
     getNRHealth(),
     getUmamiData(),
     getCloudflareDomains(),
+    getStripeDashboardData(),
   ]);
   const codexUsage = await getCodexUsage({
     codexSessionsDir: app.config.codexSessionsDir,
@@ -885,6 +1258,7 @@ async function getDashboardData(app: AppContext) {
     nrHealth,
     umami,
     domains,
+    stripe,
     googleAds,
     mutations,
     scheduler: getNightScheduler(),
@@ -1070,6 +1444,31 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .dc-days{font-size:28px;font-weight:700;font-family:var(--mono);letter-spacing:-1.5px;line-height:1}
 .dc-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:1px}
 .dc-date{font-size:10px;font-family:var(--mono);color:var(--subtle);margin-top:4px}
+/* ── stripe ── */
+.stripe-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:1100px){.stripe-grid{grid-template-columns:minmax(0,1fr)}}
+.stripe-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.stripe-card:hover{border-color:var(--border2)}
+.stripe-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.stripe-name{font-size:16px;font-weight:700;letter-spacing:-.4px}
+.stripe-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+.stripe-notes{display:flex;gap:6px;flex-wrap:wrap}
+.b-stripe{background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(165,180,252,.25)}
+.stripe-modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(max-width:800px){.stripe-modes{grid-template-columns:minmax(0,1fr)}}
+.stripe-mode{border:1px solid var(--border);border-radius:10px;padding:12px;background:rgba(255,255,255,0.02);display:flex;flex-direction:column;gap:10px}
+.stripe-mode.sandbox{grid-column:1 / -1}
+.stripe-mode-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stripe-mode-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.stripe-mode-sub{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.stripe-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.stripe-stat{padding:9px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+.stripe-stat-val{font-size:15px;font-weight:600;font-family:var(--mono);line-height:1.2}
+.stripe-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+.stripe-product-list{display:flex;flex-wrap:wrap;gap:6px}
+.stripe-json details{border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.stripe-json summary{padding:9px 11px;cursor:pointer;font-size:11px;color:var(--muted);font-family:var(--mono)}
+.stripe-json pre{margin:0;padding:0 11px 11px;font-size:10px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;font-family:var(--mono)}
 </style>
 </head>
 <body>
@@ -1097,6 +1496,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="scheduler">Scheduler <span class="tab-count" id="cnt-sched"></span></button>
     <button class="tab-btn" data-tab="umami">Analytics <span class="tab-count" id="cnt-umami"></span></button>
     <button class="tab-btn" data-tab="google-ads">Google Ads <span class="tab-count" id="cnt-google-ads"></span></button>
+    <button class="tab-btn" data-tab="stripe">Stripe <span class="tab-count" id="cnt-stripe"></span></button>
     <button class="tab-btn" data-tab="mutations">Mutations <span class="tab-count" id="cnt-mutations"></span></button>
     <button class="tab-btn" data-tab="domains">Domains <span class="tab-count" id="cnt-domains"></span></button>
   </nav>
@@ -1106,6 +1506,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
   <div class="tab-panel" id="tab-scheduler"></div>
   <div class="tab-panel" id="tab-umami"></div>
   <div class="tab-panel" id="tab-google-ads"></div>
+  <div class="tab-panel" id="tab-stripe"></div>
   <div class="tab-panel" id="tab-mutations"></div>
   <div class="tab-panel" id="tab-domains"></div>
 </div>
@@ -1407,6 +1808,64 @@ function renderGoogleAds(data){
   html+='</div>';
   return html;
 }
+function fmtMoney(amount,currency){
+  if(amount===null||amount===undefined)return'—';
+  const code=(currency||'usd').toUpperCase();
+  try{return new Intl.NumberFormat('en-US',{style:'currency',currency:code,maximumFractionDigits:2}).format(amount);}
+  catch{return code+' '+Number(amount).toFixed(2);}
+}
+function renderStripeMode(mode,label,kind){
+  if(!mode)return'';
+  const products=(mode.topProducts||[]).length
+    ?'<div class="stripe-product-list">'+mode.topProducts.map(name=>'<span class="badge b-stripe">'+esc(name)+'</span>').join('')+'</div>'
+    :'<div class="stripe-sub">No active products in sample.</div>';
+  const breakdown=Object.entries(mode.statusBreakdown||{}).length
+    ?Object.entries(mode.statusBreakdown).map(([status,count])=>'<span class="badge b-stale">'+esc(status)+': '+count+'</span>').join(' ')
+    :'';
+  return'<div class="stripe-mode '+(kind||'')+'">'
+    +'<div class="stripe-mode-head"><div><div class="stripe-mode-title">'+esc(label)+'</div><div class="stripe-mode-sub">'+esc(mode.accountId||'unknown account')+' · '+esc((mode.currency||'usd').toUpperCase())+'</div></div>'
+    +'<span class="badge '+(label==='Live'?'b-live':label==='Test'?'b-stale':'b-old')+'">'+esc(label)+'</span></div>'
+    +'<div class="stripe-stats">'
+    +'<div class="stripe-stat"><div class="stripe-stat-val">'+fmtMoney(mode.availableAmount,mode.currency)+'</div><div class="stripe-stat-lbl">Available balance</div></div>'
+    +'<div class="stripe-stat"><div class="stripe-stat-val">'+fmtMoney(mode.pendingAmount,mode.currency)+'</div><div class="stripe-stat-lbl">Pending balance</div></div>'
+    +'<div class="stripe-stat"><div class="stripe-stat-val">'+fmtMoney(mode.recentNetAmount,mode.currency)+'</div><div class="stripe-stat-lbl">Net revenue · '+mode.sampledChargeWindowDays+'d sample</div></div>'
+    +'<div class="stripe-stat"><div class="stripe-stat-val">'+mode.recentChargeCount+'</div><div class="stripe-stat-lbl">Succeeded charges · sample</div></div>'
+    +'<div class="stripe-stat"><div class="stripe-stat-val">'+mode.productsCount+'</div><div class="stripe-stat-lbl">Active products</div></div>'
+    +'<div class="stripe-stat"><div class="stripe-stat-val">'+mode.pricesCount+'</div><div class="stripe-stat-lbl">Active prices</div></div>'
+    +'<div class="stripe-stat"><div class="stripe-stat-val">'+mode.subscriptionsCount+'</div><div class="stripe-stat-lbl">Subscriptions sampled</div></div>'
+    +'<div class="stripe-stat"><div class="stripe-stat-val">'+mode.customersCount+'</div><div class="stripe-stat-lbl">Customers sampled</div></div>'
+    +'</div>'
+    +(breakdown?'<div class="stripe-sub">'+breakdown+'</div>':'')
+    +products
+    +'<div class="stripe-json">'
+    +'<details><summary>account JSON</summary><pre>'+esc(JSON.stringify(mode.raw.account,null,2))+'</pre></details>'
+    +'<details><summary>balance JSON</summary><pre>'+esc(JSON.stringify(mode.raw.balance,null,2))+'</pre></details>'
+    +'</div>'
+    +'</div>';
+}
+function renderStripe(data){
+  if(!data)return'<div class="nr-err">Stripe not configured.</div>';
+  if(data.status==='no_data')return'<div class="nr-err">'+esc(data.error||'Stripe profiles not found')+'</div>';
+  if(data.status==='error')return'<div class="nr-err">Stripe Error: '+esc(data.error||'Unknown error')+'</div>';
+  if(!data.accounts||data.accounts.length===0)return'<div class="empty">No Stripe accounts indexed.</div>';
+  let head='<div class="sec-hd"><span class="sec-title">Stripe Accounts</span><span class="sec-count">'+data.accounts.length+'</span>';
+  if(data.cachedAt)head+='<span style="font-size:10px;color:var(--subtle);margin-left:auto">cached '+age(data.cachedAt)+'</span>';
+  head+='</div>';
+  const cards=data.accounts.map((account)=>{
+    const notes=(account.notes||[]).map(note=>'<span class="badge '+(note.includes('workspace')?'b-live':'b-stripe')+'">'+esc(note)+'</span>').join('');
+    const error=account.error?'<div class="nr-err">Fetch error: '+esc(account.error)+'</div>':'';
+    return'<div class="stripe-card">'
+      +'<div class="stripe-head"><div><div class="stripe-name">'+esc(account.displayName)+'</div><div class="stripe-sub">'+esc(account.liveProfile)+' · '+esc(account.ownership)+'</div></div><div class="stripe-notes">'+notes+'</div></div>'
+      +error
+      +'<div class="stripe-modes">'
+      +renderStripeMode(account.live,'Live','')
+      +renderStripeMode(account.test,'Test','')
+      +renderStripeMode(account.sandbox,'Dedicated sandbox','sandbox')
+      +'</div>'
+      +'</div>';
+  }).join('');
+  return head+'<div class="stripe-grid fade">'+cards+'</div>';
+}
 function renderMutations(data){
   if(!data)return'<div class="nr-err">Mutations not available.</div>';
   if(data.status==='no_data')return'<div class="nr-err">'+esc(data.error||'Google Ads database not found')+'</div>';
@@ -1475,6 +1934,9 @@ function render(d){
   const gaPending=d.googleAds&&d.googleAds.pendingMutations?d.googleAds.pendingMutations:0;
   document.getElementById('cnt-google-ads').textContent=gaPending?String(gaPending):'';
   document.getElementById('tab-google-ads').innerHTML=renderGoogleAds(d.googleAds);
+  const stripeCount=d.stripe&&d.stripe.accounts?d.stripe.accounts.length:0;
+  document.getElementById('cnt-stripe').textContent=stripeCount?String(stripeCount):'';
+  document.getElementById('tab-stripe').innerHTML=renderStripe(d.stripe);
   const mutCount=d.mutations&&d.mutations.mutations?d.mutations.mutations.length:0;
   document.getElementById('cnt-mutations').textContent=mutCount?String(mutCount):'';
   document.getElementById('tab-mutations').innerHTML=renderMutations(d.mutations);
