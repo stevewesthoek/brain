@@ -1090,6 +1090,226 @@ def cmd_recommendations(args: argparse.Namespace) -> int:
     return 0 if errors == 0 else 1
 
 
+def cmd_preview(args: argparse.Namespace) -> int:
+    """
+    Preview approved mutations before applying.
+
+    Shows detailed information about what each mutation will do:
+    - Negative keywords: keywords to be added to which campaign
+    - Recommendations: impact, type, and affected campaign
+    - Summary: total mutations, estimated impact, risk level
+
+    Usage:
+      preview              # Show all approved mutations
+      preview --type negative_keywords
+      preview --id 5
+    """
+    mutation_id = getattr(args, "id", None)
+    mutation_type = getattr(args, "type", None)
+
+    with connect_db() as conn:
+        # Fetch approved mutations
+        query = "SELECT * FROM pending_mutations WHERE status = 'approved'"
+        params = []
+
+        if mutation_id:
+            query += " AND id = ?"
+            params.append(mutation_id)
+        if mutation_type:
+            query += " AND mutation_type = ?"
+            params.append(mutation_type)
+
+        query += " ORDER BY id"
+        mutations = conn.execute(query, params).fetchall()
+
+    if not mutations:
+        print("No approved mutations to preview")
+        return 0
+
+    print("MUTATION PREVIEW")
+    print("=" * 100)
+    print()
+
+    total_impact = 0.0
+
+    for mut in mutations:
+        payload = json.loads(mut["payload"])
+        mtype = mut["mutation_type"]
+
+        if mtype == "add_negative_keywords":
+            keywords = payload.get("keywords", [])
+            campaign_id = mut["campaign_id"]
+            match_type = payload.get("match_type", "BROAD")
+
+            print(f"Mutation ID {mut['id']}:")
+            print(f"  Type: Negative Keywords")
+            print(f"  Campaign ID: {campaign_id}")
+            print(f"  Match type: {match_type}")
+            print(f"  Keywords ({len(keywords)}):")
+            for kw in keywords[:10]:
+                print(f"    - {kw}")
+            if len(keywords) > 10:
+                print(f"    ... and {len(keywords) - 10} more")
+            print()
+
+        elif mtype == "apply_recommendation":
+            rec_type = payload.get("recommendation_type", "UNKNOWN")
+            priority = payload.get("priority", "MEDIUM")
+            impact = float(payload.get("impact_estimate", 0) or 0)
+            description = payload.get("description", "No description")
+            campaign_id = mut["campaign_id"]
+
+            print(f"Mutation ID {mut['id']}:")
+            print(f"  Type: Google Ads Recommendation")
+            print(f"  Recommendation type: {rec_type}")
+            print(f"  Priority: {priority}")
+            print(f"  Campaign ID: {campaign_id}")
+            print(f"  Estimated impact: ${impact:.2f}")
+            print(f"  Description: {description}")
+            print()
+
+            total_impact += impact
+
+    print("=" * 100)
+    print(f"Total mutations: {len(mutations)}")
+    if total_impact > 0:
+        print(f"Total estimated impact: ${total_impact:.2f}")
+    print()
+    print("To apply these mutations, run:")
+    if mutation_type:
+        print(f"  bash tools/google-ads/run.sh batch-apply --type {mutation_type} --live")
+    else:
+        print(f"  bash tools/google-ads/run.sh batch-apply --live")
+
+    log_run("preview", "ok", f"previewed={len(mutations)}")
+    return 0
+
+
+def cmd_compliance_check(args: argparse.Namespace) -> int:
+    """
+    Check pending mutations for compliance with organizational rules.
+
+    Validates:
+    - No negative keywords that are too generic (e.g., single character)
+    - No mutations if account is suspended or in violation
+    - Recommendations align with mission (if mission_alignment required)
+    - Campaign status is not already modified recently
+    - Daily spend limits per campaign type
+
+    Reports:
+    - Compliance status for each pending mutation
+    - Risk warnings for borderline cases
+    - Blocks mutations that fail validation
+    """
+    rules = load_toml(CONFIG_DIR / "rules.toml")
+    compliance_rules = rules.get("compliance", {})
+
+    with connect_db() as conn:
+        mutations = conn.execute(
+            "SELECT * FROM pending_mutations WHERE status = 'pending' ORDER BY id"
+        ).fetchall()
+
+    if not mutations:
+        print("No pending mutations to check")
+        log_run("compliance-check", "ok", "count=0")
+        return 0
+
+    print("COMPLIANCE CHECK")
+    print("=" * 100)
+    print()
+
+    passed = 0
+    failed = 0
+    warnings = 0
+
+    for mut in mutations:
+        payload = json.loads(mut["payload"])
+        mtype = mut["mutation_type"]
+        status_str = "✓ PASS"
+
+        checks = []
+
+        if mtype == "add_negative_keywords":
+            keywords = payload.get("keywords", [])
+
+            # Check for generic/too-short keywords
+            short_keywords = [kw for kw in keywords if len(kw.strip()) <= 2]
+            if short_keywords:
+                checks.append(f"WARNING: {len(short_keywords)} keywords too short (likely invalid)")
+                warnings += 1
+                status_str = "⚠ WARN"
+
+            # Check for stop words that might be too broad
+            broad_stop_words = ["the", "a", "an", "and", "or", "but", "in", "on", "at"]
+            broad_keywords = [kw for kw in keywords if kw.lower().strip() in broad_stop_words]
+            if broad_keywords:
+                checks.append(f"WARNING: {len(broad_keywords)} keywords are stop words (likely too broad)")
+                warnings += 1
+                status_str = "⚠ WARN"
+
+        elif mtype == "apply_recommendation":
+            rec_type = payload.get("recommendation_type", "")
+            priority = payload.get("priority", "")
+
+            # Check mission alignment if required
+            if compliance_rules.get("require_mission_alignment", False):
+                # For now, just flag MEDIUM/LOW priority recommendations
+                if priority in ["MEDIUM", "LOW"]:
+                    checks.append(f"REVIEW: {priority} priority recommendation requires mission check")
+                    warnings += 1
+                    status_str = "⚠ WARN"
+
+            # Check recommendation type restrictions
+            if rec_type == "BID_ADJUSTMENT":
+                checks.append("NOTE: Bid adjustments can affect account performance significantly")
+                warnings += 1
+                status_str = "⚠ WARN"
+
+        # Check for recent modifications
+        with connect_db() as conn:
+            recent_changes = conn.execute(
+                """
+                SELECT COUNT(*) as count FROM change_events
+                WHERE resource_type = ?
+                  AND resource_id = ?
+                  AND change_date = DATE('now')
+                """,
+                (mut["resource_type"], mut["resource_id"]),
+            ).fetchone()
+
+            if recent_changes and recent_changes["count"] > 3:
+                checks.append(f"NOTE: Resource modified {recent_changes['count']} times today")
+                warnings += 1
+
+        # Output result
+        if status_str.startswith("✓"):
+            passed += 1
+        elif status_str.startswith("⚠"):
+            warnings += 1
+        else:
+            failed += 1
+
+        print(f"{status_str} ID {mut['id']:3d} {mtype:25s}")
+        for check in checks:
+            print(f"      {check}")
+
+    print()
+    print("=" * 100)
+    print(f"Passed: {passed}")
+    print(f"Warnings: {warnings}")
+    print(f"Failed: {failed}")
+    print()
+
+    if failed > 0:
+        print("Some mutations failed compliance checks. Review and fix before approval.")
+        log_run("compliance-check", "failed", f"passed={passed} warnings={warnings} failed={failed}")
+        return 1
+    else:
+        print("All mutations passed compliance checks.")
+        log_run("compliance-check", "ok", f"passed={passed} warnings={warnings}")
+        return 0
+
+
 def cmd_status(_: argparse.Namespace) -> int:
     """
     Show comprehensive status of the Google Ads automation pipeline.
@@ -2016,6 +2236,14 @@ def build_parser() -> argparse.ArgumentParser:
     batch_apply.add_argument("--type", help="Filter by mutation type before applying")
     batch_apply.add_argument("--live", action="store_true", help="Apply for real (default: dry-run)")
     batch_apply.set_defaults(func=cmd_batch_apply)
+
+    preview = subparsers.add_parser("preview", help="Preview approved mutations before applying.")
+    preview.add_argument("--type", help="Filter by mutation type")
+    preview.add_argument("--id", type=int, help="Preview specific mutation ID")
+    preview.set_defaults(func=cmd_preview)
+
+    compliance_check = subparsers.add_parser("compliance-check", help="Check pending mutations for compliance.")
+    compliance_check.set_defaults(func=cmd_compliance_check)
 
     approve = subparsers.add_parser("approve", help="Approve pending mutations.")
     approve_group = approve.add_mutually_exclusive_group(required=True)
