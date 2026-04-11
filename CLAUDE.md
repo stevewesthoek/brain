@@ -106,6 +106,105 @@ All API keys, tokens, and credentials are indexed (no values) at `operations/acc
 Run `sync-credentials` to scan `~/.config/` for new `.env` files and append untracked entries.
 A PostToolUse hook auto-runs `sync-credentials` whenever Claude writes or edits a `.env` file.
 
+## Integrations (AI-Agnostic Shared Capabilities)
+
+All skills, CLIs, and MCP servers below are **available to Claude, Codex, and Gemini equally** unless marked [Claude specific] or [Codex specific].
+
+Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
+
+### Planning & Architecture
+- `/plan-ceo-review` — CEO/founder-mode plan review (6 forcing questions)
+- `/plan-eng-review` — Eng manager-mode plan review (execution plan lockdown)
+- `/plan-design-review` — Designer-eye plan review (UX/visual architecture)
+- `/autoplan` — Auto-review pipeline (reads full CEO + eng + design reviews)
+- `/office-hours` — YC Office Hours mode (startup evaluation)
+
+### Ship & Deploy
+- `/ship` — Ship workflow (detect + merge + test + version + changelog + push + PR)
+- `/land-and-deploy` — Land PR and deploy (merge + wait for CI + deploy)
+- `/setup-deploy` — Configure deployment settings for land-and-deploy
+- `/canary` — Post-deploy canary monitoring (watch live app for errors)
+- `/document-release` — Post-ship documentation update
+
+### Code Review & Quality
+- `/review` — Pre-landing PR review (SQL safety, LLM trust, patterns)
+- `/design-review` — Designer-eye QA (visual consistency, spacing, hierarchy)
+- `/qa` — Systematic QA testing (find bugs, report with fixes)
+- `/qa-only` — QA report only (test + document, no fixes)
+- `/benchmark` — Performance regression detection (page load, Core Web Vitals)
+
+### Investigation & Learning
+- `/investigate` — Systematic debugging (4 phases: investigate → hypothesize → test → confirm)
+- `/retro` — Weekly engineering retrospective (git history analysis, patterns)
+- `/learner` — Extract hard-won patterns from session (shared across all three engines)
+
+### Safety & Guardrails
+- `/careful` — Safety guardrails for destructive commands (warn before rm -rf, DROP TABLE, force-push)
+- `/freeze` — Restrict file edits to specific directory
+- `/guard` — Full safety mode (warnings + approval prompts)
+- `/unfreeze` — Clear freeze boundary
+- `/cso` — Chief Security Officer mode (infrastructure-first security audit)
+
+### Web Research & Data
+- `/firecrawl` — Web search + scraping to clean markdown (http://100.83.38.48:3002 via Tailscale)
+- `/autoresearch` — Autonomous optimization loop (define scope + metric → iterate → keep improvements)
+
+### Content & Design
+- `/design-system` — Build landing pages, websites, UI projects with design systems
+- `/design-consultation` — Design consultation (product understanding + landscape + system proposal)
+- `/redesign-skill` — Upgrade existing websites/apps to premium quality
+- `/soft-skill` — Design like high-end agency (teaches premium UX/UI patterns)
+- `/taste-skill` — Senior UI/UX engineer (architect interfaces over time)
+- `/ui-ux-pro-max` — UI/UX design intelligence (searchable database)
+- `/web-design` — Web design work (landing pages, SaaS, marketing sites)
+
+### Research & Knowledge
+- `/notebooklm` — NotebookLM CLI v0.3.4 (create notebooks, add sources, generate audio/video/slides/quizzes/flashcards/mind-maps)
+- `/firecrawl` — Web scraping to markdown (also above)
+
+### Infrastructure & Integrations
+- `/aws` — AWS EC2/Lightsail provisioning, resource inspection
+- `/azure` — Azure resource discovery/management
+- `/cloudflare` — DNS record management
+- `/gws` — Google Workspace calendar, drive, admin operations
+- `/hetzner` — Hetzner Cloud infrastructure management
+- `/gh` — GitHub operations (PR, issue, release management)
+- `/stripe` — Stripe webhook forwarding, test events, auth
+- `/supabase` — Database migrations, auth management
+- `/dokploy` — Application deployment, management, inspection
+- `/tailscale` — Network inspection, VPN state
+- `/n8n` — Self-hosted n8n workflow export/import, audit, recovery
+
+### System & Config
+- `/model-router` — Routing policy guidance (Haiku → Sonnet → Opus → Codex, when to use Gemini)
+- `/skill-creator` — Create new skills, modify existing, measure performance
+- `/skill-prune` — Monthly skill library pruning (review all active skills)
+- `/ai-agnostic-config` — Configure Claude Code settings (settings.json, hooks, CLAUDE.md)
+- `/output-skill` — Override LLM truncation (enforce complete output)
+
+### Browser & Automation
+- `/playwright` — Browser automation, testing, scraping
+- `/ffmpeg` — Audio/video processing
+
+### Session Management
+- `/handoff` — Session pause/resume/setup (compress state, restore context, initialize .ai/ memory system)
+
+### [Claude Specific] AI Model Routing
+- `/codex` — Codex CLI wrapper for code review (OpenAI CLI integration)
+- `/codex-second-opinion` — Codex code review second opinion (controlled review tier)
+- `/gemini` — Gemini CLI for large-context preprocessing, bulk analysis (free Flash tier)
+
+### CLIs (installed globally, available to all three engines)
+- `aws`, `azure`, `cloudflare`, `gws`, `hetzner` — cloud provider CLIs
+- `gh`, `stripe`, `supabase`, `dokploy`, `tailscale` — SaaS/deployment CLIs
+- `ffmpeg`, `notebooklm`, `playwright`, `firecrawl` — development/media CLIs
+- `n8n` — self-hosted workflow CLI
+
+### MCP Servers
+- **stitch** [Codex only] — Stitch MCP for design tools (command: `npx @_davideast/stitch-mcp proxy`)
+- **context-mode** — Large-context preprocessing, batch execution (marketplace plugin)
+- **OpenAI plugins** [Codex only] — Canva, Stripe, GitHub, Google Drive
+
 ## Decision log
 
 The decision log for this repo lives at `operations/decision-log.md`.

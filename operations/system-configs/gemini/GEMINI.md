@@ -57,6 +57,35 @@ Avoid using Gemini for:
 
 ---
 
+## Integrations (Shared AI-Agnostic + Gemini-Specific)
+
+**Shared with Claude and Codex** (51 AI-agnostic skills + 18+ CLIs):
+All skills listed in CLAUDE.md Integrations section are available to you. See `brain/CLAUDE.md` for complete list.
+
+Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
+
+### Gemini-Specific Constraints & Usage
+
+**Your strongest use cases:**
+- `/autoresearch` — Autonomous optimization (define scope + metric, iterate overnight)
+- `/benchmark` — Performance analysis across large datasets
+- `/investigate` — Deep debugging of complex logs/data
+- `/firecrawl` — Bulk web scraping (process 50+ URLs in one request via your 1M token context)
+- Large-context tasks (>100k tokens) — preprocess and compact for Claude
+
+**Not supported on Gemini:**
+- MCP servers — Gemini CLI does not use MCP architecture; use shared skills instead
+- Codex-specific tools (Stitch, OpenAI plugins) — not available in Gemini
+- Real-time streaming (use Claude Code for interactive sessions)
+
+**Best practice:**
+1. Use Gemini Flash (free, 1M context) for bulk analysis, preprocessing, large-file diff review
+2. Output compact summaries (5-10k tokens) for Claude to act on
+3. For coding tasks: preprocess with Gemini, implement with Claude
+4. For architecture: preprocess with Gemini, decide with Claude Opus
+
+---
+
 ## Model tiers
 
 **Escalation is automatic and hands-off — never ask the user which tier to use.**

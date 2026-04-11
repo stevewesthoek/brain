@@ -33,12 +33,34 @@ The mistake: Installing features for only one engine, or installing globally but
 
 ## The approach
 
-### Step 1 — Decide: Is this for all three engines, or just one?
+### Step 1 — Decide: Is this AI-agnostic or AI-specific?
 
-- **For all three?** (99% of the time) → follow this checklist
-- **Engine-specific?** (rare) → clearly mark it as such and put it in a separate folder or section
+**AI-Agnostic** (install for all three engines):
+- Works conceptually the same way in Claude, Codex, and Gemini
+- Uses only generic operations: file read/write, bash, git, standard CLIs
+- Examples: firecrawl (web scraping), notebooklm (research), playwright (browser automation)
+- Installation: update CLAUDE.md, AGENTS.md, GEMINI.md simultaneously
 
-### Step 2 — Install globally (if needed)
+**AI-Specific** (install for one engine only):
+- Depends on engine-specific APIs or tooling
+- Examples: Codex-specific (OpenAI plugins like Canva/Stripe), Gemini-specific (1M token preprocessing), Claude-specific (marketplace-only integrations)
+- Installation: update only the relevant engine config
+- MUST clearly mark in config as "[Codex only]", "[Gemini only]", or "[Claude specific]"
+
+**How to determine if it's AI-agnostic:**
+1. Would Claude Code, Codex, and Gemini CLI ALL benefit from this capability?
+2. Does it depend on engine-specific APIs? (Yes = specific; No = likely agnostic)
+3. Can the documentation be written engine-neutrally, or must it say "in Codex, use X; in Claude, use Y"?
+
+If all three can use it the same way → AI-agnostic → update all three configs
+If only one engine benefits or the behavior differs significantly per engine → AI-specific → mark clearly and update only that config
+
+### Step 2 — Decide: Is this for all three engines, or just one?
+
+- **AI-agnostic?** (majority) → follow the universal installation ritual below
+- **AI-specific?** (minority) → mark clearly with [Engine name], update only that config
+
+### Step 3 — Install globally (if needed)
 
 ```bash
 # CLI: install once, globally accessible to all three
@@ -53,7 +75,7 @@ npm install -g mcp-server-package
 # Skill: add to brain/ai/skills/custom/ (already global)
 ```
 
-### Step 3 — Write AI-agnostic documentation
+### Step 4 — Write AI-agnostic or AI-specific documentation
 
 Create a shared skill or doc that describes the capability generically:
 
@@ -75,7 +97,13 @@ description: "What this does, when to use it. Works with Claude, Codex, and Gemi
 [Generic usage — not "in Claude, do X; in Codex, do Y"]
 ```
 
-### Step 4 — Update all three engine configs
+### Step 5 — Update engine configs
+
+**For AI-agnostic capabilities:**
+Update all three: CLAUDE.md, AGENTS.md, GEMINI.md
+
+**For AI-specific capabilities:**
+Update only the relevant engine config and mark clearly with [Engine name]
 
 For each of the three files, add engine-specific documentation:
 
@@ -100,9 +128,11 @@ Add to the integrations section:
   at `brain/ai/skills/custom/{skill-name}/SKILL.md`
 ```
 
-### Step 5 — For MCP servers: Configure in each engine's config
+### Step 6 — For MCP servers: Configure based on AI-agnostic vs AI-specific
 
-**Claude (`~/.claude/settings.json`):**
+**For AI-agnostic MCP servers** (configure in all engines):
+
+Claude (`~/.claude/settings.json`):
 ```json
 {
   "mcp_servers": {
@@ -113,24 +143,34 @@ Add to the integrations section:
 }
 ```
 
-**Codex (`operations/system-configs/codex/config.toml`):**
+Codex (`operations/system-configs/codex/config.toml`):
 ```toml
 [mcp_servers.tool-name]
 command = "/path/to/binary"
 ```
 
-**Gemini (`operations/system-configs/gemini/...`):**
-If Gemini uses MCP, add the same pattern. If not, document in GEMINI.md that it's not supported.
+Gemini (document in GEMINI.md if not supported):
+If supported, add to settings.json. If not, note: "[Gemini does not support this MCP server]"
 
-### Step 6 — For CLIs: Document in all three engine configs
+**For AI-specific MCP servers** (configure in relevant engine only):
 
-Even though the CLI is installed once, **all three engines need to know about it**:
+Mark clearly:
+- `[Codex only]` in AGENTS.md
+- `[Claude specific]` in CLAUDE.md
+- `[Gemini specific]` in GEMINI.md
 
-- **CLAUDE.md**: "Use `/skill` or call directly via bash"
-- **AGENTS.md**: "Use `/skill` or call directly via bash; available to Codex"
-- **GEMINI.md**: "Reference the shared skill; CLI available if needed"
+### Step 7 — For CLIs: Document in relevant engine configs
 
-### Step 7 — Verify the installation is AI-agnostic
+**For AI-agnostic CLIs** (document in all three):
+- **CLAUDE.md**: "Use CLI via bash or `/skill` wrapper"
+- **AGENTS.md**: "Use CLI via bash or `/skill` wrapper (same as Claude)"
+- **GEMINI.md**: "Use CLI via bash or `/skill` wrapper (same as Claude)"
+
+**For AI-specific CLIs**:
+- Document only in the relevant engine config
+- Mark clearly: "[Codex only]" or "[Claude specific]" or "[Gemini specific]"
+
+### Step 8 — Verify the installation is AI-agnostic or correctly marked
 
 Checklist:
 
@@ -153,7 +193,7 @@ which {tool-name}
 # Should return: /path/to/binary (one shared location)
 ```
 
-### Step 8 — Commit together
+### Step 9 — Commit together
 
 All changes — skill, config updates, MCP entries, CLI documentation — **in one commit**:
 

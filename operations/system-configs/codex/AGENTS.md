@@ -55,6 +55,27 @@ Avoid using Codex for:
 
 ---
 
+## Integrations (Shared AI-Agnostic + Codex-Specific)
+
+**Shared with Claude and Gemini** (51 AI-agnostic skills + 18+ CLIs):
+All skills listed in CLAUDE.md Integrations section are available to you. See `brain/CLAUDE.md` for complete list.
+
+Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
+
+### Codex-Specific Capabilities
+
+**[Codex only] Code Review Integration:**
+- `/codex` — Codex CLI wrapper (second opinion on diffs via OpenAI Codex)
+- `/codex-second-opinion` — Controlled code review tier system
+
+**[Codex only] MCP Servers & Plugins:**
+- **stitch** — Design tools integration (command: `npx @_davideast/stitch-mcp proxy`)
+- **OpenAI plugins** — Canva, Stripe, GitHub, Google Drive (marketplace integrations)
+
+These are Codex-exclusive because they depend on OpenAI's closed-source tooling.
+
+---
+
 ## Model tiers (your own)
 
 **Escalation is automatic and hands-off — never ask the user which tier to use.**
