@@ -1,0 +1,118 @@
+{
+  "name": "Google Ads: Auto-Approve Low-Risk Mutations",
+  "description": "Phase 4E: Auto-approve and apply low/medium-risk mutations without human intervention",
+  "nodes": [
+    {
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "parameters": {
+        "path": "google-ads-auto-approve",
+        "httpMethod": "POST"
+      }
+    },
+    {
+      "name": "Extract Risk Level",
+      "type": "n8n-nodes-base.set",
+      "position": [450, 300],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "risk_level",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"risk_score\"][\"level\"]}}"
+            },
+            {
+              "name": "mutation_id",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"details\"][\"mutation_id\"]}}"
+            },
+            {
+              "name": "impact",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"details\"][\"impact\"]}}"
+            },
+            {
+              "name": "type",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"details\"][\"mutation_type\"]}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Should Auto-Approve?",
+      "type": "n8n-nodes-base.if",
+      "position": [650, 300],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$node[\"Extract Risk Level\"].json[\"risk_level\"]}}",
+              "operation": "notEquals",
+              "value2": "urgent"
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "name": "HTTP Approve",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [850, 150],
+      "parameters": {
+        "url": "http://localhost:8001/approve",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "application/json",
+        "body": "={\"mutation_id\": {{$node[\"Extract Risk Level\"].json[\"mutation_id\"]}}}"
+      }
+    },
+    {
+      "name": "HTTP Apply",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1050, 150],
+      "parameters": {
+        "url": "http://localhost:8001/apply",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "application/json",
+        "body": "={\"mutation_id\": {{$node[\"Extract Risk Level\"].json[\"mutation_id\"]}}}"
+      }
+    },
+    {
+      "name": "Slack Success",
+      "type": "n8n-nodes-base.slack",
+      "position": [1250, 150],
+      "parameters": {
+        "channel": "#google-ads-notifications",
+        "text": "✅ Auto-approved and applied: {{$node[\"Extract Risk Level\"].json[\"type\"]}} (Impact: ${{$node[\"Extract Risk Level\"].json[\"impact\"]}})"
+      }
+    },
+    {
+      "name": "Skip (High Risk)",
+      "type": "n8n-nodes-base.noOp",
+      "position": [850, 450],
+      "description": "High/urgent risk routed to escalation workflow"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Extract Risk Level", "type": "main", "index": 0}]]
+    },
+    "Extract Risk Level": {
+      "main": [[{"node": "Should Auto-Approve?", "type": "main", "index": 0}]]
+    },
+    "Should Auto-Approve?": {
+      "main": [
+        [{"node": "HTTP Approve", "type": "main", "index": 0}],
+        [{"node": "Skip (High Risk)", "type": "main", "index": 0}]
+      ]
+    },
+    "HTTP Approve": {
+      "main": [[{"node": "HTTP Apply", "type": "main", "index": 0}]]
+    },
+    "HTTP Apply": {
+      "main": [[{"node": "Slack Success", "type": "main", "index": 0}]]
+    }
+  }
+}

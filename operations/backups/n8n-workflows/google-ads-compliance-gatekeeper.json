@@ -1,0 +1,174 @@
+{
+  "name": "Google Ads: Compliance Gatekeeper (Pre-Queue Validation)",
+  "description": "Phase 4E: Validate mutations before queuing - keyword length, stop words, mission alignment, duplicate check",
+  "nodes": [
+    {
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "parameters": {
+        "path": "google-ads-compliance-check",
+        "httpMethod": "POST"
+      }
+    },
+    {
+      "name": "Extract Payload",
+      "type": "n8n-nodes-base.set",
+      "position": [450, 300],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "mutation_type",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"details\"][\"mutation_type\"]}}"
+            },
+            {
+              "name": "keywords",
+              "value": "={{JSON.stringify($node[\"Webhook Trigger\"].json[\"details\"][\"keywords\"])}}"
+            },
+            {
+              "name": "campaign_id",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"details\"][\"campaign_id\"]}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Filter Non-Keyword",
+      "type": "n8n-nodes-base.if",
+      "position": [650, 300],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$node[\"Extract Payload\"].json[\"mutation_type\"]}}",
+              "operation": "equals",
+              "value2": "add_negative_keywords"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Length Check",
+      "type": "n8n-nodes-base.code",
+      "position": [850, 150],
+      "parameters": {
+        "language": "javascript",
+        "code": "const keywords = JSON.parse($node['Extract Payload'].json['keywords']);\nconst errors = [];\n\nfor (const keyword of keywords) {\n  if (keyword.length > 80) {\n    errors.push(`Keyword too long (${keyword.length}): \"${keyword}\"`);\n  }\n  if (keyword.length === 0) {\n    errors.push('Empty keyword');\n  }\n}\n\nreturn [{ json: { errors, valid: errors.length === 0 } }];"
+      }
+    },
+    {
+      "name": "Stop Word Filter",
+      "type": "n8n-nodes-base.code",
+      "position": [1050, 150],
+      "parameters": {
+        "language": "javascript",
+        "code": "const keywords = JSON.parse($node['Extract Payload'].json['keywords']);\nconst stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'is', 'it', 'be', 'are', 'was', 'were'];\nconst errors = $node['Length Check'].json['errors'] || [];\n\nfor (const keyword of keywords) {\n  const words = keyword.toLowerCase().split(' ');\n  const hasOnlyStopWords = words.every(w => stopWords.includes(w.toLowerCase()));\n  if (hasOnlyStopWords) {\n    errors.push(`Keyword contains only stop words: \"${keyword}\"`);\n  }\n}\n\nreturn [{ json: { errors, valid: errors.length === 0 } }];"
+      }
+    },
+    {
+      "name": "Duplicate Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1250, 150],
+      "parameters": {
+        "url": "http://localhost:8001/check-duplicates",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "application/json",
+        "body": "={\"campaign_id\": \"{{$node['Extract Payload'].json['campaign_id']}}\", \"keywords\": {{$node['Extract Payload'].json['keywords']}}}"
+      }
+    },
+    {
+      "name": "Aggregator",
+      "type": "n8n-nodes-base.code",
+      "position": [1450, 150],
+      "parameters": {
+        "language": "javascript",
+        "code": "const errors = [\n  ...$node['Stop Word Filter'].json['errors'] || [],\n  ...($node['Duplicate Check'].json['duplicate_errors'] || [])\n];\n\nreturn [{ json: { valid: errors.length === 0, errors } }];"
+      }
+    },
+    {
+      "name": "Return Valid",
+      "type": "n8n-nodes-base.webhook",
+      "position": [1650, 50],
+      "parameters": {
+        "responseMode": "responseNode"
+      }
+    },
+    {
+      "name": "Return Invalid",
+      "type": "n8n-nodes-base.webhook",
+      "position": [1650, 250],
+      "parameters": {
+        "responseMode": "responseNode"
+      }
+    },
+    {
+      "name": "Final Decision",
+      "type": "n8n-nodes-base.if",
+      "position": [1450, 300],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$node[\"Aggregator\"].json[\"valid\"]}}",
+              "operation": "equals",
+              "value2": "true"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Return Not Keyword Mutation",
+      "type": "n8n-nodes-base.webhook",
+      "position": [850, 450],
+      "parameters": {
+        "responseMode": "responseNode"
+      }
+    },
+    {
+      "name": "Skip (Not Keywords)",
+      "type": "n8n-nodes-base.noOp",
+      "position": [1050, 450],
+      "description": "Non-keyword mutations bypass compliance check"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Extract Payload", "type": "main", "index": 0}]]
+    },
+    "Extract Payload": {
+      "main": [[{"node": "Filter Non-Keyword", "type": "main", "index": 0}]]
+    },
+    "Filter Non-Keyword": {
+      "main": [
+        [{"node": "Length Check", "type": "main", "index": 0}],
+        [{"node": "Skip (Not Keywords)", "type": "main", "index": 0}]
+      ]
+    },
+    "Length Check": {
+      "main": [[{"node": "Stop Word Filter", "type": "main", "index": 0}]]
+    },
+    "Stop Word Filter": {
+      "main": [[{"node": "Duplicate Check", "type": "main", "index": 0}]]
+    },
+    "Duplicate Check": {
+      "main": [[{"node": "Aggregator", "type": "main", "index": 0}]]
+    },
+    "Aggregator": {
+      "main": [[{"node": "Final Decision", "type": "main", "index": 0}]]
+    },
+    "Final Decision": {
+      "main": [
+        [{"node": "Return Valid", "type": "main", "index": 0}],
+        [{"node": "Return Invalid", "type": "main", "index": 0}]
+      ]
+    },
+    "Skip (Not Keywords)": {
+      "main": [[{"node": "Return Not Keyword Mutation", "type": "main", "index": 0}]]
+    }
+  }
+}

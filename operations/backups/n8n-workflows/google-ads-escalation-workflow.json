@@ -1,0 +1,202 @@
+{
+  "name": "Google Ads: Escalation Router (Manual Review)",
+  "description": "Phase 4E: Route high/urgent-risk mutations to Slack for human review and reaction-based approval",
+  "nodes": [
+    {
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "parameters": {
+        "path": "google-ads-escalate",
+        "httpMethod": "POST"
+      }
+    },
+    {
+      "name": "Extract Details",
+      "type": "n8n-nodes-base.set",
+      "position": [450, 300],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "risk_level",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"risk_score\"][\"level\"]}}"
+            },
+            {
+              "name": "risk_score",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"risk_score\"][\"score\"]}}"
+            },
+            {
+              "name": "mutation_id",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"details\"][\"mutation_id\"]}}"
+            },
+            {
+              "name": "impact",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"details\"][\"impact\"]}}"
+            },
+            {
+              "name": "type",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"details\"][\"mutation_type\"]}}"
+            },
+            {
+              "name": "reasons",
+              "value": "={{$node[\"Webhook Trigger\"].json[\"risk_score\"][\"reasons\"].join(\"\\n\")}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [650, 300],
+      "parameters": {
+        "channel": "#google-ads-mutations",
+        "attachments": true,
+        "attachmentsJson": "[{\"color\": \"{{#if $node['Extract Details'].json['risk_level'] === 'urgent'}}#ff0000{{else}}#ff6600{{/if}}\", \"title\": \"🚨 {{$node['Extract Details'].json['risk_level'].toUpperCase()}} Mutation Requires Review\", \"fields\": [{\"title\": \"Mutation ID\", \"value\": \"{{$node['Extract Details'].json['mutation_id']}}\", \"short\": true}, {\"title\": \"Type\", \"value\": \"{{$node['Extract Details'].json['type']}}\", \"short\": true}, {\"title\": \"Estimated Impact\", \"value\": \"${{$node['Extract Details'].json['impact']}}\", \"short\": true}, {\"title\": \"Risk Score\", \"value\": \"{{$node['Extract Details'].json['risk_score']}}/100\", \"short\": true}, {\"title\": \"Risk Factors\", \"value\": \"{{$node['Extract Details'].json['reasons']}}\", \"short\": false}], \"footer\": \"React with ✅ to approve, ❌ to reject\"}]"
+      }
+    },
+    {
+      "name": "Get Message TS",
+      "type": "n8n-nodes-base.set",
+      "position": [850, 300],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "message_ts",
+              "value": "={{$node[\"Post to Slack\"].json[\"ts\"]}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Wait for Reaction",
+      "type": "n8n-nodes-base.wait",
+      "position": [1050, 300],
+      "parameters": {
+        "waitType": "duration",
+        "duration": 15,
+        "timeUnit": "minutes"
+      }
+    },
+    {
+      "name": "Get Reactions",
+      "type": "n8n-nodes-base.slack",
+      "position": [1250, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "getReactions",
+        "channelId": "google-ads-mutations",
+        "timestamp": "={{$node[\"Get Message TS\"].json[\"message_ts\"]}}"
+      }
+    },
+    {
+      "name": "Check Reaction",
+      "type": "n8n-nodes-base.if",
+      "position": [1450, 300],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$node[\"Get Reactions\"].json.length}}",
+              "operation": "greaterThan",
+              "value2": "0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "HTTP Approve",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1650, 150],
+      "parameters": {
+        "url": "http://localhost:8001/approve",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "application/json",
+        "body": "={\"mutation_id\": {{$node[\"Extract Details\"].json[\"mutation_id\"]}}}"
+      }
+    },
+    {
+      "name": "HTTP Apply",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1850, 150],
+      "parameters": {
+        "url": "http://localhost:8001/apply",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "application/json",
+        "body": "={\"mutation_id\": {{$node[\"Extract Details\"].json[\"mutation_id\"]}}}"
+      }
+    },
+    {
+      "name": "Slack Approved",
+      "type": "n8n-nodes-base.slack",
+      "position": [2050, 150],
+      "parameters": {
+        "channel": "#google-ads-mutations",
+        "text": "✅ Approved and applied (ID: {{$node[\"Extract Details\"].json[\"mutation_id\"]}})"
+      }
+    },
+    {
+      "name": "HTTP Reject (Timeout)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1650, 450],
+      "parameters": {
+        "url": "http://localhost:8001/reject",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "application/json",
+        "body": "={\"mutation_id\": {{$node[\"Extract Details\"].json[\"mutation_id\"]}}, \"reason\": \"Manual approval timeout (15 min)\"}",
+        "description": "No reaction received within timeout period"
+      }
+    },
+    {
+      "name": "Slack Timeout",
+      "type": "n8n-nodes-base.slack",
+      "position": [1850, 450],
+      "parameters": {
+        "channel": "#google-ads-errors",
+        "text": "⏱️ Mutation {{$node[\"Extract Details\"].json[\"mutation_id\"]}} approval timeout - auto-rejected"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Extract Details", "type": "main", "index": 0}]]
+    },
+    "Extract Details": {
+      "main": [[{"node": "Post to Slack", "type": "main", "index": 0}]]
+    },
+    "Post to Slack": {
+      "main": [[{"node": "Get Message TS", "type": "main", "index": 0}]]
+    },
+    "Get Message TS": {
+      "main": [[{"node": "Wait for Reaction", "type": "main", "index": 0}]]
+    },
+    "Wait for Reaction": {
+      "main": [[{"node": "Get Reactions", "type": "main", "index": 0}]]
+    },
+    "Get Reactions": {
+      "main": [[{"node": "Check Reaction", "type": "main", "index": 0}]]
+    },
+    "Check Reaction": {
+      "main": [
+        [{"node": "HTTP Approve", "type": "main", "index": 0}],
+        [{"node": "HTTP Reject (Timeout)", "type": "main", "index": 0}]
+      ]
+    },
+    "HTTP Approve": {
+      "main": [[{"node": "HTTP Apply", "type": "main", "index": 0}]]
+    },
+    "HTTP Apply": {
+      "main": [[{"node": "Slack Approved", "type": "main", "index": 0}]]
+    },
+    "HTTP Reject (Timeout)": {
+      "main": [[{"node": "Slack Timeout", "type": "main", "index": 0}]]
+    }
+  }
+}

@@ -24,8 +24,16 @@ open_report_when_sources_change = true
 # Enable notification system
 enabled = true
 
-# Webhook endpoint for alerts (e.g., n8n, Make, Zapier)
+# Primary webhook for all event types (legacy, deprecated)
 webhook_url = ""  # Set in environment: GOOGLE_ADS_WEBHOOK_URL
+
+# n8n workflow routing (Phase 4E)
+# Each webhook URL receives only its event type for selective n8n routing
+[notifications.n8n_webhooks]
+auto_approve = ""          # Low/medium-risk: GOOGLE_ADS_N8N_AUTO_APPROVE
+escalation = ""            # High/urgent-risk: GOOGLE_ADS_N8N_ESCALATION
+compliance_check = ""      # Pre-queue validation: GOOGLE_ADS_N8N_COMPLIANCE
+webhook_base_url = "https://n8n.prochat.tools/webhook"  # For webhook construction
 
 # Notification channels
 slack_enabled = false

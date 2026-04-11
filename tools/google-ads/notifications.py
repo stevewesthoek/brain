@@ -249,25 +249,44 @@ def send_notifications(
     """
     Send notifications based on event type and configuration.
 
+    Supports:
+    - Legacy webhook_url (all events to one endpoint)
+    - n8n routing: separate webhooks for auto-approve, escalation, compliance (Phase 4E)
+    - Slack, email
+
     Returns dict with:
     - slack_sent: bool
     - webhook_sent: bool
+    - n8n_webhooks_sent: dict with {auto_approve, escalation, compliance}
     - email_sent: bool
     - errors: list
     """
     config = get_notification_config(rules)
 
     if not config.get("enabled", True):
-        return {"slack_sent": False, "webhook_sent": False, "email_sent": False, "errors": []}
+        return {
+            "slack_sent": False,
+            "webhook_sent": False,
+            "n8n_webhooks_sent": {},
+            "email_sent": False,
+            "errors": [],
+        }
 
     # Check if event should trigger notifications
     trigger_key = f"notify_on_{event_type.replace('mutation_', '')}"
     if not config.get(trigger_key, False):
-        return {"slack_sent": False, "webhook_sent": False, "email_sent": False, "errors": []}
+        return {
+            "slack_sent": False,
+            "webhook_sent": False,
+            "n8n_webhooks_sent": {},
+            "email_sent": False,
+            "errors": [],
+        }
 
     results = {
         "slack_sent": False,
         "webhook_sent": False,
+        "n8n_webhooks_sent": {},
         "email_sent": False,
         "errors": [],
     }
@@ -282,7 +301,7 @@ def send_notifications(
             else:
                 results["errors"].append("Slack notification failed")
 
-    # Send webhook
+    # Send to legacy webhook (all events)
     webhook_url = os.environ.get("GOOGLE_ADS_WEBHOOK_URL") or config.get("webhook_url")
     if webhook_url:
         payload = format_webhook_payload(event_type, details, risk_score)
@@ -290,6 +309,33 @@ def send_notifications(
             results["webhook_sent"] = True
         else:
             results["errors"].append("Webhook notification failed")
+
+    # Send to n8n workflow-specific webhooks (Phase 4E)
+    n8n_config = config.get("n8n_webhooks", {})
+    if n8n_config:
+        payload = format_webhook_payload(event_type, details, risk_score)
+
+        # Route by risk level
+        if risk_score:
+            level = risk_score.get("level", "medium")
+            if level in ["low", "medium"] and risk_score.get("requires_escalation") is False:
+                # Auto-approve workflow
+                webhook_key = "auto_approve"
+                webhook_url = os.environ.get("GOOGLE_ADS_N8N_AUTO_APPROVE") or n8n_config.get(webhook_key)
+                if webhook_url:
+                    if send_webhook_notification(webhook_url, payload):
+                        results["n8n_webhooks_sent"]["auto_approve"] = True
+                    else:
+                        results["errors"].append("n8n auto-approve webhook failed")
+            elif level in ["high", "urgent"] or risk_score.get("requires_escalation"):
+                # Escalation workflow
+                webhook_key = "escalation"
+                webhook_url = os.environ.get("GOOGLE_ADS_N8N_ESCALATION") or n8n_config.get(webhook_key)
+                if webhook_url:
+                    if send_webhook_notification(webhook_url, payload):
+                        results["n8n_webhooks_sent"]["escalation"] = True
+                    else:
+                        results["errors"].append("n8n escalation webhook failed")
 
     # Email would be implemented here if SMTP configured
     # For now, just flag it
