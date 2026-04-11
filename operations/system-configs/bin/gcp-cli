@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stable local entrypoint for Google Cloud CLI usage across Claude, Codex,
+# and Gemini. Optionally sources a local-only env file for non-secret config
+# such as CLOUDSDK_ACTIVE_CONFIG_NAME or CLOUDSDK_PYTHON.
+
+env_file="${GCP_ENV_FILE:-$HOME/.config/gcp/.env}"
+if [[ -f "${env_file}" ]]; then
+  # shellcheck disable=SC1090
+  source "${env_file}"
+fi
+
+gcloud_bin="${GCLOUD_BIN:-/opt/homebrew/bin/gcloud}"
+
+if [[ ! -x "${gcloud_bin}" ]]; then
+  gcloud_bin="$(command -v gcloud 2>/dev/null || true)"
+  if [[ -z "${gcloud_bin}" ]]; then
+    echo "ERROR: gcloud binary not found. Install with: brew install google-cloud-sdk" >&2
+    exit 1
+  fi
+fi
+
+# Prefer a supported Homebrew Python when available. This avoids Cloud SDK
+# falling back to an older system Python on macOS.
+if [[ -z "${CLOUDSDK_PYTHON:-}" ]]; then
+  if [[ -x /opt/homebrew/bin/python3.13 ]]; then
+    export CLOUDSDK_PYTHON=/opt/homebrew/bin/python3.13
+  elif [[ -x /opt/homebrew/bin/python3.12 ]]; then
+    export CLOUDSDK_PYTHON=/opt/homebrew/bin/python3.12
+  fi
+fi
+
+exec "${gcloud_bin}" "$@"

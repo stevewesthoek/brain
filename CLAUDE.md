@@ -166,6 +166,7 @@ Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
 - `/aws` — AWS EC2/Lightsail provisioning, resource inspection
 - `/azure` — Azure resource discovery/management
 - `/cloudflare` — DNS record management
+- `/gcp` — Google Cloud project/resource discovery and management via `gcloud`
 - `/gws` — Google Workspace calendar, drive, admin operations
 - `/hetzner` — Hetzner Cloud infrastructure management
 - `/gh` — GitHub operations (PR, issue, release management)
@@ -195,7 +196,7 @@ Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
 - `/gemini` — Gemini CLI for large-context preprocessing, bulk analysis (free Flash tier)
 
 ### CLIs (installed globally, available to all three engines)
-- `aws`, `azure`, `cloudflare`, `gws`, `hetzner` — cloud provider CLIs
+- `aws`, `azure`, `cloudflare`, `gcloud`, `gws`, `hetzner` — cloud provider CLIs
 - `gh`, `stripe`, `supabase`, `dokploy`, `tailscale` — SaaS/deployment CLIs
 - `ffmpeg`, `notebooklm`, `playwright`, `firecrawl` — development/media CLIs
 - `n8n` — self-hosted workflow CLI
