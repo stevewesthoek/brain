@@ -10,7 +10,23 @@ import { buildRecentContinuationCards } from "../services/control-plane.js";
 import { getCodexUsage } from "../services/codex-usage.js";
 
 const execAsync = promisify(exec);
-const FAVICON_PNG = Buffer.from('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', 'base64');
+const FAVICON_SVG = `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lobster-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff4d4d"/>
+      <stop offset="100%" stop-color="#991b1b"/>
+    </linearGradient>
+  </defs>
+  <path d="M60 10 C30 10 15 35 15 55 C15 75 30 95 45 100 L45 110 L55 110 L55 100 C55 100 60 102 65 100 L65 110 L75 110 L75 100 C90 95 105 75 105 55 C105 35 90 10 60 10Z" fill="url(#lobster-gradient)"/>
+  <path d="M20 45 C5 40 0 50 5 60 C10 70 20 65 25 55 C28 48 25 45 20 45Z" fill="url(#lobster-gradient)"/>
+  <path d="M100 45 C115 40 120 50 115 60 C110 70 100 65 95 55 C92 48 95 45 100 45Z" fill="url(#lobster-gradient)"/>
+  <path d="M45 15 Q35 5 30 8" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round"/>
+  <path d="M75 15 Q85 5 90 8" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="45" cy="35" r="6" fill="#050810"/>
+  <circle cx="75" cy="35" r="6" fill="#050810"/>
+  <circle cx="46" cy="34" r="2.5" fill="#00e5cc"/>
+  <circle cx="76" cy="34" r="2.5" fill="#00e5cc"/>
+</svg>`;
 
 const START_TIME = Date.now();
 
@@ -687,8 +703,8 @@ const HTML = `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProBot</title>
-<link rel="icon" href="/favicon.png" type="image/png">
-<link rel="shortcut icon" href="/favicon.png" type="image/png">
+<link rel="icon" href="/favicon.svg?v=20260411-2" type="image/svg+xml">
+<link rel="shortcut icon" href="/favicon.svg?v=20260411-2" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1212,12 +1228,12 @@ export function createDashboardServer(app: AppContext): http.Server {
       return;
     }
 
-    if ((req.method === "GET" || req.method === "HEAD") && (url === "/favicon.png" || url === "/favicon.ico")) {
+    if ((req.method === "GET" || req.method === "HEAD") && (url.startsWith("/favicon.svg") || url === "/favicon.ico")) {
       res.writeHead(200, {
-        "Content-Type": "image/png",
+        "Content-Type": "image/svg+xml; charset=utf-8",
         "Cache-Control": "public, max-age=3600",
       });
-      res.end(req.method === "HEAD" ? undefined : FAVICON_PNG);
+      res.end(req.method === "HEAD" ? undefined : FAVICON_SVG);
       return;
     }
 
