@@ -59,6 +59,13 @@ from rollback import (
     get_rollback_status,
     export_rollback_csv,
 )
+from ml_scoring import (
+    train_mutation_model,
+    score_mutation_ml,
+    suggest_cost_optimizations,
+    queue_optimization_suggestions,
+    analyze_ab_test_results,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -2624,6 +2631,72 @@ def cmd_override_rollback(args: argparse.Namespace) -> int:
             return 1
 
 
+def cmd_train_model(args: argparse.Namespace) -> int:
+    """Train ML model on historical mutations for better risk prediction (Phase 4I)."""
+    model_path = DATA_DIR / "models" / "mutation_predictor.pkl"
+
+    model = train_mutation_model(str(DB_PATH), str(model_path))
+
+    if model:
+        print(f"✓ Model trained and saved to {model_path}")
+        log_run("train-model", "ok", f"model_path={model_path}")
+        return 0
+    else:
+        print("✗ Model training failed (may need 20+ analyzed mutations)", file=sys.stderr)
+        log_run("train-model", "failed", "insufficient_data")
+        return 1
+
+
+def cmd_suggest_optimizations(args: argparse.Namespace) -> int:
+    """Suggest cost optimizations: bid adjustments for high-CPC/low-conversion keywords (Phase 4I)."""
+    rules = load_toml(CONFIG_DIR / "rules.toml")
+    suggestions = suggest_cost_optimizations(str(DB_PATH), top_k=10)
+
+    if not suggestions:
+        print("No cost optimization opportunities found")
+        return 0
+
+    print(f"\n💡 Cost Optimization Suggestions ({len(suggestions)} found)")
+    for idx, sug in enumerate(suggestions, 1):
+        adjustment = sug["adjustment"]
+        impact = sug["estimated_impact"]
+        direction = "reduce" if adjustment < 1 else "increase"
+        print(f"\n{idx}. {sug['keyword']} ({sug['match_type']})")
+        print(f"   Action: {direction.upper()} bids by {abs(adjustment - 1) * 100:.0f}%")
+        print(f"   Reason: {sug['reason']}")
+        print(f"   Current spend: ${sug['current_spend']:.2f}")
+        print(f"   Estimated impact: ${impact:+.2f}")
+
+    if args.auto_queue:
+        with connect_db() as conn:
+            queued = queue_optimization_suggestions(conn, suggestions, rules)
+            print(f"\n✓ Queued {queued} optimization mutations for approval")
+            log_run("suggest-optimizations", "ok", f"queued={queued}")
+
+    return 0
+
+
+def cmd_analyze_ab_tests(args: argparse.Namespace) -> int:
+    """Analyze A/B test results: compare test vs control buckets (Phase 4I)."""
+    results = analyze_ab_test_results(str(DB_PATH), "apply_recommendation", min_samples=20)
+
+    if results.get("status") == "insufficient_data":
+        print(f"Insufficient data: need {results['min_samples']}, have {results.get('actual_samples', 0)}")
+        return 0
+
+    if results.get("status") == "error":
+        print(f"ERROR: {results.get('message')}", file=sys.stderr)
+        return 1
+
+    print(f"\n🧪 A/B Test Results ({results.get('mutation_type')})")
+    print(f"   Sample size: {results.get('sample_size')}")
+    print(f"   Conversion lift: {results.get('conversion_lift', 0):+.1f}%")
+    print(f"   CPA impact: {results.get('cpa_impact', 0):+.1f}%")
+    print(f"   Recommendation: {results.get('recommendation')}")
+
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="AI-agnostic Google Ads automation CLI for the nonprofit Ad Grants stack.",
@@ -2753,6 +2826,17 @@ def build_parser() -> argparse.ArgumentParser:
     override.add_argument("--id", type=int, required=True, help="Mutation ID")
     override.add_argument("--reason", required=True, help="Override reason")
     override.set_defaults(func=cmd_override_rollback)
+
+    # Phase 4I: ML Scoring & Optimization
+    train = subparsers.add_parser("train-model", help="Train ML model on historical mutations.")
+    train.set_defaults(func=cmd_train_model)
+
+    opt = subparsers.add_parser("suggest-optimizations", help="Suggest cost optimizations (bid adjustments).")
+    opt.add_argument("--auto-queue", action="store_true", help="Auto-queue suggestions as mutations")
+    opt.set_defaults(func=cmd_suggest_optimizations)
+
+    ab = subparsers.add_parser("analyze-ab-tests", help="Analyze A/B test results by mutation type.")
+    ab.set_defaults(func=cmd_analyze_ab_tests)
 
     return parser
 
