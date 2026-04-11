@@ -238,7 +238,7 @@ async function getNRHealth(): Promise<NRHealth> {
         }
       }
     };
-    const [syntheticsConditionsRaw, infraConditionsRaw] = await Promise.all([
+    const [syntheticsConditionsRaw, infraConditionsRaw, nrqlConditionsRaw] = await Promise.all([
       execAsync(
         `curl -s -X GET 'https://api.eu.newrelic.com/v2/alerts_synthetics_conditions.json' \
           -G --data-urlencode 'policy_id=1685919' \
@@ -251,6 +251,13 @@ async function getNRHealth(): Promise<NRHealth> {
           -H 'Api-Key: ${apiKey}'`,
         { timeout: 10_000 }
       ).then(({ stdout }) => stdout).catch(() => ""),
+      execAsync(
+        `curl -s -X POST 'https://api.eu.newrelic.com/graphql' \
+          -H 'API-Key: ${apiKey}' \
+          -H 'Content-Type: application/json' \
+          -d '{"query":"query{actor{account(id:7019441){alerts{nrqlConditionsSearch(searchCriteria:{policyId:\\"1685919\\"}){nrqlConditions{id name enabled nrql{query}}}}}}}"}'`,
+        { timeout: 10_000 }
+      ).then(({ stdout }) => stdout).catch(() => "{}"),
     ]);
 
     const hostSamples = data.data?.actor?.account?.hostSamples?.results ?? [];
@@ -279,11 +286,28 @@ async function getNRHealth(): Promise<NRHealth> {
         .filter((check) => check.facet)
         .map((check) => [check.facet as string, check])
     );
-    const configuredSyntheticMonitorIds = new Set(
-      syntheticsConditions
+    // Extract monitor IDs from NRQL conditions that query SyntheticCheck
+    const nrqlMonitorIds: string[] = (() => {
+      try {
+        const parsed = JSON.parse(nrqlConditionsRaw);
+        const conditions = parsed?.data?.actor?.account?.alerts?.nrqlConditionsSearch?.nrqlConditions ?? [];
+        return conditions
+          .filter((condition: any) => condition.enabled && condition.nrql?.query?.includes("monitorId"))
+          .flatMap((condition: any) => {
+            const matches = (condition.nrql.query as string).match(/'([a-f0-9\-]+)'/g);
+            return matches ? matches.map((m: string) => m.replace(/'/g, "")) : [];
+          });
+      } catch {
+        return [];
+      }
+    })();
+
+    const configuredSyntheticMonitorIds = new Set([
+      ...syntheticsConditions
         .filter((condition) => condition.enabled && condition.monitor_id)
-        .map((condition) => condition.monitor_id as string)
-    );
+        .map((condition) => condition.monitor_id as string),
+      ...nrqlMonitorIds,
+    ]);
     const configuredHostNames = new Set(
       infraConditions
         .filter((condition) => condition.enabled && condition.type === "infra_host_not_reporting" && condition.where_clause)
