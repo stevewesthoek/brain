@@ -149,9 +149,10 @@ interface NRSyntheticCheck {
 }
 
 const NR_ENTITY_LABEL_OVERRIDES: Array<{ match: RegExp; replace: string }> = [
-  { match: /\bopenfund\.yeshua\.academy\b/gi, replace: "finance.yeshua.academy" },
-  { match: /\bopen\s*fund\b/gi, replace: "Yeshua Academy Finance" },
-  { match: /\bopenfund\b/gi, replace: "Yeshua Academy Finance" },
+  // Keep the legacy Open Fund monitor explicit so the dashboard does not
+  // misrepresent its health as the live finance.yeshua.academy service.
+  { match: /\bopen\s*fund\b/gi, replace: "Open Fund (legacy)" },
+  { match: /\bopenfund\b/gi, replace: "Open Fund (legacy)" },
 ];
 
 function normalizeNREntityLabel(value?: string | null): string {
