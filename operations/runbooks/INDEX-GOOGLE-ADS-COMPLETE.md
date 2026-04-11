@@ -1,8 +1,8 @@
 # Google Ads: Complete Implementation Index
 
-**Status:** ✅ LIVE  
-**ProBot Dashboard:** http://localhost:7070 → "Google Ads" tab  
-**Date:** 2026-04-11
+**Status:** ✅ FULLY INTEGRATED  
+**ProBot Dashboard:** http://localhost:7070 → "Google Ads" + "Mutations" tabs  
+**Date:** 2026-04-11 (Phase 4F deployed, all 9 phases complete)
 
 ---
 
@@ -13,13 +13,19 @@
    http://localhost:7070
    ```
 
-2. **Click "Google Ads" tab** at the top
+2. **Click "Mutations" tab** at the top (Phase 4F)
 
 3. **You'll see:**
+   - List of pending/approved/applied mutations
+   - Checkbox selection for batch operations
+   - Approve / Reject / Apply buttons
+   - Real-time status updates
+
+4. **Alternative: Click "Google Ads" tab for account metrics**
    - Account: Vila Solidária (592-920-2435)
    - Pacing status (GREEN/YELLOW/RED)
    - Current spend, conversions, metrics
-   - Last sync timestamp
+   - Pending mutations count
 
 ---
 
@@ -134,22 +140,31 @@ projects/probot/src/bot/dashboard.ts
 - ✅ System status
 - ✅ Last sync timestamp
 
-### Coming Next Week (Phase 4E)
-- ⏳ HTTP webhook integration
-- ⏳ Real-time mutation updates
-- ⏳ Auto-approval indicators
+### ✅ Phase 4E (HTTP Server - Ready)
+- Webhook callbacks on port 8001
+- n8n workflow integration
+- Auto-approval routing
 
-### Coming Week +2 (Phase 4F-4G)
-- ⏳ Batch operations UI
-- ⏳ WebSocket real-time updates
-- ⏳ Analytics insights
-- ⏳ Effectiveness patterns
+### ✅ Phase 4F (Dashboard - LIVE TODAY)
+- Mutations tab in ProBot
+- Batch operations UI
+- Real-time status updates
+- Approve/reject/apply buttons
 
-### Coming Week +3+ (Phase 4H-4I)
-- ⏳ Rollback decisions display
-- ⏳ Auto-revert history
-- ⏳ ML confidence scores
-- ⏳ Cost optimization suggestions
+### ✅ Phase 4G (Analytics - Ready)
+- Baseline vs actual comparison
+- Effectiveness patterns
+- Data-driven gate tuning
+
+### ✅ Phase 4H (Rollback - Ready)
+- Auto-revert on regression
+- 4-hour monitoring cycle
+- Manual override support
+
+### ✅ Phase 4I (ML Scoring - Ready)
+- Random Forest classifier
+- Cost optimization suggestions
+- A/B testing framework
 
 ---
 
