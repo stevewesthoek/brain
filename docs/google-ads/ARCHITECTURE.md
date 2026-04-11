@@ -34,8 +34,9 @@ Current real-world shape:
 
 Required future shape:
 - client account remains `592-920-2435`
-- add a customer-owned manager account controlled by `steve@yeshua.academy`
-- use that customer-owned manager account for API Center and developer token management
+- customer-owned manager account `935-769-8503` is controlled by `steve@yeshua.academy`
+- link manager account `935-769-8503` to client account `592-920-2435`
+- use manager account `935-769-8503` for API Center and developer token management
 
 ## Control plane
 

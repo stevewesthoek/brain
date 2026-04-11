@@ -58,10 +58,10 @@ Because the current account `592-920-2435` is a client account, this workflow st
 Current required path:
 
 1. Sign into Google Ads as `steve@yeshua.academy`
-2. Create a new Google Ads manager account (MCC) that we control
+2. Use manager account `935-769-8503`
 3. From that MCC, send a manager link invitation to client account `592-920-2435`
 4. Accept that invitation from the client account
-5. Open `https://ads.google.com/aw/apicenter` from the customer-owned MCC
+5. Open `https://ads.google.com/aw/apicenter` from manager account `935-769-8503`
 6. Complete the API Access form
 7. Record the resulting token locally, never in git
 8. Update `config/google-ads/account.toml` statuses from `missing` to the real state
