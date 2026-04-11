@@ -6,9 +6,6 @@ personality = "pragmatic"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 
-[mcp_servers.notebooklm]
-command = "/Users/Office/.local/bin/notebooklm-mcp-server"
-
 [mcp_servers.stitch]
 command = "npx"
 args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]

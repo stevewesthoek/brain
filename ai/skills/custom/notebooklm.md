@@ -135,8 +135,8 @@ notebooklm download data-table ./data.csv
 
 - **All notebooks** are stored in your Google NotebookLM account
 - The CLI authenticates with Google and reads/writes to the same data
-- **No local database** — switching from web UI to CLI to MCP doesn't change your data
-- Existing notebooks from the MCP server are instantly available via CLI
+- **No local database** — all data is synced to Google's servers
+- Notebooks created via web UI, CLI, or any authenticated session are instantly available
 
 ## When to use Claude for NotebookLM
 
