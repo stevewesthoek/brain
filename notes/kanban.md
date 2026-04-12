@@ -137,7 +137,6 @@ kanban-plugin: board
 
 - [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
 - [ ] YA finance app
-- [ ] Family finance app
 - [ ] Make my contact card iPhone
 
 
@@ -145,6 +144,7 @@ kanban-plugin: board
 
 - [ ] Learn Portuguese app
 - [ ] plan NL trip
+- [ ] Family finance app
 
 
 ## Done
