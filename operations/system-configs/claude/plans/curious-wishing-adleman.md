@@ -1,257 +1,282 @@
-# Product Strategy: Portuguese Learning App
-**Context:** Steve lives in Portugal, married to a Portuguese person, needs to speak for daily life and business. Beginner with basics. 30-45 min/day. European Portuguese (mainland) only. Free tech only, CLI-friendly, local AI (M1 Mac mini). Simple web UI.
+# `fala` — Full Implementation Plan
+**Stack:** Next.js 14 + TypeScript + Tailwind + Prisma + Supabase + Clerk + Dokploy
 
 ---
 
-## 1. The Strategic Insight
+## Context
 
-Most language learning apps assume you need to *simulate* immersion. Steve doesn't. He already has:
-- A native speaker at home (his wife)
-- Business conversations in Portuguese happening now
-- Daily street-level Portuguese (shops, restaurants, neighbors)
-- A living language lab running 24/7
-
-**This changes the product entirely.** The app is not a language tutor. It is a **precision bridge tool**: it takes Steve from "basics" to "fluent enough for real life, right here, right now."
-
-The competition is not Duolingo. The competition is his wife trying to explain words while cooking dinner.
+Building `fala` — a Portuguese learning SaaS for Steve (lives in Portugal, married to a Portuguese person, beginner with basics, 30-45 min/day). European Portuguese only. 3 methodologies: SRS, Comprehensible Input, Contextual Vocabulary. This is a SaaS-ready product under `prochattools/saas/fala` deployable on Dokploy at `fala.prochat.tools`.
 
 ---
 
-## 2. Methodology Filter (from 10 down to 3)
-
-From the research, only 3 methodologies apply to Steve's specific context:
-
-### ✅ Keep: Spaced Repetition (SRS)
-**Why it fits:** 30-45 min/day = no room for wasted study. SRS automates the right words at the right time. Most efficient method for vocabulary retention.
-**Application:** 15-20 min daily SRS session, European Portuguese word families, audio included.
-
-### ✅ Keep: Comprehensible Input (Krashen)
-**Why it fits:** Steve hears Portuguese all day. The app gives him structured input slightly above his level so that exposure converts into acquisition. Without this, immersion just washes over you without sticking.
-**Application:** 10-15 min/day of curated European Portuguese audio (RTP, podcasts, YouTube) at A1-A2 level.
-
-### ✅ Keep: Contextual / Situational Vocabulary
-**Why it fits:** Steve doesn't need generic travel phrases. He needs words for his actual life — home conversations with his wife, business meetings, grocery shopping in Lisbon, the doctor, the bank.
-**Application:** Vocabulary organized by real situations (home/family, work/business, daily errands, social settings).
-
-### ❌ Removed methodologies and why:
-- **Language Exchange Connector** — He lives with a native speaker. He has this.
-- **Community Features** — He has real-world Portuguese community.
-- **Memory Palaces (Wyner)** — Powerful but adds complexity. Worth revisiting Phase 2.
-- **Pronunciation Waveform Analysis** — He hears European Portuguese all day. Over-engineering for MVP.
-- **In-app Video Calling** — Already has this via his life context.
-- **Immersion Tools** — He IS immersed. App doesn't need to simulate it.
-- **AI Conversation Chatbot** — Phase 2 with Ollama (free, local M1), not MVP.
-- **Brazilian Portuguese anything** — Hard excluded. European Portuguese only in all content, audio, and examples.
-
----
-
-## 3. Product Vision
-
-**Name (working):** `fala` — Portuguese for "speak"
-
-**What it is:**
-A precision vocabulary and listening tool designed for an immersed beginner. 
-30-40 minutes a day. No fluff. Exactly what to do today, every day.
-
-**What it does:**
-1. Teaches you the 500-1,000 most common European Portuguese words via SRS
-2. Organizes vocabulary by the real situations you encounter daily
-3. Suggests 10-15 min of real European Portuguese content each day
-4. Tracks your progress to keep momentum
-
-**What it is NOT:**
-- Not a full-featured app for everyone
-- Not a classroom replacement
-- Not a Brazilian Portuguese tool
-- Not a social platform
-
----
-
-## 4. Hard Technical Constraints
-
-| Constraint | Decision |
-|------------|----------|
-| **No paid services** | Everything free or open-source |
-| **Local AI** | Ollama on M1 (Phase 2) — no OpenAI/Anthropic costs |
-| **CLI-friendly** | Backend has a CLI interface; dev workflow is CLI-first |
-| **Runs on M1 Mac** | Local stack only; no cloud dependencies for core features |
-| **Interface** | Simple web UI served locally (localhost), mobile-friendly |
-
----
-
-## 5. Free Tech Stack
-
-| Layer | Tool | Notes |
-|-------|------|-------|
-| **SRS Algorithm** | FSRS (open-source, Python) | Most modern algorithm; we implement it ourselves (500 lines Python). No Anki dependency. |
-| **Backend** | Python + FastAPI | Lightweight, CLI-friendly, runs on M1 |
-| **Database** | SQLite | Zero-config, local, no server |
-| **Frontend** | HTML/CSS/JS (vanilla or minimal framework) | No React overhead for MVP |
-| **Audio (TTS)** | Piper TTS — European Portuguese voice | Free, local, offline, M1-compatible |
-| **Content Feed** | RSS/scraping from RTP, free podcasts | No API costs |
-| **AI (Phase 2)** | Ollama + Mistral 7B or Llama 3.1 8B | Free, runs well on M1 Mac mini |
-| **Dev CLI** | Python Click | Seed vocab, reset deck, export progress |
-
-**No cloud. No subscriptions. No API keys for core features.**
-
----
-
-## 6. MVP Feature Set (Ruthlessly Minimal)
-
-### Feature 1: Smart SRS Deck — *the core*
-- 500 most common European Portuguese words (pre-loaded)
-- Each card: PT word → audio (Piper TTS) → English meaning
-- FSRS algorithm: tells you exactly which cards to review today
-- Contextual tags: `home`, `work`, `daily-errands`, `social`
-- Session cap: 15-20 min max. App stops pushing after daily quota.
-
-### Feature 2: Situational Phrase Packs
-- Phrases organized by real situations Steve faces:
-  - "At home with family" (30 phrases)
-  - "In a business meeting" (30 phrases)
-  - "Daily errands (store, post office, pharmacy)" (30 phrases)
-  - "Social / small talk" (30 phrases)
-- Phrases are SRS-card compatible (feed into the same deck)
-- Audio via Piper TTS for each phrase
-
-### Feature 3: Daily Content Suggestion
-- App suggests 1 piece of European Portuguese content per day (10-15 min)
-- Curated static list to start: RTP Notícias clips, Portuguese podcasts, easy YouTube
-- Tagged by difficulty (A1 / A2 / B1)
-- No streaming engine — just a well-curated rotating list
-
-### Feature 4: Progress Dashboard
-- Cards mastered today / streak / total words learned
-- % of the 500-word foundation completed
-- "Sentences you can now say" estimate (motivational)
-- Daily session status: Done ✅ / Not yet
-
----
-
-## 7. What We Explicitly Leave Out of MVP
-
-| Feature | Why excluded |
-|---------|--------------|
-| In-app video calls | Not needed — Steve has this via his life |
-| AI chatbot | Phase 2 only (Ollama local); adds complexity |
-| Community/social | Adds infra; not needed |
-| Pronunciation analysis | Overengineering for someone already hearing the language daily |
-| Grammar lessons | Deliberate — grammar emerges from input + SRS |
-| Advanced analytics | Simple streak + word count is enough for now |
-| Brazilian content | Hard excluded |
-
----
-
-## 8. Development Phases
-
-### Phase 1: Foundation (MVP) — Weeks 1-3
-**Goal:** Functional SRS + situational phrases + daily session structure
-
-Tasks:
-1. Seed European Portuguese vocabulary dataset (500 words + audio)
-2. Implement FSRS algorithm in Python
-3. Build SRS card interface (web)
-4. Build situational phrase packs
-5. Build daily session flow (start → review → done)
-6. Build progress dashboard
-7. Set up Piper TTS for audio generation
-8. CLI commands: seed, reset, export, status
-
-Deliverable: A working daily study app.
-
-### Phase 2: Intelligence — Weeks 4-6
-**Goal:** Add local AI conversation practice + content feed
-
-Tasks:
-1. Integrate Ollama (Mistral 7B) for Portuguese conversation practice
-2. Build chat interface (EU PT only, grammar correction mode)
-3. Build European Portuguese content feed (RTP RSS + podcast list)
-4. Add vocabulary expansion (500 → 1,000 words)
-5. Add content difficulty tagging
-
-Deliverable: AI conversation partner + curated content library.
-
-### Phase 3: Polish & Business Portuguese — Weeks 7-8
-**Goal:** Tune for business context, refine UX, export/share
-
-Tasks:
-1. Business vocabulary pack (60+ phrases for meetings, calls, email)
-2. "Today's session" email/notification option
-3. Export deck to Anki format (for power users)
-4. Mobile-responsive UI polish
-5. Autoresearch loop setup (new vocabulary suggestions based on usage gaps)
-
-Deliverable: Production-ready personal learning tool.
-
----
-
-## 9. European Portuguese-Specific Content Sources (Free)
-
-| Source | Type | Cost | Notes |
-|--------|------|------|-------|
-| RTP (rtp.pt) | TV/radio/news | Free | Public broadcaster, legal, A2-B2 |
-| Rádio Renascença | Podcast/radio | Free | Great for listening |
-| Practice Portuguese (podcast) | Podcast | Free tier | Built for EU PT specifically |
-| Coisas de Portugueses (YouTube) | YouTube | Free | Natural casual EU PT |
-| A Vida em Português (YouTube) | YouTube | Free | Expat learning EU PT |
-| Portuguese With Carla | YouTube | Free | EU PT, clear speech, A1-B1 |
-| Subtitled Portuguese films | YouTube/RTP | Free | With PT subtitles, not English |
-
----
-
-## 10. Success Metrics (Measurable)
-
-- **Week 2:** Complete 100 SRS cards with ≥80% retention rate
-- **Week 4:** Hold a 5-minute unscripted conversation at home without reverting to English
-- **Week 8:** 400 words in active SRS deck with ≥85% retention
-- **Week 12:** Can navigate a full business meeting understanding 80%+
-- **Long-term:** When your wife says something, you understand it before she finishes the sentence
-
----
-
-## 11. Files to Create
+## Architecture
 
 ```
-fala/                           # App root
-├── backend/
-│   ├── main.py                 # FastAPI app
-│   ├── srs.py                  # FSRS algorithm
-│   ├── models.py               # SQLite models
-│   ├── routes/
-│   │   ├── deck.py             # Card review API
-│   │   ├── progress.py         # Progress API
-│   │   └── content.py          # Content feed API
-│   ├── data/
-│   │   ├── vocab_eu_pt.json    # 500 EU Portuguese words
-│   │   ├── phrases_home.json   # Situational phrases
-│   │   ├── phrases_work.json
-│   │   ├── phrases_errands.json
-│   │   └── content_feed.json   # Curated content list
-│   └── cli.py                  # CLI: seed, reset, export, status
-├── frontend/
-│   ├── index.html              # Dashboard
-│   ├── deck.html               # SRS card review
-│   ├── phrases.html            # Browse phrase packs
-│   └── static/
-│       ├── style.css
-│       └── app.js
-├── audio/                      # Generated via Piper TTS
-├── requirements.txt
-└── README.md
+~/Repos/prochattools/saas/fala/
+├── src/
+│   ├── app/
+│   │   ├── (marketing)/           # Public landing page
+│   │   │   ├── page.tsx           # Landing page
+│   │   │   └── layout.tsx
+│   │   ├── (app)/                 # Authenticated app
+│   │   │   ├── sign-in/[[...sign-in]]/page.tsx
+│   │   │   ├── sign-up/[[...sign-up]]/page.tsx
+│   │   │   ├── dashboard/page.tsx
+│   │   │   ├── deck/page.tsx      # SRS card review
+│   │   │   ├── phrases/page.tsx   # Phrase pack browser
+│   │   │   └── layout.tsx
+│   │   └── api/
+│   │       ├── deck/
+│   │       │   ├── next/route.ts  # GET next card
+│   │       │   └── review/route.ts # POST review
+│   │       ├── progress/route.ts
+│   │       └── webhooks/clerk/route.ts  # Sync user on signup
+│   ├── components/
+│   │   ├── ui/                    # shadcn/ui components
+│   │   ├── deck/                  # FlashCard, AudioButton, QualityButtons
+│   │   ├── dashboard/             # StatsCard, Streak, DailySession
+│   │   └── phrases/               # PhrasePack, PhraseCard
+│   ├── lib/
+│   │   ├── srs.ts                 # FSRS v4 algorithm
+│   │   ├── db.ts                  # Prisma client singleton
+│   │   └── auth.ts                # Clerk helpers (getCurrentUser)
+│   └── middleware.ts              # Clerk + route protection
+├── prisma/
+│   ├── schema.prisma
+│   └── seed.ts                    # Loads vocab_eu_pt.json to DB
+├── data/
+│   ├── vocab_eu_pt.json           # 500 EU PT words
+│   ├── phrases_home.json          # 30 phrases
+│   ├── phrases_work.json          # 30 phrases
+│   ├── phrases_errands.json       # 30 phrases
+│   └── phrases_social.json        # 30 phrases
+├── public/audio/                  # Piper TTS generated .mp3 files (gitignored)
+├── scripts/
+│   ├── generate-audio.py          # Piper TTS batch generator
+│   └── seed.sh                    # Run prisma db push + seed
+├── DESIGN.md                      # From /design-system skill
+├── Dockerfile                     # 4-stage node:20-bullseye (same as proofly)
+├── nixpacks.toml                  # Dokploy build config
+├── docker-compose.yml             # Local dev only
+├── .env.example
+└── package.json
 ```
 
 ---
 
-## 12. Autoresearch Integration (Phase 3)
+## Database Schema (Prisma → Supabase)
 
-Once the app is running:
-- `/autoresearch` will analyze which vocabulary categories have lowest retention
-- Suggest new phrase packs based on Steve's gaps
-- Suggest new European Portuguese content sources
-- Feed improvements back into the deck automatically
+Connection: `postgresql://fala_user:<pw>@100.71.31.88:5433/fala?schema=public`
+*(Tailscale internal IP for Dokploy; external IP 68.221.194.245 for local dev)*
+
+```prisma
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  createdAt DateTime @default(now())
+  cards     Card[]
+  sessions  Session[]
+}
+
+model Word {
+  id            Int      @id @default(autoincrement())
+  portuguese    String
+  english       String
+  audioPath     String?  // e.g. /audio/word_42.mp3
+  difficultyTag String   @default("A1")   // A1, A2, B1
+  frequencyRank Int
+  tags          String[] // home, work, errands, social, greeting, etc.
+  cards         Card[]
+}
+
+model PhrasePack {
+  id       String   @id @default(cuid())
+  name     String   // "At Home", "Business", "Daily Errands", "Social"
+  icon     String   // emoji
+  phrases  Phrase[]
+}
+
+model Phrase {
+  id          String     @id @default(cuid())
+  portuguese  String
+  english     String
+  audioPath   String?
+  packId      String
+  pack        PhrasePack @relation(fields: [packId], references: [id])
+}
+
+model Card {
+  id            String    @id @default(cuid())
+  userId        String
+  wordId        Int
+  user          User      @relation(fields: [userId], references: [id])
+  word          Word      @relation(fields: [wordId], references: [id])
+  // FSRS state
+  stability     Float     @default(0)
+  difficulty    Float     @default(5)
+  elapsedDays   Int       @default(0)
+  scheduledDays Int       @default(0)
+  reps          Int       @default(0)
+  lapses        Int       @default(0)
+  state         Int       @default(0) // 0=New, 1=Learning, 2=Review, 3=Relearning
+  lastReview    DateTime?
+  nextReview    DateTime  @default(now())
+  reviews       Review[]
+  @@unique([userId, wordId])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  cardId      String
+  card        Card     @relation(fields: [cardId], references: [id])
+  quality     Int      // 1=Again 2=Hard 3=Good 4=Easy
+  durationMs  Int?
+  reviewedAt  DateTime @default(now())
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  date          DateTime @default(now())
+  cardsReviewed Int      @default(0)
+  timeSpentMs   Int      @default(0)
+  completed     Boolean  @default(false)
+}
+```
 
 ---
 
-## Decisions Needed Before Build
+## Key Implementations
 
-None. Constraints are clear. Ready to execute Phase 1.
+### 1. FSRS v4 Algorithm (`src/lib/srs.ts`)
+
+Implements FSRS v4 (open-spaced-repetition/fsrs.js converted to TypeScript):
+- `getNextCard(userId)` — fetches card with lowest `nextReview` that is due
+- `reviewCard(cardId, quality)` — runs FSRS calculation, returns new scheduling state
+- Core formula: stability × ease × (1 + randomFuzz) = next interval
+- Target retention: 90%
+- Quality scale: 1=Again (relearn), 2=Hard, 3=Good, 4=Easy
+
+### 2. Clerk Auth
+
+Passcode (email OTP) mode is set in the Clerk dashboard — not in code.
+In code:
+- `src/middleware.ts`: clerkMiddleware + protect all `/dashboard`, `/deck`, `/phrases`, `/api/deck/*`, `/api/progress/*`
+- Public routes: `/`, `/sign-in(.*)`, `/sign-up(.*)`, `/api/webhooks/*`
+- `src/app/api/webhooks/clerk/route.ts`: sync new user to Prisma on `user.created` event
+- Sign-in/sign-up pages: `<SignIn forceRedirectUrl="/dashboard" />` (same as proofly)
+
+### 3. Piper TTS Audio
+
+- Script: `scripts/generate-audio.py`
+- Runs: `piper --model pt_PT-... --output_file audio/word_{id}.mp3 --text "{word}"`
+- European Portuguese model: `pt_PT-tugão-medium` (free, official Piper model)
+- Output: `public/audio/*.mp3` (gitignored, regenerated post-deploy via CLI)
+- Triggered with: `python scripts/generate-audio.py`
+
+---
+
+## Environment Variables (.env.example)
+
+```bash
+# Database (Supabase self-hosted)
+DATABASE_URL="postgresql://fala_user:<password>@100.71.31.88:5433/fala?schema=public"
+
+# Clerk Auth
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+CLERK_WEBHOOK_SECRET=
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+
+# App
+NEXT_PUBLIC_APP_URL=https://fala.prochat.tools
+```
+
+---
+
+## Deployment Sequence
+
+### 1. Cloudflare DNS
+```bash
+# Add CNAME record: fala.prochat.tools → dc7bb87e.cfargotunnel.com
+cloudflare dns create --zone prochat.tools --type CNAME \
+  --name fala --content dc7bb87e.cfargotunnel.com --proxied
+```
+
+### 2. Dokploy Tunnel Entry
+Add to Cloudflare Tunnel ingress config:
+```json
+{
+  "hostname": "fala.prochat.tools",
+  "service": "http://localhost:3050",
+  "originRequest": { "httpHostHeader": "fala.prochat.tools" }
+}
+```
+*(port 3050 reserved for fala; check infra.md for next available)*
+
+### 3. Supabase Database Setup
+```bash
+# Connect to Supabase VM and create DB + user
+supabase db execute "CREATE DATABASE fala;"
+supabase db execute "CREATE USER fala_user WITH PASSWORD '<pw>';"
+supabase db execute "GRANT ALL ON DATABASE fala TO fala_user;"
+```
+
+### 4. Dokploy App Config
+- Source: GitHub `prochattools/fala` (main branch)
+- Build: nixpacks (uses nixpacks.toml)
+- Port: 3050
+- Public hostname: fala.prochat.tools
+- Env vars: Set all from .env.example
+
+### 5. Audio Generation (post-deploy)
+```bash
+# SSH/Dokploy CLI into running container
+python scripts/generate-audio.py
+```
+
+---
+
+## Build Sequence (Ordered)
+
+1. `[SETUP]` Create repo at ~/Repos/prochattools/saas/fala
+2. `[SETUP]` Bootstrap Next.js + dependencies (copy key packages from proofly)
+3. `[DESIGN]` Run `/design-system` skill → generates DESIGN.md
+4. `[DATA]` Create `data/vocab_eu_pt.json` (500 EU PT words)
+5. `[DATA]` Create 4 phrase pack JSON files (30 phrases each)
+6. `[DATA]` Create `data/content_feed.json` (20 curated EU PT sources)
+7. `[DB]` Write Prisma schema
+8. `[DB]` Create Supabase database + run `prisma db push` + seed
+9. `[BACKEND]` Implement FSRS algorithm in `src/lib/srs.ts`
+10. `[BACKEND]` Build API routes: deck/next, deck/review, progress, webhooks/clerk
+11. `[FRONTEND]` Landing page (from DESIGN.md)
+12. `[FRONTEND]` Sign-in / Sign-up pages (Clerk components)
+13. `[FRONTEND]` Dashboard page (stats + streak + today's content)
+14. `[FRONTEND]` Deck page (card review + audio + quality buttons)
+15. `[FRONTEND]` Phrases page (4 packs, phrase cards, audio)
+16. `[AUDIO]` Install Piper TTS, download pt_PT model, run generate-audio.py
+17. `[DEPLOY]` Add Cloudflare DNS entry for fala.prochat.tools
+18. `[DEPLOY]` Configure Dokploy app + tunnel + env vars
+19. `[DEPLOY]` Deploy, run migrations, generate audio, verify at fala.prochat.tools
+
+---
+
+## Critical Files to Create (in order)
+
+| File | Purpose | Priority |
+|------|---------|----------|
+| `data/vocab_eu_pt.json` | Core vocabulary dataset | Critical |
+| `prisma/schema.prisma` | Database schema | Critical |
+| `src/lib/srs.ts` | FSRS algorithm | Critical |
+| `src/app/api/deck/next/route.ts` | Get next card | Critical |
+| `src/app/api/deck/review/route.ts` | Submit review | Critical |
+| `src/app/(app)/deck/page.tsx` | Card review UI | Critical |
+| `src/app/(marketing)/page.tsx` | Landing page | Important |
+| `src/app/(app)/dashboard/page.tsx` | Progress dashboard | Important |
+| `DESIGN.md` | Design system reference | Before UI work |
+| `scripts/generate-audio.py` | Piper TTS audio | Important |
+| `Dockerfile` | Dokploy deploy | Deployment |
+| `nixpacks.toml` | Dokploy build | Deployment |

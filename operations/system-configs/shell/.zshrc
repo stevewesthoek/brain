@@ -57,3 +57,4 @@ repos() {
 sessions() {
   bash ~/Repos/stevewesthoek/brain/tools/scripts/sessions.sh
 }
+export PATH=$HOME/bin:$PATH
