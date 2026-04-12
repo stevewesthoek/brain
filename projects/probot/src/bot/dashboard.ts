@@ -102,20 +102,36 @@ async function openGhosttySession(directCommand: string, cwd: string): Promise<v
 
   const fullCommand = `cd ${JSON.stringify(cwd)} && ${directCommand}`;
 
-  // Copy the command to clipboard — safe, proven, reliable
+  // Step 1: Copy the command to clipboard
   await execAsync(`printf %s ${JSON.stringify(fullCommand)} | pbcopy`);
 
-  // Open Ghostty — if already running, this brings it to focus and user can paste
-  // If not running, it starts and user can paste
-  // This is the only macOS-safe approach that doesn't interfere with running instances
-  const ghosttyPath = [
-    "/Applications/Ghostty.app",
-    path.join(os.homedir(), "Applications/Ghostty.app"),
-  ].find((p) => fs.existsSync(p));
-  if (ghosttyPath) {
-    await execAsync(`open "${ghosttyPath}"`);
-  } else {
-    await execAsync(`open -a Ghostty`);
+  // Step 2: Open a new Ghostty window (not affecting existing instances)
+  // The -n flag creates a completely new process instance
+  await execAsync(`open -n -a Ghostty`);
+
+  // Step 3: Wait briefly for the new window to open and become ready
+  await new Promise((resolve) => setTimeout(resolve, 800));
+
+  // Step 4: Use AppleScript to automatically paste the command and press Enter
+  // This makes the feature truly seamless — no manual paste needed
+  try {
+    const appleScript = `
+tell application "Ghostty"
+  activate
+  delay 0.2
+  tell application "System Events"
+    keystroke "v" using command down
+    delay 0.1
+    keystroke return
+  end tell
+end tell
+`;
+    await execFileAsync("osascript", ["-e", appleScript]);
+  } catch (err) {
+    // If AppleScript automation fails, that's okay — the command is still in clipboard
+    // The user can manually paste if needed, but this is a graceful fallback
+    // Log it for debugging but don't throw
+    console.error("AppleScript keystroke automation failed (command is in clipboard):", String(err));
   }
 }
 
