@@ -96,21 +96,21 @@ function isLocalDashboardRequest(req: http.IncomingMessage): boolean {
   return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1";
 }
 
-async function openGhosttyWithPreparedCommand(command: string): Promise<void> {
-  const safeCommand = command.replace(/\r?\n/g, " ").trim();
-  if (!safeCommand) throw new Error("Command is empty.");
-  // Copy to clipboard
-  await execAsync(`printf %s ${JSON.stringify(safeCommand)} | pbcopy`);
-  // Open Ghostty — find by path first, fall back to open -a
-  const ghosttyPath = [
-    "/Applications/Ghostty.app",
-    path.join(os.homedir(), "Applications/Ghostty.app"),
-  ].find((p) => fs.existsSync(p));
-  if (ghosttyPath) {
-    await execAsync(`open "${ghosttyPath}"`);
-  } else {
-    await execAsync(`open -a Ghostty`);
-  }
+async function openGhosttySession(directCommand: string, cwd: string): Promise<void> {
+  if (!directCommand.trim()) throw new Error("directCommand is empty.");
+  if (!cwd.trim()) throw new Error("cwd is empty.");
+
+  // Find the ghostty binary
+  const candidates = [
+    "/Applications/Ghostty.app/Contents/MacOS/ghostty",
+    path.join(os.homedir(), "Applications/Ghostty.app/Contents/MacOS/ghostty"),
+  ];
+  const ghosttyBin = candidates.find((p) => fs.existsSync(p)) ?? "ghostty";
+
+  // Launch a new Ghostty window: cd to cwd, then run the tool's resume command
+  // Use execFile to avoid shell injection; pass via zsh -i -c so PATH/env is loaded
+  const shellCmd = `cd ${JSON.stringify(cwd)} && ${directCommand}`;
+  await execFileAsync(ghosttyBin, ["--", "zsh", "-i", "-c", shellCmd]);
 }
 
 // ─── New Relic helpers ────────────────────────────────────────────────────────
@@ -1626,10 +1626,10 @@ async function applyMutation(btn){
   btn.disabled=false;btn.textContent='Apply Selected';
 }
 /* ghostty — no client-side localhost check; server handles auth via socket address */
-async function openGhostty(btn,cmd){
+async function openGhostty(btn,directCommand,cwd){
   const old=btn.textContent;btn.textContent='Opening…';
   try{
-    const r=await fetch('/api/local/ghostty',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})});
+    const r=await fetch('/api/local/ghostty',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({directCommand,cwd})});
     if(r.status===403){btn.textContent='Desktop only';}
     else if(!r.ok)throw new Error('HTTP '+r.status);
     else btn.textContent='Opened ✓';
@@ -1684,9 +1684,7 @@ function continuationItem(s){
     +'</div>'
     +'<div class="si-hl">'+esc(s.headline)+'</div>'
     +'<div class="si-ft">'
-    +'<code class="si-cmd">'+esc(s.suggestedCommand)+'</code>'
-    +'<button class="btn-sm" data-v="'+attr(s.suggestedCommand)+'" onclick="copyCmd(this,this.dataset.v)">Copy</button>'
-    +'<button class="btn-sm" data-v="'+attr(s.suggestedCommand)+'" onclick="openGhostty(this,this.dataset.v)">Open in Ghostty</button>'
+    +'<button class="btn-sm" data-cmd="'+attr(s.directCommand)+'" data-cwd="'+attr(s.cwd)+'" onclick="openGhostty(this,this.dataset.cmd,this.dataset.cwd)">Open in Ghostty</button>'
     +'</div></div>';
 }
 function repoCard(r){
@@ -2144,13 +2142,13 @@ export function createDashboardServer(app: AppContext): http.Server {
       try {
         let body = "";
         for await (const chunk of req) body += chunk;
-        const parsed = JSON.parse(body) as { command?: string };
-        if (!parsed.command || typeof parsed.command !== "string") {
+        const parsed = JSON.parse(body) as { directCommand?: string; cwd?: string };
+        if (!parsed.directCommand || !parsed.cwd || typeof parsed.directCommand !== "string" || typeof parsed.cwd !== "string") {
           res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Missing command." }));
+          res.end(JSON.stringify({ error: "Missing directCommand or cwd." }));
           return;
         }
-        await openGhosttyWithPreparedCommand(parsed.command);
+        await openGhosttySession(parsed.directCommand, parsed.cwd);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
       } catch (err) {

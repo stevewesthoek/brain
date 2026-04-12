@@ -132,17 +132,24 @@ kanban-plugin: board
 - [ ] [[notes/04-tasks/personal-tasks/0592-find-osteopata.md|Find osteopata]] #p3 #you
 - [ ] [[notes/04-tasks/personal-tasks/0593-emtpy-the-video-cassettes-miro.md|Emtpy the video cassette's Miro]] #p3 #you
 
+
 ## To Do
 
 - [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
+- [ ] plan NL trip
+- [ ] sessions & repositories ProBot dasboard improve
+- [ ] YA finance app
+- [ ] Family finance app
+- [ ] Learn Portuguese app
+
 
 ## Doing
+
 
 
 ## Done
 
 **Complete**
-
 - [x] [[notes/04-tasks/business-tasks/0259-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
 - [x] [[notes/04-tasks/business-tasks/0612-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
 - [x] [[notes/04-tasks/personal-tasks/0083-pay-phone-bill-wintre.md|Pay phone bill WinTre]] #p2 #you
@@ -761,8 +768,10 @@ kanban-plugin: board
 - [x] [[notes/04-tasks/personal-tasks/0567-self-host-microsaasfast.md|Self Host MicroSaasFast]] #p3 #you
 
 
+
+
 %% kanban:settings
 ```
-{"tag-colors": [{"tagKey": "#p1", "color": "#fff", "backgroundColor": "#c0392b"}, {"tagKey": "#p2", "color": "#fff", "backgroundColor": "#e67e22"}, {"tagKey": "#p3", "color": "#000", "backgroundColor": "#f1c40f"}, {"tagKey": "#p4", "color": "#000", "backgroundColor": "#2ecc71"}, {"tagKey": "#p5", "color": "#fff", "backgroundColor": "#95a5a6"}, {"tagKey": "#you", "color": "#fff", "backgroundColor": "#2980b9"}, {"tagKey": "#ai", "color": "#fff", "backgroundColor": "#8e44ad"}], "date-format": "YYYY-MM-DD", "time-format": "HH:mm", "link-date-to-daily-note": true}
+{"tag-colors":[{"tagKey":"#p1","color":"#fff","backgroundColor":"#c0392b"},{"tagKey":"#p2","color":"#fff","backgroundColor":"#e67e22"},{"tagKey":"#p3","color":"#000","backgroundColor":"#f1c40f"},{"tagKey":"#p4","color":"#000","backgroundColor":"#2ecc71"},{"tagKey":"#p5","color":"#fff","backgroundColor":"#95a5a6"},{"tagKey":"#you","color":"#fff","backgroundColor":"#2980b9"},{"tagKey":"#ai","color":"#fff","backgroundColor":"#8e44ad"}],"date-format":"YYYY-MM-DD","time-format":"HH:mm","link-date-to-daily-note":true,"kanban-plugin":"board"}
 ```
 %%

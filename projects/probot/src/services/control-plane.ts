@@ -51,6 +51,8 @@ export interface ContinuationCard {
   intentLabel: string;
   suggestedActionLabel: string;
   suggestedCommand: string;
+  resumeTarget: string;
+  directCommand: string;
 }
 
 function matchRepoPath(session: SessionSummary, repoPath: string): boolean {
@@ -142,6 +144,12 @@ function suggestedCommand(ranked: RankedSession, config: Config, selection?: num
     return `continue ${selection}`;
   }
   return `resume ${repoAliasForSession(ranked.session, config)}`;
+}
+
+function buildDirectCommand(session: SessionSummary): string {
+  if (session.tool === "claude") return `claude --resume ${session.resumeTarget}`;
+  if (session.tool === "codex") return `codex resume ${session.resumeTarget}`;
+  return `gemini --resume ${session.resumeTarget}`;
 }
 
 function rankSessionsForContinuation(sessions: SessionSummary[], config: Config): RankedSession[] {
@@ -384,6 +392,8 @@ export async function buildRecentContinuationCards(config: Config, limit = 5): P
       intentLabel: humanIntentLabel(ranked.intent, ranked.session),
       suggestedActionLabel: suggestedNextAction(ranked, config, index + 1),
       suggestedCommand: suggestedCommand(ranked, config, index + 1),
+      resumeTarget: ranked.session.resumeTarget,
+      directCommand: buildDirectCommand(ranked.session),
     }));
 }
 
