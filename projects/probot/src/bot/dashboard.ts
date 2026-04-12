@@ -102,12 +102,59 @@ async function openGhosttySession(directCommand: string, cwd: string): Promise<v
 
   const fullCommand = `cd ${JSON.stringify(cwd)} && ${directCommand}`;
 
-  // Copy the command to clipboard
+  // Copy the command to clipboard as a fallback
   await execAsync(`printf %s ${JSON.stringify(fullCommand)} | pbcopy`);
 
-  // Open Ghostty
-  // This is the stable, proven approach that won't crash or create multiple windows
-  await execAsync(`open -a Ghostty`);
+  // Check if Ghostty is already running
+  const { stdout: pgrep } = await execFileAsync("pgrep", ["-f", "Ghostty"]);
+  const isRunning = pgrep.trim().length > 0;
+
+  if (isRunning) {
+    // Ghostty is already running — open a new tab and run the command
+    // Use AppleScript to tell Ghostty to create a new tab and run the command
+    const appleScript = `
+tell application "Ghostty"
+  activate
+  delay 0.1
+  tell application "System Events"
+    keystroke "t" using command down
+    delay 0.3
+    keystroke "v" using command down
+    delay 0.1
+    keystroke return
+  end tell
+end tell
+`;
+    try {
+      await execFileAsync("osascript", ["-e", appleScript]);
+    } catch (err) {
+      // If AppleScript fails, user has command in clipboard
+      console.error("AppleScript failed but command is in clipboard:", String(err));
+    }
+  } else {
+    // Ghostty is not running — start it
+    await execAsync(`open -a Ghostty`);
+    // Wait for Ghostty to start
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Now paste the command and run it
+    const appleScript = `
+tell application "Ghostty"
+  activate
+  delay 0.2
+  tell application "System Events"
+    keystroke "v" using command down
+    delay 0.1
+    keystroke return
+  end tell
+end tell
+`;
+    try {
+      await execFileAsync("osascript", ["-e", appleScript]);
+    } catch (err) {
+      // If AppleScript fails, user has command in clipboard
+      console.error("AppleScript failed but command is in clipboard:", String(err));
+    }
+  }
 }
 
 // ─── New Relic helpers ────────────────────────────────────────────────────────
