@@ -137,10 +137,10 @@ kanban-plugin: board
 
 - [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
 - [ ] plan NL trip
-- [ ] sessions & repositories ProBot dasboard improve
 - [ ] YA finance app
 - [ ] Family finance app
 - [ ] Learn Portuguese app
+- [ ] Apify cli
 
 
 ## Doing
@@ -151,6 +151,7 @@ kanban-plugin: board
 
 **Complete**
 - [x] [[notes/04-tasks/business-tasks/0259-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
+- [x] sessions & repositories ProBot dasboard improve ✅ 2026-04-12
 - [x] [[notes/04-tasks/business-tasks/0612-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
 - [x] [[notes/04-tasks/personal-tasks/0083-pay-phone-bill-wintre.md|Pay phone bill WinTre]] #p2 #you
 - [x] [[notes/04-tasks/personal-tasks/0085-sergio-jarig.md|Sergio Jarig]] #p2 #you
