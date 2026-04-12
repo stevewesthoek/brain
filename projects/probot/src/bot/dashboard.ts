@@ -10,6 +10,7 @@ import { buildSessionOverview } from "../services/sessions.js";
 import { buildRecentContinuationCards } from "../services/control-plane.js";
 import { getCodexUsage } from "../services/codex-usage.js";
 import { getDokployStatus } from "../services/dokploy.js";
+import { getCloudflareTunnels } from "../services/cloudflare-tunnels.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -1237,7 +1238,7 @@ async function getDashboardData(app: AppContext) {
   const load     = os.loadavg();
   const googleAds = getGoogleAdsMetrics();
   const mutations = getMutationsData();
-  const [sessions, continuationCards, nrHealth, umami, domains, stripe, dokploy] = await Promise.all([
+  const [sessions, continuationCards, nrHealth, umami, domains, stripe, dokploy, tunnels] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
       app.config.codexSessionsDir,
@@ -1249,6 +1250,7 @@ async function getDashboardData(app: AppContext) {
     getCloudflareDomains(),
     getStripeDashboardData(),
     getDokployStatus(),
+    getCloudflareTunnels(),
   ]);
   const codexUsage = await getCodexUsage({
     codexSessionsDir: app.config.codexSessionsDir,
@@ -1276,6 +1278,7 @@ async function getDashboardData(app: AppContext) {
     googleAds,
     mutations,
     dokploy,
+    tunnels,
     scheduler: getNightScheduler(),
     sessions: sessions.slice(0, 9).map((s) => ({
       tool: s.tool, projectLabel: s.projectLabel,
@@ -1537,6 +1540,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="stripe">Stripe <span class="tab-count" id="cnt-stripe"></span></button>
     <button class="tab-btn" data-tab="mutations">Mutations <span class="tab-count" id="cnt-mutations"></span></button>
     <button class="tab-btn" data-tab="domains">Domains <span class="tab-count" id="cnt-domains"></span></button>
+    <button class="tab-btn" data-tab="tunnels">Tunnels <span class="tab-count" id="cnt-tunnels"></span></button>
     <button class="tab-btn" data-tab="xgrow">xgrow <span class="tab-count" id="cnt-xgrow"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
@@ -1548,6 +1552,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
   <div class="tab-panel" id="tab-stripe"></div>
   <div class="tab-panel" id="tab-mutations"></div>
   <div class="tab-panel" id="tab-domains"></div>
+  <div class="tab-panel" id="tab-tunnels"></div>
   <div class="tab-panel" id="tab-xgrow"></div>
 </div>
 <script>
@@ -1954,6 +1959,42 @@ function renderDomains(data){
   hd+='</div>';
   return hd+'<div class="dom-grid fade">'+data.domains.map(domainCard).join('')+'</div>';
 }
+function tunnelStatusColor(status){
+  if(!status)return'var(--gray)';
+  if(status==='healthy')return'var(--green)';
+  if(status==='down'||status==='degraded')return'var(--red)';
+  return'var(--gray)';
+}
+function hostnameOnlineColor(online){
+  if(online===true)return'var(--green)';
+  if(online===false)return'var(--red)';
+  return'var(--amber)';
+}
+function renderCloudflareTunnels(data){
+  if(!data)return'<div class="empty">Cloudflare tunnels not configured.</div>';
+  if(data.error&&!data.tunnels.length)return'<div class="nr-err">'+esc(data.error)+'</div>';
+  if(!data.tunnels.length)return'<div class="empty">No tunnels found.</div>';
+  let h='';
+  data.tunnels.forEach(function(tunnel){
+    const tCount=tunnel.hostnames.length;
+    h+='<div class="sec-hd"><span class="sec-title">'+esc(tunnel.name)+'</span><span class="sec-count">'+tCount+'</span>';
+    h+='<span class="nr-dot" style="background:'+tunnelStatusColor(tunnel.status)+';margin-left:8px"></span>';
+    h+='<span style="color:var(--muted);font-size:10px;margin-left:4px">'+esc(tunnel.status)+'</span>';
+    h+='</div>';
+    if(!tunnel.hostnames||tunnel.hostnames.length===0){
+      h+='<div class="empty" style="margin-bottom:16px">No public hostnames configured</div>';
+    }else{
+      h+='<div class="nr-grid fade">';
+      tunnel.hostnames.forEach(function(hostname){
+        h+='<div class="nr-card"><span class="nr-dot" style="background:'+hostnameOnlineColor(hostname.online)+'"></span>';
+        h+='<div><div class="nr-name">'+esc(hostname.hostname)+'</div>';
+        h+='<div class="nr-sub">'+esc(hostname.service)+'</div></div></div>';
+      });
+      h+='</div>';
+    }
+  });
+  return h;
+}
 function renderXgrow(data){
   if(!data){return'<div class="empty">xgrow data unavailable</div>';}
   if(data.error){return'<div class="nr-err">'+esc(data.error)+'</div>';}
@@ -2049,6 +2090,9 @@ function render(d){
   const dw=d.domains&&d.domains.domains?d.domains.domains.length:0;
   document.getElementById('cnt-domains').textContent=dw?String(dw):'';
   document.getElementById('tab-domains').innerHTML=renderDomains(d.domains);
+  const tcCount=(d.tunnels&&d.tunnels.tunnels||[]).reduce((n,t)=>n+(t.hostnames||[]).length,0);
+  document.getElementById('cnt-tunnels').textContent=tcCount?String(tcCount):'';
+  document.getElementById('tab-tunnels').innerHTML=renderCloudflareTunnels(d.tunnels);
   if(d.xgrow){
     const xp=d.xgrow.stats?d.xgrow.stats.pendingPostsCount:0;
     document.getElementById('cnt-xgrow').textContent=xp?String(xp):'';
