@@ -1403,7 +1403,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .si-hd{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .si-repo{font-size:12px;font-weight:500;font-family:var(--mono);color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .si-age{font-size:10px;color:var(--subtle);font-family:var(--mono);flex-shrink:0}
-.si-hl{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.si-hl{font-size:12px;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.4}
 .si-ft{display:flex;align-items:center;gap:6px;padding-top:6px;border-top:1px solid var(--border);flex-wrap:wrap}
 .si-cmd{font-size:11px;font-family:var(--mono);color:var(--subtle);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* ── repos ── */

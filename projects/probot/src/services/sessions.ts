@@ -54,7 +54,8 @@ function extractClaudeHeadline(entries: Record<string, unknown>[]): string {
     const message = entry.message as Record<string, unknown> | undefined;
     const content = message?.content;
     if (typeof content === "string" && content.trim() && !content.trim().startsWith("<")) {
-      return content.trim().slice(0, 120);
+      // Allow up to 3 lines (~250 chars) for better readability
+      return content.trim().slice(0, 250);
     }
     if (Array.isArray(content)) {
       const text = content
@@ -66,7 +67,8 @@ function extractClaudeHeadline(entries: Record<string, unknown>[]): string {
         .join(" ")
         .trim();
       if (text && !text.startsWith("<")) {
-        return text.slice(0, 120);
+        // Allow up to 3 lines (~250 chars) for better readability
+        return text.slice(0, 250);
       }
     }
   }
@@ -176,18 +178,76 @@ export async function listCodexSessions(
     const updatedAt = indexed?.updated_at ?? meta.payload.timestamp;
     if (!updatedAt) continue;
 
-    const headline = indexed?.thread_name || "(unnamed)";
-      summaries.push({
-        tool: "codex",
-        id: sessionId,
-        projectLabel: shortProjectLabel(meta.payload.cwd),
-        cwd: meta.payload.cwd,
-        age: formatAge(updatedAt),
-        updatedAt,
-        headline,
-        activeInTmux: tmuxSessions.has(sessionId),
-        resumeTarget: sessionId,
-      });
+    // Use thread_name from index if available, otherwise extract first user message
+    let headline = indexed?.thread_name;
+    if (!headline) {
+      // Extract first user/developer message from session entries
+      for (const entry of entries) {
+        // Codex uses "response_item" with payload.role "user" or "developer"
+        if (entry.type === "response_item") {
+          const payload = entry.payload as Record<string, unknown> | undefined;
+          const role = payload?.role as string | undefined;
+          // Look for user input (role = "user") or developer response that contains actual user content
+          if (role === "user" || (role === "developer" && typeof payload?.content !== "undefined")) {
+            const content = payload?.content;
+            if (Array.isArray(content)) {
+              const text = content
+                .map((part) => {
+                  if (!part || typeof part !== "object") return "";
+                  const block = part as Record<string, unknown>;
+                  // Skip system messages and permissions blocks
+                  if (typeof block.text === "string" && !block.text.includes("<permissions") && !block.text.includes("<collaboration_mode")) {
+                    return block.text;
+                  }
+                  return "";
+                })
+                .join(" ")
+                .trim();
+              if (text && !text.startsWith("<")) {
+                headline = text.slice(0, 250);
+                break;
+              }
+            }
+          }
+        }
+        // Also support Claude-style entries
+        else if (entry.type === "user") {
+          const message = entry.message as Record<string, unknown> | undefined;
+          const content = message?.content;
+          if (typeof content === "string" && content.trim()) {
+            headline = content.trim().slice(0, 250);
+            break;
+          }
+          if (Array.isArray(content)) {
+            const text = content
+              .map((part) => {
+                if (!part || typeof part !== "object") return "";
+                const block = part as Record<string, unknown>;
+                return block.type === "text" && typeof block.text === "string" ? block.text : "";
+              })
+              .join(" ")
+              .trim();
+            if (text) {
+              headline = text.slice(0, 250);
+              break;
+            }
+          }
+        }
+      }
+    }
+    headline = headline || "(unnamed)";
+
+    summaries.push({
+      tool: "codex",
+      id: sessionId,
+      projectLabel: shortProjectLabel(meta.payload.cwd),
+      cwd: meta.payload.cwd,
+      age: formatAge(updatedAt),
+      updatedAt,
+      headline,
+      activeInTmux: tmuxSessions.has(sessionId),
+      resumeTarget: sessionId,
+    });
   }
 
   return summaries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6);
