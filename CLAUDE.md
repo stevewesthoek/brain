@@ -149,7 +149,7 @@ Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
 - `/cso` — Chief Security Officer mode (infrastructure-first security audit)
 
 ### Web Research & Data
-- `/firecrawl` — Web search + scraping to clean markdown (http://100.83.38.48:3002 via Tailscale)
+- `/firecrawl` — Web search + scraping to clean markdown (http://100.83.38.48:3051 via Tailscale)
 - `/apify` — Web scraping + data extraction via multi-account Apify system ($50/mo total = 10 accounts × $5 each, round-robin rotation, deduplication patterns A/B/C, n8n webhook integration)
 - `/autoresearch` — Autonomous optimization loop (define scope + metric → iterate → keep improvements)
 

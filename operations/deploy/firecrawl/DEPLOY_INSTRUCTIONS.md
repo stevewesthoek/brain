@@ -1,6 +1,6 @@
 # Firecrawl Deployment to Dokploy — Manual Setup (Reference)
 
-**Current status:** ✅ Firecrawl is already deployed and running at `http://100.83.38.48:3002` (Tailscale).
+**Current status:** ✅ Firecrawl is already deployed and running at `http://100.83.38.48:3051` (Tailscale).
 
 This document is a **reference guide** for future redeployment via Dokploy dashboard. It is NOT current deployment instructions.
 
@@ -35,7 +35,7 @@ This document is a **reference guide** for future redeployment via Dokploy dashb
 Add these env vars in the Dokploy UI (copy-paste each):
 
 ```
-PORT=3002
+PORT=3051
 HOST=0.0.0.0
 USE_DB_AUTHENTICATION=false
 BULL_AUTH_KEY=98bee5d87a681f63b8fb800f4f18ff0cc97f5ec279cc347429edc93a954888cd
@@ -63,7 +63,7 @@ LOGGING_LEVEL=warn
 2. Click **Add Domain**
 3. **Hostname**: `firecrawl.prochat.tools`
 4. **Service**: `api` (the main API service)
-5. **Port**: `3002`
+5. **Port**: `3051`
 6. **SSL**: Enabled (automatic)
 7. Click **Add**
 
@@ -85,10 +85,10 @@ Once deployed, test from your Mac (via Tailscale):
 
 ```bash
 # Health check
-curl -s http://100.83.38.48:3002/health
+curl -s http://100.83.38.48:3051/health
 
 # Test scrape
-curl -X POST http://100.83.38.48:3002/v1/scrape \
+curl -X POST http://100.83.38.48:3051/v1/scrape \
   -H 'Content-Type: application/json' \
   -d '{
     "url": "https://example.com",
@@ -106,7 +106,7 @@ Test the admin queue UI (via Tailscale):
 
 ```bash
 # Replace with your actual BULL_AUTH_KEY
-curl -s http://100.83.38.48:3002/admin/<YOUR_BULL_AUTH_KEY>/queues
+curl -s http://100.83.38.48:3051/admin/<YOUR_BULL_AUTH_KEY>/queues
 ```
 
 Should return the admin UI HTML (not an error).
@@ -120,13 +120,13 @@ Should return the admin UI HTML (not an error).
 **Solution:**
 1. Check Dokploy logs for each container
 2. Common issues:
-   - Port 3002 already in use (shouldn't happen with Dokploy routing)
+   - Port 3051 already in use (shouldn't happen with Dokploy routing)
    - Memory limits exceeded (Dokploy server RAM too low)
    - Docker volume `firecrawl_pgdata` permission error
 
 ### API returns 503 or timeout
 
-**Symptom:** `curl http://100.83.38.48:3002/v1/scrape` returns error
+**Symptom:** `curl http://100.83.38.48:3051/v1/scrape` returns error
 
 **Solution:**
 1. Wait 60 seconds for API container to fully initialize (there's a 60s healthcheck delay)
@@ -135,19 +135,19 @@ Should return the admin UI HTML (not an error).
 
 ### Tailscale connectivity issues
 
-**Symptom:** `http://100.83.38.48:3002` returns connection refused or timeout
+**Symptom:** `http://100.83.38.48:3051` returns connection refused or timeout
 
 **Solution:**
 1. Verify dokploy is reachable: `~/.local/bin/tailscale-cli ping dokploy`
 2. Check Firecrawl containers: `ssh dokploy 'docker ps | grep firecrawl'`
-3. Test locally on dokploy: `ssh dokploy 'curl -s http://localhost:3002/health'`
+3. Test locally on dokploy: `ssh dokploy 'curl -s http://localhost:3051/health'`
 4. If containers are down, restart: `ssh dokploy 'docker compose up -d'` (in the compose directory)
 
 ## Environment Variable Reference
 
 | Variable | Value | Purpose |
 |----------|-------|---------|
-| `PORT` | 3002 | HTTP port (exposed) |
+| `PORT` | 3051 | HTTP port (exposed) |
 | `HOST` | 0.0.0.0 | Bind to all interfaces |
 | `USE_DB_AUTHENTICATION` | false | No API key auth (self-hosted) |
 | `BULL_AUTH_KEY` | (random) | Admin UI security key |

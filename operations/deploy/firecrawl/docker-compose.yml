@@ -84,8 +84,8 @@ services:
     environment:
       <<: *common-env
       HOST: "0.0.0.0"
-      PORT: ${PORT:-3002}
-      INTERNAL_PORT: ${INTERNAL_PORT:-3002}
+      PORT: ${PORT:-3051}
+      INTERNAL_PORT: ${INTERNAL_PORT:-3051}
       EXTRACT_WORKER_PORT: ${EXTRACT_WORKER_PORT:-3004}
       WORKER_PORT: ${WORKER_PORT:-3005}
       NUQ_RABBITMQ_URL: amqp://rabbitmq:5672
@@ -102,13 +102,13 @@ services:
       nuq-postgres:
         condition: service_started
     ports:
-      - "${PORT:-3002}:${INTERNAL_PORT:-3002}"
+      - "${PORT:-3051}:${INTERNAL_PORT:-3051}"
     command: node dist/src/harness.js --start-docker
     cpus: 4.0
     mem_limit: 5G
     memswap_limit: 5G
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3051/health"]
       interval: 30s
       timeout: 10s
       retries: 3

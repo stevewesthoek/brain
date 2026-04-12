@@ -207,7 +207,7 @@ cloudflare dns create --zone prochat.tools --type CNAME \
 ```
 
 ### 2. Dokploy Tunnel Entry
-Add to Cloudflare Tunnel ingress config:
+Tunnel ID: `dc7bb87e`. Add to ingress config:
 ```json
 {
   "hostname": "fala.prochat.tools",
@@ -215,15 +215,19 @@ Add to Cloudflare Tunnel ingress config:
   "originRequest": { "httpHostHeader": "fala.prochat.tools" }
 }
 ```
-*(port 3050 reserved for fala; check infra.md for next available)*
+Port confirmed: **3050** (first stable app port per local port registry).
 
 ### 3. Supabase Database Setup
+Supabase VM: `100.71.31.88` (Tailscale), port `5433`.
 ```bash
-# Connect to Supabase VM and create DB + user
-supabase db execute "CREATE DATABASE fala;"
-supabase db execute "CREATE USER fala_user WITH PASSWORD '<pw>';"
-supabase db execute "GRANT ALL ON DATABASE fala TO fala_user;"
+# SSH into supabase VM and create DB + user
+ssh supabase
+psql -U postgres -p 5433 -c "CREATE DATABASE fala;"
+psql -U postgres -p 5433 -c "CREATE USER fala_user WITH PASSWORD '<pw>';"
+psql -U postgres -p 5433 -c "GRANT ALL PRIVILEGES ON DATABASE fala TO fala_user;"
 ```
+DATABASE_URL for Dokploy: `postgresql://fala_user:<pw>@100.71.31.88:5433/fala?schema=public`
+DATABASE_URL for local dev: `postgresql://fala_user:<pw>@68.221.194.245:5433/fala?schema=public`
 
 ### 4. Dokploy App Config
 - Source: GitHub `prochattools/fala` (main branch)
@@ -280,3 +284,22 @@ python scripts/generate-audio.py
 | `scripts/generate-audio.py` | Piper TTS audio | Important |
 | `Dockerfile` | Dokploy deploy | Deployment |
 | `nixpacks.toml` | Dokploy build | Deployment |
+
+---
+
+## Local Port Registry (to add to infra.md)
+
+| Port | Service | Process | Notes |
+|------|---------|---------|-------|
+| 3000 | ⚠️ xGrow (CONFLICT) | Next.js | Needs to move — default dev port clashes. Move to 3055 in a separate session. |
+| 3002 | Firecrawl API | Docker on Dokploy | Tailscale-private: `http://100.83.38.48:3002` |
+| 3050 | fala | Next.js | `fala.prochat.tools` — first registered stable app port |
+| 7070 | ProBot | Node.js daemon | Dashboard at `localhost:7070` |
+
+## Design Spec
+
+Aesthetic: Clean & minimal — Linear / Vercel style.
+Accent color: Portuguese-inspired warm clay (#C0392B) or deep atlantic blue (#1A3C5E).
+Typography: Geist (Next.js default, free).
+Tone: Focused, confident — "Here's exactly what to do today."
+Generate DESIGN.md via /design-system before any UI work.
