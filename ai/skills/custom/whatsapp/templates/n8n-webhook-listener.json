@@ -1,0 +1,252 @@
+{
+  "meta": {
+    "instanceId": "brain-whatsapp-webhook",
+    "version": "1.0.0"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "path": "webhook/whatsapp",
+        "responseMode": "responseNode",
+        "responseData": "={{ $json }}"
+      },
+      "name": "Webhook Listener",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "={{ $json.entry[0].changes[0].value.messages }}",
+            "operator": {
+              "name": "filter.operator.notEmpty",
+              "type": "boolean",
+              "operation": "notEmpty"
+            }
+          }
+        }
+      },
+      "name": "Is Message?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": [
+          {
+            "name": "type",
+            "value": "=message"
+          },
+          {
+            "name": "from",
+            "value": "={{ $json.entry[0].changes[0].value.messages[0].from }}"
+          },
+          {
+            "name": "message_id",
+            "value": "={{ $json.entry[0].changes[0].value.messages[0].id }}"
+          },
+          {
+            "name": "message_type",
+            "value": "={{ $json.entry[0].changes[0].value.messages[0].type }}"
+          },
+          {
+            "name": "text",
+            "value": "={{ $json.entry[0].changes[0].value.messages[0].text?.body || '' }}"
+          },
+          {
+            "name": "timestamp",
+            "value": "={{ $json.entry[0].changes[0].value.timestamp }}"
+          }
+        ]
+      },
+      "name": "Parse Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        650,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": [
+          {
+            "name": "type",
+            "value": "=status"
+          },
+          {
+            "name": "message_id",
+            "value": "={{ $json.entry[0].changes[0].value.statuses[0].id }}"
+          },
+          {
+            "name": "status",
+            "value": "={{ $json.entry[0].changes[0].value.statuses[0].status }}"
+          },
+          {
+            "name": "timestamp",
+            "value": "={{ $json.entry[0].changes[0].value.timestamp }}"
+          }
+        ]
+      },
+      "name": "Parse Status",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        650,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": [
+          {
+            "column": "id",
+            "type": "string",
+            "canBeEmpty": false
+          },
+          {
+            "column": "type",
+            "type": "string",
+            "canBeEmpty": false
+          },
+          {
+            "column": "from_number",
+            "type": "string",
+            "canBeEmpty": true
+          },
+          {
+            "column": "message_content",
+            "type": "string",
+            "canBeEmpty": true
+          },
+          {
+            "column": "message_status",
+            "type": "string",
+            "canBeEmpty": true
+          },
+          {
+            "column": "timestamp",
+            "type": "string",
+            "canBeEmpty": true
+          },
+          {
+            "column": "raw_payload",
+            "type": "string",
+            "canBeEmpty": true
+          }
+        ],
+        "database": "n8n",
+        "table": "whatsapp_events",
+        "columns": "={{ Object.keys($json).join(',') }}"
+      },
+      "name": "Log to Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWithOptions": {
+          "responseType": "json"
+        },
+        "responseData": "={{ { status: 'ok', message_id: $json.message_id } }}"
+      },
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Listener": {
+      "main": [
+        [
+          {
+            "node": "Is Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Message?": {
+      "main": [
+        [
+          {
+            "node": "Parse Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Message": {
+      "main": [
+        [
+          {
+            "node": "Log to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Status": {
+      "main": [
+        [
+          {
+            "node": "Log to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Database": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "tags": [
+    "whatsapp",
+    "webhook",
+    "incoming"
+  ],
+  "triggerCount": 0,
+  "versionId": null,
+  "name": "WhatsApp Webhook Listener",
+  "pinData": {}
+}
