@@ -52,7 +52,10 @@ background-opacity = 0.85
 macos-titlebar-style = transparent 
 
 confirm-close-surface = false
-clipboard-paste-protection = false
+clipboard-trim-trailing-spaces = true
+clipboard-paste-protection = true
+clipboard-paste-bracketed-safe = true
+shell-integration = detect
 
 cursor-style = block
 

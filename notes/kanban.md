@@ -140,6 +140,7 @@ kanban-plugin: board
 - [ ] YA finance app
 - [ ] Family finance app
 - [ ] Learn Portuguese app
+- [ ] Make my contact card iPhone
 
 
 ## Doing
