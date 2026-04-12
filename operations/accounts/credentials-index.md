@@ -238,28 +238,79 @@ Tailnet for this infrastructure. Admin: `https://login.tailscale.com/admin`
 |----------|------|---------|----------|-----------|
 | `TAILSCALE_API_KEY` | `~/.config/tailscale/.env` | Tailscale API key for device management (remove nodes, rename, etc.) | API keys expire — check expiry in admin console | [Tailscale → Settings → Keys](https://login.tailscale.com/admin/settings/keys) |
 
-## Apify
+## Apify — Multi-Account System (10 Accounts × $5/mo = $50/mo Total)
 
-Web scraping and data extraction platform. Console: `https://console.apify.com/` · Account: `ProChat` (info@prochat.tools)
+Web scraping and data extraction platform. Multi-account rotation with round-robin distribution.
+
+**Manager location:** `~/.apify-multi/` (tokens.json + state.json)  
+**Manager script:** `brain/ai/skills/custom/apify/apify-multi-account-manager.py`  
+**CLI wrapper:** `apify-multi` command  
+**Runbook:** `operations/runbooks/apify-multi-account.md`
+
+### Single Account (Default/CLI)
 
 | Variable | File | Purpose | Rotation | Regenerate |
 |----------|------|---------|----------|-----------|
-| `APIFY_TOKEN` | `~/.apify/auth.json` | API token for CLI and REST API authentication — account: ProChat | No automatic expiry; rotate if compromised | [Apify Console → Integrations → API & Integrations](https://console.apify.com/account/integrations) |
+| `APIFY_TOKEN` | `~/.apify/auth.json` | API token for CLI — account: ProChat-1 | No automatic expiry; rotate if compromised | [Apify Console → Integrations → API & Integrations](https://console.apify.com/account/integrations) |
 
-**Status:** ✅ **Configured** (2026-04-12). Token validated and CLI working.
+**Account 1 (ProChat):**
+- Username: `ProChat` | Email: `info@prochat.tools`
+- Plan: FREE ($5/month)
+- Status: ✅ **Configured** (2026-04-12)
 
-**Account details:**
-- Username: `ProChat`
-- Email: `info@prochat.tools`
-- Plan: FREE ($5/month renewable platform credit)
-- Features enabled: Actors, Storage, Scheduler, Webhooks, Proxy, Proxy Residential, Proxy SERPs, All Public Actors
-- Max concurrent runs: 25
-- Max actor memory: 8 GB
-- Data retention: 7 days
+### Multi-Account Credentials (10 Total)
 
-**Proxy access:** 5 USA datacenter proxies available
+| Account # | Name | Email | Monthly Credit | Status |
+|-----------|------|-------|-----------------|--------|
+| 1 | ProChat-1 | info@prochat.tools | $5 | ✅ Active |
+| 2 | ProChat-2 | 54.car-culler@icloud.com | $5 | ✅ Active |
+| 3 | ProChat-3 | builds.mustard.3z@icloud.com | $5 | ✅ Active |
+| 4 | ProChat-4 | lot_retinol.7@icloud.com | $5 | ✅ Active |
+| 5 | ProChat-5 | parties.clank-0w@icloud.com | $5 | ✅ Active |
+| 6 | ProChat-6 | slog_odder0i@icloud.com | $5 | ✅ Active |
+| 7 | ProChat-7 | smiths.fights-5v@icloud.com | $5 | ✅ Active |
+| 8 | ProChat-8 | stances-malt.18@icloud.com | $5 | ✅ Active |
+| 9 | ProChat-9 | terry_92_basho@icloud.com | $5 | ✅ Active |
+| 10 | ProChat-10 | vastest_images.2z@icloud.com | $5 | ✅ Active |
 
-**Note:** Free tier: $5/month renewable platform credit (no credit card required). CLI installed globally via Homebrew. Runbook: `operations/runbooks/apify.md`
+**Total monthly credit:** $50/month (renewable)
+
+### Rotation System
+
+- **Strategy:** Round-robin, cycle-based
+- **Distribution:** Accounts 1-10 used sequentially, repeat next month
+- **Benefits:** Even load distribution (bot detection resistance), all accounts used equally
+- **Cycle tracking:** `cycle_count` increments when rotation wraps to Account 1
+
+### Usage
+
+```bash
+# Get next token (for automation/n8n)
+python3 ~/.apify-multi-account-manager.py next-token
+
+# Check status (budget tracking)
+python3 ~/.apify-multi-account-manager.py status
+
+# CLI wrapper (local testing)
+apify-multi run apify/web-scraper --input-file input.json
+```
+
+### n8n Integration
+
+See `n8n-integration-pattern.md` for workflow setup. Key pattern:
+1. Execute Command: Get next token from manager
+2. HTTP POST: Start Apify run with token
+3. Wait Loop: Poll until complete
+4. HTTP GET: Fetch results
+
+### Credentials Storage
+
+- **Location:** `~/.apify-multi/tokens.json` and `~/.apify-multi/state.json`
+- **Permissions:** 600 (user-readable only)
+- **Backup:** Regular backups recommended (contains API keys)
+- **Rotation:** Automatic (round-robin state in state.json)
+
+**Note:** All 10 accounts configured and validated (2026-04-12). Free tier renewable monthly on the 1st UTC.
 
 ---
 
