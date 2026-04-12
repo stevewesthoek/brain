@@ -138,7 +138,8 @@ Your output feeds back into Claude for action — be compact and structured.
 
 ## Workspace layout
 
-Shared AI-agnostic skills live in `brain/ai/skills/`. For Clerk CLI auth management, use the shared `/clerk` skill at `brain/ai/skills/custom/clerk/SKILL.md` — inspect and manage users, organizations, apps, webhooks, and sessions.
+Shared AI-agnostic skills live in `brain/ai/skills/`. For Ory authentication platform (PRIMARY), use the shared `/ory` skill at `brain/ai/skills/custom/ory/SKILL.md` — self-hosted, multi-domain, full automation.
+For Clerk CLI auth management (FALLBACK/legacy), use the shared `/clerk` skill at `brain/ai/skills/custom/clerk/SKILL.md`.
 For Apify web scraping and data extraction, use the shared `/apify` skill at `brain/ai/skills/custom/apify/` — $50/mo total (10 accounts × $5 each, round-robin with deduplication patterns). **Gemini's role:** preprocess Apify results (bulk analysis, categorization), do NOT initiate scrapes (that's Claude's job). For Yeshua Academy nonprofit Google Ads automation, use the shared `/google-ads` skill at `brain/ai/skills/custom/google-ads/google-ads-automation/`. This stack is Ad Grants-only until the docs say otherwise.
 
 Local repos live at `~/Repos/` organized by GitHub account:

@@ -169,7 +169,8 @@ Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
 ### Infrastructure & Integrations
 - `/aws` — AWS EC2/Lightsail provisioning, resource inspection
 - `/azure` — Azure resource discovery/management
-- `/clerk` — Clerk authentication CLI (users, orgs, apps, webhooks, sessions); inspect and manage all Clerk applications from the CLI
+- `/ory` — Ory authentication platform (PRIMARY) — self-hosted on auth.prochat.tools; multi-domain auto-provisioning; full user/session management via CLI
+- `/clerk` — Clerk authentication CLI (FALLBACK) — legacy apps; migrate to Ory one-by-one
 - `/cloudflare` — DNS record management
 - `/gcp` — Google Cloud project/resource discovery and management via `gcloud`
 - `/google-ads` — Yeshua Academy Google Ad Grants automation via the shared CLI and docs in `docs/google-ads/`
@@ -203,7 +204,8 @@ Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
 
 ### CLIs (installed globally, available to all three engines)
 - `aws`, `azure`, `cloudflare`, `gcloud`, `gws`, `hetzner` — cloud provider CLIs
-- `clerk` — Clerk authentication management CLI
+- `ory` — Ory authentication platform CLI (PRIMARY auth)
+- `clerk` — Clerk authentication management CLI (FALLBACK/legacy)
 - `gh`, `stripe`, `supabase`, `dokploy`, `tailscale` — SaaS/deployment CLIs
 - `apify`, `apify-multi`, `ffmpeg`, `notebooklm`, `playwright`, `firecrawl` — development/web/media CLIs
 - `n8n` — self-hosted workflow CLI

@@ -238,9 +238,49 @@ Tailnet for this infrastructure. Admin: `https://login.tailscale.com/admin`
 |----------|------|---------|----------|-----------|
 | `TAILSCALE_API_KEY` | `~/.config/tailscale/.env` | Tailscale API key for device management (remove nodes, rename, etc.) | API keys expire — check expiry in admin console | [Tailscale → Settings → Keys](https://login.tailscale.com/admin/settings/keys) |
 
+## Ory
+
+Self-hosted authentication platform (PRIMARY). Dashboard: https://auth-admin.prochat.tools
+
+| Credential | Storage | Purpose | Rotation | Regenerate |
+|------------|---------|---------|----------|-----------|
+| `ORY_DATABASE_URL` | `~/.config/ory/.env` | PostgreSQL connection to ory_prod database | Static (internal) | Supabase → Connection string |
+| `ORY_ADMIN_API_KEY` | `~/.config/ory/.env` | Admin API access for CLI/automation | No automatic expiry; rotate if compromised | `ory list admin-api-keys` → regenerate |
+| `ORY_PUBLIC_URL` | `~/.config/ory/.env` | Public auth endpoint (config, not secret) | Static | https://auth.prochat.tools |
+| `ORY_ADMIN_URL` | `~/.config/ory/.env` | Admin API endpoint (config, not secret) | Static | https://auth-admin.prochat.tools |
+
+**Account Details:**
+- CLI installed at: `/usr/local/bin/ory` (via Homebrew v1.3.0)
+- Deployment: Dokploy (Ops project, compose ID: vwTXGojIaXcVNJJTnusNB)
+- Database: Supabase PostgreSQL (ory_prod, user: ory_user)
+- Credentials file: `~/.config/ory/.env` (gitignored, mode 600)
+- Runbook: `operations/runbooks/ory-cli.md`
+- Skill: `brain/ai/skills/custom/ory/SKILL.md`
+
+**Key features:**
+- Multi-domain support (one instance, unlimited projects)
+- Programmatic provisioning (auto-create domains via CLI)
+- Full user lifecycle management (create, list, update, delete)
+- Session management (inspect, revoke)
+- Email verification, password recovery, MFA
+- Open-source (Apache 2.0)
+
+**To use CLI:**
+```bash
+source ~/.config/ory/.env
+ory list projects
+ory list identities --project <project-id>
+```
+
+**Status:** ✅ PRODUCTION READY (deployed 2026-04-12)
+
+---
+
 ## Clerk
 
-Authentication platform for multiple applications. Dashboard: https://dashboard.clerk.com
+Authentication platform for multiple applications (FALLBACK/legacy). Dashboard: https://dashboard.clerk.com
+
+**Status:** Active but migrating to Ory
 
 | Credential | Storage | Purpose | Rotation | Regenerate |
 |------------|---------|---------|----------|-----------|

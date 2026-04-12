@@ -9,6 +9,7 @@ import type { AppContext } from "../types/app.js";
 import { buildSessionOverview } from "../services/sessions.js";
 import { buildRecentContinuationCards } from "../services/control-plane.js";
 import { getCodexUsage } from "../services/codex-usage.js";
+import { getDokployStatus } from "../services/dokploy.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -1236,7 +1237,7 @@ async function getDashboardData(app: AppContext) {
   const load     = os.loadavg();
   const googleAds = getGoogleAdsMetrics();
   const mutations = getMutationsData();
-  const [sessions, continuationCards, nrHealth, umami, domains, stripe] = await Promise.all([
+  const [sessions, continuationCards, nrHealth, umami, domains, stripe, dokploy] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
       app.config.codexSessionsDir,
@@ -1247,6 +1248,7 @@ async function getDashboardData(app: AppContext) {
     getUmamiData(),
     getCloudflareDomains(),
     getStripeDashboardData(),
+    getDokployStatus(),
   ]);
   const codexUsage = await getCodexUsage({
     codexSessionsDir: app.config.codexSessionsDir,
@@ -1273,6 +1275,7 @@ async function getDashboardData(app: AppContext) {
     stripe,
     googleAds,
     mutations,
+    dokploy,
     scheduler: getNightScheduler(),
     sessions: sessions.slice(0, 8).map((s) => ({
       tool: s.tool, projectLabel: s.projectLabel,
@@ -1428,6 +1431,25 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .uc-stat-val{font-size:16px;font-weight:600;font-family:var(--mono);letter-spacing:-.5px;line-height:1.2}
 .uc-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-top:2px}
 .uc-ft{display:flex;gap:14px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);font-family:var(--mono)}
+/* ── dokploy ── */
+.dokploy-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:1100px){.dokploy-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.dokploy-grid{grid-template-columns:minmax(0,1fr)}}
+.dokploy-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 13px;display:flex;flex-direction:column;gap:8px}
+.dokploy-card:hover{border-color:var(--border2)}
+.dokploy-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.dokploy-info{flex:1;min-width:0}
+.dokploy-name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dokploy-project{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.dokploy-env{font-size:9px;color:var(--subtle);font-family:var(--mono);margin-top:1px}
+.dokploy-status{display:flex;align-items:center;gap:6px}
+.dokploy-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dokploy-status-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.3px;min-width:fit-content}
+.dokploy-done{color:var(--green)}
+.dokploy-running{color:#60a5fa;animation:pulse-run 2s ease-in-out infinite}
+.dokploy-failed{color:var(--red)}
+.dokploy-stopped{color:var(--gray)}
+.dokploy-unknown{color:var(--muted)}
 /* ── domains ── */
 .dom-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 @media(max-width:1200px){.dom-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -1507,6 +1529,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
   <div id="metrics"><div class="loading"><div class="spin"></div>Loading...</div></div>
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="sessions">Sessions <span class="tab-count" id="cnt-sessions"></span></button>
+    <button class="tab-btn" data-tab="dokploy">Dokploy <span class="tab-count" id="cnt-dokploy"></span></button>
     <button class="tab-btn" data-tab="nr">New Relic</button>
     <button class="tab-btn" data-tab="scheduler">Scheduler <span class="tab-count" id="cnt-sched"></span></button>
     <button class="tab-btn" data-tab="umami">Analytics <span class="tab-count" id="cnt-umami"></span></button>
@@ -1517,6 +1540,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="xgrow">xgrow <span class="tab-count" id="cnt-xgrow"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
+  <div class="tab-panel" id="tab-dokploy"></div>
   <div class="tab-panel" id="tab-nr"></div>
   <div class="tab-panel" id="tab-scheduler"></div>
   <div class="tab-panel" id="tab-umami"></div>
@@ -1677,6 +1701,34 @@ function continuationItem(s){
     +'<div class="si-ft">'
     +'<button class="btn-sm" data-cmd="'+attr(s.directCommand)+'" data-cwd="'+attr(s.cwd)+'" onclick="openGhostty(this,this.dataset.cmd,this.dataset.cwd)">Open in Ghostty</button>'
     +'</div></div>';
+}
+function dokployStatusColor(status){
+  if(!status)return'var(--gray)';
+  const s=String(status).toLowerCase();
+  if(s==='done')return'var(--green)';
+  if(s==='running')return'#60a5fa';
+  if(s==='failed'||s==='error')return'var(--red)';
+  if(s==='stopped')return'var(--gray)';
+  return'var(--muted)';
+}
+function dokployCard(item){
+  const c=dokployStatusColor(item.status);
+  const stat=String(item.status||'unknown').toLowerCase();
+  return'<div class="dokploy-card"><div class="dokploy-header"><div class="dokploy-info"><div class="dokploy-name">'+esc(item.name)+'</div><div class="dokploy-project">'+esc(item.project)+'</div><div class="dokploy-env">'+esc(item.environment)+'</div></div><div class="dokploy-status"><div class="dokploy-dot" style="background:'+c+'"></div><div class="dokploy-status-label dokploy-'+stat+'">'+esc(stat)+'</div></div></div></div>';
+}
+function renderDokploy(data){
+  if(data.error)return'<div class="nr-err">Dokploy: '+esc(data.error)+'</div>';
+  if(!data.apps.length&&!data.compose.length)return'<div class="empty">No Dokploy applications or services.</div>';
+  let html='';
+  if(data.apps.length){
+    html+='<div class="sec-hd"><span class="sec-title">Applications</span><span class="sec-count">'+data.apps.length+'</span></div>';
+    html+='<div class="dokploy-grid fade">'+data.apps.map(dokployCard).join('')+'</div>';
+  }
+  if(data.compose.length){
+    html+=(data.apps.length?'<div class="sec-hd" style="margin-top:16px"><span class="sec-title">Docker Compose Services</span><span class="sec-count">'+data.compose.length+'</span></div>':'<div class="sec-hd"><span class="sec-title">Docker Compose Services</span><span class="sec-count">'+data.compose.length+'</span></div>');
+    html+='<div class="dokploy-grid fade">'+data.compose.map(dokployCard).join('')+'</div>';
+  }
+  return html;
 }
 function nrDot(item){
   if(typeof item.online==='boolean')return item.online?'var(--green)':'var(--red)';
@@ -1972,6 +2024,9 @@ function render(d){
   document.getElementById('tab-sessions').innerHTML=sc===0
     ?'<div class="empty">No recent sessions found.</div>'
     :'<div class="slist fade">'+d.continuations.map(continuationItem).join('')+'</div>';
+  const dkCount=d.dokploy&&d.dokploy.totalApps?d.dokploy.totalApps+(d.dokploy.totalCompose||0):0;
+  document.getElementById('cnt-dokploy').textContent=dkCount?String(dkCount):'';
+  document.getElementById('tab-dokploy').innerHTML=renderDokploy(d.dokploy);
   document.getElementById('tab-nr').innerHTML=renderNRHealth(d.nrHealth);
   const sj=d.scheduler||[];
   const ok=sj.filter(j=>j.status==='success').length;
