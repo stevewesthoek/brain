@@ -1,11 +1,12 @@
 # Firecrawl Port 3051 Migration — Deployment Status
 
-**Current Status:** ⚠️ **Deployment in progress — RabbitMQ compatibility issue encountered**
+**Current Status:** ⚠️ **RabbitMQ FIXED ✓ — Database schema initialization needed**
 
 **Date:** 2026-04-12  
-**Time Spent:** ~2 hours  
-**Port:** Successfully configured to 3051 (code + docs 100% updated)  
-**Deployment Issue:** RabbitMQ container failing to start on Dokploy
+**Time Spent:** ~3 hours  
+**Port:** Successfully configured to 3051 (code + docs 100% updated) ✓  
+**RabbitMQ Issue:** RESOLVED ✓ (upgraded to 3.12-management-alpine)  
+**Current Issue:** Database schema not initializing on fresh volume
 
 ---
 
@@ -20,95 +21,91 @@
 - ✅ Created `test-api.sh`: automated test script
 - ✅ Git committed: `345ef8d`
 
-### Deployment Attempts (BLOCKED)
+### Deployment Attempts (PROGRESS)
 - ✅ SSH access to Dokploy verified
 - ✅ Docker compose deployed to `~/firecrawl-final`
-- ✅ Supporting services starting: Playwright, PostgreSQL, Redis
-- ❌ RabbitMQ container failing to start (permission issue)
-- ❌ API container blocked on RabbitMQ health check dependency
+- ✅ All supporting services running: Playwright, PostgreSQL, Redis
+- ✅ RabbitMQ container FIXED and running healthy (upgraded to 3.12-management-alpine)
+- ✅ API container starts but crashes (database schema missing)
+- ⚠️ PostgreSQL not initializing required database tables on fresh volume
 
 ---
 
-## Problem: RabbitMQ .erlang.cookie Permission Error
+## Problem 1: RabbitMQ .erlang.cookie Permission Error — **RESOLVED ✓**
 
-### Error
+### Error (Now Fixed)
 ```
 Error when reading /var/lib/rabbitmq/.erlang.cookie: eacces
 ```
 
-### Root Cause
-The `rabbitmq:3-management` image fails to read/write the `.erlang.cookie` file due to permission issues. This is a known Docker compatibility issue on certain Linux kernels or Docker daemon configurations.
+### Solution Applied
+Upgraded RabbitMQ image from `rabbitmq:3-management` to `rabbitmq:3.12-management-alpine`. The Alpine-based image handles permissions correctly and starts without issues.
 
-### Attempts Made
-1. ❌ Fresh deploy with new volumes
-2. ❌ Using old database volume
-3. ❌ Complete cleanup + rebuild
-4. ❌ Multiple restarts
-
-All attempts result in the same `.erlang.cookie: eacces` error.
+### Current RabbitMQ Status ✓
+```
+firecrawl-rabbitmq-1   rabbitmq:3.12-management-alpine   Up 2 minutes (healthy)
+```
 
 ---
 
-## Solutions to Try
+## Problem 2: Database Schema Initialization — **NEEDS SOLUTION**
 
-### Option 1: Update RabbitMQ Image (Recommended)
-The issue may be with the specific `rabbitmq:3-management` version. Try:
-
-```dockerfile
-# In docker-compose.yml, update:
-rabbitmq:
-  image: rabbitmq:3.12-management-alpine  # Use Alpine version
-  # OR
-  image: rabbitmq:3.13-management  # Use newer version
+### Error
+```
+error: relation "nuq.queue_scrape" does not exist
 ```
 
-Then redeploy:
+### Root Cause
+The `nuq-postgres` container image has initialization scripts that should create the database schema, but they're not executing properly or the schema is incomplete. The database is running but tables are missing.
+
+### Impact
+The API container starts but crashes when workers try to access the database tables that don't exist.
+
+---
+
+## Solutions
+
+### ✅ Solution 1: RabbitMQ (COMPLETE)
+**Status:** DONE - Upgraded to `rabbitmq:3.12-management-alpine`
+
+RabbitMQ is now running and healthy. No further action needed.
+
+### Solution 2: Database Schema Initialization (NEXT STEP)
+
+The `nuq-postgres` image should auto-initialize, but it's not. Try these:
+
+**Option A: Restore from Backup (Recommended if available)**
+If you have an old working Firecrawl database dump, restore it:
 ```bash
-cd ~/firecrawl-final
-docker compose pull  # Get new image
-docker compose down -v  # Remove all volumes
-docker compose up -d  # Start fresh
+ssh dokploy 'cd ~/firecrawl-final && \
+  docker compose exec -T nuq-postgres psql -U firecrawl -d firecrawl < /path/to/backup.sql'
 ```
 
-### Option 2: Pre-create RabbitMQ Volume with Correct Permissions
-
+**Option B: Manual Schema Creation**
+Get the schema from a working Firecrawl instance or from their GitHub repository:
 ```bash
-ssh dokploy << 'EOF'
-docker volume create rabbitmq-data
-docker run -d -v rabbitmq-data:/var/lib/rabbitmq rabbitmq:3-management
-sleep 10
-docker stop $(docker ps -q --filter ancestor=rabbitmq:3-management)
-EOF
+ssh dokploy 'cd ~/firecrawl-final && \
+  docker compose exec -T nuq-postgres psql -U firecrawl -d firecrawl < schema.sql'
 ```
 
-Then update `docker-compose.yml` to use the named volume:
-
-```yaml
-rabbitmq:
-  volumes:
-    - rabbitmq-data:/var/lib/rabbitmq
+**Option C: Run Migration/Setup Script**
+Check if firecrawl has a setup/migration command:
+```bash
+ssh dokploy 'cd ~/firecrawl-final && \
+  docker compose exec api npm run db:setup'
 ```
 
-### Option 3: Bypass RabbitMQ (Workaround for Testing)
+**Option D: Use Existing Database Volume**
+If an older deployment still has a working database volume with the schema, use that volume in docker-compose.yml (edit volume mounts section).
 
-Remove RabbitMQ from `docker-compose.yml` to test if the API works on port 3051:
-
-```yaml
-# Comment out or remove the rabbitmq service
-# rabbitmq:
-#   image: ...
-
-# In api service, remove rabbitmq from depends_on:
-depends_on:
-  redis:
-    condition: service_started
-  # rabbitmq:  <-- REMOVE THIS
-  # condition: service_healthy  <-- REMOVE THIS
-  playwright-service:
-    condition: service_started
-  nuq-postgres:
-    condition: service_started
+### Solution 3: Debug Database Initialization
+Connect to PostgreSQL and check what tables exist:
+```bash
+ssh dokploy 'cd ~/firecrawl-final && \
+  docker compose exec nuq-postgres psql -U firecrawl -d firecrawl -c "\dt nuq.*"'
 ```
+
+This will show if ANY tables were created.
 
 ---
 
