@@ -110,14 +110,14 @@ async function openGhosttySession(directCommand: string, cwd: string): Promise<v
   const isRunning = pgrep.trim().length > 0;
 
   if (isRunning) {
-    // Ghostty is already running — open a new tab and run the command
-    // Use AppleScript to tell Ghostty to create a new tab and run the command
+    // Ghostty is already running — open a new window and run the command
+    // Use AppleScript to tell Ghostty to create a new window and run the command
     const appleScript = `
 tell application "Ghostty"
   activate
   delay 0.1
   tell application "System Events"
-    keystroke "t" using command down
+    keystroke "n" using command down
     delay 0.3
     keystroke "v" using command down
     delay 0.1
