@@ -102,37 +102,12 @@ async function openGhosttySession(directCommand: string, cwd: string): Promise<v
 
   const fullCommand = `cd ${JSON.stringify(cwd)} && ${directCommand}`;
 
-  // Step 1: Copy the command to clipboard
+  // Copy the command to clipboard
   await execAsync(`printf %s ${JSON.stringify(fullCommand)} | pbcopy`);
 
-  // Step 2: Open a new Ghostty window (not affecting existing instances)
-  // The -n flag creates a completely new process instance
-  await execAsync(`open -n -a Ghostty`);
-
-  // Step 3: Wait briefly for the new window to open and become ready
-  await new Promise((resolve) => setTimeout(resolve, 800));
-
-  // Step 4: Use AppleScript to automatically paste the command and press Enter
-  // This makes the feature truly seamless — no manual paste needed
-  try {
-    const appleScript = `
-tell application "Ghostty"
-  activate
-  delay 0.2
-  tell application "System Events"
-    keystroke "v" using command down
-    delay 0.1
-    keystroke return
-  end tell
-end tell
-`;
-    await execFileAsync("osascript", ["-e", appleScript]);
-  } catch (err) {
-    // If AppleScript automation fails, that's okay — the command is still in clipboard
-    // The user can manually paste if needed, but this is a graceful fallback
-    // Log it for debugging but don't throw
-    console.error("AppleScript keystroke automation failed (command is in clipboard):", String(err));
-  }
+  // Open Ghostty
+  // This is the stable, proven approach that won't crash or create multiple windows
+  await execAsync(`open -a Ghostty`);
 }
 
 // ─── New Relic helpers ────────────────────────────────────────────────────────
