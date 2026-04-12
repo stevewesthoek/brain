@@ -240,11 +240,24 @@ Tailnet for this infrastructure. Admin: `https://login.tailscale.com/admin`
 
 ## Apify
 
-Web scraping and data extraction platform. Console: `https://console.apify.com/`
+Web scraping and data extraction platform. Console: `https://console.apify.com/` · Account: `ProChat` (info@prochat.tools)
 
 | Variable | File | Purpose | Rotation | Regenerate |
 |----------|------|---------|----------|-----------|
-| `APIFY_TOKEN` | `~/.apify/auth.json` | API token for CLI and REST API authentication | No automatic expiry; rotate if compromised | [Apify Console → Integrations → API & Integrations](https://console.apify.com/account/integrations) |
+| `APIFY_TOKEN` | `~/.apify/auth.json` | API token for CLI and REST API authentication — account: ProChat | No automatic expiry; rotate if compromised | [Apify Console → Integrations → API & Integrations](https://console.apify.com/account/integrations) |
+
+**Status:** ✅ **Configured** (2026-04-12). Token validated and CLI working.
+
+**Account details:**
+- Username: `ProChat`
+- Email: `info@prochat.tools`
+- Plan: FREE ($5/month renewable platform credit)
+- Features enabled: Actors, Storage, Scheduler, Webhooks, Proxy, Proxy Residential, Proxy SERPs, All Public Actors
+- Max concurrent runs: 25
+- Max actor memory: 8 GB
+- Data retention: 7 days
+
+**Proxy access:** 5 USA datacenter proxies available
 
 **Note:** Free tier: $5/month renewable platform credit (no credit card required). CLI installed globally via Homebrew. Runbook: `operations/runbooks/apify.md`
 
