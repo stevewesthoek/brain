@@ -87,17 +87,23 @@ Bootstraps config, SQLite, services, and Telegram polling.
 
 ### `src/services/*`
 
-- `status.ts`
-- `sessions.ts`
-- `notes.ts`
-- `brain.ts`
-- `files.ts`
+- `status.ts` — ProBot daemon health and machine summary
+- `sessions.ts` — Claude, Codex, and Gemini session indexing and resumption ranking
+- `notes.ts` — text note capture to Brain inbox
+- `brain.ts` — Brain repo search and context retrieval
+- `files.ts` — file search and approved send operations
 - `intents.ts` — natural language router; maps plain-text messages to service calls without LLM (pattern matching only)
 - `codex-usage.ts` — resolves Codex 5h/7d remaining percentages from local session logs, caches snapshots, and performs bounded refresh probes only when needed for dashboard accuracy
+- `dokploy.ts` — fetches deployment status from Dokploy API; aggregates applications and services across projects/environments; powers the Dokploy dashboard tab
+
+Dashboard-specific services:
+
+- `control-plane.ts` — session ranking and continuation card building
+- `approvals.ts` — approval workflow state and callbacks
 
 Future:
 
-- `mail.ts`
+- `mail.ts` — calendar and mail integration
 - `calendar.ts`
 - `contacts.ts`
 - `voice.ts`

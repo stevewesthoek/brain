@@ -161,10 +161,28 @@ The `home` Slack command returns structured Block Kit messages rather than a pla
 The dashboard reuses the same continuation ranking and suggestion logic, with a tab-based layout:
 
 - **Metrics bar** — always-visible top row: CPU, Memory, Uptime, Host, Codex 5h, Codex 7d in one compact row
-- **Tabs** — Sessions | New Relic | Scheduler | Stripe; one section visible at a time, no full-page scroll
+- **Tabs** — Sessions | Dokploy | New Relic | Scheduler | Analytics | Google Ads | Stripe | Mutations | Domains; one section visible at a time, no full-page scroll
 - **Sessions tab** — best next sessions as a card grid
-- each card shows the tool badge, repo, intent label, age, multi-line headline, and the suggested `continue N` command
-- **Open in Ghostty** button opens Ghostty, `cd`s to the repo, and automatically resumes the session; uses TCP socket address detection so it works when the dashboard is accessed through a Cloudflare tunnel or reverse proxy as well as direct localhost
+  - each card shows the tool badge, repo, intent label, age, multi-line headline, and the suggested `continue N` command
+  - **Open in Ghostty** button opens Ghostty, `cd`s to the repo, and automatically resumes the session; uses TCP socket address detection so it works when the dashboard is accessed through a Cloudflare tunnel or reverse proxy as well as direct localhost
+
+### Dashboard Dokploy Tab
+
+ProBot monitors all Dokploy deployments (applications and Docker Compose services) across all projects and environments.
+
+**Features:**
+
+- **Deployment grid** — Shows all applications and services with color-coded status indicators
+  - 🟢 **Green (done)** — healthy, running as expected
+  - 🔵 **Blue (running)** — currently deploying or starting
+  - 🔴 **Red (failed/error)** — deployment failed, needs attention
+  - ⚫ **Gray (stopped/idle)** — not currently running
+- **Smart sorting** — errors and building deployments appear first (top row, leftmost), followed by idle, stopped, and healthy deployments
+- **Full context** — each card shows application name, project, environment, and status
+- **Real-time updates** — refreshes every 30 seconds to reflect deployment changes
+- **Responsive design** — 3-column grid on desktop, 2 on tablet, 1 on mobile
+
+The tab is sourced from Dokploy's `/api/project.all` endpoint using credentials stored in `~/.config/dokploy/.env` (same credentials used by the `dokploy` CLI).
 
 ## Dashboard AI Usage
 
