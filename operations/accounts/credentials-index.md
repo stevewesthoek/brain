@@ -244,12 +244,14 @@ Authentication platform for multiple applications. Dashboard: https://dashboard.
 
 | Credential | Storage | Purpose | Rotation | Regenerate |
 |------------|---------|---------|----------|-----------|
-| OAuth token | `~/.clerk.json` | Browser OAuth credentials for CLI access — not a persistent API key | Auto-refreshes if used within 30 days; manually re-auth if expired | Run `clerk auth` at any time |
+| `CLERK_SECRET_KEY` | `~/.config/clerk/.env` | Live secret key for prochat.tools app — API access, user management, webhooks | No automatic expiry; rotate if compromised | [Dashboard → API Keys](https://dashboard.clerk.com/apps) → Secret Key → Regenerate |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `~/.config/clerk/.env` | Live publishable key for prochat.tools app — frontend auth | No automatic expiry; rotate if compromised | [Dashboard → API Keys](https://dashboard.clerk.com/apps) → Publishable Key → Regenerate |
 
 **Account Details:**
 - CLI installed at: `~/bin/clerk`
 - Version: 0.0.2-canary (2026-04-12)
-- Login: Automated browser OAuth (one account at a time)
+- Primary app: prochat.tools (live keys configured)
+- Credentials file: `~/.config/clerk/.env` (gitignored, mode 600)
 - Runbook: `operations/runbooks/clerk-cli.md`
 - Skill: `brain/ai/skills/custom/clerk/SKILL.md`
 
@@ -259,7 +261,12 @@ Authentication platform for multiple applications. Dashboard: https://dashboard.
 - Manage webhooks and test events
 - Full CLI-based automation support
 
-**To log in:** `clerk auth` (opens browser → https://dashboard.clerk.com)
+**To use CLI (load env first):**
+```bash
+export $(cat ~/.config/clerk/.env | xargs)
+clerk apps list
+clerk env --app prochat.tools
+```
 
 ---
 
