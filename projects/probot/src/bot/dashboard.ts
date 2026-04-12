@@ -1243,7 +1243,7 @@ async function getDashboardData(app: AppContext) {
       app.config.codexSessionsDir,
       app.config.codexSessionIndex,
     ).catch(() => []),
-    buildRecentContinuationCards(app.config, 8).catch(() => []),
+    buildRecentContinuationCards(app.config, 9).catch(() => []),
     getNRHealth(),
     getUmamiData(),
     getCloudflareDomains(),
@@ -1277,7 +1277,7 @@ async function getDashboardData(app: AppContext) {
     mutations,
     dokploy,
     scheduler: getNightScheduler(),
-    sessions: sessions.slice(0, 8).map((s) => ({
+    sessions: sessions.slice(0, 9).map((s) => ({
       tool: s.tool, projectLabel: s.projectLabel,
       age: s.age, headline: s.headline, activeInTmux: s.activeInTmux,
     })),
