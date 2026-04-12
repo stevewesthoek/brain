@@ -329,11 +329,13 @@ Self-hosted messaging integration. Phone: 949-776-2428 (verified in Meta Busines
 
 **Account Details:**
 - Phone: `949-776-2428`
-- Phone Number ID: `244609202066850`
-- Business Account ID: `244609202066850`
+- Phone Number ID: `342165748989753`
+- Business Account ID (WABA): `244609202066850`
 - Meta App: `819349503541241`
 - Plan: Free tier ($1 value initially, then usage-based)
-- Status: ✅ **Credentials configured** (2026-04-12) · ⚠️ **Token validation pending**
+- Status: ✅ **FULLY OPERATIONAL** (2026-04-12)
+- Token Type: Long-lived (60-day expiration)
+- API Endpoint: https://graph.facebook.com (not Instagram)
 
 **Rotation Notes:**
 - Access token expires ~60 days from generation

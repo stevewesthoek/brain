@@ -38,7 +38,7 @@ class WhatsAppConfig:
             business_account_id=os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID"),
             access_token=os.getenv("WHATSAPP_ACCESS_TOKEN"),
             api_version=os.getenv("WHATSAPP_API_VERSION", "v18.0"),
-            api_base_url=os.getenv("WHATSAPP_API_BASE_URL", "https://graph.instagram.com")
+            api_base_url=os.getenv("WHATSAPP_API_BASE_URL", "https://graph.facebook.com")
         )
 
     def validate(self) -> bool:

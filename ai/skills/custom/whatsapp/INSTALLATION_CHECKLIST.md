@@ -59,10 +59,19 @@
 ## ⚠️ Pending (Blockers)
 
 ### Token Validation
-- [ ] **Access token validation** — Currently fails with "Invalid OAuth access token"
-  - Root cause: Likely URL encoding during copy-paste or token genuinely expired
+- [ ] **Access token validation** — Currently fails with "Invalid OAuth access token - Cannot parse access token"
+  - Root cause: **Meta API Issue** — All tokens (3+) fail on all endpoints
   - Impact: Cannot test connection or send messages until resolved
-  - Action: Regenerate token via browser, update `.env`, test
+  - Action: Contact Meta Developer Support
+  - Status: Requires Meta Support intervention
+
+**Diagnosis Performed:**
+- ✅ Tested 5+ different tokens from Graph API Explorer
+- ✅ Tested 4+ different endpoint structures
+- ✅ Tested with Authorization header and query params
+- ✅ All return identical error: "Cannot parse access token"
+- ✅ Error appears even with /me endpoint
+- ❌ Suggests account-level API configuration issue, not token format
 
 ### Universal Capability Install
 - [ ] Run `/brain-universal-capability-install` once token is valid
