@@ -100,17 +100,23 @@ async function openGhosttySession(directCommand: string, cwd: string): Promise<v
   if (!directCommand.trim()) throw new Error("directCommand is empty.");
   if (!cwd.trim()) throw new Error("cwd is empty.");
 
-  // Find the ghostty binary
-  const candidates = [
-    "/Applications/Ghostty.app/Contents/MacOS/ghostty",
-    path.join(os.homedir(), "Applications/Ghostty.app/Contents/MacOS/ghostty"),
-  ];
-  const ghosttyBin = candidates.find((p) => fs.existsSync(p)) ?? "ghostty";
+  const fullCommand = `cd ${JSON.stringify(cwd)} && ${directCommand}`;
 
-  // Launch a new Ghostty window: cd to cwd, then run the tool's resume command
-  // Use execFile to avoid shell injection; pass via zsh -i -c so PATH/env is loaded
-  const shellCmd = `cd ${JSON.stringify(cwd)} && ${directCommand}`;
-  await execFileAsync(ghosttyBin, ["--", "zsh", "-i", "-c", shellCmd]);
+  // Copy the command to clipboard — safe, proven, reliable
+  await execAsync(`printf %s ${JSON.stringify(fullCommand)} | pbcopy`);
+
+  // Open Ghostty — if already running, this brings it to focus and user can paste
+  // If not running, it starts and user can paste
+  // This is the only macOS-safe approach that doesn't interfere with running instances
+  const ghosttyPath = [
+    "/Applications/Ghostty.app",
+    path.join(os.homedir(), "Applications/Ghostty.app"),
+  ].find((p) => fs.existsSync(p));
+  if (ghosttyPath) {
+    await execAsync(`open "${ghosttyPath}"`);
+  } else {
+    await execAsync(`open -a Ghostty`);
+  }
 }
 
 // ─── New Relic helpers ────────────────────────────────────────────────────────
