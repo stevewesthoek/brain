@@ -161,11 +161,10 @@ The `home` Slack command returns structured Block Kit messages rather than a pla
 The dashboard reuses the same continuation ranking and suggestion logic, with a tab-based layout:
 
 - **Metrics bar** — always-visible top row: CPU, Memory, Uptime, Host, Codex 5h, Codex 7d in one compact row
-- **Tabs** — Sessions | Repositories | New Relic | Scheduler | Stripe; one section visible at a time, no full-page scroll
-- **Sessions tab** — best next sessions as a 3-column card grid (same layout as Repositories)
-- each card shows the tool badge, repo, intent label, age, truncated headline, and the suggested `continue N` command
-- **Open in Ghostty** copies the command to clipboard and opens Ghostty; uses TCP socket address detection so it works when the dashboard is accessed through a Cloudflare tunnel or reverse proxy as well as direct localhost
-- **Copy** copies the suggested command to clipboard; works on HTTPS and HTTP contexts
+- **Tabs** — Sessions | New Relic | Scheduler | Stripe; one section visible at a time, no full-page scroll
+- **Sessions tab** — best next sessions as a card grid
+- each card shows the tool badge, repo, intent label, age, multi-line headline, and the suggested `continue N` command
+- **Open in Ghostty** button opens Ghostty, `cd`s to the repo, and automatically resumes the session; uses TCP socket address detection so it works when the dashboard is accessed through a Cloudflare tunnel or reverse proxy as well as direct localhost
 
 ## Dashboard AI Usage
 

@@ -56,45 +56,6 @@ function getFreshness(updatedAt: string | null): "fresh" | "stale" | "old" | "no
   return "old";
 }
 
-function getReposData(app: AppContext) {
-  const repos = [];
-  for (const [name, repoPath] of app.config.repoAliases) {
-    const handoffPath = path.join(repoPath, ".ai", "current.md");
-    const exists = fs.existsSync(handoffPath);
-    let goal = "No goal set";
-    let status = "No status recorded";
-    let tool = "Unknown";
-    let nextSteps: string[] = [];
-    let resumePrompt = `Continue work on ${name}.`;
-    let updatedAt: string | null = null;
-
-    if (exists) {
-      try {
-        const content = fs.readFileSync(handoffPath, "utf8");
-        const s = parseHandoffSections(content);
-        goal         = s["Goal"]?.[0]        ?? goal;
-        status       = s["Status"]?.[0]      ?? status;
-        tool         = s["Tool"]?.[0]        ?? tool;
-        nextSteps    = (s["Next steps"] ?? []).slice(0, 3).map((l) => l.replace(/^\d+\.\s*/, ""));
-        resumePrompt = s["Resume prompt"]?.join("\n") ?? resumePrompt;
-        updatedAt    = fs.statSync(handoffPath).mtime.toISOString();
-      } catch { /* best-effort */ }
-    }
-
-    // Only include repos with actual handoffs (skip empty ones)
-    if (!exists) continue;
-
-    repos.push({
-      name,
-      cwd: repoPath,
-      handoff: { exists, goal, status, tool, nextSteps, resumePrompt, updatedAt, freshness: getFreshness(updatedAt) },
-    });
-  }
-  // Sort by freshness (most fresh first)
-  repos.sort((a, b) => (b.handoff.updatedAt || "").localeCompare(a.handoff.updatedAt || ""));
-  return repos;
-}
-
 function isLocalDashboardRequest(req: http.IncomingMessage): boolean {
   // Check TCP socket origin — handles proxied access (Cloudflare tunnel, Nginx, etc.)
   // where the Host header is a public domain but the connection comes from localhost.
@@ -1313,7 +1274,6 @@ async function getDashboardData(app: AppContext) {
     googleAds,
     mutations,
     scheduler: getNightScheduler(),
-    repos: getReposData(app),
     sessions: sessions.slice(0, 8).map((s) => ({
       tool: s.tool, projectLabel: s.projectLabel,
       age: s.age, headline: s.headline, activeInTmux: s.activeInTmux,
@@ -1413,23 +1373,6 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .si-hl{font-size:12px;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.4}
 .si-ft{display:flex;align-items:center;gap:6px;padding-top:6px;border-top:1px solid var(--border);flex-wrap:wrap}
 .si-cmd{font-size:11px;font-family:var(--mono);color:var(--subtle);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* ── repos ── */
-.repos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-@media(max-width:1100px){.repos{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:640px){.repos{grid-template-columns:minmax(0,1fr)}}
-.rc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s}
-.rc:hover{border-color:var(--border2)}
-.rc-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.rc-name{font-weight:600;font-size:13px;font-family:var(--mono);letter-spacing:-.3px}
-.badges{display:flex;align-items:center;gap:4px;flex-shrink:0;flex-wrap:wrap}
-.rc-goal{font-size:12px;color:var(--text);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.rc-status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}
-.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.steps{display:flex;flex-direction:column;gap:3px}
-.step{font-size:11px;color:var(--muted);display:flex;gap:5px;align-items:flex-start}
-.step-n{font-family:var(--mono);font-size:10px;color:var(--subtle);padding-top:1px;flex-shrink:0}
-.rc-ft{display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);margin-top:auto}
-.rc-age{font-size:10px;color:var(--muted);font-family:var(--mono)}
 /* ── new relic ── */
 .nr-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
 @media(max-width:900px){.nr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -1564,7 +1507,6 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
   <div id="metrics"><div class="loading"><div class="spin"></div>Loading...</div></div>
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="sessions">Sessions <span class="tab-count" id="cnt-sessions"></span></button>
-    <button class="tab-btn" data-tab="repos">Repositories <span class="tab-count" id="cnt-repos"></span></button>
     <button class="tab-btn" data-tab="nr">New Relic</button>
     <button class="tab-btn" data-tab="scheduler">Scheduler <span class="tab-count" id="cnt-sched"></span></button>
     <button class="tab-btn" data-tab="umami">Analytics <span class="tab-count" id="cnt-umami"></span></button>
@@ -1575,7 +1517,6 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="xgrow">xgrow <span class="tab-count" id="cnt-xgrow"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
-  <div class="tab-panel" id="tab-repos"></div>
   <div class="tab-panel" id="tab-nr"></div>
   <div class="tab-panel" id="tab-scheduler"></div>
   <div class="tab-panel" id="tab-umami"></div>
@@ -1631,31 +1572,6 @@ function applyBtnCopy(btn,text){
     .catch(()=>{btn.textContent='Failed';setTimeout(()=>{btn.textContent=o;},2000);});
 }
 function copyCmd(btn,text){applyBtnCopy(btn,text);}
-function openGhosttyResume(btn, cmd, cwd) {
-  const old = btn.textContent;
-  btn.textContent = 'Opening…';
-  try {
-    // Note: unlike openGhostty which executes, this just pastes and shows the command
-    // User can analyze/modify before pressing Enter
-    fetch('/api/local/ghostty', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ directCommand: cmd, cwd, executeCommand: false })
-    })
-      .then(r => {
-        if (r.status === 403) { btn.textContent = 'Desktop only'; }
-        else if (!r.ok) throw new Error('HTTP ' + r.status);
-        else btn.textContent = 'Opened ✓';
-      })
-      .catch(e => { btn.textContent = 'Failed'; })
-      .finally(() => {
-        setTimeout(() => { btn.textContent = old; }, 2000);
-      });
-  } catch (e) {
-    btn.textContent = 'Failed';
-    setTimeout(() => { btn.textContent = old; }, 2000);
-  }
-}
 /* mutations — approve, reject, apply */
 function getSelectedMutationIds(){
   const cbs=document.querySelectorAll('.mutation-cb:checked');
@@ -1760,24 +1676,6 @@ function continuationItem(s){
     +'<div class="si-hl">'+esc(s.headline)+'</div>'
     +'<div class="si-ft">'
     +'<button class="btn-sm" data-cmd="'+attr(s.directCommand)+'" data-cwd="'+attr(s.cwd)+'" onclick="openGhostty(this,this.dataset.cmd,this.dataset.cwd)">Open in Ghostty</button>'
-    +'</div></div>';
-}
-function repoCard(r){
-  const h=r.handoff;
-  const steps=(h.nextSteps||[]).slice(0,2).map((s,i)=>
-    '<div class="step"><span class="step-n">'+(i+1)+'.</span><span>'+esc(s)+'</span></div>'
-  ).join('');
-  return'<div class="rc">'
-    +'<div class="rc-hd"><div class="rc-name">'+esc(r.name)+'</div>'
-    +'<div class="badges">'+toolBadge(h.tool)+'<span class="badge '+fc[h.freshness]+'">'+fl[h.freshness]+'</span></div></div>'
-    +(h.exists
-      ?'<div class="rc-goal">'+esc(h.goal)+'</div>'
-       +'<div class="rc-status"><div class="dot" style="background:'+fco[h.freshness]+'"></div><span>'+esc(h.status)+'</span></div>'
-       +(steps?'<div class="steps">'+steps+'</div>':'')
-      :'<div class="rc-status"><span style="color:var(--subtle)">No handoff yet</span></div>'
-    )
-    +'<div class="rc-ft"><span class="rc-age">'+age(h.updatedAt)+'</span>'
-    +(h.exists?'<button class="btn-sm" data-cmd="'+attr(h.resumePrompt)+'" data-cwd="'+attr(r.cwd)+'" onclick="openGhosttyResume(this,this.dataset.cmd,this.dataset.cwd)">Review & Resume</button>':'')
     +'</div></div>';
 }
 function nrDot(item){
@@ -2074,11 +1972,6 @@ function render(d){
   document.getElementById('tab-sessions').innerHTML=sc===0
     ?'<div class="empty">No recent sessions found.</div>'
     :'<div class="slist fade">'+d.continuations.map(continuationItem).join('')+'</div>';
-  const rc=d.repos.length;
-  document.getElementById('cnt-repos').textContent=rc?String(rc):'';
-  document.getElementById('tab-repos').innerHTML=rc===0
-    ?'<div class="empty">No repo aliases configured.</div>'
-    :'<div class="repos fade">'+d.repos.map(repoCard).join('')+'</div>';
   document.getElementById('tab-nr').innerHTML=renderNRHealth(d.nrHealth);
   const sj=d.scheduler||[];
   const ok=sj.filter(j=>j.status==='success').length;
