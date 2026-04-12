@@ -136,15 +136,15 @@ kanban-plugin: board
 ## To Do
 
 - [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
-- [ ] plan NL trip
 - [ ] YA finance app
 - [ ] Family finance app
-- [ ] Learn Portuguese app
 - [ ] Make my contact card iPhone
 
 
 ## Doing
 
+- [ ] Learn Portuguese app
+- [ ] plan NL trip
 
 
 ## Done
