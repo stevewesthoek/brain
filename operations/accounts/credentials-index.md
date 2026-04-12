@@ -522,3 +522,15 @@ Entries detected by `sync-credentials` that are not yet categorized. Move each r
 | `WHATSAPP_API_BASE_URL` | `~/.config/whatsapp/.env` | 2026-04-12 |
 | `WHATSAPP_API_VERSION` | `~/.config/whatsapp/.env` | 2026-04-12 |
 | `WHATSAPP_APP_ID` | `~/.config/whatsapp/.env` | 2026-04-12 |
+| `ORY_LOG_LEVEL` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_LOG_FORMAT` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_SECRETS_CIPHER` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_SECRETS_SYSTEM` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_SESSION_COOKIE_SAME_SITE` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_SESSION_COOKIE_PATH` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_SERVE_COOKIES_SAME_SITE_LEGACY_WORKAROUND` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_PROJECT_ID` | `~/.config/ory/.env` | 2026-04-13 |
+| `SUPABASE_HOST` | `~/.config/supabase/.env` | 2026-04-13 |
+| `SUPABASE_PORT` | `~/.config/supabase/.env` | 2026-04-13 |
+| `SUPABASE_ADMIN_USER` | `~/.config/supabase/.env` | 2026-04-13 |
+| `SUPABASE_ADMIN_PASSWORD` | `~/.config/supabase/.env` | 2026-04-13 |
