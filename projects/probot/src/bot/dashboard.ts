@@ -1486,6 +1486,11 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .xgrow-list{background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:300px;overflow-y:auto}
 .xgrow-item{padding:8px 10px;border-bottom:1px solid var(--border);font-size:10px;font-family:var(--mono)}
 .xgrow-item:last-child{border-bottom:none}
+.xgrow-post-card{padding:10px 12px;font-family:var(--font)}
+.xgrow-post-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+.xgrow-replies{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.xgrow-reply-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:5px;padding:7px 9px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.xgrow-reply-text{font-size:10px;color:var(--text);flex:1;line-height:1.4;white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -1531,6 +1536,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 </div>
 <script>
 let _d=null;
+var xgrowPosts={};
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function age(iso){
   if(!iso)return'never';
@@ -1934,14 +1940,55 @@ function renderXgrow(data){
   h+='<div class="xgrow-stat"><div class="xgrow-stat-val">'+String(s.postsRemaining||0)+'</div><div class="xgrow-stat-lbl">Remaining</div></div>';
   h+='<div class="xgrow-stat"><div class="xgrow-stat-val">'+String(s.pendingPostsCount||0)+'</div><div class="xgrow-stat-lbl">Pending</div></div>';
   h+='</div>';
-  h+='<div class="xgrow-btns fade"><button class="xgrow-btn" onclick="xgrowAction(\'scan\')">Scan</button><button class="xgrow-btn" onclick="xgrowAction(\'process\')">Process</button><button class="xgrow-btn" onclick="xgrowAction(\'pause\')">Pause</button><button class="xgrow-btn" onclick="xgrowAction(\'resume\')">Resume</button></div>';
+  h+='<div class="xgrow-btns fade"><button class="xgrow-btn" onclick="xgrowTrigger(this,&quot;scan&quot;)">Scan Posts</button><button class="xgrow-btn" onclick="xgrowTrigger(this,&quot;process&quot;)">Process Now</button><button class="xgrow-btn" onclick="xgrowDo(this,&quot;pause-automation&quot;)">Pause</button><button class="xgrow-btn" onclick="xgrowDo(this,&quot;resume-automation&quot;)">Resume</button><button class="xgrow-btn" style="border-color:var(--red);color:var(--red)" onclick="xgrowDo(this,&quot;clear-pending&quot;)">Clear Pending</button></div>';
   h+='<div class="xgrow-grid fade">';
-  h+='<div class="xgrow-section"><h3>Logs</h3><div class="xgrow-list">';
-  if(data.logs.length===0){h+='<div class="xgrow-item">No logs</div>';}else{data.logs.slice(0,5).forEach(l=>{h+='<div class="xgrow-item">'+age(l.createdAt)+' - '+l.status+'</div>';});}
-  h+='</div></div>';
-  h+='<div class="xgrow-section"><h3>Pending Posts</h3><div class="xgrow-list">';
-  if(data.posts.length===0){h+='<div class="xgrow-item">No pending posts</div>';}else{data.posts.slice(0,5).forEach(p=>{h+='<div class="xgrow-item">@'+esc(p.authorUsername)+': '+esc((p.content||'').substring(0,40))+'...</div>';});}
+  h+='<div class="xgrow-section"><h3>Recent Logs</h3><div class="xgrow-list">';
+  if(!data.logs||data.logs.length===0){h+='<div class="xgrow-item" style="color:var(--subtle)">No logs yet</div>';}
+  else{data.logs.forEach(function(l){
+    const sc=l.status==='posted'?'color:var(--green)':l.status==='failed'?'color:var(--red)':'color:var(--amber)';
+    h+='<div class="xgrow-item"><span style="color:var(--subtle)">'+age(l.createdAt)+'</span> <span style="'+sc+'">'+esc(l.status)+'</span>';
+    if(l.replyText)h+=' <span style="color:var(--muted)">'+esc(String(l.replyText).substring(0,60))+'...</span>';
+    if(l.error)h+='<div style="color:var(--red);font-size:9px">'+esc(l.error)+'</div>';
+    h+='</div>';
+  });}
   h+='</div></div></div>';
+  h+='<div class="xgrow-section fade" style="margin-top:14px"><h3>Pending Posts ('+String((data.posts||[]).length)+')</h3>';
+  if(!data.posts||data.posts.length===0){
+    h+='<div class="xgrow-list"><div class="xgrow-item" style="color:var(--subtle)">No pending posts — run a scan first</div></div>';
+  }else{
+    h+='<div class="xgrow-list">';
+    data.posts.forEach(function(p){
+      xgrowPosts[p.id]=p;
+      var storedReplies=[];
+      if(p.generatedReplies){try{storedReplies=JSON.parse(p.generatedReplies);}catch(e){}}
+      xgrowPosts[p.id].cachedReplies=storedReplies;
+      h+='<div class="xgrow-item xgrow-post-card" id="xgrow-post-'+p.id+'">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:baseline">';
+      h+='<strong style="font-size:11px">@'+esc(p.authorUsername)+'</strong>';
+      h+='<span style="color:var(--subtle);font-size:9px">score:'+Math.round(p.opportunityScore||0)+'</span>';
+      h+='</div>';
+      h+='<div style="color:var(--muted);margin-top:4px;margin-bottom:0;line-height:1.5;font-size:10px;font-family:var(--font)">'+esc(String(p.content||'').substring(0,140))+(p.content&&p.content.length>140?'...':'')+'</div>';
+      h+='<div class="xgrow-post-actions">';
+      h+='<button class="xgrow-btn" style="font-size:10px;padding:4px 8px" onclick="xgrowGenReplies(this,&quot;'+p.id+'&quot;)">Generate Replies</button>';
+      if(p.postUrl)h+='<a href="'+esc(p.postUrl)+'" target="_blank" style="font-size:9px;color:var(--muted);padding:4px 6px;text-decoration:none">View ↗</a>';
+      h+='<button class="xgrow-btn" style="font-size:9px;padding:3px 6px;border-color:var(--subtle);color:var(--subtle)" onclick="xgrowDo(this,&quot;skip-post&quot;)">Skip</button>';
+      h+='</div>';
+      h+='<div class="xgrow-replies" id="replies-'+p.id+'">';
+      if(storedReplies.length>0){
+        storedReplies.forEach(function(reply,idx){
+          var rt=typeof reply==='string'?reply:(reply&&reply.suggestedReply?reply.suggestedReply:String(reply));
+          h+='<div class="xgrow-reply-card">';
+          h+='<div class="xgrow-reply-text">'+esc(rt)+'</div>';
+          h+='<button class="xgrow-btn" style="font-size:9px;padding:3px 7px;border-color:var(--green);color:var(--green);white-space:nowrap" onclick="xgrowPostReply(this,&quot;'+p.id+'&quot;,'+idx+')">Post</button>';
+          h+='</div>';
+        });
+      }
+      h+='</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
   return h;
 }
 function render(d){
@@ -2003,6 +2050,81 @@ function refresh(){
 setInterval(fetchData,30000);
 setInterval(()=>{if(_d)document.getElementById('upd').textContent='updated '+age(_d.meta.updatedAt);},60000);
 fetchData();
+async function xgrowTrigger(btn,cmd){
+  const o=btn.textContent;btn.disabled=true;btn.textContent='...';
+  try{
+    const r=await fetch('/api/xgrow/trigger',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})});
+    const d=await r.json();
+    btn.textContent=d.message||'Done';
+    setTimeout(()=>{btn.disabled=false;btn.textContent=o;fetchData();},1500);
+  }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+}
+async function xgrowDo(btn,action){
+  const o=btn.textContent;btn.disabled=true;btn.textContent='...';
+  try{
+    const r=await fetch('/api/xgrow/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
+    const d=await r.json();
+    btn.textContent=d.message||'Done';
+    setTimeout(()=>{btn.disabled=false;btn.textContent=o;fetchData();},1500);
+  }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+}
+async function xgrowGenReplies(btn,postId){
+  const p=xgrowPosts[postId];
+  if(!p){alert('Post not found in cache — reload the tab');return;}
+  const o=btn.textContent;btn.disabled=true;btn.textContent='Generating...';
+  try{
+    const r=await fetch('/api/xgrow/generate-reply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      targetPost:p.content,
+      authorUsername:p.authorUsername,
+      authorFollowers:p.authorFollowers,
+      accountTier:p.accountTier
+    })});
+    const d=await r.json();
+    if(d.error){btn.disabled=false;btn.textContent=o;alert('Error: '+d.error);return;}
+    const raw=d.replies||[];
+    if(!raw.length){btn.disabled=false;btn.textContent=o;alert('No replies generated');return;}
+    const replies=raw.map(function(r){return typeof r==='string'?r:(r.suggestedReply||String(r));});
+    xgrowPosts[postId].cachedReplies=replies;
+    const el=document.getElementById('replies-'+postId);
+    if(el){
+      let rh='';
+      replies.forEach(function(reply,idx){
+        rh+='<div class="xgrow-reply-card">';
+        rh+='<div class="xgrow-reply-text">'+esc(String(reply))+'</div>';
+        rh+='<button class="xgrow-btn" style="font-size:9px;padding:3px 7px;border-color:var(--green);color:var(--green);white-space:nowrap" onclick="xgrowPostReply(this,&quot;'+postId+'&quot;,'+idx+')">Post</button>';
+        rh+='</div>';
+      });
+      el.innerHTML=rh;
+    }
+    btn.disabled=false;btn.textContent='Regenerate';
+  }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+}
+async function xgrowPostReply(btn,postId,replyIdx){
+  const p=xgrowPosts[postId];
+  if(!p){alert('Post not found in cache — reload the tab');return;}
+  const replies=p.cachedReplies||[];
+  const replyText=replies[replyIdx];
+  if(!replyText){alert('Reply not found');return;}
+  const o=btn.textContent;btn.disabled=true;btn.textContent='Posting...';
+  try{
+    const r=await fetch('/api/xgrow/post-reply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      postDbId:p.id,
+      replyText:replyText,
+      inReplyToTweetId:p.postId
+    })});
+    const d=await r.json();
+    if(d.success){
+      btn.textContent='Posted!';
+      btn.style.opacity='0.5';
+      const card=document.getElementById('xgrow-post-'+postId);
+      if(card){card.style.opacity='0.4';}
+      setTimeout(fetchData,2000);
+    }else{
+      btn.disabled=false;btn.textContent=o;
+      alert('Failed: '+(d.error||'Unknown error'));
+    }
+  }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+}
 </script>
 </body>
 </html>`;
