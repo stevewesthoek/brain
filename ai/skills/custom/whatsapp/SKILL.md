@@ -1,3 +1,8 @@
+---
+name: whatsapp
+description: WhatsApp Business API integration for sending messages, managing templates, handling incoming webhooks, and automating workflows via n8n using shared local credentials.
+---
+
 # WhatsApp Business API Skill
 
 **Status:** Ready for integration · **Last Updated:** 2026-04-12  
