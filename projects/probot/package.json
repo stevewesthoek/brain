@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Local Telegram control plane for Brain, Claude, and Codex workflows.",
+  "bin": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
