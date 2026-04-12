@@ -10,6 +10,10 @@ import { startCodexUsageMonitor } from "./services/codex-usage.js";
 import type { AppContext } from "./types/app.js";
 
 async function main(): Promise<void> {
+  // Set process title to "ProBot" so it appears clearly in macOS system dialogs,
+  // Activity Monitor, and Accessibility permissions (instead of generic "node")
+  process.title = "ProBot";
+
   fs.mkdirSync(config.dataDir, { recursive: true });
   fs.mkdirSync(config.notesDir, { recursive: true });
 
