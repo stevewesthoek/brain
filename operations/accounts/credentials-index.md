@@ -238,6 +238,44 @@ Tailnet for this infrastructure. Admin: `https://login.tailscale.com/admin`
 |----------|------|---------|----------|-----------|
 | `TAILSCALE_API_KEY` | `~/.config/tailscale/.env` | Tailscale API key for device management (remove nodes, rename, etc.) | API keys expire — check expiry in admin console | [Tailscale → Settings → Keys](https://login.tailscale.com/admin/settings/keys) |
 
+## Supabase PostgreSQL (Infrastructure Database)
+
+Self-hosted PostgreSQL instance (shared infrastructure for ory_prod, prochat, finance, cedula, accounting, and other databases).
+
+**Instance Details:**
+- Host: `10.0.2.4`
+- Port: `5433`
+- Server: Hetzner private network
+
+| Credential | Storage | Purpose | Rotation | Regenerate |
+|------------|---------|---------|----------|-----------|
+| `SYSTEM_DATABASE_URL` | `~/.config/supabase/.env` (recommended) | Superuser/admin connection string — database administration, user permission grants, schema migrations | No automatic expiry; rotate if compromised; credentials are sensitive — treat like production SSH key | [Supabase Dashboard](https://app.supabase.com) → Project Settings → Database → Connection string (copy admin connection) |
+| Superuser username | `supabase_admin` (config, not secret) | Admin account for Supabase management and permission grants | Static | — |
+| Superuser password | Store in `~/.config/supabase/.env` (mode 600, gitignored) | Required for administrative tasks (grants, migrations, schema management) | No automatic expiry; rotate if compromised | Supabase Dashboard → Project Settings → Database → Connection string → Password |
+
+**Database Directory (in same Supabase instance):**
+- `ory_prod` — Ory authentication platform (user: `ory_user`)
+- `prochat` — ProChat application (user: prochat_user)
+- `finance` — Finance/accounting (user: finance_user)
+- `cedula` — Cedula document management (user: cedula_user)
+- `accounting` — Accounting system (user: accounting_user)
+- And other application databases...
+
+**Safety Rules:**
+- ✅ Use only `supabase_admin` for administrative tasks (permissions, migrations)
+- ✅ Use application-specific users (e.g., `ory_user`) for normal operations
+- ❌ Never delete or modify schemas other than the application's own schema
+- ❌ Never modify user permissions outside the application's granted scope
+- ⚠️ Always test SQL changes in a non-production database first
+
+**To connect as admin:**
+```bash
+export SYSTEM_DATABASE_URL="postgresql://supabase_admin:PASSWORD@10.0.2.4:5433/postgres?schema=public"
+psql "$SYSTEM_DATABASE_URL"
+```
+
+---
+
 ## Ory
 
 Self-hosted authentication platform (PRIMARY). Dashboard: https://auth-admin.prochat.tools
