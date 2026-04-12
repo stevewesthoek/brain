@@ -150,6 +150,7 @@ Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
 
 ### Web Research & Data
 - `/firecrawl` — Web search + scraping to clean markdown (http://100.83.38.48:3002 via Tailscale)
+- `/apify` — Web scraping + data extraction via Apify CLI and API ($5/mo free tier, no credit card required)
 - `/autoresearch` — Autonomous optimization loop (define scope + metric → iterate → keep improvements)
 
 ### Content & Design
@@ -202,7 +203,7 @@ Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
 ### CLIs (installed globally, available to all three engines)
 - `aws`, `azure`, `cloudflare`, `gcloud`, `gws`, `hetzner` — cloud provider CLIs
 - `gh`, `stripe`, `supabase`, `dokploy`, `tailscale` — SaaS/deployment CLIs
-- `ffmpeg`, `notebooklm`, `playwright`, `firecrawl` — development/media CLIs
+- `apify`, `ffmpeg`, `notebooklm`, `playwright`, `firecrawl` — development/web/media CLIs
 - `n8n` — self-hosted workflow CLI
 
 ### MCP Servers

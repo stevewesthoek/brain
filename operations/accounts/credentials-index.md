@@ -238,6 +238,16 @@ Tailnet for this infrastructure. Admin: `https://login.tailscale.com/admin`
 |----------|------|---------|----------|-----------|
 | `TAILSCALE_API_KEY` | `~/.config/tailscale/.env` | Tailscale API key for device management (remove nodes, rename, etc.) | API keys expire — check expiry in admin console | [Tailscale → Settings → Keys](https://login.tailscale.com/admin/settings/keys) |
 
+## Apify
+
+Web scraping and data extraction platform. Console: `https://console.apify.com/`
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `APIFY_TOKEN` | `~/.apify/auth.json` | API token for CLI and REST API authentication | No automatic expiry; rotate if compromised | [Apify Console → Integrations → API & Integrations](https://console.apify.com/account/integrations) |
+
+**Note:** Free tier: $5/month renewable platform credit (no credit card required). CLI installed globally via Homebrew. Runbook: `operations/runbooks/apify.md`
+
 ---
 
 ## ⚠️ Pending — needs metadata
