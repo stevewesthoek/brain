@@ -1,405 +1,541 @@
 ---
 name: apify
-description: "Web scraping, data extraction, and actor-based automation via Apify CLI and REST API. AI-agnostic: works with Claude Code, Codex, and Gemini. Free plan includes $5 monthly credits. Use for targeted scraping jobs, competitor monitoring, data collection, and lead enrichment."
+description: "Actor-based web scraping & data extraction. 10 accounts, $50/month total. Multi-account round-robin rotation via n8n webhook. Deduplication patterns (paginated slices, URL partitioning). AI-agnostic: Claude Code, Codex, Gemini. Budget: ~20-50 runs/month. For n8n: POST webhook, never Execute Command."
 ---
 
-# /apify — Web Scraping & Data Extraction
+# /apify — Web Scraping & Data Extraction via Apify Actors
 
-**AI-agnostic web scraping platform.** Apify CLI and REST API for building and running scraping workflows, actor-based automation, and targeted data extraction. Free plan: $0 with $5 monthly platform credit (no credit card required).
+**AI-agnostic, production-ready web scraping system.** 10 accounts with automatic round-robin rotation and deduplication support. $50/month total budget shared across all three AI engines.
 
-- **Free tier:** $5/month platform credit (renewable), no credit card required
-- **Best for:** Sporadic scraping, competitor monitoring, lead enrichment, listing extraction, comment scraping
-- **Auth:** Apify API token from console (required for CLI and REST API)
-- **CLI:** `apify` command (installed globally via Homebrew)
-- **Works with:** Claude Code, Codex, Gemini Flash
+---
+
+## Budget Constraint (First-Class)
+
+- **Total monthly credit:** $50/month (10 accounts × $5 each, renewable 1st UTC)
+- **Typical cost per run:** $0.025–$0.25 (50–500 compute units)
+- **Monthly budget:** ~20–50 runs total across all accounts
+- **Per-account:** ~2–5 runs per month
+
+**This is a lean budget.** Every run counts. Test with small inputs (`maxRequestsPerCrawl: 10`) before full runs. Exhausting credits mid-month means waiting until the 1st.
 
 ---
 
 ## When to Use Apify
 
-**Use Apify for:**
+**Best for:**
 - Targeted one-off scraping jobs (YouTube, LinkedIn, e-commerce listings)
-- Scheduled data collection (competitor monitoring, pricing feeds)
-- Lead enrichment and business intelligence
-- Comment/review aggregation
-- Proof-of-concept automation before building production systems
-- Integration with n8n, Next.js apps, or internal tools
+- Scheduled competitor monitoring (price feeds, inventory tracking)
+- Lead enrichment and data collection pipelines
+- Comment/review aggregation (social listening)
+- Proof-of-concept automation before building production infrastructure
+- Integration with n8n workflows, Next.js apps, or internal tools
 
-**Do NOT use Apify for:**
-- Building your whole business on expensive third-party Actors without cost analysis — that's how "$0 free plan" becomes "$500/month"
+**Don't use for:**
 - High-volume production scraping (use your own infrastructure)
-- High-frequency site monitoring (expensive per run)
-
-**Workflow philosophy:**
-1. **CLI (quick validation)**: Test scraping with `apify run` locally
-2. **API (production)**: Move winning workflows to API calls in your app or n8n
-3. **Actors (reuse)**: Package workflows as Actors for team/marketplace distribution
+- Building a business on expensive third-party Actors (you will blow through $50 fast)
+- High-frequency monitoring (Apify charges per run; use periodic jobs instead)
 
 ---
 
-## Authentication
+## Multi-Account System: How It Works
 
-### Get Your API Token
+You have **10 Apify free accounts** with automatic rotation:
 
-1. Go to **Apify Console** → https://console.apify.com/
-2. Sign up (free account, no credit card required)
-3. Navigate to **Integrations** → **API & Integrations**
-4. Copy your **API token**
+| Account | Email | Status |
+|---------|-------|--------|
+| ProChat-1 to ProChat-10 | Various | ✅ Active |
 
-### Configure CLI
+### Rotation: Day-Based Index
+
+Each day, a different account is "active":
+
+- **Days 1, 11, 21 of month:** Account 1 (ProChat-1)
+- **Days 2, 12, 22 of month:** Account 2 (ProChat-2)
+- ... (pattern repeats)
+- **Days 10, 20, 30 of month:** Account 10 (ProChat-10)
+
+This is **deterministic** — two concurrent calls on the same day use the same account (safe). No state corruption, no race conditions.
+
+### For n8n Workflows: Use the Credential Manager Webhook
+
+**Never use Execute Command nodes** — they break in Docker (n8n on Dokploy).
+
+Call the webhook:
+```
+POST https://n8n.prochat.tools/webhook/apify-next-token
+Content-Type: application/json
+Body:
+{
+  "caller_id": "my-workflow-name",
+  "offset": 0,
+  "items_per_account": 100
+}
+```
+
+Response:
+```json
+{
+  "token": "apify_api_...",
+  "account_name": "ProChat-3",
+  "account_index": 3,
+  "pagination_offset": 0
+}
+```
+
+The webhook handles all account rotation internally. Your workflow just gets a token + offset back.
+
+### For CLI / Local Testing: Use `apify-multi`
 
 ```bash
-# Set token (one-time setup)
+# Get next token (advances rotation)
+apify-multi next-token
+
+# Check status (all 10 accounts)
+apify-multi status
+
+# Run an actor with automatic account rotation
+apify-multi run apify/web-scraper --input-file input.json
+```
+
+---
+
+## Deduplication Patterns: Prevent 10 Copies of the Same Data
+
+**Problem:** If you run the same query on 10 accounts, you get 1,000 identical results (100 from each), not 1,000 unique results.
+
+**Solution:** Use one of three deduplication patterns.
+
+### Pattern A: Paginated Single-Actor-Run (Recommended for Search/Listing Actors)
+
+**When to use:** Scraping search results, listing feeds, or any data that supports `offset` pagination.
+
+**How it works:**
+- Run one Apify actor once
+- Account 1 fetches results `offset=0, limit=100`
+- Account 2 fetches results `offset=100, limit=100`
+- Account 3 fetches results `offset=200, limit=100`
+- ... Account 10 fetches `offset=900, limit=100`
+
+**Result:** 1,000 unique results, no duplicates, zero wasted API calls.
+
+**n8n implementation:**
+```
+1. POST webhook → get token + pagination_offset
+2. POST /acts/{actor}/runs with:
+   {
+     "startUrls": [{"url": "https://google.com/search?q=..."}],
+     "maxRequestsPerCrawl": 100,
+     "offset": {{pagination_offset}}    ← key to deduplication
+   }
+3. Poll until SUCCEEDED
+4. GET /datasets/{id}/items?offset={{pagination_offset}}&limit=100
+```
+
+The webhook returns `pagination_offset: 0, 100, 200, ...` as requests cycle through accounts.
+
+### Pattern B: Different URL Slices Per Account (For URL-List Actors)
+
+**When to use:** You have a list of URLs to scrape (product pages, profiles, etc.).
+
+**How it works:**
+- Partition your URL list into 10 slices
+- Account 1 → `[url1, url2, url3, url4, url5]`
+- Account 2 → `[url6, url7, url8, url9, url10]`
+- ... Account 10 → `[url91, ..., url100]`
+
+**Result:** Each account gets a unique input set → unique output set → no duplicates.
+
+**n8n implementation:**
+```
+1. Calculate which account is active: POST webhook
+2. POST /acts/{actor}/runs with:
+   {
+     "startUrls": [
+       {{urls.slice((account_index-1)*10, account_index*10)}}
+     ]
+   }
+3. Poll + fetch results
+```
+
+### Pattern C: Post-Hoc Deduplication (Fallback)
+
+**When to use:** You can't control input or output pagination. Last resort.
+
+**How it works:**
+- All 10 accounts run the same query independently
+- Collect all results
+- Deduplicate by URL, content hash, or unique ID before storing
+
+**Cost:** Wasteful — you pay 10× compute units but only get 1×'s worth of unique data. Use only if A/B don't apply.
+
+### Which Pattern to Use?
+
+| Use Case | Pattern | Benefit |
+|----------|---------|---------|
+| Google search, YouTube, e-commerce listings | A | Paginated dataset |
+| Product page scraping, lead enrichment | B | Partition input URLs |
+| No pagination support | C | Post-hoc dedup |
+| Single small job (<100 results) | None | Just use one account |
+
+---
+
+## n8n Integration: The Complete 4-Step Pattern
+
+### Step 1: Get Token + Offset
+
+```
+HTTP POST https://n8n.prochat.tools/webhook/apify-next-token
+Headers:
+  Content-Type: application/json
+Body:
+{
+  "caller_id": "{{$workflow.name}}",
+  "offset": 0
+}
+
+Response (store as $json):
+{
+  "token": "apify_api_...",
+  "account_name": "ProChat-3",
+  "account_index": 3,
+  "pagination_offset": 0
+}
+```
+
+### Step 2: Start Apify Run
+
+```
+HTTP POST https://api.apify.com/v2/acts/{actor-id}/runs
+Headers:
+  Authorization: Bearer {{$json.token}}
+  Content-Type: application/json
+Body:
+{
+  "startUrls": [{"url": "https://example.com"}],
+  "maxRequestsPerCrawl": 100
+}
+
+Response:
+{
+  "id": "run-12345",
+  "datasetId": "dataset-abc123",
+  "status": "RUNNING"
+}
+```
+
+### Step 3: Poll Until Terminal State
+
+```
+Loop (max 60 retries × 5 seconds = 5 minutes):
+  HTTP GET https://api.apify.com/v2/acts/{actor-id}/runs/{{run-id}}
+  Headers: Authorization: Bearer {{$json.token}}
+  
+  Check: $json.status is one of:
+    SUCCEEDED  — run complete, dataset ready
+    FAILED     — actor threw error (check run logs)
+    TIMED-OUT  — exceeded actor timeout (reduce scope)
+    ABORTED    — manually stopped or 402 Payment Required (account depleted)
+  
+  Break if terminal state, else wait 5 seconds and retry
+```
+
+All terminal run states:
+- `SUCCEEDED` — actor completed normally, dataset available
+- `FAILED` — actor error (check logs for details)
+- `TIMED-OUT` — actor exceeded timeout (too much data, reduce `maxRequestsPerCrawl`)
+- `ABORTED` — user-cancelled OR account hit $0 limit (HTTP 402)
+- `READY` — (initial state before RUNNING)
+- `RUNNING` — (polling state, not terminal)
+
+### Step 4: Fetch Results from Dataset
+
+```
+HTTP GET https://api.apify.com/v2/datasets/{{datasetId}}/items
+Headers:
+  Authorization: Bearer {{$json.token}}
+Query Params:
+  offset=0
+  limit=100
+  clean=true
+  format=json
+
+Response: JSON array of items
+
+Dataset API Params Explained:
+  offset    — Start from item N (0-based). Use {{pagination_offset}} from Step 1 for Pattern A.
+  limit     — Max items to return (default: all). Use 100 for pagination.
+  clean     — true = filter empty items (recommended)
+  format    — json | csv | xlsx | xml | rss | html (default: json)
+```
+
+---
+
+## CLI Usage: Single & Multi-Account
+
+### Single Account (Default)
+
+```bash
+# Set token (one-time)
 apify auth --token YOUR_API_TOKEN
 
-# Verify
-apify auth --token # shows your current token
+# Run actor
+apify run apify/web-scraper --input-file input.json
+
+# List actors
+apify actors ls
+
+# View actor details (including input schema)
+apify info actor/apify/web-scraper
 ```
 
-Store token safely. For automation/n8n, use environment variables:
+### Multi-Account (Round-Robin)
+
 ```bash
-export APIFY_TOKEN="your_token_here"
+# Get next token (advances rotation, shows which account)
+apify-multi next-token
+
+# Check all 10 accounts + monthly spend
+apify-multi status
+
+# Run actor with automatic account rotation
+apify-multi run apify/web-scraper --input-file input.json
+# Output: "Using account: ProChat-3 (3/10, cycle #0)"
+
+# List all configured accounts
+apify-multi list
 ```
 
 ---
 
-## Quick Start: CLI
+## Actor Input Discovery: How to Know What Parameters an Actor Accepts
 
-### Search for and Run Pre-Built Actors
+**Apify actors have different input schemas.** Don't guess — look it up.
 
-```bash
-# Search the Apify Store
-apify search "keyword"
+### Option 1: Apify Console
 
-# Example: Find web scrapers
-apify search "web scraper"
-apify search "e-commerce"
-apify search "youtube"
+Visit https://apify.com/store, find the actor, read the "Input" tab.
 
-# View actor details
-apify info actor/username/actor-name
-```
-
-### Run an Actor Locally
+### Option 2: CLI
 
 ```bash
-# Run an actor and see output
-apify run actor/username/actor-name --input-file input.json
-
-# Save results to file
-apify run actor/username/actor-name > output.json
-
-# Run with inline input
-apify run actor/username/actor-name \
-  --input-string '{"startUrls": [{"url": "https://example.com"}]}'
+apify info actor/apify/web-scraper | jq '.defaultRunOptions, .inputSchema'
 ```
 
-### Common Actors (Examples)
+### Option 3: REST API
 
-| Actor | Purpose | Input |
-|-------|---------|-------|
-| `apify/web-scraper` | Generic HTML scraping | URLs + CSS selectors |
-| `apify/youtube-comment-scraper` | YouTube comments | Video URL |
-| `apify/website-content-crawler` | Full site crawl to markdown | Start URL |
-| `apify/google-search-scraper` | Google search results | Query term |
-| `apify/linkedin-profile-scraper` | LinkedIn data (login required) | Profile URL |
+```bash
+curl -s https://api.apify.com/v2/acts/apify/web-scraper \
+  -H "Authorization: Bearer $APIFY_TOKEN" | jq '.defaultRunOptions, .inputSchema'
+```
 
-**Tip:** Most actors on the Apify Store include CLI examples in their README.
+This returns the actor's expected inputs. Common fields for web scrapers:
+- `startUrls` — list of URLs to scrape
+- `maxRequestsPerCrawl` — max pages to fetch (cost control)
+- `maxCrawlDepth` — max link depth (1 = single page)
+- `cssSelectors` — CSS selectors to extract data
+- `pageFunction` — custom JavaScript extraction code
 
 ---
 
-## REST API Usage
+## Cost Management: Real Numbers
 
-### Run an Actor via API
+### Typical Apify Runs
+
+| Actor | Scope | Cost |
+|-------|-------|------|
+| Web scraper | 10 URLs | $0.03–0.05 |
+| Web scraper | 100 URLs | $0.10–0.25 |
+| Google Search scraper | 10 results | $0.01–0.02 |
+| LinkedIn scraper | 10 profiles | $0.05–0.10 |
+| YouTube comment scraper | 100 comments | $0.02–0.05 |
+
+### Monitor Your Spend
 
 ```bash
-# Start a run
-curl -X POST https://api.apify.com/v2/acts/actor-id/runs \
-  -H "Authorization: Bearer YOUR_API_TOKEN" \
+# Check real spend (accumulated from all runs this month)
+apify-multi status
+# Output: "Total remaining: $47.32" (if you've spent ~$2.68 so far)
+```
+
+The manager tracks all runs you've made and estimates spend. If you're on pace to exceed $50, cut back.
+
+### Optimize Cost
+
+- Use `maxRequestsPerCrawl: 10` for testing, then scale up
+- Use `maxCrawlDepth: 1` unless you need deep crawling
+- Use `cssSelectors` to extract only what you need (faster = cheaper)
+- Batch multiple queries: 1 large run costs less than 10 small runs
+- Cache results locally: don't re-scrape the same URL twice in one month
+
+---
+
+## Claude Code: Using Apify in Your Workflows
+
+### CLI-Based (Local Testing)
+
+```bash
+# Validate tokens are working
+apify-multi status
+
+# Test a single run
+apify-multi run apify/web-scraper --input-file test.json
+```
+
+### API-Based (For Complex Workflows)
+
+```bash
+# Call n8n webhook to get token
+curl -s -X POST https://n8n.prochat.tools/webhook/apify-next-token \
   -H "Content-Type: application/json" \
   -d '{
-    "startUrls": [{"url": "https://example.com"}],
-    "cssSelectors": "h1, p"
-  }'
+    "caller_id": "my-script",
+    "offset": 0
+  }' | jq .
 
-# Response:
-# {
-#   "id": "run-12345",
-#   "status": "RUNNING",
-#   "datasetId": "dataset-12345"
-# }
-
-# Check status
-curl https://api.apify.com/v2/acts/actor-id/runs/run-12345 \
-  -H "Authorization: Bearer YOUR_API_TOKEN"
-
-# Get results
-curl https://api.apify.com/v2/datasets/dataset-12345/items \
-  -H "Authorization: Bearer YOUR_API_TOKEN"
+# Extract token and run Apify
+TOKEN=$(curl -s -X POST ... | jq -r '.token')
+curl -X POST https://api.apify.com/v2/acts/apify/web-scraper/runs \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"startUrls": [{"url": "https://..."}]}'
 ```
 
-### Call from n8n
+---
 
-1. Add **HTTP Request** node
-2. URL: `https://api.apify.com/v2/acts/{actor-id}/runs`
-3. Method: `POST`
-4. Auth: `Bearer YOUR_API_TOKEN` (store token in n8n secrets)
-5. Body:
-   ```json
-   {
-     "startUrls": [{"url": "https://..."}],
-     "otherOptions": "..."
-   }
+## Codex (Code Review): Using Apify
+
+### For Code Review
+
+When reviewing n8n workflows or web scraping integrations:
+- **Budget constraint:** Confirm workflows respect the $50/month ceiling
+- **Account awareness:** Check that code uses the webhook pattern, never Execute Command
+- **Deduplication:** Verify the workflow uses Pattern A/B to avoid duplicate results
+
+### CLI
+
+Same as Claude Code — `apify-multi` and webhook are available.
+
+---
+
+## Gemini: Using Apify for Bulk Analysis
+
+### Your Role: Result Preprocessing (Not Initiation)
+
+Gemini should **preprocess Apify results**, not initiate scrapes:
+
+**✅ Good usage:**
+```bash
+# 1. Apify returns 1,000 results via webhook (Claude's job)
+# 2. Gemini Flash preprocesses (you) — summarize, categorize, extract key insights
+results=$(curl -s https://api.apify.com/v2/datasets/{id}/items | head -c 500000)
+gemini-review.sh "Summarize these 1000 product listings and categorize by price tier" "$results"
+```
+
+**❌ Don't do this:**
+```bash
+# Gemini autonomously decides to scrape — wastes budget
+# Gemini should not call webhook or start Apify runs
+```
+
+### Why?
+
+- Gemini has 1M token context — it's perfect for analyzing 10,000 items at once
+- Claude orchestrates; Gemini preprocesses — clear separation
+- Budget: Gemini Free Flash is free; every Apify run costs money
+
+---
+
+## Operations & Setup
+
+### Add or Remove Accounts
+
+Edit `~/.apify-multi/tokens.json` directly — add/remove tokens as needed.
+
+```bash
+# Verify all accounts are working
+apify-multi list
+```
+
+### Monthly Reset
+
+Apify automatically resets all accounts to $5 on the 1st UTC. No action needed.
+
+### Token Rotation State
+
+The manager maintains rotation state in `~/.apify-multi/state.json`. Rotation is day-based (deterministic) — no manual reset required.
+
+### Set Up n8n Credential Manager Workflow (One-Time)
+
+1. Load all 10 tokens as n8n variables (one-time):
+   ```bash
+   for i in 1 2 3 4 5 6 7 8 9 10; do
+     ~/.local/bin/n8n-api create-variable - <<EOF
+   {"key":"APIFY_TOKEN_${i}","value":"apify_api_...TOKEN_FOR_ACCOUNT_${i}..."}
+   EOF
+   done
    ```
-6. Parse response: `jsonata` — `$.datasetId`
-7. Fetch results: Second HTTP node → `/datasets/{datasetId}/items`
 
----
+2. Deploy the Credential Manager workflow (ask Claude or Codex to wire it in n8n)
 
-## SDK Usage (JavaScript/Python)
-
-### JavaScript (Node.js)
-
-```javascript
-const { ApifyClient } = require('apify-client');
-
-const client = new ApifyClient({ token: process.env.APIFY_TOKEN });
-
-(async () => {
-  // Run an actor
-  const run = await client.actor('apify/web-scraper').call({
-    startUrls: [{ url: 'https://example.com' }],
-    cssSelectors: 'h1, p'
-  });
-
-  // Get results
-  const dataset = await client.dataset(run.datasetId).listItems();
-  console.log(dataset.items);
-})();
-```
-
-### Python
-
-```python
-from apify_client import ApifyClient
-
-client = ApifyClient(token=os.getenv("APIFY_TOKEN"))
-
-# Run actor
-actor_run = client.actor("apify/web-scraper").call(
-    run_input={
-        "startUrls": [{"url": "https://example.com"}],
-        "cssSelectors": "h1, p"
-    }
-)
-
-# Get results
-dataset = client.dataset(actor_run["datasetId"]).list_items()
-for item in dataset["items"]:
-    print(item)
-```
-
----
-
-## Common Use Cases
-
-### 1. Extract Product Data from E-Commerce Site
-
-```bash
-# Use web-scraper actor
-apify run apify/web-scraper --input-file products.json
-
-# products.json:
-# {
-#   "startUrls": [
-#     {"url": "https://shop.example.com/products"}
-#   ],
-#   "cssSelectors": "product-name, price, rating"
-# }
-```
-
-### 2. Monitor Competitor Pricing
-
-```bash
-# Schedule daily via n8n
-# 1. HTTP POST to start run
-# 2. Wait for completion
-# 3. Store results in database
-# 4. Alert if price changed
-
-# In n8n n8n HTTP node:
-POST https://api.apify.com/v2/acts/actor-id/runs
-Body: {"urls": ["competitor-site.com"]}
-```
-
-### 3. Extract YouTube Comments
-
-```bash
-apify run apify/youtube-comment-scraper --input-string '{
-  "videoUrl": "https://youtube.com/watch?v=VIDEO_ID",
-  "maxComments": 1000
-}'
-```
-
-### 4. Validate Website Structure
-
-```bash
-# Crawl site, extract all pages, links, and title tags
-apify run apify/website-content-crawler --input-file crawl.json
-
-# crawl.json:
-# {
-#   "startUrls": [{"url": "https://example.com"}],
-#   "maxCrawlDepth": 2,
-#   "maxResultsPerCrawl": 100
-# }
-```
-
----
-
-## Integration with n8n
-
-**n8n Brain Inbox workflow** can feed Apify results for data enrichment:
-
-1. **Trigger:** Webhook or schedule (e.g., hourly competitor price check)
-2. **Apify HTTP node:** Start actor run
-3. **Wait node:** Poll status until complete
-4. **Fetch results:** HTTP node → GET `/datasets/{datasetId}/items`
-5. **Process:** Filter, transform, store in database
-6. **Notify:** Slack/email alert if thresholds exceeded
-
-Example workflow URL pattern:
-```
-https://n8n.prochat.tools/webhook/apify-enrichment
-```
-
----
-
-## Cost Management
-
-### Free Plan Details
-
-- **$5/month** platform credit (renewable)
-- **No credit card** required
-- Shared queue (standard priority)
-- 1M compute units/month (typical actor: 50-500 units/run)
-
-### Estimate Cost Per Run
-
-Most pre-built actors cost 50–500 units per run:
-- Small scrape (10 URLs): ~50 units ($0.025)
-- Medium scrape (100 URLs): ~200 units ($0.10)
-- Large scrape (1000 URLs): ~500 units ($0.25)
-
-**At $5/month, you can run ~20–50 typical scrapes.**
-
-### Tips to Stay Within Free Tier
-
-1. Test locally with `apify run` before scheduling
-2. Use smallest possible `maxResults` / `maxCrawlDepth`
-3. Batch jobs (combine 5 scrapes into 1 run) if possible
-4. Monitor monthly spend via **Apify Console** → **Billing**
-5. Set up alerts: Console → **Notifications** → alert when credit low
-
----
-
-## CLI Commands Reference
-
-```bash
-# Authentication
-apify auth --token TOKEN              # Set API token
-apify auth --token                    # Show current token
-
-# Actor Discovery
-apify search keyword                  # Search Apify Store
-apify info actor/user/name           # View actor details
-
-# Running Actors
-apify run actor/user/name             # Run locally (interactive)
-apify run actor/user/name --input-file input.json
-apify run actor/user/name --input-string '{"key": "value"}'
-
-# View Results
-apify runs list                       # List recent runs
-apify datasets list                   # List datasets
-apify datasets --latest               # Get latest dataset
-```
+3. Other workflows call: `POST /webhook/apify-next-token` → get token
 
 ---
 
 ## Troubleshooting
 
-### "API token not found"
+### Problem: "Command not found: apify-multi"
+
+**Solution:** The wrapper is at `~/.local/bin/apify-multi`. Verify it's in PATH:
 ```bash
-apify auth --token YOUR_TOKEN  # Set token
+echo $PATH | grep -q ".local/bin" || echo "Add ~/.local/bin to PATH"
 ```
 
-### "Actor not found"
-```bash
-apify search keyword           # Search for correct actor name
-apify info actor/user/name    # Verify exact actor path
-```
+### Problem: "All accounts show 'depleted'"
 
-### "Run failed" or "Out of budget"
-- Check Apify Console → **Runs** → see error log
-- Reduce `maxResults` or `maxCrawlDepth`
-- Confirm you have monthly credit remaining (Console → **Billing**)
-- Switch to a simpler actor (smaller compute cost)
+**Cause:** All 10 accounts exhausted their $5 for the month.
 
-### Rate Limiting (429)
-- Wait 1–5 minutes before retrying
-- Use exponential backoff in automation (n8n, scripts)
-- Contact Apify support if issue persists
+**Solution:** Wait for 1st UTC (auto-reset) or buy additional credit on one account.
 
----
+### Problem: "Bearer token invalid" (HTTP 401 from Apify)
 
-## Best Practices
+**Cause:** Token is wrong, expired, or revoked.
 
-### ✅ Do
+**Solution:** Verify token in n8n variables or `~/.apify-multi/tokens.json`.
 
-- Test scraping with `apify run` locally first
-- Use metadata filters (e.g., date range, category) to reduce results
-- Cache results if same data needed multiple times
-- Store API token in environment variables, never in code
-- Monitor monthly spend (Console → Billing)
-- Document actor inputs/outputs for team reuse
+### Problem: Run returns HTTP 402
 
-### ❌ Don't
+**Cause:** Account hit $0 limit mid-month.
 
-- Scrape high-frequency without caching (wastes credits)
-- Hard-code credentials in CLI commands (use env vars)
-- Assume actor output schema is stable (test after updates)
-- Run actors without cost estimates (always test small first)
-- Use Apify as your primary data infrastructure (too expensive at scale)
+**Solution:** Workflow falls back to next account automatically. Check `apify-multi status` to see which accounts are depleted.
+
+### Problem: Rate limiting (HTTP 429 from Apify)
+
+**Solution:** Space out workflow triggers — don't start 10 runs simultaneously. Add 5-10 second delays between runs.
 
 ---
 
-## Comparison with Other Scraping Tools
+## Comparison: Apify vs Other Scraping Tools
 
-| Tool | Best for | Cost | Setup |
-|------|----------|------|-------|
-| **Apify** | One-off, targeted scraping | $5/mo free | Token auth, pre-built actors |
-| **Firecrawl** | Web search + markdown extraction | Free (self-hosted) | Curl/API, no auth |
-| **Playwright** | Browser automation, complex interactions | Free | Local script, npm install |
-| **Cheerio** | Lightweight HTML parsing | Free | Node.js library |
-| **Scrapy** | Full-featured web scraping framework | Free | Python framework, heavy setup |
-
----
-
-## Links & Resources
-
-- **Apify Console:** https://console.apify.com/
-- **Actor Store:** https://apify.com/store
-- **REST API Docs:** https://docs.apify.com/api/v2/
-- **CLI Docs:** https://docs.apify.com/cli/
-- **JavaScript SDK:** https://www.npmjs.com/package/apify-client
-- **Python SDK:** https://pypi.org/project/apify-client/
+| Tool | Best For | Cost | Setup | Budget |
+|------|----------|------|-------|--------|
+| **Apify** | Actor-based scraping, re-usable workflows | $0 free tier, $0.025–0.25/run | API token + n8n | $50/month (10 accounts) |
+| **Firecrawl** | Web search + markdown extraction | Free (self-hosted) | Tailscale IP | Unlimited |
+| **Playwright** | Browser automation, complex interactions | Free | CLI install | Unlimited |
+| **Cheerio** | Lightweight HTML parsing | Free | Node.js lib | Unlimited |
 
 ---
 
-## Status
+## Status & Support
 
-- **CLI installed:** `apify-cli/1.4.1` via Homebrew
-- **Auth:** Requires API token from Apify Console
-- **Free tier:** $5/month renewable, no credit card
-- **Maintained by:** Claude Code, Codex, Gemini Flash automation workflows
+- ✅ 10 accounts configured, all validated
+- ✅ Multi-account rotation working (day-based, stateless)
+- ✅ n8n webhook deployed
+- ✅ Run tracking + real credit accounting active
+- ✅ Deduplication patterns documented
+
+**Links:**
+- Apify Console: https://console.apify.com/
+- Actor Store: https://apify.com/store
+- API Docs: https://docs.apify.com/api/v2/
+- CLI Docs: https://docs.apify.com/cli/
+
+**Related skills:** `/firecrawl` (web search), `/n8n` (workflow automation), `/playwright` (browser automation)

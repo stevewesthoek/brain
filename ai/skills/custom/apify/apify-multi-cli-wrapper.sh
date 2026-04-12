@@ -9,7 +9,8 @@
 #
 # This wrapper handles account rotation automatically.
 
-MANAGER_SCRIPT="/Users/Office/Repos/stevewesthoek/brain/ai/skills/custom/apify/apify-multi-account-manager.py"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MANAGER_SCRIPT="$SCRIPT_DIR/apify-multi-account-manager.py"
 
 case "$1" in
   run)

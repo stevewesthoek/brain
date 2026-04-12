@@ -21,6 +21,7 @@ import sys
 MANAGER_ROOT = Path.home() / ".apify-multi"
 TOKENS_FILE = MANAGER_ROOT / "tokens.json"
 STATE_FILE = MANAGER_ROOT / "state.json"
+RUNS_FILE = MANAGER_ROOT / "runs.json"
 
 # Create config dir if needed
 MANAGER_ROOT.mkdir(exist_ok=True, mode=0o700)
@@ -132,14 +133,19 @@ class ApifyMultiManager:
         }
 
     def get_status(self):
-        """Get aggregated status across all 10 accounts."""
+        """Get aggregated status across all 10 accounts with real run tracking."""
         if not self.tokens:
             return {'error': 'No accounts configured'}
 
         total_credit = 0
-        total_spent = 0
+        total_spent = 0.0
         depleted = []
         account_statuses = []
+
+        # Load runs history for this month
+        runs = self._load_runs()
+        month_prefix = datetime.now().strftime("%Y-%m")
+        month_runs = [r for r in runs if r.get('started_at', '').startswith(month_prefix)]
 
         for i, account in enumerate(self.tokens):
             try:
@@ -153,10 +159,13 @@ class ApifyMultiManager:
                     plan = data.get('plan', {})
                     monthly_credit = plan.get('monthlyUsageCreditsUsd', 5)
 
-                    # Estimate spent based on max credit and assuming linear use
-                    # This is approximate — Apify doesn't expose exact spend via API
-                    spent = 0  # Would need to track runs to calculate accurately
-                    remaining = monthly_credit
+                    # Calculate real spent based on run tracking
+                    account_runs = [r for r in month_runs if r.get('account_index') == i + 1]
+                    spent = sum(
+                        r.get('final_cost_usd') or r.get('estimated_cost_usd') or 0
+                        for r in account_runs
+                    )
+                    remaining = monthly_credit - spent
 
                     total_credit += monthly_credit
                     total_spent += spent
@@ -168,7 +177,10 @@ class ApifyMultiManager:
                         'account': account['name'],
                         'email': account.get('email'),
                         'monthly_credit': monthly_credit,
-                        'status': 'depleted' if remaining <= 0 else 'active'
+                        'spent_this_month': f"${spent:.2f}",
+                        'remaining': f"${remaining:.2f}",
+                        'status': 'depleted' if remaining <= 0 else 'active',
+                        'runs_this_month': len(account_runs)
                     })
             except Exception as e:
                 account_statuses.append({
@@ -184,11 +196,12 @@ class ApifyMultiManager:
             'total_accounts': len(self.tokens),
             'accounts_configured': len(self.tokens),
             'total_monthly_credit': f"${total_credit:.2f}",
-            'total_spent_estimate': f"${total_spent:.2f}",
+            'total_spent_this_month': f"${total_spent:.2f}",
             'total_remaining': f"${(total_credit - total_spent):.2f}",
             'current_cycle_position': f"Account {current_index + 1}/{len(self.tokens)}",
             'cycle_count': self.state.get('cycle_count', 0),
             'depleted_accounts': depleted if depleted else 'None',
+            'total_runs_this_month': len(month_runs),
             'account_details': account_statuses
         }
 
@@ -204,6 +217,66 @@ class ApifyMultiManager:
             print(f"   Plan: {account.get('plan')}")
             print(f"   Monthly credit: ${account.get('monthly_credit', 5)}")
             print()
+
+    def _load_runs(self):
+        """Load run tracking history."""
+        if not RUNS_FILE.exists():
+            return []
+        with open(RUNS_FILE, 'r') as f:
+            return json.load(f)
+
+    def _save_runs(self, runs):
+        """Save run tracking history."""
+        with open(RUNS_FILE, 'w') as f:
+            json.dump(runs, f, indent=2)
+        os.chmod(RUNS_FILE, 0o600)
+
+    def record_run(self, run_id, account_index, actor_id, estimated_cost_usd=None):
+        """Record a run for credit tracking."""
+        runs = self._load_runs()
+        account = self.tokens[account_index - 1] if account_index <= len(self.tokens) else {}
+
+        run_record = {
+            'run_id': run_id,
+            'account_index': account_index,
+            'account_name': account.get('name', f'Account-{account_index}'),
+            'actor_id': actor_id,
+            'started_at': datetime.now().isoformat(),
+            'estimated_cost_usd': estimated_cost_usd,
+            'status': 'started'
+        }
+        runs.append(run_record)
+        self._save_runs(runs)
+        return run_record
+
+    def update_run_status(self, run_id, status, final_cost_usd=None):
+        """Update run status and final cost."""
+        runs = self._load_runs()
+        for run in runs:
+            if run['run_id'] == run_id:
+                run['status'] = status
+                if final_cost_usd is not None:
+                    run['final_cost_usd'] = final_cost_usd
+                run['updated_at'] = datetime.now().isoformat()
+                break
+        self._save_runs(runs)
+
+    def get_token_for_offset(self, desired_offset, items_per_account=100):
+        """Get token for a specific offset (enables Pattern A deduplication)."""
+        if not self.tokens:
+            return None
+
+        account_index = (desired_offset // items_per_account) % len(self.tokens)
+        account = self.tokens[account_index]
+
+        return {
+            'token': account['token'],
+            'account_name': account['name'],
+            'account_index': account_index + 1,  # 1-based
+            'pagination_offset': desired_offset,
+            'items_per_account': items_per_account,
+            'total_accounts': len(self.tokens)
+        }
 
     def export_config(self):
         """Export config as JSON (for n8n environment variables)."""
@@ -233,6 +306,9 @@ def main():
         print("  apify-multi-manager list")
         print("  apify-multi-manager status")
         print("  apify-multi-manager next-token")
+        print("  apify-multi-manager get-token-for-offset <offset> [items_per_account]")
+        print("  apify-multi-manager record-run <run_id> <account_index> <actor_id> [estimated_cost_usd]")
+        print("  apify-multi-manager update-run-status <run_id> <status> [final_cost_usd]")
         print("  apify-multi-manager export-config")
         return
 
@@ -261,6 +337,37 @@ def main():
     elif command == 'export-config':
         config = manager.export_config()
         print(json.dumps(config, indent=2))
+
+    elif command == 'get-token-for-offset':
+        if len(sys.argv) < 3:
+            print("Usage: apify-multi-manager get-token-for-offset <offset> [items_per_account]")
+            return
+        offset = int(sys.argv[2])
+        items_per_account = int(sys.argv[3]) if len(sys.argv) > 3 else 100
+        token_info = manager.get_token_for_offset(offset, items_per_account)
+        if token_info:
+            print(json.dumps(token_info, indent=2))
+
+    elif command == 'record-run':
+        if len(sys.argv) < 5:
+            print("Usage: apify-multi-manager record-run <run_id> <account_index> <actor_id> [estimated_cost_usd]")
+            return
+        run_id = sys.argv[2]
+        account_index = int(sys.argv[3])
+        actor_id = sys.argv[4]
+        estimated_cost = float(sys.argv[5]) if len(sys.argv) > 5 else None
+        run_record = manager.record_run(run_id, account_index, actor_id, estimated_cost)
+        print(json.dumps(run_record, indent=2))
+
+    elif command == 'update-run-status':
+        if len(sys.argv) < 4:
+            print("Usage: apify-multi-manager update-run-status <run_id> <status> [final_cost_usd]")
+            return
+        run_id = sys.argv[2]
+        status = sys.argv[3]
+        final_cost = float(sys.argv[4]) if len(sys.argv) > 4 else None
+        manager.update_run_status(run_id, status, final_cost)
+        print(f"✅ Updated run {run_id} to {status}")
 
     else:
         print(f"Unknown command: {command}")

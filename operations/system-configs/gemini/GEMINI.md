@@ -138,7 +138,7 @@ Your output feeds back into Claude for action — be compact and structured.
 
 ## Workspace layout
 
-Shared AI-agnostic skills live in `brain/ai/skills/`. For Apify web scraping and data extraction, use the shared `/apify` skill at `brain/ai/skills/custom/apify/`. For Yeshua Academy nonprofit Google Ads automation, use the shared `/google-ads` skill at `brain/ai/skills/custom/google-ads/google-ads-automation/`. This stack is Ad Grants-only until the docs say otherwise.
+Shared AI-agnostic skills live in `brain/ai/skills/`. For Apify web scraping and data extraction, use the shared `/apify` skill at `brain/ai/skills/custom/apify/` — $50/mo total (10 accounts × $5 each, round-robin with deduplication patterns). **Gemini's role:** preprocess Apify results (bulk analysis, categorization), do NOT initiate scrapes (that's Claude's job). For Yeshua Academy nonprofit Google Ads automation, use the shared `/google-ads` skill at `brain/ai/skills/custom/google-ads/google-ads-automation/`. This stack is Ad Grants-only until the docs say otherwise.
 
 Local repos live at `~/Repos/` organized by GitHub account:
 - `stevewesthoek/` — personal repos (brain, this config)
