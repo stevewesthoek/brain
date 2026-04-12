@@ -238,6 +238,31 @@ Tailnet for this infrastructure. Admin: `https://login.tailscale.com/admin`
 |----------|------|---------|----------|-----------|
 | `TAILSCALE_API_KEY` | `~/.config/tailscale/.env` | Tailscale API key for device management (remove nodes, rename, etc.) | API keys expire — check expiry in admin console | [Tailscale → Settings → Keys](https://login.tailscale.com/admin/settings/keys) |
 
+## Clerk
+
+Authentication platform for multiple applications. Dashboard: https://dashboard.clerk.com
+
+| Credential | Storage | Purpose | Rotation | Regenerate |
+|------------|---------|---------|----------|-----------|
+| OAuth token | `~/.clerk.json` | Browser OAuth credentials for CLI access — not a persistent API key | Auto-refreshes if used within 30 days; manually re-auth if expired | Run `clerk auth` at any time |
+
+**Account Details:**
+- CLI installed at: `~/bin/clerk`
+- Version: 0.0.2-canary (2026-04-12)
+- Login: Automated browser OAuth (one account at a time)
+- Runbook: `operations/runbooks/clerk-cli.md`
+- Skill: `brain/ai/skills/custom/clerk/SKILL.md`
+
+**Key features:**
+- List applications and API keys
+- Query/export users, organizations, sessions
+- Manage webhooks and test events
+- Full CLI-based automation support
+
+**To log in:** `clerk auth` (opens browser → https://dashboard.clerk.com)
+
+---
+
 ## Apify — Multi-Account System (10 Accounts × $5/mo = $50/mo Total)
 
 Web scraping and data extraction platform. Multi-account rotation with round-robin distribution.
