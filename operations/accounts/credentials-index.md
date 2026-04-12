@@ -409,3 +409,4 @@ Entries detected by `sync-credentials` that are not yet categorized. Move each r
 | `WHATSAPP_ACCESS_TOKEN` | `~/.config/whatsapp/.env` | 2026-04-12 |
 | `WHATSAPP_API_BASE_URL` | `~/.config/whatsapp/.env` | 2026-04-12 |
 | `WHATSAPP_API_VERSION` | `~/.config/whatsapp/.env` | 2026-04-12 |
+| `WHATSAPP_APP_ID` | `~/.config/whatsapp/.env` | 2026-04-12 |
