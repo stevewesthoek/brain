@@ -36,7 +36,7 @@ const schema = z.object({
     .transform((value) => value === "true"),
   CLAUDE_PROJECTS_DIR: z.string().default(path.join(os.homedir(), ".claude", "projects")),
   CODEX_SESSIONS_DIR: z.string().default(path.join(os.homedir(), ".codex", "sessions")),
-  CODEX_SESSION_INDEX: z.string().default(path.join(os.homedir(), ".codex", "session_index.jsonl")),
+  CODEX_SESSION_INDEX: z.string().default(path.join(os.homedir(), ".codex", "state_5.sqlite")),
   PROBOT_REPO_ALIASES: z.string().default(""),
   SLACK_BOT_TOKEN: z.string().optional(),
   SLACK_APP_TOKEN: z.string().optional(),

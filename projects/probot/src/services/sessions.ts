@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { runCommand } from "../connectors/process.js";
 import type { SessionSummary } from "../types/app.js";
 
@@ -127,25 +128,39 @@ export async function listClaudeSessions(claudeProjectsDir: string): Promise<Ses
   return summaries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6);
 }
 
-interface CodexIndexEntry {
+interface CodexThreadRow {
   id: string;
-  thread_name?: string;
-  updated_at?: string;
+  cwd: string;
+  title: string;
+  first_user_message: string;
+  updated_at: number;
 }
 
-function loadCodexIndex(indexPath: string): Map<string, CodexIndexEntry> {
-  const map = new Map<string, CodexIndexEntry>();
-  for (const entry of readJsonLines(indexPath) as CodexIndexEntry[]) {
-    if (entry?.id) map.set(entry.id, entry);
+function loadCodexSqliteIndex(sqlitePath: string): Map<string, CodexThreadRow> {
+  const map = new Map<string, CodexThreadRow>();
+  if (!fs.existsSync(sqlitePath)) return map;
+  try {
+    const db = new DatabaseSync(sqlitePath, { readOnly: true });
+    const rows = db
+      .prepare(
+        "SELECT id, cwd, title, first_user_message, updated_at FROM threads WHERE cwd != ? ORDER BY updated_at DESC",
+      )
+      .all("/tmp") as unknown as CodexThreadRow[];
+    db.close();
+    for (const row of rows) {
+      map.set(row.id, row);
+    }
+  } catch {
+    // DB missing, locked, or schema mismatch — degrade to JSONL-only
   }
   return map;
 }
 
 export async function listCodexSessions(
   sessionsDir: string,
-  indexPath: string,
+  sqlitePath: string,
 ): Promise<SessionSummary[]> {
-  const index = loadCodexIndex(indexPath);
+  const index = loadCodexSqliteIndex(sqlitePath);
   const tmuxSessions = await listTmuxSessions();
   const summaries: SessionSummary[] = [];
 
@@ -168,80 +183,50 @@ export async function listCodexSessions(
       | { payload?: { cwd?: string; timestamp?: string } }
       | undefined;
 
-    if (!meta?.payload?.cwd) continue;
-
     const filename = path.basename(filePath, ".jsonl");
     const parts = filename.split("-");
     if (parts.length < 5) continue;
     const sessionId = parts.slice(-5).join("-");
     const indexed = index.get(sessionId);
-    const updatedAt = indexed?.updated_at ?? meta.payload.timestamp;
+
+    // cwd: prefer SQLite (reliable), fall back to session_meta JSONL
+    const cwd = indexed?.cwd ?? meta?.payload?.cwd;
+    // Skip /tmp sessions (automated health checks, not real user work)
+    if (!cwd || cwd === "/tmp") continue;
+
+    // updatedAt: SQLite stores epoch seconds (INTEGER), convert to ISO string
+    const updatedAt = indexed
+      ? new Date(indexed.updated_at * 1000).toISOString()
+      : (meta?.payload?.timestamp ?? undefined);
     if (!updatedAt) continue;
 
-    // Use thread_name from index if available, otherwise extract first user message
-    let headline = indexed?.thread_name;
+    // Primary: SQLite title is Codex's own stored first user message
+    let headline: string | undefined;
+    if (indexed) {
+      const raw = (indexed.title || indexed.first_user_message).trim();
+      if (raw) headline = raw.slice(0, 250);
+    }
+
+    // Fallback: scan JSONL event_msg entries for older sessions not in SQLite
     if (!headline) {
-      // Extract first user/developer message from session entries
       for (const entry of entries) {
-        // Codex uses "response_item" with payload.role "user" or "developer"
-        if (entry.type === "response_item") {
-          const payload = entry.payload as Record<string, unknown> | undefined;
-          const role = payload?.role as string | undefined;
-          // Look for user input (role = "user") or developer response that contains actual user content
-          if (role === "user" || (role === "developer" && typeof payload?.content !== "undefined")) {
-            const content = payload?.content;
-            if (Array.isArray(content)) {
-              const text = content
-                .map((part) => {
-                  if (!part || typeof part !== "object") return "";
-                  const block = part as Record<string, unknown>;
-                  // Skip system messages and permissions blocks
-                  if (typeof block.text === "string" && !block.text.includes("<permissions") && !block.text.includes("<collaboration_mode")) {
-                    return block.text;
-                  }
-                  return "";
-                })
-                .join(" ")
-                .trim();
-              if (text && !text.startsWith("<")) {
-                headline = text.slice(0, 250);
-                break;
-              }
-            }
-          }
-        }
-        // Also support Claude-style entries
-        else if (entry.type === "user") {
-          const message = entry.message as Record<string, unknown> | undefined;
-          const content = message?.content;
-          if (typeof content === "string" && content.trim()) {
-            headline = content.trim().slice(0, 250);
-            break;
-          }
-          if (Array.isArray(content)) {
-            const text = content
-              .map((part) => {
-                if (!part || typeof part !== "object") return "";
-                const block = part as Record<string, unknown>;
-                return block.type === "text" && typeof block.text === "string" ? block.text : "";
-              })
-              .join(" ")
-              .trim();
-            if (text) {
-              headline = text.slice(0, 250);
-              break;
-            }
-          }
+        if (entry.type !== "event_msg") continue;
+        const payload = entry.payload as Record<string, unknown> | undefined;
+        if (payload?.type !== "user_message") continue;
+        const message = payload.message;
+        if (typeof message === "string" && message.trim() && !message.trim().startsWith("<")) {
+          headline = message.trim().slice(0, 250);
+          break;
         }
       }
     }
-    headline = headline || "(unnamed)";
+    headline = headline ?? "(unnamed)";
 
     summaries.push({
       tool: "codex",
       id: sessionId,
-      projectLabel: shortProjectLabel(meta.payload.cwd),
-      cwd: meta.payload.cwd,
+      projectLabel: shortProjectLabel(cwd),
+      cwd,
       age: formatAge(updatedAt),
       updatedAt,
       headline,
