@@ -81,11 +81,17 @@ function getReposData(app: AppContext) {
       } catch { /* best-effort */ }
     }
 
+    // Only include repos with actual handoffs (skip empty ones)
+    if (!exists) continue;
+
     repos.push({
       name,
+      cwd: repoPath,
       handoff: { exists, goal, status, tool, nextSteps, resumePrompt, updatedAt, freshness: getFreshness(updatedAt) },
     });
   }
+  // Sort by freshness (most fresh first)
+  repos.sort((a, b) => (b.handoff.updatedAt || "").localeCompare(a.handoff.updatedAt || ""));
   return repos;
 }
 
@@ -96,7 +102,7 @@ function isLocalDashboardRequest(req: http.IncomingMessage): boolean {
   return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1";
 }
 
-async function openGhosttySession(directCommand: string, cwd: string): Promise<void> {
+async function openGhosttySession(directCommand: string, cwd: string, executeCommand: boolean = true): Promise<void> {
   if (!directCommand.trim()) throw new Error("directCommand is empty.");
   if (!cwd.trim()) throw new Error("cwd is empty.");
 
@@ -110,8 +116,9 @@ async function openGhosttySession(directCommand: string, cwd: string): Promise<v
   const isRunning = pgrep.trim().length > 0;
 
   if (isRunning) {
-    // Ghostty is already running — open a new window and run the command
-    // Use AppleScript to tell Ghostty to create a new window and run the command
+    // Ghostty is already running — open a new window and paste the command
+    // If executeCommand is true, also press Enter to run it
+    // If false, user can review before pressing Enter
     const appleScript = `
 tell application "Ghostty"
   activate
@@ -121,7 +128,7 @@ tell application "Ghostty"
     delay 0.3
     keystroke "v" using command down
     delay 0.1
-    keystroke return
+    ${executeCommand ? 'keystroke return' : '-- User can review before pressing Enter'}
   end tell
 end tell
 `;
@@ -136,7 +143,7 @@ end tell
     await execAsync(`open -a Ghostty`);
     // Wait for Ghostty to start
     await new Promise((resolve) => setTimeout(resolve, 500));
-    // Now paste the command and run it
+    // Now paste the command (but don't execute if executeCommand is false)
     const appleScript = `
 tell application "Ghostty"
   activate
@@ -144,7 +151,7 @@ tell application "Ghostty"
   tell application "System Events"
     keystroke "v" using command down
     delay 0.1
-    keystroke return
+    ${executeCommand ? 'keystroke return' : '-- User can review before pressing Enter'}
   end tell
 end tell
 `;
@@ -1624,7 +1631,31 @@ function applyBtnCopy(btn,text){
     .catch(()=>{btn.textContent='Failed';setTimeout(()=>{btn.textContent=o;},2000);});
 }
 function copyCmd(btn,text){applyBtnCopy(btn,text);}
-function copyResume(btn,text){applyBtnCopy(btn,text);}
+function openGhosttyResume(btn, cmd, cwd) {
+  const old = btn.textContent;
+  btn.textContent = 'Opening…';
+  try {
+    // Note: unlike openGhostty which executes, this just pastes and shows the command
+    // User can analyze/modify before pressing Enter
+    fetch('/api/local/ghostty', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directCommand: cmd, cwd, executeCommand: false })
+    })
+      .then(r => {
+        if (r.status === 403) { btn.textContent = 'Desktop only'; }
+        else if (!r.ok) throw new Error('HTTP ' + r.status);
+        else btn.textContent = 'Opened ✓';
+      })
+      .catch(e => { btn.textContent = 'Failed'; })
+      .finally(() => {
+        setTimeout(() => { btn.textContent = old; }, 2000);
+      });
+  } catch (e) {
+    btn.textContent = 'Failed';
+    setTimeout(() => { btn.textContent = old; }, 2000);
+  }
+}
 /* mutations — approve, reject, apply */
 function getSelectedMutationIds(){
   const cbs=document.querySelectorAll('.mutation-cb:checked');
@@ -1746,7 +1777,7 @@ function repoCard(r){
       :'<div class="rc-status"><span style="color:var(--subtle)">No handoff yet</span></div>'
     )
     +'<div class="rc-ft"><span class="rc-age">'+age(h.updatedAt)+'</span>'
-    +(h.exists?'<button class="btn-sm" data-v="'+attr(h.resumePrompt)+'" onclick="copyResume(this,this.dataset.v)">Copy resume</button>':'')
+    +(h.exists?'<button class="btn-sm" data-cmd="'+attr(h.resumePrompt)+'" data-cwd="'+attr(r.cwd)+'" onclick="openGhosttyResume(this,this.dataset.cmd,this.dataset.cwd)">Review & Resume</button>':'')
     +'</div></div>';
 }
 function nrDot(item){
@@ -2186,13 +2217,15 @@ export function createDashboardServer(app: AppContext): http.Server {
       try {
         let body = "";
         for await (const chunk of req) body += chunk;
-        const parsed = JSON.parse(body) as { directCommand?: string; cwd?: string };
+        const parsed = JSON.parse(body) as { directCommand?: string; cwd?: string; executeCommand?: boolean };
         if (!parsed.directCommand || !parsed.cwd || typeof parsed.directCommand !== "string" || typeof parsed.cwd !== "string") {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: "Missing directCommand or cwd." }));
           return;
         }
-        await openGhosttySession(parsed.directCommand, parsed.cwd);
+        // executeCommand defaults to true (auto-execute like sessions); false for review mode (like repos)
+        const shouldExecute = parsed.executeCommand !== false;
+        await openGhosttySession(parsed.directCommand, parsed.cwd, shouldExecute);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
       } catch (err) {
