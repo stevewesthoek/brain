@@ -221,5 +221,6 @@ This keeps capture local to the ProBot project until you decide which captured i
 
 ## Main Docs
 
-- [SPEC.md](./SPEC.md)
+- [SPEC.md](./SPEC.md) — Technical architecture and runtime model
+- [SESSIONS-AND-ACCESSIBILITY.md](./SESSIONS-AND-ACCESSIBILITY.md) — **⚠️ READ THIS**: How sessions work, the "Open in Ghostty" feature, and why macOS Accessibility shows "node" instead of "ProBot"
 - [.env.example](./.env.example)
