@@ -1,0 +1,126 @@
+# Ory Kratos Configuration
+# Self-hosted authentication platform
+# Primary auth for prochat.tools and future domains
+
+version: v0.11.9
+
+# Database and data storage
+dsn: postgresql://ory_user:ory_prod_secure_password@10.0.2.4:5433/ory_prod?sslmode=disable
+
+# Serving configuration
+serve:
+  public:
+    base_url: https://auth.prochat.tools
+    port: 4433
+    cors:
+      allowed_origins:
+        - https://prochat.tools
+        - https://*.prochat.tools
+        - http://localhost:3000
+        - http://localhost:8000
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Content-Type
+        - Authorization
+        - X-CSRF-Token
+      exposed_headers:
+        - Content-Type
+        - Set-Cookie
+      allow_credentials: true
+      max_age: 3600
+  admin:
+    base_url: https://auth-admin.prochat.tools
+    port: 4434
+
+# Log configuration
+log:
+  level: info
+  format: json
+
+# Secrets (32 chars exactly)
+secrets:
+  default:
+    - ory-default-secret-key-32charxxx
+  cipher:
+    - ory-cipher-secret-key-32charsxxx
+
+# Self-service flows
+selfservice:
+  default_browser_return_url: https://prochat.tools
+
+  flows:
+    login:
+      ui_url: https://prochat.tools/auth/login
+      lifespan: 10m
+    registration:
+      ui_url: https://prochat.tools/auth/register
+      lifespan: 10m
+      after:
+        password:
+          hooks:
+            - hook: session
+    recovery:
+      ui_url: https://prochat.tools/auth/recovery
+      lifespan: 1h
+    verification:
+      ui_url: https://prochat.tools/auth/verify
+      lifespan: 10m
+    settings:
+      ui_url: https://prochat.tools/settings
+      lifespan: 15m
+      privileged_session_max_age: 15m
+    logout:
+      after:
+        default_browser_return_url: https://prochat.tools
+
+  # Identity schema
+  methods:
+    password:
+      enabled: true
+      config:
+        min_password_length: 12
+    totp:
+      enabled: true
+      config:
+        issuer: Prochat
+    code:
+      enabled: true
+      config:
+        lifespan: 15m
+    oidc:
+      enabled: false
+      config:
+        providers: []
+    profile:
+      enabled: true
+    link:
+      enabled: true
+      config:
+        lifespan: 15m
+    lookup_secret:
+      enabled: true
+
+# Session configuration
+session:
+  lifespan: 24h
+  cookie:
+    same_site: Lax
+    path: /
+    domain: prochat.tools
+
+# Identity configuration
+identity:
+  default_schema_id: default
+  schemas:
+    - id: default
+      url: file:///etc/config/kratos/identity.schema.json
+
+# Courier (email configuration - optional for now)
+# courier:
+#   smtp:
+#     connection_uri: null

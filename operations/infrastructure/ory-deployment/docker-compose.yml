@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  ory:
+    image: oryd/kratos:latest
+    container_name: ory-kratos
+    restart: unless-stopped
+    command: serve -c /etc/config/kratos/kratos.yml
+
+    environment:
+      # Only database DSN - config file handles everything else
+      - DSN=postgresql://ory_user:ory_prod_secure_password@10.0.2.4:5433/ory_prod?sslmode=disable
+      - NODE_ENV=production
+
+    ports:
+      - "4433:4433"  # Public API
+      - "4434:4434"  # Admin API
+      - "4435:4435"  # Metrics
+
+    volumes:
+      - ./ory-config.yaml:/etc/config/kratos/kratos.yml:ro
+      - ./identity.schema.json:/etc/config/kratos/identity.schema.json:ro
+      - ory-data:/var/lib/ory
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4434/health/alive"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+    labels:
+      # Traefik routing for auth.prochat.tools
+      - traefik.enable=true
+      - traefik.http.routers.ory-public.rule=Host(`auth.prochat.tools`)
+      - traefik.http.routers.ory-public.entrypoints=websecure
+      - traefik.http.routers.ory-public.tls=true
+      - traefik.http.routers.ory-public.tls.certResolver=letsencrypt
+      - traefik.http.services.ory-public.loadbalancer.server.port=4433
+      - traefik.http.routers.ory-public.service=ory-public
+      # Admin API routing (optional - for auth-admin.prochat.tools)
+      - traefik.http.routers.ory-admin.rule=Host(`auth-admin.prochat.tools`)
+      - traefik.http.routers.ory-admin.entrypoints=websecure
+      - traefik.http.routers.ory-admin.tls=true
+      - traefik.http.routers.ory-admin.tls.certResolver=letsencrypt
+      - traefik.http.services.ory-admin.loadbalancer.server.port=4434
+      - traefik.http.routers.ory-admin.service=ory-admin
+
+    networks:
+      - dokploy-network
+
+volumes:
+  ory-data:
+    driver: local
+
+networks:
+  dokploy-network:
+    external: true

@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Prochat User Identity",
+  "description": "Default identity schema for Prochat users",
+  "properties": {
+    "traits": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "title": "Email",
+          "minLength": 3,
+          "maxLength": 254,
+          "ory.sh/kratos": {
+            "credentials": {
+              "password": {
+                "identifier": true
+              },
+              "code": {
+                "identifier": true
+              }
+            },
+            "recovery": {
+              "via": "email"
+            },
+            "verification": {
+              "via": "email"
+            }
+          }
+        },
+        "name": {
+          "type": "object",
+          "title": "Name",
+          "properties": {
+            "first": {
+              "type": "string",
+              "title": "First Name",
+              "maxLength": 100
+            },
+            "last": {
+              "type": "string",
+              "title": "Last Name",
+              "maxLength": 100
+            }
+          }
+        },
+        "role": {
+          "type": "string",
+          "title": "User Role",
+          "enum": ["user", "admin"],
+          "default": "user"
+        },
+        "organization": {
+          "type": "string",
+          "title": "Organization",
+          "maxLength": 255
+        }
+      },
+      "required": ["email"],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
