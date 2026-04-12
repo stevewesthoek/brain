@@ -312,6 +312,41 @@ See `n8n-integration-pattern.md` for workflow setup. Key pattern:
 
 **Note:** All 10 accounts configured and validated (2026-04-12). Free tier renewable monthly on the 1st UTC.
 
+## WhatsApp Business API
+
+Self-hosted messaging integration. Phone: 949-776-2428 (verified in Meta Business Manager)
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `WHATSAPP_PHONE_NUMBER_ID` | `~/.config/whatsapp/.env` | Phone number ID (not the phone number itself) | Static | [Meta Business Manager → Phone Numbers](https://business.facebook.com/latest/settings/phone-numbers) |
+| `WHATSAPP_BUSINESS_ACCOUNT_ID` | `~/.config/whatsapp/.env` | WhatsApp Business Account ID | Static | [Meta Business Manager → Phone Numbers](https://business.facebook.com/latest/settings/phone-numbers) |
+| `META_BUSINESS_ACCOUNT_ID` | `~/.config/whatsapp/.env` | Meta Business Account ID (for account operations) | Static | [Meta Business Manager → Info](https://business.facebook.com/latest/settings/info) |
+| `META_APP_ID` | `~/.config/whatsapp/.env` | Meta app ID for WhatsApp integration | Static | [Meta Developers → Apps](https://developers.facebook.com/apps) |
+| `META_APP_SECRET` | `~/.config/whatsapp/.env` | Meta app secret (config, not used in API calls) | Rotate if compromised | [Meta Developers → App Settings → Basic](https://developers.facebook.com/apps/{APP_ID}/settings/basic) |
+| `WHATSAPP_ACCESS_TOKEN` | `~/.config/whatsapp/.env` | Long-lived access token for Cloud API — expires ~60 days | Manually rotate before expiry | [Meta Developers → WhatsApp API Setup](https://developers.facebook.com/apps/819349503541241/whatsapp/api_setup) → "Generate Token" |
+| `WHATSAPP_API_BASE_URL` | `~/.config/whatsapp/.env` | API base URL (config, not secret) | Static | — |
+| `WHATSAPP_API_VERSION` | `~/.config/whatsapp/.env` | API version (config, not secret) | Static unless deprecated | — |
+
+**Account Details:**
+- Phone: `949-776-2428`
+- Phone Number ID: `244609202066850`
+- Business Account ID: `244609202066850`
+- Meta App: `819349503541241`
+- Plan: Free tier ($1 value initially, then usage-based)
+- Status: ✅ **Credentials configured** (2026-04-12) · ⚠️ **Token validation pending**
+
+**Rotation Notes:**
+- Access token expires ~60 days from generation
+- Set reminder: Check token expiry monthly
+- Regenerate at: [Meta Developers → WhatsApp API Setup](https://developers.facebook.com/apps/819349503541241/whatsapp/api_setup)
+- No automatic renewal; manual regeneration required
+
+**Skill Location:** `brain/ai/skills/custom/whatsapp/`  
+**CLI:** `whatsapp send`, `whatsapp send-template`, `whatsapp list-templates`, etc.  
+**SDK:** `whatsapp_sdk.py` (Python programmatic access)  
+**Runbook:** `operations/runbooks/whatsapp-business-api.md`  
+**n8n Templates:** `brain/ai/skills/custom/whatsapp/templates/`
+
 ---
 
 ## ⚠️ Pending — needs metadata
