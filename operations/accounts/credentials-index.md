@@ -289,8 +289,9 @@ Self-hosted authentication platform (PRIMARY). Dashboard: https://auth-admin.pro
 
 **Account Details:**
 - CLI installed at: `/usr/local/bin/ory` (via Homebrew v1.3.0)
-- Deployment: Dokploy (Ops project, compose ID: vwTXGojIaXcVNJJTnusNB)
-- Database: Supabase PostgreSQL (ory_prod, user: ory_user)
+- Deployment: Dokploy (Ops project, compose ID: `DpMDhd91-YVUbHCxTD3Mx`, image: `oryd/kratos:v1.3.1`)
+- Config volume: Docker named volume `ory-config` (contains kratos.yml + identity.schema.json)
+- Database: Supabase PostgreSQL (ory_prod, user: ory_user, remote at 10.0.2.4:5433)
 - Credentials file: `~/.config/ory/.env` (gitignored, mode 600)
 - Runbook: `operations/runbooks/ory-cli.md`
 - Skill: `brain/ai/skills/custom/ory/SKILL.md`
@@ -534,3 +535,8 @@ Entries detected by `sync-credentials` that are not yet categorized. Move each r
 | `SUPABASE_PORT` | `~/.config/supabase/.env` | 2026-04-13 |
 | `SUPABASE_ADMIN_USER` | `~/.config/supabase/.env` | 2026-04-13 |
 | `SUPABASE_ADMIN_PASSWORD` | `~/.config/supabase/.env` | 2026-04-13 |
+| `ORY_SECRETS_COOKIE` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_IMAGE` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_DOKPLOY_COMPOSE_ID` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_CONFIG_VOLUME` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_CLOUDFLARE_TUNNEL` | `~/.config/ory/.env` | 2026-04-13 |
