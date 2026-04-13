@@ -51,10 +51,10 @@ python3 ~/Repos/stevewesthoek/brain/tools/google-ads/cli.py policy-watch
 Config:
 
 ```text
-config/google-ads/account.toml
-config/google-ads/goals.toml
-config/google-ads/rules.toml
-config/google-ads/sources.toml
+operations/google-ads/config/account.toml
+operations/google-ads/config/goals.toml
+operations/google-ads/config/rules.toml
+operations/google-ads/config/sources.toml
 ```
 
 Docs:
@@ -66,13 +66,13 @@ docs/google-ads/
 Reports:
 
 ```text
-reports/google-ads/
+operations/google-ads/reports/
 ```
 
 State:
 
 ```text
-data/google-ads/google_ads.sqlite3
+operations/google-ads/data/google_ads.sqlite3
 ```
 
 ## Workflow

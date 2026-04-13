@@ -1,8 +1,10 @@
-# macOS / Python / local tool noise
+# macOS / Python / Node / local tool noise
 .DS_Store
 **/.DS_Store
 **/__pycache__/
 *.pyc
+.venv/
+node-compile-cache/
 
 # Cloudflare local cache
 .wrangler/
@@ -35,6 +37,7 @@ operations/system-configs/claude/projects/
 operations/system-configs/claude/session-env/
 operations/system-configs/claude/sessions/
 operations/system-configs/claude/shell-snapshots/
+operations/system-configs/claude/stats-cache.json
 operations/system-configs/claude/statsig/
 operations/system-configs/claude/supabase/.temp/
 operations/system-configs/claude/tasks/
@@ -129,6 +132,9 @@ operations/security-auto-approvals.log
 
 # Obsidian daily notes — personal ephemeral, not part of repo config
 notes/daily/*.md
+
+# Obsidian trash — deleted notes
+.trash/
 
 # Obsidian Git plugin local state
 .obsidian/plugins/obsidian-git/data/

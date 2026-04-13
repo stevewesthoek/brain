@@ -22,8 +22,10 @@ It is meant to be:
 - `organisations/` — company, brand, messaging, offers, playbooks
 - `projects/` — project-specific context, assets, notes, and execution docs
 - `ai/` — prompts, provider notes, shared multi-tool skills
-- `operations/` — runbooks, scripts, snippets, automations, infrastructure, deploy docs, system configs
+- `operations/` — runbooks, scripts, snippets, automations, infrastructure, deploy docs, system configs, google-ads artifacts
 - `tools/` — utility and workflow scripts for this machine (`tools/scripts/`)
+- `docs/` — reference documentation (google-ads, api-standards, testing, deploy)
+- `notes/` — Obsidian-managed notes
 - `runtime/` — ProBot runtime workspace material and local working state
 
 ## Reading Order
@@ -45,7 +47,7 @@ Rule: whenever you add or change content, update the documentation that describe
 |--------------------|----------------|
 | New top-level folder | This README (Top-Level Structure + Folder Notes), plus Reading Order if it needs a start-here doc |
 | New project under projects/ | `projects/README.md`, plus a README in the new project folder if it's active |
-| New skill | `ai/skills/README.md` if the structure changes; symlink in `ai/skills/active/`; `CLAUDE.md` global skills list if it's user-facing |
+| New skill | `ai/skills/README.md` if the structure changes; symlink in `ai/skills/active/` |
 | New tool config under system-configs/ | `operations/system-configs/README.md` symlink map |
 | New automation | `operations/automations/README.md` (if it exists), or note in `operations/README.md` |
 | New script under tools/scripts/ | `tools/README.md` |

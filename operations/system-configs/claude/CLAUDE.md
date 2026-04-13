@@ -1,6 +1,6 @@
 # gstack
 
-**DEFAULT WEB RESEARCH TOOL:** Use `/firecrawl` (Tailscale: `http://100.83.38.48:3002`) for ALL web search, scraping, and research. It replaces `/browse` and `WebFetch`. Works with Claude Code, Codex, and Gemini.
+**DEFAULT WEB RESEARCH TOOL:** Use `/firecrawl` (Tailscale: `http://100.83.38.48:3051`) for ALL web search, scraping, and research. It replaces `/browse` and `WebFetch`. Works with Claude Code, Codex, and Gemini.
 
 Never use `mcp__claude-in-chrome__*` tools or raw `WebFetch` for research.
 Canonical guardrails policy: `brain/ai/policy/guardrails.md`.

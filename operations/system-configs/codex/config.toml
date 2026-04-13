@@ -49,3 +49,6 @@ trust_level = "trusted"
 
 [projects."/Users/Office/Repos/stevewesthoek/Brain"]
 trust_level = "trusted"
+
+[projects."/Users/Office/Repos/prochattools/web/prochat"]
+trust_level = "trusted"

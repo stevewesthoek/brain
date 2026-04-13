@@ -462,81 +462,102 @@ Self-hosted messaging integration. Phone: 949-776-2428 (verified in Meta Busines
 
 ---
 
-## ⚠️ Pending — needs metadata
+## ING Bank (Statement Automation)
 
-Entries detected by `sync-credentials` that are not yet categorized. Move each row to the right section above and fill in Purpose, Rotation, and Regenerate.
+Automated bank statement download. Script: `tools/scripts/run-ing-bank-statement-download.sh`
 
-| Variable | File | Detected |
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `ING_USERNAME` | `~/.config/ing/.env` | ING online banking username | Static | ING web portal |
+| `ING_PASSWORD` | `~/.config/ing/.env` | ING online banking password | Change periodically via ING app/web | ING web portal |
+| `ING_NTFY_TOPIC` | `~/.config/ing/.env` | ntfy.sh notification topic for download alerts (config, not secret) | Static | — |
+
+## Azure Billing
+
+Billing-specific service principals (separate from the AI provisioner/destroyer credentials above). Used by ProBot for cost reporting.
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `AZURE_TENANT_ID` | `~/.config/azure-billing/prochat-apps.env` | Tenant ID (yeshuaacademypt) | Static | Azure AD → Overview |
+| `AZURE_CLIENT_ID` | `~/.config/azure-billing/prochat-apps.env` | Service principal — Cost Management Reader | Static unless rotated | App registrations |
+| `AZURE_CLIENT_SECRET` | `~/.config/azure-billing/prochat-apps.env` | Service principal secret | Check expiry in Azure portal | App registration → Certificates & secrets |
+| `AZURE_SUBSCRIPTION_ID` | `~/.config/azure-billing/prochat-apps.env` | PROCHAT-APPS subscription | Static | Azure Portal → Subscriptions |
+| `AZURE_SERVICE_PRINCIPAL_NAME` | `~/.config/azure-billing/prochat-apps.env` | Display name (config, not secret) | Static | — |
+| `AZURE_TENANT_ID` | `~/.config/azure-billing/prochat-data.env` | Tenant ID (yeshuaacademy) | Static | Azure AD → Overview |
+| `AZURE_CLIENT_ID` | `~/.config/azure-billing/prochat-data.env` | Service principal — Cost Management Reader | Static unless rotated | App registrations |
+| `AZURE_CLIENT_SECRET` | `~/.config/azure-billing/prochat-data.env` | Service principal secret | Check expiry in Azure portal | App registration → Certificates & secrets |
+| `AZURE_SUBSCRIPTION_ID` | `~/.config/azure-billing/prochat-data.env` | PROCHAT-DATA subscription | Static | Azure Portal → Subscriptions |
+| `AZURE_SERVICE_PRINCIPAL_NAME` | `~/.config/azure-billing/prochat-data.env` | Display name (config, not secret) | Static | — |
+
+## GCP
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `CLOUDSDK_PYTHON` | `~/.config/gcp/.env` | Python interpreter path for gcloud SDK (config, not secret) | Static | — |
+
+Note: ADC and OAuth credentials are at `~/.config/gcloud/application_default_credentials.json`. Legacy credentials for 3 accounts (info@prochat.tools, steve@yeshua.academy, westhoek@hotmail.com) at `~/.config/gcloud/legacy_credentials/`.
+
+## Says the Bible — YouTube
+
+| Credential | File | Purpose | Rotation | Regenerate |
+|------------|------|---------|----------|-----------|
+| YouTube OAuth token | `~/.config/saysthebible/youtube-token.json` | Auto-refreshed OAuth token for YouTube Data API (video publishing) | Auto-refreshes; delete and re-auth if stale | Run YouTube OAuth flow via pipeline |
+
+## xGrow (SaaS)
+
+ProBot integration for xGrow status and cron monitoring.
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `XGROW_URL` | `~/.config/probot/.env` | xGrow app URL (config, not secret) | Static | — |
+| `XGROW_API_KEY` | `~/.config/probot/.env` | API key for xGrow programmatic access | No automatic expiry; rotate if compromised | xGrow dashboard → API settings |
+| `XGROW_CRON_SECRET` | `~/.config/probot/.env` | Shared secret for cron webhook auth | No automatic expiry; rotate if compromised | xGrow dashboard |
+
+---
+
+**Ory additional variables** (added to `~/.config/ory/.env` alongside the credentials documented in the Ory section above):
+
+| Variable | File | Purpose |
 |----------|------|---------|
-| `TELEGRAM_ALLOWED_USER_IDS` | `~/.config/probot/.env` | 2026-04-07 |
-| `PROBOT_BRAIN_ROOT` | `~/.config/probot/.env` | 2026-04-07 |
-| `PROBOT_DATA_DIR` | `~/.config/probot/.env` | 2026-04-07 |
-| `PROBOT_NOTES_DIR` | `~/.config/probot/.env` | 2026-04-07 |
-| `PROBOT_ALLOWED_ROOTS` | `~/.config/probot/.env` | 2026-04-07 |
-| `PROBOT_MAX_FILE_MB` | `~/.config/probot/.env` | 2026-04-07 |
-| `PROBOT_DEBUG` | `~/.config/probot/.env` | 2026-04-07 |
-| `CLAUDE_PROJECTS_DIR` | `~/.config/probot/.env` | 2026-04-07 |
-| `CODEX_SESSIONS_DIR` | `~/.config/probot/.env` | 2026-04-07 |
-| `CODEX_SESSION_INDEX` | `~/.config/probot/.env` | 2026-04-07 |
-| `PROBOT_DASHBOARD_PORT` | `~/.config/probot/.env` | 2026-04-07 |
-| `PROBOT_DASHBOARD_URL` | `~/.config/probot/.env` | 2026-04-07 |
-| `SLACK_ALLOWED_USER_IDS` | `~/.config/probot/.env` | 2026-04-07 |
-| `PROBOT_REPO_ALIASES` | `~/.config/probot/.env` | 2026-04-07 |
-| `NEW_RELIC_USER_API_KEY` | `~/.config/probot/.env` | 2026-04-07 |
-| `NEW_RELIC_ACCOUNT_ID` | `~/.config/probot/.env` | 2026-04-07 |
-| `UMAMI_URL` | `~/.config/probot/.env` | 2026-04-08 |
-| `UMAMI_USERNAME` | `~/.config/probot/.env` | 2026-04-08 |
-| `UMAMI_PASSWORD` | `~/.config/probot/.env` | 2026-04-08 |
-| `CLOUDFLARE_API_TOKEN` | `~/.config/probot/.env` | 2026-04-09 |
-| `ING_USERNAME` | `~/.config/ing/.env` | 2026-04-10 |
-| `ING_PASSWORD` | `~/.config/ing/.env` | 2026-04-10 |
-| `ING_NTFY_TOPIC` | `~/.config/ing/.env` | 2026-04-10 |
-| `GITHUB_PAT` | `~/.config/github/.env` | 2026-04-11 |
-| `AZURE_TENANT_ID` | `~/.config/azure-billing/prochat-apps.env` | 2026-04-12 |
-| `AZURE_CLIENT_ID` | `~/.config/azure-billing/prochat-apps.env` | 2026-04-12 |
-| `AZURE_CLIENT_SECRET` | `~/.config/azure-billing/prochat-apps.env` | 2026-04-12 |
-| `AZURE_SUBSCRIPTION_ID` | `~/.config/azure-billing/prochat-apps.env` | 2026-04-12 |
-| `AZURE_SERVICE_PRINCIPAL_NAME` | `~/.config/azure-billing/prochat-apps.env` | 2026-04-12 |
-| `AZURE_TENANT_ID` | `~/.config/azure-billing/prochat-data.env` | 2026-04-12 |
-| `AZURE_CLIENT_ID` | `~/.config/azure-billing/prochat-data.env` | 2026-04-12 |
-| `AZURE_CLIENT_SECRET` | `~/.config/azure-billing/prochat-data.env` | 2026-04-12 |
-| `AZURE_SUBSCRIPTION_ID` | `~/.config/azure-billing/prochat-data.env` | 2026-04-12 |
-| `AZURE_SERVICE_PRINCIPAL_NAME` | `~/.config/azure-billing/prochat-data.env` | 2026-04-12 |
-| `CLOUDSDK_PYTHON` | `~/.config/gcp/.env` | 2026-04-12 |
-| `GOOGLE_ADS_DEVELOPER_TOKEN` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-12 |
-| `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-12 |
-| `GOOGLE_ADS_CUSTOMER_ID` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-12 |
-| `GOOGLE_ADS_OAUTH_CLIENT_ID` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-12 |
-| `GOOGLE_ADS_OAUTH_CLIENT_SECRET` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-12 |
-| `GOOGLE_ADS_REFRESH_TOKEN` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-12 |
-| `XGROW_URL` | `~/.config/probot/.env` | 2026-04-12 |
-| `XGROW_API_KEY` | `~/.config/probot/.env` | 2026-04-12 |
-| `XGROW_CRON_SECRET` | `~/.config/probot/.env` | 2026-04-12 |
-| `META_BUSINESS_ACCOUNT_ID` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `WHATSAPP_BUSINESS_ACCOUNT_ID` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `META_APP_ID` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `META_APP_SECRET` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `WHATSAPP_PHONE_NUMBER` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `WHATSAPP_PHONE_NUMBER_ID` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `WHATSAPP_PHONE_ID` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `WHATSAPP_ACCESS_TOKEN` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `WHATSAPP_API_BASE_URL` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `WHATSAPP_API_VERSION` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `WHATSAPP_APP_ID` | `~/.config/whatsapp/.env` | 2026-04-12 |
-| `ORY_LOG_LEVEL` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_LOG_FORMAT` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_SECRETS_CIPHER` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_SECRETS_SYSTEM` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_SESSION_COOKIE_SAME_SITE` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_SESSION_COOKIE_PATH` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_SERVE_COOKIES_SAME_SITE_LEGACY_WORKAROUND` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_PROJECT_ID` | `~/.config/ory/.env` | 2026-04-13 |
-| `SUPABASE_HOST` | `~/.config/supabase/.env` | 2026-04-13 |
-| `SUPABASE_PORT` | `~/.config/supabase/.env` | 2026-04-13 |
-| `SUPABASE_ADMIN_USER` | `~/.config/supabase/.env` | 2026-04-13 |
-| `SUPABASE_ADMIN_PASSWORD` | `~/.config/supabase/.env` | 2026-04-13 |
-| `ORY_SECRETS_COOKIE` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_IMAGE` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_DOKPLOY_COMPOSE_ID` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_CONFIG_VOLUME` | `~/.config/ory/.env` | 2026-04-13 |
-| `ORY_CLOUDFLARE_TUNNEL` | `~/.config/ory/.env` | 2026-04-13 |
+| `ORY_LOG_LEVEL` | `~/.config/ory/.env` | Logging verbosity (config) |
+| `ORY_LOG_FORMAT` | `~/.config/ory/.env` | Log output format (config) |
+| `ORY_SECRETS_CIPHER` | `~/.config/ory/.env` | Encryption key for data at rest |
+| `ORY_SECRETS_SYSTEM` | `~/.config/ory/.env` | System-level secret for HMAC |
+| `ORY_SECRETS_COOKIE` | `~/.config/ory/.env` | Cookie encryption secret |
+| `ORY_SESSION_COOKIE_SAME_SITE` | `~/.config/ory/.env` | Cookie SameSite policy (config) |
+| `ORY_SESSION_COOKIE_PATH` | `~/.config/ory/.env` | Cookie path (config) |
+| `ORY_SERVE_COOKIES_SAME_SITE_LEGACY_WORKAROUND` | `~/.config/ory/.env` | Legacy browser compat flag (config) |
+| `ORY_PROJECT_ID` | `~/.config/ory/.env` | Kratos project identifier (config) |
+| `ORY_IMAGE` | `~/.config/ory/.env` | Docker image reference (config) |
+| `ORY_DOKPLOY_COMPOSE_ID` | `~/.config/ory/.env` | Dokploy compose service ID (config) |
+| `ORY_CONFIG_VOLUME` | `~/.config/ory/.env` | Docker volume name (config) |
+| `ORY_CLOUDFLARE_TUNNEL` | `~/.config/ory/.env` | Cloudflare tunnel ID (config) |
+
+**Supabase additional variables** (added to `~/.config/supabase/.env` alongside the credentials documented in the Supabase section above):
+
+| Variable | File | Purpose |
+|----------|------|---------|
+| `SUPABASE_HOST` | `~/.config/supabase/.env` | PostgreSQL host (config) |
+| `SUPABASE_PORT` | `~/.config/supabase/.env` | PostgreSQL port (config) |
+| `SUPABASE_ADMIN_USER` | `~/.config/supabase/.env` | Admin username |
+| `SUPABASE_ADMIN_PASSWORD` | `~/.config/supabase/.env` | Admin password — treat as secret |
+
+**GitHub additional tokens** (added to `~/.config/github/.env` alongside tokens documented in the GitHub section above):
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `GITHUB_PAT` | `~/.config/github/.env` | General-purpose PAT (broader scope than `n8n-github-brain`) | Check expiry in GitHub settings | [GitHub → Settings → Developer settings → PATs](https://github.com/settings/tokens?type=beta) |
+
+**Google Ads additional variables** (in `~/.config/google-ads/brain-google-ads.env`, alongside credentials documented in Google Ads section above):
+
+| Variable | File | Purpose |
+|----------|------|---------|
+| `GOOGLE_ADS_OAUTH_CLIENT_ID` | `~/.config/google-ads/brain-google-ads.env` | OAuth client ID from GCP project |
+| `GOOGLE_ADS_OAUTH_CLIENT_SECRET` | `~/.config/google-ads/brain-google-ads.env` | OAuth client secret from GCP project |
+| `GOOGLE_ADS_REFRESH_TOKEN` | `~/.config/google-ads/brain-google-ads.env` | Auto-refreshed OAuth token |
+
+---
+
+## Pending — empty
+
+All detected credentials have been categorized. Run `sync-credentials` to check for new entries.
