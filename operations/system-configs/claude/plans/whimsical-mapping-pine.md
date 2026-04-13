@@ -2,22 +2,24 @@
 
 ## Context
 
-Steve needs a standalone family finance application for tracking income, expenses, and account balances across multiple bank accounts (bunq/Dutch, wife's manual accounts). The app will be accessible at `finance.prochat.tools`, deployed on Dokploy, and used by both Steve and his wife (full transparency, shared view). This is an iterative launch — MVP first, bunq API in Phase 2.
+Steve needs a standalone family finance application for tracking income, expenses, and account balances across multiple bank accounts (bunq/Dutch, wife's manual accounts). Accessible at `finance.prochat.tools`, deployed on Dokploy, used by both Steve and his wife (full transparency). Iterative launch — MVP first, bunq API in Phase 2.
+
+**Auth change:** Clerk replaced by Ory Kratos (already live at `auth.prochat.tools`). This is the primary auth platform for the prochat.tools infrastructure. No Clerk dependency.
 
 ---
 
-## Stack (matches existing ProChat conventions)
+## Stack
 
 - **Framework**: Next.js 14 (App Router) + TypeScript
 - **Styling**: Tailwind v3 + shadcn/ui
-- **Auth**: Clerk 5 with the canonical mock/real toggle pattern (from prokit-dev)
+- **Auth**: Ory Kratos v1.3.1 — self-hosted at `https://auth.prochat.tools`
 - **Database**: Prisma 6 → Self-hosted Supabase Postgres (port 5433 on Dokploy)
-- **Charts**: recharts (React-native, lightweight)
+- **Charts**: recharts
 - **Deploy**: Dockerfile (Node 18 Bullseye, 4-stage), Dokploy, `finance.prochat.tools`
-- **Boilerplate source**: `/Users/Office/Repos/prochattools/boilerplates/products/prokit-dev/`
+- **Boilerplate source**: `prokit-dev` (`/Users/Office/Repos/prochattools/boilerplates/products/prokit-dev/`)
 
-Removed from boilerplate: Stripe, Resend, subscription model.
-Added: Finance schema, recharts, react-hook-form, date-fns.
+Removed from boilerplate: Stripe, Resend, Clerk, subscription model.
+Added: Finance schema, recharts, react-hook-form, date-fns, `@ory/client`.
 
 ---
 
@@ -27,9 +29,135 @@ Added: Finance schema, recharts, react-hook-form, date-fns.
 
 ---
 
+## Ory Auth Architecture
+
+Ory Kratos is already deployed and live. No new infra needed.
+
+```
+finance.prochat.tools (Next.js app)
+  ↓ middleware session check
+auth.prochat.tools (Ory Kratos v1.3.1, port 4433)
+  ↓ session cookie set on .prochat.tools domain
+finance.prochat.tools (cookie automatically valid here)
+```
+
+**Key facts:**
+- CORS in `kratos.yml` already allows `https://*.prochat.tools`
+- Session cookie domain is `prochat.tools` → valid at `finance.prochat.tools` automatically
+- Only 2 users (Steve + wife) — create via CLI, no registration page needed
+- Ory config `login.ui_url` currently points to `https://prochat.tools/auth/login` (doesn't exist yet) → must update to `https://finance.prochat.tools/auth/login`
+
+### Ory config update required
+
+Update the `login.ui_url` in `kratos.yml` (in the `ory-config` Docker volume) to:
+```yaml
+selfservice:
+  flows:
+    login:
+      ui_url: https://finance.prochat.tools/auth/login
+```
+
+Done via:
+```bash
+# SSH into Dokploy server, update ory-config volume
+docker run --rm -v ory-config:/etc/config/kratos alpine \
+  sed -i 's|https://prochat.tools/auth/login|https://finance.prochat.tools/auth/login|' \
+  /etc/config/kratos/kratos.yml
+docker restart ory-kratos
+```
+
+### Auth library (`lib/ory.ts`)
+
+```typescript
+import { Configuration, FrontendApi } from '@ory/client'
+
+export const ory = new FrontendApi(
+  new Configuration({
+    basePath: process.env.NEXT_PUBLIC_ORY_PUBLIC_URL || 'https://auth.prochat.tools',
+    baseOptions: { withCredentials: true },
+  })
+)
+
+export async function getOrySession(cookie?: string) {
+  try {
+    const { data } = await ory.toSession({ cookie })
+    return data
+  } catch {
+    return null
+  }
+}
+```
+
+### Middleware (`src/middleware.ts`)
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { Configuration, FrontendApi } from '@ory/client'
+
+const ory = new FrontendApi(new Configuration({
+  basePath: process.env.NEXT_PUBLIC_ORY_PUBLIC_URL || 'https://auth.prochat.tools',
+}))
+
+const publicPaths = ['/auth/login', '/auth/error', '/api/health']
+
+export async function middleware(req: NextRequest) {
+  const isPublic = publicPaths.some(p => req.nextUrl.pathname.startsWith(p))
+  if (isPublic) return NextResponse.next()
+
+  try {
+    await ory.toSession({ cookie: req.headers.get('cookie') ?? undefined })
+    return NextResponse.next()
+  } catch {
+    const url = new URL('/auth/login', req.url)
+    url.searchParams.set('return_to', req.nextUrl.pathname)
+    return NextResponse.redirect(url)
+  }
+}
+
+export const config = {
+  matcher: ['/((?!_next|.*\\..*).*)', '/(api)(.*)'],
+}
+```
+
+### Login page (`app/(auth)/auth/login/page.tsx`)
+
+Custom UI using Ory's self-service browser flow:
+1. Client component hits `ory.createBrowserLoginFlow()` (or reads `flowId` from URL if redirected by Ory)
+2. Renders form from flow's `ui.nodes` (email, password fields)
+3. On submit, calls `ory.updateLoginFlow()` with credentials
+4. On success, Ory sets session cookie on `.prochat.tools` domain → middleware passes on next request
+5. Redirect to `return_to` param (or `/dashboard`)
+
+No Clerk wrappers, no provider. All auth state comes from `ory.toSession()`.
+
+### User management (CLI)
+
+```bash
+source ~/.config/ory/.env
+
+# Create Steve
+ory create identity --project $ORY_PROJECT_ID \
+  --schema-id default \
+  --trait email=steve@prochat.tools \
+  --trait name.first="Steve"
+
+# Create wife
+ory create identity --project $ORY_PROJECT_ID \
+  --schema-id default \
+  --trait email=wife@prochat.tools \
+  --trait name.first="<wife's name>"
+```
+
+---
+
 ## Database Schema (`prisma/schema.prisma`)
 
 ```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")  // postgres://postgres:<pass>@10.0.2.4:5433/finance
+}
+
 model Account {
   id              String      @id @default(cuid())
   name            String
@@ -53,14 +181,14 @@ model Transaction {
   id               String     @id @default(cuid())
   accountId        String
   date             DateTime
-  amount           Decimal    @db.Decimal(12,2)   // negative = expense, positive = income
+  amount           Decimal    @db.Decimal(12,2)  // negative = expense, positive = income
   currency         String     @default("EUR")
   description      String
   merchant         String?
   categoryId       String?
-  externalId       String?    // bank's tx ID (prevents duplicate imports)
+  externalId       String?    // bank's tx ID — prevents duplicate imports
   isManual         Boolean    @default(false)
-  createdByClerkId String?
+  createdByOryId   String?    // Ory identity ID (replaces Clerk user ID)
   notes            String?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
@@ -72,8 +200,8 @@ model Transaction {
 model Category {
   id           String         @id @default(cuid())
   name         String
-  icon         String?        // emoji
-  color        String?        // hex
+  icon         String?
+  color        String?
   type         CategoryType
   isSystem     Boolean        @default(false)
   parentId     String?
@@ -115,8 +243,8 @@ enum SyncStatus { SUCCESS FAILED PARTIAL }
 // Phase 2: bunq OAuth token storage
 model BunqConnection {
   id           String    @id @default(cuid())
-  clerkUserId  String    @unique
-  accessToken  String    // AES-256 encrypted at rest
+  oryIdentityId String   @unique   // Ory identity ID (not Clerk)
+  accessToken  String    // AES-256 encrypted
   expiresAt    DateTime?
   bunqUserId   String?
   createdAt    DateTime  @default(now())
@@ -131,123 +259,61 @@ model BunqConnection {
 ```
 src/
 ├── app/
-│   ├── (app)/                      # Protected routes (Clerk)
+│   ├── (app)/                      # Protected routes (Ory session required)
 │   │   ├── layout.tsx              # Sidebar + header shell
-│   │   ├── dashboard/page.tsx      # Main overview
+│   │   ├── dashboard/page.tsx
 │   │   ├── accounts/
-│   │   │   ├── page.tsx            # Account list
-│   │   │   └── [id]/page.tsx       # Account detail + txns
-│   │   ├── transactions/page.tsx   # All transactions + filter
-│   │   ├── analytics/page.tsx      # Charts + trends
-│   │   └── settings/page.tsx       # Categories + connections
+│   │   │   ├── page.tsx
+│   │   │   └── [id]/page.tsx
+│   │   ├── transactions/page.tsx
+│   │   ├── analytics/page.tsx
+│   │   └── settings/page.tsx
 │   ├── (auth)/
-│   │   ├── sign-in/[[...sign-in]]/page.tsx
-│   │   └── sign-up/[[...sign-up]]/page.tsx
+│   │   ├── auth/login/page.tsx     # Custom Ory login UI (client component)
+│   │   └── auth/error/page.tsx     # Ory error display
 │   ├── api/
-│   │   ├── accounts/route.ts       # GET list, POST create
-│   │   ├── accounts/[id]/route.ts  # GET, PUT, DELETE
-│   │   ├── transactions/route.ts   # GET (filtered), POST
+│   │   ├── accounts/route.ts
+│   │   ├── accounts/[id]/route.ts
+│   │   ├── transactions/route.ts
 │   │   ├── transactions/[id]/route.ts
 │   │   ├── categories/route.ts
-│   │   ├── analytics/route.ts      # Monthly summaries, trends
+│   │   ├── analytics/route.ts
 │   │   └── health/route.ts
-│   └── layout.tsx                  # Root + SafeClerkProvider
+│   └── layout.tsx                  # Root layout (no ClerkProvider — not needed)
 ├── components/
-│   ├── ui/                         # shadcn: card, button, input, select, table, dialog, badge, sheet, tabs
+│   ├── ui/                         # shadcn components
 │   ├── layout/                     # Sidebar, Header, MobileNav
-│   ├── dashboard/                  # NetWorthCard, MonthSummary, AccountList, RecentTransactions, CategoryPie
+│   ├── dashboard/                  # NetWorthCard, MonthSummary, AccountCards, RecentTransactions, CategoryPie
 │   ├── transactions/               # TransactionTable, TransactionForm, CategorySelect, QuickAddFAB
 │   └── analytics/                  # IncomeExpenseChart, CategoryBreakdown, RecurringList, TrendLine
 ├── lib/
-│   ├── prisma.ts                   # Singleton PrismaClient
-│   ├── categories.ts               # System category seed (12 defaults)
-│   ├── recurring.ts                # Detection algorithm (±5% amount, 28-31 day window)
-│   └── format.ts                   # Currency formatting, date helpers
-└── libs/                           # Copied from prokit-dev:
-    ├── clerkFlags.ts
-    ├── safeClerk.tsx
-    ├── safeClerkServer.ts
-    └── middleware.ts (at src/middleware.ts)
+│   ├── prisma.ts
+│   ├── ory.ts                      # Ory client singleton + getOrySession()
+│   ├── categories.ts               # System category seed
+│   ├── recurring.ts                # Recurring payment detection
+│   └── format.ts                   # Currency + date helpers
+└── middleware.ts                   # Ory session validation (replaces Clerk middleware)
 ```
-
----
-
-## Key Pages & Components
-
-### Dashboard
-- **NetWorthCard**: Sum of all account balance snapshots
-- **MonthSummary**: Current month income (positive txns) vs expenses (negative txns), savings rate %
-- **AccountCards**: Grid showing each account, current balance, last synced badge
-- **CategoryPie**: Recharts PieChart of top categories this month
-- **RecentTransactions**: Last 10 txns, click to categorize
-
-### Transactions Page
-- Filter bar: date range picker, account dropdown, category dropdown, search input
-- Table: date | merchant | description | amount (colored ±) | category badge | notes
-- Mobile: card list (not table) for touch-friendly scrolling
-- FAB (floating action button): QuickAddFAB — opens Sheet/Drawer for fast manual entry
-
-### Manual Entry Form (mobile-optimized)
-```
-Date (default: today)
-Amount (numeric keyboard trigger on mobile)
-Income / Expense toggle
-Description
-Merchant (optional)
-Account selector
-Category selector (with smart suggestions)
-Notes (optional)
-```
-Uses `react-hook-form` + controlled inputs. Works one-handed on iPhone.
-
-### Analytics Page
-- **IncomeExpenseChart**: Recharts BarChart, 12 months, grouped (income blue, expense red)
-- **TrendLine**: Net savings per month line chart
-- **CategoryBreakdown**: Pie + ranked list with amounts
-- **RecurringTable**: Detected recurring payments, confirm/dismiss UI
-
----
-
-## Default Categories (seeded on first run)
-
-**Income**: Salary, Freelance, Investment Returns, Bonuses, Other Income
-**Living**: Rent/Mortgage, Utilities, Groceries, Household
-**Transport**: Fuel, Car Insurance, Public Transit
-**Health**: Medical, Pharmacy, Fitness
-**Family**: Childcare, Education, Gifts
-**Entertainment**: Dining Out, Subscriptions, Hobbies
-**Shopping**: Clothing, Electronics, General
-**Financial**: Loan Payments, Bank Fees, Savings Transfer
-
----
-
-## Recurring Payment Detection Algorithm (`lib/recurring.ts`)
-
-On every transaction import batch:
-1. For each unique merchant, group transactions by amount (±5% tolerance)
-2. Check date gaps — if consistently 28-35 days (monthly) or 6-8 days (weekly)
-3. Score: 3+ occurrences = high confidence (>0.8), 2 occurrences = medium (0.5)
-4. Write to `RecurringPayment` table; user confirms or dismisses in Analytics UI
 
 ---
 
 ## Environment Variables (`.env.example`)
 
-```
-# Database
-DATABASE_URL=postgresql://postgres:<pass>@<supabase-host>:5433/finance
+```bash
+# Database (Supabase self-hosted Postgres — note: postgres:// not postgresql://)
+DATABASE_URL=postgres://postgres:<pass>@10.0.2.4:5433/finance
 
-# Clerk
-NEXT_PUBLIC_CLERK_DISABLED=false
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
-CLERK_SECRET_KEY=sk_live_...
+# Ory (no Clerk keys needed)
+NEXT_PUBLIC_ORY_PUBLIC_URL=https://auth.prochat.tools
+ORY_ADMIN_URL=https://auth-admin.prochat.tools
+ORY_ADMIN_API_KEY=<from ~/.config/ory/.env>
 
 # App
 NEXT_PUBLIC_APP_URL=https://finance.prochat.tools
 
 # Phase 2: bunq
-BUNQ_API_KEY=                   # personal API key for own bunq account
-BUNQ_OAUTH_CLIENT_ID=           # for OAuth (wife's account connection)
+BUNQ_API_KEY=
+BUNQ_OAUTH_CLIENT_ID=
 BUNQ_OAUTH_CLIENT_SECRET=
 BUNQ_WEBHOOK_SECRET=
 ```
@@ -256,47 +322,45 @@ BUNQ_WEBHOOK_SECRET=
 
 ## Dockerfile
 
-Identical pattern to prokit-dev — Node 18 Bullseye, 4-stage, exposes 3000, health check at `/api/health`. Build step runs `prisma generate && npx prisma migrate deploy && next build`.
-
----
-
-## Deployment Checklist (Dokploy)
-
-1. Create Dokploy app `family-finance`
-2. Set env vars (DATABASE_URL pointing to self-hosted Supabase Postgres)
-3. Add domain `finance.prochat.tools` → Cloudflare DNS A record
-4. Push to `main` → Dokploy builds Docker image → deploys
-5. Run database seed for system categories on first boot
+Node 18 Bullseye, 4-stage (identical to prokit-dev pattern).  
+Build: `npx prisma generate && npx prisma migrate deploy && next build`  
+Expose 3000, health check at `/api/health`.
 
 ---
 
 ## Phase 1 MVP — Deliverables
 
-- [ ] Repo scaffolded from prokit-dev (Stripe/Resend stripped)
-- [ ] Finance Prisma schema + migration
-- [ ] System category seed script
-- [ ] Dashboard page (net worth, monthly summary, account cards, recent txns)
+- [ ] Repo scaffolded from prokit-dev (Stripe, Resend, Clerk stripped)
+- [ ] Ory auth integration (`lib/ory.ts`, `middleware.ts`, `/auth/login` page)
+- [ ] Ory config updated: `login.ui_url` → `finance.prochat.tools/auth/login`
+- [ ] Two Ory users created via CLI (Steve + wife)
+- [ ] Finance Prisma schema + first migration
+- [ ] System category seed script (22 default categories)
+- [ ] Dashboard page (net worth, monthly summary, account cards, recent txns, category pie)
 - [ ] Transactions page (table + filters + FAB manual entry form)
-- [ ] Accounts page (list + add/edit account)
-- [ ] Analytics page (bar chart, category pie)
+- [ ] Accounts page (list + add/edit)
+- [ ] Analytics page (12-month bar chart, category breakdown)
 - [ ] Responsive design (desktop sidebar, mobile bottom nav + FAB)
-- [ ] Dockerfile + Dokploy deploy config
-- [ ] DNS + domain live at `finance.prochat.tools`
+- [ ] Dockerfile + Dokploy deploy
+- [ ] DNS A record → `finance.prochat.tools` live
 
 ## Phase 2 — bunq API Integration
 
-- `lib/bunq/client.ts`: thin HTTP client with RSA-signed requests
+- `lib/bunq/client.ts`: thin HTTP client with RSA-signed requests (no official JS SDK)
 - OAuth 2.0 flow (`/api/bunq/connect` + `/api/bunq/callback`)
-- Account sync (`/api/bunq/sync`) — fetches paginated payments, deduplicates via `externalId`
+- Account sync — paginated payments, deduplication via `externalId`
 - Webhook handler (`/api/bunq/webhook`) — real-time transaction push
-- `BunqConnection` table for token storage (access token encrypted with AES-256)
-- Sandbox testing first (bunq provides `sandbox-user-person` endpoint)
+- `BunqConnection` stores Ory identity ID (not Clerk user ID)
+- Sandbox testing first (bunq `sandbox-user-person` endpoint)
 
 ---
 
 ## Verification
 
-1. Local: `npm run dev` → sign in with Clerk → create accounts → add manual transactions → verify dashboard math
-2. Analytics: add 3+ identical-amount transactions 30 days apart → verify recurring detection fires
-3. Mobile: open on iPhone → add transaction via FAB → verify form is touch-friendly
-4. Deploy: push to main → Dokploy builds → health check passes → `finance.prochat.tools` loads
+1. Local: `npm run dev` → `/auth/login` renders Ory flow → sign in → dashboard loads with correct session
+2. Accounts: Create 3 accounts → balances show in net worth card
+3. Transactions: Add manual txn via FAB → appears in list → category assigned
+4. Analytics: Add txns across 3+ months → bar chart renders correctly
+5. Recurring: Add 3+ same-merchant/same-amount txns 30 days apart → recurring detection fires
+6. Mobile: open on iPhone → FAB opens drawer → manual entry form works with touch keyboard
+7. Deploy: push to main → Dokploy builds → health check passes → `finance.prochat.tools` loads → Ory login works

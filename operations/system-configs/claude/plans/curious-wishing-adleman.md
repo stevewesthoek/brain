@@ -1,5 +1,5 @@
 # `fala` — Full Implementation Plan
-**Stack:** Next.js 14 + TypeScript + Tailwind + Prisma + Supabase + Clerk + Dokploy
+**Stack:** Next.js 14 + TypeScript + Tailwind + Prisma + Supabase + **Ory** + Dokploy
 
 ---
 
@@ -30,7 +30,7 @@ Building `fala` — a Portuguese learning SaaS for Steve (lives in Portugal, mar
 │   │       │   ├── next/route.ts  # GET next card
 │   │       │   └── review/route.ts # POST review
 │   │       ├── progress/route.ts
-│   │       └── webhooks/clerk/route.ts  # Sync user on signup
+│   │       └── webhooks/ory/route.ts  # Ory identity events (future)
 │   ├── components/
 │   │   ├── ui/                    # shadcn/ui components
 │   │   ├── deck/                  # FlashCard, AudioButton, QualityButtons
@@ -148,6 +148,63 @@ model Session {
 
 ---
 
+## Auth Architecture (Ory Kratos)
+
+**Status:** ✅ Ory is production-ready (running at auth.prochat.tools on Dokploy Ops project)
+
+Apps authenticate by:
+1. User visits app → middleware checks `ory_kratos_session` cookie
+2. No cookie → redirect to Ory login UI (`https://auth.prochat.tools/login`)
+3. User enters email + password (or recovery email)
+4. Ory authenticates and sets session cookie
+5. App validates session via Ory Admin API (`getCurrentUser()`)
+6. App creates/syncs User record in Prisma
+
+**Key URLs:**
+- **Public:** `https://auth.prochat.tools` (login, signup, recovery, verification)
+- **Admin API:** `https://auth-admin.prochat.tools` (backend use only)
+- **Health:** `https://auth.prochat.tools/health/ready`
+
+**Ory Infrastructure:**
+- Platform: Dokploy (Ops project, compose ID `DpMDhd91-YVUbHCxTD3Mx`)
+- Image: `oryd/kratos:v1.3.1`
+- Database: PostgreSQL `ory_prod` at `10.0.2.4:5433` (Supabase, isolated)
+- Tunnel: Cloudflare `dc7bb87e` routes `auth.prochat.tools` → `localhost:80` → Traefik → Ory
+
+**fala Project Provisioning:**
+```bash
+# Load credentials from brain
+source ~/.config/ory/.env
+
+# Create project
+ory create project --name "fala"
+# Output: Project created: <project-id>
+
+# Save to .env.local
+echo "ORY_PROJECT_ID=<project-id>" >> .env.local
+
+# (Optional) Verify
+ory list identities --project <project-id>
+```
+
+**Environment Variables for fala:**
+```bash
+# Public (shared by all Ory-using apps)
+NEXT_PUBLIC_ORY_PUBLIC_URL=https://auth.prochat.tools
+
+# Backend only
+ORY_ADMIN_URL=https://auth-admin.prochat.tools
+ORY_ADMIN_API_KEY=<from-~/.config/ory/.env>
+ORY_PROJECT_ID=<from-ory-create-project>
+```
+
+**Webhook Configuration (Ory Dashboard):**
+- URL: `https://fala.prochat.tools/api/webhooks/ory`
+- Events: `identity.created`, `identity.updated`, `identity.deleted`
+- Headers: `Authorization: Bearer <ORY_ADMIN_API_KEY>`
+
+---
+
 ## Key Implementations
 
 ### 1. FSRS v4 Algorithm (`src/lib/srs.ts`)
@@ -159,14 +216,14 @@ Implements FSRS v4 (open-spaced-repetition/fsrs.js converted to TypeScript):
 - Target retention: 90%
 - Quality scale: 1=Again (relearn), 2=Hard, 3=Good, 4=Easy
 
-### 2. Clerk Auth
+### 2. Ory Authentication Middleware
 
-Passcode (email OTP) mode is set in the Clerk dashboard — not in code.
-In code:
-- `src/middleware.ts`: clerkMiddleware + protect all `/dashboard`, `/deck`, `/phrases`, `/api/deck/*`, `/api/progress/*`
-- Public routes: `/`, `/sign-in(.*)`, `/sign-up(.*)`, `/api/webhooks/*`
-- `src/app/api/webhooks/clerk/route.ts`: sync new user to Prisma on `user.created` event
-- Sign-in/sign-up pages: `<SignIn forceRedirectUrl="/dashboard" />` (same as proofly)
+Ory session validation in middleware + API routes:
+- `src/middleware.ts`: Check Ory session from cookie → if invalid, redirect to Ory login
+- `src/lib/auth.ts`: `getCurrentUser()` fetches session from Ory Admin API, syncs to Prisma
+- `src/app/api/webhooks/ory/route.ts`: (future) Listen for Ory identity events (create/delete)
+- Public routes: `/`, `/api/health`, Ory callback routes
+- Protected routes: `/dashboard`, `/deck`, `/phrases`, `/api/deck/*`, `/api/progress/*`
 
 ### 3. Piper TTS Audio
 
@@ -184,15 +241,15 @@ In code:
 # Database (Supabase self-hosted)
 DATABASE_URL="postgresql://fala_user:<password>@100.71.31.88:5433/fala?schema=public"
 
-# Clerk Auth
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-CLERK_WEBHOOK_SECRET=
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+# Ory Authentication (self-hosted at auth.prochat.tools)
+NEXT_PUBLIC_ORY_PUBLIC_URL=https://auth.prochat.tools
+ORY_ADMIN_URL=https://auth-admin.prochat.tools
+ORY_ADMIN_API_KEY=<from-credentials>
+ORY_PROJECT_ID=<from-ory-provisioning>
 
 # App
 NEXT_PUBLIC_APP_URL=https://fala.prochat.tools
+NODE_ENV=production
 ```
 
 ---
