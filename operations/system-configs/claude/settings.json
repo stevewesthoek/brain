@@ -1,6 +1,13 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "bypassPermissions",
+    "deny": [
+      "Read(node_modules/**)",
+      "Read(dist/**)",
+      "Read(.next/**)",
+      "Read(coverage/**)",
+      "Read(*.lock)"
+    ]
   },
   "model": "haiku",
   "hooks": {
