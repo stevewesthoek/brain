@@ -15,12 +15,17 @@ This skill loads and applies the full unified routing policy for the current ses
 | Agent | Model/Tool | Cost | Use when |
 |-------|------------|------|----------|
 | `gemini-flash` | Gemini Flash | **Free** | Large context preprocessing (>100k tokens), bulk analysis, free-tier summarization |
-| `cheap-prep` | Haiku | Cheapest paid | **DEFAULT for all tasks** — coding, triage, commits, fixes, reviews; escalate if struggling |
+| `cheap-prep` | Haiku | Cheapest paid | **Default paid agent** for coding, triage, commits, fixes, and reviews; escalate if struggling |
 | `coder-default` | Sonnet | Mid paid | Escalate from Haiku: multi-file tasks, deeper reasoning, complex coding |
 | `deep-architect` | Opus | Expensive | Escalate from Sonnet: architecture, high blast radius (prod/auth/migrations), repeated failures |
 | `codex` | Codex CLI (`gpt-5.4-mini`, medium default) | Paid subscription | Parallel task delegation, code review, advisory second opinion; escalate by effort first, then model |
 
-**Cost priority:** Gemini Flash (free) > Haiku > Codex cheap > Codex default > Sonnet > Codex hard > Codex risk > Opus / Codex critical
+**Cost priority (rough):**
+- Free first: Gemini Flash
+- Cheapest paid: Haiku
+- Cheapest Codex: Codex cheap -> Codex default -> Codex hard
+- Higher-stakes paid: Sonnet -> Codex risk
+- Most expensive: Opus / Codex critical
 
 **Escalation ladders:**
 - **Claude**: Haiku → Sonnet → Opus (try each tier; only escalate when the current tier struggles)
@@ -34,7 +39,7 @@ This skill loads and applies the full unified routing policy for the current ses
 Route automatically on every task — do not ask the user which model to use.
 
 **Decompose a task into sub-agents when ALL of these are true:**
-- The task has 3+ distinct subtasks that can be worked on independently, OR involves 6+ files across different concerns
+- The task has 3+ distinct subtasks that can be worked on independently, OR involves 6+ files across different concerns with limited cross-file coupling
 - Routing to cheaper agents saves an estimated ≥20% of total tokens vs handling everything in Sonnet
 - The overhead of decomposition (spawning agents, merging results) is less than the savings
 
@@ -50,7 +55,7 @@ Route automatically on every task — do not ask the user which model to use.
 
 ## Routing rules
 
-1. **Default to `cheap-prep`** (Haiku) for all tasks — including coding. Start cheap; escalate only when struggling.
+1. **Default to `cheap-prep`** (Haiku) for paid coding and execution tasks. Start cheap; escalate only when struggling.
 2. **Escalate to `coder-default`** (Sonnet) when: Haiku output is insufficient, task clearly spans many files, or deeper reasoning is needed.
 3. **Escalate to `deep-architect`** (Opus) only when:
    - Sonnet has failed or produced unsatisfactory results after 2+ attempts
@@ -58,7 +63,7 @@ Route automatically on every task — do not ask the user which model to use.
    - Blast radius is high (prod data, shared infrastructure, auth, migrations)
    - The decision will be load-bearing for future architecture
 4. **Before escalating to Opus**: always run Gemini Flash or `cheap-prep` to compact context first.
-5. **Large context first**: when input is >100k tokens, run `gemini-review.sh` (Flash) first to produce a compact briefing. This is free.
+5. **Large context first**: when input is very large or poorly scoped (typically >60k–100k tokens), run `gemini-review.sh` (Flash) first to produce a compact briefing.
 6. **Free-tier preference**: for pure analysis/summarization tasks, prefer Gemini Flash (free) over Haiku (paid).
 7. **Delegate to `codex`** for parallel load or second opinion — default tier is `default`:
    - Running 3+ agents in parallel (route 1–2 self-contained tasks to Codex `cheap` or `default` depending on risk)
@@ -101,7 +106,7 @@ Route automatically on every task — do not ask the user which model to use.
 - Escalate effort first:
   - `minimal -> low -> medium -> high`
 - Escalate model second:
-  - `gpt-5.4-mini high -> gpt-5.4 low`
+  - `gpt-5.4-mini high -> gpt-5.4 low or medium, depending on blast radius`
   - `gpt-5.4 low/medium` only when failure cost is real or mini has already struggled
 - Avoid `gpt-5.4 xhigh` unless the task is genuinely high-stakes
 
@@ -111,12 +116,18 @@ Route automatically on every task — do not ask the user which model to use.
 | **cheap** | `codex-review.sh '<prompt>' cheap` | Tiny edits, trivial review, narrow checks (`gpt-5.4-mini`, low/minimal) |
 | **default** | `codex-review.sh '<prompt>'` | **DEFAULT** — normal coding and review (`gpt-5.4-mini`, medium) |
 | **hard** | `codex-review.sh '<prompt>' hard` | Weird bugs, subtle breakage, multi-file refactors (`gpt-5.4-mini`, high) |
-| **risk** | `codex-review.sh '<prompt>' risk` | Auth, migrations, prod-touching, load-bearing decisions (`gpt-5.4`, medium) |
+| **risk** | `codex-review.sh '<prompt>' risk` | Auth, migrations, prod-touching, load-bearing decisions (`gpt-5.4`, low/medium depending on blast radius) |
 | **critical** | `codex-review.sh '<prompt>' critical` | Rare panic-room use only (`gpt-5.4`, high/xhigh if truly justified) |
 
 Prompt limit: keep prompts compressed. Paid subscription — use deliberately.
 Escalation ladder: cheap → default → hard → risk → critical.
 Try the cheapest tier that plausibly fits the task.
+
+### Output discipline
+- Keep Codex verbosity low by default.
+- Ask for terse output on small tasks: findings, patch summary, risks, next step.
+- Do not request long explanations unless the task is architectural or ambiguous.
+- Prefer structured outputs over narrative outputs.
 
 ---
 
