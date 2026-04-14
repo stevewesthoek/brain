@@ -26,7 +26,7 @@ This skill loads and applies the full unified routing policy for the current ses
 - Cheapest paid: Haiku
 - Cheapest Codex: Codex cheap -> Codex default -> Codex hard
 - Higher-stakes paid: Sonnet -> Codex risk
-- Most expensive: Opus / Codex critical / Gemini Pro
+- Most expensive: Opus / Codex critical
 
 **Escalation ladders:**
 - **Gemini**: Flash-Lite -> Flash -> Pro
@@ -62,7 +62,7 @@ Route automatically on every task — do not ask the user which model to use.
 
 ## Routing rules
 
-1. **Default to free preprocessing first** when the task involves broad context, file discovery, summarization, triage, task shaping, or prompt compression:
+1. **Default to free preprocessing first** when the task involves broad context, file discovery, summarization, triage, task shaping, prompt compression, or repo mapping:
    - Start with `gemini-lite`
    - Escalate to `gemini-flash` when better synthesis is needed
 
@@ -116,7 +116,7 @@ Before escalating Claude tiers, classify the failure:
 
 ### Default
 - **default:** Gemini Flash-Lite
-- Rationale: default free workhorse for preprocessing, triage, and task shaping.
+- Rationale: default free workhorse for preprocessing, triage, task shaping, and agent selection.
 
 ### Escalate from Flash-Lite to Flash only when ONE of these is true
 - The context is large and synthesis quality matters
@@ -238,8 +238,8 @@ Before escalating Claude tiers, classify the failure:
 - Escalate effort first:
   - `minimal -> low -> medium -> high`
 - Escalate model second:
-  - `gpt-5.4-mini high -> gpt-5.4 low or medium, depending on blast radius`
-  - `gpt-5.4 low/medium` only when failure cost is real or mini has already struggled
+  - `gpt-5.4-mini high -> gpt-5.4 medium, depending on blast radius`
+  - `gpt-5.4 medium` only when failure cost is real or mini has already struggled
 - Avoid `gpt-5.4 xhigh` unless the task is genuinely high-stakes
 
 ### Invocation mapping
@@ -248,7 +248,7 @@ Before escalating Claude tiers, classify the failure:
 | **cheap** | `codex-review.sh '<prompt>' cheap` | Tiny edits, trivial review, narrow checks (`gpt-5.4-mini`, low/minimal) |
 | **default** | `codex-review.sh '<prompt>'` | **DEFAULT** — normal coding and review (`gpt-5.4-mini`, medium) |
 | **hard** | `codex-review.sh '<prompt>' hard` | Weird bugs, subtle breakage, multi-file refactors (`gpt-5.4-mini`, high) |
-| **risk** | `codex-review.sh '<prompt>' risk` | Auth, migrations, prod-touching, load-bearing decisions (`gpt-5.4`, low/medium depending on blast radius) |
+| **risk** | `codex-review.sh '<prompt>' risk` | Auth, migrations, prod-touching, load-bearing decisions (`gpt-5.4`, medium) |
 | **critical** | `codex-review.sh '<prompt>' critical` | Rare panic-room use only (`gpt-5.4`, high/xhigh if truly justified) |
 
 Prompt limit: keep prompts compressed. Paid subscription — use deliberately.
@@ -267,8 +267,8 @@ Try the cheapest tier that plausibly fits the task.
 
 | Tier | Invocation | When to use |
 |------|-----------|-------------|
-| **lite** (default) | `gemini-review.sh '<prompt>' lite` | Default free preprocessor for repo mapping, file triage, summarization, prompt compression, and mechanical analysis |
-| **flash** | `gemini-review.sh '<prompt>'` | Stronger free synthesis for long-context analysis, structured briefing, and cross-file understanding |
+| **lite** (default) | `gemini-review.sh '<prompt>'` | Default free preprocessor for repo mapping, file triage, summarization, prompt compression, and mechanical analysis |
+| **flash** | `gemini-review.sh '<prompt>' flash` | Stronger free synthesis for long-context analysis, structured briefing, and cross-file understanding |
 | **pro** | `gemini-review.sh '<prompt>' pro` | Deep reasoning only when free tiers are insufficient and the task truly justifies it |
 
 Prompt limit: keep prompts compressed before escalation.
@@ -295,6 +295,6 @@ Opus: reserve for genuinely hard, high-blast-radius problems. Do not escalate ou
 Codex cheap: `gpt-5.4-mini` at minimal/low effort — cheapest Codex pass.
 Codex default: `gpt-5.4-mini` at medium effort — default for most Codex tasks.
 Codex hard: `gpt-5.4-mini` at high effort — escalate before changing models.
-Codex risk: `gpt-5.4` at low/medium effort — reserve for auth, migrations, prod-touching work.
+Codex risk: `gpt-5.4` at medium effort — reserve for auth, migrations, prod-touching work.
 Codex critical: `gpt-5.4` at high/xhigh effort — panic-room use only.
 Gemini Pro: reserve for rare deep reasoning only.
