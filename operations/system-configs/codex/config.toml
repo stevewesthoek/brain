@@ -52,3 +52,6 @@ trust_level = "trusted"
 
 [projects."/Users/Office/Repos/prochattools/web/prochat"]
 trust_level = "trusted"
+
+[projects."/Users/Office/Repos/prochattools/clients/jc-citadel/jpv-bootcamp"]
+trust_level = "trusted"
