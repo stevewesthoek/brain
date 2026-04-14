@@ -561,3 +561,11 @@ ProBot integration for xGrow status and cron monitoring.
 ## Pending — empty
 
 All detected credentials have been categorized. Run `sync-credentials` to check for new entries.
+| `GOOGLE_ADS_DEVELOPER_TOKEN` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-15 |
+| `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-15 |
+| `GOOGLE_ADS_CUSTOMER_ID` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-15 |
+| `CLOUDFLARE_API_TOKEN` | `~/.config/probot/.env` | 2026-04-15 |
+| `UMAMI_URL` | `~/.config/probot/.env` | 2026-04-15 |
+| `UMAMI_USERNAME` | `~/.config/probot/.env` | 2026-04-15 |
+| `UMAMI_PASSWORD` | `~/.config/probot/.env` | 2026-04-15 |
+| `WHATSAPP_APP_ID` | `~/.config/whatsapp/.env` | 2026-04-15 |
