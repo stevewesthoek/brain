@@ -138,6 +138,8 @@ kanban-plugin: board
 - [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
 - [ ] YA finance app
 - [ ] Make my contact card iPhone
+- [ ] fix photo share JPV Bootcamp
+- [ ] Make upgrade solution FREE to PRO JPV Bootcamp
 
 
 ## Doing
