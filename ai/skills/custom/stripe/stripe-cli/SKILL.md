@@ -25,7 +25,7 @@ Help Claude use the Stripe CLI safely and consistently for local development wor
 2. **Never expose secrets.** Do not log, print, commit, or echo Stripe API keys, webhook signing secrets, or tokens. Never include them in command outputs shown to the user.
 3. **No destructive production actions without confirmation.** Before any operation that could affect live/production data, state what you are about to do and wait for explicit confirmation.
 4. **Verify auth before proceeding.** Do not rely on `stripe whoami` in this workspace. The installed CLI build does not support it. Check `~/.config/stripe/config.toml` and/or `stripe get /v1/account -p <profile>` before relying on CLI state. If unauthenticated, prompt login first.
-5. **Workspace default profile.** Unless a repo-specific doc says otherwise, treat `prochat-main` as the default Stripe CLI profile in this workspace.
+5. **Workspace default profile.** Unless a repo-specific doc says otherwise, treat `ProChat Studio` as the default Stripe CLI profile in this workspace.
 
 ## Recommended workflow
 
@@ -35,10 +35,10 @@ stripe --version
 
 # 2. Check current auth status
 cat ~/.config/stripe/config.toml
-stripe get /v1/account -p prochat-main
+stripe get /v1/account -p "ProChat Studio"
 
 # 3. Login if needed (opens browser)
-stripe login --project-name prochat-main
+stripe login --project-name "ProChat Studio"
 
 # 4. Forward webhooks to your local server
 stripe listen --forward-to localhost:3000/webhooks
@@ -58,9 +58,9 @@ stripe payment_intents list --limit 5
 stripe --version
 
 # Auth
-stripe login --project-name prochat-main
+stripe login --project-name "ProChat Studio"
 cat ~/.config/stripe/config.toml
-stripe get /v1/account -p prochat-main
+stripe get /v1/account -p "ProChat Studio"
 
 # Webhook forwarding
 stripe listen --forward-to localhost:3000/webhooks
@@ -85,6 +85,6 @@ stripe logs tail
 - Auth tokens are stored locally by the CLI — never pass them as inline arguments in commands Claude runs
 - Use `--api-key` flag only when absolutely necessary and only with test keys; never hardcode production keys
 - In this workspace, treat Stripe CLI as profile-based. One account can have both live and test access in the same profile.
-- Default to `prochat-main` unless a repo-specific doc overrides the profile for that repo.
+- Default to `ProChat Studio` unless a repo-specific doc overrides the profile for that repo.
 - Dashboard-visible accounts in Stripe are not guaranteed to be enumerable via one account's API. Separate CLI auth per account may be required.
 - Canonical Stripe operations doc: `operations/runbooks/stripe-cli-and-probot.md`
