@@ -2,9 +2,9 @@
 
 Real-time dynamic model detection with visibility into why each model is in use.
 
-**Status:** Live since 2026-04-14  
+**Status:** Refactored 2026-04-15 — now uses Claude Code's live model payload  
 **Location:** `~/.claude/` hooks + `statusline-command.sh`  
-**Tracking file:** `~/.claude/model-tracking.json`
+**Tracking file:** `~/.claude/model-tracking.json` (badge state only)
 
 ---
 
@@ -45,7 +45,25 @@ brain  |  haiku ⚙ (prep)                      # Context preprocessing
 
 ## How It Works
 
-### Hook Pipeline
+### Architecture: Ground Truth from Statusline Payload
+
+The statusline command receives the **actual live model** from Claude Code in its stdin JSON as `.model.display_name`. This is the authoritative source — it reflects exactly which model is running at that moment.
+
+```
+statusline-command.sh (runs every prompt)
+  ↓
+  Reads .model.display_name from Claude Code (LIVE: haiku, sonnet, opus, etc.)
+  ↓
+  Normalizes to short label: "Claude Sonnet 4.6" → "sonnet"
+  ↓
+  Reads badge state from ~/.claude/model-tracking.json
+  ↓
+  Renders: [model] [badge] [agent] [context]
+```
+
+### Hook Pipeline for Badge Enrichment
+
+Hooks update the badge state (reason, agent) to show **why** Claude Code chose that model:
 
 **User input detection:**
 ```
@@ -53,7 +71,7 @@ UserPromptSubmit hook → model-tracking-hook.sh
   ↓
   Scans for: Agent(, /review, plan, /firecrawl, /gemini, /ship, etc.
   ↓
-  Updates ~/.claude/model-tracking.json with model + reason
+  Updates ~/.claude/model-tracking.json with reason + agent (NOT model)
 ```
 
 **Agent completion detection:**
@@ -62,48 +80,39 @@ PostToolUse (Agent) → model-escalation-detector.sh
   ↓
   Catches when coder-default, deep-architect, cheap-prep complete
   ↓
-  Updates tracking file with actual model that ran
-```
-
-**Status line refresh:**
-```
-statusline-command.sh (runs every prompt)
-  ↓
-  Reads ~/.claude/model-tracking.json
-  ↓
-  Renders: [model] [badge] [context]
+  Updates tracking file with reason + agent
 ```
 
 **Automatic reset:**
 ```
 Stop hook → model-reset-on-stop.sh
   ↓
-  Resets to Haiku when task completes
+  Resets badge reason to "default" and agent to null
   ↓
-  Next task starts fresh at cheapest tier
+  Model stays true (from next prompt's statusline payload)
 ```
 
 ### Tracking File Structure
 
-`~/.claude/model-tracking.json`:
+`~/.claude/model-tracking.json` (badge state only):
 
 ```json
 {
-  "model": "sonnet",
   "reason": "escalation-complexity",
   "context": "Complex multi-file refactor",
-  "timestamp": "2026-04-14T10:30:45Z",
+  "timestamp": "2026-04-15T10:30:45Z",
   "agent": "coder-default"
 }
 ```
 
 | Field | Type | Purpose |
 |-------|------|---------|
-| `model` | string | Active model: `haiku`, `sonnet`, `opus`, `gemini-flash` |
-| `reason` | string | Why that model (see Badges table above) |
+| `reason` | string | Why that badge (see Badges table above) |
 | `context` | string | Human-readable task description |
-| `timestamp` | ISO-8601 or null | When state was last updated |
+| `timestamp` | ISO-8601 or null | When badge was last updated |
 | `agent` | string or null | Which sub-agent spawned it |
+
+**Note:** The `model` field is no longer stored here. It's always authoritative from Claude Code's statusline payload (`.model.display_name`).
 
 ---
 
@@ -134,66 +143,88 @@ The badges show you whether you're still in tier 1 or if escalation became neces
 
 ```bash
 jq '.hooks.UserPromptSubmit' ~/.claude/settings.json
-# Should show: model-tracking-hook.sh in first position
+# Should show: model-tracking-hook.sh registered
 
 jq '.hooks.PostToolUse' ~/.claude/settings.json
 # Should show: Agent matcher → model-escalation-detector.sh
 
 jq '.hooks.Stop' ~/.claude/settings.json
-# Should show: model-reset-on-stop.sh in first position
+# Should show: model-reset-on-stop.sh registered
 ```
 
 ### Test status line rendering
 
 ```bash
-# Default Haiku state
-echo '{"workspace": {"current_dir": "/tmp"}, "model": {"display_name": "Haiku"}, "context_window": {"context_window_size": 200000, "used_percentage": 42}}' | bash ~/.claude/statusline-command.sh
+# Default Haiku state (no badge)
+echo '{"workspace": {"current_dir": "/tmp"}, "model": {"display_name": "Claude Haiku 4.5"}, "context_window": {"context_window_size": 200000, "used_percentage": 42}}' | bash ~/.claude/statusline-command.sh
+# Output: tmp  |  haiku (200k)  |  ███░░░░░ 42%
 
-# Sonnet escalation
+# Sonnet with escalation badge
 cat > ~/.claude/model-tracking.json <<'EOF'
-{"model": "sonnet", "reason": "escalation-complexity", "context": "test", "timestamp": null, "agent": "coder-default"}
+{"reason": "escalation-complexity", "context": "test", "timestamp": null, "agent": "coder-default"}
 EOF
-echo '{"workspace": {"current_dir": "/tmp"}, "model": {"display_name": "Haiku"}, "context_window": {"context_window_size": 200000, "used_percentage": 62}}' | bash ~/.claude/statusline-command.sh
+echo '{"workspace": {"current_dir": "/tmp"}, "model": {"display_name": "Claude Sonnet 4.6"}, "context_window": {"context_window_size": 200000, "used_percentage": 62}}' | bash ~/.claude/statusline-command.sh
+# Output: tmp  |  sonnet ↑ (complex) [coder-default] (200k)  |  ████░░░░ 62%
+
+# Opus with high-complexity badge
+cat > ~/.claude/model-tracking.json <<'EOF'
+{"reason": "escalation-high-complexity", "context": "test", "timestamp": null, "agent": "deep-architect"}
+EOF
+echo '{"workspace": {"current_dir": "/tmp"}, "model": {"display_name": "Claude Opus 4.6"}, "context_window": {"context_window_size": 200000, "used_percentage": 85}}' | bash ~/.claude/statusline-command.sh
+# Output: tmp  |  opus ↑↑ (hard) [deep-architect] (200k)  |  ██████░░ 85%
 ```
 
 ### Inspect current tracking state
 
 ```bash
 cat ~/.claude/model-tracking.json | jq .
+# Should only have: reason, context, timestamp, agent (no model field)
 ```
 
 ---
 
 ## Troubleshooting
 
-### Status line not showing model changes
+### Status line shows wrong model
 
-**Check 1:** Verify tracking file exists and is readable
+**Root cause:** The model comes from Claude Code's statusline payload (`.model.display_name`), not from guessing or hooks. If the status line shows wrong model, Claude Code itself is reporting the wrong model. This is extremely rare.
+
+**If it happens:**
+1. Verify Claude Code is showing the right model in its UI
+2. Test the statusline script with a sample payload:
+   ```bash
+   echo '{"workspace": {"current_dir": "/tmp"}, "model": {"display_name": "Claude Sonnet 4.5"}, "context_window": {"context_window_size": 200000, "used_percentage": 50}}' | bash ~/.claude/statusline-command.sh
+   ```
+3. Should output: `tmp  |  sonnet (200k)  |  █████░░░ 50%`
+
+### Badge not updating when I run an Agent
+
+**Check 1:** Verify tracking file and hooks exist
 ```bash
-ls -la ~/.claude/model-tracking.json
-cat ~/.claude/model-tracking.json | jq .
+ls -la ~/.claude/model-tracking.json ~/.claude/hooks/model-*.sh
 ```
 
-**Check 2:** Verify hooks are registered in settings.json
+**Check 2:** Verify hooks are registered
 ```bash
-jq '.hooks' ~/.claude/settings.json | grep -A2 UserPromptSubmit
+jq '.hooks' ~/.claude/settings.json | jq '.PostToolUse'
 ```
 
-**Check 3:** Test the statusline script directly
+**Check 3:** Test the badge update manually
 ```bash
-echo '{"workspace": {"current_dir": "/tmp"}, "model": {"display_name": "Haiku"}, "context_window": {"context_window_size": 200000, "used_percentage": 50}}' | bash ~/.claude/statusline-command.sh
+# Manually trigger an update
+echo '{"reason": "escalation-complexity", "context": "test", "timestamp": null, "agent": "coder-default"}' > ~/.claude/model-tracking.json
+
+# Check output
+bash ~/.claude/statusline-command.sh < ~/.claude/statusline-payload-sample.json
 ```
 
-### Tracking shows wrong model after escalation
+### Unexpected badge reset between prompts
 
-**Cause:** PostToolUse hook for Agent tool didn't fire (detection pattern mismatch)  
-**Fix:** Edit `model-escalation-detector.sh` to match your Agent invocation pattern
+**Expected behavior:** Stop hook resets the badge reason to "default" when a task completes (between independent prompts).
 
-### Status line resets when you don't expect it
+**Why:** Badges represent transient state (we're in plan mode, running an agent, etc.). When you move to the next task, that state should reset unless the next prompt explicitly triggers a badge.
 
-**Cause:** Stop hook runs on every prompt end  
-**Expected:** Model resets to Haiku between independent tasks (by design)  
-**If unwanted:** Modify `model-reset-on-stop.sh` to be more selective
+**If unwanted:** This is by design. Badges are ephemeral — they indicate the *current* mode within a task.
 
 ---
 

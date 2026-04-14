@@ -1,19 +1,17 @@
 #!/bin/bash
 
-# Model reset hook - runs on Stop to reset model tracking when task completes
-# Allows the next task to start with a clean slate at Haiku
+# Badge reset hook - runs on Stop to reset badge state when task completes
+# Resets reason to "default", but model stays true (from statusline payload)
 
 TRACKING_FILE="$HOME/.claude/model-tracking.json"
 
-# Reset to default state
+# Reset badge state only (reason, agent)
+# The actual model is always authoritative from the statusline payload
 cat > "$TRACKING_FILE" <<EOF
 {
-  "model": "haiku",
   "reason": "default",
   "context": "",
   "timestamp": null,
   "agent": null
 }
 EOF
-
-echo "Model tracking reset to default (Haiku)"

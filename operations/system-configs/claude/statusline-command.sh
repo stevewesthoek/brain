@@ -5,15 +5,26 @@ dir=$(basename "$dir_full")
 ctx_size=$(echo "$input" | jq -r '.context_window.context_window_size // ""')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 
-# Read dynamic model tracking state
+# Get the ACTUAL live model from Claude Code's statusline payload
+# This is the ground truth — it reflects the real model currently running
+live_model_display=$(echo "$input" | jq -r '.model.display_name // empty' 2>/dev/null)
+
+# Normalize display_name to short label (Claude Haiku 4.5 → haiku, etc.)
+if [ -n "$live_model_display" ]; then
+  # Remove "Claude " prefix and take first word, lowercase
+  active_model=$(echo "$live_model_display" | sed 's/^Claude[[:space:]]*//; s/[[:space:]].*//' | tr '[:upper:]' '[:lower:]')
+else
+  # Fallback: use tracking file model if payload doesn't have it
+  active_model="haiku"
+fi
+
+# Read badge enrichment from tracking file (reason, agent, context)
 tracking_file="$HOME/.claude/model-tracking.json"
 if [ -f "$tracking_file" ]; then
-  active_model=$(jq -r '.model // "haiku"' "$tracking_file" 2>/dev/null)
   reason=$(jq -r '.reason // "default"' "$tracking_file" 2>/dev/null)
   agent=$(jq -r '.agent // null' "$tracking_file" 2>/dev/null)
   context=$(jq -r '.context // ""' "$tracking_file" 2>/dev/null)
 else
-  active_model="haiku"
   reason="default"
   agent="null"
   context=""

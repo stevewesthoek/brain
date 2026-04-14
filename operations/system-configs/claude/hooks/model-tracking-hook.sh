@@ -9,7 +9,6 @@ TRACKING_FILE="$HOME/.claude/model-tracking.json"
 if [ ! -f "$TRACKING_FILE" ]; then
   cat > "$TRACKING_FILE" <<EOF
 {
-  "model": "haiku",
   "reason": "default",
   "context": "",
   "timestamp": null,
@@ -24,18 +23,17 @@ USER_INPUT=$(cat)
 # Extract the actual prompt text (remove system messages, focus on user intent)
 PROMPT=$(echo "$USER_INPUT" | sed -n '/^User:/,/^---/p' | head -1)
 
-# Track model changes based on user intent
-update_model() {
-  local model=$1
-  local reason=$2
-  local context=$3
-  local agent=$4
+# Track badge state (reason, agent, context) based on user intent
+# The actual model comes from Claude Code's statusline payload (always accurate)
+update_badge() {
+  local reason=$1
+  local context=$2
+  local agent=$3
 
   local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
   cat > "$TRACKING_FILE" <<EOF
 {
-  "model": "$model",
   "reason": "$reason",
   "context": "$context",
   "timestamp": "$timestamp",
@@ -47,46 +45,46 @@ EOF
 # Detect Agent invocations (spawning coder-default, deep-architect, cheap-prep, etc.)
 if echo "$PROMPT" | grep -qE "Agent\(|subagent_type"; then
   if echo "$PROMPT" | grep -q "deep-architect"; then
-    update_model "opus" "escalation-high-complexity" "Deep architecture task - multi-system reasoning" "deep-architect"
+    update_badge "escalation-high-complexity" "Deep architecture task - multi-system reasoning" "deep-architect"
   elif echo "$PROMPT" | grep -q "coder-default"; then
-    update_model "sonnet" "escalation-complexity" "Complex coding task - multi-file or deep reasoning" "coder-default"
+    update_badge "escalation-complexity" "Complex coding task - multi-file or deep reasoning" "coder-default"
   elif echo "$PROMPT" | grep -q "cheap-prep"; then
-    update_model "haiku" "preprocessing-triage" "Context compression before handing to main task" "cheap-prep"
+    update_badge "preprocessing-triage" "Context compression before handing to main task" "cheap-prep"
   fi
 fi
 
 # Detect plan mode entry
 if echo "$PROMPT" | grep -qiE "EnterPlanMode|enter.*plan|planning.*mode"; then
-  update_model "haiku" "plan-mode" "Architecture planning phase - gathering info" null
+  update_badge "plan-mode" "Architecture planning phase - gathering info" null
 fi
 
 # Detect review skill (/review)
 if echo "$PROMPT" | grep -qE "/review|review.*pr|code.*review"; then
-  update_model "haiku" "review-mode" "Pre-landing PR review" null
+  update_badge "review-mode" "Pre-landing PR review" null
 fi
 
 # Detect /firecrawl or web research
 if echo "$PROMPT" | grep -qE "/firecrawl|/gemini|preprocessing.*context|large.*context"; then
   if echo "$PROMPT" | grep -q "/gemini"; then
-    update_model "gemini-flash" "preprocessing-large-context" "Free-tier preprocessing of large inputs" null
+    update_badge "preprocessing-large-context" "Free-tier preprocessing of large inputs" null
   else
-    update_model "haiku" "research-mode" "Web scraping and research" null
+    update_badge "research-mode" "Web scraping and research" null
   fi
 fi
 
 # Detect /ship or /land-and-deploy
 if echo "$PROMPT" | grep -qE "/ship|/land-and-deploy|merge.*pr"; then
-  update_model "haiku" "deploy-mode" "Ship workflow - merge and deploy" null
+  update_badge "deploy-mode" "Ship workflow - merge and deploy" null
 fi
 
-# Default: back to Haiku if no special mode detected
+# Default: back to default badge if no special mode detected
 if [ -z "$PROMPT" ] || (! echo "$PROMPT" | grep -qE "Agent\(|subagent_type|EnterPlanMode|/review|/firecrawl|/gemini|/ship"); then
   # Only reset if we're not already in a multi-turn task
-  CURRENT=$(jq -r '.model' "$TRACKING_FILE" 2>/dev/null || echo "haiku")
+  CURRENT=$(jq -r '.reason' "$TRACKING_FILE" 2>/dev/null || echo "default")
 
   # Don't reset if we just started an agent or mode
-  if [ "$CURRENT" = "haiku" ]; then
-    update_model "haiku" "default" "" null
+  if [ "$CURRENT" = "default" ]; then
+    update_badge "default" "" null
   fi
 fi
 

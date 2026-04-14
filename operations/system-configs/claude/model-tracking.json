@@ -1,7 +1,6 @@
 {
-  "model": "haiku",
   "reason": "default",
   "context": "",
-  "timestamp": "2026-04-14T23:08:01Z",
-  "agent": "null"
+  "timestamp": null,
+  "agent": null
 }
