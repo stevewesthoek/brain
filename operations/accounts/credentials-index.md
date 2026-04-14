@@ -205,11 +205,11 @@ CLI auth via browser OAuth — no persistent API key file. Account IDs stored in
 | Vila Solidária | `acct_1S4gIHGuhwwbZ1l7` | `vila-solidaria` | Same profile has test mode | CLI-verified on 2026-04-11; standard account; non-profit business type; dashboard timezone `Europe/Lisbon`; country `PT` |
 | Yeshua Academy | `acct_1FIyIjBfXlZVNl8d` | `yeshua-academy` | Same profile has test mode | CLI-verified on 2026-04-11; standard account; non-profit business type; dashboard timezone `Europe/Lisbon`; country `NL` |
 
-Re-authenticate: `stripe login` (opens browser). Switch profiles: `stripe login --profile "says the bible sandbox"`.
+Re-authenticate: `stripe login --project-name prochat-main` (opens browser). Switch profiles: `stripe login --profile "says the bible sandbox"`.
 
 ### Stripe inventory notes
 
-- The `prochat-main` CLI profile now resolves to `ProChat Studio` and is separate from the existing `default` Says the Bible profile.
+- The `prochat-main` CLI profile is the workspace default and resolves to `ProChat Studio`; it is separate from the existing `default` Says the Bible profile.
 - `stripe get /v1/accounts -p prochat-main` returned an empty list, so the other dashboard-visible accounts are not exposed as Connect subaccounts through this API credential.
 - All authenticated live profiles now also have test-mode API keys in the same Stripe CLI profile.
 - In Stripe terms, test mode is usually not a separate sandbox account ID; it is the same account with separate test credentials.

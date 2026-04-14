@@ -25,6 +25,11 @@ Use this runbook when:
 
 The Stripe CLI is profile-based.
 
+Workspace default:
+
+- `prochat-main` is the default Stripe CLI profile unless a repo-specific doc says otherwise.
+- Repo-specific guidance can override the default profile for that repo's Stripe account.
+
 Each profile is stored in `~/.config/stripe/config.toml` and can contain:
 
 - `account_id`
@@ -110,6 +115,8 @@ then the profile has both live and test access for that account.
 
 The local machine currently uses dedicated profiles for the dashboard-visible live accounts, plus one distinct sandbox profile for Says the Bible.
 
+The workspace default profile is `prochat-main` unless a repo-specific doc overrides it.
+
 See `operations/accounts/credentials-index.md` for the current account roster and IDs.
 
 ## Live vs test mode
@@ -149,7 +156,7 @@ This avoids the false assumption that one Stripe profile can enumerate every oth
 - Read-only by default.
 - Never print secrets into logs, chat replies, or committed files.
 - Use the Stripe CLI or API in the target profile context explicitly.
-- Preserve existing production wiring, especially the current Says the Bible default profile.
+- Preserve existing production wiring, especially the current `prochat-main` default profile and any repo-specific overrides.
 
 ## Operational safety rules
 
