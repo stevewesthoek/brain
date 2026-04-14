@@ -10,6 +10,22 @@ This skill loads and applies the full unified routing policy for the current ses
 
 ---
 
+## Core principle
+
+Use expensive models to resolve uncertainty, not to perform all follow-through by default.
+
+**Escalate reluctantly. De-escalate aggressively.**
+
+Touch Sonnet, Opus, Codex risk, Codex critical, Gemini Flash, or Gemini Pro only when needed to:
+- identify root cause
+- resolve ambiguity
+- choose an approach
+- produce a bounded implementation brief
+
+Once the problem is understood well enough, immediately hand execution back to the **cheapest safe agent**.
+
+---
+
 ## Agent roster
 
 | Agent | Model/Tool | Cost | Use when |
@@ -38,6 +54,11 @@ This skill loads and applies the full unified routing policy for the current ses
   - Compact context before escalation when failure appears scope-related rather than intelligence-related
 - **Codex**: cheap -> default -> hard -> risk -> critical
   - Escalate only when the current tier struggles and the task justifies paid code-review depth
+
+**De-escalation ladders:**
+- **Gemini**: Pro -> Flash -> Flash-Lite
+- **Claude**: Opus 4.6 -> Sonnet 4.6 -> Haiku 4.5
+- **Codex**: critical -> risk -> hard -> default -> cheap
 
 ---
 
@@ -101,6 +122,10 @@ Route automatically on every task — do not ask the user which model to use.
    - Escalate model second: `risk -> critical` only for high-stakes work
    - Codex is on a paid subscription — use deliberately
 
+9. **De-escalate after diagnosis**: once a higher-tier model has reduced the problem to a bounded implementation task, hand execution back to the cheapest safe agent immediately.
+
+10. **Do not let a higher-tier model keep the task by inertia**. If ambiguity is resolved, routing must be reconsidered before the next step.
+
 ### Escalation diagnosis
 Before escalating Claude tiers, classify the failure:
 
@@ -109,6 +134,74 @@ Before escalating Claude tiers, classify the failure:
 
 - **Intelligence fault**: model cannot reason through the task, misses dependencies, gives shallow tradeoffs, or repeats bad plans
   - Action: escalate one tier
+
+### De-escalation diagnosis
+Before keeping work on a higher-tier model, classify the remaining work:
+
+- **Bounded execution**: the root cause is known, files are known, constraints are known, and the remaining work is mostly implementation or verification
+  - Action: de-escalate to the cheapest safe agent
+
+- **Ongoing ambiguity**: the architecture, fault model, or blast radius is still unclear and each step can materially change the plan
+  - Action: stay on the current tier until the ambiguity is reduced
+
+---
+
+## De-escalation policy
+
+### Principle
+Use expensive models to solve uncertainty, not to perform all follow-through by default.
+
+### Mandatory handoff-down
+When a higher-tier model has:
+- identified the root cause
+- selected the approach
+- reduced ambiguity to a bounded task
+- narrowed the work to a small file set or clear execution plan
+
+Then it must hand the task back down to the cheapest agent that can safely complete it.
+
+### Preferred handoff-down order
+- From **Gemini Flash** -> Gemini Flash-Lite, Haiku, or Codex cheap/default depending on the remaining work
+- From **Gemini Pro** -> Gemini Flash first, then lower if the task is now bounded
+- From **Sonnet** -> Haiku first, or Codex default if a focused code-review/execution pass is better
+- From **Opus** -> Sonnet first if some reasoning remains, otherwise Haiku or Codex default/cheap
+- From **Codex risk/critical** -> Codex default or cheap if the remaining work is now mechanical
+- From **any higher tier** -> Gemini Lite if the next step is simply restructuring, summarizing, or reducing context again
+
+### Do NOT stay on the higher tier when
+- the remaining work is mechanical
+- the fix is now bounded to 1–3 files
+- the implementation plan is already clear
+- the higher model is no longer resolving ambiguity, only executing steps
+- the task has become a straightforward patch, review, summary, or verification pass
+
+### Stay on the higher tier only when
+- implementation itself is high risk
+- the code remains tightly coupled and ambiguous
+- each edit materially changes the architecture decision
+- verification requires the same high-level reasoning that caused escalation
+- the blast radius remains too high for a cheaper model to safely execute
+
+### Required handoff format
+Before de-escalating, the higher-tier model should produce:
+- root cause
+- chosen fix
+- files to change
+- constraints
+- risks
+- exact next step
+- recommended lower-tier agent
+
+Then the cheaper model executes from that bounded brief.
+
+### Dynamic de-escalation rule
+De-escalation is not a one-time event. Re-check after every meaningful step:
+- if uncertainty drops, de-escalate again
+- if the task becomes mechanical, de-escalate again
+- if a lower-tier agent fails for real, escalate only as far as needed, then de-escalate again
+
+### Anti-sticky rule
+No model keeps ownership of a task just because it already has context. Context familiarity is not a reason to keep spending expensive tokens.
 
 ---
 
@@ -123,6 +216,17 @@ Before escalating Claude tiers, classify the failure:
 - The first Lite pass is too shallow or misses key dependencies
 - You need a stronger structured implementation brief
 - You need better cross-file reasoning before handing off to a paid model
+
+### Escalate from Flash to Pro only when ONE of these is true
+- Flash still misses important dependencies or tradeoffs
+- The reasoning problem is genuinely complex and still unresolved
+- A stronger analytical pass is needed before handing off to Claude or Codex
+- Free tiers are insufficient for the current depth of reasoning
+
+### De-escalate Gemini as soon as possible
+- Flash -> Flash-Lite once the task becomes mostly extraction, compression, or organization
+- Pro -> Flash once the key reasoning is done
+- Pro or Flash -> Haiku or Codex default/cheap once the next step is bounded implementation or review
 
 ### Use Gemini before paid models for
 - repo mapping
@@ -192,6 +296,12 @@ Before escalating Claude tiers, classify the failure:
 - The prompt has not been compacted first
 - Sonnet has not yet had one clean, well-scoped attempt
 
+### De-escalate Claude as soon as possible
+- Sonnet -> Haiku once the task becomes bounded implementation, narrow verification, or straightforward follow-through
+- Opus -> Sonnet once the architecture or diagnosis is clear but some reasoning still remains
+- Opus -> Haiku directly when the remaining work is now mechanical and safe
+- Opus or Sonnet -> Codex default/cheap when a focused implementation-review-execution handoff is better than keeping work inside Claude
+
 ### Retry budget
 - Haiku: up to **2 passes**
 - Sonnet: up to **2 passes**
@@ -203,6 +313,7 @@ Before escalating Claude tiers, classify the failure:
 - Prefer structured asks: goal, constraints, files, expected output.
 - Ask for concise patches, decisions, risks, and next steps instead of long narrative explanations.
 - Do not spend Sonnet or Opus tokens on repo summarization that Gemini can do for free.
+- Before ending a Sonnet or Opus pass, explicitly ask whether the next step can be handed down to Haiku, Codex, or Gemini.
 
 ---
 
@@ -242,6 +353,13 @@ Before escalating Claude tiers, classify the failure:
   - `gpt-5.4 medium` only when failure cost is real or mini has already struggled
 - Avoid `gpt-5.4 xhigh` unless the task is genuinely high-stakes
 
+### De-escalate Codex as soon as possible
+- critical -> risk only while some elevated reasoning still matters
+- risk -> default as soon as the task becomes bounded and implementation-focused
+- default -> cheap when the remaining work is narrow, mechanical, or a light review pass
+- Codex -> Haiku when the remaining work is straightforward execution rather than code-review-grade scrutiny
+- Codex -> Gemini Lite when the next step is only summarization, restructuring, or context reduction
+
 ### Invocation mapping
 | Tier | Invocation | When to use |
 |------|-----------|-------------|
@@ -253,6 +371,7 @@ Before escalating Claude tiers, classify the failure:
 
 Prompt limit: keep prompts compressed. Paid subscription — use deliberately.
 Escalation ladder: cheap → default → hard → risk → critical.
+De-escalation ladder: critical → risk → hard/default → cheap.
 Try the cheapest tier that plausibly fits the task.
 
 ### Output discipline
@@ -260,6 +379,7 @@ Try the cheapest tier that plausibly fits the task.
 - Ask for terse output on small tasks: findings, patch summary, risks, next step.
 - Do not request long explanations unless the task is architectural or ambiguous.
 - Prefer structured outputs over narrative outputs.
+- Before ending a risk or critical pass, explicitly ask whether the next step can be handed down to default or cheap.
 
 ---
 
@@ -273,6 +393,8 @@ Try the cheapest tier that plausibly fits the task.
 
 Prompt limit: keep prompts compressed before escalation.
 Use stable model IDs in scripts where possible; avoid preview aliases as default unless you intentionally want preview behavior.
+Default ladder: lite -> flash -> pro.
+De-escalation ladder: pro -> flash -> lite.
 
 ---
 
@@ -290,11 +412,11 @@ After significant work, produce a compact summary (5 bullets or fewer) for:
 Gemini Flash-Lite: **free** — first choice for preprocessing, triage, compression, and high-volume lightweight tasks.
 Gemini Flash: **free** — second free choice for stronger synthesis and large-context analysis.
 Haiku: ~25× cheaper than Opus. **Default for Claude-side paid work after free preprocessing.**
-Sonnet: ~5× cheaper than Opus. Escalation from Haiku only for verified difficulty.
-Opus: reserve for genuinely hard, high-blast-radius problems. Do not escalate out of impatience.
+Sonnet: ~5× cheaper than Opus. Use briefly for verified difficulty, then hand bounded work back down.
+Opus: reserve for genuinely hard, high-blast-radius problems. Use only to resolve uncertainty, then de-escalate immediately.
 Codex cheap: `gpt-5.4-mini` at minimal/low effort — cheapest Codex pass.
 Codex default: `gpt-5.4-mini` at medium effort — default for most Codex tasks.
 Codex hard: `gpt-5.4-mini` at high effort — escalate before changing models.
-Codex risk: `gpt-5.4` at medium effort — reserve for auth, migrations, prod-touching work.
-Codex critical: `gpt-5.4` at high/xhigh effort — panic-room use only.
-Gemini Pro: reserve for rare deep reasoning only.
+Codex risk: `gpt-5.4` at medium effort — reserve for auth, migrations, prod-touching work, then hand back down.
+Codex critical: `gpt-5.4` at high/xhigh effort — panic-room use only, then hand back down immediately.
+Gemini Pro: reserve for rare deep reasoning only, then step back to Flash or Lite.

@@ -19,6 +19,7 @@
 # Policy:
 # - Start on the cheapest tier that plausibly fits the task
 # - Escalate effort first, model second
+# - De-escalate as soon as the problem is understood
 # - Keep output terse and structured
 
 set -euo pipefail
@@ -41,7 +42,7 @@ if [ "${#INPUT}" -gt "$MAX_CHARS" ]; then
   INPUT="${INPUT:0:$MAX_CHARS}"
 fi
 
-PROMPT="You are a strict secondary code reviewer.
+PROMPT="You are a strict secondary code reviewer in a cost-aware multi-model workflow.
 
 Your job:
 - review the proposed code, plan, diff, or debugging context
@@ -50,13 +51,31 @@ Your job:
 - be concise and practical
 - prefer short bullet points
 - if the code looks fine, say so clearly
+- after reviewing, decide whether the next step can be handed down to a cheaper tier
+
+Routing principle:
+- expensive reasoning should only resolve uncertainty
+- once the issue is understood, bounded, and low-ambiguity, recommend the cheapest safe next tier
+- do not keep work on a higher tier by inertia
 
 Output format:
 - Verdict
+- Root cause or main issue
 - Key risks
 - Missing checks
 - Simpler option
+- Can this be handed down now? (yes/no)
+- Recommended next tier
 - Next step
+
+Allowed next tiers:
+- cheap
+- default
+- hard
+- risk
+- critical
+- haiku
+- gemini-lite
 
 Important constraints:
 - this is a second-opinion pass
@@ -64,6 +83,7 @@ Important constraints:
 - do not invent files, APIs, or requirements
 - do not rewrite everything unless necessary
 - avoid narrative prose
+- prefer de-escalation whenever the remaining work is mechanical or clearly bounded
 
 Context to review:
 

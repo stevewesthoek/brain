@@ -26,6 +26,7 @@
 # - Prefer Gemini before paid models for breadth-first work
 # - Prefer structured extraction over prose
 # - Use stable model IDs where possible
+# - De-escalate as soon as uncertainty is reduced
 
 set -euo pipefail
 
@@ -58,6 +59,14 @@ Your job:
 - be concise
 - prefer bullet points and structured sections over prose
 - do not include filler or preamble
+- recommend the cheapest safe next agent
+- explicitly prefer de-escalation once ambiguity is reduced
+
+Routing principle:
+- use stronger models only to resolve uncertainty
+- once the task is bounded, hand it down immediately
+- do not keep work on a stronger tier by inertia
+- prefer the smallest viable next agent
 
 Output format:
 - Task summary
@@ -66,8 +75,21 @@ Output format:
 - Constraints
 - Risks
 - Open questions
+- Can this be handed down now? (yes/no)
 - Recommended next step
 - Recommended next agent
+
+Allowed next agents:
+- gemini-lite
+- gemini-flash
+- gemini-pro
+- haiku
+- sonnet
+- opus
+- codex-cheap
+- codex-default
+- codex-hard
+- codex-risk
 
 Important constraints:
 - you are a preprocessing and triage step, not the final authority
@@ -78,6 +100,7 @@ Important constraints:
 - if the input is documents: extract key facts, decisions, requirements, and actions
 - if the input is broad or messy: create a bounded work order for the next agent
 - prefer selecting the smallest viable next agent over escalating by habit
+- if a stronger model was only needed for diagnosis, recommend a lower-tier execution agent once the diagnosis is clear
 
 Content to analyze:
 
