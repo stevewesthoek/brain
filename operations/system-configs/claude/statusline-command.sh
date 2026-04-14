@@ -2,9 +2,62 @@
 input=$(cat)
 dir_full=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // ""')
 dir=$(basename "$dir_full")
-model=$(echo "$input" | jq -r '.model.display_name // ""')
 ctx_size=$(echo "$input" | jq -r '.context_window.context_window_size // ""')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+
+# Read dynamic model tracking state
+tracking_file="$HOME/.claude/model-tracking.json"
+if [ -f "$tracking_file" ]; then
+  active_model=$(jq -r '.model // "haiku"' "$tracking_file" 2>/dev/null)
+  reason=$(jq -r '.reason // "default"' "$tracking_file" 2>/dev/null)
+  agent=$(jq -r '.agent // null' "$tracking_file" 2>/dev/null)
+  context=$(jq -r '.context // ""' "$tracking_file" 2>/dev/null)
+else
+  active_model="haiku"
+  reason="default"
+  agent="null"
+  context=""
+fi
+
+# Format model display with reason badge
+model=""
+case "$reason" in
+  "default")
+    model="$active_model"
+    ;;
+  "escalation-complexity")
+    model="${active_model} ↑ (complex)"
+    ;;
+  "escalation-high-complexity")
+    model="${active_model} ↑↑ (hard)"
+    ;;
+  "plan-mode")
+    model="${active_model} ⊙ (plan)"
+    ;;
+  "review-mode")
+    model="${active_model} ◊ (review)"
+    ;;
+  "preprocessing-triage")
+    model="${active_model} ⚙ (prep)"
+    ;;
+  "preprocessing-large-context")
+    model="${active_model} ⚙ (preprocess)"
+    ;;
+  "research-mode")
+    model="${active_model} 🔍 (research)"
+    ;;
+  "deploy-mode")
+    model="${active_model} ⬆ (deploy)"
+    ;;
+  *)
+    model="${active_model}"
+    ;;
+esac
+
+# Add agent info if present
+if [ "$agent" != "null" ] && [ -n "$agent" ]; then
+  model="${model} [${agent}]"
+fi
 
 # Format context window size as e.g. "200k"
 if [ -n "$ctx_size" ] && [ "$ctx_size" != "null" ]; then
