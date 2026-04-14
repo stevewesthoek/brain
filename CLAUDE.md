@@ -51,7 +51,7 @@ Local repos at `~/Repos/` by GitHub account:
 
 ## Reference docs
 
-For credential conventions, see `docs/api-standards.md`. For testing/QA procedures, see `docs/testing.md`. For deployment rules, see `docs/deploy.md`.
+For credential conventions, see `docs/api-standards.md`. For testing/QA procedures, see `docs/testing.md`. For deployment rules, see `docs/deploy.md`. For model tracking and cost transparency, see `docs/model-tracking-reference.md`.
 
 ## Symlink map (home → brain)
 
@@ -76,10 +76,25 @@ Master index (metadata only): `operations/accounts/credentials-index.md`. Run `s
 
 `operations/decision-log.md` — confirmed decisions only.
 
+## Model tracking
+
+Claude Code model routing is now **fully transparent** — your status line shows which model is running and why in real-time.
+
+- **Status line display:** Dynamic badges show escalations, modes, preprocessing (`↑`, `⊙`, `◊`, `⚙`, etc.)
+- **Tracking file:** `~/.claude/model-tracking.json` — readable state of current model + reason
+- **Cost awareness:** See when tasks escalate from Haiku → Sonnet → Opus
+- **Runbook:** `operations/runbooks/model-tracking.md` — full operational guide
+- **Reference:** `docs/model-tracking-reference.md` — user-facing quick reference
+
+This system runs automatically via hooks in `~/.claude/settings.json`. No user action needed — just look at your status line.
+
 ## Do not break
 
 - `~/.claude` → `brain/operations/system-configs/claude`. Do not delete or restructure.
 - `~/.claude/skills` → `brain/ai/skills/active`. Keep `active/` as symlinks only.
+- `~/.claude/model-tracking.json` — Do not delete. Hooks depend on it.
+- `~/.claude/hooks/model-*.sh` — Model tracking hooks. Do not delete.
+- `~/.claude/settings.json` — Model tracking hooks registered here in UserPromptSubmit, PostToolUse, Stop sections.
 - `~/.codex` → `brain/operations/system-configs/codex`. Do not delete or restructure.
 - `~/.gemini` → `brain/operations/system-configs/gemini`. Do not delete or restructure.
 - `~/.kiro` → `brain/operations/system-configs/kiro`. Do not delete or restructure.
