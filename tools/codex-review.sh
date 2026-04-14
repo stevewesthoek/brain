@@ -10,11 +10,11 @@
 #   codex-review.sh '<prompt>' critical
 #
 # Tier routing:
-#   cheap    -> gpt-5.4-mini, low effort      — tiny edits, narrow checks
-#   default  -> gpt-5.4-mini, medium effort   — DEFAULT; normal code review/debugging
-#   hard     -> gpt-5.4-mini, high effort     — weird bugs, subtle breakage, multi-file refactors
-#   risk     -> gpt-5.4, low/medium effort    — auth, migrations, prod-touching decisions
-#   critical -> gpt-5.4, high effort          — rare panic-room use only
+#   cheap    -> gpt-5.4-mini, low effort    — tiny edits, narrow checks
+#   default  -> gpt-5.4-mini, medium effort — DEFAULT; normal code review/debugging
+#   hard     -> gpt-5.4-mini, high effort   — weird bugs, subtle breakage, multi-file refactors
+#   risk     -> gpt-5.4, medium effort      — auth, migrations, prod-touching decisions
+#   critical -> gpt-5.4, high effort        — rare panic-room use only
 #
 # Policy:
 # - Start on the cheapest tier that plausibly fits the task
@@ -41,7 +41,7 @@ if [ "${#INPUT}" -gt "$MAX_CHARS" ]; then
   INPUT="${INPUT:0:$MAX_CHARS}"
 fi
 
-PROMPT="You are acting as a strict secondary code reviewer.
+PROMPT="You are a strict secondary code reviewer.
 
 Your job:
 - review the proposed code, plan, diff, or debugging context

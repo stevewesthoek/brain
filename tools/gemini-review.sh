@@ -2,7 +2,7 @@
 # gemini-review.sh — free-first preprocessing and analysis via Gemini CLI
 #
 # Usage:
-#   gemini-review.sh '<prompt>'           # flash tier (default)
+#   gemini-review.sh '<prompt>'           # lite tier (default)
 #   gemini-review.sh '<prompt>' lite
 #   gemini-review.sh '<prompt>' flash
 #   gemini-review.sh '<prompt>' pro
@@ -20,6 +20,7 @@
 # - stack trace clustering
 # - prompt compression
 # - implementation briefing
+# - selecting the smallest viable next agent
 #
 # Policy:
 # - Prefer Gemini before paid models for breadth-first work
@@ -40,14 +41,14 @@ if [ "$#" -lt 1 ]; then
 fi
 
 INPUT="$1"
-TIER="${2:-flash}"
+TIER="${2:-lite}"
 MAX_CHARS=500000
 
 if [ "${#INPUT}" -gt "$MAX_CHARS" ]; then
   INPUT="${INPUT:0:$MAX_CHARS}"
 fi
 
-PROMPT="You are acting as a free-first analysis engine in a multi-AI workflow.
+PROMPT="You are a free-first analysis engine in a multi-AI workflow.
 
 Your job:
 - process the provided content thoroughly
@@ -65,6 +66,7 @@ Output format:
 - Constraints
 - Risks
 - Open questions
+- Recommended next step
 - Recommended next agent
 
 Important constraints:
@@ -75,6 +77,7 @@ Important constraints:
 - if the input is logs: extract errors, anomalies, clusters, and likely causes
 - if the input is documents: extract key facts, decisions, requirements, and actions
 - if the input is broad or messy: create a bounded work order for the next agent
+- prefer selecting the smallest viable next agent over escalating by habit
 
 Content to analyze:
 
