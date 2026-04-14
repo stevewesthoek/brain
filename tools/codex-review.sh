@@ -2,17 +2,24 @@
 # codex-review.sh — secondary code review via Codex CLI
 #
 # Usage:
-#   codex-review.sh '<prompt>'           # low tier (default — start here, escalate if needed)
-#   codex-review.sh '<prompt>' low       # low tier (explicit)
-#   codex-review.sh '<prompt>' mini      # mini tier — codex-mini-latest, fast sanity check
-#   codex-review.sh '<prompt>' standard  # standard tier — escalate when low is insufficient
-#   codex-review.sh '<prompt>' max       # max tier — deep reasoning, high-stakes code
+#   codex-review.sh '<prompt>'              # default tier
+#   codex-review.sh '<prompt>' cheap
+#   codex-review.sh '<prompt>' default
+#   codex-review.sh '<prompt>' hard
+#   codex-review.sh '<prompt>' risk
+#   codex-review.sh '<prompt>' critical
 #
-# Escalation ladder (start low, escalate when struggling):
-#   low      → gpt-5.4, reasoning_effort="low"   — DEFAULT; most tasks start here
-#   mini     → codex-mini-latest, reasoning_effort="low" — fast parallel filler only
-#   standard → gpt-5.4, reasoning_effort="medium"  — escalate when low is insufficient
-#   max      → gpt-5.4, reasoning_effort="xhigh" — auth, migrations, prod-touching
+# Tier routing:
+#   cheap    -> gpt-5.4-mini, low effort      — tiny edits, narrow checks
+#   default  -> gpt-5.4-mini, medium effort   — DEFAULT; normal code review/debugging
+#   hard     -> gpt-5.4-mini, high effort     — weird bugs, subtle breakage, multi-file refactors
+#   risk     -> gpt-5.4, low/medium effort    — auth, migrations, prod-touching decisions
+#   critical -> gpt-5.4, high effort          — rare panic-room use only
+#
+# Policy:
+# - Start on the cheapest tier that plausibly fits the task
+# - Escalate effort first, model second
+# - Keep output terse and structured
 
 set -euo pipefail
 
@@ -22,12 +29,12 @@ if ! command -v codex >/dev/null 2>&1; then
 fi
 
 if [ "$#" -lt 1 ]; then
-  echo "Usage: codex-review.sh '<prompt>' [mini|standard|max]" >&2
+  echo "Usage: codex-review.sh '<prompt>' [cheap|default|hard|risk|critical]" >&2
   exit 1
 fi
 
 INPUT="$1"
-TIER="${2:-low}"
+TIER="${2:-default}"
 MAX_CHARS=12000
 
 if [ "${#INPUT}" -gt "$MAX_CHARS" ]; then
@@ -37,43 +44,64 @@ fi
 PROMPT="You are acting as a strict secondary code reviewer.
 
 Your job:
-- review the proposed code, plan, or debugging context
-- identify likely bugs, weak assumptions, missing edge cases, or simpler alternatives
+- review the proposed code, plan, diff, or debugging context
+- identify likely bugs, weak assumptions, missing edge cases, and simpler alternatives
+- focus on correctness, risk, and implementation quality
 - be concise and practical
-- do not rewrite everything unless necessary
 - prefer short bullet points
 - if the code looks fine, say so clearly
+
+Output format:
+- Verdict
+- Key risks
+- Missing checks
+- Simpler option
+- Next step
 
 Important constraints:
 - this is a second-opinion pass
 - do not assume hidden context
-- do not invent files or APIs
-- focus on correctness, risk, and implementation quality
+- do not invent files, APIs, or requirements
+- do not rewrite everything unless necessary
+- avoid narrative prose
 
 Context to review:
 
 $INPUT"
 
+run_codex() {
+  local model="$1"
+  local effort="$2"
+
+  codex exec "$PROMPT" -s read-only \
+    -c "model=\"$model\"" \
+    -c "model_reasoning_effort=\"$effort\"" \
+    -c 'model_verbosity="low"'
+}
+
 case "$TIER" in
-  mini)
-    echo "[codex-review] tier=mini (fast parallel filler — codex-mini-latest)" >&2
-    codex exec "$PROMPT" -s read-only \
-      -c 'model="codex-mini-latest"' \
-      -c 'model_reasoning_effort="low"'
+  cheap)
+    echo "[codex-review] tier=cheap (gpt-5.4-mini, low effort)" >&2
+    run_codex "gpt-5.4-mini" "low"
     ;;
-  standard)
-    echo "[codex-review] tier=standard (escalated — gpt-5.4, medium effort)" >&2
-    codex exec "$PROMPT" -s read-only \
-      -c 'model_reasoning_effort="medium"'
+  default)
+    echo "[codex-review] tier=default (gpt-5.4-mini, medium effort)" >&2
+    run_codex "gpt-5.4-mini" "medium"
     ;;
-  max)
-    echo "[codex-review] tier=max (deep reasoning — gpt-5.4, xhigh effort)" >&2
-    codex exec "$PROMPT" -s read-only \
-      -c 'model_reasoning_effort="xhigh"'
+  hard)
+    echo "[codex-review] tier=hard (gpt-5.4-mini, high effort)" >&2
+    run_codex "gpt-5.4-mini" "high"
     ;;
-  low|*)
-    echo "[codex-review] tier=low (default — gpt-5.4, low effort)" >&2
-    codex exec "$PROMPT" -s read-only \
-      -c 'model_reasoning_effort="low"'
+  risk)
+    echo "[codex-review] tier=risk (gpt-5.4, medium effort)" >&2
+    run_codex "gpt-5.4" "medium"
+    ;;
+  critical)
+    echo "[codex-review] tier=critical (gpt-5.4, high effort)" >&2
+    run_codex "gpt-5.4" "high"
+    ;;
+  *)
+    echo "ERROR: unknown tier '$TIER'. Use one of: cheap, default, hard, risk, critical." >&2
+    exit 1
     ;;
 esac

@@ -1,17 +1,30 @@
 #!/usr/bin/env bash
-# gemini-review.sh — large-context preprocessing and analysis via Gemini CLI
+# gemini-review.sh — free-first preprocessing and analysis via Gemini CLI
 #
 # Usage:
-#   gemini-review.sh '<prompt>'        # flash tier (default) — free, 1M token context
-#   gemini-review.sh '<prompt>' flash  # flash tier (explicit)
-#   gemini-review.sh '<prompt>' pro    # pro tier — deeper reasoning, limited free quota (~50 RPD)
+#   gemini-review.sh '<prompt>'           # flash tier (default)
+#   gemini-review.sh '<prompt>' lite
+#   gemini-review.sh '<prompt>' flash
+#   gemini-review.sh '<prompt>' pro
 #
 # Tier routing:
-#   flash → gemini-2.5-flash — fast, free, 1M token context — DEFAULT
-#   pro   → gemini-2.5-pro   — deep reasoning, limited free tier
+#   lite  -> gemini-2.5-flash-lite   — default free preprocessor for triage, repo mapping, compression
+#   flash -> gemini-2.5-flash        — stronger free synthesis for long-context analysis
+#   pro   -> gemini-2.5-pro          — deep reasoning only when truly justified
 #
-# Primary use case: preprocess large inputs into compact summaries for Claude/Codex.
-# This reduces token costs on paid engines by doing the heavy lifting on free Flash.
+# Primary use cases:
+# - repo mapping
+# - file triage
+# - summarization
+# - test/log triage
+# - stack trace clustering
+# - prompt compression
+# - implementation briefing
+#
+# Policy:
+# - Prefer Gemini before paid models for breadth-first work
+# - Prefer structured extraction over prose
+# - Use stable model IDs where possible
 
 set -euo pipefail
 
@@ -22,7 +35,7 @@ if ! command -v gemini >/dev/null 2>&1; then
 fi
 
 if [ "$#" -lt 1 ]; then
-  echo "Usage: gemini-review.sh '<prompt>' [flash|pro]" >&2
+  echo "Usage: gemini-review.sh '<prompt>' [lite|flash|pro]" >&2
   exit 1
 fi
 
@@ -34,35 +47,59 @@ if [ "${#INPUT}" -gt "$MAX_CHARS" ]; then
   INPUT="${INPUT:0:$MAX_CHARS}"
 fi
 
-PROMPT="You are acting as a large-context analysis engine in a multi-AI workflow.
+PROMPT="You are acting as a free-first analysis engine in a multi-AI workflow.
 
 Your job:
-- process the provided content thoroughly using your full context window
-- produce a compact, structured summary that another AI (Claude or Codex) can act on efficiently
-- identify key findings, patterns, issues, or relevant information
-- be concise — your output will be used as input for downstream AI work
+- process the provided content thoroughly
+- produce a compact, structured output that another AI (Claude or Codex) can act on efficiently
+- identify key findings, patterns, issues, dependencies, and relevant files
+- extract only what matters
+- be concise
 - prefer bullet points and structured sections over prose
 - do not include filler or preamble
 
+Output format:
+- Task summary
+- Relevant files or areas
+- Key findings
+- Constraints
+- Risks
+- Open questions
+- Recommended next agent
+
 Important constraints:
-- you are a preprocessing step, not the final decision maker
-- do not invent context that wasn't provided
-- focus on what is actionable or important
-- if the input is code: identify structure, patterns, bugs, risks
-- if the input is logs: extract errors, anomalies, key events
-- if the input is documents: extract key facts, decisions, requirements
+- you are a preprocessing and triage step, not the final authority
+- do not invent context that was not provided
+- prefer compression and extraction over explanation
+- if the input is code: identify structure, patterns, likely bugs, and risky areas
+- if the input is logs: extract errors, anomalies, clusters, and likely causes
+- if the input is documents: extract key facts, decisions, requirements, and actions
+- if the input is broad or messy: create a bounded work order for the next agent
 
 Content to analyze:
 
 $INPUT"
 
+run_gemini() {
+  local model="$1"
+  printf '%s' "$PROMPT" | gemini --model "$model"
+}
+
 case "$TIER" in
-  pro)
-    echo "[gemini-review] tier=pro (deep reasoning, ~50 RPD free quota)" >&2
-    printf '%s' "$PROMPT" | gemini --model gemini-2.5-pro
+  lite)
+    echo "[gemini-review] tier=lite (gemini-2.5-flash-lite)" >&2
+    run_gemini "gemini-2.5-flash-lite"
     ;;
-  flash|*)
-    echo "[gemini-review] tier=flash (free, 1M token context)" >&2
-    printf '%s' "$PROMPT" | gemini --model gemini-2.5-flash
+  flash)
+    echo "[gemini-review] tier=flash (gemini-2.5-flash)" >&2
+    run_gemini "gemini-2.5-flash"
+    ;;
+  pro)
+    echo "[gemini-review] tier=pro (gemini-2.5-pro)" >&2
+    run_gemini "gemini-2.5-pro"
+    ;;
+  *)
+    echo "ERROR: unknown tier '$TIER'. Use one of: lite, flash, pro." >&2
+    exit 1
     ;;
 esac

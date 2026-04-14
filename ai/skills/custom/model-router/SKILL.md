@@ -1,6 +1,6 @@
 ---
 name: model-router
-description: Routing policy for selecting the right agent per task. Invoke with /model-router to re-prime routing awareness. Reference when deciding between cheap-prep (Haiku), coder-default (Sonnet), deep-architect (Opus), Codex CLI, or Gemini CLI.
+description: Routing policy for selecting the right agent per task. Invoke with /model-router to re-prime routing awareness. Reference when deciding between Gemini CLI, cheap-prep (Haiku), coder-default (Sonnet), deep-architect (Opus), or Codex CLI.
 ---
 
 # /model-router — Model Routing Policy
@@ -14,25 +14,30 @@ This skill loads and applies the full unified routing policy for the current ses
 
 | Agent | Model/Tool | Cost | Use when |
 |-------|------------|------|----------|
-| `gemini-flash` | Gemini Flash | **Free** | Large context preprocessing (>100k tokens), bulk analysis, free-tier summarization |
+| `gemini-lite` | Gemini Flash-Lite | **Free** | **Default free preprocessor** for repo mapping, file triage, summarization, log clustering, prompt compression, and mechanical analysis |
+| `gemini-flash` | Gemini Flash | **Free** | Stronger free model for long-context synthesis, structured brief generation, and higher-quality preprocessing before paid models |
 | `cheap-prep` | Claude Haiku 4.5 | Cheapest paid | **Default paid agent** for coding, triage, commits, fixes, and reviews; retry once with better scope before escalating |
 | `coder-default` | Claude Sonnet 4.6 | Mid paid | Escalate from Haiku only after verified difficulty: repeated failure, tightly coupled multi-file reasoning, or stronger instruction-following needs |
 | `deep-architect` | Claude Opus 4.6 | Expensive | Escalate from Sonnet only for high-blast-radius decisions, repeated Sonnet failure, or load-bearing architecture work |
 | `codex` | Codex CLI (`gpt-5.4-mini`, medium default) | Paid subscription | Parallel task delegation, code review, advisory second opinion; escalate by effort first, then model |
 
 **Cost priority (rough):**
-- Free first: Gemini Flash
+- Free first: Gemini Flash-Lite -> Gemini Flash
 - Cheapest paid: Haiku
 - Cheapest Codex: Codex cheap -> Codex default -> Codex hard
 - Higher-stakes paid: Sonnet -> Codex risk
-- Most expensive: Opus / Codex critical
+- Most expensive: Opus / Codex critical / Gemini Pro
 
 **Escalation ladders:**
+- **Gemini**: Flash-Lite -> Flash -> Pro
+  - Use Flash-Lite first for bulk preprocessing, extraction, and task shaping
+  - Use Flash when Lite is too shallow or synthesis quality matters
+  - Use Pro only for rare deep reasoning where free tiers are insufficient
 - **Claude**: Haiku 4.5 -> Sonnet 4.6 -> Opus 4.6
   - Escalate only after the current tier has had a fair pass count and the task still justifies it
   - Compact context before escalation when failure appears scope-related rather than intelligence-related
-- **Codex**: cheap -> default -> hard -> risk -> critical (try each tier; only escalate when the current tier struggles)
-- **Gemini**: Flash -> Pro (Flash is free and handles almost everything; Pro only for deep reasoning)
+- **Codex**: cheap -> default -> hard -> risk -> critical
+  - Escalate only when the current tier struggles and the task justifies paid code-review depth
 
 ---
 
@@ -51,30 +56,45 @@ Route automatically on every task — do not ask the user which model to use.
 - The estimated savings are under 20%
 - You're already inside a sub-agent
 
-**After completing any task with multiple agents:** Report which agents/models were used (one line: “Used: Sonnet + Gemini Flash preprocessing + Codex (gpt-5.4-mini, medium)”).
+**After completing any task with multiple agents:** Report which agents/models were used (one line: “Used: Gemini Flash-Lite + Haiku + Codex (gpt-5.4-mini, medium)”).
 
 ---
 
 ## Routing rules
 
-1. **Default to `cheap-prep`** (Claude Haiku 4.5) for paid coding and execution tasks.
-2. **Before escalating from Haiku**, first improve scope:
+1. **Default to free preprocessing first** when the task involves broad context, file discovery, summarization, triage, task shaping, or prompt compression:
+   - Start with `gemini-lite`
+   - Escalate to `gemini-flash` when better synthesis is needed
+
+2. **Default to `cheap-prep`** (Claude Haiku 4.5) for paid coding and execution tasks after the task has been scoped well enough.
+
+3. **Before escalating from Haiku**, first improve scope:
    - compress context
    - narrow the task
    - request structured output
    - retry once if the failure looks instruction- or context-related
-3. **Escalate to `coder-default`** (Claude Sonnet 4.6) only when:
+
+4. **Escalate to `coder-default`** (Claude Sonnet 4.6) only when:
    - Haiku has failed twice, OR
    - the task requires tightly coupled multi-file reasoning, OR
    - stronger consistency or instruction-following is clearly needed
-4. **Escalate to `deep-architect`** (Claude Opus 4.6) only when:
+
+5. **Escalate to `deep-architect`** (Claude Opus 4.6) only when:
    - Sonnet has failed twice, AND/OR
    - the task has high blast radius (prod data, auth, billing, migrations, shared infra), AND/OR
    - the decision is load-bearing and hard to reverse
    - Always compact context first before escalating to Opus
-5. **Large context first**: when input is very large or poorly scoped (typically >60k–100k tokens), run `gemini-review.sh` (Flash) first to produce a compact briefing.
-6. **Free-tier preference**: for pure analysis, summarization, or context compression tasks, prefer Gemini Flash (free) over Haiku (paid).
-7. **Delegate to `codex`** for parallel load or second opinion — default tier is `default`:
+
+6. **Large or messy context first**: when input is broad, messy, or very large (typically >30k tokens, and especially >60k–100k), run Gemini first to produce:
+   - a compact brief
+   - relevant file shortlist
+   - constraints
+   - open questions
+   - recommended next agent
+
+7. **Free-tier preference**: for pure analysis, summarization, context compression, file selection, repo mapping, implementation briefing, and log triage, prefer Gemini over paid models.
+
+8. **Delegate to `codex`** for parallel load or second opinion — default tier is `default`:
    - Running 3+ agents in parallel (route 1–2 self-contained tasks to Codex `cheap` or `default` depending on risk)
    - Well-scoped task needing code review or diff analysis
    - Escalate Codex effort first: `cheap -> default -> hard`
@@ -89,6 +109,54 @@ Before escalating Claude tiers, classify the failure:
 
 - **Intelligence fault**: model cannot reason through the task, misses dependencies, gives shallow tradeoffs, or repeats bad plans
   - Action: escalate one tier
+
+---
+
+## Gemini routing policy
+
+### Default
+- **default:** Gemini Flash-Lite
+- Rationale: default free workhorse for preprocessing, triage, and task shaping.
+
+### Escalate from Flash-Lite to Flash only when ONE of these is true
+- The context is large and synthesis quality matters
+- The first Lite pass is too shallow or misses key dependencies
+- You need a stronger structured implementation brief
+- You need better cross-file reasoning before handing off to a paid model
+
+### Use Gemini before paid models for
+- repo mapping
+- file triage
+- summarization
+- test/log triage
+- stack trace clustering
+- prompt compression
+- creating a scoped implementation brief
+- extracting constraints, risks, and open questions
+- turning a messy request into an executable work order
+- selecting the smallest viable next agent
+
+### Do NOT use Gemini as final authority for
+- auth, billing, migrations, shared infra
+- production-critical code changes
+- high-blast-radius architectural decisions
+- final review where correctness pressure is high
+
+### Output discipline
+- Always ask for structured output:
+  - task summary
+  - relevant files
+  - constraints
+  - risks
+  - open questions
+  - recommended next step
+- Prefer compression and extraction over narrative explanation
+- Use Gemini to reduce paid-model context, not to generate verbose intermediate prose
+
+### Free-tier discipline
+- Prefer Gemini for breadth first, paid models for depth second
+- Spend free Gemini calls aggressively on messy inputs and large repos
+- Do not waste paid Claude or Codex tokens on summarization that Gemini can do first
 
 ---
 
@@ -134,7 +202,7 @@ Before escalating Claude tiers, classify the failure:
 - Keep prompts narrow and explicit before escalating model size.
 - Prefer structured asks: goal, constraints, files, expected output.
 - Ask for concise patches, decisions, risks, and next steps instead of long narrative explanations.
-- Do not spend Sonnet or Opus tokens on repo summarization that Gemini Flash can do for free.
+- Do not spend Sonnet or Opus tokens on repo summarization that Gemini can do for free.
 
 ---
 
@@ -199,11 +267,12 @@ Try the cheapest tier that plausibly fits the task.
 
 | Tier | Invocation | When to use |
 |------|-----------|-------------|
-| **flash** (default) | `gemini-review.sh '<prompt>'` | All preprocessing, bulk analysis, large context (up to 1M tokens) — FREE |
-| **pro** | `gemini-review.sh '<prompt>' pro` | Deep reasoning when Flash is insufficient; ~50 RPD limit — conserve |
+| **lite** (default) | `gemini-review.sh '<prompt>' lite` | Default free preprocessor for repo mapping, file triage, summarization, prompt compression, and mechanical analysis |
+| **flash** | `gemini-review.sh '<prompt>'` | Stronger free synthesis for long-context analysis, structured briefing, and cross-file understanding |
+| **pro** | `gemini-review.sh '<prompt>' pro` | Deep reasoning only when free tiers are insufficient and the task truly justifies it |
 
-Prompt limit: 500k chars enforced in script; Flash handles up to ~1M tokens.
-Flash is free — use liberally. Pro is limited — conserve.
+Prompt limit: keep prompts compressed before escalation.
+Use stable model IDs in scripts where possible; avoid preview aliases as default unless you intentionally want preview behavior.
 
 ---
 
@@ -218,8 +287,9 @@ After significant work, produce a compact summary (5 bullets or fewer) for:
 
 ## Cost ratios (rough)
 
-Gemini Flash: **free** — first choice for any preprocessing or large-context task.
-Haiku: ~25× cheaper than Opus. **Default for Claude-side paid work.**
+Gemini Flash-Lite: **free** — first choice for preprocessing, triage, compression, and high-volume lightweight tasks.
+Gemini Flash: **free** — second free choice for stronger synthesis and large-context analysis.
+Haiku: ~25× cheaper than Opus. **Default for Claude-side paid work after free preprocessing.**
 Sonnet: ~5× cheaper than Opus. Escalation from Haiku only for verified difficulty.
 Opus: reserve for genuinely hard, high-blast-radius problems. Do not escalate out of impatience.
 Codex cheap: `gpt-5.4-mini` at minimal/low effort — cheapest Codex pass.
@@ -227,4 +297,4 @@ Codex default: `gpt-5.4-mini` at medium effort — default for most Codex tasks.
 Codex hard: `gpt-5.4-mini` at high effort — escalate before changing models.
 Codex risk: `gpt-5.4` at low/medium effort — reserve for auth, migrations, prod-touching work.
 Codex critical: `gpt-5.4` at high/xhigh effort — panic-room use only.
-Gemini Pro: reserve for deep reasoning only.
+Gemini Pro: reserve for rare deep reasoning only.
