@@ -18,13 +18,13 @@ This skill loads and applies the full unified routing policy for the current ses
 | `cheap-prep` | Haiku | Cheapest paid | **DEFAULT for all tasks** — coding, triage, commits, fixes, reviews; escalate if struggling |
 | `coder-default` | Sonnet | Mid paid | Escalate from Haiku: multi-file tasks, deeper reasoning, complex coding |
 | `deep-architect` | Opus | Expensive | Escalate from Sonnet: architecture, high blast radius (prod/auth/migrations), repeated failures |
-| `codex` | Codex CLI (low) | Paid subscription | Parallel task delegation, code review, advisory second opinion; default tier = low |
+| `codex` | Codex CLI (`gpt-5.4-mini`, medium default) | Paid subscription | Parallel task delegation, code review, advisory second opinion; escalate by effort first, then model |
 
-**Cost priority:** Gemini Flash (free) > Haiku > Codex low > Codex mini > Sonnet > Codex standard > Opus / Codex max
+**Cost priority:** Gemini Flash (free) > Haiku > Codex cheap > Codex default > Sonnet > Codex hard > Codex risk > Opus / Codex critical
 
 **Escalation ladders:**
 - **Claude**: Haiku → Sonnet → Opus (try each tier; only escalate when the current tier struggles)
-- **Codex**: low → standard → max (try each tier; only escalate when the current tier struggles)
+- **Codex**: cheap → default → hard → risk → critical (try each tier; only escalate when the current tier struggles)
 - **Gemini**: Flash → Pro (Flash is free and handles almost everything; Pro only for deep reasoning)
 
 ---
@@ -44,7 +44,7 @@ Route automatically on every task — do not ask the user which model to use.
 - The estimated savings are under 20%
 - You're already inside a sub-agent
 
-**After completing any task with multiple agents:** Report which agents/models were used (one line: "Used: Sonnet + Gemini Flash preprocessing + Codex mini").
+**After completing any task with multiple agents:** Report which agents/models were used (one line: “Used: Sonnet + Gemini Flash preprocessing + Codex (gpt-5.4-mini, medium)”).
 
 ---
 
@@ -60,25 +60,63 @@ Route automatically on every task — do not ask the user which model to use.
 4. **Before escalating to Opus**: always run Gemini Flash or `cheap-prep` to compact context first.
 5. **Large context first**: when input is >100k tokens, run `gemini-review.sh` (Flash) first to produce a compact briefing. This is free.
 6. **Free-tier preference**: for pure analysis/summarization tasks, prefer Gemini Flash (free) over Haiku (paid).
-7. **Delegate to `codex`** for parallel load or second opinion — default tier is `low`:
-   - Running 3+ agents in parallel (route 1–2 self-contained tasks to Codex low)
+7. **Delegate to `codex`** for parallel load or second opinion — default tier is `default`:
+   - Running 3+ agents in parallel (route 1–2 self-contained tasks to Codex `cheap` or `default` depending on risk)
    - Well-scoped task needing code review or diff analysis
-   - Escalate Codex to `standard` when low is insufficient; `max` for high-stakes only
-   - Codex is on a paid subscription — use deliberately.
+   - Escalate Codex effort first: `cheap -> default -> hard`
+   - Escalate model second: `risk -> critical` only for high-stakes work
+   - Codex is on a paid subscription — use deliberately
 
 ---
 
-## Codex sub-model routing
+## Codex routing policy
 
+### Default
+- **default:** `gpt-5.4-mini` + `medium`
+- Rationale: best cost/capability default for interactive coding, repo work, code review, and normal debugging.
+
+### Effort ladder
+1. **minimal**
+   - Use for: tiny edits, grep-and-patch, small search/replace, obvious diff review, trivial fixes
+   - Goal: cheapest possible pass
+
+2. **low**
+   - Use for: small single-file changes, straightforward bug fixes, simple triage, narrow code review
+   - Goal: quick and cheap
+
+3. **medium** (**default**)
+   - Use for: normal coding, contained multi-file work, standard debugging, ordinary implementation tasks
+   - Goal: best general balance
+
+4. **high**
+   - Use for: weird bugs, subtle regressions, dependency chains, multi-step refactors, repeated failure on medium
+   - Goal: push harder before changing models
+
+5. **xhigh**
+   - Use only for: auth, billing, migrations, prod-touching changes, shared infra, high-blast-radius critique
+   - Goal: rare escalation only
+
+### Model ladder
+- Start on `gpt-5.4-mini`
+- Escalate effort first:
+  - `minimal -> low -> medium -> high`
+- Escalate model second:
+  - `gpt-5.4-mini high -> gpt-5.4 low`
+  - `gpt-5.4 low/medium` only when failure cost is real or mini has already struggled
+- Avoid `gpt-5.4 xhigh` unless the task is genuinely high-stakes
+
+### Invocation mapping
 | Tier | Invocation | When to use |
 |------|-----------|-------------|
-| **low** | `codex-review.sh '<prompt>'` | **DEFAULT** — start here for all Codex tasks (gpt-5.4, low effort) |
-| **mini** | `codex-review.sh '<prompt>' mini` | Fast parallel filler — small isolated sanity checks (codex-mini-latest) |
-| **standard** | `codex-review.sh '<prompt>' standard` | Escalate when low is insufficient; normal code review (gpt-5.4, medium effort) |
-| **max** | `codex-review.sh '<prompt>' max` | Escalate for auth, migrations, prod-touching, deep critique (gpt-5.4, xhigh effort) |
+| **cheap** | `codex-review.sh '<prompt>' cheap` | Tiny edits, trivial review, narrow checks (`gpt-5.4-mini`, low/minimal) |
+| **default** | `codex-review.sh '<prompt>'` | **DEFAULT** — normal coding and review (`gpt-5.4-mini`, medium) |
+| **hard** | `codex-review.sh '<prompt>' hard` | Weird bugs, subtle breakage, multi-file refactors (`gpt-5.4-mini`, high) |
+| **risk** | `codex-review.sh '<prompt>' risk` | Auth, migrations, prod-touching, load-bearing decisions (`gpt-5.4`, medium) |
+| **critical** | `codex-review.sh '<prompt>' critical` | Rare panic-room use only (`gpt-5.4`, high/xhigh if truly justified) |
 
-Prompt limit: 12k chars. Compress before calling. Paid subscription — use deliberately.
-Escalation ladder: low → standard → max. Try low first.
+Prompt limit: keep prompts compressed. Paid subscription — use deliberately.
+Escalation ladder: cheap → default → hard → risk → critical.
+Try the cheapest tier that plausibly fits the task.
 
 ---
 
@@ -109,6 +147,9 @@ Gemini Flash: **free** — first choice for any preprocessing or large-context t
 Haiku: ~25× cheaper than Opus. **New default for all Claude tasks.**
 Sonnet: ~5× cheaper than Opus. Escalation from Haiku for complex coding.
 Opus: reserve for genuinely hard problems. Do not escalate out of impatience.
-Codex low: **new default** — gpt-5.4 at low effort. Most tasks complete here.
-Codex standard: escalate from low when insufficient.
-Codex max / Gemini Pro: reserve for high-stakes only.
+Codex cheap: `gpt-5.4-mini` at minimal/low effort — cheapest Codex pass.
+Codex default: `gpt-5.4-mini` at medium effort — default for most Codex tasks.
+Codex hard: `gpt-5.4-mini` at high effort — escalate before changing models.
+Codex risk: `gpt-5.4` at low/medium effort — reserve for auth, migrations, prod-touching work.
+Codex critical: `gpt-5.4` at high/xhigh effort — panic-room use only.
+Gemini Pro: reserve for deep reasoning only.
