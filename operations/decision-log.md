@@ -10,6 +10,14 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Rollback:
 
 ## Entries
+
+- Date: 2026-04-14
+- Decision: Implement real-time model tracking system with dynamic status line visibility into Claude Code's automatic model routing.
+- Context: Claude Code's model router automatically escalates from Haiku → Sonnet → Opus based on task complexity, but these decisions were invisible to the user. No way to see when expensive models (Sonnet ~5× cost, Opus ~25× cost) are running or why. Users couldn't correlate task cost with actual model choices.
+- Impact: (1) Status line now displays active model + reason badge + agent name (e.g., "sonnet ↑ (complex) [coder-default]"); (2) Reason badges signal cost (↑ = escalation, ↑↑ = high blast-radius, ⊙ = plan, ◊ = review, ⚙ = preprocessing); (3) Three hooks (UserPromptSubmit, PostToolUse/Agent, Stop) detect mode changes and update ~/.claude/model-tracking.json in real-time; (4) Automatic reset to Haiku between independent tasks maintains cost discipline; (5) Full documentation: operations/runbooks/model-tracking.md (ops), docs/model-tracking-reference.md (user reference), operations/model-tracking-visual-guide.md (architecture); (6) Validation script passes all 12 checks.
+- Rationale: Transparency into model routing enables users to (a) understand why expensive models are necessary, (b) track cost per task without guessing, (c) debug whether cheaper tiers could work, (d) learn which task types naturally escalate. Badges serve as real-time cost signals.
+- Rollback: (1) Remove hook registrations from ~/.claude/settings.json (UserPromptSubmit, PostToolUse/Agent, Stop); (2) Delete ~/.claude/hooks/model-*.sh files; (3) Delete ~/.claude/model-tracking.json; (4) Revert statusline-command.sh to previous version (remove tracking JSON read logic); (5) Delete brain docs/operations files related to model tracking; (6) Remove model tracking section from brain/CLAUDE.md.
+
 - Date: 2026-04-10
 - Decision: Deploy self-hosted Firecrawl on Dokploy as the default AI-agnostic web data tool, replacing `/browse` (QA tool, retired) and raw WebFetch usage (token-heavy HTML).
 - Context: Firecrawl provides 75–90% token savings by returning clean markdown instead of raw HTML. It supports search, scrape, and batch crawl. Self-hosted means no API cost, full control, and data privacy. Replaces gstack `/browse` (which is a QA/dogfooding tool not web search) and ad-hoc WebFetch calls for research.
