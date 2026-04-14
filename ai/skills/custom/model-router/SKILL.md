@@ -15,9 +15,9 @@ This skill loads and applies the full unified routing policy for the current ses
 | Agent | Model/Tool | Cost | Use when |
 |-------|------------|------|----------|
 | `gemini-flash` | Gemini Flash | **Free** | Large context preprocessing (>100k tokens), bulk analysis, free-tier summarization |
-| `cheap-prep` | Haiku | Cheapest paid | **Default paid agent** for coding, triage, commits, fixes, and reviews; escalate if struggling |
-| `coder-default` | Sonnet | Mid paid | Escalate from Haiku: multi-file tasks, deeper reasoning, complex coding |
-| `deep-architect` | Opus | Expensive | Escalate from Sonnet: architecture, high blast radius (prod/auth/migrations), repeated failures |
+| `cheap-prep` | Claude Haiku 4.5 | Cheapest paid | **Default paid agent** for coding, triage, commits, fixes, and reviews; retry once with better scope before escalating |
+| `coder-default` | Claude Sonnet 4.6 | Mid paid | Escalate from Haiku only after verified difficulty: repeated failure, tightly coupled multi-file reasoning, or stronger instruction-following needs |
+| `deep-architect` | Claude Opus 4.6 | Expensive | Escalate from Sonnet only for high-blast-radius decisions, repeated Sonnet failure, or load-bearing architecture work |
 | `codex` | Codex CLI (`gpt-5.4-mini`, medium default) | Paid subscription | Parallel task delegation, code review, advisory second opinion; escalate by effort first, then model |
 
 **Cost priority (rough):**
@@ -28,9 +28,11 @@ This skill loads and applies the full unified routing policy for the current ses
 - Most expensive: Opus / Codex critical
 
 **Escalation ladders:**
-- **Claude**: Haiku → Sonnet → Opus (try each tier; only escalate when the current tier struggles)
-- **Codex**: cheap → default → hard → risk → critical (try each tier; only escalate when the current tier struggles)
-- **Gemini**: Flash → Pro (Flash is free and handles almost everything; Pro only for deep reasoning)
+- **Claude**: Haiku 4.5 -> Sonnet 4.6 -> Opus 4.6
+  - Escalate only after the current tier has had a fair pass count and the task still justifies it
+  - Compact context before escalation when failure appears scope-related rather than intelligence-related
+- **Codex**: cheap -> default -> hard -> risk -> critical (try each tier; only escalate when the current tier struggles)
+- **Gemini**: Flash -> Pro (Flash is free and handles almost everything; Pro only for deep reasoning)
 
 ---
 
@@ -55,22 +57,84 @@ Route automatically on every task — do not ask the user which model to use.
 
 ## Routing rules
 
-1. **Default to `cheap-prep`** (Haiku) for paid coding and execution tasks. Start cheap; escalate only when struggling.
-2. **Escalate to `coder-default`** (Sonnet) when: Haiku output is insufficient, task clearly spans many files, or deeper reasoning is needed.
-3. **Escalate to `deep-architect`** (Opus) only when:
-   - Sonnet has failed or produced unsatisfactory results after 2+ attempts
-   - Major design ambiguity spans multiple systems
-   - Blast radius is high (prod data, shared infrastructure, auth, migrations)
-   - The decision will be load-bearing for future architecture
-4. **Before escalating to Opus**: always run Gemini Flash or `cheap-prep` to compact context first.
+1. **Default to `cheap-prep`** (Claude Haiku 4.5) for paid coding and execution tasks.
+2. **Before escalating from Haiku**, first improve scope:
+   - compress context
+   - narrow the task
+   - request structured output
+   - retry once if the failure looks instruction- or context-related
+3. **Escalate to `coder-default`** (Claude Sonnet 4.6) only when:
+   - Haiku has failed twice, OR
+   - the task requires tightly coupled multi-file reasoning, OR
+   - stronger consistency or instruction-following is clearly needed
+4. **Escalate to `deep-architect`** (Claude Opus 4.6) only when:
+   - Sonnet has failed twice, AND/OR
+   - the task has high blast radius (prod data, auth, billing, migrations, shared infra), AND/OR
+   - the decision is load-bearing and hard to reverse
+   - Always compact context first before escalating to Opus
 5. **Large context first**: when input is very large or poorly scoped (typically >60k–100k tokens), run `gemini-review.sh` (Flash) first to produce a compact briefing.
-6. **Free-tier preference**: for pure analysis/summarization tasks, prefer Gemini Flash (free) over Haiku (paid).
+6. **Free-tier preference**: for pure analysis, summarization, or context compression tasks, prefer Gemini Flash (free) over Haiku (paid).
 7. **Delegate to `codex`** for parallel load or second opinion — default tier is `default`:
    - Running 3+ agents in parallel (route 1–2 self-contained tasks to Codex `cheap` or `default` depending on risk)
    - Well-scoped task needing code review or diff analysis
    - Escalate Codex effort first: `cheap -> default -> hard`
    - Escalate model second: `risk -> critical` only for high-stakes work
    - Codex is on a paid subscription — use deliberately
+
+### Escalation diagnosis
+Before escalating Claude tiers, classify the failure:
+
+- **Context fault**: too much input, weak scoping, poor task framing, noisy repo context
+  - Action: compress, narrow, retry same tier
+
+- **Intelligence fault**: model cannot reason through the task, misses dependencies, gives shallow tradeoffs, or repeats bad plans
+  - Action: escalate one tier
+
+---
+
+## Claude routing policy
+
+### Default
+- **default:** Claude Haiku 4.5
+- Rationale: cheapest paid Claude option; good enough for most coding, triage, reviews, and implementation tasks.
+
+### Escalate from Haiku to Sonnet only when ONE of these is true
+- Haiku failed twice on the same task class
+- The task requires non-trivial reasoning across multiple files **and** the files are tightly coupled
+- The first Haiku pass produced a structurally wrong plan, not just an incomplete one
+- The task touches fragile logic where a wrong answer is expensive to verify manually
+- The task requires stronger instruction-following or consistency than Haiku is showing
+
+### Do NOT escalate from Haiku to Sonnet when
+- The task is mostly mechanical
+- The task is broad only because the prompt is bloated
+- The failure is caused by poor scoping, weak instructions, or too much context
+- A second Haiku pass with a compressed brief is likely enough
+
+### Escalate from Sonnet to Opus only when TWO of these are true
+- The task affects auth, billing, migrations, shared infrastructure, or production safety
+- Sonnet failed twice or produced materially conflicting solutions
+- The architecture decision is load-bearing and hard to reverse
+- There is major ambiguity spanning multiple systems or repos
+- You need deep critique, tradeoff analysis, or long-horizon planning with high correctness pressure
+
+### Do NOT escalate to Opus when
+- The task is just “hard” but local
+- The codebase is messy and needs cleanup more than intelligence
+- The prompt has not been compacted first
+- Sonnet has not yet had one clean, well-scoped attempt
+
+### Retry budget
+- Haiku: up to **2 passes**
+- Sonnet: up to **2 passes**
+- Opus: **1 pass by default**
+- If the current tier fails because of context bloat, compact first instead of escalating
+
+### Output discipline
+- Keep prompts narrow and explicit before escalating model size.
+- Prefer structured asks: goal, constraints, files, expected output.
+- Ask for concise patches, decisions, risks, and next steps instead of long narrative explanations.
+- Do not spend Sonnet or Opus tokens on repo summarization that Gemini Flash can do for free.
 
 ---
 
@@ -155,9 +219,9 @@ After significant work, produce a compact summary (5 bullets or fewer) for:
 ## Cost ratios (rough)
 
 Gemini Flash: **free** — first choice for any preprocessing or large-context task.
-Haiku: ~25× cheaper than Opus. **New default for all Claude tasks.**
-Sonnet: ~5× cheaper than Opus. Escalation from Haiku for complex coding.
-Opus: reserve for genuinely hard problems. Do not escalate out of impatience.
+Haiku: ~25× cheaper than Opus. **Default for Claude-side paid work.**
+Sonnet: ~5× cheaper than Opus. Escalation from Haiku only for verified difficulty.
+Opus: reserve for genuinely hard, high-blast-radius problems. Do not escalate out of impatience.
 Codex cheap: `gpt-5.4-mini` at minimal/low effort — cheapest Codex pass.
 Codex default: `gpt-5.4-mini` at medium effort — default for most Codex tasks.
 Codex hard: `gpt-5.4-mini` at high effort — escalate before changing models.
