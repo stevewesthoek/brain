@@ -136,10 +136,17 @@ kanban-plugin: board
 ## To Do
 
 - [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
+- [ ] Make upgrade solution FREE to PRO JPV Bootcamp
 - [ ] YA finance app
 - [ ] Make my contact card iPhone
 - [ ] fix photo share JPV Bootcamp
-- [ ] Make upgrade solution FREE to PRO JPV Bootcamp
+- [ ] Empty mail
+- [ ] Check Joe's privacy policy
+- [ ] Setup STB Facebook app
+- [ ] Vraag Tim om terug betalen geld
+- [ ] Vraag Tim voor verhuizen domein
+- [ ] Vraag Jon voor verhuizen domein
+- [ ] vraag NISS aan
 
 
 ## Doing
