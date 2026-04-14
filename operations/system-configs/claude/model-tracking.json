@@ -1,7 +1,7 @@
 {
-  "model": "haiku",
-  "reason": "default",
-  "context": "",
-  "timestamp": null,
-  "agent": null
+  "model": "opus",
+  "reason": "escalation-high-complexity",
+  "context": "Deep architecture analysis and planning",
+  "timestamp": "2026-04-14T22:02:28Z",
+  "agent": "deep-architect"
 }
