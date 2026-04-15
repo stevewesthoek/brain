@@ -1828,31 +1828,34 @@ function renderGoogleAds(data){
   if(!data)return'<div class="nr-err">Google Ads not configured.</div>';
   if(data.status==='no_data')return'<div class="nr-err">'+esc(data.error||'Google Ads database not found')+'</div>';
   if(data.status==='error')return'<div class="nr-err">Google Ads Error: '+esc(data.error||'Unknown error')+'</div>';
+  let html='';
   const m=data.metrics;
   const pct=m.percentOfTarget;
   const pctColor=pct>100?'var(--amber)':pct>50?'var(--green)':'var(--red)';
   const statusBadge=pct<50?'b-old':pct<100?'b-stale':'b-live';
-  let html='<div class="sec-hd"><span class="sec-title">Google Ads (Nonprofit)</span>';
+  html+='<div class="sec-hd"><span class="sec-title">Google Ads (Nonprofit)</span>';
   html+='<span class="badge '+statusBadge+'" style="margin-left:8px">'+pct+'% of daily target</span>';
   if(data.pendingMutations&&data.pendingMutations>0)html+='<span class="badge b-old" style="margin-left:4px">'+data.pendingMutations+' pending</span>';
   if(data.lastSync)html+='<span style="font-size:10px;color:var(--subtle);margin-left:auto">last metrics '+age(data.lastSync)+'</span>';
   html+='</div>';
-  html+='<div class="ga-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px">';
+  html+='<div class="ga-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px">';
   html+='<div class="mc"><div class="mc-label">Daily Spend (USD)</div><div class="mc-value" style="color:'+pctColor+'">$'+m.dailyBudgetUSD.toFixed(2)+'</div><div class="mc-sub">Target: $'+m.targetBudgetUSD.toFixed(2)+'/day</div></div>';
   html+='<div class="mc"><div class="mc-label">Day of Month</div><div class="mc-value">'+m.dayOfMonth+'/'+m.daysInMonth+'</div><div class="mc-sub">'+Math.round((m.dayOfMonth/m.daysInMonth)*100)+'% through month</div></div>';
   if(data.doctorStatus)html+='<div class="mc"><div class="mc-label">System Status</div><div class="mc-value">'+esc(data.doctorStatus)+'</div><div class="mc-sub">CLI health check</div></div>';
   html+='</div>';
   if(data.policyWatchStatus){
     const pw=data.policyWatchStatus;
-    html+='<div class="sec-hd" style="margin-top:20px"><span class="sec-title">Policy Monitoring</span></div>';
-    html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px">';
+    html+='<div class="sec-hd" style="margin-top:24px"><span class="sec-title">Policy Monitoring</span></div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:24px">';
     html+='<div class="mc"><div class="mc-label">Sources Tracked</div><div class="mc-value">'+pw.sourcesChecked+'</div><div class="mc-sub">Official Google docs</div></div>';
     const changeColor=pw.sourcesChanged>0?'var(--amber)':'var(--green)';
     html+='<div class="mc"><div class="mc-label">Changes Detected</div><div class="mc-value" style="color:'+changeColor+'">'+pw.sourcesChanged+'</div><div class="mc-sub">Ad Grants documentation</div></div>';
     if(pw.lastCheck)html+='<div class="mc"><div class="mc-label">Last Check</div><div class="mc-value" style="font-size:11px">'+age(pw.lastCheck)+'</div><div class="mc-sub">Policy watch</div></div>';
     html+='</div>';
   }
-  html+='<div style="font-size:11px;color:var(--muted);margin-top:12px;padding:8px;background:var(--card);border-radius:4px;border:1px solid var(--border)">';
+  html+='<div style="margin-top:24px;margin-bottom:0">';
+  html+='</div>';
+  html+='<div style="font-size:11px;color:var(--muted);margin-top:24px;padding:8px;background:var(--card);border-radius:4px;border:1px solid var(--border)">';
   html+='<strong>Next phase:</strong> Live API integration will populate real campaign metrics, search terms, and recommendations once credentials are provisioned.<br/>';
   html+='<strong>Account:</strong> Vila Solidária (592-920-2435) · Manager: Yeshua Academy Google Ads Manager (935-769-8503)<br/>';
   html+='<strong>Program:</strong> Google Ad Grants (nonprofit) · Monthly budget: $10,000 USD';
@@ -2078,7 +2081,7 @@ function render(d){
   document.getElementById('tab-umami').innerHTML=renderUmami(d.umami);
   const gaPending=d.googleAds&&d.googleAds.pendingMutations?d.googleAds.pendingMutations:0;
   document.getElementById('cnt-google-ads').textContent=gaPending?String(gaPending):'';
-  document.getElementById('tab-google-ads').innerHTML=renderGoogleAds(d.googleAds)+renderMutations(d.mutations);
+  document.getElementById('tab-google-ads').innerHTML=renderMutations(d.mutations)+'<div style="margin-top:24px"></div>'+renderGoogleAds(d.googleAds);
   const stripeCount=d.stripe&&d.stripe.accounts?d.stripe.accounts.length:0;
   document.getElementById('cnt-stripe').textContent=stripeCount?String(stripeCount):'';
   document.getElementById('tab-stripe').innerHTML=renderStripe(d.stripe);
