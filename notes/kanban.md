@@ -136,7 +136,6 @@ kanban-plugin: board
 
 ## To Do
 
-- [ ] Vraag Jon voor verhuizen domein & give him a coinbase address
 - [ ] Vraag Tim voor verhuizen domein
 - [ ] plan NL trip
 - [ ] Vraag Tim om terug betalen geld
@@ -157,6 +156,7 @@ kanban-plugin: board
 
 ## Doing
 
+- [ ] Vraag Jon voor verhuizen domein & give him a coinbase address
 - [ ] Check Joe's privacy policy
 
 
