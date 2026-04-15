@@ -1,11 +1,11 @@
-# Reusable Dokploy deploy workflow
-# Copy this file to .github/workflows/deploy.yml in any repo that deploys to Dokploy.
+# Minimal Dokploy trigger — use ONLY for apps where Dokploy builds the image itself (sourceType: github).
+#
+# For Next.js / Node apps that build on GitHub and push to GHCR, use dokploy-image-deploy.yml instead.
+# That template is the standard for all prochattools/yeshuaacademy repos.
 #
 # Required GitHub secrets:
 #   DOKPLOY_API_KEY   — generate in Dokploy dashboard → Settings → API
 #   DOKPLOY_APP_ID    — found in app settings URL in the Dokploy dashboard
-#
-# Optional: adjust branches, add build steps, or extend with health checks.
 
 name: Deploy to Dokploy
 

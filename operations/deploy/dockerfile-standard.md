@@ -47,6 +47,21 @@ RUN --mount=type=cache,target=/app/.next/cache \
     npx prisma generate && \
     npm run build
 
+# ---- Runtime deps (isolated — no npm cache in final image) ----
+# newrelic: loaded via NODE_OPTIONS=--require newrelic (not traced by standalone)
+# pg + prisma: needed by deploy gate scripts (start-prod.sh → db:init, db:migrate:prod)
+# IMPORTANT: never cherry-pick transitive deps from the deps stage —
+# npm v7+ hoists packages into nested node_modules and they won't exist at top level.
+# Always npm install fresh so npm resolves all transitive deps correctly.
+# prisma must NOT use --ignore-scripts: its postinstall downloads the migration engine binary.
+FROM node:20-bullseye-slim AS runtime-deps
+WORKDIR /nr
+RUN echo '{"dependencies":{"newrelic":"^13.18.0","pg":"^8"}}' > package.json
+RUN npm install --omit=dev --ignore-scripts 2>&1 | tail -1
+# Install prisma separately (postinstall downloads migration engine binary)
+RUN npm install --omit=dev prisma@6.7.0 2>&1 | tail -1
+# Match the prisma version to the app's package.json
+
 # ---- Runner ----
 FROM node:20-bullseye-slim AS runner
 WORKDIR /app
@@ -58,10 +73,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
-# newrelic is required at runtime via NODE_OPTIONS=--require newrelic
-# but is not traced by the standalone bundler — copy it explicitly
-COPY --from=builder /app/node_modules/newrelic ./node_modules/newrelic
-COPY --from=builder /app/node_modules/@newrelic ./node_modules/@newrelic
+# Copy package.json so npm run scripts (db:init, db:migrate:prod) resolve via require('./package.json')
+COPY --from=builder /app/package.json ./package.json
+# Runtime deps: newrelic (NODE_OPTIONS), pg and prisma (deploy gate)
+COPY --from=runtime-deps /nr/node_modules ./node_modules
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:3000/api/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
@@ -85,7 +100,8 @@ CMD ["node", "server.js"]
 | `NEXT_PUBLIC_*` env vars | Use **real production values** — these are baked into the client JS bundle at build time; Dokploy runtime injection is too late (see section below) |
 | App has a custom start script | Replace CMD with `CMD ["sh", "scripts/runtime/start-prod.sh"]` and add `COPY scripts` in runner |
 | next.js standalone output | Copy `.next/standalone` and `.next/static` instead of the full `.next` + `node_modules` tree; see the Via di Eden Dockerfile |
-| App uses New Relic APM (`NODE_OPTIONS=--require newrelic`) | Add `COPY --from=builder /app/node_modules/newrelic ./node_modules/newrelic` and `COPY --from=builder /app/node_modules/@newrelic ./node_modules/@newrelic` in runner — standalone bundler does not trace runtime-injected requires |
+| App uses New Relic APM (`NODE_OPTIONS=--require newrelic`) | Already handled by the `runtime-deps` stage in the standard template. Never copy newrelic from the builder stage — standalone's `@vercel/nft` does not trace `NODE_OPTIONS`-injected modules, so the copy would be incomplete. |
+| `start-prod.sh` calls `npm run db:init` or `npm run db:migrate:prod` | Already handled by `runtime-deps` (includes `pg` and `prisma`). Adjust prisma version to match `package.json`. Add `COPY --from=builder /app/scripts ./scripts` to runner. |
 
 ---
 
@@ -193,9 +209,31 @@ After the first GitHub Actions build and push:
 
 1. In Dokploy → app → General → Source: switch from **GitHub (Dockerfile)** to **Docker Image**
 2. Docker Image: `ghcr.io/<org>/<repo>:latest`
-3. Registry: select the GHCR registry configured in Dokploy Settings → Registry
+3. GHCR authentication — set credentials directly on the application via the API:
+   ```bash
+   source ~/.config/dokploy/.env
+   curl -s -X POST "https://dokploy.prochat.tools/api/application.update" \
+     -H "x-api-key: $DOKPLOY_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "applicationId": "<app-id>",
+       "username": "stevewesthoek",
+       "password": "<ghp_PAT_with_read:packages>",
+       "registryUrl": "ghcr.io",
+       "registryId": null
+     }'
+   ```
+   **Do NOT use `registryId`** — it triggers "Registry Swarm" mode which re-tags and pushes
+   the image to a registry rather than using credentials for pulling. See skill: `dokploy-ghcr-pull-auth`.
 4. All runtime env vars remain in Dokploy's env section (unchanged)
 5. Domains, volumes, Traefik config — unchanged
+6. Set GitHub secrets in the repo: `DOKPLOY_API_KEY` and `DOKPLOY_APP_ID`
+   ```bash
+   source ~/.config/dokploy/.env
+   cd /path/to/repo
+   gh secret set DOKPLOY_API_KEY --body "$DOKPLOY_API_KEY"
+   gh secret set DOKPLOY_APP_ID --body "<app-id>"
+   ```
 
 ---
 
