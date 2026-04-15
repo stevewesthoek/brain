@@ -144,13 +144,13 @@ kanban-plugin: board
 - [ ] Put money on bank account
 - [ ] Plantenpot aanpassen
 - [ ] plan NL trip
+- [ ] Fix Antenna
 - [ ] Decommision Hetzner 🔼
 - [ ] YA finance app
 - [ ] Empty mail
 - [ ] fix photo share JPV Bootcamp
 - [ ] Family finance app
 - [ ] Learn Portuguese app
-- [ ] Fix Antenna
 - [ ] Make Via di Eden editable for Joe
 - [ ] Make Oliveto Organizing editable for Ashley
 - [ ] Merge Stripe ProChat legacy into ProChat Studio
@@ -160,6 +160,8 @@ kanban-plugin: board
 - [ ] add obsidian to phone
 - [ ] Product: ChatGPT bridge
 - [ ] Product: Model Router
+- [ ] empty ChatGPT into Obsidian
+- [ ] read mark's boek
 
 
 ## Doing
