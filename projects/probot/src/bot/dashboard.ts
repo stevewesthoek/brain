@@ -1237,6 +1237,7 @@ async function getStripeDashboardData(): Promise<StripeDashboardData> {
 const LOCAL_APPS = [
   { name: "ProBot", port: 7070, url: "http://localhost:7070", check: "http://localhost:7070", start: "cd ~/Repos/stevewesthoek/brain/projects/probot && npm start > /tmp/probot.log 2>&1 &" },
   { name: "Firecrawl", port: 3051, url: "http://localhost:3051", check: "http://localhost:3051/health", start: "cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d" },
+  { name: "xGrow", port: 7080, url: "http://localhost:7080", check: "http://localhost:7080", start: "cd ~/Repos/prochattools/saas/xgrow && npm run dev > /tmp/xgrow.log 2>&1 &" },
   { name: "Google Ads API", port: 8001, url: "http://localhost:8001", check: "http://localhost:8001/health", start: "supervisorctl start google-ads-http-server" },
   { name: "ComfyUI", port: 8188, url: "http://localhost:8188", check: "http://localhost:8188", start: "echo 'Manual start required'" },
   { name: "Family Finance", port: 3060, url: "http://localhost:3060", check: "http://localhost:3060", start: "cd ~/Repos/stevewesthoek/family-finance && npm run dev > /tmp/family-finance.log 2>&1 &" },

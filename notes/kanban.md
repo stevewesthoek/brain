@@ -155,6 +155,7 @@ kanban-plugin: board
 - [ ] Contact Crypto.com support creditcard
 - [ ] Make Via di Eden editable for Joe
 - [ ] Make Oliveto Organizing editable for Ashley
+- [ ] Merge Stripe ProChat legacy into ProChat Studio
 
 
 ## Doing
