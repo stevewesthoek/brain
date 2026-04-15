@@ -712,7 +712,7 @@ interface GoogleAdsMetrics {
 }
 
 function getGoogleAdsMetrics(): GoogleAdsMetrics {
-  const googleAdsDbPath = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "data", "google-ads", "google_ads.sqlite3");
+  const googleAdsDbPath = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "operations", "google-ads", "data", "google_ads.sqlite3");
 
   if (!fs.existsSync(googleAdsDbPath)) {
     return {
@@ -815,7 +815,7 @@ interface MutationsData {
 }
 
 function getMutationsData(): MutationsData {
-  const googleAdsDbPath = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "data", "google-ads", "google_ads.sqlite3");
+  const googleAdsDbPath = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "operations", "google-ads", "data", "google_ads.sqlite3");
 
   if (!fs.existsSync(googleAdsDbPath)) {
     return {
@@ -1538,7 +1538,6 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="umami">Analytics <span class="tab-count" id="cnt-umami"></span></button>
     <button class="tab-btn" data-tab="google-ads">Google Ads <span class="tab-count" id="cnt-google-ads"></span></button>
     <button class="tab-btn" data-tab="stripe">Stripe <span class="tab-count" id="cnt-stripe"></span></button>
-    <button class="tab-btn" data-tab="mutations">Mutations <span class="tab-count" id="cnt-mutations"></span></button>
     <button class="tab-btn" data-tab="domains">Domains <span class="tab-count" id="cnt-domains"></span></button>
     <button class="tab-btn" data-tab="tunnels">Tunnels <span class="tab-count" id="cnt-tunnels"></span></button>
     <button class="tab-btn" data-tab="xgrow">xgrow <span class="tab-count" id="cnt-xgrow"></span></button>
@@ -1550,7 +1549,6 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
   <div class="tab-panel" id="tab-umami"></div>
   <div class="tab-panel" id="tab-google-ads"></div>
   <div class="tab-panel" id="tab-stripe"></div>
-  <div class="tab-panel" id="tab-mutations"></div>
   <div class="tab-panel" id="tab-domains"></div>
   <div class="tab-panel" id="tab-tunnels"></div>
   <div class="tab-panel" id="tab-xgrow"></div>
@@ -2080,13 +2078,10 @@ function render(d){
   document.getElementById('tab-umami').innerHTML=renderUmami(d.umami);
   const gaPending=d.googleAds&&d.googleAds.pendingMutations?d.googleAds.pendingMutations:0;
   document.getElementById('cnt-google-ads').textContent=gaPending?String(gaPending):'';
-  document.getElementById('tab-google-ads').innerHTML=renderGoogleAds(d.googleAds);
+  document.getElementById('tab-google-ads').innerHTML=renderGoogleAds(d.googleAds)+renderMutations(d.mutations);
   const stripeCount=d.stripe&&d.stripe.accounts?d.stripe.accounts.length:0;
   document.getElementById('cnt-stripe').textContent=stripeCount?String(stripeCount):'';
   document.getElementById('tab-stripe').innerHTML=renderStripe(d.stripe);
-  const mutCount=d.mutations&&d.mutations.mutations?d.mutations.mutations.length:0;
-  document.getElementById('cnt-mutations').textContent=mutCount?String(mutCount):'';
-  document.getElementById('tab-mutations').innerHTML=renderMutations(d.mutations);
   const dw=d.domains&&d.domains.domains?d.domains.domains.length:0;
   document.getElementById('cnt-domains').textContent=dw?String(dw):'';
   document.getElementById('tab-domains').innerHTML=renderDomains(d.domains);
@@ -2234,7 +2229,7 @@ export function createDashboardServer(app: AppContext): http.Server {
         res.end(JSON.stringify({ error: "Mutation actions are only enabled on localhost." }));
         return;
       }
-      const googleAdsDbPath = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "data", "google-ads", "google_ads.sqlite3");
+      const googleAdsDbPath = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "operations", "google-ads", "data", "google_ads.sqlite3");
       try {
         let body = "";
         for await (const chunk of req) body += chunk;
