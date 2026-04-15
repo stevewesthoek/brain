@@ -1,23 +1,38 @@
-# GitHub Actions workflow — Build Docker image on GitHub, push to GHCR, trigger Dokploy redeploy.
-# Copy to .github/workflows/deploy.yml in any repo that deploys to Dokploy via image pull.
+# Canonical GitHub Actions workflow — Build Docker image on GitHub, push to GHCR, trigger Dokploy redeploy.
 #
-# Required GitHub secrets:
-#   DOKPLOY_API_KEY  — generate in Dokploy dashboard → Settings → API
-#   DOKPLOY_APP_ID   — found in app settings URL in the Dokploy dashboard
+# Standard practice for ALL prochattools/yeshuaacademy repos deployed via Dokploy.
+# Copy this file to .github/workflows/deploy.yml in any repo.
+#
+# Required GitHub secrets (set via: gh secret set <NAME> --body "<value>"):
+#   DOKPLOY_API_KEY  — Dokploy server API key (from ~/.config/dokploy/.env)
+#   DOKPLOY_APP_ID   — Dokploy application ID for this specific app
+#                      (find via: curl .../api/project.all | grep applicationId, or Dokploy dashboard URL)
+#
+# Standards enforced by this template:
+#   1. ONE workflow only — CI (lint/build check) is merged into this job. No separate ci.yml.
+#   2. Docker steps (buildx, login, push) only run on push to main, not on PRs.
+#   3. Commit metadata (subject, author, date, SHA) is passed to Dokploy so deployments
+#      are labelled with the real commit message instead of "new changes".
+#   4. GHA layer cache (cache-from/cache-to: type=gha) is always enabled.
+#
+# GHCR authentication in Dokploy:
+#   Set username/password/registryUrl directly on the application record — NOT via registryId.
+#   Using registryId triggers "Registry Swarm" mode (Dokploy re-tags and PUSHES the image),
+#   which causes permission_denied. The correct fields are application.username,
+#   application.password, application.registryUrl set to ghcr.io.
+#   See skill: dokploy-ghcr-pull-auth
 #
 # NEXT_PUBLIC_* vars:
-#   These are baked into the JS bundle at build time (not injectable at runtime).
-#   Pass them as build-args from GitHub repo variables (Settings → Variables → Actions).
+#   These are baked into the JS bundle at build time — Dokploy runtime injection is too late.
+#   Pass them as build-args from GitHub repo Settings → Variables → Actions.
 #   See the commented build-args block below.
-#
-# Registry:
-#   Images are pushed to GHCR (ghcr.io) using the built-in GITHUB_TOKEN.
-#   Dokploy needs a read-only PAT (read:packages) registered in Dokploy Settings → Registry.
 
 name: Build and Deploy
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 jobs:
@@ -27,18 +42,68 @@ jobs:
       contents: read
       packages: write
 
+    # ── CI env (used for the build-check steps on both push and PR) ──────────
+    # Adjust these for the specific app. Common pattern for saaskit apps:
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+      SYSTEM_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+      # APP_SLUG: myapp           # set to normalized slug (lowercase, no separators)
+      # RESEND_API_KEY: dummy-ci-key
+      # CLERK_DISABLED: 'true'
+      # NEXT_PUBLIC_CLERK_DISABLED: 'true'
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
+      # ── CI steps (run on every push and PR) ───────────────────────────────
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=prisma/system.prisma
+        # Adjust schema path if different, or remove if no Prisma.
+
+      - name: Run migrations
+        run: npm run db:migrate:dev
+        # Remove if no migration script.
+
+      - name: Build check
+        run: npm run build
+
+      # ── Docker steps (push to main only — not on PRs) ─────────────────────
       - uses: docker/setup-buildx-action@v3
+        if: github.event_name == 'push'
 
       - uses: docker/login-action@v3
+        if: github.event_name == 'push'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push Docker image
+        if: github.event_name == 'push'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -49,21 +114,31 @@ jobs:
             ghcr.io/${{ github.repository }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # Uncomment and extend for apps with NEXT_PUBLIC_* env vars.
-          # Values live in GitHub repo Settings → Variables → Actions (not secrets).
+          # Uncomment for apps with NEXT_PUBLIC_* vars (values in repo Settings → Variables):
           # build-args: |
           #   NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
 
+      # ── Deploy trigger — passes full commit metadata to Dokploy ───────────
       - name: Trigger Dokploy redeploy
+        if: github.event_name == 'push'
         run: |
-          DOKPLOY_URL="${{ secrets.DOKPLOY_URL || 'https://dokploy.prochat.tools' }}"
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "$DOKPLOY_URL/api/application.deploy" \
+          COMMIT_MSG=$(git log -1 --pretty=format:"%s" ${{ github.sha }})
+          COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an" ${{ github.sha }})
+          COMMIT_DATE=$(git log -1 --pretty=format:"%ci" ${{ github.sha }})
+          DESCRIPTION="${COMMIT_AUTHOR} · ${COMMIT_DATE}"$'\n\n'"${{ github.sha }}"
+
+          RESPONSE=$(curl -s -o /tmp/dokploy_response.json -w "%{http_code}" \
+            -X POST "https://dokploy.prochat.tools/api/application.deploy" \
             -H "x-api-key: ${{ secrets.DOKPLOY_API_KEY }}" \
             -H "Content-Type: application/json" \
-            -d "{\"applicationId\": \"${{ secrets.DOKPLOY_APP_ID }}\"}")
+            -d "{
+              \"applicationId\": \"${{ secrets.DOKPLOY_APP_ID }}\",
+              \"title\": $(echo "$COMMIT_MSG" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().strip()))'),
+              \"description\": $(echo "$DESCRIPTION" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().strip()))')
+            }")
 
           echo "HTTP status: $RESPONSE"
+          cat /tmp/dokploy_response.json
 
           if [ "$RESPONSE" != "200" ]; then
             echo "Dokploy trigger failed with status $RESPONSE"
