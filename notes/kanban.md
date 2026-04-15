@@ -137,10 +137,10 @@ kanban-plugin: board
 
 - [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
 - [ ] Make upgrade solution FREE to PRO JPV Bootcamp
-- [ ] vraag NISS aan
 - [ ] Check Joe's privacy policy
 - [ ] Vraag Jon voor verhuizen domein
 - [ ] Vraag Tim voor verhuizen domein
+- [ ] plan NL trip
 - [ ] Vraag Tim om terug betalen geld
 - [ ] Setup STB Facebook app
 - [ ] Make my contact card iPhone
@@ -148,18 +148,18 @@ kanban-plugin: board
 - [ ] Empty mail
 - [ ] fix photo share JPV Bootcamp
 - [ ] maak factuur TDP domeinen
+- [ ] Family finance app
+- [ ] Learn Portuguese app
 
 
 ## Doing
 
-- [ ] Learn Portuguese app
-- [ ] plan NL trip
-- [ ] Family finance app
 
 
 ## Done
 
 **Complete**
+- [x] vraag NISS aan ✅ 2026-04-15
 - [x] [[notes/04-tasks/business-tasks/0259-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
 - [x] sessions & repositories ProBot dasboard improve ✅ 2026-04-12
 - [x] Apify cli ✅ 2026-04-12

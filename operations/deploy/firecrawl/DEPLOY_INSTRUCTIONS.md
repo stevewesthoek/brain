@@ -1,6 +1,6 @@
 # Firecrawl Deployment to Dokploy — Manual Setup (Reference)
 
-**Current status:** ✅ Firecrawl is already deployed and running at `http://100.83.38.48:3051` (Tailscale).
+**Current status:** ✅ Firecrawl is already deployed and running at `http://localhost:3051` (Tailscale).
 
 This document is a **reference guide** for future redeployment via Dokploy dashboard. It is NOT current deployment instructions.
 
@@ -85,10 +85,10 @@ Once deployed, test from your Mac (via Tailscale):
 
 ```bash
 # Health check
-curl -s http://100.83.38.48:3051/health
+curl -s http://localhost:3051/health
 
 # Test scrape
-curl -X POST http://100.83.38.48:3051/v1/scrape \
+curl -X POST http://localhost:3051/v1/scrape \
   -H 'Content-Type: application/json' \
   -d '{
     "url": "https://example.com",
@@ -106,7 +106,7 @@ Test the admin queue UI (via Tailscale):
 
 ```bash
 # Replace with your actual BULL_AUTH_KEY
-curl -s http://100.83.38.48:3051/admin/<YOUR_BULL_AUTH_KEY>/queues
+curl -s http://localhost:3051/admin/<YOUR_BULL_AUTH_KEY>/queues
 ```
 
 Should return the admin UI HTML (not an error).
@@ -126,7 +126,7 @@ Should return the admin UI HTML (not an error).
 
 ### API returns 503 or timeout
 
-**Symptom:** `curl http://100.83.38.48:3051/v1/scrape` returns error
+**Symptom:** `curl http://localhost:3051/v1/scrape` returns error
 
 **Solution:**
 1. Wait 60 seconds for API container to fully initialize (there's a 60s healthcheck delay)
@@ -135,7 +135,7 @@ Should return the admin UI HTML (not an error).
 
 ### Tailscale connectivity issues
 
-**Symptom:** `http://100.83.38.48:3051` returns connection refused or timeout
+**Symptom:** `http://localhost:3051` returns connection refused or timeout
 
 **Solution:**
 1. Verify dokploy is reachable: `~/.local/bin/tailscale-cli ping dokploy`

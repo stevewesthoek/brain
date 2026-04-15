@@ -1,12 +1,12 @@
 # Firecrawl Runbook
 
-Self-hosted web scraping & search API. Deployed on Dokploy, accessible via Tailscale at `http://100.83.38.48:3051`.
+Self-hosted web scraping & search API. Deployed on Dokploy, accessible via Tailscale at `http://localhost:3051`.
 
 ## Service Details
 
 | Aspect | Value |
 |--------|-------|
-| **Tailscale Endpoint** | `http://100.83.38.48:3051` |
+| **Tailscale Endpoint** | `http://localhost:3051` |
 | **Tailscale Node** | `dokploy` (100.83.38.48) |
 | **Deployment** | Dokploy (Azure `vm-dokploy`) |
 | **Docker Compose** | `brain/operations/deploy/firecrawl/docker-compose.yml` |
@@ -20,7 +20,7 @@ Self-hosted web scraping & search API. Deployed on Dokploy, accessible via Tails
 
 ```bash
 # Quick health check (via Tailscale)
-curl -s http://100.83.38.48:3051/v1/scrape \
+curl -s http://localhost:3051/v1/scrape \
   -H 'Content-Type: application/json' \
   -d '{"url":"https://example.com","formats":["markdown"]}' | jq '.success'
 
@@ -74,14 +74,14 @@ If Firecrawl service becomes unresponsive:
 
 5. **Verify from outside:**
    ```bash
-   curl -s https://100.83.38.48:3051/health
+   curl -s https://localhost:3051/health
    ```
 
 ---
 
 ## Admin Queue UI
 
-**URL:** `http://100.83.38.48:3051/admin/<BULL_AUTH_KEY>/queues` (via Tailscale)  
+**URL:** `http://localhost:3051/admin/<BULL_AUTH_KEY>/queues` (via Tailscale)  
 (Replace `<BULL_AUTH_KEY>` with value from Dokploy environment settings)
 
 **Use for:**
@@ -211,7 +211,7 @@ To update Firecrawl to latest version:
    ```bash
    docker compose pull && docker compose up -d
    ```
-3. Verify health: `curl -s http://100.83.38.48:3051/health`
+3. Verify health: `curl -s http://localhost:3051/health`
 
 ---
 
@@ -221,7 +221,7 @@ To update Firecrawl to latest version:
 
 1. Redeploy compose stack to Dokploy
 2. Database volume persists — data is not lost
-3. Tailscale endpoint remains available: `http://100.83.38.48:3051`
+3. Tailscale endpoint remains available: `http://localhost:3051`
 4. Service should be online within 5 minutes
 
 **Data loss (volume deleted):**

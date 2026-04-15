@@ -28,7 +28,7 @@ Managed via Cloudflare. Use `/cloudflare` skill for record management.
 
 | Service | Port | Access |
 |---------|------|--------|
-| Firecrawl | 3051 | `http://100.83.38.48:3051` (Tailscale) |
+| Firecrawl | 3051 | `http://localhost:3051` (Tailscale) |
 | n8n | — | `https://n8n.prochat.tools` |
 | Dokploy | — | `https://dokploy.prochat.tools` |
 | Ory Kratos | — | `https://auth.prochat.tools` |

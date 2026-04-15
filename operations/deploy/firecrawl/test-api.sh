@@ -5,7 +5,7 @@
 
 set -e
 
-API_HOST="${FIRECRAWL_HOST:-100.83.38.48:3051}"
+API_HOST="${FIRECRAWL_HOST:-localhost:3051}"
 TIMEOUT=10
 
 echo "🧪 Firecrawl API Test Suite (Port 3051)"
