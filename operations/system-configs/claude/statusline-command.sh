@@ -1,21 +1,22 @@
 #!/bin/sh
 input=$(cat)
-dir_full=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // ""')
+dir_full=$(echo "$input" | jq -r '.cwd // .workspace.current_dir // ""')
 dir=$(basename "$dir_full")
 ctx_size=$(echo "$input" | jq -r '.context_window.context_window_size // ""')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 
 # Get the ACTUAL live model from Claude Code's statusline payload
-# This is the ground truth — it reflects the real model currently running
+# .model.display_name values: "Haiku", "Sonnet", "Opus" (short, no "Claude" prefix)
+# or legacy long-form: "Claude Haiku 4.5", "Claude Sonnet 4.6"
 live_model_display=$(echo "$input" | jq -r '.model.display_name // empty' 2>/dev/null)
 
-# Normalize display_name to short label (Claude Haiku 4.5 → haiku, etc.)
+# Normalize to short lowercase label
 if [ -n "$live_model_display" ]; then
-  # Remove "Claude " prefix and take first word, lowercase
+  # Remove "Claude " prefix if present, take first word, lowercase
   active_model=$(echo "$live_model_display" | sed 's/^Claude[[:space:]]*//; s/[[:space:]].*//' | tr '[:upper:]' '[:lower:]')
 else
-  # Fallback: use tracking file model if payload doesn't have it
-  active_model="haiku"
+  # No model in payload — fall back to session model from settings
+  active_model=$(jq -r '.model // "?"' "$HOME/.claude/settings.json" 2>/dev/null || echo "?")
 fi
 
 # Read badge enrichment from tracking file (reason, agent, context)
