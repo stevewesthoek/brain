@@ -156,6 +156,8 @@ kanban-plugin: board
 - [ ] Make Via di Eden editable for Joe
 - [ ] Make Oliveto Organizing editable for Ashley
 - [ ] Merge Stripe ProChat legacy into ProChat Studio
+- [ ] Improve thumbnails STB
+- [ ] Expand STB pipeline and start posting FB, YT & PIN
 
 
 ## Doing

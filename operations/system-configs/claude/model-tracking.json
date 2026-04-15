@@ -1,6 +1,6 @@
 {
-  "reason": "escalation-complexity",
-  "context": "Complex multi-file coding task",
-  "timestamp": "2026-04-15T11:49:54Z",
-  "agent": "coder-default"
+  "reason": "default",
+  "context": "",
+  "timestamp": "2026-04-15T12:04:00Z",
+  "agent": "null"
 }
