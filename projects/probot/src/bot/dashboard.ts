@@ -1616,7 +1616,11 @@ function fmtReset(iso){
 document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+b.dataset.tab));
-  if(b.dataset.tab==='local-apps'){localAppsRefresh();}
+  console.log('Tab clicked:',b.dataset.tab);
+  if(b.dataset.tab==='local-apps'){
+    console.log('Calling localAppsRefresh');
+    localAppsRefresh().catch(e=>console.error('localAppsRefresh error:',e));
+  }
 }));
 /* encode a value for use inside a double-quoted HTML attribute */
 function attr(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
@@ -2040,11 +2044,11 @@ function renderLocalApps(data){
   let html='<div class="sec-hd"><span class="sec-title">Local Applications</span><span class="sec-count">'+data.apps.length+'</span></div>';
   const running=data.apps.filter(a=>a.status==='running').length;
   if(running>0)html+='<span class="badge b-live" style="margin-left:8px">'+running+' running</span>';
-  html+='<div class="local-app-grid">';
+  html+='<div class="local-app-grid fade">';
   data.apps.forEach(function(app){
     const isRunning=app.status==='running';
     const statusClass=isRunning?'running':'stopped';
-    const statusDot=isRunning?'●':'○';
+    const statusDot=isRunning?'&#9679;':'&#9675;';
     html+='<div class="local-app-card">';
     html+='<div class="local-app-header">';
     html+='<span style="font-size:14px">'+statusDot+'</span>';
@@ -2053,8 +2057,8 @@ function renderLocalApps(data){
     html+='</div>';
     html+='<div class="local-app-status '+statusClass+'">';
     html+='<span>'+esc(app.status.toUpperCase())+'</span>';
-    if(app.lastSeen)html+=' · last '+esc(age(app.lastSeen));
-    if(app.lastDuration)html+=' · '+esc(app.lastDuration);
+    if(app.lastSeen)html+=' &middot; last '+esc(age(app.lastSeen));
+    if(app.lastDuration)html+=' &middot; '+esc(app.lastDuration);
     html+='</div>';
     html+='<div class="local-app-actions">';
     if(app.name!=='ProBot'){
