@@ -135,8 +135,39 @@ kanban-plugin: board
 
 ## To Do
 
+- [ ] maak factuur TDP domeinen
+- [ ] Bring car to mechanic
+- [ ] Place baby bed down
+- [ ] Setup STB Facebook app ⏫
+- [ ] Vraag Tim voor verhuizen domein & Vraag Tim om terug betalen geld
+- [ ] Put money on bank account
+- [ ] Plantenpot aanpassen
+- [ ] plan NL trip
+- [ ] Fix Antenna
+- [ ] Decommision Hetzner 🔼
+- [ ] YA finance app
+- [ ] Empty mail
+- [ ] fix photo share JPV Bootcamp
+- [ ] Family finance app
+- [ ] Learn Portuguese app
+- [ ] Make Via di Eden editable for Joe
+- [ ] Make Oliveto Organizing editable for Ashley
+- [ ] Merge Stripe ProChat legacy into ProChat Studio
+- [ ] Improve thumbnails STB
+- [ ] Expand STB pipeline and start posting FB, YT & PIN
+- [ ] fix the obsidian way of working
+- [ ] add obsidian to phone
+- [ ] Product: ChatGPT bridge
+- [ ] Product: Model Router
+- [ ] empty ChatGPT into Obsidian
+- [ ] read mark's boek
+
 
 ## Doing
+
+- [ ] Vraag Jon voor verhuizen domein & give him a coinbase address
+- [ ] Apply for passport
+- [ ] Make my contact card iPhone
 
 
 ## Done
