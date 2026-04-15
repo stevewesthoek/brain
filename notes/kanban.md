@@ -138,10 +138,11 @@ kanban-plugin: board
 
 - [ ] Make upgrade solution FREE to PRO JPV Bootcamp
 - [ ] Check Joe's privacy policy
-- [ ] Vraag Jon voor verhuizen domein
+- [ ] Vraag Jon voor verhuizen domein & give him a coinbase address
 - [ ] Vraag Tim voor verhuizen domein
 - [ ] plan NL trip
 - [ ] Vraag Tim om terug betalen geld
+- [ ] Decommision Hetzner
 - [ ] Setup STB Facebook app
 - [ ] Make my contact card iPhone
 - [ ] YA finance app
