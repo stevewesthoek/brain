@@ -164,13 +164,11 @@ Projects and workloads verified through the Dokploy API on 2026-04-03:
 - App: `SaaSKit Studio`
 
 `SaaS`
-- App: `xGrow`
 - App: `Status Link`
 - App: `Egg Cooker`
 - App: `Proofly`
 
 Notable statuses seen in Dokploy:
-- `xGrow` was in `error`
 - `JCCP Holdings` was in `idle`
 - `kutt` was in `idle`
 
@@ -341,7 +339,6 @@ Dokploy UI: `https://dokploy.prochat.tools`
 | `lean.diet` | — | TBD | Parked | Added to Dokploy tunnel 2026-04-04; domain repurposed, new project not yet created |
 | `arkware.solutions` | — | TBD | Parked | Added to Dokploy tunnel 2026-04-04; domain repurposed, new project not yet created |
 | `viadieden.com` | Via di Eden | Clients | Online | — |
-| `xgrow.io` | xGrow | SaaS | Error | xGrow app was in error state as of 2026-04-03 |
 | `onestatus.link` | Status Link | SaaS | Online | `statuslink.io` currently points to an unrelated Framer site and returns 404 |
 | `proofly.io` | Proofly | SaaS | Online | — |
 
@@ -381,7 +378,6 @@ Known sites still present on Hetzner server filesystem (not yet deleted):
 
 - Confirm domain names for remaining Dokploy apps (ProChat Accountant, Egg Cooker, Free Resend, kutt, umami, boilerplates).
 - Delete `jccp-management.pro` site files from Hetzner server via CloudPanel UI.
-- Update xGrow status once error state is resolved.
 
 Last updated:
 - 2026-04-04 WEST

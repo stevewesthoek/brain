@@ -1,76 +1,110 @@
-# Plan: Fix Google Ads DB path + Merge Mutations into Google Ads tab
+# Plan: Remove xgrow, add "Local Apps" tab to ProBot dashboard
 
 ## Context
-ProBot dashboard has two issues:
-1. Google Ads database path is wrong (`data/google-ads/google_ads.sqlite3`) — actual location is `operations/google-ads/data/google_ads.sqlite3`. This causes both the GA widget and the Mutations tab to show "database not found".
-2. There are two separate tabs (Google Ads + Mutations) that both read from the same database. Merging them cleans up the UI.
-
-**File:** `/Users/Office/Repos/stevewesthoek/brain/projects/probot/src/bot/dashboard.ts`
-**Build:** `cd projects/probot && npm run build` (tsc → `dist/`) then restart the ProBot process.
+X-Grow has been decommissioned and should be completely removed from ProBot. In its place, a new "Local Apps" tab will show all locally running services on the Office Mac, with live status (running/stopped), port, last-run time, duration, and Start/Stop buttons.
 
 ---
 
-## Changes
+## Files to change
 
-### 1. Fix DB path — 3 places (replace_all)
-All three occurrences of:
-```ts
-path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "data", "google-ads", "google_ads.sqlite3")
-```
-→ replace with:
-```ts
-path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "operations", "google-ads", "data", "google_ads.sqlite3")
-```
-Affected lines: 715, 818, 2237. Use `replace_all: true` since the string is identical everywhere.
-
-### 2. Delete Mutations tab button (line ~1541)
-Remove:
-```html
-    <button class="tab-btn" data-tab="mutations">Mutations <span class="tab-count" id="cnt-mutations"></span></button>
-```
-
-### 3. Delete Mutations tab panel div (line ~1553)
-Remove:
-```html
-  <div class="tab-panel" id="tab-mutations"></div>
-```
-
-### 4. Merge mutations render into Google Ads panel (lines ~2081–2089)
-Current:
-```js
-const gaPending = d.googleAds && d.googleAds.pendingMutations ? d.googleAds.pendingMutations : 0;
-document.getElementById('cnt-google-ads').textContent=gaPending?String(gaPending):'';
-document.getElementById('tab-google-ads').innerHTML=renderGoogleAds(d.googleAds);
-```
-...and further down (lines 2087–2089):
-```js
-const mutCount=d.mutations&&d.mutations.mutations?d.mutations.mutations.length:0;
-document.getElementById('cnt-mutations').textContent=mutCount?String(mutCount):'';
-document.getElementById('tab-mutations').innerHTML=renderMutations(d.mutations);
-```
-
-Replace the three GA lines AND remove the three mutations lines, replacing with:
-```js
-const gaPending = d.googleAds && d.googleAds.pendingMutations ? d.googleAds.pendingMutations : 0;
-document.getElementById('cnt-google-ads').textContent=gaPending?String(gaPending):'';
-document.getElementById('tab-google-ads').innerHTML=renderGoogleAds(d.googleAds)+renderMutations(d.mutations);
-```
+**Primary:** `/Users/Office/Repos/stevewesthoek/brain/projects/probot/src/bot/dashboard.ts`
+**Documentation:** `/Users/Office/Repos/stevewesthoek/brain/operations/infrastructure/infra.md`
 
 ---
 
-## Build & Restart
+## Part 1: Remove xgrow completely from dashboard.ts
+
+All on single file. Removals by section:
+
+1. **CSS block** — lines ~1491–1512: delete the `/* ── xgrow ── */` block and all `.xgrow-*` rules
+2. **Tab button** — line ~1543: delete `<button class="tab-btn" data-tab="xgrow">...</button>`
+3. **Tab panel** — line ~1554: delete `<div class="tab-panel" id="tab-xgrow"></div>`
+4. **Global cache var** — line ~1558: delete `var xgrowPosts={}`
+5. **JS helper functions** — lines ~2116–2188: delete `xgrowTrigger()`, `xgrowDo()`, `xgrowGenReplies()`, `xgrowPostReply()`
+6. **renderXgrow()** — lines ~1999–2050: delete entire function
+7. **Render call** — lines ~2094–2097: delete the `if(d.xgrow){...}` block
+8. **API handlers** — 4 route handlers for `/api/xgrow/*` in the server section: delete all four
+
+---
+
+## Part 2: Add "Local Apps" tab
+
+### Services to index (from infra.md + runbooks)
+
+| Name | Port | Check URL | Start cmd | Stop cmd |
+|------|------|-----------|-----------|----------|
+| ProBot | 7070 | `http://localhost:7070` | `cd ~/Repos/stevewesthoek/brain/projects/probot && npm start` | kill process on port 7070 |
+| Firecrawl | 3051 | `http://localhost:3051/health` | `cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d` | `docker compose down` |
+| Google Ads API | 8001 | `http://localhost:8001/health` | start via supervisor/launchd | kill process on port 8001 |
+| ComfyUI | 8188 | `http://localhost:8188` | from runbook | kill process on port 8188 |
+| Family Finance | 3060 | `http://localhost:3060` | `cd ~/Repos/stevewesthoek/family-finance && npm run dev` | kill on port |
+| Fala | 3050 | `http://localhost:3050` | start via dokploy or local | kill on port |
+
+Note: ProBot itself shows as "running" with no Stop button (can't stop itself).
+
+### Server-side: new `getLocalAppsStatus()` function in dashboard.ts
+
+Logic:
+- For each service, do a `fetch` to its health URL with a short timeout (1.5s)
+- If response ok → `running`, record response time
+- If fetch fails/timeout → `stopped`
+- Read last-run from a small JSON file `~/.probot/local-apps-history.json` (keyed by service name: `{ lastSeen: ISO, lastDuration: ms }`) — updated each time a service is detected as running
+- Returns array of `{ name, port, url, status, lastSeen, lastDuration, startCmd, stopCmd }`
+
+### New API endpoints
+
+- `GET /api/local-apps` — returns the live status array (called separately from `/api/data` since it's slow)
+- `POST /api/local-apps/start` — `{ name }` — shells out the start command
+- `POST /api/local-apps/stop` — `{ name }` — kills process on the port
+
+### Frontend
+
+**Tab button** (replace xgrow button):
+```html
+<button class="tab-btn" data-tab="local-apps">Local Apps <span class="tab-count" id="cnt-local-apps"></span></button>
+```
+
+**Tab panel** (replace xgrow panel):
+```html
+<div class="tab-panel" id="tab-local-apps"></div>
+```
+
+**renderLocalApps(data)** function — renders a card per service:
+```
+┌─────────────────────────────────────────────────┐
+│ ● ProBot             port 7070                  │
+│   running · last seen 2h ago · 3d 4h uptime     │
+│                              [Open] [Stop]       │
+└─────────────────────────────────────────────────┘
+```
+
+**CSS** — new `.local-app-*` classes replacing `.xgrow-*`
+
+**JS fetch** — Local Apps tab fetches `/api/local-apps` lazily when the tab is first clicked (not in the main `/api/data` call, since port probing is slow)
+
+---
+
+## Part 3: Remove xgrow from infra.md
+
+- Remove xgrow row from domain table (line ~344)
+- Remove xgrow from Dokploy apps section (line ~167)
+- Remove TODO about xgrow status (line ~384)
+
+---
+
+## Build & restart
 ```bash
 cd /Users/Office/Repos/stevewesthoek/brain/projects/probot
 npm run build
-# Then kill and restart ProBot process (PID from: ps aux | grep probot)
+pkill -9 -f "node dist" && npm start > /tmp/probot.log 2>&1 &
 ```
-
-ProBot runs as a macOS app (PID 10626). After build, use ProBot restart mechanism or reopen the app.
 
 ---
 
 ## Verification
-1. Open ProBot dashboard → Google Ads tab should load without "database not found" error.
-2. Scroll down in Google Ads tab — Pending Mutations table should appear below the metrics.
-3. No "Mutations" tab button visible in the tab bar.
-4. Mutation approve/reject/apply actions still work (API handler unchanged, just DB path fixed).
+1. No "xgrow" tab in ProBot dashboard tab bar
+2. "Local Apps" tab visible, clicking it triggers `/api/local-apps` fetch
+3. ProBot row shows as running (port 7070 responds)
+4. Firecrawl shows running or stopped depending on whether docker container is up
+5. Start/Stop buttons send correct POST requests
+6. No xgrow references remain in infra.md

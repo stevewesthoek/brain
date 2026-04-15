@@ -1232,6 +1232,53 @@ async function getStripeDashboardData(): Promise<StripeDashboardData> {
   return data;
 }
 
+// ─── Local Apps Status ───────────────────────────────────────────────────────
+
+const LOCAL_APPS = [
+  { name: "ProBot", port: 7070, url: "http://localhost:7070", check: "http://localhost:7070", start: "cd ~/Repos/stevewesthoek/brain/projects/probot && npm start > /tmp/probot.log 2>&1 &" },
+  { name: "Firecrawl", port: 3051, url: "http://localhost:3051", check: "http://localhost:3051/health", start: "cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d" },
+  { name: "Google Ads API", port: 8001, url: "http://localhost:8001", check: "http://localhost:8001/health", start: "supervisorctl start google-ads-http-server" },
+  { name: "ComfyUI", port: 8188, url: "http://localhost:8188", check: "http://localhost:8188", start: "echo 'Manual start required'" },
+  { name: "Family Finance", port: 3060, url: "http://localhost:3060", check: "http://localhost:3060", start: "cd ~/Repos/stevewesthoek/family-finance && npm run dev > /tmp/family-finance.log 2>&1 &" },
+  { name: "Fala", port: 3050, url: "http://localhost:3050", check: "http://localhost:3050", start: "echo 'Manual start required'" }
+];
+
+function getLocalAppPort(name: string): number | null {
+  const app = LOCAL_APPS.find(a => a.name === name);
+  return app ? app.port : null;
+}
+
+function getLocalAppStartCommand(name: string): string | null {
+  const app = LOCAL_APPS.find(a => a.name === name);
+  return app ? app.start : null;
+}
+
+async function getLocalAppsStatus() {
+  const apps: any[] = [];
+  for (const app of LOCAL_APPS) {
+    let status = "stopped";
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1000);
+      const r = await fetch(app.check, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (r.ok) status = "running";
+    } catch (e) {
+      status = "stopped";
+    }
+    const appData: any = {
+      name: app.name,
+      port: app.port,
+      url: app.url,
+      status: status,
+      lastSeen: null,
+      lastDuration: null
+    };
+    apps.push(appData);
+  }
+  return { apps };
+}
+
 async function getDashboardData(app: AppContext) {
   const memTotal = os.totalmem();
   const memUsed  = memTotal - os.freemem();
@@ -1488,28 +1535,18 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .stripe-json details{border:1px solid var(--border);border-radius:8px;background:var(--surface)}
 .stripe-json summary{padding:9px 11px;cursor:pointer;font-size:11px;color:var(--muted);font-family:var(--mono)}
 .stripe-json pre{margin:0;padding:0 11px 11px;font-size:10px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;font-family:var(--mono)}
-/* ── xgrow ── */
-.xgrow-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
-@media(max-width:900px){.xgrow-stats{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:600px){.xgrow-stats{grid-template-columns:1fr}}
-.xgrow-stat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
-.xgrow-stat-val{font-size:24px;font-weight:700;font-family:var(--mono);letter-spacing:-1px}
-.xgrow-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:6px}
-.xgrow-btns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
-.xgrow-btn{padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;color:var(--text);transition:all .15s}
-.xgrow-btn:hover{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
-.xgrow-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:1000px){.xgrow-grid{grid-template-columns:1fr}}
-.xgrow-section{display:flex;flex-direction:column;gap:8px}
-.xgrow-section h3{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
-.xgrow-list{background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:300px;overflow-y:auto}
-.xgrow-item{padding:8px 10px;border-bottom:1px solid var(--border);font-size:10px;font-family:var(--mono)}
-.xgrow-item:last-child{border-bottom:none}
-.xgrow-post-card{padding:10px 12px;font-family:var(--font)}
-.xgrow-post-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
-.xgrow-replies{margin-top:8px;display:flex;flex-direction:column;gap:5px}
-.xgrow-reply-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:5px;padding:7px 9px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.xgrow-reply-text{font-size:10px;color:var(--text);flex:1;line-height:1.4;white-space:pre-wrap}
+/* ── local apps ── */
+.local-app-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-top:16px}
+.local-app-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.local-app-header{display:flex;align-items:center;gap:8px;font-weight:500}
+.local-app-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
+.local-app-status.running{color:var(--green)}
+.local-app-status.stopped{color:var(--red)}
+.local-app-actions{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.local-app-btn{padding:5px 10px;font-size:10px;background:var(--border);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text);transition:all .15s}
+.local-app-btn:hover{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
+.local-app-btn.danger{color:var(--red);border-color:rgba(248,113,113,.2)}
+.local-app-btn.danger:hover{background:rgba(248,113,113,.1);border-color:var(--red)}
 </style>
 </head>
 <body>
@@ -1540,7 +1577,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="stripe">Stripe <span class="tab-count" id="cnt-stripe"></span></button>
     <button class="tab-btn" data-tab="domains">Domains <span class="tab-count" id="cnt-domains"></span></button>
     <button class="tab-btn" data-tab="tunnels">Tunnels <span class="tab-count" id="cnt-tunnels"></span></button>
-    <button class="tab-btn" data-tab="xgrow">xgrow <span class="tab-count" id="cnt-xgrow"></span></button>
+    <button class="tab-btn" data-tab="local-apps">Local Apps <span class="tab-count" id="cnt-local-apps"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
   <div class="tab-panel" id="tab-dokploy"></div>
@@ -1551,11 +1588,10 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
   <div class="tab-panel" id="tab-stripe"></div>
   <div class="tab-panel" id="tab-domains"></div>
   <div class="tab-panel" id="tab-tunnels"></div>
-  <div class="tab-panel" id="tab-xgrow"></div>
+  <div class="tab-panel" id="tab-local-apps"></div>
 </div>
 <script>
 let _d=null;
-var xgrowPosts={};
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function age(iso){
   if(!iso)return'never';
@@ -1996,65 +2032,45 @@ function renderCloudflareTunnels(data){
   });
   return h;
 }
-function renderXgrow(data){
-  if(!data){return'<div class="empty">xgrow data unavailable</div>';}
-  if(data.error){return'<div class="nr-err">'+esc(data.error)+'</div>';}
-  const s=data.stats||{};
-  let h='<div class="xgrow-stats fade">';
-  h+='<div class="xgrow-stat"><div class="xgrow-stat-val">'+String(s.postsToday||0)+'/'+String(s.maxPostsPerDay||5)+'</div><div class="xgrow-stat-lbl">Posts Today</div></div>';
-  h+='<div class="xgrow-stat"><div class="xgrow-stat-val">'+String(s.postsRemaining||0)+'</div><div class="xgrow-stat-lbl">Remaining</div></div>';
-  h+='<div class="xgrow-stat"><div class="xgrow-stat-val">'+String(s.pendingPostsCount||0)+'</div><div class="xgrow-stat-lbl">Pending</div></div>';
-  h+='</div>';
-  h+='<div class="xgrow-btns fade"><button class="xgrow-btn" onclick="xgrowTrigger(this,&quot;scan&quot;)">Scan Posts</button><button class="xgrow-btn" onclick="xgrowTrigger(this,&quot;process&quot;)">Process Now</button><button class="xgrow-btn" onclick="xgrowDo(this,&quot;pause-automation&quot;)">Pause</button><button class="xgrow-btn" onclick="xgrowDo(this,&quot;resume-automation&quot;)">Resume</button><button class="xgrow-btn" style="border-color:var(--red);color:var(--red)" onclick="xgrowDo(this,&quot;clear-pending&quot;)">Clear Pending</button></div>';
-  h+='<div class="xgrow-grid fade">';
-  h+='<div class="xgrow-section"><h3>Recent Logs</h3><div class="xgrow-list">';
-  if(!data.logs||data.logs.length===0){h+='<div class="xgrow-item" style="color:var(--subtle)">No logs yet</div>';}
-  else{data.logs.forEach(function(l){
-    const sc=l.status==='posted'?'color:var(--green)':l.status==='failed'?'color:var(--red)':'color:var(--amber)';
-    h+='<div class="xgrow-item"><span style="color:var(--subtle)">'+age(l.createdAt)+'</span> <span style="'+sc+'">'+esc(l.status)+'</span>';
-    if(l.replyText)h+=' <span style="color:var(--muted)">'+esc(String(l.replyText).substring(0,60))+'...</span>';
-    if(l.error)h+='<div style="color:var(--red);font-size:9px">'+esc(l.error)+'</div>';
-    h+='</div>';
-  });}
-  h+='</div></div></div>';
-  h+='<div class="xgrow-section fade" style="margin-top:14px"><h3>Pending Posts ('+String((data.posts||[]).length)+')</h3>';
-  if(!data.posts||data.posts.length===0){
-    h+='<div class="xgrow-list"><div class="xgrow-item" style="color:var(--subtle)">No pending posts — run a scan first</div></div>';
-  }else{
-    h+='<div class="xgrow-list">';
-    data.posts.forEach(function(p){
-      xgrowPosts[p.id]=p;
-      var storedReplies=[];
-      if(p.generatedReplies){try{storedReplies=JSON.parse(p.generatedReplies);}catch(e){}}
-      xgrowPosts[p.id].cachedReplies=storedReplies;
-      h+='<div class="xgrow-item xgrow-post-card" id="xgrow-post-'+p.id+'">';
-      h+='<div style="display:flex;justify-content:space-between;align-items:baseline">';
-      h+='<strong style="font-size:11px">@'+esc(p.authorUsername)+'</strong>';
-      h+='<span style="color:var(--subtle);font-size:9px">score:'+Math.round(p.opportunityScore||0)+'</span>';
-      h+='</div>';
-      h+='<div style="color:var(--muted);margin-top:4px;margin-bottom:0;line-height:1.5;font-size:10px;font-family:var(--font)">'+esc(String(p.content||'').substring(0,140))+(p.content&&p.content.length>140?'...':'')+'</div>';
-      h+='<div class="xgrow-post-actions">';
-      h+='<button class="xgrow-btn" style="font-size:10px;padding:4px 8px" onclick="xgrowGenReplies(this,&quot;'+p.id+'&quot;)">Generate Replies</button>';
-      if(p.postUrl)h+='<a href="'+esc(p.postUrl)+'" target="_blank" style="font-size:9px;color:var(--muted);padding:4px 6px;text-decoration:none">View ↗</a>';
-      h+='<button class="xgrow-btn" style="font-size:9px;padding:3px 6px;border-color:var(--subtle);color:var(--subtle)" onclick="xgrowDo(this,&quot;skip-post&quot;)">Skip</button>';
-      h+='</div>';
-      h+='<div class="xgrow-replies" id="replies-'+p.id+'">';
-      if(storedReplies.length>0){
-        storedReplies.forEach(function(reply,idx){
-          var rt=typeof reply==='string'?reply:(reply&&reply.suggestedReply?reply.suggestedReply:String(reply));
-          h+='<div class="xgrow-reply-card">';
-          h+='<div class="xgrow-reply-text">'+esc(rt)+'</div>';
-          h+='<button class="xgrow-btn" style="font-size:9px;padding:3px 7px;border-color:var(--green);color:var(--green);white-space:nowrap" onclick="xgrowPostReply(this,&quot;'+p.id+'&quot;,'+idx+')">Post</button>';
-          h+='</div>';
-        });
+function renderLocalApps(data){
+  if(!data)return'<div class="nr-err">Local apps data unavailable</div>';
+  if(data.error)return'<div class="nr-err">'+esc(data.error)+'</div>';
+  if(!data.apps||!Array.isArray(data.apps))return'<div class="empty">No local apps configured</div>';
+  let html='<div class="sec-hd"><span class="sec-title">Local Applications</span><span class="sec-count">'+data.apps.length+'</span></div>';
+  const running=data.apps.filter(a=>a.status==='running').length;
+  if(running>0)html+='<span class="badge b-live" style="margin-left:8px">'+running+' running</span>';
+  html+='<div class="local-app-grid">';
+  data.apps.forEach(function(app){
+    const isRunning=app.status==='running';
+    const statusClass=isRunning?'running':'stopped';
+    const statusDot=isRunning?'●':'○';
+    html+='<div class="local-app-card">';
+    html+='<div class="local-app-header">';
+    html+='<span style="font-size:14px">'+statusDot+'</span>';
+    html+='<span style="flex:1"><strong>'+esc(app.name)+'</strong></span>';
+    html+='<span style="font-size:10px;color:var(--muted)">port '+app.port+'</span>';
+    html+='</div>';
+    html+='<div class="local-app-status '+statusClass+'">';
+    html+='<span>'+esc(app.status.toUpperCase())+'</span>';
+    if(app.lastSeen)html+=' · last '+esc(age(app.lastSeen));
+    if(app.lastDuration)html+=' · '+esc(app.lastDuration);
+    html+='</div>';
+    html+='<div class="local-app-actions">';
+    if(app.name!=='ProBot'){
+      if(!isRunning){
+        html+='<button class="local-app-btn" onclick="localAppStart(this,&quot;'+esc(app.name)+'&quot;)">Start</button>';
+      }else{
+        html+='<button class="local-app-btn danger" onclick="localAppStop(this,&quot;'+esc(app.name)+'&quot;)">Stop</button>';
       }
-      h+='</div>';
-      h+='</div>';
-    });
-    h+='</div>';
-  }
-  h+='</div>';
-  return h;
+    }
+    if(app.url){
+      html+='<a href="'+esc(app.url)+'" target="_blank" class="local-app-btn" style="text-decoration:none;display:inline-block">Open ↗</a>';
+    }
+    html+='</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
 }
 function render(d){
   _d=d;
@@ -2091,11 +2107,6 @@ function render(d){
   const tcCount=(d.tunnels&&d.tunnels.tunnels||[]).reduce((n,t)=>n+(t.hostnames||[]).length,0);
   document.getElementById('cnt-tunnels').textContent=tcCount?String(tcCount):'';
   document.getElementById('tab-tunnels').innerHTML=renderCloudflareTunnels(d.tunnels);
-  if(d.xgrow){
-    const xp=d.xgrow.stats?d.xgrow.stats.pendingPostsCount:0;
-    document.getElementById('cnt-xgrow').textContent=xp?String(xp):'';
-    document.getElementById('tab-xgrow').innerHTML=renderXgrow(d.xgrow);
-  }
 }
 async function fetchData(){
   try{
@@ -2113,80 +2124,33 @@ function refresh(){
 setInterval(fetchData,30000);
 setInterval(()=>{if(_d)document.getElementById('upd').textContent='updated '+age(_d.meta.updatedAt);},60000);
 fetchData();
-async function xgrowTrigger(btn,cmd){
-  const o=btn.textContent;btn.disabled=true;btn.textContent='...';
+async function localAppStart(btn,name){
+  const o=btn.textContent;btn.disabled=true;btn.textContent='Starting...';
   try{
-    const r=await fetch('/api/xgrow/trigger',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})});
+    const r=await fetch('/api/local-apps/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
-    btn.textContent=d.message||'Done';
-    setTimeout(()=>{btn.disabled=false;btn.textContent=o;fetchData();},1500);
+    btn.textContent=d.message||'Started';
+    setTimeout(()=>{btn.disabled=false;btn.textContent=o;localAppsRefresh();},1500);
   }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
 }
-async function xgrowDo(btn,action){
-  const o=btn.textContent;btn.disabled=true;btn.textContent='...';
+async function localAppStop(btn,name){
+  const o=btn.textContent;btn.disabled=true;btn.textContent='Stopping...';
   try{
-    const r=await fetch('/api/xgrow/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
+    const r=await fetch('/api/local-apps/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
-    btn.textContent=d.message||'Done';
-    setTimeout(()=>{btn.disabled=false;btn.textContent=o;fetchData();},1500);
+    btn.textContent=d.message||'Stopped';
+    setTimeout(()=>{btn.disabled=false;btn.textContent=o;localAppsRefresh();},1500);
   }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
 }
-async function xgrowGenReplies(btn,postId){
-  const p=xgrowPosts[postId];
-  if(!p){alert('Post not found in cache — reload the tab');return;}
-  const o=btn.textContent;btn.disabled=true;btn.textContent='Generating...';
+async function localAppsRefresh(){
   try{
-    const r=await fetch('/api/xgrow/generate-reply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      targetPost:p.content,
-      authorUsername:p.authorUsername,
-      authorFollowers:p.authorFollowers,
-      accountTier:p.accountTier
-    })});
-    const d=await r.json();
-    if(d.error){btn.disabled=false;btn.textContent=o;alert('Error: '+d.error);return;}
-    const raw=d.replies||[];
-    if(!raw.length){btn.disabled=false;btn.textContent=o;alert('No replies generated');return;}
-    const replies=raw.map(function(r){return typeof r==='string'?r:(r.suggestedReply||String(r));});
-    xgrowPosts[postId].cachedReplies=replies;
-    const el=document.getElementById('replies-'+postId);
-    if(el){
-      let rh='';
-      replies.forEach(function(reply,idx){
-        rh+='<div class="xgrow-reply-card">';
-        rh+='<div class="xgrow-reply-text">'+esc(String(reply))+'</div>';
-        rh+='<button class="xgrow-btn" style="font-size:9px;padding:3px 7px;border-color:var(--green);color:var(--green);white-space:nowrap" onclick="xgrowPostReply(this,&quot;'+postId+'&quot;,'+idx+')">Post</button>';
-        rh+='</div>';
-      });
-      el.innerHTML=rh;
-    }
-    btn.disabled=false;btn.textContent='Regenerate';
-  }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
-}
-async function xgrowPostReply(btn,postId,replyIdx){
-  const p=xgrowPosts[postId];
-  if(!p){alert('Post not found in cache — reload the tab');return;}
-  const replies=p.cachedReplies||[];
-  const replyText=replies[replyIdx];
-  if(!replyText){alert('Reply not found');return;}
-  const o=btn.textContent;btn.disabled=true;btn.textContent='Posting...';
-  try{
-    const r=await fetch('/api/xgrow/post-reply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      postDbId:p.id,
-      replyText:replyText,
-      inReplyToTweetId:p.postId
-    })});
-    const d=await r.json();
-    if(d.success){
-      btn.textContent='Posted!';
-      btn.style.opacity='0.5';
-      const card=document.getElementById('xgrow-post-'+postId);
-      if(card){card.style.opacity='0.4';}
-      setTimeout(fetchData,2000);
-    }else{
-      btn.disabled=false;btn.textContent=o;
-      alert('Failed: '+(d.error||'Unknown error'));
-    }
-  }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+    const r=await fetch('/api/local-apps');
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    document.getElementById('tab-local-apps').innerHTML=renderLocalApps(data);
+  }catch(e){
+    console.error('Local apps refresh failed:',e.message);
+  }
 }
 </script>
 </body>
@@ -2273,6 +2237,74 @@ export function createDashboardServer(app: AppContext): http.Server {
           db.close();
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: true, applied, note: "Only approved mutations can be applied" }));
+          return;
+        }
+
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Endpoint not found" }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(err) }));
+      }
+      return;
+    }
+
+    if (url === "/api/local-apps") {
+      try {
+        const status = await getLocalAppsStatus();
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+        res.end(JSON.stringify(status));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(err) }));
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url.startsWith("/api/local-apps/")) {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Local app actions are only enabled on localhost." }));
+        return;
+      }
+      try {
+        let body = "";
+        for await (const chunk of req) body += chunk;
+        const payload = JSON.parse(body);
+
+        if (url === "/api/local-apps/start" && payload.name) {
+          const cmd = getLocalAppStartCommand(payload.name);
+          if (!cmd) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "App not found or cannot be started" }));
+            return;
+          }
+          try {
+            const { exec } = require("child_process");
+            exec(cmd, { cwd: os.homedir() });
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true, message: "Starting..." }));
+          } catch (e) {
+            throw new Error(`Failed to start ${payload.name}: ${String(e)}`);
+          }
+          return;
+        }
+
+        if (url === "/api/local-apps/stop" && payload.name) {
+          const port = getLocalAppPort(payload.name);
+          if (!port) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "App not found or cannot be stopped" }));
+            return;
+          }
+          try {
+            const { exec } = require("child_process");
+            exec(`lsof -i :${port} | grep LISTEN | awk '{print $2}' | xargs kill -9`);
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true, message: "Stopping..." }));
+          } catch (e) {
+            throw new Error(`Failed to stop ${payload.name}: ${String(e)}`);
+          }
           return;
         }
 
