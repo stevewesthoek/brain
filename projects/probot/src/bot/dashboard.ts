@@ -1296,7 +1296,7 @@ const HTML = `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProBot</title>
-<link rel="icon" href="/favicon.svg?v=20260415-1" type="image/svg+xml">
+<link rel="icon" href="/favicon.svg?v=20260415-3" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -2307,7 +2307,7 @@ export function createDashboardServer(app: AppContext): http.Server {
     }
 
     if (url === "/" || url === "/index.html") {
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0" });
       res.end(HTML);
       return;
     }
