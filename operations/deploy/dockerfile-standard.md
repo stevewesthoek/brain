@@ -58,6 +58,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
+# newrelic is required at runtime via NODE_OPTIONS=--require newrelic
+# but is not traced by the standalone bundler — copy it explicitly
+COPY --from=builder /app/node_modules/newrelic ./node_modules/newrelic
+COPY --from=builder /app/node_modules/@newrelic ./node_modules/@newrelic
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:3000/api/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
@@ -81,6 +85,7 @@ CMD ["node", "server.js"]
 | `NEXT_PUBLIC_*` env vars | Use **real production values** — these are baked into the client JS bundle at build time; Dokploy runtime injection is too late (see section below) |
 | App has a custom start script | Replace CMD with `CMD ["sh", "scripts/runtime/start-prod.sh"]` and add `COPY scripts` in runner |
 | next.js standalone output | Copy `.next/standalone` and `.next/static` instead of the full `.next` + `node_modules` tree; see the Via di Eden Dockerfile |
+| App uses New Relic APM (`NODE_OPTIONS=--require newrelic`) | Add `COPY --from=builder /app/node_modules/newrelic ./node_modules/newrelic` and `COPY --from=builder /app/node_modules/@newrelic ./node_modules/@newrelic` in runner — standalone bundler does not trace runtime-injected requires |
 
 ---
 
