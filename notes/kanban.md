@@ -150,6 +150,10 @@ kanban-plugin: board
 - [ ] maak factuur TDP domeinen
 - [ ] Family finance app
 - [ ] Learn Portuguese app
+- [ ] Fix Antenna
+- [ ] Bring car to mechanic
+- [ ] Place baby bed down
+- [ ] Put money on bank account
 
 
 ## Doing
