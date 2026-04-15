@@ -3,15 +3,16 @@ name: firecrawl
 description: "Default tool for ALL web data tasks — searching the internet, scraping URLs to clean markdown, crawling entire websites. Replaces /browse and WebFetch for research. AI-agnostic: works with Claude Code, Codex, and Gemini Flash. Use whenever you need to fetch web content, search the web, or research online."
 ---
 
-# /firecrawl — Self-Hosted Web Data API
+# /firecrawl — Web Data API with On-Demand Wrapper
 
-**Default web research tool for Claude Code, Codex, and Gemini.** Self-hosted Firecrawl API on Tailscale (`http://100.83.38.48:3051`) for token-efficient, structured web scraping and search.
+**Default web research tool for Claude Code, Codex, and Gemini.** Uses VPS-backed Firecrawl with safety guardrails and logging through a wrapper script at `~/tools/firecrawl/firecrawl-wrapper.sh`.
 
 - **Token efficiency**: 75–90% reduction vs raw HTML (returns clean markdown)
 - **AI-agnostic**: Works with Claude Code, Codex, Gemini Flash
 - **Replaces**: `/browse` (QA tool, retired), `WebFetch` (token-heavy HTML), ad-hoc web searching
-- **No auth required**: Self-hosted with authentication disabled
-- **Uses**: Playwright for JS-heavy sites, auto-handles redirects and anti-bot measures
+- **Safe defaults**: Hard caps on crawl depth and pages; domain-scoped crawling
+- **Auditable**: All requests logged to `~/tools/firecrawl/logs/firecrawl.log`
+- **Managed wrapper**: Validates parameters, enforces caps, handles timeouts
 
 ---
 
@@ -31,11 +32,47 @@ description: "Default tool for ALL web data tasks — searching the internet, sc
 
 ---
 
-## API Endpoints
+## Wrapper Usage
+
+All Firecrawl requests go through the wrapper at `~/tools/firecrawl/firecrawl-wrapper.sh`:
+
+```bash
+# Manual usage
+~/tools/firecrawl/firecrawl-wrapper.sh scrape <url> [timeout]
+~/tools/firecrawl/firecrawl-wrapper.sh crawl <url> [pages] [depth] [timeout] [--deep]
+~/tools/firecrawl/firecrawl-wrapper.sh map <url> [timeout]
+
+# Check health
+~/tools/firecrawl/firecrawl-wrapper.sh health
+
+# View logs
+~/tools/firecrawl/firecrawl-wrapper.sh logs
+```
+
+### Wrapper Features
+
+- **Parameter validation**: Enforces hard caps (max 50 pages, 3 depth, 120s timeout)
+- **Health checks**: Verifies Firecrawl is responding before requests
+- **Comprehensive logging**: Every request logged with URL, mode, parameters, and result
+- **Safe defaults**: 25 pages, 2 depth, 60s timeout unless overridden
+- **Deep mode**: `--deep` flag allows up to 100 pages and 3 depth for approved research
+- **Error handling**: Clear messages if Firecrawl is unavailable or requests fail
+
+### Logs
+
+All requests logged to: `~/tools/firecrawl/logs/firecrawl.log`
+
+Format: `[timestamp] REQUEST | URL: ... | MODE: ... | MAX_PAGES: ... | STATUS: ...`
+
+Example:
+```
+[2026-04-15 08:49:37] REQUEST | URL: https://platform.claude.com | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+```
+
+## VPS Endpoint (Internal)
 
 **Tailscale Endpoint:** `http://100.83.38.48:3051`  
-**Auth:** None (self-hosted, authentication disabled)  
-**Auth:** None (self-hosted, `USE_DB_AUTHENTICATION=false`)
+**Do NOT use directly** — always route through wrapper for safety and logging
 
 ### Search the Web
 
