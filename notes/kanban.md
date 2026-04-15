@@ -136,11 +136,10 @@ kanban-plugin: board
 
 ## To Do
 
-- [ ] Vraag Tim voor verhuizen domein
+- [ ] Setup STB Facebook app ⏫
+- [ ] Vraag Tim voor verhuizen domein & Vraag Tim om terug betalen geld
 - [ ] plan NL trip
-- [ ] Vraag Tim om terug betalen geld
-- [ ] Decommision Hetzner
-- [ ] Setup STB Facebook app
+- [ ] Decommision Hetzner 🔼
 - [ ] Make my contact card iPhone
 - [ ] YA finance app
 - [ ] Empty mail
@@ -152,6 +151,7 @@ kanban-plugin: board
 - [ ] Bring car to mechanic
 - [ ] Place baby bed down
 - [ ] Put money on bank account
+- [ ] Plantenpot aanpassen
 - [ ] Contact Crypto.com support creditcard
 - [ ] Make Via di Eden editable for Joe
 - [ ] Make Oliveto Organizing editable for Ashley
