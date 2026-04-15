@@ -90,7 +90,7 @@ Global skills are available in every session — only note the ones relevant to 
 ## Memory
 Use this file for repo-specific decisions, commands, and constraints.
 Use `.ai/current.md` for short-term resumable session handoffs (overwritten each session).
-Use `.ai/handoffs/` for archived timestamped past handoffs.
+Use `ai/handoffs/` for archived timestamped past handoffs.
 Use `decision-log.md` for confirmed architecture and workflow decisions only (append-only, never overwritten).
 Never use full transcripts as memory — use `/handoff setup` to initialize the `.ai/` system in a new repo.
 ---

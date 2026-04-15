@@ -11,7 +11,7 @@ Manage Claude and Codex session continuity with minimal token overhead. The hand
 
 1. **`.ai/current.md`** — Short-term resumable state (gets overwritten each session)
 2. **`decision-log.md`** — Long-term durable decisions (append-only archive)
-3. **`.ai/handoffs/`** — Timestamped copies of past handoffs (optional, for history)
+3. **`ai/handoffs/`** — Timestamped copies of past handoffs (optional, for history)
 
 This skill helps pause work at the end of a session with a compressed handoff, resume from a prior handoff, or initialize the `.ai/` memory system in a new repo.
 
@@ -111,7 +111,7 @@ End a meaningful session and write compressed state to `.ai/current.md`.
 - Impact:
 ```
 
-9. Optionally, save a timestamped copy to `.ai/handoffs/YYYY-MM-DD-HH-MM-SS.md` (archive)
+9. Optionally, save a timestamped copy to `ai/handoffs/YYYY-MM-DD-HH-MM-SS.md` (archive)
 10. **Learner check:** Before closing, ask: "Did anything non-obvious get solved this session — a tricky bug, a workaround, a codebase-specific gotcha?" If yes, prompt: "Run the shared `/learner` skill to extract it as a reusable skill before you go."
 
 ### `/handoff resume`
@@ -142,14 +142,14 @@ Initialize the `.ai/` memory system in a repo.
 4. Print exact plan:
    - "Will create `.ai/` folder: [yes/no]"
    - "Will create `.ai/current.md`: [yes/no]"
-   - "Will create `.ai/handoffs/` folder: [yes/no]"
+   - "Will create `ai/handoffs/` folder: [yes/no]"
    - "Will create `decision-log.md`: [yes/no]"
    - "Will update `CLAUDE.md` memory section: [yes/no]"
 5. Wait for confirmation
 6. Execute:
    - Create `.ai/` if missing
    - Create `.ai/current.md` with blank template if missing
-   - Create `.ai/handoffs/` if missing
+   - Create `ai/handoffs/` if missing
    - Create `decision-log.md` if missing (use template below)
    - If `CLAUDE.md` exists and lacks memory section, append memory workflow section (see template below)
 7. Verify all files exist and print summary
@@ -227,7 +227,7 @@ This repo uses `.ai/current.md` for session handoffs (short-term resumable state
 
 ### `.ai/` directory structure
 - `.ai/current.md` — Resumable session state (overwritten each session)
-- `.ai/handoffs/` — Archive of past handoffs (timestamped, optional)
+- `ai/handoffs/` — Archive of past handoffs (timestamped, optional)
 
 ### Workflow
 - At end of session: Run `/handoff pause` to write `.ai/current.md`
