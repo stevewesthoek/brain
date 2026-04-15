@@ -1616,6 +1616,7 @@ function fmtReset(iso){
 document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+b.dataset.tab));
+  if(b.dataset.tab==='local-apps'){localAppsRefresh();}
 }));
 /* encode a value for use inside a double-quoted HTML attribute */
 function attr(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
