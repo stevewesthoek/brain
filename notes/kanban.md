@@ -136,22 +136,21 @@ kanban-plugin: board
 
 ## To Do
 
+- [ ] maak factuur TDP domeinen
+- [ ] Bring car to mechanic
+- [ ] Place baby bed down
 - [ ] Setup STB Facebook app ⏫
 - [ ] Vraag Tim voor verhuizen domein & Vraag Tim om terug betalen geld
+- [ ] Put money on bank account
+- [ ] Plantenpot aanpassen
 - [ ] plan NL trip
 - [ ] Decommision Hetzner 🔼
-- [ ] Make my contact card iPhone
 - [ ] YA finance app
 - [ ] Empty mail
 - [ ] fix photo share JPV Bootcamp
-- [ ] maak factuur TDP domeinen
 - [ ] Family finance app
 - [ ] Learn Portuguese app
 - [ ] Fix Antenna
-- [ ] Bring car to mechanic
-- [ ] Place baby bed down
-- [ ] Put money on bank account
-- [ ] Plantenpot aanpassen
 - [ ] Make Via di Eden editable for Joe
 - [ ] Make Oliveto Organizing editable for Ashley
 - [ ] Merge Stripe ProChat legacy into ProChat Studio
@@ -166,13 +165,14 @@ kanban-plugin: board
 ## Doing
 
 - [ ] Vraag Jon voor verhuizen domein & give him a coinbase address
-- [ ] Check Joe's privacy policy
 - [ ] Apply for passport
+- [ ] Make my contact card iPhone
 
 
 ## Done
 
 **Complete**
+- [x] Check Joe's privacy policy ✅ 2026-04-15
 - [x] vraag NISS aan ✅ 2026-04-15
 - [x] Make upgrade solution FREE to PRO JPV Bootcamp ✅ 2026-04-15
 - [x] Contact Crypto.com support creditcard ✅ 2026-04-15
