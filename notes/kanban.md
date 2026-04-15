@@ -152,6 +152,9 @@ kanban-plugin: board
 - [ ] Bring car to mechanic
 - [ ] Place baby bed down
 - [ ] Put money on bank account
+- [ ] Contact Crypto.com support creditcard
+- [ ] Make Via di Eden editable for Joe
+- [ ] Make Oliveto Organizing editable for Ashley
 
 
 ## Doing
