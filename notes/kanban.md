@@ -152,7 +152,6 @@ kanban-plugin: board
 - [ ] Place baby bed down
 - [ ] Put money on bank account
 - [ ] Plantenpot aanpassen
-- [ ] Contact Crypto.com support creditcard
 - [ ] Make Via di Eden editable for Joe
 - [ ] Make Oliveto Organizing editable for Ashley
 - [ ] Merge Stripe ProChat legacy into ProChat Studio
@@ -162,13 +161,13 @@ kanban-plugin: board
 - [ ] add obsidian to phone
 - [ ] Product: ChatGPT bridge
 - [ ] Product: Model Router
-- [ ] Apply for passport
 
 
 ## Doing
 
 - [ ] Vraag Jon voor verhuizen domein & give him a coinbase address
 - [ ] Check Joe's privacy policy
+- [ ] Apply for passport
 
 
 ## Done
@@ -176,6 +175,7 @@ kanban-plugin: board
 **Complete**
 - [x] vraag NISS aan ✅ 2026-04-15
 - [x] Make upgrade solution FREE to PRO JPV Bootcamp ✅ 2026-04-15
+- [x] Contact Crypto.com support creditcard ✅ 2026-04-15
 - [x] [[notes/04-tasks/business-tasks/0259-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
 - [x] sessions & repositories ProBot dasboard improve ✅ 2026-04-12
 - [x] Apify cli ✅ 2026-04-12
