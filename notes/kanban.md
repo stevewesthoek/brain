@@ -162,6 +162,7 @@ kanban-plugin: board
 - [ ] add obsidian to phone
 - [ ] Product: ChatGPT bridge
 - [ ] Product: Model Router
+- [ ] Apply for passport
 
 
 ## Doing
