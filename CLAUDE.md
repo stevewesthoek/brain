@@ -41,7 +41,8 @@ Local repos at `~/Repos/` by GitHub account:
 | `operations/system-configs/` | Global tool configs, symlinked from home directory |
 | `operations/runbooks/` | Procedures for tools and workflows |
 | `operations/accounts/` | Credential metadata, billing, inventories |
-| `operations/deploy/` | Deployment configs (Dokploy, Firecrawl) |
+| `operations/deploy/` | Deployment configs (Dokploy) |
+| `tools/firecrawl/` | Local on-demand Firecrawl: docker-compose, wrapper script, logs |
 | `operations/google-ads/` | Google Ads config, data, and reports |
 | `docs/` | Reference documentation (google-ads, standards) |
 | `notes/` | Obsidian-managed notes |
