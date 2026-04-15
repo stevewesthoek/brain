@@ -3,16 +3,17 @@ name: firecrawl
 description: "Default tool for ALL web data tasks — searching the internet, scraping URLs to clean markdown, crawling entire websites. Replaces /browse and WebFetch for research. AI-agnostic: works with Claude Code, Codex, and Gemini Flash. Use whenever you need to fetch web content, search the web, or research online."
 ---
 
-# /firecrawl — Web Data API with On-Demand Wrapper
+# /firecrawl — Local On-Demand Web Scraping API
 
-**Default web research tool for Claude Code, Codex, and Gemini.** Uses VPS-backed Firecrawl with safety guardrails and logging through a wrapper script at `~/tools/firecrawl/firecrawl-wrapper.sh`.
+**Default web research tool for Claude Code, Codex, and Gemini.** Local Docker-based Firecrawl with auto-lifecycle management (starts on-demand, idles down after 15 minutes). All requests routed through wrapper at `~/tools/firecrawl/firecrawl-wrapper.sh`.
 
 - **Token efficiency**: 75–90% reduction vs raw HTML (returns clean markdown)
-- **AI-agnostic**: Works with Claude Code, Codex, Gemini Flash
+- **AI-agnostic**: Works with Claude Code, Codex, Gemini Flash (single source of truth)
+- **Auto-managed**: Starts on first request, shuts down after 15-minute idle timeout
 - **Replaces**: `/browse` (QA tool, retired), `WebFetch` (token-heavy HTML), ad-hoc web searching
 - **Safe defaults**: Hard caps on crawl depth and pages; domain-scoped crawling
 - **Auditable**: All requests logged to `~/tools/firecrawl/logs/firecrawl.log`
-- **Managed wrapper**: Validates parameters, enforces caps, handles timeouts
+- **Managed wrapper**: Validates parameters, enforces caps, handles timeouts, manages lifecycle
 
 ---
 
@@ -69,50 +70,49 @@ Example:
 [2026-04-15 08:49:37] REQUEST | URL: https://platform.claude.com | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
 ```
 
-## VPS Endpoint (Internal)
+## Local Endpoint
 
-**Tailscale Endpoint:** `http://100.83.38.48:3051`  
-**Do NOT use directly** — always route through wrapper for safety and logging
+**Localhost:** `http://localhost:3051`  
+**Do NOT use directly** — always route through wrapper at `~/tools/firecrawl/firecrawl-wrapper.sh` for safety, logging, and lifecycle management
 
-### Search the Web
+The wrapper automatically:
+- Starts Docker Compose on first request
+- Handles all API calls with parameter validation
+- Logs all requests for audit trail
+- Shuts down after 15 minutes of inactivity
 
-```bash
-curl -X POST http://100.83.38.48:3051/v1/search \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": "your search query",
-    "limit": 5,
-    "scrape": true
-  }'
-```
+---
 
-**Response:**
-```json
-[
-  {
-    "url": "https://...",
-    "title": "...",
-    "description": "...",
-    "markdown": "# Full page content as markdown"
-  },
-  ...
-]
-```
+## Usage Examples
 
-**Key field:** `markdown` — use this for content, ignore `rawHtml` or `html`
+### All AI Engines (Claude Code, Codex, Gemini)
 
-### Scrape a Single URL
+Use the wrapper script consistently across all engines:
 
 ```bash
-curl -X POST http://100.83.38.48:3051/v1/scrape \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "url": "https://example.com/page",
-    "formats": ["markdown"]
-  }'
+# Scrape a single URL
+~/tools/firecrawl/firecrawl-wrapper.sh scrape https://example.com
+
+# Crawl a site (25 pages, depth 2 by default)
+~/tools/firecrawl/firecrawl-wrapper.sh crawl https://example.com
+
+# Crawl with custom limits
+~/tools/firecrawl/firecrawl-wrapper.sh crawl https://example.com 10 2 60
+
+# Deep crawl for approved research
+~/tools/firecrawl/firecrawl-wrapper.sh crawl https://example.com --deep
+
+# Check if Firecrawl is running
+~/tools/firecrawl/firecrawl-wrapper.sh health
+
+# View request logs
+~/tools/firecrawl/firecrawl-wrapper.sh logs
 ```
 
-**Response:**
+### Response Format
+
+All API responses are JSON with consistent structure:
+
 ```json
 {
   "success": true,
@@ -124,100 +124,7 @@ curl -X POST http://100.83.38.48:3051/v1/scrape \
 }
 ```
 
-### Crawl an Entire Site (Async)
-
-```bash
-# Start crawl
-curl -X POST http://100.83.38.48:3051/v1/crawl \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "url": "https://example.com",
-    "scrapeOptions": {"formats": ["markdown"]}
-  }'
-
-# Response:
-# {
-#   "id": "crawl-12345",
-#   "url": "https://example.com"
-# }
-
-# Check status (poll)
-curl http://100.83.38.48:3051/v1/crawl/crawl-12345 \
-  -H 'Content-Type: application/json' \
-  -d '{}'
-
-# Response (while running):
-# {
-#   "status": "running",
-#   "completed": 3,
-#   "total": 15,
-#   "data": [{"markdown": "..."}, ...]
-# }
-
-# Response (when done):
-# {
-#   "status": "completed",
-#   "completed": 15,
-#   "total": 15,
-#   "data": [...]
-# }
-```
-
----
-
-## Usage Examples
-
-### Claude Code (Direct HTTP)
-
-```bash
-# Search
-result=$(curl -s -X POST http://100.83.38.48:3051/v1/search \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": "best React design systems 2026",
-    "limit": 3,
-    "scrape": true
-  }')
-
-# Extract markdown from first result
-echo "$result" | jq -r '.[0].markdown'
-```
-
-### Codex (Reference in AGENTS.md)
-
-Add to your project's `AGENTS.md`:
-
-```markdown
-## Web Research
-
-Use Firecrawl for all web search and scraping:
-- **Tailscale Endpoint:** `http://100.83.38.48:3051`  
-**Auth:** None (self-hosted, authentication disabled)
-- **No auth required**
-- **Endpoints:**
-  - `POST /v1/search` — web search + scrape top results
-  - `POST /v1/scrape` — single URL to markdown
-  - `POST /v1/crawl` — async site crawl
-
-Example:
-\`\`\`bash
-curl -X POST http://100.83.38.48:3051/v1/search \
-  -H 'Content-Type: application/json' \
-  -d '{"query": "...", "limit": 5, "scrape": true}' | jq '.[].markdown'
-\`\`\`
-```
-
-### Gemini Flash (Preprocess Large Results)
-
-```bash
-# Fetch search results
-results=$(curl -s -X POST http://100.83.38.48:3051/v1/search \
-  -H 'Content-Type: application/json' \
-  -d '{"query": "topic", "limit": 10, "scrape": true}')
-
-# Pass to Gemini Flash for preprocessing/summarization
-gemini-review.sh "Summarize these research findings into 5 key insights: $(echo "$results" | jq -r '.[].markdown' | head -c 50000)"
-```
+**Key field:** `markdown` — use this for content, ignore other fields
 
 ---
 
@@ -267,25 +174,29 @@ Check `"success": true` before proceeding. If false, log the error and retry wit
 
 ---
 
-## Admin & Monitoring
+## Lifecycle Management
 
-**Admin Queue UI:** `http://100.83.38.48:3051/admin/<BULL_AUTH_KEY>/queues`  
-(Replace `<BULL_AUTH_KEY>` with the actual key from Dokploy env vars)
+**Automatic startup:** Wrapper detects first request and starts Docker Compose if not running
 
-- Useful for: monitoring crawl jobs, inspecting failed requests, checking queue depth
-- Does NOT require auth to view (endpoint is internal)
+**Automatic shutdown:** After 15 minutes of inactivity, Firecrawl stops automatically to free resources
 
-**Health check:**
-
+**Manual control:**
 ```bash
-curl -s http://100.83.38.48:3051/health || echo "Firecrawl is down"
+# Start Firecrawl manually
+cd ~/tools/firecrawl && docker-compose up -d
+
+# Stop Firecrawl manually
+cd ~/tools/firecrawl && docker-compose down
+
+# Check current status
+~/tools/firecrawl/firecrawl-wrapper.sh health
 ```
 
 ---
 
-## Configuration & Deployment
+## Configuration
 
-Deployed on Dokploy at `firecrawl.prochat.tools`.
+Configured via `~/tools/firecrawl/docker-compose.yml`:
 
 **Key env vars:**
 - `USE_DB_AUTHENTICATION=false` — no auth needed
@@ -293,12 +204,13 @@ Deployed on Dokploy at `firecrawl.prochat.tools`.
 - `BLOCK_MEDIA=true` — skip images/video for speed
 - `LOGGING_LEVEL=warn` — minimal logs
 
-**Persistent storage:** PostgreSQL database in Docker volume `firecrawl_pgdata`
+**Persistent storage:** PostgreSQL database in Docker volume `firecrawl_pgdata` (survives container restarts)
 
-**Rollback:** If Firecrawl service fails, restart via Dokploy dashboard or:
-```bash
-ssh dokploy 'docker compose -f /path/to/firecrawl/docker-compose.yml restart'
-```
+**Wrapper config:** `~/tools/firecrawl/firecrawl-wrapper.sh`
+- Hard caps: 50 pages, 3 depth, 120s timeout
+- Safe defaults: 25 pages, 2 depth, 60s timeout
+- Idle timeout: 15 minutes before auto-shutdown
+- Logging: `~/tools/firecrawl/logs/firecrawl.log`
 
 ---
 
@@ -336,7 +248,8 @@ ssh dokploy 'docker compose -f /path/to/firecrawl/docker-compose.yml restart'
 
 ## Status
 
-- **Live:** `http://100.83.38.48:3051` (deployed to Dokploy 2026-04-10)
+- **Live:** `http://localhost:3051` (local Docker Compose)
 - **Database:** PostgreSQL in Docker volume (persistent)
-- **Replaced:** `/browse` skill, WebFetch (for research)
-- **Maintained by:** Claude Code, Codex, Gemini Flash research workflows
+- **Lifecycle:** Auto-starts on first request, auto-stops after 15-minute idle
+- **AI-agnostic:** Single skill source readable by Claude Code, Codex, Gemini Flash
+- **Replaced:** VPS-backed Firecrawl (removed from Dokploy), `/browse` skill, WebFetch (for research)
