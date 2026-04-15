@@ -1619,10 +1619,15 @@ function fmtReset(iso){
 document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+b.dataset.tab));
-  console.log('Tab clicked:',b.dataset.tab);
   if(b.dataset.tab==='local-apps'){
-    console.log('Calling localAppsRefresh');
-    localAppsRefresh().catch(e=>console.error('localAppsRefresh error:',e));
+    const panel=document.getElementById('tab-local-apps');
+    if(panel){
+      panel.innerHTML='<div class="loading"><div class="spin"></div>Loading...</div>';
+      fetch('/api/local-apps')
+        .then(r=>r.json())
+        .then(data=>{panel.innerHTML=renderLocalApps(data);})
+        .catch(e=>{panel.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
+    }
   }
 }));
 /* encode a value for use inside a double-quoted HTML attribute */
