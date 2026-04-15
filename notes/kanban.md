@@ -10,6 +10,7 @@ kanban-plugin: board
 - [ ] [[notes/04-tasks/business-tasks/0348-extend-the-presentation-with-the-other-plans.md|Extend the Presentation with the other plans]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0349-check-hoe-databar-werkt.md|Check hoe Databar werkt]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0350-make-a-simple-page-with-shortened-link-to-put-ever.md|make a simple page with shortened link to put everywhere on social media to promote my business.]] #p3 #you
+- [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0351-make-3-custom-workflows-for-focus-hyptoheken.md|Make 3 custom workflows for Focus Hyptoheken]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0352-todo-before-launch.md|Todo before launch]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0353-put-lanbot-on-a-single-page-vincent.md|Put Lanbot on a single page Vincent]] #p3 #you
@@ -135,7 +136,6 @@ kanban-plugin: board
 
 ## To Do
 
-- [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
 - [ ] Make upgrade solution FREE to PRO JPV Bootcamp
 - [ ] Check Joe's privacy policy
 - [ ] Vraag Jon voor verhuizen domein
