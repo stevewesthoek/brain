@@ -13,6 +13,18 @@ Verification status:
 Related local control-plane inventory:
 - `operations/infrastructure/scheduler-inventory.md` — canonical scheduler and LaunchAgent inventory for the `Office` Mac
 - `operations/infrastructure/PYTHON-VERSIONS.md` — Python version strategy (dual versions, migration path, upstream tracking)
+- `operations/infrastructure/local-apps.json` — **canonical** list of locally-running apps on the `Office` Mac (single source of truth; ProBot dashboard reads this at runtime)
+- `operations/infrastructure/local-apps.md` — schema reference, runbook, and inventory table for local apps
+
+## Local Applications (`Office` Mac)
+
+All locally-running apps on the `Office` Mac are indexed in:
+- **`operations/infrastructure/local-apps.json`** — machine-readable; ProBot dashboard reads this file on every `/api/local-apps` request (no restart needed)
+- **`operations/infrastructure/local-apps.md`** — human-readable runbook with schema docs, instructions for adding/removing apps
+
+Current inventory: ProBot (7070), Firecrawl (3051), xGrow (7080), Google Ads API (8001), ComfyUI (8188), Family Finance (3060), Fala (3050).
+
+To add a new local app, edit `local-apps.json` — the ProBot "Local Apps" tab updates immediately.
 
 ## Control Plane
 

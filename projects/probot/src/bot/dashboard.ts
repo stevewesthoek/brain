@@ -1233,30 +1233,44 @@ async function getStripeDashboardData(): Promise<StripeDashboardData> {
 }
 
 // ─── Local Apps Status ───────────────────────────────────────────────────────
+// Source of truth: brain/operations/infrastructure/local-apps.json
+// Edit that file to add/remove apps — no ProBot rebuild required.
 
-const LOCAL_APPS = [
-  { name: "ProBot", port: 7070, url: "http://localhost:7070", check: "http://localhost:7070", start: "cd ~/Repos/stevewesthoek/brain/projects/probot && npm start > /tmp/probot.log 2>&1 &" },
-  { name: "Firecrawl", port: 3051, url: "http://localhost:3051", check: "http://localhost:3051/health", start: "cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d" },
-  { name: "xGrow", port: 7080, url: "http://localhost:7080", check: "http://localhost:7080", start: "cd ~/Repos/prochattools/saas/xgrow && npm run dev > /tmp/xgrow.log 2>&1 &" },
-  { name: "Google Ads API", port: 8001, url: "http://localhost:8001", check: "http://localhost:8001/health", start: "supervisorctl start google-ads-http-server" },
-  { name: "ComfyUI", port: 8188, url: "http://localhost:8188", check: "http://localhost:8188", start: "echo 'Manual start required'" },
-  { name: "Family Finance", port: 3060, url: "http://localhost:3060", check: "http://localhost:3060", start: "cd ~/Repos/stevewesthoek/family-finance && npm run dev > /tmp/family-finance.log 2>&1 &" },
-  { name: "Fala", port: 3050, url: "http://localhost:3050", check: "http://localhost:3050", start: "echo 'Manual start required'" }
-];
+interface LocalAppConfig {
+  name: string;
+  port: number;
+  url: string;
+  check: string;
+  start: string;
+  description?: string;
+}
+
+const LOCAL_APPS_CONFIG_PATH = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "operations", "infrastructure", "local-apps.json");
+
+function loadLocalApps(): LocalAppConfig[] {
+  try {
+    const raw = fs.readFileSync(LOCAL_APPS_CONFIG_PATH, "utf-8");
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed as LocalAppConfig[];
+  } catch {
+    return [];
+  }
+}
 
 function getLocalAppPort(name: string): number | null {
-  const app = LOCAL_APPS.find(a => a.name === name);
+  const app = loadLocalApps().find(a => a.name === name);
   return app ? app.port : null;
 }
 
 function getLocalAppStartCommand(name: string): string | null {
-  const app = LOCAL_APPS.find(a => a.name === name);
+  const app = loadLocalApps().find(a => a.name === name);
   return app ? app.start : null;
 }
 
 async function getLocalAppsStatus() {
   const apps: any[] = [];
-  for (const app of LOCAL_APPS) {
+  for (const app of loadLocalApps()) {
     let status = "stopped";
     try {
       const controller = new AbortController();
@@ -1267,15 +1281,15 @@ async function getLocalAppsStatus() {
     } catch (e) {
       status = "stopped";
     }
-    const appData: any = {
+    apps.push({
       name: app.name,
       port: app.port,
       url: app.url,
-      status: status,
+      description: app.description ?? "",
+      status,
       lastSeen: null,
-      lastDuration: null
-    };
-    apps.push(appData);
+      lastDuration: null,
+    });
   }
   return { apps };
 }
@@ -2062,8 +2076,9 @@ function renderLocalApps(data){
     html+='<div class="local-app-header">';
     html+='<span style="font-size:14px">'+statusDot+'</span>';
     html+='<span style="flex:1"><strong>'+esc(app.name)+'</strong></span>';
-    html+='<span style="font-size:10px;color:var(--muted)">port '+app.port+'</span>';
+    html+='<span style="font-size:10px;color:var(--muted)">:'+app.port+'</span>';
     html+='</div>';
+    if(app.description)html+='<div style="font-size:10px;color:var(--muted);margin-bottom:2px">'+esc(app.description)+'</div>';
     html+='<div class="local-app-status '+statusClass+'">';
     html+='<span>'+esc(app.status.toUpperCase())+'</span>';
     if(app.lastSeen)html+=' &middot; last '+esc(age(app.lastSeen));
