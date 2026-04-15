@@ -1,6 +1,7 @@
 # Standard Dockerfile Pattern — prochattools stack
 
 All prochattools and client projects deployed via Dokploy use a custom multi-stage Dockerfile with `dockerfile` buildType. **Never use nixpacks for this stack.**
+Prefer Next.js standalone output for any Next app so Dokploy runs a compact runtime image instead of a full `node_modules` tree.
 
 ## Why not nixpacks
 
@@ -51,16 +52,16 @@ FROM node:20-bullseye-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
-CMD ["npm", "run", "start"]
+  CMD node -e "require('http').get('http://127.0.0.1:3000/api/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+CMD ["node", "server.js"]
 ```
 
 ---
@@ -79,7 +80,7 @@ CMD ["npm", "run", "start"]
 | SQLite data dir needed | Add `RUN mkdir -p /app/data` in **both builder** (better-sqlite3 opens DB at module-eval during `next build`) **and runner** (data dir must exist at runtime) |
 | `NEXT_PUBLIC_*` env vars | Use **real production values** — these are baked into the client JS bundle at build time; Dokploy runtime injection is too late (see section below) |
 | App has a custom start script | Replace CMD with `CMD ["sh", "scripts/runtime/start-prod.sh"]` and add `COPY scripts` in runner |
-| next.js standalone output | Copy `.next/standalone` instead of `.next`; see prochat Dockerfile |
+| next.js standalone output | Copy `.next/standalone` and `.next/static` instead of the full `.next` + `node_modules` tree; see the Via di Eden Dockerfile |
 
 ---
 

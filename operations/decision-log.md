@@ -194,3 +194,9 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - The automation architecture is AI-agnostic: Claude, Codex, and Gemini must all use the same docs, config, CLI, local SQLite state, and markdown reports.
 - The customer-owned manager account is `Yeshua Academy Google Ads Manager (935-769-8503)`, linked to client account `592-920-2435`.
 - Google Ads secrets live only in local files under `~/.config/google-ads/` and ADC under `~/.config/gcloud/`; the repo stores only status and file-path conventions.
+
+- Date: 2026-04-15
+- Decision: Standardize Dokploy Next.js apps on standalone output with a slim runtime image.
+- Context: Via di Eden was still shipping a full `node_modules` tree into the runtime image, producing a ~4.97 GB container and long Swarm rollout times. A local Docker build showed the standalone variant reduces the image to ~400 MB while keeping `/api/health` healthy. The Dokploy application is still source-deployed with `buildType: dockerfile`, so full GitHub-built image publishing would require a separate app-model migration.
+- Impact: The shared Dockerfile standard now recommends `output: 'standalone'`, `COPY .next/standalone`, `COPY .next/static`, and `CMD ["node", "server.js"]` for Next.js apps. This should be copied into all new and existing prochattools apps that still carry a full runtime `node_modules` layer.
+- Rollback: Restore the old runtime image pattern with `COPY /app/node_modules` and `npm run start`, or revert the app back to a non-standalone Next.js build if a dependency truly requires it.
