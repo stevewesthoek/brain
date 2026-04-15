@@ -136,8 +136,6 @@ kanban-plugin: board
 
 ## To Do
 
-- [ ] Make upgrade solution FREE to PRO JPV Bootcamp
-- [ ] Check Joe's privacy policy
 - [ ] Vraag Jon voor verhuizen domein & give him a coinbase address
 - [ ] Vraag Tim voor verhuizen domein
 - [ ] plan NL trip
@@ -159,12 +157,14 @@ kanban-plugin: board
 
 ## Doing
 
+- [ ] Check Joe's privacy policy
 
 
 ## Done
 
 **Complete**
 - [x] vraag NISS aan ✅ 2026-04-15
+- [x] Make upgrade solution FREE to PRO JPV Bootcamp ✅ 2026-04-15
 - [x] [[notes/04-tasks/business-tasks/0259-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
 - [x] sessions & repositories ProBot dasboard improve ✅ 2026-04-12
 - [x] Apify cli ✅ 2026-04-12
