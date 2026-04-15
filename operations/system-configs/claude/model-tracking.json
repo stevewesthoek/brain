@@ -1,6 +1,4 @@
 {
-  "reason": "default",
-  "context": "",
-  "timestamp": null,
-  "agent": null
+  "mode": "default",
+  "agents": []
 }

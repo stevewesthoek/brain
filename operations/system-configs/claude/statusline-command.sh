@@ -5,89 +5,78 @@ dir=$(basename "$dir_full")
 ctx_size=$(echo "$input" | jq -r '.context_window.context_window_size // ""')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 
-# Get the ACTUAL live model from Claude Code's statusline payload
-# .model.display_name values: "Haiku", "Sonnet", "Opus" (short, no "Claude" prefix)
-# or legacy long-form: "Claude Haiku 4.5", "Claude Sonnet 4.6"
+# Outer session model from statusline payload (ground truth for the orchestrating session)
 live_model_display=$(echo "$input" | jq -r '.model.display_name // empty' 2>/dev/null)
-
-# Normalize to short lowercase label
 if [ -n "$live_model_display" ]; then
-  # Remove "Claude " prefix if present, take first word, lowercase
   active_model=$(echo "$live_model_display" | sed 's/^Claude[[:space:]]*//; s/[[:space:]].*//' | tr '[:upper:]' '[:lower:]')
 else
-  # No model in payload — fall back to session model from settings
   active_model=$(jq -r '.model // "?"' "$HOME/.claude/settings.json" 2>/dev/null || echo "?")
 fi
 
-# Read badge enrichment from tracking file (reason, agent, context)
+# Read tracking state
 tracking_file="$HOME/.claude/model-tracking.json"
+mode="default"
+agents_seg=""
+
 if [ -f "$tracking_file" ]; then
-  reason=$(jq -r '.reason // "default"' "$tracking_file" 2>/dev/null)
-  agent=$(jq -r '.agent // null' "$tracking_file" 2>/dev/null)
-  context=$(jq -r '.context // ""' "$tracking_file" 2>/dev/null)
-else
-  reason="default"
-  agent="null"
-  context=""
+  mode=$(jq -r '.mode // "default"' "$tracking_file" 2>/dev/null)
+
+  # Build per-agent display from agents array
+  # Each agent: ● type(model) if running, ✓ type(model) if done
+  agents_seg=$(python3 - "$tracking_file" <<'PY'
+import json, sys
+
+path = sys.argv[1]
+try:
+    with open(path) as f:
+        state = json.load(f)
+except Exception:
+    state = {}
+
+agents = state.get("agents", [])
+if not agents:
+    sys.exit(0)
+
+parts = []
+for a in agents:
+    t = a.get("type", "agent")
+    m = a.get("model", "?")
+    s = a.get("status", "running")
+    icon = "●" if s == "running" else "✓"
+    parts.append(f"{icon} {t}({m})")
+
+print("  ".join(parts))
+PY
+  )
 fi
 
-# Format model display with reason badge
-model=""
-case "$reason" in
-  "default")
-    model="$active_model"
-    ;;
-  "escalation-complexity")
-    model="${active_model} ↑ (complex)"
-    ;;
-  "escalation-high-complexity")
-    model="${active_model} ↑↑ (hard)"
-    ;;
-  "plan-mode")
-    model="${active_model} ⊙ (plan)"
-    ;;
-  "review-mode")
-    model="${active_model} ◊ (review)"
-    ;;
-  "preprocessing-triage")
-    model="${active_model} ⚙ (prep)"
-    ;;
-  "preprocessing-large-context")
-    model="${active_model} ⚙ (preprocess)"
-    ;;
-  "research-mode")
-    model="${active_model} 🔍 (research)"
-    ;;
-  "deploy-mode")
-    model="${active_model} ⬆ (deploy)"
-    ;;
-  *)
-    model="${active_model}"
-    ;;
+# Mode badge for skill-level context (shown on outer session model label)
+mode_badge=""
+case "$mode" in
+  review)   mode_badge=" ◊" ;;
+  research) mode_badge=" 🔍" ;;
+  gemini)   mode_badge=" ⚙" ;;
+  deploy)   mode_badge=" ⬆" ;;
+  plan)     mode_badge=" ⊙" ;;
 esac
 
-# Add agent info if present
-if [ "$agent" != "null" ] && [ -n "$agent" ]; then
-  model="${model} [${agent}]"
+# Assemble model segment:
+# If agents are active, show:  outer-model  |  ● agent1(model)  ✓ agent2(model)
+# Otherwise just show the outer model with mode badge
+if [ -n "$agents_seg" ]; then
+  session_seg="${active_model}${mode_badge}"
+  model_seg="${session_seg}  |  ${agents_seg}"
+else
+  model_seg="${active_model}${mode_badge}"
 fi
 
-# Format context window size as e.g. "200k"
+# Append context window size
 if [ -n "$ctx_size" ] && [ "$ctx_size" != "null" ]; then
   ctx_label=$(awk "BEGIN { printf \"%.0fk\", $ctx_size/1000 }")
-else
-  ctx_label=""
+  model_seg="${model_seg} (${ctx_label})"
 fi
 
-# Build model segment
-if [ -n "$model" ] && [ -n "$ctx_label" ]; then
-  model_seg="$model ($ctx_label)"
-elif [ -n "$model" ]; then
-  model_seg="$model"
-else
-  model_seg=""
-fi
-
-# Build context usage segment with 7-block progress bar (green filled blocks)
+# Progress bar (7 blocks, green filled)
 if [ -n "$used_pct" ]; then
   filled=$(awk "BEGIN { f = int($used_pct / 100 * 7 + 0.5); if (f > 7) f = 7; print f }")
   green='\033[32m'
@@ -108,8 +97,7 @@ else
   ctx_seg=""
 fi
 
-# Build clickable hyperlink for the folder name (OSC 8, opens in Finder via file:// URI)
-# \033[1m = bold, \033[38;5;61m = muted slate-purple, \033[0m = reset; hover underline provided by terminal OSC 8
+# Clickable folder hyperlink (OSC 8)
 if [ -n "$dir_full" ] && [ "$dir_full" != "null" ]; then
   dir_link=$(printf '\033]8;;file://%s\033\\\033[1m\033[38;5;61m%s\033[0m\033]8;;\033\\' "$dir_full" "$dir")
 else
@@ -117,9 +105,8 @@ else
 fi
 
 # Assemble output
-parts=""
-[ -n "$dir_link" ]  && parts="$dir_link"
+parts="$dir_link"
 [ -n "$model_seg" ] && parts="$parts  |  $model_seg"
-[ -n "$ctx_seg" ]  && parts="$parts  |  $ctx_seg"
+[ -n "$ctx_seg" ]   && parts="$parts  |  $ctx_seg"
 
 printf "%b" "$parts"
