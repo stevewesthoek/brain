@@ -6,11 +6,11 @@ kanban-plugin: board
 
 ## Backlog
 
+- [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0347-put-review-jon-cris-on-funnel.md|Put review Jon & Cris on funnel]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0348-extend-the-presentation-with-the-other-plans.md|Extend the Presentation with the other plans]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0349-check-hoe-databar-werkt.md|Check hoe Databar werkt]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0350-make-a-simple-page-with-shortened-link-to-put-ever.md|make a simple page with shortened link to put everywhere on social media to promote my business.]] #p3 #you
-- [ ] [[notes/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md|Read book - The One Things by Gary Keller]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0351-make-3-custom-workflows-for-focus-hyptoheken.md|Make 3 custom workflows for Focus Hyptoheken]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0352-todo-before-launch.md|Todo before launch]] #p3 #you
 - [ ] [[notes/04-tasks/business-tasks/0353-put-lanbot-on-a-single-page-vincent.md|Put Lanbot on a single page Vincent]] #p3 #you
@@ -133,54 +133,17 @@ kanban-plugin: board
 - [ ] [[notes/04-tasks/personal-tasks/0592-find-osteopata.md|Find osteopata]] #p3 #you
 - [ ] [[notes/04-tasks/personal-tasks/0593-emtpy-the-video-cassettes-miro.md|Emtpy the video cassette's Miro]] #p3 #you
 
-
 ## To Do
-
-- [ ] maak factuur TDP domeinen
-- [ ] Bring car to mechanic
-- [ ] Place baby bed down
-- [ ] Setup STB Facebook app ⏫
-- [ ] Vraag Tim voor verhuizen domein & Vraag Tim om terug betalen geld
-- [ ] Put money on bank account
-- [ ] Plantenpot aanpassen
-- [ ] plan NL trip
-- [ ] Fix Antenna
-- [ ] Decommision Hetzner 🔼
-- [ ] YA finance app
-- [ ] Empty mail
-- [ ] fix photo share JPV Bootcamp
-- [ ] Family finance app
-- [ ] Learn Portuguese app
-- [ ] Make Via di Eden editable for Joe
-- [ ] Make Oliveto Organizing editable for Ashley
-- [ ] Merge Stripe ProChat legacy into ProChat Studio
-- [ ] Improve thumbnails STB
-- [ ] Expand STB pipeline and start posting FB, YT & PIN
-- [ ] fix the obsidian way of working
-- [ ] add obsidian to phone
-- [ ] Product: ChatGPT bridge
-- [ ] Product: Model Router
-- [ ] empty ChatGPT into Obsidian
-- [ ] read mark's boek
 
 
 ## Doing
-
-- [ ] Vraag Jon voor verhuizen domein & give him a coinbase address
-- [ ] Apply for passport
-- [ ] Make my contact card iPhone
 
 
 ## Done
 
 **Complete**
-- [x] Check Joe's privacy policy ✅ 2026-04-15
-- [x] vraag NISS aan ✅ 2026-04-15
-- [x] Make upgrade solution FREE to PRO JPV Bootcamp ✅ 2026-04-15
-- [x] Contact Crypto.com support creditcard ✅ 2026-04-15
+
 - [x] [[notes/04-tasks/business-tasks/0259-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
-- [x] sessions & repositories ProBot dasboard improve ✅ 2026-04-12
-- [x] Apify cli ✅ 2026-04-12
 - [x] [[notes/04-tasks/business-tasks/0612-boek-afspraak-met-antero.md|Boek afspraak met Antero]] #p2 #you
 - [x] [[notes/04-tasks/personal-tasks/0083-pay-phone-bill-wintre.md|Pay phone bill WinTre]] #p2 #you
 - [x] [[notes/04-tasks/personal-tasks/0085-sergio-jarig.md|Sergio Jarig]] #p2 #you
@@ -798,10 +761,8 @@ kanban-plugin: board
 - [x] [[notes/04-tasks/personal-tasks/0567-self-host-microsaasfast.md|Self Host MicroSaasFast]] #p3 #you
 
 
-
-
 %% kanban:settings
 ```
-{"tag-colors":[{"tagKey":"#p1","color":"#fff","backgroundColor":"#c0392b"},{"tagKey":"#p2","color":"#fff","backgroundColor":"#e67e22"},{"tagKey":"#p3","color":"#000","backgroundColor":"#f1c40f"},{"tagKey":"#p4","color":"#000","backgroundColor":"#2ecc71"},{"tagKey":"#p5","color":"#fff","backgroundColor":"#95a5a6"},{"tagKey":"#you","color":"#fff","backgroundColor":"#2980b9"},{"tagKey":"#ai","color":"#fff","backgroundColor":"#8e44ad"}],"date-format":"YYYY-MM-DD","time-format":"HH:mm","link-date-to-daily-note":true,"kanban-plugin":"board"}
+{"tag-colors": [{"tagKey": "#p1", "color": "#fff", "backgroundColor": "#c0392b"}, {"tagKey": "#p2", "color": "#fff", "backgroundColor": "#e67e22"}, {"tagKey": "#p3", "color": "#000", "backgroundColor": "#f1c40f"}, {"tagKey": "#p4", "color": "#000", "backgroundColor": "#2ecc71"}, {"tagKey": "#p5", "color": "#fff", "backgroundColor": "#95a5a6"}, {"tagKey": "#you", "color": "#fff", "backgroundColor": "#2980b9"}, {"tagKey": "#ai", "color": "#fff", "backgroundColor": "#8e44ad"}], "date-format": "YYYY-MM-DD", "time-format": "HH:mm", "link-date-to-daily-note": true}
 ```
 %%
