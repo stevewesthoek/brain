@@ -158,6 +158,8 @@ kanban-plugin: board
 - [ ] Merge Stripe ProChat legacy into ProChat Studio
 - [ ] Improve thumbnails STB
 - [ ] Expand STB pipeline and start posting FB, YT & PIN
+- [ ] fix the obsidian way of working
+- [ ] add obsidian to phone
 
 
 ## Doing

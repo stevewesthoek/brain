@@ -154,6 +154,46 @@ If the app has env var validation that throws when `NEXT_PUBLIC_APP_URL` is miss
 
 ---
 
+## Image-based deployment (GitHub Actions → GHCR → Dokploy pull)
+
+When using the image-based flow (workflow template: `operations/deploy/dokploy-image-deploy.yml`), the build runs on GitHub Actions instead of the Dokploy VM. Everything in the Dockerfile stays the same **except for `NEXT_PUBLIC_*` vars**.
+
+### NEXT_PUBLIC_* vars in image-based flow
+
+`NEXT_PUBLIC_*` vars are baked into the client JS bundle during `next build`. In source-deployed apps they are set as `ENV` in the Dockerfile builder stage. In image-based apps they must be passed as Docker **build-args** from GitHub Actions — because the build happens on GitHub, not on the Dokploy VM.
+
+**Pattern:**
+
+1. In the Dockerfile builder stage, declare the ARG and ENV:
+```dockerfile
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+```
+
+2. In GitHub repo Settings → Variables → Actions, add `NEXT_PUBLIC_APP_URL` with the real production value.
+
+3. In the GitHub Actions workflow, pass it as a build-arg:
+```yaml
+build-args: |
+  NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+```
+
+**Do NOT** put `NEXT_PUBLIC_*` values in Dokploy's env section for image-based apps — they are injected too late (after the bundle is already built).
+
+Server-only runtime vars (DATABASE_URL, STRIPE_SECRET_KEY, NEW_RELIC_LICENSE_KEY, etc.) continue to live in Dokploy's env section as before.
+
+### Dokploy app setup for image-based deployment
+
+After the first GitHub Actions build and push:
+
+1. In Dokploy → app → General → Source: switch from **GitHub (Dockerfile)** to **Docker Image**
+2. Docker Image: `ghcr.io/<org>/<repo>:latest`
+3. Registry: select the GHCR registry configured in Dokploy Settings → Registry
+4. All runtime env vars remain in Dokploy's env section (unchanged)
+5. Domains, volumes, Traefik config — unchanged
+
+---
+
 ## Reference
 
 - forge skill Phase 6c — Dockerfile creation is a required step in the deploy phase
