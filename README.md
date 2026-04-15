@@ -25,7 +25,7 @@ It is meant to be:
 - `operations/` — runbooks, scripts, snippets, automations, infrastructure, deploy docs, system configs, google-ads artifacts
 - `tools/` — utility and workflow scripts for this machine (`tools/scripts/`)
 - `docs/` — reference documentation (google-ads, api-standards, testing, deploy)
-- `notes/` — Obsidian-managed notes
+- `vault/` — Obsidian-managed notes
 - `runtime/` — ProBot runtime workspace material and local working state
 
 ## Reading Order

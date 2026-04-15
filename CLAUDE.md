@@ -45,7 +45,7 @@ Local repos at `~/Repos/` by GitHub account:
 | `tools/firecrawl/` | Local on-demand Firecrawl: docker-compose, wrapper script, logs |
 | `operations/google-ads/` | Google Ads config, data, and reports |
 | `docs/` | Reference documentation (google-ads, standards) |
-| `notes/` | Obsidian-managed notes |
+| `vault/` | Obsidian-managed notes |
 | `organisations/` | Brand truth, positioning, playbooks |
 | `projects/` | Project context, specs, execution docs |
 | `personal/` | Profile, writing style, values |

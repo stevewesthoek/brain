@@ -13,7 +13,7 @@ Automates the capture and classification of ChatGPT conversations into a persona
 1. Raw text sent via webhook
 2. Gemini Flash classifies into PARA categories with confidence score
 3. Structured markdown note generated with frontmatter
-4. Note committed to `notes/inbox/` in brain repo
+4. Note committed to `vault/inbox/` in brain repo
 5. Obsidian syncs automatically (or on next pull)
 
 ## Webhook URL
@@ -44,7 +44,7 @@ POST https://n8n.prochat.tools/webhook/brain-inbox
 ```json
 {
   "status": "saved",
-  "file": "notes/inbox/2026-04-09-slug-title.md",
+  "file": "vault/inbox/2026-04-09-slug-title.md",
   "title": "Refined Title",
   "type": "project|area|resource|inbox",
   "confidence": 0.95
@@ -64,7 +64,7 @@ POST https://n8n.prochat.tools/webhook/brain-inbox
 
 ## Output format
 
-Generated note lands in `notes/inbox/` with this structure:
+Generated note lands in `vault/inbox/` with this structure:
 
 ```markdown
 ---
@@ -97,7 +97,7 @@ Full structured content or raw text.
 
 ---
 *ChatGPT capture · 2026-04-09 · 95% confidence · suggested: project*
-*Review in [[home|Command Center]] — promote to [[notes/projects/|projects]], [[notes/areas/|areas]], or [[notes/resources/|resources]]*
+*Review in [[home|Command Center]] — promote to [[vault/projects/|projects]], [[vault/areas/|areas]], or [[vault/resources/|resources]]*
 ```
 
 ## Credentials
@@ -134,14 +134,14 @@ curl -X POST https://n8n.prochat.tools/webhook/brain-inbox \
   }'
 ```
 
-Expected: 200 OK with JSON response + new file in `notes/inbox/`.
+Expected: 200 OK with JSON response + new file in `vault/inbox/`.
 
 ### Full end-to-end test
 
 1. Send test payload via webhook
 2. Check n8n execution logs for success (no errors in Gemini or GitHub nodes)
 3. Pull brain repo: `git pull`
-4. Verify file exists: `ls notes/inbox/2026-04-09-*.md`
+4. Verify file exists: `ls vault/inbox/2026-04-09-*.md`
 5. Verify Obsidian refreshes automatically
 
 ## Monitoring
@@ -184,7 +184,7 @@ Show result: "Saved as {file} ({type}, {confidence}% confidence)"
 
 ## Integration with Obsidian
 
-After capture, notes appear in `notes/inbox/`:
+After capture, notes appear in `vault/inbox/`:
 
 - **Review:** Open in Obsidian, read summary and key points
 - **Promote:** If it's a real project/area/resource, move to appropriate vault folder
@@ -203,7 +203,7 @@ To modify the workflow:
 ## Related files
 
 - **Workflow JSON:** `brain/tools/n8n-brain-inbox.json`
-- **Inbox folder:** `brain/notes/inbox/`
+- **Inbox folder:** `brain/vault/inbox/`
 - **Obsidian config:** `.obsidian/` (gitignored)
 - **Memory:** Auto-memory at `.claude/projects/-Users-Office-Repos-stevewesthoek-brain/memory/project_n8n_brain_inbox.md`
 
@@ -212,7 +212,7 @@ To modify the workflow:
 ### "File exists" error in GitHub node
 
 The workflow tries to create a new commit. If the filename collides, GitHub API rejects it.
-- Check if a note with that slug already exists: `ls notes/inbox/2026-04-09-*slug*`
+- Check if a note with that slug already exists: `ls vault/inbox/2026-04-09-*slug*`
 - The "Build Note" node generates unique filenames with timestamps, so collisions are rare
 - If it happens, increment the slug manually or re-run with a slightly different title
 

@@ -32,7 +32,7 @@ tail -20 ~/.local/share/brain/logs/auto-router.log
 The Auto-Router is a Python script that automatically routes inbox notes through the Brain GTD system. It runs every 1 minute via OS-level cron and intelligently categorizes notes based on confidence and signal_quality scores.
 
 **What it does:**
-1. Scans `notes/01-inbox/` for files with `status: unrouted`
+1. Scans `vault/01-inbox/` for files with `status: unrouted`
 2. Extracts `confidence` and `signal_quality` scores from frontmatter
 3. Routes based on decision tree (see below)
 4. Updates file status and moves to destination folder via git
@@ -272,7 +272,7 @@ tail -20 ~/.local/share/brain/logs/auto-router-error.log
 **Common issues:**
 - File doesn't have `confidence` or `signal_quality` fields (must be numeric)
 - File `status` is not exactly `unrouted`
-- Destination folder doesn't exist (router creates `notes/{route}/` automatically)
+- Destination folder doesn't exist (router creates `vault/{route}/` automatically)
 - Git authentication failing
 
 **Manual test:**
@@ -302,7 +302,7 @@ git push
 ```bash
 cd ~/Repos/stevewesthoek/brain
 
-cat > notes/01-inbox/2026-04-10-test-high-value.md << 'EOF'
+cat > vault/01-inbox/2026-04-10-test-high-value.md << 'EOF'
 ---
 type: capture
 source: test
@@ -323,8 +323,8 @@ EOF
 ~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py
 
 # Check result
-ls notes/03-projects/ | grep test-high-value
-cat notes/03-projects/2026-04-10-test-high-value.md | head -15
+ls vault/03-projects/ | grep test-high-value
+cat vault/03-projects/2026-04-10-test-high-value.md | head -15
 ```
 
 Expected: File moves to `03-projects/`, status becomes `ready-for-review`.

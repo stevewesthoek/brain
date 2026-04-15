@@ -1,7 +1,7 @@
 {
   "newFileLocation": "folder",
-  "newFileFolderPath": "notes/inbox",
-  "attachmentFolderPath": "notes/resources/attachments",
+  "newFileFolderPath": "vault/inbox",
+  "attachmentFolderPath": "vault/resources/attachments",
   "trashOption": "local",
   "promptDelete": false,
   "defaultViewMode": "source",

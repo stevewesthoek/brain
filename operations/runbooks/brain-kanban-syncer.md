@@ -4,19 +4,19 @@
 
 ## Overview
 
-The Kanban Syncer is a Python script that automatically populates `notes/kanban.md` every 10 minutes from task files in `notes/04-tasks/`. The Obsidian Kanban plugin renders this markdown as a beautiful, interactive drag-and-drop Kanban board.
+The Kanban Syncer is a Python script that automatically populates `vault/kanban.md` every 10 minutes from task files in `vault/04-tasks/`. The Obsidian Kanban plugin renders this markdown as a beautiful, interactive drag-and-drop Kanban board.
 
 **What it does:**
-1. Scans `notes/04-tasks/` for all task files with `type: task`
+1. Scans `vault/04-tasks/` for all task files with `type: task`
 2. Parses task metadata (title, status, priority, assigned_to)
-3. Loads existing `notes/kanban.md` (if it exists) to preserve user drags
+3. Loads existing `vault/kanban.md` (if it exists) to preserve user drags
 4. Generates 4 columns:
    - **Backlog** — tasks with `status: ready` (auto-populated)
    - **To Do** — user-dragged tasks (preserved each sync)
    - **Doing** — tasks with `status: in-progress` (auto-populated)
    - **Done** — tasks with `status: done` (auto-populated)
 5. Color-codes cards by priority (red=p1, orange=p2, yellow=p3, green=p4, gray=p5) and assigned_to (blue=you, purple=ai)
-6. Writes `notes/kanban.md` in Obsidian Kanban plugin markdown format
+6. Writes `vault/kanban.md` in Obsidian Kanban plugin markdown format
 7. Only commits if file changed
 8. Logs all actions for debugging
 
@@ -38,7 +38,7 @@ What persists automatically:
 - ✓ Cron job (stored in OS)
 - ✓ GitHub PAT token (`~/.config/github/.env`)
 - ✓ Python script (`~/Repos/stevewesthoek/brain/tools/scripts/`)
-- ✓ Kanban board markdown (`notes/kanban.md`)
+- ✓ Kanban board markdown (`vault/kanban.md`)
 - ✓ Logs
 
 ---
@@ -79,7 +79,7 @@ chmod +x ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
 
 ### Kanban Markdown Format
 
-The `notes/kanban.md` file uses Obsidian Kanban plugin format:
+The `vault/kanban.md` file uses Obsidian Kanban plugin format:
 
 ```markdown
 ---
@@ -90,20 +90,20 @@ kanban-plugin: board
 
 ## Backlog
 
-- [ ] [[notes/04-tasks/project/001-task.md|Task Title]] #p3 #you
+- [ ] [[vault/04-tasks/project/001-task.md|Task Title]] #p3 #you
 
 ## To Do
 
-- [ ] [[notes/04-tasks/project/002-another.md|Another Task]] #p1 #ai
+- [ ] [[vault/04-tasks/project/002-another.md|Another Task]] #p1 #ai
 
 ## Doing
 
-- [ ] [[notes/04-tasks/project/003-in-flight.md|Working On]] #p2 #you
+- [ ] [[vault/04-tasks/project/003-in-flight.md|Working On]] #p2 #you
 
 ## Done
 
 **Complete**
-- [x] [[notes/04-tasks/project/004-done.md|Done Task]] #p4 #ai
+- [x] [[vault/04-tasks/project/004-done.md|Done Task]] #p4 #ai
 
 %% kanban:settings
 ```
@@ -163,7 +163,7 @@ assigned_to: you|ai
 status: ready|in-progress|done
 priority: 1-5
 effort: small|medium|large
-project: [[notes/03-projects/project-name]]
+project: [[vault/03-projects/project-name]]
 ---
 ```
 
@@ -237,7 +237,7 @@ crontab -r
 
 ### In Obsidian
 
-1. Open `notes/kanban.md` → the Obsidian Kanban plugin automatically renders it as an interactive board
+1. Open `vault/kanban.md` → the Obsidian Kanban plugin automatically renders it as an interactive board
 2. **Drag tasks between columns:**
    - Backlog → To Do (persists)
    - To Do → Doing (syncer updates task file status to in-progress)
@@ -276,12 +276,12 @@ ls -la ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
 ### Kanban Not Updating in Obsidian
 
 The plugin reads the file from disk. After a sync, reload the file:
-- Close and re-open `notes/kanban.md`
+- Close and re-open `vault/kanban.md`
 - Or: Command Palette → "Reload app without saving"
 
 **Check if sync ran:**
 ```bash
-git log --oneline -10 -- notes/kanban.md
+git log --oneline -10 -- vault/kanban.md
 # Should show recent "brain: sync kanban" commits
 ```
 
@@ -289,12 +289,12 @@ git log --oneline -10 -- notes/kanban.md
 
 **Check if task files exist:**
 ```bash
-ls ~/Repos/stevewesthoek/brain/notes/04-tasks/
+ls ~/Repos/stevewesthoek/brain/vault/04-tasks/
 ```
 
 **Check task file format:**
 ```bash
-head -15 ~/Repos/stevewesthoek/brain/notes/04-tasks/project/001-task.md
+head -15 ~/Repos/stevewesthoek/brain/vault/04-tasks/project/001-task.md
 # Should have: type: task, status, priority
 ```
 
@@ -323,8 +323,8 @@ git push
 cd ~/Repos/stevewesthoek/brain
 
 # Create test task
-mkdir -p notes/04-tasks/test-project
-cat > notes/04-tasks/test-project/001-test-task.md << 'EOF'
+mkdir -p vault/04-tasks/test-project
+cat > vault/04-tasks/test-project/001-test-task.md << 'EOF'
 ---
 type: task
 title: "Test Kanban Task"
@@ -332,7 +332,7 @@ assigned_to: you
 status: ready
 priority: 3
 effort: small
-project: [[notes/03-projects/test]]
+project: [[vault/03-projects/test]]
 ---
 
 ## What to Do
@@ -343,7 +343,7 @@ This is a test task.
 EOF
 
 # Commit
-git add notes/04-tasks/test-project/001-test-task.md
+git add vault/04-tasks/test-project/001-test-task.md
 git commit -m "test: add test task"
 git push
 ```
@@ -357,7 +357,7 @@ tail -10 ~/.local/share/brain/logs/kanban-syncer.log
 
 ### Verify in Obsidian
 
-1. Open Obsidian → `notes/kanban.md`
+1. Open Obsidian → `vault/kanban.md`
 2. Look for "Test Kanban Task" in the Backlog column
 3. Verify color tags appear (`#p3 #you`)
 4. Click the task → should open `001-test-task.md`
@@ -400,7 +400,7 @@ Backlog | To Do (preserved) | Doing | Done
         ↓
 Build markdown (Kanban plugin format)
         ↓
-Write to notes/kanban.md
+Write to vault/kanban.md
         ↓
 Git commit (if changed) → GitHub
         ↓
@@ -413,13 +413,13 @@ Obsidian plugin renders as interactive board
 
 | Action | Command |
 |--------|---------|
-| View Kanban board | Open `notes/kanban.md` in Obsidian |
+| View Kanban board | Open `vault/kanban.md` in Obsidian |
 | View logs | `tail -f ~/.local/share/brain/logs/kanban-syncer.log` |
 | Run manually | `~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py` |
 | Edit cron | `crontab -e` |
 | Check cron | `crontab -l \| grep brain-kanban` |
-| List tasks | `ls notes/04-tasks/` |
-| Check recent syncs | `git log --oneline -5 -- notes/kanban.md` |
+| List tasks | `ls vault/04-tasks/` |
+| Check recent syncs | `git log --oneline -5 -- vault/kanban.md` |
 
 ---
 
@@ -428,8 +428,8 @@ Obsidian plugin renders as interactive board
 For issues:
 1. Check logs: `tail -20 ~/.local/share/brain/logs/kanban-syncer*.log`
 2. Run manually: `~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py`
-3. Check kanban.md exists: `ls -la notes/kanban.md`
-4. Check task files: `ls -la notes/04-tasks/`
+3. Check kanban.md exists: `ls -la vault/kanban.md`
+4. Check task files: `ls -la vault/04-tasks/`
 5. Verify git access: `cd ~/Repos/stevewesthoek/brain && git pull && git push`
 
 Last updated: 2026-04-10

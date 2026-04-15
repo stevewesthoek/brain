@@ -178,7 +178,7 @@ Config values in the same file (not secrets — listed so `sync-credentials` doe
 | `SLACK_ALLOWED_USER_IDS` | `~/.config/probot/.env` | Comma-separated Slack user IDs allowed to interact with the bot |
 | `PROBOT_BRAIN_ROOT` | `~/.config/probot/.env` | Path to brain repo root |
 | `PROBOT_DATA_DIR` | `~/.config/probot/.env` | Path to ProBot SQLite data directory |
-| `PROBOT_NOTES_DIR` | `~/.config/probot/.env` | Path to notes/Obsidian vault |
+| `PROBOT_NOTES_DIR` | `~/.config/probot/.env` | Path to vault/Obsidian vault |
 | `PROBOT_ALLOWED_ROOTS` | `~/.config/probot/.env` | Colon-separated list of allowed filesystem roots |
 | `PROBOT_MAX_FILE_MB` | `~/.config/probot/.env` | Max file size for ProBot file ops |
 | `PROBOT_DEBUG` | `~/.config/probot/.env` | Debug flag |

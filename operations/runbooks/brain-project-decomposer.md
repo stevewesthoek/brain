@@ -32,11 +32,11 @@ tail -20 ~/.local/share/brain/logs/project-decomposer.log
 The Project Decomposer is a Python script that automatically breaks down high-quality projects into atomic tasks. It runs every 5 minutes via OS-level cron and uses Gemini AI to decompose projects intelligently.
 
 **What it does:**
-1. Scans `notes/03-projects/` for files with `type: capture` and `status: ready-for-review` (placed there by the Auto-Router)
+1. Scans `vault/03-projects/` for files with `type: capture` and `status: ready-for-review` (placed there by the Auto-Router)
 2. Sends each project to Gemini CLI for intelligent decomposition
 3. Receives structured JSON back with project metadata and task breakdown
 4. Replaces the capture file with a proper project file (using `project.md` template)
-5. Creates N task files in `notes/04-tasks/{project-slug}/` (using `task.md` template)
+5. Creates N task files in `vault/04-tasks/{project-slug}/` (using `task.md` template)
 6. Commits all changes atomically via git
 7. Logs all actions for debugging
 
@@ -110,7 +110,7 @@ chmod +x ~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py
 ### Decision Tree
 
 The decomposer only processes files matching:
-1. **Location:** `notes/03-projects/`
+1. **Location:** `vault/03-projects/`
 2. **Type:** `type: capture` (not yet converted to proper project format)
 3. **Status:** `status: ready-for-review` (placed there by Auto-Router)
 
@@ -131,7 +131,7 @@ For each eligible file:
    - Target end date: from Gemini or empty
    - Goal: one-sentence goal from Gemini
    - Related tasks: list of links to new task files
-6. **Build task files** — One file per task in `notes/04-tasks/{project-slug}/`:
+6. **Build task files** — One file per task in `vault/04-tasks/{project-slug}/`:
    - Type: `task`
    - Assigned to: `you` or `ai` (from Gemini)
    - Priority: from Gemini (1-5)
@@ -173,7 +173,7 @@ Example response:
 
 ### File Formats
 
-**Project file** (`notes/03-projects/project-name.md` after decomposition):
+**Project file** (`vault/03-projects/project-name.md` after decomposition):
 
 ```yaml
 ---
@@ -195,11 +195,11 @@ One sentence goal statement
 Original project note content here...
 
 ## Related Tasks
-- [[notes/04-tasks/project-slug/001-task-name]]
-- [[notes/04-tasks/project-slug/002-another-task]]
+- [[vault/04-tasks/project-slug/001-task-name]]
+- [[vault/04-tasks/project-slug/002-another-task]]
 ```
 
-**Task file** (`notes/04-tasks/{project-slug}/{number}-{task-name}.md`):
+**Task file** (`vault/04-tasks/{project-slug}/{number}-{task-name}.md`):
 
 ```yaml
 ---
@@ -209,7 +209,7 @@ assigned_to: you | ai
 status: ready
 priority: 3
 effort: small | medium | large
-project: [[notes/03-projects/project-name]]
+project: [[vault/03-projects/project-name]]
 ---
 
 ## What to Do
@@ -357,7 +357,7 @@ tail -20 ~/.local/share/brain/logs/project-decomposer-error.log
 
 **Verify project files exist:**
 ```bash
-ls ~/Repos/stevewesthoek/brain/notes/03-projects/
+ls ~/Repos/stevewesthoek/brain/vault/03-projects/
 # Should see .md files with status: ready-for-review, type: capture
 ```
 
@@ -390,7 +390,7 @@ Create a test capture file in `03-projects/`:
 ```bash
 cd ~/Repos/stevewesthoek/brain
 
-cat > notes/03-projects/2026-04-10-test-decomposer.md << 'EOF'
+cat > vault/03-projects/2026-04-10-test-decomposer.md << 'EOF'
 ---
 type: capture
 source: test
@@ -429,12 +429,12 @@ tail -20 ~/.local/share/brain/logs/project-decomposer.log
 
 ```bash
 # Check project file was converted
-ls notes/03-projects/ | grep test-decomposer
-cat notes/03-projects/2026-04-10-test-decomposer.md | head -20
+ls vault/03-projects/ | grep test-decomposer
+cat vault/03-projects/2026-04-10-test-decomposer.md | head -20
 
 # Check task files were created
-ls notes/04-tasks/learn-rust-programming/
-cat notes/04-tasks/learn-rust-programming/001-*.md
+ls vault/04-tasks/learn-rust-programming/
+cat vault/04-tasks/learn-rust-programming/001-*.md
 ```
 
 **Expected:**
@@ -492,8 +492,8 @@ Recommended: Keep at **every 5 minutes** unless you hit Gemini rate limits.
 | Edit cron | `crontab -e` |
 | Check cron | `crontab -l` |
 | Test Gemini | `echo "Say hello" \| gemini --model gemini-2.5-flash` |
-| List projects | `ls notes/03-projects/` |
-| List tasks | `ls notes/04-tasks/` |
+| List projects | `ls vault/03-projects/` |
+| List tasks | `ls vault/04-tasks/` |
 | Disable | `crontab -r` |
 
 ---
