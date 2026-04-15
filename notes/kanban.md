@@ -160,6 +160,8 @@ kanban-plugin: board
 - [ ] Expand STB pipeline and start posting FB, YT & PIN
 - [ ] fix the obsidian way of working
 - [ ] add obsidian to phone
+- [ ] Product: ChatGPT bridge
+- [ ] Product: Model Router
 
 
 ## Doing
