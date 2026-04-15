@@ -1343,7 +1343,7 @@ const HTML = `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProBot</title>
-<link rel="icon" href="/favicon.svg?v=20260415-3" type="image/svg+xml">
+<link rel="icon" href="/favicon.svg?v=20260415-4" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -2145,12 +2145,16 @@ async function localAppStop(btn,name){
 }
 async function localAppsRefresh(){
   try{
+    const panel=document.getElementById('tab-local-apps');
+    if(!panel)return;
+    panel.innerHTML='<div class="loading"><div class="spin"></div>Loading...</div>';
     const r=await fetch('/api/local-apps');
     if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();
-    document.getElementById('tab-local-apps').innerHTML=renderLocalApps(data);
+    panel.innerHTML=renderLocalApps(data);
   }catch(e){
-    console.error('Local apps refresh failed:',e.message);
+    console.error('Local apps refresh failed:',e);
+    document.getElementById('tab-local-apps').innerHTML='<div class="nr-err">Failed to load: '+esc(String(e))+'</div>';
   }
 }
 </script>
