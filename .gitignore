@@ -5,6 +5,7 @@
 *.pyc
 .venv/
 node-compile-cache/
+**/node_modules/
 
 # Cloudflare local cache
 .wrangler/
