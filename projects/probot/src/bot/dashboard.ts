@@ -1296,7 +1296,7 @@ const HTML = `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProBot</title>
-<link rel="icon" href="/favicon.svg?v=20260411-2" type="image/svg+xml">
+<link rel="icon" href="/favicon.svg?v=20260415-1" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1853,13 +1853,6 @@ function renderGoogleAds(data){
     if(pw.lastCheck)html+='<div class="mc"><div class="mc-label">Last Check</div><div class="mc-value" style="font-size:11px">'+age(pw.lastCheck)+'</div><div class="mc-sub">Policy watch</div></div>';
     html+='</div>';
   }
-  html+='<div style="margin-top:24px;margin-bottom:0">';
-  html+='</div>';
-  html+='<div style="font-size:11px;color:var(--muted);margin-top:24px;padding:8px;background:var(--card);border-radius:4px;border:1px solid var(--border)">';
-  html+='<strong>Next phase:</strong> Live API integration will populate real campaign metrics, search terms, and recommendations once credentials are provisioned.<br/>';
-  html+='<strong>Account:</strong> Vila Solidária (592-920-2435) · Manager: Yeshua Academy Google Ads Manager (935-769-8503)<br/>';
-  html+='<strong>Program:</strong> Google Ad Grants (nonprofit) · Monthly budget: $10,000 USD';
-  html+='</div>';
   return html;
 }
 function fmtMoney(amount,currency){
@@ -1946,6 +1939,13 @@ function renderMutations(data){
   }
   html+='</tbody></table></div>';
   return html;
+}
+function renderGoogleAdsInfoBanner(){
+  return '<div style="font-size:11px;color:var(--muted);margin-top:24px;padding:8px;background:var(--card);border-radius:4px;border:1px solid var(--border)">'
+    +'<strong>Next phase:</strong> Live API integration will populate real campaign metrics, search terms, and recommendations once credentials are provisioned.<br/>'
+    +'<strong>Account:</strong> Vila Solidária (592-920-2435) · Manager: Yeshua Academy Google Ads Manager (935-769-8503)<br/>'
+    +'<strong>Program:</strong> Google Ad Grants (nonprofit) · Monthly budget: $10,000 USD'
+    +'</div>';
 }
 function renderDomains(data){
   if(!data)return'<div class="nr-err">Cloudflare not configured.</div>';
@@ -2081,7 +2081,7 @@ function render(d){
   document.getElementById('tab-umami').innerHTML=renderUmami(d.umami);
   const gaPending=d.googleAds&&d.googleAds.pendingMutations?d.googleAds.pendingMutations:0;
   document.getElementById('cnt-google-ads').textContent=gaPending?String(gaPending):'';
-  document.getElementById('tab-google-ads').innerHTML=renderMutations(d.mutations)+'<div style="margin-top:24px"></div>'+renderGoogleAds(d.googleAds);
+  document.getElementById('tab-google-ads').innerHTML=renderGoogleAds(d.googleAds)+'<div style="margin-top:24px"></div>'+renderMutations(d.mutations)+'<div style="margin-top:0"></div>'+renderGoogleAdsInfoBanner();
   const stripeCount=d.stripe&&d.stripe.accounts?d.stripe.accounts.length:0;
   document.getElementById('cnt-stripe').textContent=stripeCount?String(stripeCount):'';
   document.getElementById('tab-stripe').innerHTML=renderStripe(d.stripe);
