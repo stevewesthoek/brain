@@ -21,7 +21,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://api.github.com/repos/stevewesthoek/brain/git/trees/main?recursive=1",
+        "url": "https://api.github.com/repos/stevewesthoek/mind/git/trees/main?recursive=1",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "githubApi",
         "options": {}
@@ -45,13 +45,13 @@
       "typeVersion": 2,
       "position": [440, 0],
       "parameters": {
-        "jsCode": "const tree = $input.first().json.tree || [];\n// Get all markdown files in notes/01-inbox/\nconst inboxFiles = tree\n  .filter(item => item.type === 'blob' && item.path.startsWith('notes/01-inbox/') && item.path.endsWith('.md'))\n  .map(item => ({ json: { filepath: item.path, sha: item.sha } }));\n\nconsole.log(`[brain-inbox-retry] Found ${inboxFiles.length} files in inbox`);\nreturn inboxFiles;"
+        "jsCode": "const tree = $input.first().json.tree || [];\n// Get all markdown files in 01-inbox/\nconst inboxFiles = tree\n  .filter(item => item.type === 'blob' && item.path.startsWith('01-inbox/') && item.path.endsWith('.md'))\n  .map(item => ({ json: { filepath: item.path, sha: item.sha } }));\n\nconsole.log(`[brain-inbox-retry] Found ${inboxFiles.length} files in inbox`);\nreturn inboxFiles;"
       }
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://api.github.com/repos/stevewesthoek/brain/contents/{{ $json.filepath }}",
+        "url": "=https://api.github.com/repos/stevewesthoek/mind/contents/{{ $json.filepath }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "githubApi",
         "options": {}
@@ -148,7 +148,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://api.github.com/repos/stevewesthoek/brain/contents/{{ $json.filepath }}",
+        "url": "=https://api.github.com/repos/stevewesthoek/mind/contents/{{ $json.filepath }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "githubApi",
         "sendBody": true,

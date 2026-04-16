@@ -22,14 +22,14 @@
       "typeVersion": 2,
       "position": [220, 0],
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst source = body.source || 'chatgpt';\nconst title = body.title || 'Untitled capture';\nconst content = body.content || '';\nconst typeHint = body.type_hint || '';\n\nconst now = new Date();\nconst date = now.toISOString().slice(0, 10);\nconst time = now.toISOString().slice(11, 19);\n\nconst slug = title\n  .toLowerCase()\n  .replace(/[^a-z0-9\\s-]/g, '')\n  .trim()\n  .replace(/\\s+/g, '-')\n  .slice(0, 40);\nconst filename = `${date}-${slug}.md`;\nconst filepath = `notes/01-inbox/${filename}`;\n\n// Build Gemini classification prompt\nconst promptText = [\n  'You are processing a captured note for a personal knowledge management system using the PARA method.',\n  '\\n\\nPARA definitions:',\n  '\\n- project: has a clear finish line (SaaS app, automation, specific deliverable)',\n  '\\n- area: ongoing responsibility, no end date (health, finance, business, personal development, ministry)',\n  '\\n- resource: reference material, research, learning, frameworks, how-to knowledge',\n  '\\n- inbox: unclear, mixed, needs more context',\n  '\\n\\nContext about the owner:',\n  '\\n- Builds SaaS apps and business automations',\n  '\\n- Manages prochattools business (statuslink, xgrow, prochat, says-the-bible, probot)',\n  '\\n- Has Yeshua Academy (ministry work)',\n  '\\n- Goal: automate everything, optimise costs, work efficiently',\n  `\\n\\nTitle hint: ${title}`,\n  typeHint ? `\\nType hint: ${typeHint}` : '',\n  `\\n\\nContent to classify:\\n${content}`,\n  '\\n\\nRespond ONLY with valid JSON (no markdown fences, no extra text):\\n{\\n  \"title\": \"concise title max 6 words\",\\n  \"para_type\": \"project|area|resource|inbox\",\\n  \"confidence\": 0.0,\\n  \"area_hint\": \"which life or business area\",\\n  \"tags\": [\"tag1\", \"tag2\"],\\n  \"summary\": \"2-3 sentence summary of the key insight or decision\",\\n  \"key_points\": [\"point 1\", \"point 2\", \"point 3\"],\\n  \"action_items\": [\"actionable task if any\"],\\n  \"note_content\": \"full structured markdown body for the note, without frontmatter\"\\n}'\n].join('');\n\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: promptText }] }]\n});\n\n// Raw unprocessed file content\nconst rawFile = [\n  '---',\n  'type: capture',\n  `source: ${source}`,\n  `title: \"${title}\"`,\n  `created: ${date}T${time}Z`,\n  'status: unprocessed',\n  'para_type: null',\n  'confidence: null',\n  'tags:',\n  '  - needs-review',\n  '---',\n  '',\n  `# ${title}`,\n  '',\n  '## Raw Content',\n  content,\n  '',\n  '---',\n  `*Captured ${date}T${time}Z from ${source} — awaiting Gemini classification*`\n].join('\\n');\n\nreturn [{\n  json: {\n    filepath,\n    filename,\n    rawFile,\n    title,\n    source,\n    content,\n    typeHint,\n    geminiBody,\n    date\n  }\n}];"
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst source = body.source || 'chatgpt';\nconst title = body.title || 'Untitled capture';\nconst content = body.content || '';\nconst typeHint = body.type_hint || '';\n\nconst now = new Date();\nconst date = now.toISOString().slice(0, 10);\nconst time = now.toISOString().slice(11, 19);\n\nconst slug = title\n  .toLowerCase()\n  .replace(/[^a-z0-9\\s-]/g, '')\n  .trim()\n  .replace(/\\s+/g, '-')\n  .slice(0, 40);\nconst filename = `${date}-${slug}.md`;\nconst filepath = `01-inbox/${filename}`;\n\n// Build Gemini classification prompt\nconst promptText = [\n  'You are processing a captured note for a personal knowledge management system using the PARA method.',\n  '\\n\\nPARA definitions:',\n  '\\n- project: has a clear finish line (SaaS app, automation, specific deliverable)',\n  '\\n- area: ongoing responsibility, no end date (health, finance, business, personal development, ministry)',\n  '\\n- resource: reference material, research, learning, frameworks, how-to knowledge',\n  '\\n- inbox: unclear, mixed, needs more context',\n  '\\n\\nContext about the owner:',\n  '\\n- Builds SaaS apps and business automations',\n  '\\n- Manages prochattools business (statuslink, xgrow, prochat, says-the-bible, probot)',\n  '\\n- Has Yeshua Academy (ministry work)',\n  '\\n- Goal: automate everything, optimise costs, work efficiently',\n  `\\n\\nTitle hint: ${title}`,\n  typeHint ? `\\nType hint: ${typeHint}` : '',\n  `\\n\\nContent to classify:\\n${content}`,\n  '\\n\\nRespond ONLY with valid JSON (no markdown fences, no extra text):\\n{\\n  \"title\": \"concise title max 6 words\",\\n  \"para_type\": \"project|area|resource|inbox\",\\n  \"confidence\": 0.0,\\n  \"area_hint\": \"which life or business area\",\\n  \"tags\": [\"tag1\", \"tag2\"],\\n  \"summary\": \"2-3 sentence summary of the key insight or decision\",\\n  \"key_points\": [\"point 1\", \"point 2\", \"point 3\"],\\n  \"action_items\": [\"actionable task if any\"],\\n  \"note_content\": \"full structured markdown body for the note, without frontmatter\"\\n}'\n].join('');\n\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: promptText }] }]\n});\n\n// Raw unprocessed file content\nconst rawFile = [\n  '---',\n  'type: capture',\n  `source: ${source}`,\n  `title: \"${title}\"`,\n  `created: ${date}T${time}Z`,\n  'status: unprocessed',\n  'para_type: null',\n  'confidence: null',\n  'tags:',\n  '  - needs-review',\n  '---',\n  '',\n  `# ${title}`,\n  '',\n  '## Raw Content',\n  content,\n  '',\n  '---',\n  `*Captured ${date}T${time}Z from ${source} — awaiting Gemini classification*`\n].join('\\n');\n\nreturn [{\n  json: {\n    filepath,\n    filename,\n    rawFile,\n    title,\n    source,\n    content,\n    typeHint,\n    geminiBody,\n    date\n  }\n}];"
       }
     },
     {
       "parameters": {
         "resource": "file",
         "owner": "stevewesthoek",
-        "repository": "brain",
+        "repository": "mind",
         "filePath": "={{ $json.filepath }}",
         "fileContent": "={{ $json.rawFile }}",
         "commitMessage": "=brain: capture (unprocessed) — {{ $json.title }}"
@@ -151,7 +151,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://api.github.com/repos/stevewesthoek/brain/contents/{{ $json.filepath }}",
+        "url": "=https://api.github.com/repos/stevewesthoek/mind/contents/{{ $json.filepath }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "githubApi",
         "options": {}
@@ -181,7 +181,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://api.github.com/repos/stevewesthoek/brain/contents/{{ $json.filepath }}",
+        "url": "=https://api.github.com/repos/stevewesthoek/mind/contents/{{ $json.filepath }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "githubApi",
         "sendBody": true,
