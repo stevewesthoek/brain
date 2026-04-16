@@ -56,30 +56,13 @@
     "description": "Portuguese language learning app"
   },
   {
-    "name": "Brain Bridge CLI",
-    "port": 3052,
-    "url": "http://localhost:3052",
-    "check": "http://localhost:3052/health",
-    "start": "cd ~/Repos/stevewesthoek/brain-bridge && BRIDGE_URL=ws://127.0.0.1:3053 DEVICE_TOKEN=local-agent node packages/cli/dist/index.js serve > /tmp/brain-bridge-agent.log 2>&1 &",
-    "stop": "pkill -f 'node dist/index.js serve'",
-    "description": "Local Markdown vault search and note creation agent"
-  },
-  {
-    "name": "Brain Bridge Relay",
-    "port": 3053,
-    "url": "ws://localhost:3053",
-    "check": "http://localhost:3053/health",
-    "start": "cd ~/Repos/stevewesthoek/brain-bridge/packages/bridge && node dist/server.js > /tmp/brain-bridge-relay.log 2>&1 &",
-    "stop": "pkill -f 'packages/bridge.*node dist/server.js'",
-    "description": "WebSocket relay for remote agent connections"
-  },
-  {
-    "name": "Brain Bridge Web",
+    "name": "Brain Bridge",
     "port": 3054,
-    "url": "http://localhost:3054",
+    "url": "https://brainbridge.prochat.tools",
     "check": "http://localhost:3054/api/openapi",
-    "start": "cd ~/Repos/stevewesthoek/brain-bridge/apps/web && npm run dev > /tmp/brain-bridge-web.log 2>&1 &",
-    "stop": "pkill -f 'apps/web.*next dev'",
-    "description": "Web app and ChatGPT Custom Actions endpoint"
+    "start": "cd ~/Repos/stevewesthoek/brain && operations/infrastructure/scripts/brain-bridge-stack.sh start",
+    "stop": "cd ~/Repos/stevewesthoek/brain && operations/infrastructure/scripts/brain-bridge-stack.sh stop",
+    "status": "cd ~/Repos/stevewesthoek/brain && operations/infrastructure/scripts/brain-bridge-stack.sh status",
+    "description": "Brain Bridge stack: local vault agent (3052), relay (3053), and ChatGPT Actions web endpoint (3054)"
   }
 ]
