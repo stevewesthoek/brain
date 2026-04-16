@@ -72,5 +72,14 @@
     "start": "cd ~/Repos/stevewesthoek/brain-bridge/packages/bridge && node dist/server.js > /tmp/brain-bridge-relay.log 2>&1 &",
     "stop": "pkill -f 'packages/bridge.*node dist/server.js'",
     "description": "WebSocket relay for remote agent connections"
+  },
+  {
+    "name": "Brain Bridge Web",
+    "port": 3054,
+    "url": "http://localhost:3054",
+    "check": "http://localhost:3054/api/openapi",
+    "start": "cd ~/Repos/stevewesthoek/brain-bridge/apps/web && npm run dev > /tmp/brain-bridge-web.log 2>&1 &",
+    "stop": "pkill -f 'apps/web.*next dev'",
+    "description": "Web app and ChatGPT Custom Actions endpoint"
   }
 ]
