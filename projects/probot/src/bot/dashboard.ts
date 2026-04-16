@@ -1242,6 +1242,7 @@ interface LocalAppConfig {
   url: string;
   check: string;
   start: string;
+  stop: string;
   description?: string;
 }
 
@@ -1266,6 +1267,11 @@ function getLocalAppPort(name: string): number | null {
 function getLocalAppStartCommand(name: string): string | null {
   const app = loadLocalApps().find(a => a.name === name);
   return app ? app.start : null;
+}
+
+function getLocalAppStopCommand(name: string): string | null {
+  const app = loadLocalApps().find(a => a.name === name);
+  return app ? app.stop : null;
 }
 
 async function getLocalAppsStatus() {
@@ -2323,14 +2329,14 @@ export function createDashboardServer(app: AppContext): http.Server {
         }
 
         if (url === "/api/local-apps/stop" && payload.name) {
-          const port = getLocalAppPort(payload.name);
-          if (!port) {
+          const cmd = getLocalAppStopCommand(payload.name);
+          if (!cmd) {
             res.writeHead(404, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ error: "App not found or cannot be stopped" }));
             return;
           }
           try {
-            exec(`lsof -i :${port} | grep LISTEN | awk '{print $2}' | xargs kill -9`);
+            exec(cmd, { cwd: os.homedir() });
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ ok: true, message: "Stopping..." }));
           } catch (e) {
