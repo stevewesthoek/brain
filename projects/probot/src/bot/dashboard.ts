@@ -2313,7 +2313,6 @@ export function createDashboardServer(app: AppContext): http.Server {
             return;
           }
           try {
-            const { exec } = require("child_process");
             exec(cmd, { cwd: os.homedir() });
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ ok: true, message: "Starting..." }));
@@ -2331,7 +2330,6 @@ export function createDashboardServer(app: AppContext): http.Server {
             return;
           }
           try {
-            const { exec } = require("child_process");
             exec(`lsof -i :${port} | grep LISTEN | awk '{print $2}' | xargs kill -9`);
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ ok: true, message: "Stopping..." }));
