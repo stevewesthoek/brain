@@ -80,16 +80,31 @@ This isolation ensures:
 
 ## Usage Patterns
 
-### Pattern 1: Quick Coding Task
+### Pattern 1: Auto-Loading Context (EASIEST!)
+**Just run `qwen` in any repo — it automatically loads context:**
+```bash
+cd ~/my-project
+qwen
+# [Auto-loaded repo context: README.md, package.json, CLAUDE.md, etc.]
+# qwen> what is the main tech stack?
+# qwen> explain the architecture
+# qwen> exit
+```
+QWEN sees your repo files automatically. No special syntax needed.
+
+### Pattern 2: Quick Coding Task
 ```bash
 qwen "Debug this JavaScript async/await code: $(cat my-file.js)"
 ```
 
-### Pattern 2: File-Aware Queries (NEW!)
-Read files and provide context automatically:
+### Pattern 3: Explicit File Context
+When you want specific files, not auto-loaded ones:
 ```bash
 # Single file
 qwen file:src/app.js "What does this file do?"
+
+# Directory (scans for key files)
+qwen file:./src "Explain the structure of this directory"
 
 # Multiple files matching pattern
 qwen @"*.js" "Summarize what these JavaScript files do"
@@ -98,79 +113,114 @@ qwen @"*.js" "Summarize what these JavaScript files do"
 qwen file:package.json "What version of React is this project using?"
 ```
 
-### Pattern 3: Interactive Session with File Context
+### Pattern 4: Interactive Session with Auto-Loaded Context
 ```bash
+cd ~/my-repo
 qwen
-# Starts REPL
-# qwen> file:CLAUDE.md What integrations are mentioned?
-# qwen> @*.ts Are there TypeScript errors?
-# qwen> explain how closures work in JavaScript
+# [Auto-loaded repo context from cwd]
+# qwen> what is the main tech stack?
+# qwen> explain the architecture
+# qwen> file:src/components "Explain this folder"
 # qwen> exit
 ```
 
-### Pattern 4: Repo-Based Development
+### Pattern 5: Repo-Based Development with `repos` Picker
 ```bash
 repos           # pick QWEN
 # Select a repo
-# Now in that repo context, use file-aware queries:
-# qwen file:src/index.ts "What does this file export?"
+# Opens in that repo directory with auto-loaded context
+# Now use QWEN to query your repo files
 ```
 
-### Pattern 5: Resume a Session
+### Pattern 6: Resume a Session
 ```bash
 sessions        # pick QWEN
 # Select a past QWEN session
-# Resumes in that repo with session history
+# Resumes in that repo with session history and context
 ```
 
 ## File Context Support
 
-QWEN CLI can now read and include file context in queries, making it repo-aware:
+QWEN CLI automatically loads repo context from your current working directory, making it truly repo-aware. You can also explicitly provide additional context.
 
-### Syntax
+### Auto-Loading (Default Behavior)
+
+When you run `qwen` in a repo directory, it **automatically loads** these files if they exist:
+- `package.json` — dependencies, scripts
+- `.env.example` — environment variables
+- `CLAUDE.md` — project-specific AI instructions
+- `README.md` — project overview
+- `Dockerfile`, `docker-compose.yml` — infrastructure
+- `tsconfig.json` — TypeScript config
+
+**Example:**
+```bash
+cd ~/my-project
+qwen
+# [Auto-loaded repo context: README.md, package.json, CLAUDE.md]
+# QWEN now understands your project without you asking
+```
+
+### Explicit File Context (Optional)
+
+When auto-loading isn't enough, specify files manually:
 
 **Single file:**
 ```bash
 qwen file:path/to/file.js "Your question"
+qwen file:src/app.tsx "What components are defined here?"
+```
+
+**Directory (auto-scans for key files):**
+```bash
+qwen file:./src "Explain the structure of this directory"
 ```
 
 **Multiple files (glob pattern):**
 ```bash
 qwen @"*.ts" "Your question"
-qwen @"src/**/*.tsx" "Your question"
+qwen @"src/**/*.tsx" "Check these components"
 ```
 
 ### Context Limits
 
-- **Max context:** ~8000 characters of file content (to fit within model limits)
+- **Max context:** ~12,000 characters total
+- **Auto-load truncation:** Large files like CLAUDE.md are auto-truncated to first 3000 chars
 - **Multiple files:** Stops when context limit is reached
-- **Smart truncation:** Prioritizes earlier files if pattern matches many
+- **Smart priority:** Key files (package.json, config) loaded before documentation
 
 ### Examples
 
 ```bash
-# Analyze a specific file
+# In a repo — uses auto-loaded context
+cd ~/my-project && qwen
+# qwen> what's the main tech stack?
+# qwen> explain the architecture
+
+# Explicit single file
 qwen file:src/index.ts "What does this file do?"
 
-# Ask about all test files
+# Directory scan
+qwen file:./src "Explain the structure of this directory"
+
+# Multiple files matching pattern
 qwen @"*.test.js" "Are there any missing edge case tests?"
 
-# Review package.json
-qwen file:package.json "What are the main dependencies?"
-
-# Ask about all shell scripts
-qwen @"*.sh" "Is there any error handling in these scripts?"
+# Interactive mode with auto-loaded context
+cd ~/my-project && qwen
+# qwen> what's the main tech stack?
+# qwen> file:src/components "Explain these components"
+# qwen> exit
 ```
 
-### Interactive Mode with Files
+### How It Works
 
-In interactive mode, use the same syntax:
-```bash
-qwen
-# qwen> file:src/components/Button.tsx What props does this accept?
-# qwen> @"*.json" Are all config files valid?
-# qwen> regular prompt without file context
-```
+1. **Auto-load:** When `qwen` starts in a directory, it scans for key files
+2. **Inject:** Files are added to the prompt as context
+3. **Truncate:** Large files are automatically truncated to fit
+4. **Query:** Your question is asked with all that context loaded
+
+This makes QWEN genuinely repo-aware, like Claude Code — it "knows" your project structure, tech stack, and conventions without you having to explain them each time.
 
 ## Performance & Specs
 
