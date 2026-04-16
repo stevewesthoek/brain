@@ -498,6 +498,37 @@ Billing-specific service principals (separate from the AI provisioner/destroyer 
 
 Note: ADC and OAuth credentials are at `~/.config/gcloud/application_default_credentials.json`. Legacy credentials for 3 accounts (info@prochat.tools, steve@yeshua.academy, westhoek@hotmail.com) at `~/.config/gcloud/legacy_credentials/`.
 
+## Brain Bridge — ChatGPT Actions API
+
+Public read-only API for ChatGPT Custom Actions. Public endpoint: `https://brainbridge.prochat.tools`
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `BRAIN_BRIDGE_ACTION_TOKEN` | `~/.config/brain-bridge/.env` | Bearer token for `/api/actions/*` endpoints (search, read, search-and-read) — required for ChatGPT Custom GPT authentication | No automatic expiry; rotate before sharing with new users or if compromised | Generate new with `openssl rand -hex 32` |
+
+**Account Details:**
+- Service: Brain Bridge API (read-only ChatGPT Actions)
+- Deployment: Cloudflare tunnel → localhost:3054 (Next.js web app)
+- Auth scheme: HTTP Bearer token (required for all `/api/actions/*` requests)
+- Protected endpoints: `/api/actions/search`, `/api/actions/read`, `/api/actions/search-and-read`
+- Unprotected: `/api/openapi` (schema), `/api/relay/*`, `/api/bridge/*`
+- Status: ✅ PRODUCTION (Phase 3.6, deployed 2026-04-16)
+- Documentation: `brain-bridge/PHASE3_6_ACTION_AUTH.md`
+
+**Local environment setup:**
+```bash
+source ~/.config/brain-bridge/.env
+npm run dev  # Web app loads token from env var
+```
+
+**ChatGPT Custom GPT integration:**
+- Path: Custom GPT → Configure → Actions
+- Authentication type: API Key
+- Auth scheme: Bearer
+- Schema: `brain-bridge/docs/openapi.chatgpt.json`
+
+---
+
 ## Says the Bible — YouTube
 
 | Credential | File | Purpose | Rotation | Regenerate |
