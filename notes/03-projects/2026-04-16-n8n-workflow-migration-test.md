@@ -6,7 +6,7 @@ para_type: project
 confidence: 0.95
 signal_quality: 0.9
 created: 2026-04-16
-status: unrouted
+status: ready-for-review
 ---
 
 # N8n Workflow Migration Test
