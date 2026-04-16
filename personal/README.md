@@ -1,15 +1,15 @@
-# Personal
+# Personal Infrastructure Documentation
 
-Canonical personal context for Steve.
+**Note:** Personal context (identity, values, theology) has been moved to the mind repo under:
+- `05-areas/personal-identity/` — Core identity and values
+- `06-resources/personal-references/` — AI interaction style guide
+
+This folder now contains only infrastructure documentation related to personal automation projects.
 
 ## Contents
 
-- `profile.md` — identity, background, preferences, constraints
-- `style.md` — communication and writing style
-- `theology.md` — values, worldview, and moral boundaries
+- `dance-of-life-library.md` — Documentation for the Dance of Life sync and transcription pipeline
 
-## Rule
+## Purpose
 
-If ProBot needs durable personal context, start here before using runtime notes.
-
-Do not duplicate personal facts into runtime bootstrap docs unless they are strictly needed as tiny pointers.
+This folder holds technical documentation for long-running personal automation workflows. It is machine-infrastructure documentation, not personal knowledge or decision records.

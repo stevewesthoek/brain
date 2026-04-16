@@ -5,7 +5,7 @@
 #   1. Scan Bible Studies/ for new audio/video files
 #   2. Transcribe each with mlx-whisper (large-v3, max quality)
 #   3. Format transcript as Obsidian markdown note
-#   4. Write note to brain/personal/bible-studies/dance-of-life/
+#   4. Write note to mind/05-areas/theological-studies/dance-of-life/
 #   5. Sync notes + resources to NotebookLM (one notebook per series: "DOL - [Series]")
 #   6. Regenerate README index
 #   7. Git commit new notes to brain repo

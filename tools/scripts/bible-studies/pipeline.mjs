@@ -6,7 +6,7 @@
  *  1. Scan Bible Studies/ for new .mp4 / .mp3 files not yet transcribed
  *  2. Transcribe each with mlx-whisper (mlx-community/whisper-large-v3-mlx, max quality)
  *  3. Format transcript as Obsidian markdown with [HH:MM:SS] timestamped segments
- *  4. Write note to brain/personal/bible-studies/dance-of-life/[Series]/[NN-of-TT] - Title.md
+ *  4. Write note to mind/05-areas/theological-studies/dance-of-life/[Series]/[NN-of-TT] - Title.md
  *  5. Batch-sync new notes + series PDFs/RTFs to NotebookLM via `claude --print`
  *     (one notebook per series, named "DOL - [Series]"; auto-created on first encounter)
  *  6. Regenerate README.md index
@@ -60,7 +60,7 @@ import { execSync, spawnSync } from 'child_process';
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const C = {
   bibleSrc:   '/Users/Office/Library/CloudStorage/GoogleDrive-info@prochat.tools/My Drive/Bible Study/Dance of Life/Bible Studies',
-  notesDest:  '/Users/Office/Repos/stevewesthoek/brain/personal/bible-studies/dance-of-life',
+  notesDest:  '/Users/Office/Repos/stevewesthoek/mind/05-areas/theological-studies/dance-of-life',
   brainRoot:  '/Users/Office/Repos/stevewesthoek/brain',
   stateFile:  path.join(os.homedir(), '.local/state/bible-studies/state.json'),
   logFile:    path.join(os.homedir(), 'Library/Logs/office-scheduler/bible-studies.log'),
