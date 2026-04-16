@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
-# qwen — local QWEN 2.5 coder 14b CLI
+# qwen — local QWEN 2.5 coder 14b CLI with file context support
 # Wrapper that connects to the QWEN Ollama instance (port 11435)
-# Usage: qwen [prompt]
+# Usage:
+#   qwen "prompt"                         — send prompt to QWEN
+#   qwen file:path/to/file "question"    — read file + send question
+#   qwen @pattern "question"              — find files matching pattern + send question
+#   qwen                                  — interactive mode
 
 set -euo pipefail
 
 OLLAMA_HOST="127.0.0.1:11435"
 MODEL="qwen2.5-coder:14b"
+MAX_CONTEXT=8000  # rough token limit for file context
 
 # Check if QWEN instance is running
 if ! curl -s "http://$OLLAMA_HOST/api/tags" >/dev/null 2>&1; then
@@ -15,41 +20,145 @@ if ! curl -s "http://$OLLAMA_HOST/api/tags" >/dev/null 2>&1; then
   exit 1
 fi
 
-# Function to send prompt to QWEN
+# Function to read file(s) and build context
+build_context() {
+  local file_pattern="$1"
+  local context=""
+  local char_count=0
+
+  # Handle @pattern syntax (glob)
+  if [[ "$file_pattern" == @* ]]; then
+    local pattern="${file_pattern#@}"
+    while IFS= read -r file; do
+      if [[ -f "$file" ]]; then
+        local file_content
+        file_content=$(<"$file")
+        local file_chars=${#file_content}
+        if (( char_count + file_chars < MAX_CONTEXT )); then
+          context+="
+---
+File: $file
+---
+$file_content
+"
+          char_count=$((char_count + file_chars))
+        fi
+      fi
+    done < <(find . -name "$pattern" -type f 2>/dev/null | head -10)
+  # Handle file: syntax (direct path)
+  elif [[ "$file_pattern" == file:* ]]; then
+    local filepath="${file_pattern#file:}"
+    if [[ -f "$filepath" ]]; then
+      context=$(<"$filepath")
+      char_count=${#context}
+    else
+      echo "✗ File not found: $filepath" >&2
+      return 1
+    fi
+  fi
+
+  if [[ -z "$context" ]]; then
+    echo "✗ No files found or file is empty" >&2
+    return 1
+  fi
+
+  echo "$context"
+}
+
+# Function to send prompt to QWEN and handle streaming
 query_qwen() {
   local prompt="$1"
-  local json_prompt=$(printf '%s\n' "$prompt" | jq -R -s -c '.')
 
+  # Escape and prepare JSON
+  local json_prompt
+  json_prompt=$(printf '%s\n' "$prompt" | jq -R -s -c '.')
+
+  # Send request and collect full response before printing
   curl -X POST "http://$OLLAMA_HOST/api/generate" \
     -H "Content-Type: application/json" \
     -d "{\"model\": \"$MODEL\", \"prompt\": $json_prompt, \"stream\": true}" \
     --no-buffer 2>/dev/null | \
-    jq -r '.response' 2>/dev/null | sed '/^$/d'
+    jq -r '.response // empty' 2>/dev/null | \
+    tr -d '\n' | \
+    fold -w 80 -s
+
+  echo ""
 }
 
-# If no arguments, start an interactive session
+# Main logic
 if [ $# -eq 0 ]; then
+  # Interactive mode
   echo "QWEN 2.5 coder 14b (local, via Ollama)"
   echo "Type your prompt and press Enter. Type 'exit' to quit."
+  echo "Optional: file:path/to/file or @pattern to add file context"
   echo ""
 
   while true; do
     printf "qwen> "
-    read -r prompt
-    if [ "$prompt" = "exit" ] || [ "$prompt" = "quit" ]; then
+    read -r user_input
+
+    if [ "$user_input" = "exit" ] || [ "$user_input" = "quit" ]; then
       echo "Goodbye!"
       break
     fi
-    if [ -z "$prompt" ]; then
+
+    if [ -z "$user_input" ]; then
       continue
     fi
 
-    echo ""
-    query_qwen "$prompt"
+    # Check if input starts with file: or @
+    if [[ "$user_input" =~ ^(file:|@) ]]; then
+      # Extract file pattern and question
+      pattern=$(echo "$user_input" | awk '{print $1}')
+      question=$(echo "$user_input" | cut -d' ' -f2-)
+
+      if [[ -z "$question" ]]; then
+        echo "Usage: file:path \"question\" or @pattern \"question\"" >&2
+        continue
+      fi
+
+      echo "[Reading context...]"
+      if ! context=$(build_context "$pattern"); then
+        continue
+      fi
+
+      full_prompt="Context from files:
+$context
+
+Question: $question"
+      query_qwen "$full_prompt"
+    else
+      query_qwen "$user_input"
+    fi
+
     echo ""
   done
 else
-  # Non-interactive: pipe all arguments as a single prompt
-  prompt="$*"
-  query_qwen "$prompt"
+  # Non-interactive mode: parse arguments
+  first_arg="$1"
+  shift || true
+
+  if [[ "$first_arg" =~ ^(file:|@) ]]; then
+    # File context mode
+    context=$(build_context "$first_arg") || exit 1
+
+    question="$*"
+    if [[ -z "$question" ]]; then
+      echo "Error: No question provided" >&2
+      exit 1
+    fi
+
+    full_prompt="Context from files:
+$context
+
+Question: $question"
+    query_qwen "$full_prompt"
+  else
+    # Regular prompt mode (all args are the prompt)
+    if [ $# -eq 0 ]; then
+      query_qwen "$first_arg"
+    else
+      query_qwen "$first_arg $*"
+    fi
+  fi
 fi

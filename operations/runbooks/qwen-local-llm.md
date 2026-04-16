@@ -85,27 +85,91 @@ This isolation ensures:
 qwen "Debug this JavaScript async/await code: $(cat my-file.js)"
 ```
 
-### Pattern 2: Interactive Session
+### Pattern 2: File-Aware Queries (NEW!)
+Read files and provide context automatically:
+```bash
+# Single file
+qwen file:src/app.js "What does this file do?"
+
+# Multiple files matching pattern
+qwen @"*.js" "Summarize what these JavaScript files do"
+
+# In repo, read config
+qwen file:package.json "What version of React is this project using?"
+```
+
+### Pattern 3: Interactive Session with File Context
 ```bash
 qwen
 # Starts REPL
+# qwen> file:CLAUDE.md What integrations are mentioned?
+# qwen> @*.ts Are there TypeScript errors?
 # qwen> explain how closures work in JavaScript
-# qwen> write a closure example
 # qwen> exit
 ```
 
-### Pattern 3: Repo-Based Development
+### Pattern 4: Repo-Based Development
 ```bash
 repos           # pick QWEN
 # Select a repo
-# Opens Claude Code in the repo, ready for QWEN queries
+# Now in that repo context, use file-aware queries:
+# qwen file:src/index.ts "What does this file export?"
 ```
 
-### Pattern 4: Resume a Session
+### Pattern 5: Resume a Session
 ```bash
 sessions        # pick QWEN
 # Select a past QWEN session
-# Resumes in that repo with the session history
+# Resumes in that repo with session history
+```
+
+## File Context Support
+
+QWEN CLI can now read and include file context in queries, making it repo-aware:
+
+### Syntax
+
+**Single file:**
+```bash
+qwen file:path/to/file.js "Your question"
+```
+
+**Multiple files (glob pattern):**
+```bash
+qwen @"*.ts" "Your question"
+qwen @"src/**/*.tsx" "Your question"
+```
+
+### Context Limits
+
+- **Max context:** ~8000 characters of file content (to fit within model limits)
+- **Multiple files:** Stops when context limit is reached
+- **Smart truncation:** Prioritizes earlier files if pattern matches many
+
+### Examples
+
+```bash
+# Analyze a specific file
+qwen file:src/index.ts "What does this file do?"
+
+# Ask about all test files
+qwen @"*.test.js" "Are there any missing edge case tests?"
+
+# Review package.json
+qwen file:package.json "What are the main dependencies?"
+
+# Ask about all shell scripts
+qwen @"*.sh" "Is there any error handling in these scripts?"
+```
+
+### Interactive Mode with Files
+
+In interactive mode, use the same syntax:
+```bash
+qwen
+# qwen> file:src/components/Button.tsx What props does this accept?
+# qwen> @"*.json" Are all config files valid?
+# qwen> regular prompt without file context
 ```
 
 ## Performance & Specs

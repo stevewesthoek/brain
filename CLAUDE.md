@@ -91,13 +91,18 @@ This system runs automatically via hooks in `~/.claude/settings.json`. No user a
 
 ## Local LLMs
 
-**QWEN 2.5 coder 14b** — local, free alternative to Claude/Codex. Ollama-based, runs on port 11435 (separate instance).
+**QWEN 2.5 coder 14b** — local, free alternative to Claude/Codex. Ollama-based, runs on port 11435 (separate instance). **Repo-aware with file context support.**
 
 - **Start service:** `qwen-service start`
 - **Stop service:** `qwen-service stop`
 - **Check status:** `qwen-service status`
-- **CLI:** `qwen "your prompt"` or `qwen` for interactive mode
+- **CLI:**
+  - `qwen "your prompt"` — regular query
+  - `qwen file:path/to/file "question"` — read file + ask question
+  - `qwen @"*.js" "question"` — find files matching pattern + ask
+  - `qwen` — interactive mode (supports file syntax too)
 - **Integration:** Added to `repos` and `sessions` pickers alongside Claude, Codex, Gemini
+- **File context:** ~8000 char limit per query; use when in a repo directory
 - **Configuration:** 
   - Ollama binary: `/opt/homebrew/opt/ollama/bin/ollama` (Homebrew)
   - Models dir: `~/.ollama-qwen`
