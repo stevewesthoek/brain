@@ -1,9 +1,10 @@
 # n8n Brain Inbox Automation Runbook
 
 **Deployed:** 2026-04-09  
-**Workflow ID:** `WiZPSTJwq22LBIqZ`  
+**Workflow ID:** `FwP5INe9qoo1OwGC` (updated 2026-04-16)  
 **Status:** ✅ Active  
-**Last tested:** 2026-04-09
+**Last tested:** 2026-04-16
+**Updated:** 2026-04-16 — Migrated to write exclusively to `stevewesthoek/mind` repo at `01-inbox/`
 
 ## Overview
 
@@ -13,7 +14,7 @@ Automates the capture and classification of ChatGPT conversations into a persona
 1. Raw text sent via webhook
 2. Gemini Flash classifies into PARA categories with confidence score
 3. Structured markdown note generated with frontmatter
-4. Note committed to `vault/inbox/` in brain repo
+4. Note committed to `01-inbox/` in mind repo
 5. Obsidian syncs automatically (or on next pull)
 
 ## Webhook URL
@@ -44,10 +45,11 @@ POST https://n8n.prochat.tools/webhook/brain-inbox
 ```json
 {
   "status": "saved",
-  "file": "vault/inbox/2026-04-09-slug-title.md",
+  "file": "01-inbox/2026-04-09-slug-title.md",
   "title": "Refined Title",
-  "type": "project|area|resource|inbox",
-  "confidence": 0.95
+  "para_type": "project|area|resource|inbox",
+  "confidence": 0.95,
+  "signal_quality": 0.9
 }
 ```
 
@@ -64,7 +66,7 @@ POST https://n8n.prochat.tools/webhook/brain-inbox
 
 ## Output format
 
-Generated note lands in `vault/inbox/` with this structure:
+Generated note lands in `01-inbox/` in the mind repo with this structure:
 
 ```markdown
 ---
@@ -96,8 +98,8 @@ tags:
 Full structured content or raw text.
 
 ---
-*ChatGPT capture · 2026-04-09 · 95% confidence · suggested: project*
-*Review in [[home|Command Center]] — promote to [[vault/projects/|projects]], [[vault/areas/|areas]], or [[vault/resources/|resources]]*
+*ChatGPT capture · 2026-04-09 · 95% confidence · 90% signal · suggested: project*
+*Review in [[home|Command Center]] — promote to [[03-projects/|projects]], [[05-areas/|areas]], or [[06-resources/|resources]]*
 ```
 
 ## Credentials
@@ -140,8 +142,8 @@ Expected: 200 OK with JSON response + new file in `vault/inbox/`.
 
 1. Send test payload via webhook
 2. Check n8n execution logs for success (no errors in Gemini or GitHub nodes)
-3. Pull brain repo: `git pull`
-4. Verify file exists: `ls vault/inbox/2026-04-09-*.md`
+3. Pull mind repo: `cd ../mind && git pull`
+4. Verify file exists: `ls 01-inbox/2026-04-16-*.md`
 5. Verify Obsidian refreshes automatically
 
 ## Monitoring
@@ -184,10 +186,10 @@ Show result: "Saved as {file} ({type}, {confidence}% confidence)"
 
 ## Integration with Obsidian
 
-After capture, notes appear in `vault/inbox/`:
+After capture, notes appear in `mind/01-inbox/`:
 
 - **Review:** Open in Obsidian, read summary and key points
-- **Promote:** If it's a real project/area/resource, move to appropriate vault folder
+- **Promote:** If it's a real project/area/resource, move to appropriate folder (03-projects, 05-areas, 06-resources)
 - **Link:** Backlinks in the note template point to [[home|Command Center]] for easy navigation
 - **Auto-sync:** If using Obsidian Git plugin, pull automatically updates vault
 
@@ -202,10 +204,11 @@ To modify the workflow:
 
 ## Related files
 
-- **Workflow JSON:** `brain/tools/n8n-brain-inbox.json`
-- **Inbox folder:** `brain/vault/inbox/`
-- **Obsidian config:** `.obsidian/` (gitignored)
-- **Memory:** Auto-memory at `.claude/projects/-Users-Office-Repos-stevewesthoek-brain/memory/project_n8n_brain_inbox.md`
+- **Workflow JSON (archived reference):** `brain/tools/n8n-brain-inbox.json`
+- **Workflow Retry JSON (archived reference):** `brain/tools/n8n-brain-inbox-retry.json`
+- **Target Inbox folder:** `mind/01-inbox/` (in stevewesthoek/mind repo)
+- **Source Obsidian vault:** `mind/` (in stevewesthoek/mind repo)
+- **Obsidian config:** `mind/.obsidian/` (gitignored)
 
 ## Troubleshooting
 
