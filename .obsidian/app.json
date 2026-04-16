@@ -1,9 +1,0 @@
-{
-  "newFileLocation": "folder",
-  "newFileFolderPath": "vault/inbox",
-  "attachmentFolderPath": "vault/resources/attachments",
-  "trashOption": "local",
-  "promptDelete": false,
-  "defaultViewMode": "source",
-  "foldHeading": false
-}
