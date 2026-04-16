@@ -4,14 +4,15 @@
 # Usage:
 #   qwen "prompt"                         — send prompt to QWEN
 #   qwen file:path/to/file "question"    — read file + send question
+#   qwen file:path/to/dir "question"     — scan dir + send question
 #   qwen @pattern "question"              — find files matching pattern + send question
-#   qwen                                  — interactive mode
+#   qwen                                  — interactive mode (cwd = context)
 
 set -euo pipefail
 
 OLLAMA_HOST="127.0.0.1:11435"
 MODEL="qwen2.5-coder:14b"
-MAX_CONTEXT=8000  # rough token limit for file context
+MAX_CONTEXT=12000  # token limit for file context
 
 # Check if QWEN instance is running
 if ! curl -s "http://$OLLAMA_HOST/api/tags" >/dev/null 2>&1; then
@@ -45,14 +46,41 @@ $file_content
         fi
       fi
     done < <(find . -name "$pattern" -type f 2>/dev/null | head -10)
-  # Handle file: syntax (direct path)
+  # Handle file: syntax (direct path or directory)
   elif [[ "$file_pattern" == file:* ]]; then
     local filepath="${file_pattern#file:}"
-    if [[ -f "$filepath" ]]; then
+
+    # If it's a directory, scan for key files
+    if [[ -d "$filepath" ]]; then
+      local dir="$filepath"
+      # Priority: find key files first
+      local key_patterns=("README.md" "CLAUDE.md" "package.json" ".env.example" "Dockerfile" "docker-compose.yml" "*.config.ts" "*.config.js" "tsconfig.json")
+
+      for pattern in "${key_patterns[@]}"; do
+        while IFS= read -r file; do
+          if [[ -f "$file" ]]; then
+            local file_content
+            file_content=$(<"$file")
+            local file_chars=${#file_content}
+            if (( char_count + file_chars < MAX_CONTEXT )); then
+              context+="
+---
+File: $file
+---
+$file_content
+"
+              char_count=$((char_count + file_chars))
+            fi
+          fi
+        done < <(find "$dir" -maxdepth 2 -name "$pattern" -type f 2>/dev/null)
+      done
+
+    # Single file
+    elif [[ -f "$filepath" ]]; then
       context=$(<"$filepath")
       char_count=${#context}
     else
-      echo "✗ File not found: $filepath" >&2
+      echo "✗ File or directory not found: $filepath" >&2
       return 1
     fi
   fi
@@ -63,6 +91,43 @@ $file_content
   fi
 
   echo "$context"
+}
+
+# Function to auto-load repo context (for interactive mode)
+auto_load_context() {
+  local cwd="$1"
+  local context=""
+  local char_count=0
+
+  # Scan for key files in current directory
+  # Prioritize smaller, config-like files first, truncate large files
+  for file in package.json .env.example Dockerfile docker-compose.yml tsconfig.json README.md CLAUDE.md; do
+    if [[ -f "$cwd/$file" && $char_count -lt $MAX_CONTEXT ]]; then
+      local file_content
+      file_content=$(<"$cwd/$file")
+      local file_chars=${#file_content}
+
+      # For CLAUDE.md and other large files, take only first 3000 chars
+      if [[ "$file" == "CLAUDE.md" && $file_chars -gt 3000 ]]; then
+        file_content="${file_content:0:3000}..."
+        file_chars=3003
+      fi
+
+      if (( char_count + file_chars < MAX_CONTEXT )); then
+        context+="
+---
+File: $file
+---
+$file_content
+"
+        char_count=$((char_count + file_chars))
+      fi
+    fi
+  done
+
+  if [[ -n "$context" ]]; then
+    echo "$context"
+  fi
 }
 
 # Function to send prompt to QWEN and handle streaming
@@ -87,10 +152,20 @@ query_qwen() {
 
 # Main logic
 if [ $# -eq 0 ]; then
-  # Interactive mode
+  # Interactive mode - auto-load repo context
   echo "QWEN 2.5 coder 14b (local, via Ollama)"
+  echo "Working directory: $(pwd)"
+  echo ""
+
+  # Try to auto-load context
+  auto_context=$(auto_load_context "$(pwd)") || true
+  if [[ -n "$auto_context" ]]; then
+    echo "[Auto-loaded repo context: README.md, package.json, etc.]"
+    echo ""
+  fi
+
   echo "Type your prompt and press Enter. Type 'exit' to quit."
-  echo "Optional: file:path/to/file or @pattern to add file context"
+  echo "Use: file:path/to/file or file:path/to/dir or @pattern for explicit context"
   echo ""
 
   while true; do
@@ -110,15 +185,15 @@ if [ $# -eq 0 ]; then
     if [[ "$user_input" =~ ^(file:|@) ]]; then
       # Extract file pattern and question
       pattern=$(echo "$user_input" | awk '{print $1}')
-      question=$(echo "$user_input" | cut -d' ' -f2-)
+      question=$(echo "$user_input" | cut -d' ' -f2- 2>/dev/null || echo "")
 
       if [[ -z "$question" ]]; then
         echo "Usage: file:path \"question\" or @pattern \"question\"" >&2
         continue
       fi
 
-      echo "[Reading context...]"
-      if ! context=$(build_context "$pattern"); then
+      echo "[Loading context...]"
+      if ! context=$(build_context "$pattern" 2>/dev/null); then
         continue
       fi
 
@@ -128,7 +203,20 @@ $context
 Question: $question"
       query_qwen "$full_prompt"
     else
-      query_qwen "$user_input"
+      # Use auto-loaded context + user prompt
+      if [[ -n "${auto_context:-}" ]]; then
+        full_prompt="You have been provided with the following files from the repository:
+
+$auto_context
+
+---
+
+Based on these files, answer the following question:
+$user_input"
+        query_qwen "$full_prompt"
+      else
+        query_qwen "$user_input"
+      fi
     fi
 
     echo ""
@@ -140,7 +228,7 @@ else
 
   if [[ "$first_arg" =~ ^(file:|@) ]]; then
     # File context mode
-    context=$(build_context "$first_arg") || exit 1
+    context=$(build_context "$first_arg" 2>/dev/null) || exit 1
 
     question="$*"
     if [[ -z "$question" ]]; then
