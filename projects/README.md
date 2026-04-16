@@ -14,9 +14,9 @@ Use project folders for:
 ## Rule
 
 Prefer project-local files when discussing a specific project, but prefer:
-- `personal/`
-- `organisations/`
-- `operations/decision-log.md`
+- `operations/decision-log.md` for architecture decisions
+- mind repo (`02-strategy/organisations/`) for business/brand truth
+- mind repo (`05-areas/personal-identity/`) for personal context
 
 for global behavior, identity, and safety.
 

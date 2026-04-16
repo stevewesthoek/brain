@@ -8,7 +8,7 @@ description: "Use when the user asks for web design work (landing pages, SaaS ap
 ## References to load when needed
 - Style catalog: `references/styles.md`
 - Component map: `references/components.md`
-- Stack + constraints: `personal/style.md`, `personal/profile.md`, `organisations/prochat/playbooks/saas-reference.md`
+- Stack + constraints: mind/06-resources/personal-references/style.md, mind/05-areas/personal-identity/profile.md, mind/02-strategy/organisations/prochat/playbooks/saas-reference.md
 - Existing prompt (AI analytics landing): `ai/prompts/webdesign.md`
 - UI-UX Pro Max overview: `../ui-ux-pro-max/references/overview.md`
 

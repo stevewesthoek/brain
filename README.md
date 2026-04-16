@@ -5,10 +5,10 @@ Private knowledge base and shared resource repo for Steve across local machines,
 ## Purpose
 
 This repo holds:
-- durable personal, business, and project context
 - reusable AI prompts and shared skills
 - operational docs, scripts, and selected system configs
 - runtime and ProBot workspace notes
+- project-specific assets and execution docs
 
 It is meant to be:
 - human-readable
@@ -18,8 +18,6 @@ It is meant to be:
 
 ## Top-Level Structure
 
-- `personal/` — personal profile, writing style, values, boundaries
-- `organisations/` — company, brand, messaging, offers, playbooks
 - `projects/` — project-specific context, assets, notes, and execution docs
 - `ai/` — prompts, provider notes, shared multi-tool skills
 - `operations/` — runbooks, standards, scripts, snippets, automations, infrastructure, deploy docs, system configs
@@ -30,12 +28,12 @@ It is meant to be:
 
 Start here:
 1. `README.md`
-2. `personal/README.md`
-3. `organisations/README.md`
-4. `projects/README.md`
-5. `ai/README.md`
-6. `operations/README.md`
-7. `runtime/README.md`
+2. `projects/README.md`
+3. `ai/README.md`
+4. `operations/README.md`
+5. `runtime/README.md`
+
+For personal context and business organisation information, see the mind repo (`~/Repos/stevewesthoek/mind`).
 
 ## Expanding This Repo
 
@@ -57,14 +55,6 @@ This table is the contract. If a tool reads the docs and finds no pointer to a n
 **Before removing anything:** check if the item is a symlink target (see `CLAUDE.md` under "Do not break"), has an active symlink in `ai/skills/active/`, or is referenced in the table above. If yes, update those references first.
 
 ## Folder Notes
-
-### `personal/`
-- Stable personal context.
-- Prefer these files over ad-hoc notes for identity, communication, and values.
-
-### `organisations/`
-- Organised by organisation/brand.
-- Use this for brand truth, positioning, legal docs, and growth playbooks.
 
 ### `projects/`
 - Organised by project.

@@ -3,7 +3,7 @@ import { runCommand } from "../connectors/process.js";
 import fs from "node:fs";
 import path from "node:path";
 
-const SEARCH_PATHS = ["personal", "organisations", "projects", "operations", "ai"];
+const SEARCH_PATHS = ["projects", "operations", "ai"];
 const STOP_WORDS = new Set([
   "a",
   "about",

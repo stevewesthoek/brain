@@ -76,9 +76,7 @@ brain/ (machine-brain)   ← AI infrastructure, system config, skills
 | `operations/deploy/` | Deployment configs (Dokploy) |
 | `tools/` | Utility scripts and tools (google-ads, aws, azure, cloudflare, n8n, etc.) |
 | `mind/` | Symlink to ../mind (vault for AI context) |
-| `organisations/` | Brand truth, positioning, playbooks |
 | `projects/` | Project context, specs, execution docs |
-| `personal/` | Profile, writing style, values |
 
 ## Reference docs
 
