@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# qwen — local QWEN 2.5 coder 14b CLI
+# Wrapper that connects to the QWEN Ollama instance (port 11435)
+# Usage: qwen [prompt]
+
+set -euo pipefail
+
+OLLAMA_HOST="127.0.0.1:11435"
+MODEL="qwen2.5-coder:14b"
+
+# Check if QWEN instance is running
+if ! curl -s "http://$OLLAMA_HOST/api/tags" >/dev/null 2>&1; then
+  echo "✗ QWEN instance not running on $OLLAMA_HOST" >&2
+  echo "Start it with: qwen-service start" >&2
+  exit 1
+fi
+
+# Function to send prompt to QWEN
+query_qwen() {
+  local prompt="$1"
+  local json_prompt=$(printf '%s\n' "$prompt" | jq -R -s -c '.')
+
+  curl -X POST "http://$OLLAMA_HOST/api/generate" \
+    -H "Content-Type: application/json" \
+    -d "{\"model\": \"$MODEL\", \"prompt\": $json_prompt, \"stream\": true}" \
+    --no-buffer 2>/dev/null | \
+    jq -r '.response' 2>/dev/null | sed '/^$/d'
+}
+
+# If no arguments, start an interactive session
+if [ $# -eq 0 ]; then
+  echo "QWEN 2.5 coder 14b (local, via Ollama)"
+  echo "Type your prompt and press Enter. Type 'exit' to quit."
+  echo ""
+
+  while true; do
+    printf "qwen> "
+    read -r prompt
+    if [ "$prompt" = "exit" ] || [ "$prompt" = "quit" ]; then
+      echo "Goodbye!"
+      break
+    fi
+    if [ -z "$prompt" ]; then
+      continue
+    fi
+
+    echo ""
+    query_qwen "$prompt"
+    echo ""
+  done
+else
+  # Non-interactive: pipe all arguments as a single prompt
+  prompt="$*"
+  query_qwen "$prompt"
+fi

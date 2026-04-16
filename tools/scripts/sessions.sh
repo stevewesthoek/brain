@@ -211,6 +211,82 @@ for s in sessions:
 PYEOF
 }
 
+list_qwen_sessions() {
+  python3 - "$HOME/.qwen" <<'PYEOF'
+import os, sys, json
+from datetime import datetime, timezone
+
+qwen_dir = sys.argv[1]
+home = os.path.expanduser("~")
+
+# QWEN sessions stored in ~/.qwen/sessions/
+sessions_dir = os.path.join(qwen_dir, "sessions")
+all_sessions = []
+
+if not os.path.isdir(sessions_dir):
+    sys.exit(0)
+
+for filename in os.listdir(sessions_dir):
+    if not filename.endswith(".json"):
+        continue
+    filepath = os.path.join(sessions_dir, filename)
+    try:
+        with open(filepath) as f:
+            data = json.load(f)
+    except Exception:
+        continue
+
+    session_id = data.get("id", filename[:-5])
+    timestamp = data.get("created_at", "")
+    if not timestamp:
+        try:
+            mtime = os.path.getmtime(filepath)
+            timestamp = datetime.fromtimestamp(mtime, timezone.utc).isoformat()
+        except Exception:
+            continue
+
+    # Extract first user message as summary
+    summary = data.get("title", "Untitled")
+    if not summary:
+        messages = data.get("messages", [])
+        for msg in messages:
+            if msg.get("role") == "user":
+                text = msg.get("content", "").strip()
+                if text and not text.startswith("<"):
+                    summary = text[:120].replace("\n", " ")
+                    break
+
+    all_sessions.append({
+        "session_id": session_id,
+        "cwd": home,
+        "timestamp": timestamp,
+        "summary": summary,
+    })
+
+all_sessions.sort(key=lambda s: s["timestamp"], reverse=True)
+
+now = datetime.now(timezone.utc)
+for s in all_sessions:
+    try:
+        ts = datetime.fromisoformat(s["timestamp"].replace("Z", "+00:00"))
+        delta = now - ts
+        total_hours = delta.days * 24 + delta.seconds // 3600
+        if delta.days >= 7:
+            age = f"{delta.days // 7}w ago"
+        elif delta.days >= 1:
+            age = f"{delta.days}d ago"
+        elif total_hours >= 1:
+            age = f"{total_hours}h ago"
+        else:
+            age = f"{delta.seconds // 60}m ago"
+    except Exception:
+        age = "?"
+
+    # Columns: age | project | summary | full_cwd | session_id
+    print(f"{age}\tqwen\t{s['summary']}\t{s['cwd']}\t{s['session_id']}")
+PYEOF
+}
+
 list_gemini_sessions() {
   python3 - "$HOME/.gemini" <<'PYEOF'
 import os, sys, json
@@ -324,9 +400,9 @@ PYEOF
 }
 
 # Step 1: pick AI tool — Claude is default (first item)
-tool=$(printf "Claude\nCodex\nGemini" | fzf \
+tool=$(printf "Claude\nCodex\nGemini\nQWEN" | fzf \
   --prompt="  open with: " \
-  --height=9 \
+  --height=10 \
   --layout=reverse \
   --border=rounded \
   --bind='tab:down,btab:up' \
@@ -368,7 +444,7 @@ elif [[ "$tool" == "Codex" ]]; then
   selected_cwd=$(echo "$selected" | cut -f4)
   selected_sid=$(echo "$selected" | cut -f5)
   cd "$selected_cwd" && exec codex resume "$selected_sid"
-else
+elif [[ "$tool" == "Gemini" ]]; then
   selected=$(list_gemini_sessions | fzf \
     --prompt="  session (Gemini): " \
     --height=60% \
@@ -385,4 +461,21 @@ else
   selected_cwd=$(echo "$selected" | cut -f4)
   selected_idx=$(echo "$selected" | cut -f5)
   cd "$selected_cwd" && exec gemini --resume "$selected_idx"
+else
+  selected=$(list_qwen_sessions | fzf \
+    --prompt="  session (QWEN): " \
+    --height=60% \
+    --layout=reverse \
+    --border=rounded \
+    --delimiter=$'\t' \
+    --with-nth=1,2,3 \
+    --header="age        project                  summary" \
+    --preview='printf "  project:  %s\n  session:  %s\n\n  %s" "{4}" "{5}" "{3}"' \
+    --preview-window='down:4:wrap' \
+    --bind='tab:down,btab:up' \
+    2>/dev/null)
+  [[ -z "$selected" ]] && exit 0
+  selected_cwd=$(echo "$selected" | cut -f4)
+  selected_sid=$(echo "$selected" | cut -f5)
+  cd "$selected_cwd" && exec qwen "$selected_sid"
 fi

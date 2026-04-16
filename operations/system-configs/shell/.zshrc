@@ -49,6 +49,9 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 LOCAL_SHELL_ENV="$HOME/Repos/stevewesthoek/brain/operations/system-configs/shell/.zshrc.local"
 [[ -f "$LOCAL_SHELL_ENV" ]] && source "$LOCAL_SHELL_ENV"
 
+# Brain scripts and tools
+export PATH="$HOME/Repos/stevewesthoek/brain/tools/scripts:$PATH"
+
 # Unified pickers — one command for both AI tools
 repos() {
   bash ~/Repos/stevewesthoek/brain/tools/scripts/repos.sh
@@ -57,4 +60,10 @@ repos() {
 sessions() {
   bash ~/Repos/stevewesthoek/brain/tools/scripts/sessions.sh
 }
+
+# QWEN service management
+qwen-service() {
+  bash ~/Repos/stevewesthoek/brain/tools/scripts/qwen-service.sh "$@"
+}
+
 export PATH=$HOME/bin:$PATH

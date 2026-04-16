@@ -1,0 +1,212 @@
+{
+  "main": {
+    "id": "c803f4bc54ef8c9b",
+    "type": "split",
+    "children": [
+      {
+        "id": "d687d0b48648ef43",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7c95a530340ebe38",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "e1bcc80bfae91ed1",
+    "type": "split",
+    "children": [
+      {
+        "id": "e1ba6b9d3d7e428a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "86fe36604e4aab36",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "c9942e93bc50ac7e",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "2101a43e8d2103ba",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "5898e37fb36d7f22",
+    "type": "split",
+    "children": [
+      {
+        "id": "d445aa2acfba596c",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "eba8fb92be415e4c",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "1ec75e84eb9d8c7b",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "8a6b8e7662028ec6",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "4b411753dfe8d133",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "7481e446b74cf077",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "86fe36604e4aab36",
+  "lastOpenFiles": [
+    "04-tasks/business-tasks/0706-put-lanbot-on-a-single-page-vincent.md",
+    "04-tasks/business-tasks/0705-todo-before-launch.md",
+    "04-tasks/business-tasks/0704-make-3-custom-workflows-for-focus-hyptoheken.md",
+    "04-tasks/business-tasks/0703-make-a-simple-page-with-shortened-link-to-put-ever.md",
+    "04-tasks/business-tasks/0702-check-hoe-databar-werkt.md",
+    "04-tasks/business-tasks/0701-extend-the-presentation-with-the-other-plans.md",
+    "04-tasks/business-tasks/0700-put-review-jon-cris-on-funnel.md",
+    "04-tasks/business-tasks/0699-finish-webshop-functionality-tdp.md",
+    "04-tasks/business-tasks/0698-redesign-prochat-website.md",
+    "04-tasks/business-tasks/0697-transfer-ya-hosting.md",
+    "04-tasks/business-tasks/0696-add-cursor-rules.md",
+    "04-tasks/business-tasks/0695-verstuur-factuur-tdp.md",
+    "04-tasks/business-tasks/0694-try-kirodev.md",
+    "04-tasks/business-tasks/0693-use-notebook-lm-for-bible-studies.md",
+    "04-tasks/business-tasks/0692-kow-check-ing-aanpassingen.md",
+    "04-tasks/business-tasks/0691-maak-footer-mooi-kow-checking.md",
+    "04-tasks/business-tasks/0690-update-proposal-jcc-properties.md",
+    "04-tasks/business-tasks/0689-maak-loom-video-marlies.md",
+    "04-tasks/business-tasks/0688-checkout-qwen-3-ai.md",
+    "04-tasks/business-tasks/0687-check-out-boltnew.md",
+    "04-tasks/business-tasks/0686-checkout-firebase.md",
+    "04-tasks/business-tasks/0685-contact-athena-for-prospects.md",
+    "04-tasks/business-tasks/0684-cancel-and-renew-awaz.md",
+    "04-tasks/business-tasks/0683-help-joe-with-his-questions.md",
+    "04-tasks/business-tasks/0682-voorbereiding-call-athina.md",
+    "04-tasks/business-tasks/0681-maak-website-voor-neuroad.md",
+    "03-projects",
+    "02-strategy/brainstorm",
+    "02-strategy",
+    "01-inbox"
+  ]
+}

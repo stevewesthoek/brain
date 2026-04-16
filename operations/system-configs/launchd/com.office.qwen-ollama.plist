@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.office.qwen-ollama</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>
+      export OLLAMA_HOST="127.0.0.1:11435"
+      export OLLAMA_MODELS="$HOME/.ollama-qwen"
+      export OLLAMA_FLASH_ATTENTION="1"
+      export OLLAMA_KV_CACHE_TYPE="q8_0"
+      exec /opt/homebrew/opt/ollama/bin/ollama serve
+    </string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/var/log/qwen-ollama.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/var/log/qwen-ollama.log</string>
+
+  <key>Environment</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key>
+    <string>$HOME</string>
+  </dict>
+</dict>
+</plist>

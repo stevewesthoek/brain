@@ -89,6 +89,28 @@ Claude Code model routing is now **fully transparent** — your status line show
 
 This system runs automatically via hooks in `~/.claude/settings.json`. No user action needed — just look at your status line.
 
+## Local LLMs
+
+**QWEN 2.5 coder 14b** — local, free alternative to Claude/Codex. Ollama-based, runs on port 11435 (separate instance).
+
+- **Start service:** `qwen-service start`
+- **Stop service:** `qwen-service stop`
+- **Check status:** `qwen-service status`
+- **CLI:** `qwen "your prompt"` or `qwen` for interactive mode
+- **Integration:** Added to `repos` and `sessions` pickers alongside Claude, Codex, Gemini
+- **Configuration:** 
+  - Ollama binary: `/opt/homebrew/opt/ollama/bin/ollama` (Homebrew)
+  - Models dir: `~/.ollama-qwen`
+  - Service script: `tools/scripts/qwen-service.sh`
+  - CLI wrapper: `tools/scripts/qwen`
+  - LaunchD service: `operations/system-configs/launchd/com.office.qwen-ollama.plist`
+
+**Auto-start (optional):**
+```bash
+ln -sf ~/Repos/stevewesthoek/brain/operations/system-configs/launchd/com.office.qwen-ollama.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.office.qwen-ollama.plist
+```
+
 ## Do not break
 
 - `~/.claude` → `brain/operations/system-configs/claude`. Do not delete or restructure.
@@ -101,5 +123,7 @@ This system runs automatically via hooks in `~/.claude/settings.json`. No user a
 - `~/.kiro` → `brain/operations/system-configs/kiro`. Do not delete or restructure.
 - `~/.docker` → `brain/operations/system-configs/docker`. Docker Desktop fails if target is missing.
 - `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are symlinks → brain. Do not delete sources.
+- `~/.ollama-qwen` — QWEN models directory. Do not delete.
+- `tools/scripts/qwen-service.sh`, `tools/scripts/qwen` — QWEN CLI and service management.
 - `tools/scripts/` — check usage before deleting any script.
 - `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` may symlink into brain. Keep repo file as source of truth.
