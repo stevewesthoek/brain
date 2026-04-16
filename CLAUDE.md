@@ -37,7 +37,7 @@ Local repos at `~/Repos/` by GitHub account:
 **Two independent repos with symlink connection:**
 
 ```
-personal-brain/                    ← iOS Obsidian vault (200MB)
+mind/                    ← iOS Obsidian vault (200MB)
   01-inbox/, 02-strategy/, etc.
   kanban.md, home.md
   .obsidian/
@@ -47,14 +47,14 @@ machine-brain/                     ← AI infrastructure, system config
   ai/skills/
   machine/
   operations/system-configs/       ← symlinked to home (~)
-  personal-brain/ → symlink to ../personal-brain/
+  mind/ → symlink to ../mind/
   .git/
 ```
 
 **Sync:**
-- `personal-brain`: Obsidian Git (iOS + Mac bidirectional)
+- `mind`: Obsidian Git (iOS + Mac bidirectional)
 - `machine-brain`: Development workflow (Mac only, houses AI context)
-- Symlink: `machine-brain/personal-brain` → `../personal-brain` (AI agents read vault content)
+- Symlink: `machine-brain/mind` → `../mind` (AI agents read vault content)
 
 ## Repo structure (machine-brain)
 
@@ -68,7 +68,7 @@ machine-brain/                     ← AI infrastructure, system config
 | `operations/deploy/` | Deployment configs (Dokploy) |
 | `operations/google-ads/` | Google Ads config, data, and reports |
 | `docs/` | Reference documentation (google-ads, standards) |
-| `personal-brain/` | Symlink to ../personal-brain (vault for AI context) |
+| `mind/` | Symlink to ../mind (vault for AI context) |
 | `organisations/` | Brand truth, positioning, playbooks |
 | `projects/` | Project context, specs, execution docs |
 | `personal/` | Profile, writing style, values |
@@ -146,7 +146,7 @@ launchctl load ~/Library/LaunchAgents/com.office.qwen-ollama.plist
 - `tools/scripts/sync-credentials.sh` (→ ~/.local/bin/sync-credentials)
 - `tools/n8n-api.sh` (→ ~/.local/bin/n8n-api)
 - `ai/skills/custom/apify/` (2 symlinks)
-- `personal-brain/` symlink (→ ../personal-brain)
+- `mind/` symlink (→ ../mind)
 
 **Symlinks map (home → machine-brain):**
 - `~/.claude` → `machine-brain/operations/system-configs/claude`
@@ -162,5 +162,5 @@ launchctl load ~/Library/LaunchAgents/com.office.qwen-ollama.plist
 **If you touch these symlink folders, it breaks everything:**
 - NEVER move `operations/system-configs/`
 - NEVER move/delete symlinked scripts
-- NEVER change the `personal-brain/` symlink
+- NEVER change the `mind/` symlink
 - NEVER modify any symlink paths
