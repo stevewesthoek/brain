@@ -1,0 +1,9 @@
+{
+  "name": "ing-bank-automation",
+  "version": "1.0.0",
+  "description": "ING Bank Statement Automation Scripts",
+  "main": "bank-statement-login.js",
+  "dependencies": {
+    "playwright": "^1.59.0"
+  }
+}

@@ -5,14 +5,14 @@ description: "Default tool for ALL web data tasks — searching the internet, sc
 
 # /firecrawl — Local On-Demand Web Scraping API
 
-**Default web research tool for Claude Code, Codex, and Gemini.** Local Docker-based Firecrawl with auto-lifecycle management (starts on-demand, idles down after 15 minutes). All requests routed through wrapper at `~/tools/firecrawl/firecrawl-wrapper.sh`.
+**Default web research tool for Claude Code, Codex, and Gemini.** Local Docker-based Firecrawl with auto-lifecycle management (starts on-demand, idles down after 15 minutes). All requests routed through wrapper at `brain/tools/firecrawl/firecrawl-wrapper.sh`.
 
 - **Token efficiency**: 75–90% reduction vs raw HTML (returns clean markdown)
 - **AI-agnostic**: Works with Claude Code, Codex, Gemini Flash (single source of truth)
 - **Auto-managed**: Starts on first request, shuts down after 15-minute idle timeout
 - **Replaces**: `/browse` (QA tool, retired), `WebFetch` (token-heavy HTML), ad-hoc web searching
 - **Safe defaults**: Hard caps on crawl depth and pages; domain-scoped crawling
-- **Auditable**: All requests logged to `~/tools/firecrawl/logs/firecrawl.log`
+- **Auditable**: All requests logged to `brain/tools/firecrawl/logs/firecrawl.log`
 - **Managed wrapper**: Validates parameters, enforces caps, handles timeouts, manages lifecycle
 
 ---
@@ -35,19 +35,19 @@ description: "Default tool for ALL web data tasks — searching the internet, sc
 
 ## Wrapper Usage
 
-All Firecrawl requests go through the wrapper at `~/tools/firecrawl/firecrawl-wrapper.sh`:
+All Firecrawl requests go through the wrapper at `brain/tools/firecrawl/firecrawl-wrapper.sh`:
 
 ```bash
 # Manual usage
-~/tools/firecrawl/firecrawl-wrapper.sh scrape <url> [timeout]
-~/tools/firecrawl/firecrawl-wrapper.sh crawl <url> [pages] [depth] [timeout] [--deep]
-~/tools/firecrawl/firecrawl-wrapper.sh map <url> [timeout]
+brain/tools/firecrawl/firecrawl-wrapper.sh scrape <url> [timeout]
+brain/tools/firecrawl/firecrawl-wrapper.sh crawl <url> [pages] [depth] [timeout] [--deep]
+brain/tools/firecrawl/firecrawl-wrapper.sh map <url> [timeout]
 
 # Check health
-~/tools/firecrawl/firecrawl-wrapper.sh health
+brain/tools/firecrawl/firecrawl-wrapper.sh health
 
 # View logs
-~/tools/firecrawl/firecrawl-wrapper.sh logs
+brain/tools/firecrawl/firecrawl-wrapper.sh logs
 ```
 
 ### Wrapper Features
@@ -61,7 +61,7 @@ All Firecrawl requests go through the wrapper at `~/tools/firecrawl/firecrawl-wr
 
 ### Logs
 
-All requests logged to: `~/tools/firecrawl/logs/firecrawl.log`
+All requests logged to: `brain/tools/firecrawl/logs/firecrawl.log`
 
 Format: `[timestamp] REQUEST | URL: ... | MODE: ... | MAX_PAGES: ... | STATUS: ...`
 
@@ -73,7 +73,7 @@ Example:
 ## Local Endpoint
 
 **Localhost:** `http://localhost:3051`  
-**Do NOT use directly** — always route through wrapper at `~/tools/firecrawl/firecrawl-wrapper.sh` for safety, logging, and lifecycle management
+**Do NOT use directly** — always route through wrapper at `brain/tools/firecrawl/firecrawl-wrapper.sh` for safety, logging, and lifecycle management
 
 The wrapper automatically:
 - Starts Docker Compose on first request
@@ -91,22 +91,22 @@ Use the wrapper script consistently across all engines:
 
 ```bash
 # Scrape a single URL
-~/tools/firecrawl/firecrawl-wrapper.sh scrape https://example.com
+brain/tools/firecrawl/firecrawl-wrapper.sh scrape https://example.com
 
 # Crawl a site (25 pages, depth 2 by default)
-~/tools/firecrawl/firecrawl-wrapper.sh crawl https://example.com
+brain/tools/firecrawl/firecrawl-wrapper.sh crawl https://example.com
 
 # Crawl with custom limits
-~/tools/firecrawl/firecrawl-wrapper.sh crawl https://example.com 10 2 60
+brain/tools/firecrawl/firecrawl-wrapper.sh crawl https://example.com 10 2 60
 
 # Deep crawl for approved research
-~/tools/firecrawl/firecrawl-wrapper.sh crawl https://example.com --deep
+brain/tools/firecrawl/firecrawl-wrapper.sh crawl https://example.com --deep
 
 # Check if Firecrawl is running
-~/tools/firecrawl/firecrawl-wrapper.sh health
+brain/tools/firecrawl/firecrawl-wrapper.sh health
 
 # View request logs
-~/tools/firecrawl/firecrawl-wrapper.sh logs
+brain/tools/firecrawl/firecrawl-wrapper.sh logs
 ```
 
 ### Response Format
@@ -183,20 +183,20 @@ Check `"success": true` before proceeding. If false, log the error and retry wit
 **Manual control:**
 ```bash
 # Start Firecrawl manually
-cd ~/tools/firecrawl && docker-compose up -d
+cd brain/tools/firecrawl && docker-compose up -d
 
 # Stop Firecrawl manually
-cd ~/tools/firecrawl && docker-compose down
+cd brain/tools/firecrawl && docker-compose down
 
 # Check current status
-~/tools/firecrawl/firecrawl-wrapper.sh health
+brain/tools/firecrawl/firecrawl-wrapper.sh health
 ```
 
 ---
 
 ## Configuration
 
-Configured via `~/tools/firecrawl/docker-compose.yml`:
+Configured via `brain/tools/firecrawl/docker-compose.yml`:
 
 **Key env vars:**
 - `USE_DB_AUTHENTICATION=false` — no auth needed
@@ -206,11 +206,11 @@ Configured via `~/tools/firecrawl/docker-compose.yml`:
 
 **Persistent storage:** PostgreSQL database in Docker volume `firecrawl_pgdata` (survives container restarts)
 
-**Wrapper config:** `~/tools/firecrawl/firecrawl-wrapper.sh`
+**Wrapper config:** `brain/tools/firecrawl/firecrawl-wrapper.sh`
 - Hard caps: 50 pages, 3 depth, 120s timeout
 - Safe defaults: 25 pages, 2 depth, 60s timeout
 - Idle timeout: 15 minutes before auto-shutdown
-- Logging: `~/tools/firecrawl/logs/firecrawl.log`
+- Logging: `brain/tools/firecrawl/logs/firecrawl.log`
 
 ---
 

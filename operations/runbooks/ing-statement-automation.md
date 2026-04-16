@@ -90,7 +90,7 @@ Subscribe on your iPhone:
 
 ### 3. Playwright Script
 
-Already in place: `~/tools/scripts/bank-statement-login.js`
+Already in place: `brain/tools/scripts/bank-statement-login.js`
 
 Playwright is installed via n8n dependencies.
 
@@ -150,7 +150,7 @@ Run locally with a short timeout:
 
 ```bash
 source ~/.config/ing/.env
-TIMEOUT_SECONDS=120 node ~/tools/scripts/bank-statement-login.js
+TIMEOUT_SECONDS=120 node brain/tools/scripts/bank-statement-login.js
 ```
 
 Expected behavior:

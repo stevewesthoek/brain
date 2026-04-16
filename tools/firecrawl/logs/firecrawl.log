@@ -1,0 +1,54 @@
+[2026-04-15 10:17:44] Health check: FAILED
+[2026-04-15 10:17:51] Health check: OK
+[2026-04-15 10:17:55] REQUEST | URL: https://wikipedia.org | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 10:17:55] REQUEST | URL: https://wikipedia.org | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 10:18:06] REQUEST | URL: https://wikipedia.org | MODE: crawl | MAX_PAGES: 50 | MAX_DEPTH: 3 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 10:18:07] REQUEST | URL: https://wikipedia.org | MODE: crawl | MAX_PAGES: 50 | MAX_DEPTH: 3 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 10:19:36] Health check: OK
+[2026-04-15 10:19:39] Health check: OK
+[2026-04-15 10:19:39] REQUEST | URL: https://en.wikipedia.org/wiki/Python | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 10:19:40] REQUEST | URL: https://en.wikipedia.org/wiki/Python | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:09:54] Idle timeout reached after 15 minutes - shutting down
+[2026-04-15 13:09:56] REQUEST | URL: https://dokploy.com/docs/core/deployments/image | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: failed_idle_shutdown
+[2026-04-15 13:10:15] Health check: OK
+[2026-04-15 13:10:20] REQUEST | URL: https://dokploy.com/docs/core/deployments/image | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:10:21] REQUEST | URL: https://dokploy.com/docs/core/deployments/image | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:10:28] REQUEST | URL: https://docs.dokploy.com/en/docs/core/applications/deployments | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:10:28] REQUEST | URL: https://docs.dokploy.com/en/docs/core/docker-image | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:10:28] REQUEST | URL: https://docs.dokploy.com/en/docs/core/docker-image | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:10:28] REQUEST | URL: https://docs.dokploy.com/en/docs/core/applications/deployments | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:10:32] REQUEST | URL: https://docs.dokploy.com | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:10:33] REQUEST | URL: https://docs.dokploy.com | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:10:38] REQUEST | URL: https://docs.dokploy.com/docs/core/applications/deployments | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:10:38] REQUEST | URL: https://docs.dokploy.com/docs/core/applications | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:10:38] REQUEST | URL: https://docs.dokploy.com/docs/core/applications | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:10:39] REQUEST | URL: https://docs.dokploy.com/docs/core/applications/deployments | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:10:42] REQUEST | URL: https://docs.dokploy.com/docs/core/applications/general | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:10:42] REQUEST | URL: https://docs.dokploy.com/docs/core/applications/general | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:10:50] REQUEST | URL: https://docs.dokploy.com | MODE: map | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:10:51] REQUEST | URL: https://docs.dokploy.com | MODE: map | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:11:09] REQUEST | URL: https://docs.dokploy.com/docs/core/registry | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:11:09] REQUEST | URL: https://docs.dokploy.com/docs/core/Docker | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:11:09] REQUEST | URL: https://docs.dokploy.com/docs/core/registry/ghcr | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 13:11:10] REQUEST | URL: https://docs.dokploy.com/docs/core/registry | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:11:10] REQUEST | URL: https://docs.dokploy.com/docs/core/registry/ghcr | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 13:11:10] REQUEST | URL: https://docs.dokploy.com/docs/core/Docker | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 22:33:20] Idle timeout reached after 15 minutes - shutting down
+[2026-04-15 22:33:21] REQUEST | URL: https://help.obsidian.md/Getting+started/Organize+your+notes | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: failed_idle_shutdown
+[2026-04-15 22:45:59] REQUEST | URL: https://help.obsidian.md/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: failed_health_check
+[2026-04-15 22:45:59] REQUEST | URL: https://help.obsidian.md/How+to/Organize+your+notes | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: failed_health_check
+[2026-04-15 22:45:59] REQUEST | URL: https://en.wikipedia.org/wiki/PARA_method | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: failed_health_check
+[2026-04-15 22:46:14] REQUEST | URL: https://help.obsidian.md/Getting+started/Download+Obsidian | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 22:46:15] REQUEST | URL: https://help.obsidian.md/Getting+started/Download+Obsidian | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 22:46:15] REQUEST | URL: https://help.obsidian.md/How+to/Organize+your+notes | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 22:46:16] REQUEST | URL: https://help.obsidian.md/How+to/Organize+your+notes | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 22:46:16] REQUEST | URL: https://help.obsidian.md/Obsidian/Index | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 22:46:17] REQUEST | URL: https://help.obsidian.md/Obsidian/Index | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 22:46:21] REQUEST | URL: https://fortelabs.com/blog/para/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 22:46:21] REQUEST | URL: https://fortelabs.com/blog/para/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 22:46:21] REQUEST | URL: https://forum.obsidian.md/t/best-practices-for-vault-structure/153 | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 22:46:23] REQUEST | URL: https://forum.obsidian.md/t/best-practices-for-vault-structure/153 | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 22:46:26] REQUEST | URL: https://www.reddit.com/r/ObsidianMD/wiki/index | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 22:46:26] REQUEST | URL: https://www.reddit.com/r/ObsidianMD/wiki/index | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-15 22:46:26] REQUEST | URL: https://nicolevanderhoeven.com/blog/20230116-obsidian-vault-structures/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-04-15 22:46:27] REQUEST | URL: https://nicolevanderhoeven.com/blog/20230116-obsidian-vault-structures/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
