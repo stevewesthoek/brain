@@ -54,5 +54,13 @@
     "check": "http://localhost:3050",
     "start": "echo 'Manual start required'",
     "description": "Portuguese language learning app"
+  },
+  {
+    "name": "Brain Bridge",
+    "port": 3052,
+    "url": "http://localhost:3052",
+    "check": "http://localhost:3052/api/search",
+    "start": "cd ~/Repos/stevewesthoek/brain-bridge/packages/cli && node dist/index.js serve > /tmp/brain-bridge.log 2>&1 &",
+    "description": "Local Markdown vault search and note creation agent"
   }
 ]
