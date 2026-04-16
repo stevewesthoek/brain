@@ -6,7 +6,7 @@ para_type: resource
 confidence: 0.95
 signal_quality: 0.95
 created: 2026-04-16
-status: unrouted
+status: ready-for-review
 ---
 
 # Brain Bridge OpenAPI rule
