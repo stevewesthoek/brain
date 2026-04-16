@@ -59,8 +59,9 @@
     "name": "Brain Bridge",
     "port": 3052,
     "url": "http://localhost:3052",
-    "check": "http://localhost:3052/api/search",
+    "check": "http://localhost:3052/health",
     "start": "cd ~/Repos/stevewesthoek/brain-bridge/packages/cli && node dist/index.js serve > /tmp/brain-bridge.log 2>&1 &",
+    "stop": "pkill -f 'node dist/index.js serve'",
     "description": "Local Markdown vault search and note creation agent"
   }
 ]
