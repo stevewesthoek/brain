@@ -120,32 +120,6 @@ Claude Code model routing is now **fully transparent** — your status line show
 
 This system runs automatically via hooks in `~/.claude/settings.json`. No user action needed — just look at your status line.
 
-## Local LLMs
-
-**QWEN 2.5 coder 14b** — local, free alternative to Claude/Codex. Ollama-based, runs on port 11435 (separate instance). **Repo-aware with file context support.**
-
-- **Start service:** `qwen-service start`
-- **Stop service:** `qwen-service stop`
-- **Check status:** `qwen-service status`
-- **CLI:**
-  - `qwen "your prompt"` — regular query
-  - `qwen file:path/to/file "question"` — read file + ask question
-  - `qwen @"*.js" "question"` — find files matching pattern + ask
-  - `qwen` — interactive mode (supports file syntax too)
-- **Integration:** Added to `repos` and `sessions` pickers alongside Claude, Codex, Gemini
-- **File context:** ~8000 char limit per query; use when in a repo directory
-- **Configuration:** 
-  - Ollama binary: `/opt/homebrew/opt/ollama/bin/ollama` (Homebrew)
-  - Models dir: `~/.ollama-qwen`
-  - Service script: `tools/scripts/qwen-service.sh`
-  - CLI wrapper: `tools/scripts/qwen`
-  - LaunchD service: `operations/system-configs/launchd/com.office.qwen-ollama.plist`
-
-**Auto-start (optional):**
-```bash
-ln -sf ~/Repos/stevewesthoek/brain/operations/system-configs/launchd/com.office.qwen-ollama.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.office.qwen-ollama.plist
-```
 
 ## Machine-brain tasks
 
@@ -194,8 +168,6 @@ Machine tasks integrate with your main workflow — same kanban, same priorities
 - `~/.gemini` → `machine-brain/operations/system-configs/gemini`
 - `~/.kiro` → `machine-brain/operations/system-configs/kiro`
 - `~/.docker` → `machine-brain/operations/system-configs/docker`
-- `~/.ollama-qwen` — QWEN models directory. Do not delete.
-- `tools/scripts/qwen-service.sh`, `tools/scripts/qwen` — QWEN CLI and service management.
 - `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are symlinks → machine-brain
 - `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` may symlink into machine-brain
 

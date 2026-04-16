@@ -71,7 +71,7 @@ PYEOF
 }
 
 # Step 1: pick AI tool — Claude is default (first item)
-tool=$(printf "Claude\nCodex\nGemini\nQWEN" | fzf \
+tool=$(printf "Claude\nCodex\nGemini" | fzf \
   --prompt="  open with: " \
   --height=10 \
   --layout=reverse \
@@ -115,6 +115,4 @@ elif [[ "$tool" == "Codex" ]]; then
   exec codex
 elif [[ "$tool" == "Gemini" ]]; then
   exec gemini
-else
-  exec qwen
 fi

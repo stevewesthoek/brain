@@ -61,9 +61,4 @@ sessions() {
   bash ~/Repos/stevewesthoek/brain/tools/scripts/sessions.sh
 }
 
-# QWEN service management
-qwen-service() {
-  bash ~/Repos/stevewesthoek/brain/tools/scripts/qwen-service.sh "$@"
-}
-
 export PATH=$HOME/bin:$PATH
