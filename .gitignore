@@ -126,16 +126,3 @@ operations/system-configs/shell/.zshrc.local
 
 # Security auto-approval log — local audit trail, not for git
 operations/security-auto-approvals.log
-
-# Obsidian runtime state (changes every open, not useful to track)
-.obsidian/workspace.json
-.obsidian/workspace-mobile.json
-
-# Obsidian daily notes — personal ephemeral, not part of repo config
-notes/daily/*.md
-
-# Obsidian trash — deleted notes
-.trash/
-
-# Obsidian Git plugin local state
-.obsidian/plugins/obsidian-git/data/
