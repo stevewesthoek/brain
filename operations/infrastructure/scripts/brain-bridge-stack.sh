@@ -6,6 +6,11 @@ BRAIN_BRIDGE_DIR="${BRAIN_BRIDGE_DIR:-/Users/Office/Repos/stevewesthoek/brain-br
 VAULT_DIR="${VAULT_DIR:-/Users/Office/Repos/stevewesthoek/brain}"
 LOG_DIR="/tmp"
 
+# Load token from local config if not already set
+if [ -z "$BRAIN_BRIDGE_ACTION_TOKEN" ] && [ -f "$HOME/.config/brain-bridge/.env" ]; then
+  export $(grep BRAIN_BRIDGE_ACTION_TOKEN "$HOME/.config/brain-bridge/.env" | xargs)
+fi
+
 RELAY_LOG="$LOG_DIR/brainbridge-bridge.log"
 AGENT_LOG="$LOG_DIR/brainbridge-agent.log"
 WEB_LOG="$LOG_DIR/brainbridge-web.log"
