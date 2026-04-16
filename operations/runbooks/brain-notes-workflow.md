@@ -9,7 +9,7 @@
 
 ## Quick Start (2 minutes)
 
-1. **Every morning:** Open `vault/kanban.canvas`
+1. **Every morning:** Open `mind/kanban.canvas`
 2. **Pick 1-3 tasks** from "To Do"
 3. **Drag to "Doing"** when you start
 4. **Work**
@@ -41,7 +41,7 @@ https://n8n.prochat.tools/webhook/brain-inbox
    - `confidence` (0-1): Sure about PARA type?
    - `signal_quality` (0-1): Actionable and valuable?
 3. Gemini generates: title, summary, key points, action items
-4. Note lands in `vault/01-inbox/`
+4. Note lands in `mind/01-inbox/`
 
 ---
 
@@ -49,7 +49,7 @@ https://n8n.prochat.tools/webhook/brain-inbox
 
 **When:** Daily or weekly, whenever you have time
 
-**Where:** `vault/01-inbox/`
+**Where:** `mind/01-inbox/`
 
 **What to do:**
 - Read the auto-generated summary
@@ -66,10 +66,10 @@ https://n8n.prochat.tools/webhook/brain-inbox
 
 **When:** You've decided to commit to something
 
-**Where:** `vault/02-strategy/`
+**Where:** `mind/02-strategy/`
 
 **How:**
-1. Copy `vault/07-templates/strategy.md`
+1. Copy `mind/07-templates/strategy.md`
 2. Rename to your strategy title
 3. Fill in:
    - **Why:** Why does this matter now?
@@ -85,11 +85,11 @@ https://n8n.prochat.tools/webhook/brain-inbox
 
 **When:** After committing to strategy
 
-**Where:** `vault/03-projects/[project-name]/`
+**Where:** `mind/03-projects/[project-name]/`
 
 **How:**
 1. Create folder: `03-projects/[project-name]/`
-2. Copy `vault/07-templates/project.md` → `03-projects/[project-name]/README.md`
+2. Copy `mind/07-templates/project.md` → `03-projects/[project-name]/README.md`
 3. Fill in:
    - **Goal:** What defines "done"?
    - **Timeline:** Start and target end dates
@@ -103,10 +103,10 @@ https://n8n.prochat.tools/webhook/brain-inbox
 
 **When:** You're ready to execute a phase
 
-**Where:** `vault/04-tasks/`
+**Where:** `mind/04-tasks/`
 
 **How:**
-1. Copy `vault/07-templates/task.md` → `vault/04-tasks/[task-name].md`
+1. Copy `mind/07-templates/task.md` → `mind/04-tasks/[task-name].md`
 2. Fill in:
    - **What to Do:** One sentence goal
    - **Acceptance Criteria:** How do we know it's done? (2-3 specific items)
@@ -124,7 +124,7 @@ If it takes > 1 session, break it down further.
 
 ## Working on Kanban Board (Daily)
 
-**Where:** `vault/kanban.canvas`
+**Where:** `mind/kanban.canvas`
 
 **Daily routine (5 minutes):**
 
@@ -141,7 +141,7 @@ If it takes > 1 session, break it down further.
    - Drag task from "Doing" → "Done"
 
 4. **End of day (optional):**
-   - Move done tasks to `vault/08-archive/`
+   - Move done tasks to `mind/08-archive/`
 
 **Keep < 2 tasks in "Doing" at any time.**
 
@@ -176,7 +176,7 @@ If it takes > 1 session, break it down further.
 
 **When:** Once a week, after reviewing what's done
 
-**Where:** `vault/04-tasks/` + `vault/03-projects/`
+**Where:** `mind/04-tasks/` + `mind/03-projects/`
 
 **How:**
 1. Move completed task files from `04-tasks/` to `08-archive/`
@@ -224,7 +224,7 @@ Example resources:
 ## Structure at a Glance
 
 ```
-vault/
+mind/
 ├── 01-inbox/          ← Raw captures (read-only)
 ├── 02-strategy/       ← Your decisions (you write these)
 ├── 03-projects/       ← Active projects (one folder per project)
@@ -315,7 +315,7 @@ When Step 4 automation is implemented:
 
 ## References
 
-- `vault/STRUCTURE.md` — System overview and structure
-- `vault/07-templates/` — Copy these when creating notes
-- `vault/home.md` — Dashboard with queries
+- `mind/STRUCTURE.md` — System overview and structure
+- `mind/07-templates/` — Copy these when creating notes
+- `mind/home.md` — Dashboard with queries
 - `operations/runbooks/n8n-brain-inbox.md` — How the webhook/Gemini works

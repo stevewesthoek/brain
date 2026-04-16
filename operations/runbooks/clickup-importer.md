@@ -7,7 +7,7 @@
 The ClickUp CSV Importer transforms a ClickUp task export into Brain task format. It reads a CSV file and:
 
 1. Parses all tasks with metadata (name, status, due date, priority, assignees)
-2. Creates individual task `.md` files in `vault/04-tasks/{list-slug}/{number}-{task-slug}.md`
+2. Creates individual task `.md` files in `04-tasks/{list-slug}/{number}-{task-slug}.md`
 3. Maps ClickUp statuses to Brain statuses:
    - `complete` → `done` (marks task as [x] in Kanban Done column)
    - `today`, `next`, `priority` → `ready` (marks as [ ] in Backlog/To Do)
@@ -87,7 +87,7 @@ The importer reads ClickUp's standard CSV export format:
 Tasks are created in folder hierarchy based on ClickUp list names:
 
 ```
-vault/04-tasks/
+04-tasks/
 ├── business-tasks/
 │   ├── 0001-first-task.md
 │   ├── 0002-second-task.md
@@ -190,7 +190,7 @@ python3 ~/Repos/stevewesthoek/brain/tools/scripts/clickup-importer.py ~/Download
 
 Process:
 1. Parses all tasks from CSV
-2. Creates `.md` files in `vault/04-tasks/`
+2. Creates `.md` files in `04-tasks/`
 3. Stages all files with `git add`
 4. Creates atomic commit: `"brain: import N tasks from ClickUp"`
 5. Pulls from remote (`git pull --rebase`)
@@ -266,7 +266,7 @@ Task Metadata (name, status, priority, content)
         ↓
 Task file generation (YAML + markdown)
         ↓
-Write to vault/04-tasks/{list}/{number}-{slug}.md
+Write to 04-tasks/{list}/{number}-{slug}.md
         ↓
 Git: stage → commit → pull → push
         ↓
@@ -349,10 +349,10 @@ tail -20 ~/.local/share/brain/logs/clickup-importer-error.log
 
 If you accidentally import twice, you'll have duplicates. To clean up:
 
-1. Check git history: `git log --oneline vault/04-tasks/`
+1. Check git history: `git log --oneline 04-tasks/`
 2. Identify duplicate commits
 3. Reset to before the first import: `git reset --soft <commit-hash>`
-4. Delete task folders: `rm -rf vault/04-tasks/{list-name}`
+4. Delete task folders: `rm -rf 04-tasks/{list-name}`
 5. Clean and commit: `git add . && git commit -m "cleanup duplicates"`
 6. Re-run import
 

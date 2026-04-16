@@ -22,7 +22,7 @@ tail -20 ~/.local/share/brain/logs/auto-router.log
 
 **If you reinstall macOS:**
 - Keep your home directory path the same → Everything works
-- Move the brain repo → Update crontab path (see "Cron Job Management" below)
+- Move the mind repo → Update crontab path (see "Cron Job Management" below)
 - Change GitHub PAT → Update `~/.config/github/.env`
 
 ---
@@ -32,7 +32,7 @@ tail -20 ~/.local/share/brain/logs/auto-router.log
 The Auto-Router is a Python script that automatically routes inbox notes through the Brain GTD system. It runs every 1 minute via OS-level cron and intelligently categorizes notes based on confidence and signal_quality scores.
 
 **What it does:**
-1. Scans `vault/01-inbox/` for files with `status: unrouted`
+1. Scans `01-inbox/` for files with `status: unrouted`
 2. Extracts `confidence` and `signal_quality` scores from frontmatter
 3. Routes based on decision tree (see below)
 4. Updates file status and moves to destination folder via git
@@ -302,7 +302,7 @@ git push
 ```bash
 cd ~/Repos/stevewesthoek/brain
 
-cat > vault/01-inbox/2026-04-10-test-high-value.md << 'EOF'
+cat > 01-inbox/2026-04-10-test-high-value.md << 'EOF'
 ---
 type: capture
 source: test

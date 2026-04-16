@@ -3,12 +3,12 @@
 Brain Kanban Syncer: Obsidian Kanban Plugin markdown synchronization.
 
 This script runs every 10 minutes (via cron) and:
-1. Reads all task files from notes/04-tasks/
+1. Reads all task files from 04-tasks/ in the mind repo
 2. Parses task metadata (title, status, priority, assigned_to)
-3. Loads existing notes/kanban.md (if it exists)
+3. Loads existing kanban.md (if it exists)
 4. Preserves the To Do column (user drags)
 5. Auto-generates Backlog, Doing, Done from task file status
-6. Writes updated notes/kanban.md in Obsidian Kanban plugin format
+6. Writes updated kanban.md in Obsidian Kanban plugin format
 7. Only commits if kanban.md changed
 
 Cron Schedule: Every 10 minutes
@@ -16,7 +16,7 @@ Cron Schedule: Every 10 minutes
 
 Configuration:
   - GITHUB_TOKEN: Required, stored in ~/.config/github/.env or GITHUB_TOKEN env var
-  - REPO: stevewesthoek/brain
+  - REPO: stevewesthoek/mind
   - LOG_DIR: ~/.local/share/brain/logs/
 
 Logs:
@@ -39,10 +39,10 @@ import subprocess
 
 # Configuration
 REPO_USER = "stevewesthoek"
-REPO_NAME = "brain"
+REPO_NAME = "mind"
 REPO_BRANCH = "main"
-TASKS_PATH = "notes/04-tasks"
-KANBAN_PATH = "notes/kanban.md"
+TASKS_PATH = "04-tasks"
+KANBAN_PATH = "kanban.md"
 LOG_DIR = Path.home() / ".local" / "share" / "brain" / "logs"
 
 # Setup logging

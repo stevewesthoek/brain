@@ -3,10 +3,10 @@
 Brain Project Decomposer: Automated project decomposition into tasks.
 
 This script runs every 5 minutes (via cron) and:
-1. Scans notes/03-projects/ for files with status: ready-for-review and type: capture
+1. Scans 03-projects/ for files with status: ready-for-review and type: capture in the mind repo
 2. Sends each project to Gemini to decompose into phases and atomic tasks
 3. Replaces the project file with proper project.md template format
-4. Creates task files in notes/04-tasks/{project-slug}/
+4. Creates task files in 04-tasks/{project-slug}/
 5. Commits all changes atomically to GitHub
 6. Logs all actions to ~/.local/share/brain/logs/project-decomposer.log
 
@@ -15,7 +15,7 @@ Cron Schedule: Every 5 minutes
 
 Configuration:
   - GITHUB_TOKEN: Required, stored in ~/.config/github/.env or GITHUB_TOKEN env var
-  - REPO: stevewesthoek/brain
+  - REPO: stevewesthoek/mind
   - LOG_DIR: ~/.local/share/brain/logs/
 
 Logs:
@@ -38,10 +38,10 @@ import subprocess
 
 # Configuration
 REPO_USER = "stevewesthoek"
-REPO_NAME = "brain"
+REPO_NAME = "mind"
 REPO_BRANCH = "main"
-PROJECTS_PATH = "notes/03-projects"
-TASKS_PATH = "notes/04-tasks"
+PROJECTS_PATH = "03-projects"
+TASKS_PATH = "04-tasks"
 LOG_DIR = Path.home() / ".local" / "share" / "brain" / "logs"
 
 # Setup logging
@@ -327,7 +327,7 @@ def build_task_content(task_data: Dict, project_title: str, project_filename: st
         "status: ready",
         f"priority: {priority}",
         f"effort: {effort}",
-        f"project: [[notes/03-projects/{project_filename}]]",
+        f"project: [[03-projects/{project_filename}]]",
         "---",
     ]
 

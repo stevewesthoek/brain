@@ -3,7 +3,7 @@
 Brain Auto-Router: Automated GTD routing for inbox notes.
 
 This script runs every 1 minute (via cron) and:
-1. Scans notes/01-inbox/ for files with status: unrouted
+1. Scans 01-inbox/ for files with status: unrouted in the mind repo
 2. Extracts confidence and signal_quality scores from frontmatter
 3. Routes based on decision tree:
    - confidence >= 0.8 AND signal_quality >= 0.8 → 03-projects/ or 02-strategy/brainstorm, status: ready-for-review
@@ -18,7 +18,7 @@ Cron Schedule: Every 1 minute
 
 Configuration:
   - GITHUB_TOKEN: Required, stored in ~/.config/github/.env or GITHUB_TOKEN env var
-  - REPO: stevewesthoek/brain
+  - REPO: stevewesthoek/mind
   - LOG_DIR: ~/.local/share/brain/logs/
 
 Logs:
@@ -43,9 +43,9 @@ import subprocess
 
 # Configuration
 REPO_USER = "stevewesthoek"
-REPO_NAME = "brain"
+REPO_NAME = "mind"
 REPO_BRANCH = "main"
-INBOX_PATH = "notes/01-inbox"
+INBOX_PATH = "01-inbox"
 LOG_DIR = Path.home() / ".local" / "share" / "brain" / "logs"
 
 # Setup logging

@@ -4,7 +4,7 @@ ClickUp CSV Importer: Import ClickUp export tasks into Brain Obsidian task forma
 
 This script reads a ClickUp CSV export and:
 1. Parses task data (name, status, due date, priority, assignees)
-2. Creates task.md files in notes/04-tasks/{task-slug}/ with proper YAML frontmatter
+2. Creates task.md files in 04-tasks/{task-slug}/ with proper YAML frontmatter in the mind repo
 3. Maps ClickUp status to Brain task status:
    - complete → status: done
    - today → status: ready (will appear in To Do when synced)
@@ -33,9 +33,9 @@ import subprocess
 
 # Configuration
 REPO_USER = "stevewesthoek"
-REPO_NAME = "brain"
+REPO_NAME = "mind"
 REPO_BRANCH = "main"
-TASKS_PATH = "notes/04-tasks"
+TASKS_PATH = "04-tasks"
 LOG_DIR = Path.home() / ".local" / "share" / "brain" / "logs"
 
 # Setup logging

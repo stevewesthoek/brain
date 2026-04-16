@@ -7,7 +7,7 @@ Step 4 of the 4-step GTD automation:
 - Step 3: Project Decomposer — DONE
 - Step 4: Kanban Syncer — THIS PLAN
 
-The Project Decomposer creates task files in `notes/04-tasks/{project-slug}/{n}-{task-name}.md`. The Kanban Syncer reads all those task files, maps them to the correct column based on `status`, and writes `notes/kanban.canvas` with proper Obsidian file-link nodes.
+The Project Decomposer creates task files in `04-tasks/{project-slug}/{n}-{task-name}.md`. The Kanban Syncer reads all those task files, maps them to the correct column based on `status`, and writes `kanban.canvas` with proper Obsidian file-link nodes.
 
 ---
 
@@ -50,15 +50,15 @@ Same patterns as `brain-auto-router.py` and `brain-project-decomposer.py`:
 - Cron: every 10 minutes (`*/10 * * * *`)
 
 **Logic flow:**
-1. Get all task `.md` files from `notes/04-tasks/` via `git ls-tree -r main notes/04-tasks`
+1. Get all task `.md` files from `04-tasks/` via `git ls-tree -r main 04-tasks`
 2. For each file: read content via `git show main:<filepath>`, parse frontmatter
 3. Only process files with `type: task`
 4. Group tasks by `status` (ready → backlog, in-progress → doing, done → done)
-5. Load existing `notes/kanban.canvas` JSON from disk
+5. Load existing `kanban.canvas` JSON from disk
 6. Remove all existing task nodes (ID starts with `task-`) from the nodes array
 7. Build new task nodes for each task file (type: "file", file: filepath, id: "task-{slug}")
 8. Stack them vertically in each column, sorted by priority (1=highest first)
-9. Write updated JSON to `notes/kanban.canvas`
+9. Write updated JSON to `kanban.canvas`
 10. If canvas changed: `git add`, `git commit`, `git pull --rebase`, `git push`
 
 **Task node structure:**
@@ -66,7 +66,7 @@ Same patterns as `brain-auto-router.py` and `brain-project-decomposer.py`:
 {
   "id": "task-001-select-creator-niche",
   "type": "file",
-  "file": "notes/04-tasks/project-slug/001-task-name.md",
+  "file": "04-tasks/project-slug/001-task-name.md",
   "x": -540,
   "y": -160,
   "width": 200,
@@ -104,14 +104,14 @@ Rationale: Kanban sync is fast (no AI call), but the canvas doesn't need to upda
 | File | Purpose |
 |---|---|
 | `tools/scripts/brain-auto-router.py` | Pattern source |
-| `notes/kanban.canvas` | Target file to update |
-| `notes/07-templates/task.md` | Task frontmatter schema |
+| `kanban.canvas` | Target file to update |
+| `07-templates/task.md` | Task frontmatter schema |
 
 ---
 
 ## Verification
 1. Create a test task file manually in `04-tasks/`
 2. Run script: `python3 ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py`
-3. Open `notes/kanban.canvas` and confirm task card appears in correct column
+3. Open `kanban.canvas` and confirm task card appears in correct column
 4. Open in Obsidian to verify file link opens correctly
 5. Check logs: `tail -20 ~/.local/share/brain/logs/kanban-syncer.log`
