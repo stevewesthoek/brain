@@ -37,24 +37,32 @@ Local repos at `~/Repos/` by GitHub account:
 **Two independent repos with symlink connection:**
 
 ```
-mind/                    ← iOS Obsidian vault (200MB)
-  01-inbox/, 02-strategy/, etc.
-  kanban.md, home.md
-  .obsidian/
-  .git/
+mind/                    ← Personal Obsidian vault (iOS + Mac)
+  01-inbox/              Strategy captures
+  02-strategy/           Strategic decisions
+  03-projects/           Active project containers
+  04-tasks/              742 atomic work items (business/personal/church/family)
+  05-areas/              Long-term responsibilities
+  kanban.md              Active work board (To Do, Doing, Done, Backlog)
+  home.md                Dashboard command center
+  .git/                  Independent repo: stevewesthoek/mind
 
-machine-brain/                     ← AI infrastructure, system config
-  ai/skills/
-  machine/
-  operations/system-configs/       ← symlinked to home (~)
-  mind/ → symlink to ../mind/
-  .git/
+brain/ (machine-brain)   ← AI infrastructure, system config, skills
+  ai/skills/             Claude/Codex/Gemini skills
+  machine/               Configs, scripts, prompts, software settings
+  operations/system-configs/  ← symlinked to home (~)
+  mind/ → symlink to ../mind/ (AI agents read vault)
+  .git/                  Independent repo: stevewesthoek/brain
 ```
 
+**Content separation:**
+- **mind/**: All strategy, projects, tasks, personal knowledge
+- **brain/**: All AI infrastructure, system configs, automation, skills
+
 **Sync:**
-- `mind`: Obsidian Git (iOS + Mac bidirectional)
-- `machine-brain`: Development workflow (Mac only, houses AI context)
-- Symlink: `machine-brain/mind` → `../mind` (AI agents read vault content)
+- `mind`: Obsidian Git plugin (iOS ↔ Mac bidirectional, ~200MB per clone)
+- `brain`: Development workflow (Mac development)
+- Symlink: `brain/mind` → `../mind` (AI agents access full vault context for reasoning)
 
 ## Repo structure (machine-brain)
 
@@ -138,6 +146,38 @@ This system runs automatically via hooks in `~/.claude/settings.json`. No user a
 ln -sf ~/Repos/stevewesthoek/brain/operations/system-configs/launchd/com.office.qwen-ollama.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.office.qwen-ollama.plist
 ```
+
+## Machine-brain tasks
+
+**What goes on the machine kanban (in mind/04-tasks/):**
+
+Tasks for machine-brain infrastructure work (AI infrastructure, system config, skills):
+- Skill development (new Claude/Codex/Gemini skills)
+- System configuration updates
+- Automation scripts and hooks
+- Model routing and cost optimization
+- Integration work (n8n, APIs, webhooks)
+- Infrastructure maintenance (Dokploy, Docker, databases)
+- Performance optimization
+- Documentation updates for machine infrastructure
+
+**Track in mind/kanban.md:**
+- Create a "machine" tag or prefix: `#machine` in task name or tag
+- Keep machine tasks visible alongside personal work
+- Machine work gets priority on strategic decisions affecting AI agents
+
+**Example machine task entries:**
+```
+- [ ] Build ChatGPT bridge skill #machine
+- [ ] Optimize model-tracking hook for Opus #machine
+- [ ] Set up Apify multi-account webhook automation #machine
+- [ ] Update n8n brain-inbox workflow #machine
+- [ ] Document skill installation process #machine
+```
+
+Machine tasks integrate with your main workflow — same kanban, same priorities, same daily execution.
+
+---
 
 ## Do not break
 
