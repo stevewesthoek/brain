@@ -1,3 +1,5 @@
 #!/bin/bash
-# ProBot wrapper - preserves process name as "ProBot" when exec'd
-exec "$(dirname "$0")/probot-bin" "$@"
+# ProBot wrapper - run from compiled JavaScript for always-up-to-date code
+# Navigate from MacOS/ -> Contents/ -> ProBot.app/ -> projects/probot/
+PROBOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
+exec node "$PROBOT_DIR/dist/index.js" "$@"
