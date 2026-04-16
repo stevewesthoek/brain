@@ -22,10 +22,8 @@ It is meant to be:
 - `organisations/` — company, brand, messaging, offers, playbooks
 - `projects/` — project-specific context, assets, notes, and execution docs
 - `ai/` — prompts, provider notes, shared multi-tool skills
-- `operations/` — runbooks, scripts, snippets, automations, infrastructure, deploy docs, system configs, google-ads artifacts
-- `tools/` — utility and workflow scripts for this machine (`tools/scripts/`)
-- `docs/` — reference documentation (google-ads, api-standards, testing, deploy)
-- `vault/` — Obsidian-managed notes
+- `operations/` — runbooks, standards, scripts, snippets, automations, infrastructure, deploy docs, system configs
+- `tools/` — utility and workflow scripts for this machine (`tools/scripts/`, tool-specific docs)
 - `runtime/` — ProBot runtime workspace material and local working state
 
 ## Reading Order
@@ -78,6 +76,8 @@ This table is the contract. If a tool reads the docs and finds no pointer to a n
 
 ### `operations/`
 - `operations/runbooks/` for repeatable procedures
+- `operations/standards/` for reference docs, API standards, testing procedures
+- `operations/runbooks/` for operational procedures and guides
 - `operations/scripts/` for executable helpers
 - `operations/snippets/` for small reusable fragments
 - `operations/automations/` for workflow exports and higher-level automation

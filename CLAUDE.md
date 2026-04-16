@@ -70,10 +70,10 @@ brain/ (machine-brain)   ← AI infrastructure, system config, skills
 |-----------|---------|
 | `ai/skills/` | Skill management (active symlinks → vendors/custom) |
 | `operations/system-configs/` | Global tool configs, symlinked from home directory |
-| `operations/runbooks/` | Procedures for tools and workflows |
+| `operations/runbooks/` | Procedures, standards, and reference documentation |
+| `operations/standards/` | API standards, testing procedures, deployment guidelines |
 | `operations/accounts/` | Credential metadata, billing, inventories |
 | `operations/deploy/` | Deployment configs (Dokploy) |
-| `docs/` | Reference documentation (google-ads, standards) |
 | `tools/` | Utility scripts and tools (google-ads, aws, azure, cloudflare, n8n, etc.) |
 | `mind/` | Symlink to ../mind (vault for AI context) |
 | `organisations/` | Brand truth, positioning, playbooks |
@@ -82,7 +82,7 @@ brain/ (machine-brain)   ← AI infrastructure, system config, skills
 
 ## Reference docs
 
-For credential conventions, see `docs/api-standards.md`. For testing/QA procedures, see `docs/testing.md`. For deployment rules, see `docs/deploy.md`. For model tracking and cost transparency, see `docs/model-tracking-reference.md`.
+For credential conventions, see `operations/standards/api-standards.md`. For testing/QA procedures, see `operations/runbooks/testing.md`. For deployment rules, see `operations/runbooks/deploy.md`. For model tracking and cost transparency, see `operations/runbooks/model-tracking-reference.md`.
 
 ## Symlink map (home → brain)
 
@@ -115,7 +115,7 @@ Claude Code model routing is now **fully transparent** — your status line show
 - **Tracking file:** `~/.claude/model-tracking.json` — readable state of current model + reason
 - **Cost awareness:** See when tasks escalate from Haiku → Sonnet → Opus
 - **Runbook:** `operations/runbooks/model-tracking.md` — full operational guide
-- **Reference:** `docs/model-tracking-reference.md` — user-facing quick reference
+- **Reference:** `operations/runbooks/model-tracking-reference.md` — user-facing quick reference
 
 This system runs automatically via hooks in `~/.claude/settings.json`. No user action needed — just look at your status line.
 
