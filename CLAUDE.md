@@ -49,7 +49,7 @@ mind/                    ← Personal Obsidian vault (iOS + Mac)
 
 brain/ (machine-brain)   ← AI infrastructure, system config, skills
   ai/skills/             Claude/Codex/Gemini skills
-  machine/               Configs, scripts, prompts, software settings
+  tools/                 Utility scripts and tools
   operations/system-configs/  ← symlinked to home (~)
   mind/ → symlink to ../mind/ (AI agents read vault)
   .git/                  Independent repo: stevewesthoek/brain
@@ -69,13 +69,12 @@ brain/ (machine-brain)   ← AI infrastructure, system config, skills
 | Directory | Purpose |
 |-----------|---------|
 | `ai/skills/` | Skill management (active symlinks → vendors/custom) |
-| `machine/` | Config, scripts, prompts, software settings |
 | `operations/system-configs/` | Global tool configs, symlinked from home directory |
 | `operations/runbooks/` | Procedures for tools and workflows |
 | `operations/accounts/` | Credential metadata, billing, inventories |
 | `operations/deploy/` | Deployment configs (Dokploy) |
-| `operations/google-ads/` | Google Ads config, data, and reports |
 | `docs/` | Reference documentation (google-ads, standards) |
+| `tools/` | Utility scripts and tools (google-ads, aws, azure, cloudflare, n8n, etc.) |
 | `mind/` | Symlink to ../mind (vault for AI context) |
 | `organisations/` | Brand truth, positioning, playbooks |
 | `projects/` | Project context, specs, execution docs |
