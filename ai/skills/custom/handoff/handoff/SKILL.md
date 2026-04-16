@@ -1,187 +1,206 @@
 ---
 name: handoff
-description: Use when starting or ending a Claude/Codex/Gemini work session — writes compressed handoff to .ai/current.md, loads minimal context on resume, or sets up the .ai/ memory system in a repo.
+description: Use when pausing, resuming, setting up, or checking Claude/Codex/Gemini repo work. Writes compressed state to .ai/current.md, appends durable decisions to .ai/decision-log.md, and resumes with minimal context.
 ---
 
 # Session Handoffs
 
-## What this skill is for
+## Purpose
 
-Manage Claude and Codex session continuity with minimal token overhead. The handoff system divides session memory into:
+Maintain repo work continuity with minimal token cost.
 
-1. **`.ai/current.md`** — Short-term resumable state (gets overwritten each session)
-2. **`decision-log.md`** — Long-term durable decisions (append-only archive)
-3. **`ai/handoffs/`** — Timestamped copies of past handoffs (optional, for history)
+This skill prevents long AI sessions from carrying bloated conversation history. It compresses only the useful state needed to resume work in a fresh session.
 
-This skill helps pause work at the end of a session with a compressed handoff, resume from a prior handoff, or initialize the `.ai/` memory system in a new repo.
+## Memory layers
+
+1. .ai/current.md — short-term resumable state, overwritten each session
+2. .ai/decision-log.md — durable decisions, append-only
+3. .ai/handoffs/ — optional archive for important handoffs only
 
 ## Use this skill when
 
-- **Ending a meaningful session** — Compress session state into `.ai/current.md` before pausing
-- **Starting a new session in the same repo** — Load `.ai/current.md` for fast context restoration
-- **Initializing a repo** — Set up the `.ai/` memory system and `decision-log.md` template
-- **Rolling out memory infrastructure** — Set up `.ai/` across multiple repos at once
-- **Verifying memory hygiene** — Check that current.md and decision-log.md follow conventions
+- Ending a meaningful Claude/Codex/Gemini session
+- Starting a fresh session in the same repo
+- Setting up AI memory files in a repo
+- Checking whether repo memory is clean and token-efficient
+- Archiving an important milestone handoff
+- Rolling out the same .ai/ memory structure across multiple repos
 
 ## Do not use this skill for
 
-- Storing speculative ideas, debug noise, or one-off temporary notes
-- Recording secrets, tokens, credentials, or API keys
-- Tracking raw conversation history — use summaries instead
-- Dumping full session transcripts — compress ruthlessly
-- Overwriting existing user work without inspection and confirmation
+- Storing raw chat transcripts
+- Storing full logs
+- Storing speculative ideas
+- Storing secrets, credentials, tokens, API keys, cookies, private keys, or env values
+- Recording temporary debugging noise
+- Replacing proper project documentation
+- Writing long summaries "just in case"
 
-## Rules
+## Core rules
 
-1. **Inspect before writing.** Always show the exact plan and wait for confirmation before creating or modifying `.ai/` files.
-2. **Never silently overwrite.** If files exist, show diffs or previews; never blindly truncate or replace.
-3. **Token optimization first.** Compress aggressively — `.ai/current.md` should be 200–500 tokens, not thousands.
-4. **Decisions are append-only.** `decision-log.md` never gets rewritten; new entries append with timestamps.
-5. **Secrets stay out.** Never write API keys, tokens, credentials, or auth information to `.ai/` files.
-6. **This skill applies to Claude, Codex, and Gemini.**
+1. Token optimization first.
+   - .ai/current.md must be ruthlessly compressed.
+   - Target: 200–500 tokens.
+   - Hard max: 800 tokens unless the user explicitly asks for more.
 
-## Handoff commands
+2. Current handoff is disposable.
+   - .ai/current.md may be overwritten during /handoff pause.
+   - If the handoff system already exists, do not ask for confirmation before overwriting .ai/current.md.
+   - Show a compact preview before writing.
 
-### `/handoff pause` or `/handoff end`
+3. Durable decisions are append-only.
+   - .ai/decision-log.md is never rewritten.
+   - Only append high-signal decisions that will matter later.
+   - Do not log routine implementation details.
 
-End a meaningful session and write compressed state to `.ai/current.md`.
+4. No secrets.
+   - Never write secrets, credentials, API keys, private env values, auth tokens, cookies, private URLs, database passwords, or webhook secrets.
+   - If a secret appears in context, replace it with [REDACTED].
 
-**Steps:**
-1. Summarize current task in 1–2 sentences
-2. Capture file paths that were touched (just the names, not full content)
-3. List any decisions made during this session
-4. Note next steps (concise bullet list)
-5. Flag any blockers or missing info
-6. Decide where this session's information belongs — promote to the right layer, let the rest go:
+5. No transcript dumping.
+   - Summarize outcomes, decisions, touched files, and next actions.
+   - Do not preserve the conversation.
 
-   | What you have | Where it goes |
-   |---------------|---------------|
-   | Confirmed architecture or workflow decision | `decision-log.md` — append a dated entry |
-   | New stable convention (global or this repo) | `CLAUDE.md` (repo or `~/.claude/CLAUDE.md`) |
-   | Cross-repo preference or repeated correction | Auto memory — feedback or user type |
-   | Non-obvious bug fix, codebase gotcha, workaround | `/learner` → extracted as a reusable skill |
-   | Everything else (temp state, files, next steps) | `.ai/current.md` only — it expires next session |
+6. Avoid confirmation loops.
+   - For normal pause/resume, act directly.
+   - Ask confirmation only for setup, rollout, deleting files, changing durable conventions, or overwriting non-handoff user content.
 
-   Default: if unsure, write it to `.ai/current.md` and let it expire. Promote only when it will matter again.
-7. Write `.ai/current.md` with this exact structure:
+7. One exact next step.
+   - Every handoff must contain one clear next action.
+   - Avoid vague next steps like "continue implementation."
 
-```markdown
+8. Cross-tool compatibility.
+   - This skill applies to Claude Code, Codex CLI, Gemini CLI, and similar coding agents.
+
+# Commands
+
+## /handoff pause or /handoff end
+
+Use at the end of a meaningful work session.
+
+### Behavior
+
+1. Inspect whether .ai/ exists.
+2. If .ai/ does not exist, suggest /handoff setup.
+3. Create a compact handoff preview.
+4. Overwrite .ai/current.md automatically if it is an existing handoff file.
+5. Append to .ai/decision-log.md only if durable decisions were made.
+6. Do not archive unless this was an important milestone or the user explicitly asks.
+
+### Write .ai/current.md with this exact structure
+
 # Current Handoff
 
 ## Repo
-[repo path or name]
+[repo name/path]
 
 ## Tool
-[Claude Code / Codex]
+[Claude Code / Codex / Gemini]
 
 ## Goal
-[1–2 sentence summary of the work goal]
+[1–2 sentence goal]
 
 ## Status
-[Current state: "in progress", "paused", "blocked", etc.]
+[in progress / paused / blocked / ready to test / ready to ship]
 
 ## Files touched
-- path/to/file1
-- path/to/file2
-[just names, no content dump]
+- [path] — [created/modified/read]
 
 ## Decisions made
-- [Decision 1 + brief reason]
-- [Decision 2 + brief reason]
-[if none, write "None this session"]
+- [decision + brief reason]
+or: None this session
 
-## Next steps
-- [Step 1]
-- [Step 2]
-[bulleted, concise]
+## Next step
+[one exact next action]
 
 ## Blockers
-[Any blockers or missing info, or "None"]
+[blocker or None]
+
+## Do not repeat
+- [failed attempt / dead end / irrelevant path]
+or: None
 
 ## Resume prompt
-[Exact prompt to paste when resuming: "Resume from [task], continue with [next step]"]
-```
+Resume this repo from .ai/current.md and continue with: [exact next action]
 
-8. If decision-log update needed, append to `decision-log.md`:
+### Promotion rules
 
-```markdown
-## YYYY-MM-DD -- [title]
-- Decision:
-- Reason:
-- Impact:
-```
+Use the correct memory layer:
 
-9. Optionally, save a timestamped copy to `ai/handoffs/YYYY-MM-DD-HH-MM-SS.md` (archive)
-10. **Learner check:** Before closing, ask: "Did anything non-obvious get solved this session — a tricky bug, a workaround, a codebase-specific gotcha?" If yes, prompt: "Run the shared `/learner` skill to extract it as a reusable skill before you go."
+- Temporary task state goes to .ai/current.md
+- One exact next action goes to .ai/current.md
+- Files touched this session go to .ai/current.md
+- Durable architecture/workflow decisions go to .ai/decision-log.md
+- Global repo rules or conventions go to CLAUDE.md only with confirmation
+- Reusable bug fixes, workarounds, or gotchas should be suggested for extraction into a reusable skill
+- Raw logs, failed attempts, and chat history must not be stored
+- Secrets and env values must never be stored
 
-### `/handoff resume`
+## /handoff resume
 
-Load prior session state and re-prime context for minimal token cost.
+Use at the start of a fresh session.
 
-**Steps:**
-1. Load `CLAUDE.md` (repo or global rules)
-2. Load `.ai/current.md` (current task state)
-3. Load `decision-log.md` (relevant durable decisions, skim only)
-4. Summarize in 5 bullets max:
-   - Repo and tool
-   - Current goal
-   - Files involved
-   - Prior decisions (if relevant)
-   - Blockers or unknowns
-5. Restate next steps
-6. Ask: "Ready to resume? Confirm or clarify context."
+### Behavior
 
-### `/handoff setup`
+1. Read .ai/current.md.
+2. Read .ai/decision-log.md only for entries directly relevant to the current handoff.
+3. Read CLAUDE.md only when needed for repo-specific rules.
+4. Summarize context in max 5 bullets.
+5. Continue with the next step immediately unless there is a real blocker.
 
-Initialize the `.ai/` memory system in a repo.
+### Resume output format
 
-**Steps:**
-1. Inspect the repo root and existing `.ai/` folder (if any)
-2. Check for `decision-log.md`
-3. Check for `CLAUDE.md` and its memory section
-4. Print exact plan:
-   - "Will create `.ai/` folder: [yes/no]"
-   - "Will create `.ai/current.md`: [yes/no]"
-   - "Will create `ai/handoffs/` folder: [yes/no]"
-   - "Will create `decision-log.md`: [yes/no]"
-   - "Will update `CLAUDE.md` memory section: [yes/no]"
-5. Wait for confirmation
-6. Execute:
-   - Create `.ai/` if missing
-   - Create `.ai/current.md` with blank template if missing
-   - Create `ai/handoffs/` if missing
-   - Create `decision-log.md` if missing (use template below)
-   - If `CLAUDE.md` exists and lacks memory section, append memory workflow section (see template below)
-7. Verify all files exist and print summary
+## Resumed context
 
-### `/handoff rollout`
+- Repo/tool:
+- Goal:
+- Current status:
+- Relevant files:
+- Next step:
 
-Set up `.ai/` memory infrastructure across multiple Git repos.
+Proceeding with: [exact next action]
 
-**Steps:**
-1. Inspect current folder for Git repos
-2. For each repo, check which files are missing:
-   - `.ai/current.md`
-   - `.ai/handoffs/`
-   - `decision-log.md`
-   - `CLAUDE.md` memory section
-3. Print repo-by-repo plan with counts
-4. Wait for approval
-5. Execute setup for each repo
-6. Print summary: "Set up X repos, updated Y, skipped Z"
+Do not ask "Ready to resume?" unless the handoff is missing, contradictory, or blocked.
 
-## Templates
+## /handoff setup
 
-### `.ai/current.md` blank template
+Use once per repo.
 
-```markdown
+### Behavior
+
+1. Inspect repo root.
+2. Check for:
+   - .ai/
+   - .ai/current.md
+   - .ai/decision-log.md
+   - .ai/handoffs/
+   - CLAUDE.md
+3. Print exact setup plan.
+4. Wait for confirmation.
+5. Create missing files/folders.
+6. Verify all expected paths exist.
+
+### Setup plan format
+
+## Handoff setup plan
+
+- Create .ai/: [yes/no]
+- Create .ai/current.md: [yes/no]
+- Create .ai/decision-log.md: [yes/no]
+- Create .ai/handoffs/: [yes/no]
+- Update CLAUDE.md: [yes/no]
+
+Awaiting confirmation before writing files.
+
+### Blank .ai/current.md template
+
 # Current Handoff
 
 ## Repo
 [repo]
 
 ## Tool
-[Claude Code / Codex]
+[Claude Code / Codex / Gemini]
 
 ## Goal
 [goal]
@@ -190,153 +209,188 @@ Set up `.ai/` memory infrastructure across multiple Git repos.
 [status]
 
 ## Files touched
-[files]
+None
 
 ## Decisions made
-[decisions or "None this session"]
+None this session
 
-## Next steps
-[next steps]
+## Next step
+[next exact action]
 
 ## Blockers
-[blockers or "None"]
+None
+
+## Do not repeat
+None
 
 ## Resume prompt
-[resume prompt]
-```
+Resume this repo from .ai/current.md and continue with: [next exact action]
 
-### `decision-log.md` template (initial)
+### .ai/decision-log.md template
 
-```markdown
 # Decision Log
 
-Durable decisions for [repo name]. Append-only archive.
+Durable decisions for this repo.
 
-## YYYY-MM-DD -- [title]
+Rules:
+- Append-only.
+- High-signal decisions only.
+- No secrets.
+- No routine implementation notes.
+- No raw logs.
+
+## YYYY-MM-DD — [title]
+
 - Decision:
 - Reason:
 - Impact:
-```
 
-### `CLAUDE.md` memory section (append if missing)
+### Optional CLAUDE.md memory section
 
-```markdown
-## Memory
+Append only if CLAUDE.md exists and the user confirms.
 
-This repo uses `.ai/current.md` for session handoffs (short-term resumable state) and `decision-log.md` for durable decisions (long-term architecture).
+## Session handoffs
 
-### `.ai/` directory structure
-- `.ai/current.md` — Resumable session state (overwritten each session)
-- `ai/handoffs/` — Archive of past handoffs (timestamped, optional)
+This repo uses .ai/current.md for short-term session handoffs and .ai/decision-log.md for durable decisions.
 
-### Workflow
-- At end of session: Run `/handoff pause` to write `.ai/current.md`
-- At start of session: Run `/handoff resume` to load context
-- Before major decisions: Check `decision-log.md` for prior context
-- After key decisions: Update `decision-log.md` if decision is durable
+Workflow:
+- End session: /handoff pause
+- Start session: /handoff resume
+- Archive milestone: /handoff archive
+- Check memory hygiene: /handoff check
 
-### Token optimization
-- `.ai/current.md` is ruthlessly compressed: 200–500 tokens max
-- No speculative ideas, debug noise, or secrets in either file
-- `decision-log.md` is append-only; entries are never deleted or rewritten
-```
+Rules:
+- .ai/current.md is overwritten each session.
+- .ai/current.md should stay between 200–500 tokens.
+- .ai/decision-log.md is append-only.
+- Never store secrets, full logs, or raw transcripts.
 
-## Handoff memory examples
+## /handoff archive
 
-### Example: Pausing a feature branch
+Use only for important milestones.
 
-**Session context:**
-- Working on ProBot feature: "add webhook retry logic"
-- Touched: `apps/probot/src/hooks.ts`, `apps/probot/src/retry.ts`
-- Decision made: "Use exponential backoff with max 3 retries"
-- Next: Write tests for retry logic
-- Blocker: Need to verify webhook signature validation
+### Behavior
 
-**`.ai/current.md` output:**
-```markdown
+1. Read .ai/current.md.
+2. Copy it to .ai/handoffs/YYYY-MM-DD-HH-MM-SS.md.
+3. Do not archive routine handoffs by default.
+
+Archive when:
+
+- A major feature is completed
+- A release/PR is ready
+- Architecture changed
+- A hard bug was solved
+- The user explicitly asks
+
+## /handoff check
+
+Use to verify memory hygiene.
+
+### Checks
+
+Inspect:
+
+- .ai/current.md
+- .ai/decision-log.md
+- .ai/handoffs/
+- CLAUDE.md memory section, if present
+
+Report:
+
+## Handoff hygiene check
+
+- .ai/current.md exists: [yes/no]
+- Current handoff token size: [estimate]
+- Current handoff is concise: [yes/no]
+- Decision log exists: [yes/no]
+- Decision log has obvious noise: [yes/no]
+- Archive folder exists: [yes/no]
+- Secrets detected: [yes/no]
+- Recommended cleanup:
+  - [action]
+
+Never print suspected secrets. Only report that sensitive-looking values may exist.
+
+## /handoff rollout
+
+Use to set up .ai/ memory infrastructure across multiple Git repos.
+
+### Behavior
+
+1. Inspect current folder for Git repos.
+2. For each repo, check:
+   - .ai/current.md
+   - .ai/decision-log.md
+   - .ai/handoffs/
+   - CLAUDE.md memory section
+3. Print repo-by-repo setup plan.
+4. Wait for approval.
+5. Execute setup for approved repos.
+6. Print summary.
+
+### Rollout summary format
+
+## Handoff rollout summary
+
+- Repos scanned:
+- Repos updated:
+- Repos skipped:
+- Files created:
+- Files left unchanged:
+- Problems:
+
+# Examples
+
+## Example .ai/current.md
+
 # Current Handoff
 
 ## Repo
-prochattools/ops/probot
+prochattools/prokit
 
 ## Tool
 Claude Code
 
 ## Goal
-Add webhook retry logic with exponential backoff (max 3 retries)
+Finish Stripe checkout flow cleanup for SaaSKit funnel.
 
 ## Status
-in progress — core retry logic written, tests pending
+in progress — checkout env handling updated, tests pending
 
 ## Files touched
-- apps/probot/src/hooks.ts (modified)
-- apps/probot/src/retry.ts (created)
+- src/lib/stripe/config.ts — modified
+- src/app/api/checkout/route.ts — modified
+- docs/stripe-checkout.md — read
 
 ## Decisions made
-- Use exponential backoff with max 3 retries (standard pattern, handles transient failures)
+- Centralize Stripe price IDs in config.ts to avoid duplicated env access.
 
-## Next steps
-- Write unit tests for retry logic
-- Add integration test for webhook failure scenario
-- Verify retry behavior with live webhook endpoint
+## Next step
+Run lint/typecheck and fix any checkout route failures.
 
 ## Blockers
-- Need to review webhook signature validation before testing
+None
+
+## Do not repeat
+- Do not reintroduce hardcoded Stripe price IDs in route files.
 
 ## Resume prompt
-Resume from: Add webhook retry logic. Continue with unit tests for retry.ts.
-```
+Resume this repo from .ai/current.md and continue with: run lint/typecheck and fix checkout route failures.
 
-**`decision-log.md` entry (if durable):**
-```markdown
-## 2026-04-04 -- Webhook retry strategy
+## Example .ai/decision-log.md entry
 
-- Decision: Exponential backoff with max 3 retries
-- Reason: Handles transient failures without overwhelming the sender; aligns with industry standard
-- Impact: ProBot webhooks will retry on failure; requires test coverage for retry exhaustion path
-```
+## 2026-04-16 — Centralized Stripe checkout configuration
 
-### Example: Resuming from handoff
+- Decision: Stripe price IDs and checkout URLs are read from src/lib/stripe/config.ts.
+- Reason: Avoid duplicated env reads and reduce checkout drift across funnel pages.
+- Impact: Future checkout changes must update config.ts instead of route/page files directly.
 
-**Load `.ai/current.md`:**
+# Safety notes
 
-```
-Repo: prochattools/ops/probot
-Goal: Add webhook retry logic
-Status: Core logic written, tests pending
-Files: apps/probot/src/hooks.ts, retry.ts
-Prior decision: Exponential backoff, max 3 retries
-Blocker: Webhook signature validation review needed
-Next: Unit tests for retry.ts
-```
-
-**Summary:**
-```
-- Working on ProBot webhook retry feature
-- Exponential backoff strategy already decided
-- Core code exists; needs test coverage
-- Minor blocker: signature validation review
-- Resume: Write tests for retry.ts
-```
-
-## Integration with gstack skills
-
-This skill is repo-agnostic and complements other skills:
-
-- **`/codex`** — Use handoff to prep Codex review sessions (load `.ai/current.md` for context)
-- **`/review`** — Handoff captures decisions made during review for durable storage
-- **`/ship`** — Before shipping, handoff summarizes PR context and approval decisions
-- **`/investigate`** — Handoff documents investigation findings for later reference
-
-## Safety notes
-
-- **No secrets in handoffs.** API keys, credentials, env vars, and auth tokens must never be in `.ai/current.md` or `decision-log.md`.
-- **Inspect before overwriting.** Always show a preview or ask for confirmation before modifying existing handoff files.
-- **Decisions are permanent.** `decision-log.md` entries should be high-signal only; avoid append-only log spam.
-- **This applies to both Claude and Codex.** Both models should follow these same conventions.
-
-## See also
-
-- `CLAUDE.md` — Global session and memory conventions
-- `~/.claude/CLAUDE.md` — Global guardrails policy on memory storage
-- `decision-log.md` — Repo-specific durable decisions (append-only)
+- Never store secrets.
+- Never store full transcripts.
+- Never store raw logs unless the user explicitly asks, and even then redact aggressively.
+- Never rewrite .ai/decision-log.md; append only.
+- Never update CLAUDE.md without confirmation.
+- Prefer action over confirmation during normal pause/resume.
