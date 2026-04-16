@@ -56,12 +56,21 @@
     "description": "Portuguese language learning app"
   },
   {
-    "name": "Brain Bridge",
+    "name": "Brain Bridge CLI",
     "port": 3052,
     "url": "http://localhost:3052",
     "check": "http://localhost:3052/health",
-    "start": "cd ~/Repos/stevewesthoek/brain-bridge/packages/cli && node dist/index.js serve > /tmp/brain-bridge.log 2>&1 &",
+    "start": "cd ~/Repos/stevewesthoek/brain-bridge && BRIDGE_URL=ws://127.0.0.1:3053 DEVICE_TOKEN=local-agent node packages/cli/dist/index.js serve > /tmp/brain-bridge-agent.log 2>&1 &",
     "stop": "pkill -f 'node dist/index.js serve'",
     "description": "Local Markdown vault search and note creation agent"
+  },
+  {
+    "name": "Brain Bridge Relay",
+    "port": 3053,
+    "url": "ws://localhost:3053",
+    "check": "http://localhost:3053/health",
+    "start": "cd ~/Repos/stevewesthoek/brain-bridge/packages/bridge && node dist/server.js > /tmp/brain-bridge-relay.log 2>&1 &",
+    "stop": "pkill -f 'packages/bridge.*node dist/server.js'",
+    "description": "WebSocket relay for remote agent connections"
   }
 ]
