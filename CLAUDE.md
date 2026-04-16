@@ -1,8 +1,8 @@
-# CLAUDE.md — brain
+# CLAUDE.md — machine-brain
 
 ## Purpose
 
-Claude Code instructions for the `brain` repo — the central source of truth for personal config, skills, and operations.
+Claude Code instructions for the `machine-brain` repo — AI infrastructure, system config, and skills. This is part of a split repo structure (see "Repo split" section below).
 
 ## Session lifecycle
 
@@ -32,20 +32,43 @@ Local repos at `~/Repos/` by GitHub account:
 - `stevewesthoek/` — personal (this repo)
 - `yeshuaacademy/` — Yeshua Academy
 
-## Repo structure
+## Repo split
+
+**Two independent repos with symlink connection:**
+
+```
+personal-brain/                    ← iOS Obsidian vault (200MB)
+  01-inbox/, 02-strategy/, etc.
+  kanban.md, home.md
+  .obsidian/
+  .git/
+
+machine-brain/                     ← AI infrastructure, system config
+  ai/skills/
+  machine/
+  operations/system-configs/       ← symlinked to home (~)
+  personal-brain/ → symlink to ../personal-brain/
+  .git/
+```
+
+**Sync:**
+- `personal-brain`: Obsidian Git (iOS + Mac bidirectional)
+- `machine-brain`: Development workflow (Mac only, houses AI context)
+- Symlink: `machine-brain/personal-brain` → `../personal-brain` (AI agents read vault content)
+
+## Repo structure (machine-brain)
 
 | Directory | Purpose |
 |-----------|---------|
 | `ai/skills/` | Skill management (active symlinks → vendors/custom) |
-| `tools/scripts/` | Automation scripts. See runbooks for per-script docs. |
+| `machine/` | Config, scripts, prompts, software settings |
 | `operations/system-configs/` | Global tool configs, symlinked from home directory |
 | `operations/runbooks/` | Procedures for tools and workflows |
 | `operations/accounts/` | Credential metadata, billing, inventories |
 | `operations/deploy/` | Deployment configs (Dokploy) |
-| `tools/firecrawl/` | Local on-demand Firecrawl: docker-compose, wrapper script, logs |
 | `operations/google-ads/` | Google Ads config, data, and reports |
 | `docs/` | Reference documentation (google-ads, standards) |
-| `vault/` | Obsidian-managed notes |
+| `personal-brain/` | Symlink to ../personal-brain (vault for AI context) |
 | `organisations/` | Brand truth, positioning, playbooks |
 | `projects/` | Project context, specs, execution docs |
 | `personal/` | Profile, writing style, values |
@@ -118,17 +141,26 @@ launchctl load ~/Library/LaunchAgents/com.office.qwen-ollama.plist
 
 ## Do not break
 
-- `~/.claude` → `brain/operations/system-configs/claude`. Do not delete or restructure.
-- `~/.claude/skills` → `brain/ai/skills/active`. Keep `active/` as symlinks only.
-- `~/.claude/model-tracking.json` — Do not delete. Hooks depend on it.
-- `~/.claude/hooks/model-*.sh` — Model tracking hooks. Do not delete.
-- `~/.claude/settings.json` — Model tracking hooks registered here in UserPromptSubmit, PostToolUse, Stop sections.
-- `~/.codex` → `brain/operations/system-configs/codex`. Do not delete or restructure.
-- `~/.gemini` → `brain/operations/system-configs/gemini`. Do not delete or restructure.
-- `~/.kiro` → `brain/operations/system-configs/kiro`. Do not delete or restructure.
-- `~/.docker` → `brain/operations/system-configs/docker`. Docker Desktop fails if target is missing.
-- `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are symlinks → brain. Do not delete sources.
+**CRITICAL: Symlink-dependent folders (NEVER MOVE OR DELETE):**
+- `operations/system-configs/` (17 symlinks from home ~)
+- `tools/scripts/sync-credentials.sh` (→ ~/.local/bin/sync-credentials)
+- `tools/n8n-api.sh` (→ ~/.local/bin/n8n-api)
+- `ai/skills/custom/apify/` (2 symlinks)
+- `personal-brain/` symlink (→ ../personal-brain)
+
+**Symlinks map (home → machine-brain):**
+- `~/.claude` → `machine-brain/operations/system-configs/claude`
+- `~/.codex` → `machine-brain/operations/system-configs/codex`
+- `~/.gemini` → `machine-brain/operations/system-configs/gemini`
+- `~/.kiro` → `machine-brain/operations/system-configs/kiro`
+- `~/.docker` → `machine-brain/operations/system-configs/docker`
 - `~/.ollama-qwen` — QWEN models directory. Do not delete.
 - `tools/scripts/qwen-service.sh`, `tools/scripts/qwen` — QWEN CLI and service management.
-- `tools/scripts/` — check usage before deleting any script.
-- `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` may symlink into brain. Keep repo file as source of truth.
+- `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are symlinks → machine-brain
+- `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` may symlink into machine-brain
+
+**If you touch these symlink folders, it breaks everything:**
+- NEVER move `operations/system-configs/`
+- NEVER move/delete symlinked scripts
+- NEVER change the `personal-brain/` symlink
+- NEVER modify any symlink paths
