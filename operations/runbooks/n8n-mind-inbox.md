@@ -1,10 +1,10 @@
 # n8n Mind Inbox Automation Runbook
 
-**Deployed:** 2026-04-09  
-**Workflow ID:** `FwP5INe9qoo1OwGC` (updated 2026-04-17)  
-**Status:** ✅ Active  
+**Deployed:** 2026-04-09
+**Workflow ID:** `FwP5INe9qoo1OwGC`
+**Status:** ✅ Active
 **Last tested:** 2026-04-17
-**Updated:** 2026-04-17 — Renamed from "Brain Inbox" to "Mind Inbox" workflow; webhook path changed to `/mind-inbox`
+**Last updated:** 2026-04-17 — Security hardening: GitHub auth moved to n8n credentials; fixed data flow through Gemini classification pipeline
 
 ## Overview
 
@@ -55,16 +55,20 @@ POST https://n8n.prochat.tools/webhook/mind-inbox
 
 ## Node architecture
 
-| Node | Type | Purpose |
-|------|------|---------|
-| **Webhook** | Trigger | Receives POST to `/mind-inbox` |
-| **Build Gemini Body** | Code | Constructs PARA classification prompt |
-| **Gemini Flash — Classify** | HTTP Request | Calls Gemini API for classification |
-| **Build Processed Note** | Code | Parses JSON, generates markdown with frontmatter |
-| **Check Existing GitHub File** | HTTP Request | Queries GitHub API to check if file exists |
-| **Handle File Check Result** | Code | Extracts SHA from response if file exists |
-| **Save to GitHub** | HTTP Request | Commits to mind repo via GitHub API |
-| **Respond** | Webhook Response | Returns confirmation JSON |
+**Flow:** Webhook → Build Gemini Body → Gemini Classify → Build Processed Note → Check GitHub File → Handle Check → File Exists? (IF) → [Create | Update] → Respond
+
+| Node | Type | Purpose | Notes |
+|------|------|---------|-------|
+| **Webhook** | Trigger | Receives POST to `/mind-inbox` | responseMode: responseNode (waits for Respond) |
+| **Build Gemini Body** | Code | Extracts title, content, source from payload | Stores for later reference |
+| **Gemini Classify** | HTTP Request | Calls Gemini 2.5 Flash for PARA classification | Returns JSON: para_type, confidence, summary, key_points |
+| **Build Processed Note** | Code | **Critical:** Reads title/content from Build Gemini Body (not Gemini output), applies classification, generates markdown, encodes base64 | Must reference upstream node to preserve original data |
+| **Check Existing GitHub File** | HTTP Request | GET to `/repos/.../contents/{filepath}?ref=main` | Returns file + SHA if exists, 404 if new |
+| **Handle File Check** | Code | Extracts SHA from response, sets fileExists flag | Preserves all upstream fields |
+| **File Exists?** | IF | Routes based on fileExists boolean | TRUE → Update branch, FALSE → Create branch |
+| **Save to GitHub - Create** | HTTP Request | PUT without SHA (creates new file) | Message: "mind: capture — {title}" |
+| **Save to GitHub - Update** | HTTP Request | PUT with SHA (updates existing file) | Message: "mind: update — {title}" |
+| **Respond** | Webhook Response | Returns confirmation JSON | Only executes after GitHub save completes |
 
 ## Output format
 
@@ -104,16 +108,41 @@ Full structured content or raw text.
 *Review in [[home|Command Center]] — promote to [[03-projects/|projects]], [[05-areas/|areas]], or [[06-resources/|resources]]*
 ```
 
-## Credentials
+## Credentials & Security
 
-Both pre-configured on n8n.prochat.tools:
+### Environment Variables
 
-| Credential | Type | Used by | Status |
-|-----------|------|---------|--------|
-| Google Gemini API key | googlePalmApi | Gemini Classify node | ✅ Active |
-| GitHub — stevewesthoek/mind | githubApi | Save to GitHub node | ✅ Active |
+| Variable | Purpose | Location | Status |
+|----------|---------|----------|--------|
+| GITHUB_MIND_PAT | GitHub Personal Access Token | n8n Dokploy environment | ✅ Active |
+| N8N_BLOCK_ENV_ACCESS_IN_NODE | Enable env var access in workflows | n8n Docker Compose | ✅ false |
+| GEMINI_API_KEY | Google Gemini API key | n8n environment | ✅ Active |
 
-No manual setup required.
+### Authentication
+
+**GitHub API nodes (Check Existing GitHub File, Save to GitHub - Create, Save to GitHub - Update):**
+- Each node authenticates independently via Authorization header
+- Header value: `{{ 'token ' + $env.GITHUB_MIND_PAT }}`
+- GitHub PAT is stored in n8n environment variable `GITHUB_MIND_PAT`, NOT in workflow JSON
+- Every GitHub HTTP node must have its own Authorization header expression with env-var reference
+
+**Docker Compose Configuration:**
+The n8n service environment must explicitly pass both variables:
+```yaml
+  n8n:
+    environment:
+      - GITHUB_MIND_PAT=${GITHUB_MIND_PAT}
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+```
+
+Without these lines in the compose file, environment variables are NOT available to workflow nodes, even if set in Dokploy's environment settings.
+
+**n8n Configuration:**
+- `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` must be set to allow workflows to access environment variables via `$env.VARIABLE_NAME` expressions
+- Workflow JSON must contain zero literal GitHub PAT strings
+- If a token is exposed in workflow JSON, rotate the token, update `GITHUB_MIND_PAT` in Dokploy environment, restart n8n, and run a create/update smoke test
+
+**Security Rule:** Never hardcode GitHub PAT directly in workflow parameters. Always use environment variables with `$env.GITHUB_MIND_PAT` expression syntax.
 
 ## PARA context in Gemini prompt
 
@@ -161,11 +190,13 @@ n8n dashboard at https://n8n.prochat.tools:
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| 400 Bad Request | JSON malformed or missing required fields | Validate request body matches schema |
-| Gemini parsing error | Response includes markdown code fences or control chars | See sanitizeJsonString logic in "Build Processed Note" node |
-| GitHub commit fails | Repo permission issue or branch protection | Verify GitHub token has `repo` scope for mind repo |
+| 404 Webhook path | Workflow inactive or Custom GPT uses old URL | Verify workflow active; update Custom GPT to `/mind-inbox` |
+| 400 Body should be JSON | HTTP body format wrong | Use bodyParameters mode, not raw string body |
+| "Untitled Capture" returned | Original payload lost after Gemini node | Build Processed Note must read title from Build Gemini Body node |
+| File not created despite 200 | GitHub save failed silently | Check n8n execution logs; verify credential has repo scope |
+| Update fails, file not found | Missing SHA or wrong filepath | Ensure Check Existing GitHub File finds file before Update node runs |
+| Gemini parsing error | Response includes markdown code fences | See sanitizeJsonString logic in "Build Processed Note" node |
 | Low confidence (< 0.7) | Content is ambiguous or doesn't fit PARA | Add `type_hint` to guide classification |
-| HTTP response parsing error | n8n HTTP node issue with GitHub response format | Check n8n execution logs for `.status` error |
 
 ## Integration with macOS
 
@@ -279,7 +310,13 @@ Delete (use with caution):
 
 ## History
 
-**2026-04-17:** Renamed from "Brain Inbox" to "Mind Inbox" — reflects that workflow now exclusively saves to `stevewesthoek/mind` repo, not `brain` repo. Updated webhook path from `/brain-inbox` to `/mind-inbox`, commit message from "brain: capture" to "mind: capture", and all documentation references.
+**2026-04-17 (Security Hardening):**
+- Fixed critical data flow bug: Build Processed Note now references Build Gemini Body for original title/content instead of Gemini output (which loses original data)
+- GitHub authentication moved to HTTP Header Auth credential (ID: `Yitx3dqQjcJ00VvC`)
+- Verified CREATE and UPDATE flows work end-to-end
+- Cleaned up test files; documented common failure modes
+
+**2026-04-17 (Rename to Mind Inbox):** Renamed from "Brain Inbox" to "Mind Inbox" — reflects that workflow now exclusively saves to `stevewesthoek/mind` repo, not `brain` repo. Updated webhook path from `/brain-inbox` to `/mind-inbox`, commit message from "brain: capture" to "mind: capture", and all documentation references.
 
 **2026-04-16:** Added file existence checking before save (GET request with continueOnFail). Implements proper create/update logic using SHA for existing files.
 
