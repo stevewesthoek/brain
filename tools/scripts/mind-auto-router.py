@@ -174,7 +174,14 @@ def decide_route(confidence: float, signal_quality: float, para_type: str) -> Tu
     """
     # High confidence + high signal = ready for processing
     if signal_quality >= 0.8 and confidence >= 0.8:
-        route = "03-projects" if para_type == "project" else "02-strategy/brainstorm"
+        if para_type == "project":
+            route = "03-projects"
+        elif para_type == "area":
+            route = "05-areas"
+        elif para_type == "resource":
+            route = "06-resources"
+        else:
+            route = "01-inbox"
         return route, "ready-for-review"
 
     # High confidence but missing/low signal = review queue (fail-safe)
