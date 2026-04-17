@@ -104,7 +104,7 @@ Personal Google account (`stevewesthoek` / prochat.tools identity). Free tier �
 
 | Variable | File | Purpose | Rotation | Regenerate |
 |----------|------|---------|----------|-----------|
-| `GEMINI_API_KEY` | `~/.config/google-ai/.env` | Gemini API key for AI Studio — used by n8n for PARA classification in Brain Inbox workflow | No automatic expiry; rotate if compromised | [AI Studio → Get API key](https://aistudio.google.com/apikey) |
+| `GEMINI_API_KEY` | `~/.config/google-ai/.env` | Gemini API key for AI Studio — used by n8n for PARA classification in Mind Inbox workflow | No automatic expiry; rotate if compromised | [AI Studio → Get API key](https://aistudio.google.com/apikey) |
 
 Note: This is separate from the Gemini CLI (`~/.gemini/`) which uses OAuth personal auth. The CLI and API key have independent quota pools.
 
@@ -124,7 +124,7 @@ Personal account: `stevewesthoek`
 
 | Token Name | Storage | Purpose | Expiry | Rotation | Regenerate |
 |------------|---------|---------|--------|----------|-----------|
-| `n8n-github-brain` | `~/.config/github/.env` | Fine-grained PAT — brain repo only (Contents: read + write) · Used by n8n workflows | No expiration | Manually rotate if compromised | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens?type=beta) |
+| `n8n-github-mind` | `~/.config/github/.env` | Fine-grained PAT — mind repo only (Contents: read + write) · Used by n8n Mind Inbox workflow | No expiration | Manually rotate if compromised | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens?type=beta) |
 | `Dokploy` (GHCR pull) | `~/.config/dokploy/.env` as `GHCR_DOKPLOY_PULL_PAT` | Classic PAT — `read:packages` scope only. Used by Dokploy (vm-dokploy Azure) to pull private Docker images from GHCR (`ghcr.io`) across all orgs (prochattools, yeshuaacademy) and personal account. Registered once in Dokploy Settings → Registry as `dokploy-ghcr-pull`. Never needs to be re-entered per app. | No expiration set | Rotate if compromised: update in Dokploy Settings → Registry → edit `dokploy-ghcr-pull` | [GitHub → Settings → Developer settings → Personal access tokens → Classic](https://github.com/settings/tokens) |
 | SaaSKit Customer Access | GitHub only (no local storage) | Organization-scoped PAT for SaaSKit repos · Last used within 2 months | Wed, Feb 10 2027 | Rotate before Feb 10 2027 via GitHub UI | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens?type=beta) |
 | ProKit Customer Access | GitHub only (no local storage) | Organization-scoped PAT for ProKit repos · Last used within 2 months | Wed, Feb 10 2027 | Rotate before Feb 10 2027 via GitHub UI | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens?type=beta) |
