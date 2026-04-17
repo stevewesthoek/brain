@@ -196,34 +196,15 @@ python3 ~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py
 
 ## Cron Job Management
 
-### View Current Job
-```bash
-crontab -l
-```
+**For centralized cron job documentation and management, see:** `mind-automation-cron-jobs.md`
 
-### Edit Cron Expression
-To change frequency (e.g., every 5 minutes instead of 1):
+That runbook is the single source of truth for all recurring Mind automation jobs (Auto-Router, Project Decomposer, Kanban Syncer).
 
-```bash
-crontab -e
-# Change: */1 * * * * → */5 * * * *
-# Save and exit
-```
-
-**Common frequencies:**
-- Every 1 minute: `*/1 * * * *` (current)
-- Every 5 minutes: `*/5 * * * *`
-- Every 15 minutes: `*/15 * * * *`
-- Hourly: `0 * * * *`
-
-### Disable Temporarily
-```bash
-# Remove from crontab
-crontab -r
-
-# Reinstall later
-(crontab -l 2>/dev/null; echo "*/1 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py >> /dev/null 2>&1") | crontab -
-```
+To view, edit, or troubleshoot cron jobs:
+- Check installation: See "Verify Cron Installation" in `mind-automation-cron-jobs.md`
+- Update from brain-* to mind-* names: See "Update from Old brain-* Names" section
+- Disable/reinstall: See "Disable Jobs Safely" section
+- Troubleshoot: See "Troubleshooting" section
 
 ---
 
@@ -360,7 +341,8 @@ Expected: File moves to `03-projects/`, status becomes `ready-for-review`.
 | Edit cron | `crontab -e` |
 | Check cron | `crontab -l` |
 | Test routing | Create file in `01-inbox/` with `status: unrouted`, run script manually |
-| Disable | `crontab -r` |
+| Disable | See "Safely Disable" in `mind-automation-cron-jobs.md` |
+| Manage cron | See `mind-automation-cron-jobs.md` (central registry) |
 
 ---
 
@@ -370,6 +352,6 @@ For issues:
 1. Check logs: `tail -20 ~/.local/share/brain/logs/auto-router*.log`
 2. Run manually: `~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py`
 3. Check GitHub config: `cat ~/.config/github/.env`
-4. Test git access: `cd ~/Repos/stevewesthoek/brain && git pull && git push`
+4. Test git access: `cd ~/Repos/stevewesthoek/mind && git pull && git push`
 
 Last updated: 2026-04-10

@@ -219,29 +219,15 @@ Run the syncer outside cron for immediate sync:
 
 ## Cron Job Management
 
-### View Current Job
-```bash
-crontab -l | grep mind-kanban-syncer
-```
+**For centralized cron job documentation and management, see:** `mind-automation-cron-jobs.md`
 
-### Edit Frequency
-```bash
-crontab -e
-# Change: */10 * * * * (every 10 min)
-# To:     */5 * * * *  (every 5 min)
-```
+That runbook is the single source of truth for all recurring Mind automation jobs (Auto-Router, Project Decomposer, Kanban Syncer).
 
-Common frequencies:
-- Every 5 minutes: `*/5 * * * *` (more responsive)
-- Every 10 minutes: `*/10 * * * *` (current, balanced)
-- Every 15 minutes: `*/15 * * * *` (less responsive)
-
-### Disable Temporarily
-```bash
-crontab -r
-# Reinstall later
-(crontab -l 2>/dev/null; echo "*/10 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-kanban-syncer.py >> /dev/null 2>&1") | crontab -
-```
+To view, edit, or troubleshoot cron jobs:
+- Check installation: See "Verify Cron Installation" in `mind-automation-cron-jobs.md`
+- Update from brain-* to mind-* names: See "Update from Old brain-* Names" section
+- Disable/reinstall: See "Disable Jobs Safely" section
+- Troubleshoot: See "Troubleshooting" section
 
 ---
 
@@ -443,6 +429,6 @@ For issues:
 2. Run manually: `~/Repos/stevewesthoek/brain/tools/scripts/mind-kanban-syncer.py`
 3. Check kanban.md exists: `ls -la mind/kanban.md`
 4. Check task files: `ls -la mind/04-tasks/`
-5. Verify git access: `cd ~/Repos/stevewesthoek/brain && git pull && git push`
+5. Verify git access: `cd ~/Repos/stevewesthoek/mind && git pull && git push`
 
 Last updated: 2026-04-10

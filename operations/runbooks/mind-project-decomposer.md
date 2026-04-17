@@ -265,34 +265,15 @@ python3 ~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py
 
 ## Cron Job Management
 
-### View Current Job
-```bash
-crontab -l
-```
+**For centralized cron job documentation and management, see:** `mind-automation-cron-jobs.md`
 
-### Edit Cron Expression
-To change frequency (e.g., every 15 minutes instead of 5):
+That runbook is the single source of truth for all recurring Mind automation jobs (Auto-Router, Project Decomposer, Kanban Syncer).
 
-```bash
-crontab -e
-# Change: */5 * * * * → */15 * * * *
-# Save and exit
-```
-
-**Common frequencies:**
-- Every 5 minutes: `*/5 * * * *` (current)
-- Every 15 minutes: `*/15 * * * *`
-- Every 30 minutes: `*/30 * * * *`
-- Hourly: `0 * * * *`
-
-### Disable Temporarily
-```bash
-# Remove from crontab
-crontab -r
-
-# Reinstall later
-(crontab -l 2>/dev/null; echo "*/5 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py >> /dev/null 2>&1") | crontab -
-```
+To view, edit, or troubleshoot cron jobs:
+- Check installation: See "Verify Cron Installation" in `mind-automation-cron-jobs.md`
+- Update from brain-* to mind-* names: See "Update from Old brain-* Names" section
+- Disable/reinstall: See "Disable Jobs Safely" section
+- Troubleshoot: See "Troubleshooting" section
 
 ---
 
@@ -494,7 +475,8 @@ Recommended: Keep at **every 5 minutes** unless you hit Gemini rate limits.
 | Test Gemini | `echo "Say hello" \| gemini --model gemini-2.5-flash` |
 | List projects | `ls 03-projects/` |
 | List tasks | `ls 04-tasks/` |
-| Disable | `crontab -r` |
+| Disable | See "Safely Disable" in `mind-automation-cron-jobs.md` |
+| Manage cron | See `mind-automation-cron-jobs.md` (central registry) |
 
 ---
 
@@ -504,6 +486,6 @@ For issues:
 1. Check logs: `tail -20 ~/.local/share/brain/logs/project-decomposer*.log`
 2. Run manually: `~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py`
 3. Test Gemini: `echo "Say hello" | gemini --model gemini-2.5-flash`
-4. Test git access: `cd ~/Repos/stevewesthoek/brain && git pull && git push`
+4. Test git access: `cd ~/Repos/stevewesthoek/mind && git pull && git push`
 
 Last updated: 2026-04-10
