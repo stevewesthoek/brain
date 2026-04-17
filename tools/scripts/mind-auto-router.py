@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Brain Auto-Router: Automated GTD routing for inbox notes.
+Mind Auto-Router: Automated GTD routing for inbox notes.
 
 This script runs every 1 minute (via cron) and:
 1. Scans 01-inbox/ for files with status: unrouted in the mind repo
@@ -14,7 +14,7 @@ This script runs every 1 minute (via cron) and:
 5. Logs all actions to ~/.local/share/brain/logs/auto-router.log
 
 Cron Schedule: Every 1 minute
-  */1 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py
+  */1 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py
 
 Configuration:
   - GITHUB_TOKEN: Required, stored in ~/.config/github/.env or GITHUB_TOKEN env var
@@ -27,7 +27,7 @@ Logs:
   - Check logs with: tail -f ~/.local/share/brain/logs/auto-router.log
 
 Manual Execution:
-  python3 ~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py
+  python3 ~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py
 """
 
 import os
@@ -53,7 +53,7 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 log_file = LOG_DIR / "auto-router.log"
 error_log_file = LOG_DIR / "auto-router-error.log"
 
-logger = logging.getLogger("brain-auto-router")
+logger = logging.getLogger("mind-auto-router")
 logger.setLevel(logging.DEBUG)
 
 # File handler for main log
@@ -220,7 +220,7 @@ def commit_file(filepath: str, new_filepath: str, content: str, route: str, new_
             subprocess.run(["git", "-C", str(repo_path), "rm", filepath], check=True, capture_output=True)
 
         # Commit
-        commit_msg = f"brain: auto-route {route} — {new_status}"
+        commit_msg = f"mind: auto-route {route} — {new_status}"
         subprocess.run(
             ["git", "-C", str(repo_path), "commit", "-m", commit_msg],
             check=True,

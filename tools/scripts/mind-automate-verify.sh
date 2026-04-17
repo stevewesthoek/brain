@@ -1,34 +1,34 @@
 #!/bin/bash
-# Brain Automation Verification Script
+# Mind Automation Verification Script
 #
 # Run this after rebooting, OS updates, or whenever you want to verify
 # that the Auto-Router is still set up correctly.
 #
 # Usage:
-#   bash ~/Repos/stevewesthoek/brain/tools/scripts/brain-automate-verify.sh
+#   bash ~/Repos/stevewesthoek/brain/tools/scripts/mind-automate-verify.sh
 #
 
 set -e
 
-SCRIPT_PATH="$HOME/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py"
+SCRIPT_PATH="$HOME/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py"
 GITHUB_CONFIG="$HOME/.config/github/.env"
 LOG_DIR="$HOME/.local/share/brain/logs"
 REPO_PATH="$HOME/Repos/stevewesthoek/brain"
 
-echo "🔍 Brain Automation Verification"
+echo "🔍 Mind Automation Verification"
 echo "=================================="
 echo ""
 
 # 1. Check cron job
 echo "1. Checking cron job..."
-if crontab -l 2>/dev/null | grep -q "brain-auto-router"; then
-    CRON_ENTRY=$(crontab -l | grep brain-auto-router)
+if crontab -l 2>/dev/null | grep -q "mind-auto-router"; then
+    CRON_ENTRY=$(crontab -l | grep mind-auto-router)
     echo "   ✓ Cron job found:"
     echo "   $CRON_ENTRY"
 else
     echo "   ✗ ERROR: Cron job not found!"
     echo "   Run this to reinstall:"
-    echo "   (crontab -l 2>/dev/null | grep -v 'brain-auto-router'; echo '*/1 * * * * $SCRIPT_PATH >> /dev/null 2>&1') | crontab -"
+    echo "   (crontab -l 2>/dev/null | grep -v 'mind-auto-router'; echo '*/1 * * * * $SCRIPT_PATH >> /dev/null 2>&1') | crontab -"
     exit 1
 fi
 
@@ -131,7 +131,7 @@ echo ""
 
 # 7. Test Python execution
 echo "7. Testing Python script..."
-if python3 "$SCRIPT_PATH" 2>&1 | grep -q "brain-auto-router"; then
+if python3 "$SCRIPT_PATH" 2>&1 | grep -q "mind-auto-router"; then
     echo "   ✓ Script runs without errors"
 else
     echo "   ⚠ Script executed but may have issues"
@@ -145,5 +145,5 @@ echo ""
 echo "Next steps:"
 echo "  - Auto-Router runs every 1 minute via cron"
 echo "  - Check logs: tail -f $LOG_DIR/auto-router.log"
-echo "  - Add test notes to $REPO_PATH/vault/01-inbox/"
+echo "  - Add test notes to $REPO_PATH/01-inbox/"
 echo ""

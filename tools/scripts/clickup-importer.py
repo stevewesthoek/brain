@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-ClickUp CSV Importer: Import ClickUp export tasks into Brain Obsidian task format.
+ClickUp CSV Importer: Import ClickUp export tasks into Mind Obsidian task format.
 
 This script reads a ClickUp CSV export and:
 1. Parses task data (name, status, due date, priority, assignees)
 2. Creates task.md files in 04-tasks/{task-slug}/ with proper YAML frontmatter in the mind repo
-3. Maps ClickUp status to Brain task status:
+3. Maps ClickUp status to Mind task status:
    - complete → status: done
    - today → status: ready (will appear in To Do when synced)
    - backlog → status: ready
@@ -85,21 +85,21 @@ def slug_from_title(title: str) -> str:
 
 
 def parse_clickup_priority(priority_str: str) -> int:
-    """Convert ClickUp priority to Brain priority (1-5)."""
+    """Convert ClickUp priority to Mind priority (1-5)."""
     if not priority_str or priority_str == 'null':
         return 3  # default medium
     try:
         p = int(priority_str)
         # ClickUp uses 1=high, 2=medium, 3=low
-        # Brain uses 1=critical, 2=high, 3=medium, 4=low, 5=someday
+        # Mind uses 1=critical, 2=high, 3=medium, 4=low, 5=someday
         # Map: 1→2, 2→3, 3→4
         return min(5, max(1, p + 1))
     except:
         return 3
 
 
-def clickup_status_to_brain_status(status: str) -> str:
-    """Map ClickUp status to Brain task status."""
+def clickup_status_to_mind_status(status: str) -> str:
+    """Map ClickUp status to Mind task status."""
     status_lower = status.lower().strip()
     if status_lower == 'complete':
         return 'done'
@@ -154,7 +154,7 @@ def build_task_content(task: Dict, task_index: int, list_name: str) -> str:
     """Build task.md file content."""
     name = task['name']
     content = task['content']
-    brain_status = clickup_status_to_brain_status(task['status'])
+    mind_status = clickup_status_to_mind_status(task['status'])
     priority = parse_clickup_priority(task['priority'])
 
     # Determine assigned_to
@@ -176,7 +176,7 @@ def build_task_content(task: Dict, task_index: int, list_name: str) -> str:
         "type: task",
         f'title: "{name}"',
         f"assigned_to: {assigned_to}",
-        f"status: {brain_status}",
+        f"status: {mind_status}",
         f"priority: {priority}",
         f"effort: {effort}",
         f"source: clickup-import",

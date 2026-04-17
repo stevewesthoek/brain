@@ -4,7 +4,7 @@
 
 No formal test suite — this is a config/docs repo, not a code project. Verification is manual.
 
-**Post-reboot/reinstall:** Run `tools/scripts/brain-automate-verify.sh` to confirm all systems (symlinks, crons, services) are working.
+**Post-reboot/reinstall:** Run `tools/scripts/mind-automate-verify.sh` to confirm all systems (symlinks, crons, services) are working.
 
 ## QA skills (for project repos)
 

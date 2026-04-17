@@ -1,4 +1,4 @@
-# Brain Notes Workflow Guide
+# Mind Workflow Guide
 
 **Complete reference for capturing ideas, strategizing, and executing tasks.**
 
@@ -27,7 +27,7 @@ Use macOS shortcut to save selected text to brain.
 
 The shortcut POSTs to webhook:
 ```
-https://n8n.prochat.tools/webhook/brain-inbox
+https://n8n.prochat.tools/webhook/mind-inbox
 ```
 
 **That's it.** Gemini does the rest.
@@ -318,4 +318,4 @@ When Step 4 automation is implemented:
 - `mind/STRUCTURE.md` — System overview and structure
 - `mind/07-templates/` — Copy these when creating notes
 - `mind/home.md` — Dashboard with queries
-- `operations/runbooks/n8n-brain-inbox.md` — How the webhook/Gemini works
+- `operations/runbooks/n8n-mind-inbox.md` — How the webhook/Gemini works

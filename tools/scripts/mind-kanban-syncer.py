@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Brain Kanban Syncer: Obsidian Kanban Plugin markdown synchronization.
+Mind Kanban Syncer: Obsidian Kanban Plugin markdown synchronization.
 
 This script runs every 10 minutes (via cron) and:
 1. Reads all task files from 04-tasks/ in the mind repo
@@ -12,7 +12,7 @@ This script runs every 10 minutes (via cron) and:
 7. Only commits if kanban.md changed
 
 Cron Schedule: Every 10 minutes
-  */10 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
+  */10 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-kanban-syncer.py
 
 Configuration:
   - GITHUB_TOKEN: Required, stored in ~/.config/github/.env or GITHUB_TOKEN env var
@@ -24,7 +24,7 @@ Logs:
   - Errors to both stdout and LOG_DIR/kanban-syncer-error.log
 
 Manual Execution:
-  python3 ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
+  python3 ~/Repos/stevewesthoek/brain/tools/scripts/mind-kanban-syncer.py
 """
 
 import os
@@ -52,7 +52,7 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 log_file = LOG_DIR / "kanban-syncer.log"
 error_log_file = LOG_DIR / "kanban-syncer-error.log"
 
-logger = logging.getLogger("brain-kanban-syncer")
+logger = logging.getLogger("mind-kanban-syncer")
 logger.setLevel(logging.DEBUG)
 
 # File handler for main log
@@ -399,7 +399,7 @@ def commit_kanban(token: str) -> bool:
         subprocess.run(["git", "-C", str(repo_path), "add", KANBAN_PATH], check=True, capture_output=True)
 
         # Commit
-        commit_msg = "brain: sync kanban board from tasks"
+        commit_msg = "mind: sync kanban board from tasks"
         subprocess.run(
             ["git", "-C", str(repo_path), "commit", "-m", commit_msg],
             check=True,

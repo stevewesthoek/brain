@@ -1,46 +1,66 @@
-# n8n Mind Inbox Automation Runbook
+# n8n Save to Mind — PARA Inbox Runbook
 
-**Deployed:** 2026-04-09
-**Workflow ID:** `FwP5INe9qoo1OwGC`
-**Status:** ✅ Active
-**Last tested:** 2026-04-17
-**Last updated:** 2026-04-17 — Security hardening: GitHub auth moved to n8n credentials; fixed data flow through Gemini classification pipeline
+**Status:** ✅ Active and verified  
+**Workflow ID:** `FwP5INe9qoo1OwGC`  
+**Deployed:** 2026-04-09  
+**Last updated:** 2026-04-17 — Naming corrected to "Save to Mind / Mind Inbox"; webhook endpoint /mind-inbox verified active (200 OK); old /brain-inbox returns 404
 
-## Overview
+---
 
-Automates the capture and classification of ChatGPT conversations into a personal knowledge management system using the PARA method (Projects, Areas, Resources, Inbox).
+## Purpose
 
-**Flow:**
-1. Raw text sent via webhook
+Automates capture and classification of ChatGPT conversations into the Mind personal knowledge management system using PARA methodology (Projects, Areas, Resources, Inbox).
+
+**What it does:**
+1. Receives raw text via webhook
 2. Gemini Flash classifies into PARA categories with confidence score
-3. Structured markdown note generated with frontmatter
-4. Note committed to `01-inbox/` in mind repo
-5. Obsidian syncs automatically (or on next pull)
+3. Generates structured markdown note with classification metadata
+4. Commits note to `stevewesthoek/mind` repo in `01-inbox/` folder
+5. Obsidian vault syncs automatically
 
-## Webhook URL
+**What it is NOT:**
+- Not a final organization system (inbox is classified landing zone only)
+- Not the Kanban board (downstream Kanban syncer handles visualization)
+- Not the task/project tracker (those are in `03-projects/`, `04-tasks/`, etc.)
+
+---
+
+## Current Source of Truth
+
+This document (`n8n-mind-inbox.md`) is the authoritative reference for the Save to Mind workflow.
+
+---
+
+## Webhook Contract
+
+### Production Endpoint
 
 ```
 POST https://n8n.prochat.tools/webhook/mind-inbox
 ```
 
-### Request
+**Status:** Correct production endpoint  
+**Current n8n workflow path:** `/mind-inbox`  
+**Migration note:** Webhook path recently updated from `/brain-inbox` to `/mind-inbox` as part of naming standardization
+
+### Request Format
 
 ```json
 {
   "source": "chatgpt",
-  "title": "Your conversation topic",
+  "title": "Conversation topic or title",
   "content": "Full raw text from ChatGPT or other source",
   "type_hint": ""
 }
 ```
 
 **Fields:**
-- `source` (string): Label for the source ("chatgpt", "shortcut", etc.)
-- `title` (string): Topic or heading (Gemini will refine this)
-- `content` (string): The full text to classify
-- `type_hint` (string, optional): Guidance for Gemini (e.g., "This is a pricing decision")
+- `source` (required): Label for source ("chatgpt", "shortcut", etc.)
+- `title` (required): Topic or heading (Gemini will refine)
+- `content` (required): Full text to classify
+- `type_hint` (optional): Guidance for Gemini ("This is a resource", "pricing decision", etc.)
 
-### Response
+### Response Format
 
 ```json
 {
@@ -49,30 +69,66 @@ POST https://n8n.prochat.tools/webhook/mind-inbox
   "title": "Refined Title",
   "para_type": "project|area|resource|inbox",
   "confidence": 0.95,
-  "signal_quality": 0.9
+  "signal_quality": 0.90
 }
 ```
 
-## Node architecture
+**Fields:**
+- `status`: "saved" on success
+- `file`: Relative path in mind repo where note was written
+- `title`: Gemini-refined title
+- `para_type`: Classified category
+- `confidence`: Gemini confidence score (0.0–1.0)
+- `signal_quality`: Content quality assessment (0.0–1.0)
 
-**Flow:** Webhook → Build Gemini Body → Gemini Classify → Build Processed Note → Check GitHub File → Handle Check → File Exists? (IF) → [Create | Update] → Respond
+---
 
-| Node | Type | Purpose | Notes |
-|------|------|---------|-------|
-| **Webhook** | Trigger | Receives POST to `/mind-inbox` | responseMode: responseNode (waits for Respond) |
-| **Build Gemini Body** | Code | Extracts title, content, source from payload | Stores for later reference |
-| **Gemini Classify** | HTTP Request | Calls Gemini 2.5 Flash for PARA classification | Returns JSON: para_type, confidence, summary, key_points |
-| **Build Processed Note** | Code | **Critical:** Reads title/content from Build Gemini Body (not Gemini output), applies classification, generates markdown, encodes base64 | Must reference upstream node to preserve original data |
-| **Check Existing GitHub File** | HTTP Request | GET to `/repos/.../contents/{filepath}?ref=main` | Returns file + SHA if exists, 404 if new |
-| **Handle File Check** | Code | Extracts SHA from response, sets fileExists flag | Preserves all upstream fields |
-| **File Exists?** | IF | Routes based on fileExists boolean | TRUE → Update branch, FALSE → Create branch |
-| **Save to GitHub - Create** | HTTP Request | PUT without SHA (creates new file) | Message: "mind: capture — {title}" |
-| **Save to GitHub - Update** | HTTP Request | PUT with SHA (updates existing file) | Message: "mind: update — {title}" |
-| **Respond** | Webhook Response | Returns confirmation JSON | Only executes after GitHub save completes |
+## Workflow Architecture
 
-## Output format
+### Data Flow
 
-Generated note lands in `01-inbox/` in the mind repo with this structure:
+```
+Webhook (/mind-inbox) [receives raw capture]
+  ↓
+Build Gemini Body [prepares classification prompt]
+  ↓
+Gemini Classify [calls Gemini Flash API]
+  ↓
+Build Processed Note [generates markdown with frontmatter]
+  ↓
+Save to GitHub [commits to stevewesthoek/mind repo]
+  ↓
+Respond [returns success/failure to caller]
+```
+
+### Node Details
+
+| Node | Type | Purpose | Details |
+|------|------|---------|---------|
+| **Webhook** | Trigger | Receives /mind-inbox requests | Path: mind-inbox; Method: POST; Response: responseNode |
+| **Build Gemini Body** | Code | Constructs classification prompt | Extracts title, content, source; adds PARA context |
+| **Gemini Classify** | HTTP Request | Calls Gemini 2.5 Flash API | Returns: para_type, confidence, signal_quality, summary, key_points |
+| **Build Processed Note** | Code | Generates markdown with frontmatter | Creates base64-encoded content for GitHub |
+| **Save to GitHub** | HTTP Request | Commits file to mind repo | Auth: GITHUB_MIND_PAT; URL: /repos/stevewesthoek/mind/contents/ |
+| **Respond** | Webhook Response | Returns result to caller | Depends on Save to GitHub node |
+
+### Workflow Decisions
+
+**Classification criteria:**
+- Keyword analysis (project, strategy, area, resource indicators)
+- Content structure (goals, timelines, concepts)
+- User context (known businesses, personal interests)
+
+**Output path:**
+- Always: `01-inbox/` (never skips, never pre-sorts)
+- Filename: `{YYYY-MM-DD}-{slug-title}.md`
+- Unique timestamps prevent collisions
+
+---
+
+## Output Note Format
+
+Notes saved to `mind/01-inbox/` use this structure:
 
 ```markdown
 ---
@@ -80,6 +136,7 @@ type: capture
 source: chatgpt
 para_type: project|area|resource|inbox
 confidence: 0.95
+signal_quality: 0.90
 area: Business Automation
 created: 2026-04-17
 tags:
@@ -87,237 +144,299 @@ tags:
   - tag2
 ---
 
-# Title
+# Refined Title
 
 ## Summary
-2-3 sentence summary of the key insight.
+
+2–3 sentence summary of key insight.
 
 ## Key Points
+
 - Point 1
 - Point 2
 - Point 3
 
 ## Action Items
+
 - [ ] Actionable task if any
 
 ## Notes
-Full structured content or raw text.
+
+Full structured content or raw text excerpt.
 
 ---
 *ChatGPT capture · 2026-04-17 · 95% confidence · 90% signal · suggested: project*
 *Review in [[home|Command Center]] — promote to [[03-projects/|projects]], [[05-areas/|areas]], or [[06-resources/|resources]]*
 ```
 
+**Frontmatter fields:**
+- `type: capture` — Always present (identifies capture notes)
+- `source: chatgpt` — Source label
+- `para_type` — Gemini classification
+- `confidence` — Classification confidence (0.0–1.0)
+- `signal_quality` — Content quality assessment
+- `area` — User area context (optional)
+- `created` — Capture date (YYYY-MM-DD)
+- `tags` — Optional, user-assigned tags
+
+**Sections:**
+- **Summary** — Concise overview
+- **Key Points** — Bulleted highlights
+- **Action Items** — Checklist if applicable
+- **Notes** — Full content
+
+---
+
 ## Credentials & Security
 
-### Environment Variables
+### GitHub Authentication
 
-| Variable | Purpose | Location | Status |
-|----------|---------|----------|--------|
-| GITHUB_MIND_PAT | GitHub Personal Access Token | n8n Dokploy environment | ✅ Active |
-| N8N_BLOCK_ENV_ACCESS_IN_NODE | Enable env var access in workflows | n8n Docker Compose | ✅ false |
-| GEMINI_API_KEY | Google Gemini API key | n8n environment | ✅ Active |
+**Required:** Commit access to `stevewesthoek/mind` repository
 
-### Authentication
+**Credential options (in priority order):**
 
-**GitHub API nodes (Check Existing GitHub File, Save to GitHub - Create, Save to GitHub - Update):**
-- Each node authenticates independently via Authorization header
-- Header value: `{{ 'token ' + $env.GITHUB_MIND_PAT }}`
-- GitHub PAT is stored in n8n environment variable `GITHUB_MIND_PAT`, NOT in workflow JSON
-- Every GitHub HTTP node must have its own Authorization header expression with env-var reference
+1. **n8n Managed GitHub Credential** ✅ Recommended
+   - Stored encrypted in n8n
+   - Rotatable via n8n UI
+   - No exposure in workflow JSON
+   - Use: n8n credential selector (UI)
 
-**Docker Compose Configuration:**
-The n8n service environment must explicitly pass both variables:
-```yaml
-  n8n:
-    environment:
-      - GITHUB_MIND_PAT=${GITHUB_MIND_PAT}
-      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-```
+2. **Environment Variable: `GITHUB_MIND_PAT`** ✅ Acceptable
+   - Set in n8n Dokploy environment
+   - Rotatable without workflow edit
+   - Referenced as `$env.GITHUB_MIND_PAT` in workflow
+   - Requires: `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` in Dokploy config
+   - Use: Literal `token $env.GITHUB_MIND_PAT` in Authorization header
 
-Without these lines in the compose file, environment variables are NOT available to workflow nodes, even if set in Dokploy's environment settings.
+3. **Hardcoded Token** ❌ DEPRECATED
+   - Exposed in workflow JSON
+   - Exposes token in backups and exports
+   - Not rotatable without workflow edit
+   - DO NOT USE
 
-**n8n Configuration:**
-- `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` must be set to allow workflows to access environment variables via `$env.VARIABLE_NAME` expressions
-- Workflow JSON must contain zero literal GitHub PAT strings
-- If a token is exposed in workflow JSON, rotate the token, update `GITHUB_MIND_PAT` in Dokploy environment, restart n8n, and run a create/update smoke test
+### Token Rotation History
 
-**Security Rule:** Never hardcode GitHub PAT directly in workflow parameters. Always use environment variables with `$env.GITHUB_MIND_PAT` expression syntax.
+- **2026-04-09:** Initial deployment (token exposed in workflow JSON)
+- **2026-04-17:** Token rotated after exposure discovered
+  - Old token revoked in GitHub
+  - New token placed in `GITHUB_MIND_PAT` environment variable
+  - Workflow Authorization header updated to `token $env.GITHUB_MIND_PAT`
+  - n8n service restarted
 
-## PARA context in Gemini prompt
+### If Token Is Compromised
 
-The workflow includes your personal context to improve classification accuracy:
+1. Revoke immediately in GitHub (Settings → Developer Settings → Tokens → Delete)
+2. Create new GitHub PAT with `repo` scope only
+3. Update `GITHUB_MIND_PAT` in n8n Dokploy environment
+4. Restart n8n service (Dokploy will pick up new env var)
+5. Reactivate workflow in n8n UI (post-restart workflows often deactivate)
+6. Re-test webhook
 
-- **SaaS & Automation Focus:** Detects business automation projects, pricing decisions, product strategy
-- **Known businesses:** prochattools (statuslink, xgrow, prochat, says-the-bible, probot), Yeshua Academy (ministry)
-- **Goal:** Automate and optimize costs → guides categorization toward actionable items
+### Gemini Authentication
+
+Google Gemini Flash API credentials are pre-configured on n8n.prochat.tools.  
+Status: ✅ Active  
+Scope: Classification only (not exposed in workflow exports)
+
+---
+
+## Failure Behavior & Pending Buffer
+
+**Current state:**
+- ✅ Success path: Classified note → `mind/01-inbox/`
+- ❌ No error handling: Gemini failure → capture lost, webhook returns error
+
+**Failure buffer (planned, not yet deployed):**
+- Success → `mind/01-inbox/` (classified)
+- Gemini failure → `mind/00-system/pending-classification/` (raw, unclassified)
+- Webhook always returns 200 (user-friendly)
+- Allows manual or automated retry
+
+See: `FAILURE-BUFFER-IMPLEMENTATION-PLAN.md`
+
+---
+
+## Post-Capture Lightweight Sorting
+
+After capture lands in `01-inbox/`, the **lightweight inbox sorter** (optional, manual or scheduled) adds triage metadata:
+
+- Clarity score (how well-defined)
+- Usefulness score (how valuable)
+- Actionability score (does it imply action)
+- Suggested destination folder (projects, areas, resources, archive, etc.)
+
+The sorter does NOT move files automatically—user decides whether to move.
+
+See: `operations/runbooks/mind-inbox-sorting.md`
+
+---
 
 ## Testing
 
-### Quick test
+### Quick Validation Test
 
 ```bash
 curl -X POST https://n8n.prochat.tools/webhook/mind-inbox \
   -H "Content-Type: application/json" \
   -d '{
     "source": "chatgpt",
-    "title": "Test topic",
-    "content": "This is a test of the Mind Inbox capture automation system.",
-    "type_hint": ""
+    "title": "Save to Mind Test",
+    "content": "Testing the Save to Mind workflow to verify it creates a classified capture in the Mind inbox.",
+    "type_hint": "This is a test resource."
   }'
 ```
 
-Expected: 200 OK with JSON response + new file in `mind/01-inbox/`.
-
-### Full end-to-end test
-
-1. Send test payload via webhook to new URL: `https://n8n.prochat.tools/webhook/mind-inbox`
-2. Check n8n execution logs for success (no errors in Gemini or GitHub nodes)
-3. Pull mind repo: `cd ../mind && git pull`
-4. Verify file exists: `ls 01-inbox/2026-04-17-*.md`
-5. Verify Obsidian refreshes automatically
-
-## Monitoring
-
-### Health check
-
-n8n dashboard at https://n8n.prochat.tools:
-- Look for "Mind Inbox — Capture & Classify with Signal Scoring" workflow
-- Status should show "Active"
-- Recent executions should show green checkmarks
-
-### Common failures
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| 404 Webhook path | Workflow inactive or Custom GPT uses old URL | Verify workflow active; update Custom GPT to `/mind-inbox` |
-| 400 Body should be JSON | HTTP body format wrong | Use bodyParameters mode, not raw string body |
-| "Untitled Capture" returned | Original payload lost after Gemini node | Build Processed Note must read title from Build Gemini Body node |
-| File not created despite 200 | GitHub save failed silently | Check n8n execution logs; verify credential has repo scope |
-| Update fails, file not found | Missing SHA or wrong filepath | Ensure Check Existing GitHub File finds file before Update node runs |
-| Gemini parsing error | Response includes markdown code fences | See sanitizeJsonString logic in "Build Processed Note" node |
-| Low confidence (< 0.7) | Content is ambiguous or doesn't fit PARA | Add `type_hint` to guide classification |
-
-## Integration with macOS
-
-Your macOS automation (Shortcuts app) should:
-
-1. **Trigger:** Select text in ChatGPT (or any app)
-2. **Extract:** Get selected text + optional context (URL, app name)
-3. **POST:** Send to webhook with structure above
-4. **Notify:** Display returned confidence and file path (optional)
-
-Example Shortcut pseudocode:
-```
-Get selected text
-Create JSON body:
-  - source: "chatgpt"
-  - title: [extract from context or ask user]
-  - content: [selected text]
-POST to https://n8n.prochat.tools/webhook/mind-inbox
-Show result: "Saved as {file} ({type}, {confidence}% confidence)"
+**Expected response (200 OK):**
+```json
+{
+  "status": "saved",
+  "file": "01-inbox/2026-04-17-save-to-mind-test.md",
+  "title": "Save to Mind Test",
+  "para_type": "resource",
+  "confidence": 0.85,
+  "signal_quality": 0.90
+}
 ```
 
-**⚠️ IMPORTANT:** Update Shortcuts to use the new webhook URL ending in `/mind-inbox` instead of `/brain-inbox`
+**Next steps:**
+```bash
+cd ~/Repos/stevewesthoek/mind
+git pull
+cat 01-inbox/2026-04-17-save-to-mind-test.md
+```
 
-## Integration with Obsidian
+### Test Scenarios
 
-After capture, notes appear in `mind/01-inbox/`:
+| Scenario | Request | Expected |
+|----------|---------|----------|
+| Normal capture | Valid payload | 200, saved to 01-inbox/ |
+| Gemini failure | Valid payload, API down | 404 (workflow inactive) or 500 (API error) |
+| Invalid payload | Missing "content" | 400 Bad Request |
+| GitHub auth error | Valid payload, token revoked | 401 or 403 |
 
-- **Review:** Open in Obsidian, read summary and key points
-- **Promote:** If it's a real project/area/resource, move to appropriate folder (03-projects, 05-areas, 06-resources)
-- **Link:** Backlinks in the note template point to [[home|Command Center]] for easy navigation
-- **Auto-sync:** If using Obsidian Git plugin, pull automatically updates vault
+---
 
-## Updating the workflow
+## Updating & Deploying Workflow
 
-To modify the workflow:
+### Making Changes in n8n UI
 
-1. **Edit in n8n UI:** https://n8n.prochat.tools/workflows
-2. **Export as JSON:** Use n8n's export function
-3. **Save to git:** Commit to `brain/tools/n8n-mind-inbox.json`
-4. **Deploy via CLI:** `tools/n8n-api.sh update-workflow FwP5INe9qoo1OwGC <json_file>`
+1. Go to: https://n8n.prochat.tools/workflows
+2. Find: "Save to Mind — Capture & Classify with Signal Scoring" (ID: FwP5INe9qoo1OwGC)
+3. Click to open editor
+4. Make changes (e.g., update Gemini prompt, add error handling)
+5. Click "Save" (top-left)
+6. Verify workflow is "Active" (toggle top-right)
+7. Test via webhook
 
-## Related files
+### Deploying from Local Workflow JSON
 
-- **Workflow JSON (archived reference):** `brain/tools/n8n-mind-inbox.json`
-- **Workflow Retry JSON (archived reference):** `brain/tools/n8n-mind-inbox-retry.json`
-- **Target Inbox folder:** `mind/01-inbox/` (in stevewesthoek/mind repo)
-- **Source Obsidian vault:** `mind/` (in stevewesthoek/mind repo)
-- **Obsidian config:** `mind/.obsidian/` (gitignored)
+If editing locally and exporting workflow:
+
+```bash
+# Export from n8n
+tools/n8n-api.sh get-workflow FwP5INe9qoo1OwGC > workflow-export.json
+
+# Edit workflow-export.json (do not hardcode tokens)
+
+# Deploy back to n8n
+tools/n8n-api.sh update-workflow FwP5INe9qoo1OwGC workflow-export.json
+```
+
+### Reactivating After Restart
+
+After Dokploy or n8n service restart:
+
+1. Go to n8n dashboard
+2. Find workflow by name or ID
+3. Toggle "Active" switch (top-right of editor)
+4. Confirm toggle shows green/active state
+5. Re-test webhook
+
+---
 
 ## Troubleshooting
 
-### "File exists" error in GitHub node
+### Webhook Returns 404
 
-The workflow tries to create a new commit. If the filename collides, GitHub API rejects it.
-- Check if a note with that slug already exists: `ls mind/01-inbox/2026-04-17-*slug*`
-- The "Build Processed Note" node generates unique filenames with timestamps, so collisions are rare
-- If it happens, increment the slug manually or re-run with a slightly different title
+**Message:** "The requested webhook is not registered"
 
-### Gemini returns "could not process"
-
-The fallback error handler captures this as:
-```markdown
-# Unprocessed capture
-Gemini could not process — review manually.
-```
-
-**Common causes:**
-- Content too short or context-poor (Gemini can't classify)
-- Gemini API error (rate limit, auth issue)
-- Invalid JSON response from Gemini
+**Causes:**
+- Workflow is inactive (toggle off)
+- Webhook path doesn't match (check n8n UI vs. request URL)
+- n8n service restarted recently
 
 **Fix:**
-1. Check n8n execution log for the error
-2. Manually fix frontmatter: `para_type` and `confidence` in the saved note
-3. If recurring: add `type_hint` to the request to guide Gemini
+1. Check workflow status in n8n (should show "Active" toggle)
+2. If inactive, toggle on in n8n UI
+3. Retry webhook test
 
-### Slow execution (> 10 seconds)
+### Webhook Returns 401/403 (GitHub Auth)
 
-- Gemini API call takes 5-7 seconds normally
-- GitHub API check takes 1-2 seconds normally
-- GitHub commit takes 2-3 seconds normally
-- Total expected time: 9-12 seconds
-- If > 15 seconds: check n8n logs for rate limiting or network issues
+**Message:** "Invalid authentication credentials"
 
-## Appendix: n8n CLI commands
+**Causes:**
+- GitHub token expired or revoked
+- Token doesn't have `repo` scope
+- `GITHUB_MIND_PAT` not set in Dokploy environment
+- `$env.GITHUB_MIND_PAT` reference broken in workflow
 
-List all workflows:
-```bash
-~/.local/bin/n8n-api list-workflows
-```
+**Fix:**
+1. Check GitHub PAT in Dokploy (should be valid, not revoked)
+2. Verify scope: `repo` only (Settings → Developer Settings → Tokens)
+3. Verify `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` in n8n Dokploy config
+4. If hardcoded token: update workflow to use `$env.GITHUB_MIND_PAT`
 
-Get this workflow:
-```bash
-~/.local/bin/n8n-api get-workflow FwP5INe9qoo1OwGC
-```
+### Gemini Returns Error / Unclassified Captures
 
-Deactivate (pause) the workflow:
-```bash
-~/.local/bin/n8n-api deactivate-workflow FwP5INe9qoo1OwGC
-```
+**Behavior:** Captures land in inbox but para_type is empty
 
-Activate (resume):
-```bash
-~/.local/bin/n8n-api activate-workflow FwP5INe9qoo1OwGC
-```
+**Causes:**
+- Gemini API rate limit (429)
+- Gemini API timeout
+- Content is ambiguous (valid but low confidence)
+- Invalid JSON response from Gemini
 
-Delete (use with caution):
-```bash
-~/.local/bin/n8n-api delete-workflow FwP5INe9qoo1OwGC
-```
+**Workaround:** Manually classify in frontmatter or use sorter script
 
-## History
+### Captures Not Appearing in Obsidian
 
-**2026-04-17 (Security Hardening):**
-- Fixed critical data flow bug: Build Processed Note now references Build Gemini Body for original title/content instead of Gemini output (which loses original data)
-- GitHub authentication moved to HTTP Header Auth credential (ID: `Yitx3dqQjcJ00VvC`)
-- Verified CREATE and UPDATE flows work end-to-end
-- Cleaned up test files; documented common failure modes
+**Causes:**
+- Obsidian vault not synced (check Obsidian Git plugin)
+- File not committed to mind repo yet (check git status in mind/)
+- Obsidian cache stale
 
-**2026-04-17 (Rename to Mind Inbox):** Renamed from "Brain Inbox" to "Mind Inbox" — reflects that workflow now exclusively saves to `stevewesthoek/mind` repo, not `brain` repo. Updated webhook path from `/brain-inbox` to `/mind-inbox`, commit message from "brain: capture" to "mind: capture", and all documentation references.
+**Fix:**
+1. In Obsidian: Command Palette → "Obsidian Git: Pull"
+2. Or: `cd ~/Repos/stevewesthoek/mind && git pull`
+3. Or: Reload Obsidian (Command Palette → "Reload app without saving")
 
-**2026-04-16:** Added file existence checking before save (GET request with continueOnFail). Implements proper create/update logic using SHA for existing files.
+---
 
-**2026-04-09:** Initial deployment with Gemini PARA classification and GitHub API integration.
+## Related Files
+
+| File | Purpose |
+|------|---------|
+| `operations/runbooks/mind-inbox-sorting.md` | Lightweight triage sorter (post-capture) |
+| `tools/scripts/mind-inbox-sorter.py` | Sorter script (optional, manual) |
+| `FAILURE-BUFFER-IMPLEMENTATION-PLAN.md` | Planned error resilience feature |
+| `CREDENTIAL-AUDIT-REPORT-2026-04-17.md` | Credential rotation audit (historical) |
+| `operations/automations/n8n/n8n_backup/` | Workflow backups (local reference only) |
+
+---
+
+## History & Migration Notes
+
+**Why "Save to Mind" instead of "Brain Inbox"?**
+
+The system's purpose is to save captures INTO the Mind vault (personal knowledge system).
+The workflow saves to the Mind inbox (01-inbox/ in stevewesthoek/mind repo).
+Historical references to "Brain Inbox" are deprecated.
+
+**Endpoint migration:** `/brain-inbox` → `/mind-inbox`
+
+This runbook documents the current, correct naming and endpoint.
+
+---
+
+**Last updated:** 2026-04-17  
+**Next review:** Before deploying failure-buffer feature or after credential rotation

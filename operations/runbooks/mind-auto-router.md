@@ -1,4 +1,4 @@
-# Brain Auto-Router Runbook
+# Mind Auto-Router Runbook
 
 **Status:** ✓ PRODUCTION (Replaced n8n scheduled workflows 2026-04-10)
 
@@ -8,7 +8,7 @@
 
 ```bash
 # Comprehensive health check (run after reboot or any time)
-bash ~/Repos/stevewesthoek/brain/tools/scripts/brain-automate-verify.sh
+bash ~/Repos/stevewesthoek/brain/tools/scripts/mind-automate-verify.sh
 
 # Check recent activity
 tail -20 ~/.local/share/brain/logs/auto-router.log
@@ -29,7 +29,7 @@ tail -20 ~/.local/share/brain/logs/auto-router.log
 
 ## Overview
 
-The Auto-Router is a Python script that automatically routes inbox notes through the Brain GTD system. It runs every 1 minute via OS-level cron and intelligently categorizes notes based on confidence and signal_quality scores.
+The Auto-Router is a Python script that automatically routes inbox notes through the Mind GTD system. It runs every 1 minute via OS-level cron and intelligently categorizes notes based on confidence and signal_quality scores.
 
 **What it does:**
 1. Scans `01-inbox/` for files with `status: unrouted`
@@ -55,7 +55,7 @@ Previously, Auto-Router was a scheduled n8n workflow. The n8n scheduler has reli
 Run the verification script to confirm everything is set up:
 
 ```bash
-bash ~/Repos/stevewesthoek/brain/tools/scripts/brain-automate-verify.sh
+bash ~/Repos/stevewesthoek/brain/tools/scripts/mind-automate-verify.sh
 ```
 
 This checks:
@@ -71,10 +71,10 @@ The system is already installed. But if you need to reinstall:
 
 ```bash
 # Check cron job is installed
-crontab -l | grep brain-auto-router
+crontab -l | grep mind-auto-router
 
 # Check script is executable
-ls -la ~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py
+ls -la ~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py
 
 # Check logs directory exists
 ls -la ~/.local/share/brain/logs/
@@ -82,10 +82,10 @@ ls -la ~/.local/share/brain/logs/
 
 If not installed, run:
 ```bash
-chmod +x ~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py
+chmod +x ~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py
 
 # Install cron job
-(crontab -l 2>/dev/null | grep -v "brain-auto-router"; echo "*/1 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py >> /dev/null 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v "mind-auto-router"; echo "*/1 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py >> /dev/null 2>&1") | crontab -
 ```
 
 ---
@@ -128,7 +128,7 @@ For each unrouted file:
 4. Update file: replace `status: unrouted` with new status
 5. Stage file in new location via `git add`
 6. If moving: `git rm` old file
-7. Commit with message: `brain: auto-route {route} — {new_status}`
+7. Commit with message: `mind: auto-route {route} — {new_status}`
 8. `git pull --rebase` (handle remote conflicts)
 9. `git push` to origin/main
 
@@ -173,9 +173,9 @@ tail -f ~/.local/share/brain/logs/auto-router.log
 
 ### Sample Log Output
 ```
-2026-04-10 22:50:42,000 - brain-auto-router - INFO - ✓ Routed 2026-04-10-x-playbook-becoming-a-full-time-creator.md → 03-projects (ready-for-review)
-2026-04-10 22:50:42,000 - brain-auto-router - INFO - Routed 1 file(s)
-2026-04-10 22:51:12,523 - brain-auto-router - INFO - No inbox files found
+2026-04-10 22:50:42,000 - mind-auto-router - INFO - ✓ Routed 2026-04-10-x-playbook-becoming-a-full-time-creator.md → 03-projects (ready-for-review)
+2026-04-10 22:50:42,000 - mind-auto-router - INFO - Routed 1 file(s)
+2026-04-10 22:51:12,523 - mind-auto-router - INFO - No inbox files found
 ```
 
 ---
@@ -186,10 +186,10 @@ Run the router manually (outside cron) for testing or debugging:
 
 ```bash
 # Direct execution
-~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py
+~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py
 
 # With verbose output
-python3 ~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py
+python3 ~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py
 ```
 
 ---
@@ -222,7 +222,7 @@ crontab -e
 crontab -r
 
 # Reinstall later
-(crontab -l 2>/dev/null; echo "*/1 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py >> /dev/null 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "*/1 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py >> /dev/null 2>&1") | crontab -
 ```
 
 ---
@@ -233,13 +233,13 @@ crontab -r
 
 **Check if cron job exists:**
 ```bash
-crontab -l | grep brain-auto-router
+crontab -l | grep mind-auto-router
 # Should output: */1 * * * * /Users/Office/...
 ```
 
 **Check if script is executable:**
 ```bash
-ls -la ~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py
+ls -la ~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py
 # Should show: -rwxr-xr-x (executable)
 ```
 
@@ -254,7 +254,7 @@ ls -la ~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py
 **Fix:**
 ```bash
 cat ~/.config/github/.env
-# Should show: GITHUB_PAT=github_pat_11BQLFYZQ05AJr...
+# Should show: GITHUB_PAT=<your-token>
 
 # If missing, create it
 mkdir -p ~/.config/github
@@ -272,13 +272,13 @@ tail -20 ~/.local/share/brain/logs/auto-router-error.log
 **Common issues:**
 - File doesn't have `confidence` or `signal_quality` fields (must be numeric)
 - File `status` is not exactly `unrouted`
-- Destination folder doesn't exist (router creates `vault/{route}/` automatically)
+- Destination folder doesn't exist in the Mind repo; router should create `{route}/` under `~/Repos/stevewesthoek/mind/`
 - Git authentication failing
 
 **Manual test:**
 ```bash
 # Run script and capture errors
-~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py 2>&1 | tee /tmp/router-debug.log
+~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py 2>&1 | tee /tmp/router-debug.log
 cat /tmp/router-debug.log
 ```
 
@@ -288,7 +288,7 @@ cat /tmp/router-debug.log
 
 **Fix:** The script already handles this with `git pull --rebase`, but if it persists:
 ```bash
-cd ~/Repos/stevewesthoek/brain
+cd ~/Repos/stevewesthoek/mind
 git pull --rebase
 git push
 ```
@@ -300,7 +300,7 @@ git push
 ### Create a Test Note
 
 ```bash
-cd ~/Repos/stevewesthoek/brain
+cd ~/Repos/stevewesthoek/mind
 
 cat > 01-inbox/2026-04-10-test-high-value.md << 'EOF'
 ---
@@ -320,11 +320,11 @@ This is a high-confidence, high-signal note that should route to 03-projects.
 EOF
 
 # Run router
-~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py
+~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py
 
 # Check result
-ls vault/03-projects/ | grep test-high-value
-cat vault/03-projects/2026-04-10-test-high-value.md | head -15
+ls 03-projects/ | grep test-high-value
+cat 03-projects/2026-04-10-test-high-value.md | head -15
 ```
 
 Expected: File moves to `03-projects/`, status becomes `ready-for-review`.
@@ -347,7 +347,7 @@ Expected: File moves to `03-projects/`, status becomes `ready-for-review`.
 ### Future Work
 - Implement Project Decomposer as Python script + cron
 - Implement Kanban Syncer as Python script + cron
-- Unify all three scripts into a single `brain-automation` suite
+- Unify all three scripts into a single `mind-automation` suite
 
 ---
 
@@ -356,7 +356,7 @@ Expected: File moves to `03-projects/`, status becomes `ready-for-review`.
 | Action | Command |
 |--------|---------|
 | View logs | `tail -f ~/.local/share/brain/logs/auto-router.log` |
-| Run manually | `~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py` |
+| Run manually | `~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py` |
 | Edit cron | `crontab -e` |
 | Check cron | `crontab -l` |
 | Test routing | Create file in `01-inbox/` with `status: unrouted`, run script manually |
@@ -368,7 +368,7 @@ Expected: File moves to `03-projects/`, status becomes `ready-for-review`.
 
 For issues:
 1. Check logs: `tail -20 ~/.local/share/brain/logs/auto-router*.log`
-2. Run manually: `~/Repos/stevewesthoek/brain/tools/scripts/brain-auto-router.py`
+2. Run manually: `~/Repos/stevewesthoek/brain/tools/scripts/mind-auto-router.py`
 3. Check GitHub config: `cat ~/.config/github/.env`
 4. Test git access: `cd ~/Repos/stevewesthoek/brain && git pull && git push`
 

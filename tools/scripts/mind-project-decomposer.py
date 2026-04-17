@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Brain Project Decomposer: Automated project decomposition into tasks.
+Mind Project Decomposer: Automated project decomposition into tasks.
 
 This script runs every 5 minutes (via cron) and:
 1. Scans 03-projects/ for files with status: ready-for-review and type: capture in the mind repo
@@ -11,7 +11,7 @@ This script runs every 5 minutes (via cron) and:
 6. Logs all actions to ~/.local/share/brain/logs/project-decomposer.log
 
 Cron Schedule: Every 5 minutes
-  */5 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py
+  */5 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py
 
 Configuration:
   - GITHUB_TOKEN: Required, stored in ~/.config/github/.env or GITHUB_TOKEN env var
@@ -23,7 +23,7 @@ Logs:
   - Errors to both stdout and LOG_DIR/project-decomposer-error.log
 
 Manual Execution:
-  python3 ~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py
+  python3 ~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py
 """
 
 import os
@@ -49,7 +49,7 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 log_file = LOG_DIR / "project-decomposer.log"
 error_log_file = LOG_DIR / "project-decomposer-error.log"
 
-logger = logging.getLogger("brain-project-decomposer")
+logger = logging.getLogger("mind-project-decomposer")
 logger.setLevel(logging.DEBUG)
 
 # File handler for main log
@@ -371,7 +371,7 @@ def commit_decomposition(project_filepath: str, project_content: str, tasks_data
             subprocess.run(["git", "-C", str(repo_path), "add", f"{TASKS_PATH}/{task_filename}"], check=True, capture_output=True)
 
         # Commit
-        commit_msg = f"brain: decompose {original_title}"
+        commit_msg = f"mind: decompose {original_title}"
         subprocess.run(
             ["git", "-C", str(repo_path), "commit", "-m", commit_msg],
             check=True,

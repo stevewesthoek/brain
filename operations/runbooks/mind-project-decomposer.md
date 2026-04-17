@@ -1,4 +1,4 @@
-# Brain Project Decomposer Runbook
+# Mind Project Decomposer Runbook
 
 **Status:** ✓ PRODUCTION (Python + Cron, replacing n8n)
 
@@ -8,7 +8,7 @@
 
 ```bash
 # Comprehensive health check (run after reboot or any time)
-bash ~/Repos/stevewesthoek/brain/tools/scripts/brain-automate-verify.sh
+bash ~/Repos/stevewesthoek/brain/tools/scripts/mind-automate-verify.sh
 
 # Check recent activity
 tail -20 ~/.local/share/brain/logs/project-decomposer.log
@@ -22,7 +22,7 @@ tail -20 ~/.local/share/brain/logs/project-decomposer.log
 
 **If you reinstall macOS:**
 - Keep your home directory path the same → Everything works
-- Move the brain repo → Update crontab path (see "Cron Job Management" below)
+- Move the mind repo → Update paths in cron job (see "Cron Job Management" below)
 - Change GitHub PAT → Update `~/.config/github/.env`
 
 ---
@@ -32,11 +32,11 @@ tail -20 ~/.local/share/brain/logs/project-decomposer.log
 The Project Decomposer is a Python script that automatically breaks down high-quality projects into atomic tasks. It runs every 5 minutes via OS-level cron and uses Gemini AI to decompose projects intelligently.
 
 **What it does:**
-1. Scans `vault/03-projects/` for files with `type: capture` and `status: ready-for-review` (placed there by the Auto-Router)
+1. Scans `03-projects/` for files with `type: capture` and `status: ready-for-review` (placed there by the Auto-Router)
 2. Sends each project to Gemini CLI for intelligent decomposition
 3. Receives structured JSON back with project metadata and task breakdown
 4. Replaces the capture file with a proper project file (using `project.md` template)
-5. Creates N task files in `vault/04-tasks/{project-slug}/` (using `task.md` template)
+5. Creates N task files in `04-tasks/{project-slug}/` (using `task.md` template)
 6. Commits all changes atomically via git
 7. Logs all actions for debugging
 
@@ -58,7 +58,7 @@ The Auto-Router places raw capture notes into `03-projects/` when they meet qual
 Run the verification script to confirm everything is set up:
 
 ```bash
-bash ~/Repos/stevewesthoek/brain/tools/scripts/brain-automate-verify.sh
+bash ~/Repos/stevewesthoek/brain/tools/scripts/mind-automate-verify.sh
 ```
 
 This checks:
@@ -86,10 +86,10 @@ The system is already installed. But if you need to reinstall:
 
 ```bash
 # Check cron job is installed
-crontab -l | grep brain-project-decomposer
+crontab -l | grep mind-project-decomposer
 
 # Check script is executable
-ls -la ~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py
+ls -la ~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py
 
 # Check logs directory exists
 ls -la ~/.local/share/brain/logs/
@@ -97,10 +97,10 @@ ls -la ~/.local/share/brain/logs/
 
 If not installed, run:
 ```bash
-chmod +x ~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py
+chmod +x ~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py
 
 # Install cron job
-(crontab -l 2>/dev/null | grep -v "brain-project-decomposer"; echo "*/5 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py >> /dev/null 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v "mind-project-decomposer"; echo "*/5 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py >> /dev/null 2>&1") | crontab -
 ```
 
 ---
@@ -110,7 +110,7 @@ chmod +x ~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py
 ### Decision Tree
 
 The decomposer only processes files matching:
-1. **Location:** `vault/03-projects/`
+1. **Location:** `03-projects/`
 2. **Type:** `type: capture` (not yet converted to proper project format)
 3. **Status:** `status: ready-for-review` (placed there by Auto-Router)
 
@@ -131,7 +131,7 @@ For each eligible file:
    - Target end date: from Gemini or empty
    - Goal: one-sentence goal from Gemini
    - Related tasks: list of links to new task files
-6. **Build task files** — One file per task in `vault/04-tasks/{project-slug}/`:
+6. **Build task files** — One file per task in `04-tasks/{project-slug}/`:
    - Type: `task`
    - Assigned to: `you` or `ai` (from Gemini)
    - Priority: from Gemini (1-5)
@@ -173,7 +173,7 @@ Example response:
 
 ### File Formats
 
-**Project file** (`vault/03-projects/project-name.md` after decomposition):
+**Project file** (`03-projects/project-name.md` after decomposition):
 
 ```yaml
 ---
@@ -195,11 +195,11 @@ One sentence goal statement
 Original project note content here...
 
 ## Related Tasks
-- [[vault/04-tasks/project-slug/001-task-name]]
-- [[vault/04-tasks/project-slug/002-another-task]]
+- [[04-tasks/project-slug/001-task-name]]
+- [[04-tasks/project-slug/002-another-task]]
 ```
 
-**Task file** (`vault/04-tasks/{project-slug}/{number}-{task-name}.md`):
+**Task file** (`04-tasks/{project-slug}/{number}-{task-name}.md`):
 
 ```yaml
 ---
@@ -209,7 +209,7 @@ assigned_to: you | ai
 status: ready
 priority: 3
 effort: small | medium | large
-project: [[vault/03-projects/project-name]]
+project: [[03-projects/project-name]]
 ---
 
 ## What to Do
@@ -242,9 +242,9 @@ tail -f ~/.local/share/brain/logs/project-decomposer.log
 
 ### Sample Log Output
 ```
-2026-04-10 12:15:42,000 - brain-project-decomposer - INFO - ✓ Decomposed X Playbook: Becoming a Full-Time Creator → project + 5 tasks
-2026-04-10 12:20:15,000 - brain-project-decomposer - DEBUG - No project files found
-2026-04-10 12:25:42,000 - brain-project-decomposer - ERROR - Gemini call timed out for Some Project Title
+2026-04-10 12:15:42,000 - mind-project-decomposer - INFO - ✓ Decomposed X Playbook: Becoming a Full-Time Creator → project + 5 tasks
+2026-04-10 12:20:15,000 - mind-project-decomposer - DEBUG - No project files found
+2026-04-10 12:25:42,000 - mind-project-decomposer - ERROR - Gemini call timed out for Some Project Title
 ```
 
 ---
@@ -255,10 +255,10 @@ Run the decomposer manually (outside cron) for testing or debugging:
 
 ```bash
 # Direct execution
-~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py
+~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py
 
 # With verbose output
-python3 ~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py
+python3 ~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py
 ```
 
 ---
@@ -291,7 +291,7 @@ crontab -e
 crontab -r
 
 # Reinstall later
-(crontab -l 2>/dev/null; echo "*/5 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py >> /dev/null 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "*/5 * * * * /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py >> /dev/null 2>&1") | crontab -
 ```
 
 ---
@@ -302,13 +302,13 @@ crontab -r
 
 **Check if cron job exists:**
 ```bash
-crontab -l | grep brain-project-decomposer
+crontab -l | grep mind-project-decomposer
 # Should output: */5 * * * * /Users/Office/...
 ```
 
 **Check if script is executable:**
 ```bash
-ls -la ~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py
+ls -la ~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py
 # Should show: -rwxr-xr-x (executable)
 ```
 
@@ -340,7 +340,7 @@ gemini auth login
 **Fix:**
 ```bash
 cat ~/.config/github/.env
-# Should show: GITHUB_PAT=github_pat_11BQLFYZQ05AJr...
+# Should show: GITHUB_PAT=<your-token>
 
 # If missing, create it
 mkdir -p ~/.config/github
@@ -357,14 +357,14 @@ tail -20 ~/.local/share/brain/logs/project-decomposer-error.log
 
 **Verify project files exist:**
 ```bash
-ls ~/Repos/stevewesthoek/brain/vault/03-projects/
+ls ~/Repos/stevewesthoek/mind/03-projects/
 # Should see .md files with status: ready-for-review, type: capture
 ```
 
 **Test manually:**
 ```bash
 # Run script and capture output
-~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py 2>&1 | tee /tmp/decomposer-debug.log
+~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py 2>&1 | tee /tmp/decomposer-debug.log
 cat /tmp/decomposer-debug.log
 ```
 
@@ -374,7 +374,7 @@ cat /tmp/decomposer-debug.log
 
 **Fix:** The script already handles this with `git pull --rebase`, but if it persists:
 ```bash
-cd ~/Repos/stevewesthoek/brain
+cd ~/Repos/stevewesthoek/mind
 git pull --rebase
 git push
 ```
@@ -388,9 +388,9 @@ git push
 Create a test capture file in `03-projects/`:
 
 ```bash
-cd ~/Repos/stevewesthoek/brain
+cd ~/Repos/stevewesthoek/mind
 
-cat > vault/03-projects/2026-04-10-test-decomposer.md << 'EOF'
+cat > 03-projects/2026-04-10-test-decomposer.md << 'EOF'
 ---
 type: capture
 source: test
@@ -419,7 +419,7 @@ EOF
 
 ```bash
 # Run script manually
-~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py
+~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py
 
 # Check logs
 tail -20 ~/.local/share/brain/logs/project-decomposer.log
@@ -429,12 +429,12 @@ tail -20 ~/.local/share/brain/logs/project-decomposer.log
 
 ```bash
 # Check project file was converted
-ls vault/03-projects/ | grep test-decomposer
-cat vault/03-projects/2026-04-10-test-decomposer.md | head -20
+ls 03-projects/ | grep test-decomposer
+cat 03-projects/2026-04-10-test-decomposer.md | head -20
 
 # Check task files were created
-ls vault/04-tasks/learn-rust-programming/
-cat vault/04-tasks/learn-rust-programming/001-*.md
+ls 04-tasks/learn-rust-programming/
+cat 04-tasks/learn-rust-programming/001-*.md
 ```
 
 **Expected:**
@@ -442,7 +442,7 @@ cat vault/04-tasks/learn-rust-programming/001-*.md
 - Project file has `## Goal`, `## What Needs to Happen`, `## Related Tasks` sections
 - 3-7 task files created in `04-tasks/learn-rust-programming/`
 - Each task has `type: task`, `assigned_to: you|ai`, priority, effort fields
-- Git commit pushed with message: `brain: decompose Learn Rust Programming`
+- Git commit pushed with message: `mind: decompose Learn Rust Programming`
 
 ---
 
@@ -488,12 +488,12 @@ Recommended: Keep at **every 5 minutes** unless you hit Gemini rate limits.
 | Action | Command |
 |--------|---------|
 | View logs | `tail -f ~/.local/share/brain/logs/project-decomposer.log` |
-| Run manually | `~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py` |
+| Run manually | `~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py` |
 | Edit cron | `crontab -e` |
 | Check cron | `crontab -l` |
 | Test Gemini | `echo "Say hello" \| gemini --model gemini-2.5-flash` |
-| List projects | `ls vault/03-projects/` |
-| List tasks | `ls vault/04-tasks/` |
+| List projects | `ls 03-projects/` |
+| List tasks | `ls 04-tasks/` |
 | Disable | `crontab -r` |
 
 ---
@@ -502,7 +502,7 @@ Recommended: Keep at **every 5 minutes** unless you hit Gemini rate limits.
 
 For issues:
 1. Check logs: `tail -20 ~/.local/share/brain/logs/project-decomposer*.log`
-2. Run manually: `~/Repos/stevewesthoek/brain/tools/scripts/brain-project-decomposer.py`
+2. Run manually: `~/Repos/stevewesthoek/brain/tools/scripts/mind-project-decomposer.py`
 3. Test Gemini: `echo "Say hello" | gemini --model gemini-2.5-flash`
 4. Test git access: `cd ~/Repos/stevewesthoek/brain && git pull && git push`
 

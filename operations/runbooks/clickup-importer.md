@@ -4,11 +4,11 @@
 
 ## Overview
 
-The ClickUp CSV Importer transforms a ClickUp task export into Brain task format. It reads a CSV file and:
+The ClickUp CSV Importer transforms a ClickUp task export into Mind task format. It reads a CSV file and:
 
 1. Parses all tasks with metadata (name, status, due date, priority, assignees)
 2. Creates individual task `.md` files in `04-tasks/{list-slug}/{number}-{task-slug}.md`
-3. Maps ClickUp statuses to Brain statuses:
+3. Maps ClickUp statuses to Mind statuses:
    - `complete` → `done` (marks task as [x] in Kanban Done column)
    - `today`, `next`, `priority` → `ready` (marks as [ ] in Backlog/To Do)
    - `backlog` → `ready` (Backlog column)
@@ -27,7 +27,7 @@ The ClickUp CSV Importer transforms a ClickUp task export into Brain task format
 Task files are created in `04-tasks/` organized by ClickUp list name (slugified). Each task gets a unique `.md` file with full metadata preserved. After import, the Kanban Syncer automatically syncs all tasks into the interactive Obsidian Kanban board.
 
 **Why it exists:**
-ClickUp exports can be large (hundreds or thousands of tasks). Rather than manually creating each task, this script automates the import, preserving task history and status, while integrating with the existing Brain GTD automation.
+ClickUp exports can be large (hundreds or thousands of tasks). Rather than manually creating each task, this script automates the import, preserving task history and status, while integrating with the existing Mind task automation.
 
 ---
 
@@ -57,15 +57,15 @@ The importer reads ClickUp's standard CSV export format:
 | Task ID | ClickUp ID | Ignored (not needed) |
 | Task Name | Task title | Task file name (slug) |
 | Task Content | Description | Task "What to Do" section |
-| Status | Task status | Brain task status (done/ready) |
+| Status | Task status | Mind task status (done/ready) |
 | Due Date | ClickUp due date timestamp | Task frontmatter (optional) |
-| Priority | ClickUp priority (1/2/null) | Brain priority (1-5) |
+| Priority | ClickUp priority (1/2/null) | Mind priority (1-5) |
 | Assignees | ClickUp assignee name | Assignment tag (#you or #ai) |
 | List Name | ClickUp list/folder | Task folder organization |
 
 ### Status Mapping
 
-| ClickUp Status | Brain Status | Kanban Column | Checkbox |
+| ClickUp Status | Mind Status | Kanban Column | Checkbox |
 |---|---|---|---|
 | `complete` | `done` | Done | [x] |
 | `today` | `ready` | Backlog (draggable to To Do) | [ ] |
@@ -76,7 +76,7 @@ The importer reads ClickUp's standard CSV export format:
 
 ### Priority Mapping
 
-| ClickUp Priority | Brain Priority | Meaning |
+| ClickUp Priority | Mind Priority | Meaning |
 |---|---|---|
 | `1` | `2` | High |
 | `2` | `3` | Medium |
@@ -145,8 +145,8 @@ Located at: `tools/scripts/clickup-importer.py`
 
 Key components:
 - **CSV parsing:** Handles multi-line descriptions, special characters, quoted fields
-- **Status mapping:** Converts ClickUp statuses to Brain task statuses
-- **Priority mapping:** Normalizes ClickUp priorities (1-2) to Brain priorities (1-5)
+- **Status mapping:** Converts ClickUp statuses to Mind task statuses
+- **Priority mapping:** Normalizes ClickUp priorities (1-2) to Mind priorities (1-5)
 - **Slug generation:** Creates URL-safe filenames from task names
 - **Git operations:** Stages, commits, and pushes all files atomically
 - **Logging:** Three handlers (main log, error log, console)
@@ -192,7 +192,7 @@ Process:
 1. Parses all tasks from CSV
 2. Creates `.md` files in `04-tasks/`
 3. Stages all files with `git add`
-4. Creates atomic commit: `"brain: import N tasks from ClickUp"`
+4. Creates atomic commit: `"mind: import N tasks from ClickUp"`
 5. Pulls from remote (`git pull --rebase`)
 6. Pushes to main branch
 7. Logs summary
@@ -238,10 +238,10 @@ Once tasks are imported and committed, the Kanban Syncer automatically picks the
 
 ```bash
 # Manually trigger Kanban sync
-python3 ~/Repos/stevewesthoek/brain/tools/scripts/brain-kanban-syncer.py
+python3 ~/Repos/stevewesthoek/brain/tools/scripts/mind-kanban-syncer.py
 
 # Verify in Obsidian
-# Open: vault/kanban.md
+# Open: mind/kanban.md
 # Should see all imported tasks organized in columns
 ```
 
@@ -262,7 +262,7 @@ ClickUp CSV Export
         ↓
 Task Metadata (name, status, priority, content)
         ↓
-  [Status Mapper] — convert to Brain statuses
+  [Status Mapper] — convert to Mind statuses
         ↓
 Task file generation (YAML + markdown)
         ↓
@@ -272,7 +272,7 @@ Git: stage → commit → pull → push
         ↓
 Kanban Syncer (runs every 10 min)
         ↓
-vault/kanban.md updated with all tasks
+mind/kanban.md updated with all tasks
         ↓
 Obsidian Kanban plugin renders interactive board
 ```
@@ -301,7 +301,7 @@ Obsidian Kanban plugin renders interactive board
 
 **Fix:**
 ```bash
-cd ~/Repos/stevewesthoek/brain
+cd ~/Repos/stevewesthoek/mind
 rm -f .git/index.lock
 git status
 # If uncommitted changes exist, either commit or discard them
@@ -321,7 +321,7 @@ tail -20 ~/.local/share/brain/logs/clickup-importer-error.log
 
 **Reason:** ClickUp status values may differ from the standard set. The importer defaults to `ready` for unknown statuses, which goes to Backlog.
 
-**Fix:** Check the actual ClickUp status value and verify it matches the mapping table above. Edit the `clickup_status_to_brain_status()` function in the script if needed.
+**Fix:** Check the actual ClickUp status value and verify it matches the mapping table above. Edit the `clickup_status_to_mind_status()` function in the script if needed.
 
 ### Large CSV Takes Too Long
 
@@ -339,7 +339,7 @@ tail -20 ~/.local/share/brain/logs/clickup-importer-error.log
 2. **Review the output:** Check that status mapping is correct before importing
 3. **One import per session:** Import all ClickUp tasks once. For updates, manually edit individual tasks.
 4. **Clean duplicates:** If you import the same CSV twice, you'll get duplicate tasks. Use the dry-run to check before re-importing.
-5. **Check Kanban after:** Wait ~30 seconds after import, then manually trigger `brain-kanban-syncer.py` to see tasks in the board immediately
+5. **Check Kanban after:** Wait ~30 seconds after import, then manually trigger `mind-kanban-syncer.py` to see tasks in the board immediately
 
 ---
 
@@ -361,7 +361,7 @@ If you accidentally import twice, you'll have duplicates. To clean up:
 Edit the mapping functions in `tools/scripts/clickup-importer.py`:
 
 ```python
-def clickup_status_to_brain_status(status: str) -> str:
+def clickup_status_to_mind_status(status: str) -> str:
     # Customize here
     ...
 
@@ -404,10 +404,10 @@ if task['status'] not in ['backlog', 'today', 'next']:
 
 ## Related Docs
 
-- `brain-kanban-syncer.md` — Syncs imported tasks to Obsidian Kanban board
-- `brain-project-decomposer.md` — Creates tasks from captured projects
-- `brain-auto-router.md` — Routes inbox notes to the right destinations
-- CLAUDE.md — Brain repo overview and integration
+- `mind-kanban-syncer.md` — Syncs imported tasks to Obsidian Kanban board
+- `mind-project-decomposer.md` — Creates tasks from captured projects
+- `mind-auto-router.md` — Routes inbox notes to the right destinations
+- CLAUDE.md — Automation repo overview and integration
 
 ---
 
