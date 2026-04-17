@@ -1,0 +1,118 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Mind Inbox API",
+    "version": "1.0.0",
+    "description": "Save conversations and ideas to personal knowledge base"
+  },
+  "servers": [
+    {
+      "url": "https://n8n.prochat.tools"
+    }
+  ],
+  "paths": {
+    "/webhook/mind-inbox": {
+      "post": {
+        "operationId": "saveToMind",
+        "summary": "Save a conversation or idea to the personal mind inbox",
+        "description": "Capture and classify a conversation, idea, or note into your personal knowledge management system. Content is automatically classified using PARA method (Projects, Areas, Resources, Inbox) and saved to mind/01-inbox/.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "content"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "description": "Source of the capture (e.g., 'chatgpt', 'shortcut')",
+                    "default": "chatgpt"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Short descriptive title for this note (max 8 words)"
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "The full conversation content or key ideas to save"
+                  },
+                  "type_hint": {
+                    "type": "string",
+                    "enum": [
+                      "project",
+                      "area",
+                      "resource",
+                      "inbox"
+                    ],
+                    "description": "Optional hint about what type of content this is. Helps AI classification."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "Status of the save operation"
+                    },
+                    "result": {
+                      "type": "string",
+                      "description": "Result of the operation (e.g., 'file_committed')"
+                    },
+                    "file": {
+                      "type": "string",
+                      "description": "Path to the saved file in the vault"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Final title of the saved note"
+                    },
+                    "para_type": {
+                      "type": "string",
+                      "enum": [
+                        "project",
+                        "area",
+                        "resource",
+                        "inbox"
+                      ],
+                      "description": "Classified PARA type"
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "description": "Confidence score for classification (0-1)"
+                    },
+                    "signal_quality": {
+                      "type": "number",
+                      "description": "Quality score of the captured content (0-1)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing or invalid parameters"
+          },
+          "500": {
+            "description": "Server error during processing"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  }
+}
