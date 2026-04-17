@@ -37,6 +37,8 @@ from datetime import datetime
 from typing import Optional, Dict, List, Set, Tuple
 import subprocess
 
+# Type hint for parse_kanban_md return type
+
 # Configuration
 REPO_USER = "stevewesthoek"
 REPO_NAME = "mind"
@@ -159,22 +161,33 @@ def extract_frontmatter(content: str) -> dict:
     return data
 
 
-def parse_kanban_md(kanban_content: str) -> Dict[str, Set[str]]:
+def parse_kanban_md(kanban_content: str) -> Tuple[Dict[str, Set[str]], Dict[str, List[str]]]:
     """
-    Parse kanban.md and return dict of column_name -> set of file paths.
-    Extracts file paths from wikilinks: [[path/to/file.md|Display Title]]
+    Parse kanban.md and return:
+    1. Dict of column_name -> set of file paths (file-backed tasks)
+    2. Dict of column_name -> list of manual task lines (non-file-backed tasks)
+
+    File-backed tasks have wikilinks: [[path/to/file.md|Display Title]]
+    Manual tasks are plain checklist items: - [ ] Task name
     """
-    columns = {
+    file_backed = {
         "Backlog": set(),
         "To Do": set(),
         "Doing": set(),
         "Done": set()
+    }
+    manual_tasks = {
+        "Backlog": [],
+        "To Do": [],
+        "Doing": [],
+        "Done": []
     }
 
     current_column = None
     in_archive = False
 
     for line in kanban_content.split("\n"):
+        original_line = line
         line = line.strip()
 
         # Skip settings block
@@ -190,23 +203,26 @@ def parse_kanban_md(kanban_content: str) -> Dict[str, Set[str]]:
             # Remove WIP limit like "(5)"
             heading = re.sub(r"\s*\(\d+\)\s*$", "", heading).strip()
 
-            if heading in columns:
+            if heading in file_backed:
                 current_column = heading
             elif heading == "Archive":
                 current_column = "Archive"
             continue
 
-        # Extract file paths from checklist items
-        if line.startswith("- [") and current_column:
-            # Format: - [ ] [[path/to/file.md|Title]] #tags
-            # Extract the wikilink
-            match = re.search(r"\[\[([^\]]+?)\|", line)
-            if match:
-                filepath = match.group(1).strip()
-                if current_column in columns:
-                    columns[current_column].add(filepath)
+        # Extract checklist items
+        if line.startswith("- [") and current_column and current_column in file_backed:
+            # Check if it's a file-backed task (has wikilink)
+            if "[[" in line and "]]" in line:
+                # Format: - [ ] [[path/to/file.md|Title]] #tags
+                match = re.search(r"\[\[([^\]]+?)\|", line)
+                if match:
+                    filepath = match.group(1).strip()
+                    file_backed[current_column].add(filepath)
+            else:
+                # Manual task - preserve exactly as is
+                manual_tasks[current_column].append(original_line)
 
-    return columns
+    return file_backed, manual_tasks
 
 
 def load_kanban_md() -> Optional[str]:
@@ -243,9 +259,10 @@ def build_kanban_content(
     backlog_tasks: List[Tuple[str, dict]],
     todo_tasks: List[Tuple[str, dict]],
     doing_tasks: List[Tuple[str, dict]],
-    done_tasks: List[Tuple[str, dict]]
+    done_tasks: List[Tuple[str, dict]],
+    manual_tasks: Dict[str, List[str]]
 ) -> str:
-    """Build kanban.md markdown content."""
+    """Build kanban.md markdown content, preserving manual tasks."""
     lines = [
         "---",
         "",
@@ -257,7 +274,7 @@ def build_kanban_content(
         ""
     ]
 
-    # Backlog column
+    # Backlog column - file-backed tasks first
     for filepath, task_data in backlog_tasks:
         title = task_data["title"]
         priority = task_data.get("priority", 3)
@@ -266,9 +283,12 @@ def build_kanban_content(
         assigned_tag = assigned_to_tag(assigned)
         lines.append(f'- [ ] [[{filepath}|{title}]] {priority_tag} {assigned_tag}')
 
+    # Backlog manual tasks
+    lines.extend(manual_tasks.get("Backlog", []))
+
     lines.extend(["", "## To Do", ""])
 
-    # To Do column
+    # To Do column - file-backed tasks first
     for filepath, task_data in todo_tasks:
         title = task_data["title"]
         priority = task_data.get("priority", 3)
@@ -277,9 +297,12 @@ def build_kanban_content(
         assigned_tag = assigned_to_tag(assigned)
         lines.append(f'- [ ] [[{filepath}|{title}]] {priority_tag} {assigned_tag}')
 
+    # To Do manual tasks
+    lines.extend(manual_tasks.get("To Do", []))
+
     lines.extend(["", "## Doing", ""])
 
-    # Doing column
+    # Doing column - file-backed tasks first
     for filepath, task_data in doing_tasks:
         title = task_data["title"]
         priority = task_data.get("priority", 3)
@@ -288,9 +311,12 @@ def build_kanban_content(
         assigned_tag = assigned_to_tag(assigned)
         lines.append(f'- [ ] [[{filepath}|{title}]] {priority_tag} {assigned_tag}')
 
+    # Doing manual tasks
+    lines.extend(manual_tasks.get("Doing", []))
+
     lines.extend(["", "## Done", "", "**Complete**", ""])
 
-    # Done column
+    # Done column - file-backed tasks first
     for filepath, task_data in done_tasks:
         title = task_data["title"]
         priority = task_data.get("priority", 3)
@@ -298,6 +324,9 @@ def build_kanban_content(
         priority_tag = priority_to_tag(priority)
         assigned_tag = assigned_to_tag(assigned)
         lines.append(f'- [x] [[{filepath}|{title}]] {priority_tag} {assigned_tag}')
+
+    # Done manual tasks
+    lines.extend(manual_tasks.get("Done", []))
 
     # Add settings block
     lines.extend(["", "", "%% kanban:settings"])
@@ -413,13 +442,14 @@ def main():
     # Get task files
     task_files = get_task_files()
 
-    # Parse existing kanban to get To Do column contents
+    # Parse existing kanban to preserve manual tasks and file-backed task tracking
     existing_kanban = load_kanban_md()
-    current_columns = {}
+    file_backed_tasks = {}
+    manual_tasks = {}
     if existing_kanban:
-        current_columns = parse_kanban_md(existing_kanban)
+        file_backed_tasks, manual_tasks = parse_kanban_md(existing_kanban)
 
-    to_do_paths = current_columns.get("To Do", set())
+    to_do_paths = file_backed_tasks.get("To Do", set())
 
     # Read all task files and organize by status
     all_tasks: Dict[str, dict] = {}
@@ -473,8 +503,8 @@ def main():
     for task_list in [backlog_tasks, todo_tasks, doing_tasks, done_tasks]:
         task_list.sort(key=lambda x: x[1]["priority"])
 
-    # Build kanban
-    kanban_content = build_kanban_content(backlog_tasks, todo_tasks, doing_tasks, done_tasks)
+    # Build kanban with manual tasks preserved
+    kanban_content = build_kanban_content(backlog_tasks, todo_tasks, doing_tasks, done_tasks, manual_tasks)
 
     # Write kanban
     if write_kanban_md(kanban_content):
