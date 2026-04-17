@@ -168,16 +168,29 @@ def decide_route(confidence: float, signal_quality: float, para_type: str) -> Tu
     Decision tree routing logic.
 
     Returns: (route_folder, new_status)
+
+    Safety: if signal_quality is missing/unknown (0), treat as "needs-review" not "low-signal".
+    Only archive when BOTH scores are explicitly low.
     """
+    # High confidence + high signal = ready for processing
     if signal_quality >= 0.8 and confidence >= 0.8:
         route = "03-projects" if para_type == "project" else "02-strategy/brainstorm"
         return route, "ready-for-review"
-    elif signal_quality >= 0.5 and confidence >= 0.5:
+
+    # High confidence but missing/low signal = review queue (fail-safe)
+    if confidence >= 0.8 and signal_quality == 0:
         return "01-inbox", "review-queue"
-    elif signal_quality < 0.5:
+
+    # Medium-high confidence + medium signal = needs review
+    if signal_quality >= 0.5 and confidence >= 0.5:
+        return "01-inbox", "review-queue"
+
+    # Explicitly low signal = archive
+    if signal_quality < 0.5 and signal_quality > 0:
         return "08-archive", "archived-low-signal"
-    else:
-        return "08-archive", "archived-vague"
+
+    # Otherwise = vague/unknown = stays in review queue
+    return "01-inbox", "review-queue"
 
 
 def update_file_status(content: str, new_status: str) -> str:
@@ -295,7 +308,7 @@ def main():
         if route == "01-inbox":
             new_filepath = filepath  # Same location
         else:
-            new_filepath = f"notes/{route}/{filename}"
+            new_filepath = f"{route}/{filename}"
 
         # Commit
         if commit_file(filepath, new_filepath, updated_content, route, new_status, token):
