@@ -255,6 +255,39 @@ git status
 
 ---
 
+## Runtime Verification Expectations
+
+Every cron execution should produce an INFO-level heartbeat or no-op log line. This ensures consistent telemetry for operational health checks.
+
+**Expected log frequency:**
+- **Auto-Router:** At least one INFO-level line every 1 minute
+  - "Run started" at execution
+  - "No inbox files found" if inbox is empty (no-op case)
+  - "Routed N file(s)" if files were routed
+  - "Run complete" at finish
+  
+- **Project-Decomposer:** At least one INFO-level line every 5 minutes
+  - "Run started" at execution
+  - "No project files ready for decomposition" if no eligible projects (no-op case)
+  - "Decomposed N project(s)" if projects were decomposed
+  - "Run complete" at finish
+  
+- **Kanban-Syncer:** At least one INFO-level line every 10 minutes
+  - "Run started" at execution
+  - "Kanban unchanged, skipping commit" if no task changes (no-op case)
+  - "✓ Synced Kanban board" if changes were committed
+  - "Run complete" at finish
+
+**Production readiness verification:**
+Fresh log timestamps (within the last cron interval) are required before calling automation production-ready. Use:
+```bash
+tail -50 ~/.local/share/brain/logs/auto-router.log
+tail -50 ~/.local/share/brain/logs/project-decomposer.log
+tail -50 ~/.local/share/brain/logs/kanban-syncer.log
+```
+
+---
+
 ## Related Runbooks
 
 For detailed documentation of each automation job:

@@ -405,6 +405,7 @@ def commit_decomposition(project_filepath: str, project_content: str, tasks_data
 
 def main():
     """Main decomposer loop."""
+    logger.info("Run started")
     try:
         token = get_github_token()
     except RuntimeError as e:
@@ -413,7 +414,7 @@ def main():
 
     files = get_projects_files()
     if not files:
-        logger.debug("No project files found")
+        logger.info("No project files ready for decomposition")
         return
 
     decomposed_count = 0
@@ -464,6 +465,7 @@ def main():
 
     if decomposed_count > 0:
         logger.info(f"Decomposed {decomposed_count} project(s)")
+    logger.info("Run complete")
 
 
 if __name__ == "__main__":

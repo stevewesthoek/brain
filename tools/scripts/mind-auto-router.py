@@ -253,6 +253,7 @@ def commit_file(filepath: str, new_filepath: str, content: str, route: str, new_
 
 def main():
     """Main router loop."""
+    logger.info("Run started")
     try:
         token = get_github_token()
     except RuntimeError as e:
@@ -261,7 +262,7 @@ def main():
 
     files = get_inbox_files()
     if not files:
-        logger.debug("No inbox files found")
+        logger.info("No inbox files found")
         return
 
     routed_count = 0
@@ -301,6 +302,7 @@ def main():
 
     if routed_count > 0:
         logger.info(f"Routed {routed_count} file(s)")
+    logger.info("Run complete")
 
 
 if __name__ == "__main__":

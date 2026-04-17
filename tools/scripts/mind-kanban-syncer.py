@@ -433,6 +433,7 @@ def commit_kanban(token: str) -> bool:
 
 def main():
     """Main syncer loop."""
+    logger.info("Run started")
     try:
         token = get_github_token()
     except RuntimeError as e:
@@ -507,9 +508,12 @@ def main():
     kanban_content = build_kanban_content(backlog_tasks, todo_tasks, doing_tasks, done_tasks, manual_tasks)
 
     # Write kanban
-    if write_kanban_md(kanban_content):
+    if not write_kanban_md(kanban_content):
+        logger.info("Kanban unchanged, skipping commit")
+    else:
         # Commit if changed
         commit_kanban(token)
+    logger.info("Run complete")
 
 
 if __name__ == "__main__":
