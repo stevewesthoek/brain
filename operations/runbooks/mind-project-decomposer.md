@@ -73,12 +73,18 @@ This checks:
 Verify that Gemini CLI is available and authenticated:
 
 ```bash
-# Test Gemini CLI
-echo "Say 'hello'" | gemini --model gemini-2.5-flash
+# Test Gemini CLI (must be at absolute path)
+/opt/homebrew/bin/gemini --version
+echo "Say 'hello'" | /opt/homebrew/bin/gemini --model gemini-2.5-flash
 
-# If this fails, set up Gemini CLI authentication
+# If this fails, check Gemini installation
+which gemini
+
+# If missing, set up Gemini CLI authentication
 gemini auth login
 ```
+
+**Important:** The project decomposer uses the absolute path `/opt/homebrew/bin/gemini` because cron jobs have a limited PATH and cannot resolve `gemini` as a relative command. Verify the binary exists at this path before enabling cron.
 
 ### Setup (Manual, only if verification fails)
 

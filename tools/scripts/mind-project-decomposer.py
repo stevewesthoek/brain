@@ -43,6 +43,7 @@ REPO_BRANCH = "main"
 PROJECTS_PATH = "03-projects"
 TASKS_PATH = "04-tasks"
 LOG_DIR = Path.home() / ".local" / "share" / "brain" / "logs"
+GEMINI_BIN = "/opt/homebrew/bin/gemini"
 
 # Setup logging
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -208,7 +209,7 @@ Return only valid JSON. No explanation, no markdown fences."""
 
     try:
         result = subprocess.run(
-            ["gemini", "--model", "gemini-2.5-flash"],
+            [GEMINI_BIN, "--model", "gemini-2.5-flash"],
             input=prompt,
             capture_output=True,
             text=True,
