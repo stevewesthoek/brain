@@ -415,6 +415,7 @@ def main():
     files = get_projects_files()
     if not files:
         logger.info("No project files ready for decomposition")
+        logger.info("Run complete")
         return
 
     decomposed_count = 0

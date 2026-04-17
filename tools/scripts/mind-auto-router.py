@@ -263,6 +263,7 @@ def main():
     files = get_inbox_files()
     if not files:
         logger.info("No inbox files found")
+        logger.info("Run complete")
         return
 
     routed_count = 0
