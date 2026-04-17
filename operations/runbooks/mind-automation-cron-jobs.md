@@ -3,7 +3,14 @@
 **Purpose:** Central documentation and registry for all recurring Mind automation jobs running via OS-level cron.
 
 **Last verified:** 2026-04-17  
-**Status:** ⚠️ Desired state documented; live crontab update pending (old brain-* entries still active)
+**Status:** ✅ Active and verified
+
+**Verification (2026-04-17):**
+- ✅ mind-auto-router.py installed (every 1 minute)
+- ✅ mind-project-decomposer.py installed (every 5 minutes)
+- ✅ mind-kanban-syncer.py installed (every 10 minutes)
+- ✅ Old brain-* cron entries removed
+- ✅ Unrelated google-ads-rollback-check preserved
 
 ---
 
