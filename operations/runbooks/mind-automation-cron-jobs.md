@@ -3,14 +3,16 @@
 **Purpose:** Central documentation and registry for all recurring Mind automation jobs running via OS-level cron.
 
 **Last verified:** 2026-04-17  
-**Status:** ✅ Active and verified
+**Status:** ⏸️ Temporarily paused — Mind repo conflict cleanup in progress
 
-**Verification (2026-04-17):**
-- ✅ mind-auto-router.py installed (every 1 minute)
-- ✅ mind-project-decomposer.py installed (every 5 minutes)
-- ✅ mind-kanban-syncer.py installed (every 10 minutes)
-- ✅ Old brain-* cron entries removed
-- ✅ Unrelated google-ads-rollback-check preserved
+**Paused (2026-04-17 21:50):**
+- ⏸️ mind-auto-router.py paused
+- ⏸️ mind-project-decomposer.py paused
+- ⏸️ mind-kanban-syncer.py paused
+
+**Reason:** Mind repo has unresolved merge conflicts, unstaged changes, and divergence from origin. Automation cannot safely commit work while conflicts exist. Re-enable only after Mind repo is clean and runtime health checks pass.
+
+**Paused by:** Automation cleanup protocol — awaiting Mind repo conflict resolution.
 
 ---
 
