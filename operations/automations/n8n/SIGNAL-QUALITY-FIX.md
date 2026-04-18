@@ -8,7 +8,7 @@
 
 ## Problem
 
-The n8n workflow asks Gemini to compute `signal_quality` (content quality 0.0–1.0), but the "Build Processed Note" code node never extracts or includes it in the output markdown. Result: all captures arrive without `signal_quality`, causing the router to apply fail-safe logic and keep everything in review-queue instead of routing to PARA folders.
+The n8n workflow asks Gemini to compute `signal_quality` (content quality 0.0–1.0), but the "Build Processed Note" code node never extracts or includes it in the output markdown. Result: tested Shortcut-origin captures arrive without `signal_quality`, causing the router to apply fail-safe logic and keep everything in review-queue instead of routing to PARA folders.
 
 ## Evidence
 
@@ -127,7 +127,7 @@ After applying the fix:
 ## Safety
 
 - ✅ Only changes code node; no workflow structure changes
-- ✅ Fallback values (0.5) ensure router always has a value
+- ✅ n8n fallback (0.5) ensures captures have a value; router safety: treats missing as 0 (explicit fail-safe)
 - ✅ Router's fail-safe logic unchanged
 - ✅ No breaking changes to existing captures or router behavior
 - ✅ Gemini already returns signal_quality; we're just extracting it

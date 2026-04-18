@@ -177,8 +177,8 @@ Full structured content or raw text excerpt.
 - `status` — Router status after first processing (review-queue, ready-for-review, or archived-*)
 
 **Known producer limitations (live as of 2026-04-18):**
-- `signal_quality` is missing from all real captures (Shortcut and other sources)
-- Router safely handles this: missing signal_quality defaults to 0.5, applying fail-safe logic
+- `signal_quality` is missing from tested Shortcut-origin captures
+- Router safely handles this: missing signal_quality defaults to 0, triggering fail-safe logic
 - High-confidence captures stay in 01-inbox (review-queue) instead of routing to PARA folders
 - See: `/operations/automations/n8n/SIGNAL-QUALITY-FIX.md` for manual patch to enable signal_quality extraction
 
