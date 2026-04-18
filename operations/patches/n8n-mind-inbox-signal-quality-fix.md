@@ -1,5 +1,7 @@
 # n8n Mind Inbox Workflow: Add signal_quality Field
 
+⚠️ **ARCHIVAL REFERENCE ONLY** — For operational patch, see: `/operations/automations/n8n/SIGNAL-QUALITY-FIX.md`
+
 **Workflow:** Mind Inbox — Capture & Classify with Signal Scoring  
 **Workflow ID:** FwP5INe9qoo1OwGC  
 **Issue:** `signal_quality` is requested from Gemini but not extracted or included in the markdown frontmatter

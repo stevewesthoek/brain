@@ -162,12 +162,12 @@ Full structured content or raw text excerpt.
 *Review in [[home|Command Center]] — promote to [[03-projects/|projects]], [[05-areas/|areas]], or [[06-resources/|resources]]*
 ```
 
-**Frontmatter fields (producer-supplied by n8n):**
+**Frontmatter fields (producer-supplied by n8n) — CURRENT STATE:**
 - `type: capture` — Always `capture` (identifies capture notes)
 - `source` — Source label (e.g. "chatgpt", "shortcut")
 - `para_type` — Gemini classification (project, area, resource, or inbox)
 - `confidence` — Classification confidence (0.0–1.0)
-- `signal_quality` — Content quality assessment (0.0–1.0) — Gemini-computed, fallback 0.5 if absent
+- `signal_quality` — ❌ **CURRENTLY MISSING** — Gemini computes it but n8n code node doesn't extract it
 - `created` — ISO 8601 timestamp with timezone (e.g. "2026-04-18T08:26:30.198Z")
 - `title` — Refined title (present in captures)
 - `tags` — Optional array of tags (empty array if none)
@@ -176,10 +176,11 @@ Full structured content or raw text excerpt.
 **Frontmatter fields (added by auto-router):**
 - `status` — Router status after first processing (review-queue, ready-for-review, or archived-*)
 
-**Producer metadata contract (after signal_quality fix):**
-- All required fields are now consistently present: type, source, para_type, confidence, signal_quality, created, title
-- Router relies on confidence + signal_quality for routing decisions
-- Fallback handling: if signal_quality is missing, router treats as 0.5 and applies fail-safe logic
+**Known producer limitations (live as of 2026-04-18):**
+- `signal_quality` is missing from all real captures (Shortcut and other sources)
+- Router safely handles this: missing signal_quality defaults to 0.5, applying fail-safe logic
+- High-confidence captures stay in 01-inbox (review-queue) instead of routing to PARA folders
+- See: `/operations/automations/n8n/SIGNAL-QUALITY-FIX.md` for manual patch to enable signal_quality extraction
 
 **Sections:**
 - **Summary** — Concise overview

@@ -1,8 +1,10 @@
 # Save to Mind Intake Path: Producer-Side Hardening Report
 
+⚠️ **ARCHIVAL REFERENCE ONLY** — For operational patch, see: `/operations/automations/n8n/SIGNAL-QUALITY-FIX.md`
+
 **Date:** 2026-04-18  
 **Status:** REQUIRES MANUAL N8N PATCH APPLICATION  
-**Phase:** Producer contract completion
+**Phase:** Producer contract completion (diagnosis and fix documented)
 
 ---
 
