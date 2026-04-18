@@ -201,7 +201,7 @@ def decide_route(confidence: float, signal_quality: float, para_type: str) -> Tu
 
 
 def update_file_status(content: str, new_status: str) -> str:
-    """Update status field in frontmatter."""
+    """Update status field in frontmatter, or insert if missing."""
     parts = content.split("---", 2)
     if len(parts) < 3:
         return content
@@ -209,12 +209,16 @@ def update_file_status(content: str, new_status: str) -> str:
     frontmatter = parts[1]
     body = parts[2]
 
-    # Replace status field
-    updated_frontmatter = re.sub(
-        r"status:\s*\w+",
-        f"status: {new_status}",
-        frontmatter
-    )
+    # Try to replace existing status field
+    if "status:" in frontmatter:
+        updated_frontmatter = re.sub(
+            r"status:\s*\w+",
+            f"status: {new_status}",
+            frontmatter
+        )
+    else:
+        # Insert status at end of frontmatter, before closing ---
+        updated_frontmatter = frontmatter.rstrip() + f"\nstatus: {new_status}"
 
     return f"---{updated_frontmatter}---{body}"
 
@@ -303,6 +307,10 @@ def main():
         confidence = frontmatter.get("confidence", 0)
         signal_quality = frontmatter.get("signal_quality", 0)
         para_type = frontmatter.get("para_type", "inbox")
+
+        # Log missing signal_quality for observability
+        if "signal_quality" not in frontmatter:
+            logger.info(f"⚠ {filepath.split('/')[-1]}: signal_quality missing (producer incomplete), using fail-safe logic")
 
         # Decide route
         route, new_status = decide_route(confidence, signal_quality, para_type)

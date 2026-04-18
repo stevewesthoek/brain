@@ -128,20 +128,17 @@ Respond [returns success/failure to caller]
 
 ## Output Note Format
 
-Notes saved to `mind/01-inbox/` use this structure:
+Notes saved to `mind/01-inbox/` by n8n use this structure. Note that `status` is not produced by n8n; it is added by the auto-router on first processing.
 
 ```markdown
 ---
 type: capture
-source: chatgpt
+source: chatgpt|shortcut
 para_type: project|area|resource|inbox
 confidence: 0.95
-signal_quality: 0.90
-area: Business Automation
-created: 2026-04-17
-tags:
-  - tag1
-  - tag2
+created: 2026-04-18T08:26:30.198Z
+title: Refined Title
+tags: []
 ---
 
 # Refined Title
@@ -156,28 +153,32 @@ tags:
 - Point 2
 - Point 3
 
-## Action Items
-
-- [ ] Actionable task if any
-
-## Notes
+## Content
 
 Full structured content or raw text excerpt.
 
 ---
-*ChatGPT capture · 2026-04-17 · 95% confidence · 90% signal · suggested: project*
+*ChatGPT capture · 2026-04-18 · 95% confidence · suggested: project*
 *Review in [[home|Command Center]] — promote to [[03-projects/|projects]], [[05-areas/|areas]], or [[06-resources/|resources]]*
 ```
 
-**Frontmatter fields:**
-- `type: capture` — Always present (identifies capture notes)
-- `source: chatgpt` — Source label
-- `para_type` — Gemini classification
+**Frontmatter fields (producer-supplied by n8n):**
+- `type: capture` — Always `capture` (identifies capture notes)
+- `source` — Source label (e.g. "chatgpt", "shortcut")
+- `para_type` — Gemini classification (project, area, resource, or inbox)
 - `confidence` — Classification confidence (0.0–1.0)
-- `signal_quality` — Content quality assessment
-- `area` — User area context (optional)
-- `created` — Capture date (YYYY-MM-DD)
-- `tags` — Optional, user-assigned tags
+- `signal_quality` — Content quality assessment (0.0–1.0) — **May be absent; see note below**
+- `created` — ISO 8601 timestamp with timezone (e.g. "2026-04-18T08:26:30.198Z")
+- `title` — Refined title (present in captures)
+- `tags` — Optional array of tags (empty array if none)
+- `area` — User area context (optional, rarely used)
+
+**Frontmatter fields (added by auto-router):**
+- `status` — Router status after first processing (review-queue, ready-for-review, or archived-*)
+
+**Known producer limitations:**
+- `signal_quality` may be absent from Shortcut-origin captures until n8n is enhanced to compute it
+- When `signal_quality` is missing, the router applies fail-safe logic: high-confidence captures stay in inbox (review-queue) instead of being archived
 
 **Sections:**
 - **Summary** — Concise overview
