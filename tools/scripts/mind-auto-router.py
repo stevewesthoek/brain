@@ -217,8 +217,8 @@ def update_file_status(content: str, new_status: str) -> str:
             frontmatter
         )
     else:
-        # Insert status at end of frontmatter, before closing ---
-        updated_frontmatter = frontmatter.rstrip() + f"\nstatus: {new_status}"
+        # Insert status at end of frontmatter, preserving structure
+        updated_frontmatter = frontmatter.rstrip() + f"\nstatus: {new_status}\n"
 
     return f"---{updated_frontmatter}---{body}"
 
