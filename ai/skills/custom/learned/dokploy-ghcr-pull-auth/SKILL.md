@@ -1,6 +1,6 @@
 ---
 name: dokploy-ghcr-pull-auth
-description: When Dokploy fails to pull a GHCR image with "unauthorized: authentication required" — setting registryId triggers Registry Swarm (re-tag + push) instead of providing pull credentials. The correct fix is username/password/registryUrl directly on the application record.
+description: "When Dokploy fails to pull a GHCR image with \"unauthorized: authentication required\" — setting registryId triggers Registry Swarm (re-tag + push) instead of providing pull credentials. The correct fix is username/password/registryUrl directly on the application record."
 ---
 
 # Dokploy GHCR Pull Authentication
