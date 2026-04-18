@@ -167,7 +167,7 @@ Full structured content or raw text excerpt.
 - `source` — Source label (e.g. "chatgpt", "shortcut")
 - `para_type` — Gemini classification (project, area, resource, or inbox)
 - `confidence` — Classification confidence (0.0–1.0)
-- `signal_quality` — Content quality assessment (0.0–1.0) — **May be absent; see note below**
+- `signal_quality` — Content quality assessment (0.0–1.0) — Gemini-computed, fallback 0.5 if absent
 - `created` — ISO 8601 timestamp with timezone (e.g. "2026-04-18T08:26:30.198Z")
 - `title` — Refined title (present in captures)
 - `tags` — Optional array of tags (empty array if none)
@@ -176,9 +176,10 @@ Full structured content or raw text excerpt.
 **Frontmatter fields (added by auto-router):**
 - `status` — Router status after first processing (review-queue, ready-for-review, or archived-*)
 
-**Known producer limitations:**
-- `signal_quality` may be absent from Shortcut-origin captures until n8n is enhanced to compute it
-- When `signal_quality` is missing, the router applies fail-safe logic: high-confidence captures stay in inbox (review-queue) instead of being archived
+**Producer metadata contract (after signal_quality fix):**
+- All required fields are now consistently present: type, source, para_type, confidence, signal_quality, created, title
+- Router relies on confidence + signal_quality for routing decisions
+- Fallback handling: if signal_quality is missing, router treats as 0.5 and applies fail-safe logic
 
 **Sections:**
 - **Summary** — Concise overview
