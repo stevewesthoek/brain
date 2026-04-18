@@ -167,7 +167,7 @@ Full structured content or raw text excerpt.
 - `source` — Source label (e.g. "chatgpt", "shortcut")
 - `para_type` — Gemini classification (project, area, resource, or inbox)
 - `confidence` — Classification confidence (0.0–1.0)
-- `signal_quality` — ❌ **CURRENTLY MISSING** — Gemini computes it but n8n code node doesn't extract it
+- `signal_quality` — Content quality assessment (0.0–1.0)
 - `created` — ISO 8601 timestamp with timezone (e.g. "2026-04-18T08:26:30.198Z")
 - `title` — Refined title (present in captures)
 - `tags` — Optional array of tags (empty array if none)
@@ -176,11 +176,10 @@ Full structured content or raw text excerpt.
 **Frontmatter fields (added by auto-router):**
 - `status` — Router status after first processing (review-queue, ready-for-review, or archived-*)
 
-**Known producer limitations (live as of 2026-04-18):**
-- `signal_quality` is missing from tested Shortcut-origin captures
-- Router safely handles this: missing signal_quality defaults to 0, triggering fail-safe logic
-- High-confidence captures stay in 01-inbox (review-queue) instead of routing to PARA folders
-- See: `/operations/automations/n8n/SIGNAL-QUALITY-FIX.md` for manual patch to enable signal_quality extraction
+**Producer status (as of 2026-04-18 after manual n8n patch):**
+- ✅ `signal_quality` now extracted and included in frontmatter
+- ✅ Router routing works correctly: captures with confidence ≥ 0.8 AND signal_quality ≥ 0.8 route to PARA folders
+- ✅ Fail-safe logic applies when signal_quality is low or missing
 
 **Sections:**
 - **Summary** — Concise overview
