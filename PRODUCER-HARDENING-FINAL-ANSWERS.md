@@ -1,10 +1,10 @@
 # Producer-Side Hardening: Final Report
 
-⚠️ **ARCHIVAL REFERENCE ONLY** — For operational patch, see: `/operations/automations/n8n/SIGNAL-QUALITY-FIX.md`
+⚠️ **ARCHIVAL REFERENCE ONLY** — For current operational status, see: `/operations/runbooks/n8n-mind-inbox.md`
 
 **Execution Date:** 2026-04-18  
 **Scope:** Find and document signal_quality loss in Save to Mind intake path  
-**Status:** COMPLETE (n8n patch requires manual application)
+**Status:** COMPLETE — Patch applied and verified live (2026-04-18)
 
 ---
 

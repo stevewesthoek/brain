@@ -1,14 +1,15 @@
 # N8N Mind Inbox: Add signal_quality Field to Captures
 
-**Status:** REQUIRES MANUAL APPLICATION  
+⚠️ **ARCHIVAL RECOVERY PROCEDURE** — This patch has been applied to live n8n workflow. For live operational status, see: `/operations/runbooks/n8n-mind-inbox.md`
+
 **Workflow:** Mind Inbox — Capture & Classify with Signal Scoring  
 **Workflow ID:** FwP5INe9qoo1OwGC  
 **Date:** 2026-04-18  
-**Impact:** Enables proper PARA routing for high-quality captures
+**Original Issue:** signal_quality was not extracted from Gemini response by n8n code node
 
-## Problem
+## Why This Patch
 
-The n8n workflow asks Gemini to compute `signal_quality` (content quality 0.0–1.0), but the "Build Processed Note" code node never extracts or includes it in the output markdown. Result: tested Shortcut-origin captures arrive without `signal_quality`, causing the router to apply fail-safe logic and keep everything in review-queue instead of routing to PARA folders.
+The n8n workflow asks Gemini to compute `signal_quality` (content quality 0.0–1.0), but the "Build Processed Note" code node never extracted or included it in the output markdown. This patch corrects that by extracting signal_quality and including it in frontmatter, enabling proper PARA routing for high-quality captures.
 
 ## Evidence
 
