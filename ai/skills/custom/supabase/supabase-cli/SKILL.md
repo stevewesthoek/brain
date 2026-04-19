@@ -34,7 +34,7 @@ Identify the target from the connection string:
 | Operation | Local | Production |
 |---|---|---|
 | `migration list`, `db diff`, `gen types` | ✅ proceed | ✅ proceed (read-only) |
-| `db push`, `migration apply` | ✅ proceed | ⚠️ confirm with user first |
+| `db push`, `migration apply` | ✅ proceed | 🚫 NEVER (migrations run via Dokploy pipeline only) |
 | `db reset` | ✅ proceed | 🚫 NEVER |
 | `DROP TABLE/DATABASE`, `TRUNCATE` | ✅ proceed | 🚫 NEVER |
 | `prisma db push`, `prisma migrate dev` | ✅ proceed | 🚫 NEVER |
@@ -188,8 +188,6 @@ PGSSLMODE=disable ~/.local/bin/supabase-cli gen types typescript --db-url "$SUPA
 
 # List applied migrations on production (read-only)
 PGSSLMODE=disable ~/.local/bin/supabase-cli migration list --db-url "$SUPABASE_DB_URL_READONLY"
-```
-
 ```
 
 ## Environment architecture
