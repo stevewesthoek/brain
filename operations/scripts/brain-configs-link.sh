@@ -20,7 +20,6 @@ set -euo pipefail
 #   ~/.cursor                             -> $CONFIGS_DIR/cursor
 #   ~/.codex                              -> $CONFIGS_DIR/codex
 #   ~/.claude                             -> $CONFIGS_DIR/claude
-#   ~/.docker                             -> $CONFIGS_DIR/docker
 #
 # Usage:
 #   DRY_RUN=1 bash operations/scripts/brain-configs-link.sh    # preview
@@ -281,15 +280,6 @@ if [ -f "$HOME_DIR/.claude.json" ]; then
 fi
 
 ###############################################################################
-# Docker: ~/.docker
-###############################################################################
-say
-say "==> Docker: managing ~/.docker (WARNING: may contain auth tokens)."
-ensure_dir "$CONFIGS_DIR/docker"
-link_symlink "$HOME_DIR/.docker" "$CONFIGS_DIR/docker" "docker"
-say "[WARN] ~/.docker is now centralized at $CONFIGS_DIR/docker; this path should be ignored in .gitignore (which it currently is)."
-
-###############################################################################
 # Done + verify
 ###############################################################################
 say
@@ -311,7 +301,6 @@ verify_link "$HOME_DIR/.config/starship.toml"                        "$CONFIGS_D
 verify_link "$HOME_DIR/.cursor"                                      "$CONFIGS_DIR/cursor"
 verify_link "$HOME_DIR/.codex"                                       "$CONFIGS_DIR/codex"
 verify_link "$HOME_DIR/.claude"                                      "$CONFIGS_DIR/claude"
-verify_link "$HOME_DIR/.docker"                                      "$CONFIGS_DIR/docker"
 
 say
 say "Next step:"

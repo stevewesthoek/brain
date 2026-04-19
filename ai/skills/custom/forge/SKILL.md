@@ -222,18 +222,69 @@ Build the MVP feature set defined in Phase 4c:
 
 Run these steps in order:
 
-#### 6a. Supabase
+#### 6a. Supabase (local stack in OrbStack)
+
+**Prerequisites:** OrbStack must be running. See `/orbstack` skill.
+
+The local Supabase stack runs as a docker-compose service in OrbStack (not via `supabase start` CLI).
+
+**Step 1 — Create docker-compose.yml in the project root:**
+```yaml
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: supabase
+      POSTGRES_PASSWORD: supabase
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supabase"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+```
+
+**Step 2 — Start the local stack:**
 ```bash
-# Initialize Supabase locally
+docker-compose up -d
+# Wait for postgres to be healthy
+docker-compose logs postgres
+```
+
+**Step 3 — Initialize Supabase migrations:**
+```bash
 supabase init
-supabase start
 
-# Write and apply migrations
+# Create initial migration file
 supabase migration new initial_schema
-supabase db push
 
-# Generate TypeScript types
-supabase gen types typescript --local > src/types/supabase.ts
+# Apply migration to local database
+PGSSLMODE=disable supabase db push --db-url "postgresql://supabase:supabase@localhost:5433/postgres"
+```
+
+**Step 4 — Generate TypeScript types:**
+```bash
+PGSSLMODE=disable supabase gen types typescript \
+  --db-url "postgresql://supabase:supabase@localhost:5433/postgres" \
+  > src/types/supabase.ts
+```
+
+**To stop local Supabase:**
+```bash
+docker-compose down
+```
+
+**To reset all data (wipe local database):**
+```bash
+docker-compose down -v
 ```
 
 #### 6b. Stripe — account, keys, webhooks
@@ -451,15 +502,16 @@ If `/canary` finds issues → diagnose and fix before marking done.
 
 Every product needs these variables in both environments.
 
-**`.env.local` / `.env.test` (test environment):**
+**`.env.local` / `.env.test` (local development — OrbStack):**
 ```env
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+# Supabase — local stack running in OrbStack via docker-compose
+# Use direct localhost connection (no auth needed for local dev)
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:3000  # or your local URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # Stripe — test mode (pk_test_..., sk_test_..., whsec_...)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
@@ -475,10 +527,10 @@ RESEND_API_KEY=
 # App
 NEXT_PUBLIC_APP_URL=https://app.example.com
 
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+# Supabase — self-hosted instance (production)
+NEXT_PUBLIC_SUPABASE_URL=http://100.71.31.88:8000
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<from-prod-supabase>
+SUPABASE_SERVICE_ROLE_KEY=<from-prod-supabase>
 
 # Stripe — live mode (pk_live_..., sk_live_... or rk_live_..., whsec_...)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=

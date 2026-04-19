@@ -54,7 +54,7 @@ Help Claude use the Supabase CLI safely for database migrations, schema diffing,
 ## Do not use this skill for
 - Supabase Cloud management — this setup is self-hosted only
 - `supabase login` — Cloud auth, not needed here
-- `supabase start` / `supabase stop` — the local Supabase stack runs in Docker Desktop independently; the CLI's own stack would conflict on the same ports
+- `supabase start` / `supabase stop` — the local Supabase stack runs as a docker-compose service in OrbStack; the CLI's own stack would conflict on the same ports
 - Edge Functions deployment — Cloud-only feature
 - Any write operation against the production database from the Mac
 
@@ -159,10 +159,12 @@ Note: `10.0.2.4` is the internal LAN IP — only reachable from the Dokploy mach
 ## Environment architecture
 | Environment | PostgreSQL | Managed by |
 |---|---|---|
-| Local | `localhost:5433` | Docker Desktop (independent stack) |
+| Local | `localhost:5433` | OrbStack (docker-compose stack) |
 | Production | `100.71.31.88:5433` | VPS, reachable via Tailscale |
 
-**Do not use `supabase start` / `supabase stop`** — the local Supabase stack runs as its own Docker Compose setup in Docker Desktop. The CLI commands would start a conflicting second instance on the same ports.
+**Do not use `supabase start` / `supabase stop`** — the local Supabase stack runs as a docker-compose service in OrbStack. The CLI commands would start a conflicting second instance on the same ports.
+
+**To manage local Supabase, use docker-compose directly** — see `/orbstack` skill for docker-compose commands.
 
 ## Notes
 - CLI installed at: `/opt/homebrew/bin/supabase` (v2.75.0, via `brew install supabase/tap/supabase`)

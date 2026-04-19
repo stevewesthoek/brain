@@ -82,6 +82,14 @@ brain/ (machine-brain)   ← AI infrastructure, system config, skills
 
 For credential conventions, see `operations/standards/api-standards.md`. For testing/QA procedures, see `operations/runbooks/testing.md`. For deployment rules, see `operations/runbooks/deploy.md`. For model tracking and cost transparency, see `operations/runbooks/model-tracking-reference.md`.
 
+## Container runtime
+
+**OrbStack** is the default local container runtime on this Mac. It replaces Docker Desktop.
+- For local container workflows, see `/orbstack` skill
+- Local Supabase development runs in OrbStack via docker-compose
+- Docker CLI commands work identically under OrbStack
+- Production Supabase is self-hosted on Tailscale (100.71.31.88)
+
 ## Symlink map (home → brain)
 
 | Home path | Target |
@@ -90,7 +98,6 @@ For credential conventions, see `operations/standards/api-standards.md`. For tes
 | `~/.codex` | `operations/system-configs/codex/` |
 | `~/.gemini` | `operations/system-configs/gemini/` |
 | `~/.kiro` | `operations/system-configs/kiro/` |
-| `~/.docker` | `operations/system-configs/docker/` |
 | `~/.config/starship.toml` | `operations/system-configs/starship/starship.toml` |
 | `~/.config/ghostty/config` | `operations/system-configs/ghostty/config` |
 | `~/.config/git/ignore` | `operations/system-configs/git/ignore` |
@@ -164,7 +171,6 @@ Machine tasks integrate with your main workflow — same kanban, same priorities
 - `~/.codex` → `machine-brain/operations/system-configs/codex`
 - `~/.gemini` → `machine-brain/operations/system-configs/gemini`
 - `~/.kiro` → `machine-brain/operations/system-configs/kiro`
-- `~/.docker` → `machine-brain/operations/system-configs/docker`
 - `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are symlinks → machine-brain
 - `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` may symlink into machine-brain
 

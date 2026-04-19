@@ -1,9 +1,11 @@
 ---
 name: docker-desktop-broken-symlink-crash-loop
-description: Docker Desktop appears to have a "memory leak" / infinite crash loop when ~/.docker is a broken symlink. Diagnose and fix it.
+description: DEPRECATED (2026-04-19). Docker Desktop is no longer used. The machine now runs OrbStack for local containers. This skill is kept for reference only.
 ---
 
-# Docker Desktop Broken Symlink Crash Loop
+# Docker Desktop Broken Symlink Crash Loop (DEPRECATED)
+
+**⚠️ This skill is obsolete.** Docker Desktop has been replaced with OrbStack. See `/orbstack` skill instead.
 
 ## The insight
 Docker Desktop's backend calls `mkdir ~/.docker` on every startup. Go's `os.MkdirAll`
