@@ -222,69 +222,73 @@ Build the MVP feature set defined in Phase 4c:
 
 Run these steps in order:
 
-#### 6a. Supabase (local PostgreSQL in OrbStack)
+#### 6a. Supabase — Local Database Setup
 
 **Prerequisites:** OrbStack must be running. See `/orbstack` skill.
 
-Local development uses a plain PostgreSQL container in OrbStack. The Supabase CLI is used for migrations and type generation only — it does not run a full Supabase stack locally.
+The local database is plain PostgreSQL running in OrbStack. The Supabase CLI manages migrations and schema — it does not run a full Supabase stack locally.
 
-**Step 1 — Create docker-compose.yml in the project root:**
+**Step 1 — Create a local database container**
+
+Create `~/Repos/stevewesthoek/brain/operations/database/standalone/<app-name>/docker-compose.yml`:
+
 ```yaml
-version: '3.8'
+volumes:
+  data:
+
 services:
   postgres:
-    image: postgres:15
+    image: postgres:16
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: supabase
-      POSTGRES_PASSWORD: supabase
-      POSTGRES_DB: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: <app-name>
     ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U supabase"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
+      - "544X:5432"  # Use a unique port per app (5440, 5441, 5442, etc.)
+    volumes:
+      - data:/var/lib/postgresql/data
 ```
 
-**Step 2 — Start the local stack:**
+**Step 2 — Start the local database**
 ```bash
+cd ~/Repos/stevewesthoek/brain/operations/database/standalone/<app-name>
 docker-compose up -d
-# Wait for postgres to be healthy
-docker-compose logs postgres
 ```
 
-**Step 3 — Initialize Supabase migrations:**
+**Step 3 — Initialize Supabase configuration**
 ```bash
-supabase init
-
-# Create initial migration file
-supabase migration new initial_schema
-
-# Apply migration to local database
-PGSSLMODE=disable supabase db push --db-url "postgresql://supabase:supabase@localhost:5433/postgres"
+cd ~/Repos/prochattools/saas/<app-name>  # or clients/<app-name>
+~/.local/bin/supabase-cli init
 ```
 
-**Step 4 — Generate TypeScript types:**
+**Step 4 — Create and apply initial migration**
 ```bash
-PGSSLMODE=disable supabase gen types typescript \
-  --db-url "postgresql://supabase:supabase@localhost:5433/postgres" \
-  > src/types/supabase.ts
+~/.local/bin/supabase-cli migration new initial_schema
+
+# Apply to local database (replace 544X with actual port)
+PGSSLMODE=disable ~/.local/bin/supabase-cli db push \
+  --db-url "postgresql://postgres:postgres@localhost:544X/<app-name>"
 ```
 
-**To stop local Supabase:**
+**Step 5 — Generate TypeScript types**
 ```bash
-docker-compose down
+PGSSLMODE=disable ~/.local/bin/supabase-cli gen types typescript \
+  --db-url "postgresql://postgres:postgres@localhost:544X/<app-name>" \
+  > src/types/database.types.ts
 ```
 
-**To reset all data (wipe local database):**
+**Local environment variables** (.env.local):
+```env
+# Local database (running in OrbStack)
+DATABASE_URL=postgresql://postgres:postgres@localhost:544X/<app-name>
+```
+
+**To stop or reset local database:**
 ```bash
-docker-compose down -v
+cd ~/Repos/stevewesthoek/brain/operations/database/standalone/<app-name>
+docker-compose down      # Stop (keep data)
+docker-compose down -v   # Reset (wipe all data)
 ```
 
 #### 6b. Stripe — account, keys, webhooks
@@ -502,16 +506,14 @@ If `/canary` finds issues → diagnose and fix before marking done.
 
 Every product needs these variables in both environments.
 
-**`.env.local` / `.env.test` (local development — OrbStack):**
+**`.env.local` / `.env.test` (local development — OrbStack PostgreSQL):**
 ```env
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Supabase — local stack running in OrbStack via docker-compose
-# Use direct localhost connection (no auth needed for local dev)
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:3000  # or your local URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+# Local database — plain PostgreSQL in OrbStack
+# Connection string pointing to local docker-compose container
+DATABASE_URL=postgresql://postgres:postgres@localhost:544X/<app-name>
 
 # Stripe — test mode (pk_test_..., sk_test_..., whsec_...)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
@@ -522,12 +524,18 @@ STRIPE_WEBHOOK_SECRET=
 RESEND_API_KEY=
 ```
 
+**Note:** Replace `544X` with the actual port from your local `docker-compose.yml`. If the app uses Supabase Auth or other Supabase features in production, add those keys here for production only.
+
 **`.env.production` + Dokploy (production environment):**
 ```env
 # App
 NEXT_PUBLIC_APP_URL=https://app.example.com
 
-# Supabase — self-hosted instance (production)
+# Production database — self-hosted Supabase
+# Standard connection string for production (provisioned via Dokploy)
+DATABASE_URL=postgresql://<user>:<pass>@100.71.31.88:5433/<app-name>
+
+# If using Supabase Auth, Storage, or API features
 NEXT_PUBLIC_SUPABASE_URL=http://100.71.31.88:8000
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<from-prod-supabase>
 SUPABASE_SERVICE_ROLE_KEY=<from-prod-supabase>
@@ -540,6 +548,8 @@ STRIPE_WEBHOOK_SECRET=
 # Optional
 RESEND_API_KEY=
 ```
+
+**Set production vars via Dokploy** — never commit these to the repo. See `/dokploy` skill.
 
 ---
 

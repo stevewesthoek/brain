@@ -10,9 +10,9 @@ description: OrbStack is the default local container runtime on this Mac. Use wh
 ## Purpose
 
 OrbStack provides lightweight, fast local container execution for:
-- **Local Supabase stack** (development database via docker-compose)
+- **Local databases** (PostgreSQL via docker-compose)
 - **Firecrawl** (web scraping API)
-- **Other Docker-based tools** (redis, postgres, services)
+- **Other Docker-based tools** (redis, services, third-party apps)
 
 All workflows use standard `docker` and `docker-compose` commands — they work identically to Docker Desktop but with better performance.
 
@@ -31,17 +31,24 @@ docker ps
 
 ## When to use this skill
 
-- Starting or stopping local services (Supabase, Firecrawl, etc.)
-- Running docker-compose files locally
+- Starting or stopping local services (databases, Firecrawl, etc.)
+- Running docker-compose files for local development
 - Inspecting local containers or volumes
 - Troubleshooting local container issues
-- Setting up a new local development environment
+- Setting up or resetting local development environments
 
 ## Local PostgreSQL for development
 
-Local development uses plain PostgreSQL containers (not full Supabase) running in OrbStack.
+Local application databases run as plain PostgreSQL containers in OrbStack. This is not a full Supabase server — just PostgreSQL for local development and testing.
 
-**Start local PostgreSQL:**
+**Standard location for app databases:**
+```bash
+~/Repos/stevewesthoek/brain/operations/database/standalone/<app-name>/docker-compose.yml
+```
+
+Each project has its own docker-compose.yml with a unique port. See the `docker-compose.yml` pattern at the end of this section.
+
+**Start local PostgreSQL for an application:**
 ```bash
 cd ~/Repos/stevewesthoek/brain/operations/database/standalone/<app-name>
 docker-compose up -d
@@ -63,11 +70,30 @@ docker-compose down
 docker-compose down -v  # -v removes named volumes
 ```
 
+**Example docker-compose.yml for a new app:**
+```yaml
+volumes:
+  data:
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: myapp
+    ports:
+      - "5445:5432"  # Use a unique port per app
+    volumes:
+      - data:/var/lib/postgresql/data
+```
+
 **Why plain PostgreSQL?**
-- Full Supabase stack is for specific self-hosted deployments, not local dev
+- Full Supabase server (auth, storage, API) runs in production only
 - Local development needs only a database for migrations and testing
-- Supabase CLI tools (`migrations`, `gen types`) work against any PostgreSQL
-- Production uses self-hosted Supabase on Tailscale (100.71.31.88) — not replicated locally
+- Supabase CLI works against any PostgreSQL database
+- One port per app prevents conflicts
 
 ## Firecrawl
 
@@ -163,14 +189,14 @@ lsof -i :5433
 docker system prune -a
 ```
 
-## Production vs Local
+## Local vs Production
 
-| Environment | Database | Access |
-|---|---|---|
-| **Production** | Self-hosted Supabase on Tailscale (100.71.31.88:5433) | Via `SUPABASE_DB_URL` env var (read-only from Mac) |
-| **Local** | docker-compose stack in OrbStack (localhost:5433) | Direct access, safe to reset |
+| Environment | What runs | Access | Port |
+|---|---|---|---|
+| **Local** | PostgreSQL only (in OrbStack) | Direct access, safe to reset | Per-app unique port (5440+) |
+| **Production** | Full self-hosted Supabase | Read-only from Mac; writes via CI/CD pipeline | Tailscale VPN (100.71.31.88:5433) |
 
-**Never confuse the two.** Always verify which database you're working with before running migrations or destructive commands.
+**Never confuse the two.** Always verify which environment you're working with before running migrations.
 
 ## Related skills
 

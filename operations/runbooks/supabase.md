@@ -1,57 +1,114 @@
 # Supabase Runbook
 
 ## Purpose
-Safe access to Supabase — both local development (OrbStack) and production (self-hosted).
+Central reference for database provisioning, workflow, and safety across local and production environments.
 
-## Two environments
+## Database Architecture
 
-### Local Development (OrbStack)
-**Database:** Plain PostgreSQL container in OrbStack (typically port 54XX per project)
-**What runs:** PostgreSQL only; Supabase CLI is a tool, not a server
-**Managed by:** OrbStack (see `/orbstack` skill)
-**Safe operations:** Reset, push migrations, drop tables, truncate
-**Do not do:** Leave unattended; it's for development only
+| Environment | Database | Managed by | Connection |
+|---|---|---|---|
+| **Local** | Plain PostgreSQL in OrbStack | docker-compose | `localhost:544X` (per-app unique port) |
+| **Production** | Full self-hosted Supabase | Dokploy | Tailscale VPN: `100.71.31.88:5433` |
 
-**Start local PostgreSQL:**
+## Supabase CLI: Unified Workflow Tool
+
+Supabase CLI is the central tool for both environments:
+- **Locally:** Manages migrations and types against plain PostgreSQL
+- **Production:** Manages migrations and types against full Supabase
+
+Use `~/.local/bin/supabase-cli` (not bare `supabase` — that's an SSH alias).
+
+## Provisioning a New Application's Local Database
+
+**1. Create the docker-compose.yml:**
+```bash
+mkdir -p ~/Repos/stevewesthoek/brain/operations/database/standalone/<app-name>
+cat > docker-compose.yml << 'EOF'
+volumes:
+  data:
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: <app-name>
+    ports:
+      - "544X:5432"  # Choose unique port (5440, 5441, 5442, etc.)
+    volumes:
+      - data:/var/lib/postgresql/data
+EOF
+```
+
+**2. Start the database:**
+```bash
+docker-compose up -d
+```
+
+**3. Initialize and apply migrations:**
+```bash
+cd ~/Repos/prochattools/saas/<app-name>  # (or clients/<app-name>)
+~/.local/bin/supabase-cli init
+~/.local/bin/supabase-cli migration new initial_schema
+
+# Apply migrations to local database
+PGSSLMODE=disable ~/.local/bin/supabase-cli db push \
+  --db-url "postgresql://postgres:postgres@localhost:544X/<app-name>"
+```
+
+**4. Generate types:**
+```bash
+PGSSLMODE=disable ~/.local/bin/supabase-cli gen types typescript \
+  --db-url "postgresql://postgres:postgres@localhost:544X/<app-name>" \
+  > src/types/database.types.ts
+```
+
+See `/supabase` skill for detailed unified workflow examples.
+
+## Production Database Management
+
+**From Mac (read-only only):**
+```bash
+# Inspect schema
+PGSSLMODE=disable ~/.local/bin/supabase-cli db diff --db-url "$SUPABASE_DB_URL_READONLY"
+
+# Generate types
+PGSSLMODE=disable ~/.local/bin/supabase-cli gen types typescript --db-url "$SUPABASE_DB_URL_READONLY"
+```
+
+**Migrations (from Mac):** NEVER. Use the Dokploy build pipeline instead:
+- Commit migration file to repo
+- Push to GitHub
+- Dokploy automatically runs `prebuild-sync.mjs` → `prisma migrate deploy` on deploy
+
+**Database provisioning:** Handled by Dokploy and infrastructure team — not from Mac.
+
+## Safety Checklist
+
+**Before any database operation:**
+1. Identify which environment (local or production)
+2. Verify connection string — production is `100.71.31.88`, local is `localhost`
+3. For production reads only: Use `SUPABASE_DB_URL_READONLY`
+4. For migrations: Use `--dry-run` first
+5. For local: Safe to reset with `docker-compose down -v`
+
+**Rules:**
+- ❌ Never push migrations from Mac to production — use Dokploy
+- ❌ Never run `db reset` against production
+- ❌ Never commit production DB URLs to repo — store in `~/.zshrc`
+- ✅ Always use `~/.local/bin/supabase-cli` (not bare `supabase`)
+- ✅ Dry-run before any write operation
+
+## Recovery
+
+**Local database reset:**
 ```bash
 cd ~/Repos/stevewesthoek/brain/operations/database/standalone/<app-name>
-docker-compose up -d
-```
-
-**Reset completely (wipe all data):**
-```bash
 docker-compose down -v
 docker-compose up -d
+# Reapply migrations manually
 ```
 
-**Migrations (local):**
-```bash
-PGSSLMODE=disable supabase db push --db-url "postgresql://supabase:supabase@localhost:5433/postgres"
-```
-
-### Production (Self-Hosted Supabase)
-**Database:** Full Supabase server on VPS (100.71.31.88:5433 + API at :8000)
-**Managed by:** Dokploy, never manually from Mac
-**What runs:** Full Supabase stack (Auth, PostgreSQL, Storage, API, etc.)
-**Safe operations (Mac read-only):** Schema read, type generation, dry-run migrations
-**Never do:** Push migrations, reset, or delete data from Mac
-
-**Read-only access (Mac):**
-```bash
-PGSSLMODE=disable ~/.local/bin/supabase-cli gen types typescript --db-url "$SUPABASE_DB_URL_READONLY"
-PGSSLMODE=disable ~/.local/bin/supabase-cli db diff --db-url "$SUPABASE_DB_URL_READONLY"
-```
-
-**Migrations (production):** Always via `prebuild-sync.mjs` + Dokploy build pipeline — never from Mac.
-
-## Production safety checklist
-- Use `SUPABASE_DB_URL_READONLY` for reads only
-- Always use `--dry-run` before any write
-- Never run `db reset` against production
-- Keep all DB URLs in `~/.zshrc`, never in repo files
-- Check the connection string BEFORE running any command
-- For detailed rules, see `/supabase` skill
-
-## Rollback
-- Local: `docker-compose down -v` then restart
-- Production: Restore from backup (contact Dokploy team)
+**Production:** Contact Dokploy team or use automated backups (Dokploy manages this).

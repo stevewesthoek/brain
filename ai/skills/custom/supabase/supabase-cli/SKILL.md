@@ -42,14 +42,17 @@ Identify the target from the connection string:
 ---
 
 ## What this skill is for
-Help Claude use the Supabase CLI safely for database migrations, schema diffing, type generation, and local development against a self-hosted Supabase instance.
 
-## Use this skill when
-- Running or managing database migrations (`db push`, `db pull`, `migration`)
+Supabase CLI is the unified workflow tool for managing databases:
+- **Locally:** Against plain PostgreSQL running in OrbStack
+- **Production:** Against the self-hosted Supabase instance on Tailscale
+
+Use this skill when:
+- Setting up a new application's database workflow
+- Running migrations locally or in production
 - Generating TypeScript types from the database schema
-- Diffing local vs remote schema
-- Inspecting the local or remote database (read-only)
-- Linking a project to the self-hosted instance
+- Inspecting database schemas and diffing changes
+- Managing database versions and upgrades
 
 ## Do not use this skill for
 - Supabase Cloud management — this setup is self-hosted only
@@ -112,23 +115,45 @@ Credentials source: `SYSTEM_DATABASE_URL` (for the password) and `SUPABASE_SERVI
 
 Note: `10.0.2.4` is the internal LAN IP — only reachable from the Dokploy machine. Always use `100.71.31.88` from the Mac.
 
-## Recommended workflow — push migration
+## Unified database workflow — local development
 
+For a new application stored at `~/Repos/prochattools/saas/myapp/`:
+
+**1. Initialize Supabase config:**
 ```bash
-# 1. Check what migrations are pending
-~/.local/bin/supabase-cli db push --dry-run --db-url "$SUPABASE_DB_URL"
-
-# 2. Review output, then apply
-~/.local/bin/supabase-cli db push --db-url "$SUPABASE_DB_URL"
+cd ~/Repos/prochattools/saas/myapp
+~/.local/bin/supabase-cli init
 ```
 
-## Recommended workflow — generate TypeScript types
-
+**2. Start the local database (OrbStack):**
 ```bash
-~/.local/bin/supabase-cli gen types typescript \
-  --db-url "$SUPABASE_DB_URL" \
+cd ~/Repos/stevewesthoek/brain/operations/database/standalone/myapp
+docker-compose up -d
+# Get the local connection string from docker-compose.yml
+```
+
+**3. Create and apply migrations:**
+```bash
+cd ~/Repos/prochattools/saas/myapp
+
+# Create new migration
+~/.local/bin/supabase-cli migration new create_users_table
+
+# Apply to local database
+PGSSLMODE=disable ~/.local/bin/supabase-cli db push --db-url "postgresql://postgres:postgres@localhost:5445/myapp"
+```
+
+**4. Generate TypeScript types:**
+```bash
+PGSSLMODE=disable ~/.local/bin/supabase-cli gen types typescript \
+  --db-url "postgresql://postgres:postgres@localhost:5445/myapp" \
   > src/types/database.types.ts
 ```
+
+**5. When ready for production:**
+- Migrations go through the Dokploy build pipeline (`prebuild-sync.mjs`)
+- Never push migrations from your Mac to production directly
+- Use `SUPABASE_DB_URL_READONLY` for read-only inspection only
 
 ## Example commands
 
