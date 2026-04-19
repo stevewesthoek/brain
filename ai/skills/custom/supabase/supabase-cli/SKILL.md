@@ -22,10 +22,10 @@ Identify the target from the connection string:
 
 | Connection | Environment | Rules |
 |---|---|---|
-| `localhost:5432` or `localhost:5433` | **LOCAL** | Safe to reset, push, drop |
-| `100.71.31.88:5433` (Tailscale VPS) | **PRODUCTION** | Read-only unless user explicitly confirms write |
+| `localhost:544X` (per-app port) | **LOCAL** | Safe to reset, push, drop |
+| `100.71.31.88:5433` (Tailscale VPS) | **PRODUCTION** | Read-only only from Mac; all writes via Dokploy pipeline |
 | `$SUPABASE_DB_URL_READONLY` | **PRODUCTION READ-ONLY** | Never pass to write commands |
-| `$SUPABASE_DB_URL` | **PRODUCTION WRITE** | Schema migrations only — requires confirmation |
+| `$SUPABASE_DB_URL` | **PRODUCTION WRITE** | Never from Mac — migrations run via Dokploy pipeline only |
 
 **If the target is ambiguous — ask before running anything.**
 
@@ -78,11 +78,11 @@ PGSSLMODE=disable ~/.local/bin/supabase-cli db diff --db-url "$SUPABASE_DB_URL_R
 
 ## Forbidden against production from Mac
 ```bash
-supabase db push        # ← NEVER — applies schema changes to production
-supabase db reset       # ← NEVER — wipes database
-prisma db push          # ← NEVER — bypasses migration files
-prisma migrate dev      # ← NEVER against production (guard script enforces this)
-prisma migrate deploy   # ← NEVER manually — runs only via Dokploy build
+~/.local/bin/supabase-cli db push        # ← NEVER — applies schema changes to production
+~/.local/bin/supabase-cli db reset       # ← NEVER — wipes database
+prisma db push                           # ← NEVER — bypasses migration files
+prisma migrate dev                       # ← NEVER against production (guard script enforces this)
+prisma migrate deploy                    # ← NEVER manually — runs only via Dokploy build
 ```
 
 ## CLI path
@@ -157,42 +157,53 @@ PGSSLMODE=disable ~/.local/bin/supabase-cli gen types typescript \
 
 ## Example commands
 
+**Local development:**
 ```bash
 # Version
 ~/.local/bin/supabase-cli --version
 
-# Schema diff (local vs remote)
-~/.local/bin/supabase-cli db diff --db-url "$SUPABASE_DB_URL"
+# Schema diff against local database
+PGSSLMODE=disable ~/.local/bin/supabase-cli db diff --db-url "postgresql://postgres:postgres@localhost:5445/myapp"
 
-# Pull remote schema to local migration files
-~/.local/bin/supabase-cli db pull --db-url "$SUPABASE_DB_URL"
+# Push pending migrations to local database
+PGSSLMODE=disable ~/.local/bin/supabase-cli db push --db-url "postgresql://postgres:postgres@localhost:5445/myapp"
 
-# Push pending migrations to remote
-~/.local/bin/supabase-cli db push --db-url "$SUPABASE_DB_URL"
-
-# Generate TypeScript types
-~/.local/bin/supabase-cli gen types typescript --db-url "$SUPABASE_DB_URL"
+# Generate TypeScript types from local database
+PGSSLMODE=disable ~/.local/bin/supabase-cli gen types typescript --db-url "postgresql://postgres:postgres@localhost:5445/myapp"
 
 # Create a new migration file
 ~/.local/bin/supabase-cli migration new <migration-name>
 
-# List applied migrations
-~/.local/bin/supabase-cli migration list --db-url "$SUPABASE_DB_URL"
+# List applied migrations on local database
+PGSSLMODE=disable ~/.local/bin/supabase-cli migration list --db-url "postgresql://postgres:postgres@localhost:5445/myapp"
+```
+
+**Production (read-only from Mac):**
+```bash
+# Schema diff against production (read-only)
+PGSSLMODE=disable ~/.local/bin/supabase-cli db diff --db-url "$SUPABASE_DB_URL_READONLY"
+
+# Generate TypeScript types from production (read-only)
+PGSSLMODE=disable ~/.local/bin/supabase-cli gen types typescript --db-url "$SUPABASE_DB_URL_READONLY"
+
+# List applied migrations on production (read-only)
+PGSSLMODE=disable ~/.local/bin/supabase-cli migration list --db-url "$SUPABASE_DB_URL_READONLY"
+```
 
 ```
 
 ## Environment architecture
 | Environment | Database | Managed by | What runs here |
 |---|---|---|---|
-| Local | PostgreSQL (plain, localhost:5433) | OrbStack (docker-compose container) | PostgreSQL only; Supabase CLI tools for migrations/types |
+| Local | PostgreSQL (plain, localhost:544X per-app) | OrbStack (docker-compose container) | PostgreSQL only; Supabase CLI tools for migrations/types |
 | Production | PostgreSQL (Supabase-managed) | VPS at 100.71.31.88:5433 | Full self-hosted Supabase instance (auth, storage, API, etc.) |
 
-**Local development does not run a full Supabase stack.** The Supabase CLI (`supabase migrate`, `supabase gen types`) is a tool for managing schemas against any PostgreSQL — it does not require or run the Supabase server locally.
+**Local development does not run a full Supabase stack.** The Supabase CLI is a tool for managing schemas against any PostgreSQL — it does not require or run the Supabase server locally.
 
 **To manage local PostgreSQL:**
 - Start/stop container: See `/orbstack` skill for docker-compose commands
-- Run migrations: Use `supabase` CLI with `--db-url` pointing to local postgres
-- Generate types: Use `supabase gen types typescript --db-url`
+- Run migrations: Use `~/.local/bin/supabase-cli` with `--db-url` pointing to local postgres on unique per-app port
+- Generate types: Use `~/.local/bin/supabase-cli gen types typescript --db-url`
 
 ## Notes
 - CLI installed at: `/opt/homebrew/bin/supabase` (v2.75.0, via `brew install supabase/tap/supabase`)

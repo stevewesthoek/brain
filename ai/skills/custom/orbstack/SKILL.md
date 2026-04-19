@@ -200,8 +200,8 @@ docker system prune -a
 
 ## Related skills
 
-- `/supabase` — Supabase CLI, migrations, schema management
-- `/forge` — Uses OrbStack for local Supabase during product builds
+- `/supabase` — Supabase CLI, migrations, schema management against local PostgreSQL or production
+- `/forge` — Uses OrbStack for local databases and services during product builds
 - Docker CLI docs: https://docs.docker.com/engine/reference/commandline/
 
 ## Notes
