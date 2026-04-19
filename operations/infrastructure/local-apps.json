@@ -56,12 +56,12 @@
     "description": "Portuguese language learning app"
   },
   {
-    "name": "Brain Bridge Relay",
-    "port": 3053,
-    "url": "http://localhost:3053",
-    "check": "http://localhost:3053/health",
-    "start": "cd ~/Repos/stevewesthoek/brain-bridge && export RELAY_ENV_FILE=~/.config/brain-bridge/.env.relay && docker compose up -d",
-    "stop": "cd ~/Repos/stevewesthoek/brain-bridge && docker compose down",
-    "description": "WebSocket relay server for Brain Bridge (3053). Related: local CLI agent on 3052, web app on 3054. Requires: ~/.config/brain-bridge/.env.relay"
+    "name": "Brain Bridge",
+    "port": 3054,
+    "url": "http://localhost:3054",
+    "check": "http://localhost:3054/api/openapi",
+    "start": "bash ~/Repos/stevewesthoek/brain-bridge/start-all.sh",
+    "stop": "bash ~/Repos/stevewesthoek/brain-bridge/stop-all.sh",
+    "description": "Brain Bridge: unified lifecycle for agent (3052), web (3054), and relay (3053). Requires: OrbStack with Docker daemon running, ~/.config/brain-bridge/.env.relay"
   }
 ]
