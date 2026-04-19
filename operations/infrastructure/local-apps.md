@@ -15,6 +15,7 @@ Each entry in `local-apps.json` is a JSON object with these fields:
 | `url` | string | yes | URL to open in browser (`http://localhost:PORT`) |
 | `check` | string | yes | Health-check URL ProBot pings to determine running/stopped |
 | `start` | string | yes | Shell command to start the app |
+| `stop` | string | no | Shell command to stop the app |
 | `description` | string | no | One-line description shown in the dashboard card |
 
 ## Current Inventory
@@ -28,6 +29,7 @@ Each entry in `local-apps.json` is a JSON object with these fields:
 | ComfyUI | 8188 | Stable Diffusion image generation UI | Manual start required |
 | Family Finance | 3060 | Multi-account family finance tracker | `cd ~/Repos/stevewesthoek/family-finance && npm run dev` |
 | Fala | 3050 | Portuguese language learning app | Manual start required |
+| Brain Bridge Relay | 3053 | WebSocket relay for Brain Bridge (agent on 3052, web on 3054) | `cd ~/Repos/stevewesthoek/brain-bridge && docker compose up -d` |
 
 ## How ProBot loads this file
 

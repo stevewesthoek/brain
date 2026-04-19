@@ -8,7 +8,7 @@ Master map of all API keys, tokens, and credentials used across the brain infras
 - Run `sync-credentials` to scan `~/.config/` for new `.env` files and append untracked entries to the Pending section below.
 - When a new entry lands in Pending, move it to the right section and fill in Purpose, Rotation, and Regenerate.
 
-Last synced: 2026-04-10
+Last synced: 2026-04-19
 
 ---
 
@@ -498,7 +498,74 @@ Billing-specific service principals (separate from the AI provisioner/destroyer 
 
 Note: ADC and OAuth credentials are at `~/.config/gcloud/application_default_credentials.json`. Legacy credentials for 3 accounts (info@prochat.tools, steve@yeshua.academy, westhoek@hotmail.com) at `~/.config/gcloud/legacy_credentials/`.
 
-## Brain Bridge — ChatGPT Actions API
+## Brain Bridge — Relay Server & ChatGPT Actions API
+
+### Relay Server (WebSocket bridge for local agents)
+
+Self-hosted relay server on OrbStack. Port: `3053`. Bridges ChatGPT actions and local agents.
+
+| Credential | Storage | Purpose | Rights/Scope | Expiry | Rotation | Regenerate |
+|------------|---------|---------|--------------|--------|----------|-----------|
+| `RELAY_ADMIN_TOKEN` | `~/.config/brain-bridge/.env.relay` (mode 600, gitignored) | Bearer token for relay admin endpoints (`/api/sessions/*`, `/api/admin/*`) | Admin-only: device registry, session management, request audit | No automatic expiry | Rotate if compromised or after 90 days | `openssl rand -hex 32` |
+| `RELAY_DATA_DIR` | Docker compose env or container volume | Filesystem path for relay state persistence (token hashes, device registry, session logs, audit trail) | Read/write for relay process only | N/A | N/A | N/A |
+| `RELAY_ENABLE_DEFAULT_TOKENS` | Docker compose env | Flag: enable dev tokens for local testing only (must be `false` in production) | Read-only config | N/A | Change before prod deploy | N/A |
+| `BRIDGE_PORT` | Docker compose env | TCP port for relay WebSocket + HTTP server (default: 3053) | Read-only config | N/A | Change if port conflict | N/A |
+
+**Account Details:**
+- Service: Brain Bridge Relay (WebSocket bridge + session management)
+- Deployment: OrbStack Docker Compose (or local dev via `pnpm`)
+- Data directory: `~/.brainbridge` locally, or `/var/lib/brainbridge` in container
+- Auth scheme: HTTP Bearer token (optional, enabled if `RELAY_ADMIN_TOKEN` is set)
+- Protected endpoints: `/api/sessions/*`, `/api/admin/*` (if token configured)
+- Public endpoints: `/api/register`, `/api/commands`, `/health`, `/ready`
+- Status: ✅ DEPLOYMENT MVP (Phase 2D, containerization verified 2026-04-19)
+
+**Device tokens (special case):**
+- Plaintext tokens generated at device registration time, returned once to client
+- Only token hashes are persisted in relay storage (`relay-tokens.json`)
+- Plaintext values must **NOT** be stored in git or credentials index
+- Device registration path: `POST /api/register` with token → returns device ID + WebSocket URL
+- Default dev tokens for local testing: `dev-token-1`, `dev-token-2`, `local-device` (hashed in token-store.ts, plaintext only in comments marked DEVELOPMENT ONLY)
+
+**Data files (persisted in data directory):**
+- `relay-tokens.json` — device token hashes (no plaintext)
+- `relay-devices.json` — device registry (online/offline state)
+- `relay-requests.json` — request audit log
+- `relay-sessions.log` — session audit log (newline-delimited JSON)
+- `relay.audit.log` — startup and runtime events
+
+**Local environment setup:**
+```bash
+# Copy template
+cp packages/bridge/.env.relay ~/.config/brain-bridge/.env.relay
+
+# Set admin token if deploying with auth
+echo "RELAY_ADMIN_TOKEN=$(openssl rand -hex 32)" >> ~/.config/brain-bridge/.env.relay
+echo "RELAY_ENABLE_DEFAULT_TOKENS=false" >> ~/.config/brain-bridge/.env.relay
+
+# Start relay (local dev)
+cd ~/Repos/stevewesthoek/brain-bridge
+export $(cat ~/.config/brain-bridge/.env.relay | xargs)
+pnpm dev  # runs all services, relay on :3053
+
+# Or use docker-compose (production-like)
+docker compose up -d
+curl http://localhost:3053/ready
+```
+
+**Container deployment (OrbStack):**
+- Image: Built from `Dockerfile` (multi-stage, non-root user `brainbridge:1000`)
+- Volume: `brainbridge-data:/var/lib/brainbridge` (persisted across restarts)
+- Health check: GET `/ready` endpoint (tests data dir writability)
+- Compose file: `docker-compose.yml` (uses external env file: `.env.relay`)
+
+**Local credentials file path:**
+- `~/.config/brain-bridge/.env.relay` (gitignored, mode 600)
+- template: `brain-bridge/packages/bridge/.env.relay` (committed, no secrets)
+
+---
+
+### ChatGPT Actions API (Next.js web app on port 3054)
 
 Public read-only API for ChatGPT Custom Actions. Public endpoint: `https://brainbridge.prochat.tools`
 
@@ -513,7 +580,7 @@ Public read-only API for ChatGPT Custom Actions. Public endpoint: `https://brain
 - Protected endpoints: `/api/actions/search`, `/api/actions/read`, `/api/actions/search-and-read`
 - Unprotected: `/api/openapi` (schema), `/api/relay/*`, `/api/bridge/*`
 - Status: ✅ PRODUCTION (Phase 3.6, deployed 2026-04-16)
-- Documentation: `brain-bridge/PHASE3_6_ACTION_AUTH.md`
+- Documentation: `brain-bridge/DEPLOYMENT.md`
 
 **Local environment setup:**
 ```bash

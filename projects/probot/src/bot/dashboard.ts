@@ -2319,7 +2319,8 @@ export function createDashboardServer(app: AppContext): http.Server {
             return;
           }
           try {
-            exec(cmd, { cwd: os.homedir() });
+            execFileAsync("/bin/bash", ["-c", cmd], { cwd: os.homedir(), maxBuffer: 10 * 1024 * 1024 })
+              .catch(e => console.error(`[LocalApp] ${payload.name} start error:`, e.message));
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ ok: true, message: "Starting..." }));
           } catch (e) {
@@ -2336,7 +2337,8 @@ export function createDashboardServer(app: AppContext): http.Server {
             return;
           }
           try {
-            exec(cmd, { cwd: os.homedir() });
+            execFileAsync("/bin/bash", ["-c", cmd], { cwd: os.homedir(), maxBuffer: 10 * 1024 * 1024 })
+              .catch(e => console.error(`[LocalApp] ${payload.name} stop error:`, e.message));
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ ok: true, message: "Stopping..." }));
           } catch (e) {
