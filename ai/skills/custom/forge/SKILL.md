@@ -222,11 +222,11 @@ Build the MVP feature set defined in Phase 4c:
 
 Run these steps in order:
 
-#### 6a. Supabase (local stack in OrbStack)
+#### 6a. Supabase (local PostgreSQL in OrbStack)
 
 **Prerequisites:** OrbStack must be running. See `/orbstack` skill.
 
-The local Supabase stack runs as a docker-compose service in OrbStack (not via `supabase start` CLI).
+Local development uses a plain PostgreSQL container in OrbStack. The Supabase CLI is used for migrations and type generation only — it does not run a full Supabase stack locally.
 
 **Step 1 — Create docker-compose.yml in the project root:**
 ```yaml

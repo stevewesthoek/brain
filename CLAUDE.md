@@ -86,9 +86,9 @@ For credential conventions, see `operations/standards/api-standards.md`. For tes
 
 **OrbStack** is the default local container runtime on this Mac. It replaces Docker Desktop.
 - For local container workflows, see `/orbstack` skill
-- Local Supabase development runs in OrbStack via docker-compose
+- Local development databases (plain PostgreSQL) run in OrbStack via docker-compose
 - Docker CLI commands work identically under OrbStack
-- Production Supabase is self-hosted on Tailscale (100.71.31.88)
+- Production uses self-hosted Supabase server on Tailscale (100.71.31.88) — not replicated locally
 
 ## Symlink map (home → brain)
 

@@ -54,7 +54,7 @@ Help Claude use the Supabase CLI safely for database migrations, schema diffing,
 ## Do not use this skill for
 - Supabase Cloud management — this setup is self-hosted only
 - `supabase login` — Cloud auth, not needed here
-- `supabase start` / `supabase stop` — the local Supabase stack runs as a docker-compose service in OrbStack; the CLI's own stack would conflict on the same ports
+- `supabase start` / `supabase stop` — local development uses plain PostgreSQL in OrbStack, not a full Supabase stack
 - Edge Functions deployment — Cloud-only feature
 - Any write operation against the production database from the Mac
 
@@ -157,14 +157,17 @@ Note: `10.0.2.4` is the internal LAN IP — only reachable from the Dokploy mach
 ```
 
 ## Environment architecture
-| Environment | PostgreSQL | Managed by |
-|---|---|---|
-| Local | `localhost:5433` | OrbStack (docker-compose stack) |
-| Production | `100.71.31.88:5433` | VPS, reachable via Tailscale |
+| Environment | Database | Managed by | What runs here |
+|---|---|---|---|
+| Local | PostgreSQL (plain, localhost:5433) | OrbStack (docker-compose container) | PostgreSQL only; Supabase CLI tools for migrations/types |
+| Production | PostgreSQL (Supabase-managed) | VPS at 100.71.31.88:5433 | Full self-hosted Supabase instance (auth, storage, API, etc.) |
 
-**Do not use `supabase start` / `supabase stop`** — the local Supabase stack runs as a docker-compose service in OrbStack. The CLI commands would start a conflicting second instance on the same ports.
+**Local development does not run a full Supabase stack.** The Supabase CLI (`supabase migrate`, `supabase gen types`) is a tool for managing schemas against any PostgreSQL — it does not require or run the Supabase server locally.
 
-**To manage local Supabase, use docker-compose directly** — see `/orbstack` skill for docker-compose commands.
+**To manage local PostgreSQL:**
+- Start/stop container: See `/orbstack` skill for docker-compose commands
+- Run migrations: Use `supabase` CLI with `--db-url` pointing to local postgres
+- Generate types: Use `supabase gen types typescript --db-url`
 
 ## Notes
 - CLI installed at: `/opt/homebrew/bin/supabase` (v2.75.0, via `brew install supabase/tap/supabase`)

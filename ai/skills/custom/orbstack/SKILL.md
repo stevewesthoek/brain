@@ -37,11 +37,11 @@ docker ps
 - Troubleshooting local container issues
 - Setting up a new local development environment
 
-## Local Supabase stack
+## Local PostgreSQL for development
 
-Local Supabase runs as a docker-compose stack in OrbStack (not via `supabase start` CLI).
+Local development uses plain PostgreSQL containers (not full Supabase) running in OrbStack.
 
-**Start local Supabase:**
+**Start local PostgreSQL:**
 ```bash
 cd ~/Repos/stevewesthoek/brain/operations/database/standalone/<app-name>
 docker-compose up -d
@@ -62,6 +62,12 @@ docker-compose down
 ```bash
 docker-compose down -v  # -v removes named volumes
 ```
+
+**Why plain PostgreSQL?**
+- Full Supabase stack is for specific self-hosted deployments, not local dev
+- Local development needs only a database for migrations and testing
+- Supabase CLI tools (`migrations`, `gen types`) work against any PostgreSQL
+- Production uses self-hosted Supabase on Tailscale (100.71.31.88) — not replicated locally
 
 ## Firecrawl
 
