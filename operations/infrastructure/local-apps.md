@@ -2,7 +2,21 @@
 
 **Canonical source:** `operations/infrastructure/local-apps.json`
 
-This file is the single source of truth for all locally-running applications on the Office Mac. The ProBot dashboard reads it at runtime — add or remove an entry here and the **Local Apps tab updates immediately** with no ProBot rebuild required.
+`local-apps.json` is the canonical local runtime registry for the Office Mac. The ProBot dashboard reads it at runtime, and this markdown file mirrors the same data for humans.
+
+During the migration window, registry entries are intentionally dual-compatible: the richer fields are preferred for new consumers, but the legacy aliases remain present so older readers keep working.
+
+## Reserved port policy
+
+- `3000-3099` is reserved for local web app ports.
+- `5400-5499` is reserved for local PostgreSQL ports.
+- `6300-6399` is reserved for Redis ports.
+- `7000-7099` is reserved for internal dashboards and control-plane tools.
+- `8000-8099` is reserved for APIs and supporting services when needed.
+- Every app gets one permanent reserved app port.
+- Every local PostgreSQL database gets one permanent reserved database port.
+- A port, once assigned, must never be reused by a different app or database, even if the original service is retired later.
+- Do not leave project-local databases on ad hoc defaults like `5432` unless the registry explicitly documents that as intentional.
 
 ## Schema
 
@@ -10,46 +24,62 @@ Each entry in `local-apps.json` is a JSON object with these fields:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | string | yes | Display name shown in ProBot dashboard |
-| `port` | number | yes | Local port the app listens on |
-| `url` | string | yes | URL to open in browser (`http://localhost:PORT`) |
-| `check` | string | yes | Health-check URL ProBot pings to determine running/stopped |
-| `start` | string | yes | Shell command to start the app |
-| `stop` | string | no | Shell command to stop the app |
-| `description` | string | no | One-line description shown in the dashboard card |
+| `name` | string | yes | Display name shown in the ProBot dashboard |
+| `repoPath` | string | yes | Absolute repo path on the Office Mac |
+| `appPort` | number | yes | Reserved local app port |
+| `appUrl` | string | yes | Browser URL for the running app |
+| `healthCheck` | string | yes | URL ProBot pings to determine running/stopped |
+| `startCommand` | string | yes | Shell command to start the app |
+| `stopCommand` | string \| null | no | Shell command to stop the app, if one exists |
+| `description` | string | yes | One-line description shown in the dashboard card |
+| `databaseEngine` | string \| null | no | Database engine used locally, if any |
+| `databaseServiceName` | string \| null | no | Database container or service name, if any |
+| `databasePort` | number \| null | no | Reserved local database port, if any |
+| `databaseName` | string \| null | no | Local database name, if any |
+| `databaseUser` | string \| null | no | Local database user, if any |
+| `notes` | string \| null | no | Extra local-dev notes or caveats |
 
-## Current Inventory
+### Compatibility window
 
-| Name | Port | Description | Start Command |
-|------|------|-------------|---------------|
-| ProBot | 7070 | ProBot dashboard and automation daemon | `cd ~/Repos/stevewesthoek/brain/projects/probot && npm start` |
-| Firecrawl | 3051 | Web scraping and research API | `cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d` |
-| xGrow | 7080 | X (Twitter) growth automation | `cd ~/Repos/prochattools/saas/xgrow && npm run dev` |
-| Google Ads API | 8001 | Google Ads webhook and API server | `supervisorctl start google-ads-http-server` |
-| ComfyUI | 8188 | Stable Diffusion image generation UI | Manual start required |
-| Family Finance | 3060 | Multi-account family finance tracker | `cd ~/Repos/stevewesthoek/family-finance && npm run dev` |
-| Fala | 3050 | Portuguese language learning app | Manual start required |
-| Brain Bridge Relay | 3053 | WebSocket relay for Brain Bridge (agent on 3052, web on 3054) | `cd ~/Repos/stevewesthoek/brain-bridge && docker compose up -d` |
+For every entry, the following aliases are kept in sync:
+
+- `port` mirrors `appPort`
+- `url` mirrors `appUrl`
+- `check` mirrors `healthCheck`
+- `start` mirrors `startCommand`
+- `stop` mirrors `stopCommand`
+
+New code should prefer the expanded fields. Legacy readers may keep using the old names until they are fully migrated.
+
+## Current inventory
+
+| Name | App Port | DB Port | Description | Start Command |
+|------|----------|---------|-------------|---------------|
+| ProBot | 7070 | - | ProBot dashboard and automation daemon | `cd ~/Repos/stevewesthoek/brain/projects/probot && npm start > /tmp/probot.log 2>&1 &` |
+| Firecrawl | 3055 | 5443 | Web scraping and research API | `cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d` |
+| ProChat | 3056 | 5434 | ProChat marketing and conversion site | `cd ~/Repos/prochattools/web/prochat && npm run dev` |
+| xGrow | 7080 | 5445 | X (Twitter) growth automation | `cd ~/Repos/prochattools/saas/xgrow && npm run dev > /tmp/xgrow.log 2>&1 &` |
+| Google Ads API | 8001 | - | Google Ads webhook and API server | `supervisorctl start google-ads-http-server` |
+| ComfyUI | 8188 | - | Stable Diffusion image generation UI | `echo 'Manual start required'` |
+| Family Finance | 3060 | - | Multi-account family finance tracker | `cd ~/Repos/stevewesthoek/family-finance && npm run dev > /tmp/family-finance.log 2>&1 &` |
+| Fala | 3050 | - | Portuguese language learning app | `echo 'Manual start required'` |
+| Brain Bridge | 3054 | - | Unified lifecycle for agent, web, and relay | `bash ~/Repos/stevewesthoek/brain-bridge/start-all.sh` |
 
 ## How ProBot loads this file
 
-ProBot reads `local-apps.json` on every `/api/local-apps` request (no caching). Changes are live immediately — no restart or rebuild needed.
+ProBot reads `local-apps.json` on every `/api/local-apps` request, so changes are live immediately.
 
 File path hardcoded in `projects/probot/src/bot/dashboard.ts`:
-```
+
+```text
 ~/Repos/stevewesthoek/brain/operations/infrastructure/local-apps.json
 ```
 
-For each app, ProBot makes a GET request to `check` with a 1-second timeout. If it gets a 2xx response the app is **running**; otherwise **stopped**.
+For each app, ProBot makes a GET request to `healthCheck` with a 1-second timeout. If it gets a 2xx response the app is **running**; otherwise **stopped**.
 
-## Adding a new app
+## Editing rules
 
-1. Edit `operations/infrastructure/local-apps.json`
-2. Add a new JSON object following the schema above
-3. Save the file — the ProBot Local Apps tab picks it up on next refresh
-
-## Removing an app
-
-1. Edit `operations/infrastructure/local-apps.json`
-2. Delete the entry
-3. Save — the app disappears from ProBot on next refresh
+1. Edit `operations/infrastructure/local-apps.json` first.
+2. Keep this markdown table aligned with the JSON registry.
+3. Update repo-local config/docs at the same time if a reserved port changes.
+4. Never recycle a retired port for a different local app or database.

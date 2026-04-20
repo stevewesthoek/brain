@@ -13,18 +13,35 @@ Verification status:
 Related local control-plane inventory:
 - `operations/infrastructure/scheduler-inventory.md` — canonical scheduler and LaunchAgent inventory for the `Office` Mac
 - `operations/infrastructure/PYTHON-VERSIONS.md` — Python version strategy (dual versions, migration path, upstream tracking)
-- `operations/infrastructure/local-apps.json` — **canonical** list of locally-running apps on the `Office` Mac (single source of truth; ProBot dashboard reads this at runtime)
-- `operations/infrastructure/local-apps.md` — schema reference, runbook, and inventory table for local apps
+- `operations/infrastructure/local-apps.json` — **canonical** local runtime registry for app ports, database ports, and health checks on the `Office` Mac
+- `operations/infrastructure/local-apps.md` — human-readable runbook and inventory mirror for the canonical registry
+- The registry is in a compatibility window: expanded fields are preferred, but legacy aliases remain in the JSON so older consumers keep working.
 
 ## Local Applications (`Office` Mac)
 
 All locally-running apps on the `Office` Mac are indexed in:
-- **`operations/infrastructure/local-apps.json`** — machine-readable; ProBot dashboard reads this file on every `/api/local-apps` request (no restart needed)
-- **`operations/infrastructure/local-apps.md`** — human-readable runbook with schema docs, instructions for adding/removing apps
+- **`operations/infrastructure/local-apps.json`** — machine-readable canonical registry; ProBot dashboard reads this file on every `/api/local-apps` request (no restart needed)
+- **`operations/infrastructure/local-apps.md`** — human-readable runbook with schema docs, reserved port policy, and inventory table
 
-Current inventory: ProBot (7070), Firecrawl (3051), xGrow (7080), Google Ads API (8001), ComfyUI (8188), Family Finance (3060), Fala (3050).
+The registry is dual-compatible during the migration window:
+- new consumers should read `appPort`, `appUrl`, `healthCheck`, `startCommand`, and `stopCommand`
+- legacy consumers may continue to use `port`, `url`, `check`, `start`, and `stop`
+- both sets of fields are kept aligned in `local-apps.json`
+
+Current inventory: ProBot (7070), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060), Fala (3050), Brain Bridge (3054).
 
 To add a new local app, edit `local-apps.json` — the ProBot "Local Apps" tab updates immediately.
+
+## Local port policy
+
+- `3000-3099` is reserved for local web app ports.
+- `5400-5499` is reserved for local PostgreSQL ports.
+- `6300-6399` is reserved for Redis ports.
+- `7000-7099` is reserved for internal dashboards and control-plane tools.
+- `8000-8099` is reserved for APIs and supporting services.
+- Never reuse a port once it has been assigned to an app or database, even after retirement.
+- Do not repurpose `5432` for project-local databases unless `local-apps.json` explicitly documents that choice.
+- The reserved PostgreSQL range (`5400-5499`) is off-limits for ad hoc reuse except for registry-managed local databases.
 
 ## Control Plane
 

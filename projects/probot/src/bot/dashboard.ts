@@ -11,6 +11,7 @@ import { buildRecentContinuationCards } from "../services/control-plane.js";
 import { getCodexUsage } from "../services/codex-usage.js";
 import { getDokployStatus } from "../services/dokploy.js";
 import { getCloudflareTunnels } from "../services/cloudflare-tunnels.js";
+import { buildLocalAppsStatus, findLocalApp, launchLocalAppStartCommand, loadLocalApps, waitForLocalAppHealth } from "./local-apps.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -643,7 +644,7 @@ function getRunningJob(): string | null {
       const m = lines[i]?.match(/starting job=(\S+)/);
       if (m) {
         const jobKey = m[1];
-        const finished = lines.slice(i + 1).some(l => l.includes(`finished job=${jobKey}`));
+        const finished = lines.slice(i + 1).some((l: string) => l.includes(`finished job=${jobKey}`));
         if (!finished) return jobKey ?? null;
         break;
       }
@@ -1232,72 +1233,20 @@ async function getStripeDashboardData(): Promise<StripeDashboardData> {
   return data;
 }
 
-// ─── Local Apps Status ───────────────────────────────────────────────────────
-// Source of truth: brain/operations/infrastructure/local-apps.json
-// Edit that file to add/remove apps — no ProBot rebuild required.
-
-interface LocalAppConfig {
-  name: string;
-  port: number;
-  url: string;
-  check: string;
-  start: string;
-  stop: string;
-  description?: string;
-}
-
-const LOCAL_APPS_CONFIG_PATH = path.join(os.homedir(), "Repos", "stevewesthoek", "brain", "operations", "infrastructure", "local-apps.json");
-
-function loadLocalApps(): LocalAppConfig[] {
-  try {
-    const raw = fs.readFileSync(LOCAL_APPS_CONFIG_PATH, "utf-8");
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed as LocalAppConfig[];
-  } catch {
-    return [];
-  }
-}
-
 function getLocalAppPort(name: string): number | null {
-  const app = loadLocalApps().find(a => a.name === name);
-  return app ? app.port : null;
+  return findLocalApp(name)?.port ?? null;
 }
 
 function getLocalAppStartCommand(name: string): string | null {
-  const app = loadLocalApps().find(a => a.name === name);
-  return app ? app.start : null;
+  return findLocalApp(name)?.start ?? null;
 }
 
 function getLocalAppStopCommand(name: string): string | null {
-  const app = loadLocalApps().find(a => a.name === name);
-  return app ? app.stop : null;
+  return findLocalApp(name)?.stop ?? null;
 }
 
 async function getLocalAppsStatus() {
-  const apps: any[] = [];
-  for (const app of loadLocalApps()) {
-    let status = "stopped";
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 1000);
-      const r = await fetch(app.check, { signal: controller.signal });
-      clearTimeout(timeout);
-      if (r.ok) status = "running";
-    } catch (e) {
-      status = "stopped";
-    }
-    apps.push({
-      name: app.name,
-      port: app.port,
-      url: app.url,
-      description: app.description ?? "",
-      status,
-      lastSeen: null,
-      lastDuration: null,
-    });
-  }
-  return { apps };
+  return buildLocalAppsStatus(loadLocalApps());
 }
 
 async function getDashboardData(app: AppContext) {
@@ -2312,17 +2261,23 @@ export function createDashboardServer(app: AppContext): http.Server {
         const payload = JSON.parse(body);
 
         if (url === "/api/local-apps/start" && payload.name) {
-          const cmd = getLocalAppStartCommand(payload.name);
+          const app = findLocalApp(payload.name);
+          const cmd = app?.start ?? null;
           if (!cmd) {
             res.writeHead(404, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ error: "App not found or cannot be started" }));
             return;
           }
           try {
-            execFileAsync("/bin/bash", ["-c", cmd], { cwd: os.homedir(), maxBuffer: 10 * 1024 * 1024 })
-              .catch(e => console.error(`[LocalApp] ${payload.name} start error:`, e.message));
+            launchLocalAppStartCommand(cmd, os.homedir());
+            const healthy = app ? await waitForLocalAppHealth(app) : false;
+            if (!healthy) {
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: false, error: "App did not become healthy within the timeout" }));
+              return;
+            }
             res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: true, message: "Starting..." }));
+            res.end(JSON.stringify({ ok: true, message: "Started and healthy" }));
           } catch (e) {
             throw new Error(`Failed to start ${payload.name}: ${String(e)}`);
           }
