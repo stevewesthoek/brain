@@ -62,7 +62,7 @@ New code should prefer the expanded fields. Legacy readers may keep using the ol
 | JPV Bootcamp | 3000 | 5444 | JPV Bootcamp landing page, Stripe provisioning, and WordPress sync | `cd ~/Repos/prochattools/clients/jc-citadel/jpv-bootcamp && npm run dev` |
 | xGrow | 7080 | 5445 | X (Twitter) growth automation | `cd ~/Repos/prochattools/saas/xgrow && docker compose -f docker-compose.postgres.yml up -d postgres && npm run dev > /tmp/xgrow.log 2>&1 &` |
 | Google Ads API | 8001 | - | Google Ads webhook and API server | `supervisorctl start google-ads-http-server` |
-| ComfyUI | 8188 | - | Stable Diffusion image generation UI | `echo 'Manual start required'` |
+| ComfyUI | 8188 | - | Stable Diffusion image generation UI | `~/.local/bin/comfyui-start` |
 | Family Finance | 3060 | - | Multi-account family finance tracker | `cd ~/Repos/stevewesthoek/family-finance && npm run dev > /tmp/family-finance.log 2>&1 &` |
 | Fala | 3050 | - | Portuguese language learning app | `echo 'Manual start required'` |
 | BuildFlow | 3054 | - | Unified lifecycle for agent, web, and relay | `bash ~/Repos/stevewesthoek/buildflow/start-all.sh` |
@@ -88,6 +88,14 @@ The standalone Postgres stacks under `operations/database/standalone/` use these
 | SaaSKit | 5457 | `saaskit` |
 
 Only JPV Bootcamp is currently running in OrbStack in this session. The other entries are reserved stacks that remain documented for consistency.
+
+## ComfyUI lifecycle
+
+ComfyUI is a local service, not a database-backed app. ProBot can start and stop it directly via the shared lifecycle helpers:
+
+- Start: `~/.local/bin/comfyui-start`
+- Stop: `~/.local/bin/comfyui-stop`
+- UI / health: `http://localhost:8188`
 
 ## How ProBot loads this file
 

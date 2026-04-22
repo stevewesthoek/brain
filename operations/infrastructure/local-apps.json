@@ -155,17 +155,17 @@
     "appUrl": "http://localhost:8188",
     "check": "http://localhost:8188",
     "healthCheck": "http://localhost:8188",
-    "start": "echo 'Manual start required'",
-    "startCommand": "echo 'Manual start required'",
-    "stop": null,
-    "stopCommand": null,
+    "start": "~/.local/bin/comfyui-start",
+    "startCommand": "~/.local/bin/comfyui-start",
+    "stop": "~/.local/bin/comfyui-stop",
+    "stopCommand": "~/.local/bin/comfyui-stop",
     "description": "Stable Diffusion image generation UI",
     "databaseEngine": null,
     "databaseServiceName": null,
     "databasePort": null,
     "databaseName": null,
     "databaseUser": null,
-    "notes": "Manual launch only; no local database."
+    "notes": "On-demand local service with no database. Use the shared comfyui-start/comfyui-stop helpers."
   },
   {
     "name": "Family Finance",

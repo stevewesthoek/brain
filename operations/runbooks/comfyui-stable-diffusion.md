@@ -88,6 +88,8 @@ comfyui-stop
 curl -s http://localhost:8188/api/status | jq '.queue_running'
 ```
 
+These helpers are the same ones ProBot uses for its local-app start/stop buttons.
+
 ### App-managed lifecycle (recommended)
 
 Projects that need ComfyUI wrap their dev command with `with-comfyui.sh`:
@@ -99,6 +101,8 @@ Projects that need ComfyUI wrap their dev command with `with-comfyui.sh`:
 
 This starts ComfyUI before the app, and stops it automatically on Ctrl+C.
 **ComfyUI is not running when the dev server is not running.**
+
+For Says the Bible thumbnails, `npm run dev:thumbnails` is the supported local workflow because it starts Next and ComfyUI together with the shared helper.
 
 ### View logs
 
@@ -461,6 +465,7 @@ ps -o rss= -p $(cat ~/.local/var/run/comfyui.pid) | awk '{print $1/1024 " MB"}'
 | Project | Use Case | Script |
 |---------|---------|--------|
 | Says the Bible | Episode thumbnail generation | `npm run dev:thumbnails` |
+| ProBot local apps | Direct service control | `~/.local/bin/comfyui-start` / `~/.local/bin/comfyui-stop` |
 | — | Add yours here | — |
 
 ---
