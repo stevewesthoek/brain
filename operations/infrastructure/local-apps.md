@@ -56,6 +56,7 @@ New code should prefer the expanded fields. Legacy readers may keep using the ol
 | Name | App Port | DB Port | Description | Start Command |
 |------|----------|---------|-------------|---------------|
 | ProBot | 7070 | - | ProBot dashboard and automation daemon | `cd ~/Repos/stevewesthoek/brain/projects/probot && npm start > /tmp/probot.log 2>&1 &` |
+| Says the Bible | 3058 | 5441 | Says the Bible main app and admin panel | `cd ~/Repos/prochattools/web/says-the-bible && PORT=3058 npm run dev` |
 | Firecrawl | 3055 | 5443 | Web scraping and research API | `cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d` |
 | ProChat | 3056 | 5434 | ProChat marketing and conversion site | `cd ~/Repos/prochattools/web/prochat && npm run dev` |
 | JPV Bootcamp | 3000 | 5444 | JPV Bootcamp landing page, Stripe provisioning, and WordPress sync | `cd ~/Repos/prochattools/clients/jc-citadel/jpv-bootcamp && npm run dev` |

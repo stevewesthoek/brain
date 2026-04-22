@@ -21,6 +21,27 @@
     "notes": "Control-plane dashboard; no project-local database."
   },
   {
+    "name": "Says the Bible",
+    "repoPath": "/Users/Office/Repos/prochattools/web/says-the-bible",
+    "port": 3058,
+    "appPort": 3058,
+    "url": "http://localhost:3058/admin",
+    "appUrl": "http://localhost:3058/admin",
+    "check": "http://localhost:3058/api/health",
+    "healthCheck": "http://localhost:3058/api/health",
+    "start": "cd ~/Repos/prochattools/web/says-the-bible && PORT=3058 npm run dev",
+    "startCommand": "cd ~/Repos/prochattools/web/says-the-bible && PORT=3058 npm run dev",
+    "stop": null,
+    "stopCommand": null,
+    "description": "Says the Bible main app and admin panel",
+    "databaseEngine": "PostgreSQL",
+    "databaseServiceName": "saysthebible",
+    "databasePort": 5441,
+    "databaseName": "saysthebible",
+    "databaseUser": "saysthebible",
+    "notes": "Local dev runs on reserved port 3058 and opens directly to /admin. The production Dockerfile still uses PORT=3000."
+  },
+  {
     "name": "Firecrawl",
     "repoPath": "/Users/Office/Repos/stevewesthoek/brain/tools/firecrawl",
     "port": 3055,

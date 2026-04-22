@@ -28,7 +28,7 @@ The registry is dual-compatible during the migration window:
 - legacy consumers may continue to use `port`, `url`, `check`, `start`, and `stop`
 - both sets of fields are kept aligned in `local-apps.json`
 
-Current inventory: ProBot (7070), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060), Fala (3050), Brain Bridge (3054).
+Current inventory: ProBot (7070), Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060), Fala (3050), BuildFlow (3054).
 
 To add a new local app, edit `local-apps.json` — the ProBot "Local Apps" tab updates immediately.
 
