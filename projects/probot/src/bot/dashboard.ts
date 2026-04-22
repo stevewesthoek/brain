@@ -11,7 +11,7 @@ import { buildRecentContinuationCards } from "../services/control-plane.js";
 import { getCodexUsage } from "../services/codex-usage.js";
 import { getDokployStatus } from "../services/dokploy.js";
 import { getCloudflareTunnels } from "../services/cloudflare-tunnels.js";
-import { buildLocalAppsStatus, findLocalApp, launchLocalAppStartCommand, loadLocalApps, waitForLocalAppHealth } from "./local-apps.js";
+import { buildLocalAppsStatus, findLocalApp, launchLocalAppStartCommand, loadLocalApps, resolveLocalAppCwd, waitForLocalAppHealth } from "./local-apps.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -2269,8 +2269,8 @@ export function createDashboardServer(app: AppContext): http.Server {
             return;
           }
           try {
-            launchLocalAppStartCommand(cmd, os.homedir());
-            const healthy = app ? await waitForLocalAppHealth(app) : false;
+            launchLocalAppStartCommand(cmd, resolveLocalAppCwd(app));
+            const healthy = await waitForLocalAppHealth(app);
             if (!healthy) {
               res.writeHead(500, { "Content-Type": "application/json" });
               res.end(JSON.stringify({ ok: false, error: "App did not become healthy within the timeout" }));
@@ -2285,6 +2285,7 @@ export function createDashboardServer(app: AppContext): http.Server {
         }
 
         if (url === "/api/local-apps/stop" && payload.name) {
+          const app = findLocalApp(payload.name);
           const cmd = getLocalAppStopCommand(payload.name);
           if (!cmd) {
             res.writeHead(404, { "Content-Type": "application/json" });
@@ -2292,7 +2293,7 @@ export function createDashboardServer(app: AppContext): http.Server {
             return;
           }
           try {
-            execFileAsync("/bin/bash", ["-c", cmd], { cwd: os.homedir(), maxBuffer: 10 * 1024 * 1024 })
+            execFileAsync("/bin/bash", ["-c", cmd], { cwd: app ? resolveLocalAppCwd(app) : os.homedir(), maxBuffer: 10 * 1024 * 1024 })
               .catch(e => console.error(`[LocalApp] ${payload.name} stop error:`, e.message));
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ ok: true, message: "Stopping..." }));

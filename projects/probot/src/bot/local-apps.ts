@@ -120,6 +120,10 @@ export function launchLocalAppStartCommand(command: string, cwd: string): void {
   child.unref();
 }
 
+export function resolveLocalAppCwd(app: NormalizedLocalApp | null): string {
+  return app?.repoPath ?? os.homedir();
+}
+
 export async function buildLocalAppsStatus(
   apps: NormalizedLocalApp[],
   fetchImpl: typeof fetch = fetch,
@@ -151,11 +155,11 @@ export async function buildLocalAppsStatus(
 }
 
 export async function waitForLocalAppHealth(
-  app: NormalizedLocalApp,
+  app: NormalizedLocalApp | null,
   fetchImpl: typeof fetch = fetch,
   timeoutMs = 30000,
 ): Promise<boolean> {
-  if (!app.check) return false;
+  if (!app?.check) return false;
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
