@@ -17,7 +17,7 @@ Related local control-plane inventory:
 - `operations/infrastructure/local-apps.md` — human-readable runbook and inventory mirror for the canonical registry
 - The registry is in a compatibility window: expanded fields are preferred, but legacy aliases remain in the JSON so older consumers keep working.
 - ProBot starts apps from `repoPath` and injects `PORT` from the registry when available, so local app commands can stay repo-relative and avoid stale hardcoded paths.
-- For apps with expensive `predev` work, the local registry should point ProBot at a direct dev binary such as `./node_modules/.bin/next dev -p $PORT` rather than `npm run dev`.
+- For apps with expensive `predev` work or a need for restartable dashboard launches, the local registry should point ProBot at a wrapper script that can clear stale listeners and boot the app directly rather than using `npm run dev`.
 
 ## Local Applications (`Office` Mac)
 

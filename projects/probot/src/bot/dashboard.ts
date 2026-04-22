@@ -1599,6 +1599,35 @@ function uptime(s){
   return h<24?h+'h '+m+'m':Math.floor(h/24)+'d '+(h%24)+'h';
 }
 function pctColor(p){return p>50?'var(--green)':p>20?'var(--amber)':'var(--red)';}
+function fmtCountdown(iso){
+  if(!iso)return'No data';
+  const resetTs=new Date(iso).getTime();
+  if(!Number.isFinite(resetTs))return'No data';
+  const diffMs=resetTs-Date.now();
+  if(diffMs<=0)return'Resetting now';
+  const totalMinutes=Math.floor(diffMs/60000);
+  const days=Math.floor(totalMinutes/1440);
+  const hours=Math.floor((totalMinutes%1440)/60);
+  const minutes=totalMinutes%60;
+  if(days>0)return days+'d '+hours+'h '+minutes+'m';
+  if(hours>0)return hours+'h '+minutes+'m';
+  return minutes+'m';
+}
+function fmtResetExact(iso){
+  if(!iso)return'No data';
+  const d=new Date(iso);
+  if(Number.isNaN(d.getTime()))return'No data';
+  return new Intl.DateTimeFormat(undefined,{
+    weekday:'short',
+    year:'numeric',
+    month:'short',
+    day:'numeric',
+    hour:'2-digit',
+    minute:'2-digit',
+    second:'2-digit',
+    hour12:false,
+  }).format(d);
+}
 function fmtReset(iso){
   if(!iso)return'No data';
   const d=new Date(iso),now=new Date(),dm=Math.floor((d-now)/60000);
@@ -1712,7 +1741,8 @@ function codexCard(l,w){
   if(!w||!w.resetsAt)return'<div class="mc"><div class="mc-label">'+l+'</div><div class="mc-value" style="font-size:14px;color:var(--muted)">–</div><div class="mc-sub">No data yet</div></div>';
   const c=pctColor(w.remainingPercent);
   return'<div class="mc"><div class="mc-label">'+l+'</div><div class="mc-value" style="color:'+c+'">'+w.remainingPercent+'%</div>'
-    +'<div class="mc-sub">'+fmtReset(w.resetsAt)+'</div>'
+    +'<div class="mc-sub">Resets in '+fmtCountdown(w.resetsAt)+'</div>'
+    +'<div class="mc-sub" style="white-space:normal">'+fmtResetExact(w.resetsAt)+'</div>'
     +'<div class="bar"><div class="bar-fill" style="width:'+w.remainingPercent+'%;background:'+c+'"></div></div></div>';
 }
 function renderMetrics(m,mc,codex){
@@ -2061,6 +2091,9 @@ function renderLocalAppCard(app){
     if(!isRunning){
       html+='<button class="local-app-btn" data-action="start" onclick="localAppStart(this,&quot;'+esc(app.name)+'&quot;)"'+(isStarting||isStopping?' disabled':'')+'>'+(isStarting?'Starting…':isStopping?'Stopping…':'Start')+'</button>';
     }else{
+      if(app.start){
+        html+='<button class="local-app-btn" data-action="restart" onclick="localAppStart(this,&quot;'+esc(app.name)+'&quot;)">Restart</button>';
+      }
       html+='<button class="local-app-btn danger" data-action="stop" onclick="localAppStop(this,&quot;'+esc(app.name)+'&quot;)">Stop</button>';
     }
   }
