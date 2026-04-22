@@ -1432,6 +1432,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .mc-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:3px}
 .mc-value{font-size:17px;font-weight:600;font-family:var(--mono);letter-spacing:-.5px;line-height:1.2}
 .mc-sub{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-badge{font-size:9px;color:var(--subtle);text-transform:uppercase;letter-spacing:.4px;padding:2px 6px;border:1px solid var(--border);border-radius:999px;white-space:nowrap;background:rgba(255,255,255,0.02)}
 .bar{height:7px;background:rgba(255,255,255,0.06);border-radius:999px;margin-top:8px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04)}
 .bar-fill{height:100%;border-radius:999px;transition:width .35s ease,background-color .2s ease;box-shadow:0 0 10px rgba(255,255,255,0.08),0 0 14px rgba(255,255,255,0.06)}
 /* ── tabs ── */
@@ -1683,12 +1684,10 @@ function fmtResetExact(iso){
   if(Number.isNaN(d.getTime()))return'No data';
   return new Intl.DateTimeFormat(undefined,{
     weekday:'short',
-    year:'numeric',
     month:'short',
     day:'numeric',
     hour:'2-digit',
     minute:'2-digit',
-    second:'2-digit',
     hour12:false,
   }).format(d);
 }
@@ -1818,6 +1817,8 @@ function renderMetrics(m,mc,codex){
   const gpuPct=typeof mc.gpuUtilizationPercent==='number'?Math.max(0,Math.min(100,Math.round(mc.gpuUtilizationPercent))):null;
   const gpuCores=typeof mc.gpuCoreCount==='number'?mc.gpuCoreCount:null;
   const gpuColor=gpuPct===null?'var(--muted)':severityColor(gpuPct);
+  const codex5Label='Codex · 5h';
+  const codex7Label='Codex · 7d';
   return'<div class="metrics fade">'
     +'<div class="mc" id="metric-cpu"><div class="mc-label">CPU Load</div><div class="mc-value">'+mc.loadAvg1.toFixed(2)+'</div><div class="mc-sub">'+mc.cpuCount+'-core · '+cpu+'%</div><div class="bar"><div class="bar-fill" style="width:'+cpu+'%;background:'+cc+'"></div></div></div>'
     +(memPct===null
@@ -1825,8 +1826,8 @@ function renderMetrics(m,mc,codex){
       :'<div class="mc" id="metric-mem"><div class="mc-label">Memory Pressure</div><div class="mc-value">'+mc.memUsedGb+' GB</div><div class="mc-sub">'+mc.memTotalGb+' GB · '+memPct+'% free</div><div class="bar"><div class="bar-fill" style="width:'+memBarPct+'%;background:'+mc2+'"></div></div></div>')
     +'<div class="mc" id="metric-gpu"><div class="mc-label">GPU Load</div><div class="mc-value">'+(gpuPct===null?'–':gpuCores+'-core · '+gpuPct+'%')+'</div><div class="mc-sub">'+(gpuPct===null?'gpu stats unavailable':gpuCores+' GPU cores · '+gpuPct+'% load')+'</div>'+(gpuPct===null?'':'<div class="bar"><div class="bar-fill" style="width:'+gpuPct+'%;background:'+gpuColor+'"></div></div>')+'</div>'
     +'<div class="mc" id="metric-system"><div class="mc-label">Uptime</div><div class="mc-value">'+uptime(m.probotUptimeSeconds)+'</div><div class="mc-sub">ProBot daemon</div></div>'
-    +'<div class="mc" id="metric-codex-5h"><div class="mc-label">Codex · 5h</div><div class="mc-value" style="color:'+pctColor(codex.fiveHour.remainingPercent)+'">'+codex.fiveHour.remainingPercent+'%</div><div class="mc-sub">Resets in '+fmtCountdown(codex.fiveHour.resetsAt)+'</div><div class="mc-sub" style="white-space:normal">'+fmtResetExact(codex.fiveHour.resetsAt)+'</div><div class="bar"><div class="bar-fill" style="width:'+codex.fiveHour.remainingPercent+'%;background:'+pctColor(codex.fiveHour.remainingPercent)+'"></div></div></div>'
-    +'<div class="mc" id="metric-codex-7d"><div class="mc-label">Codex · 7d</div><div class="mc-value" style="color:'+pctColor(codex.sevenDay.remainingPercent)+'">'+codex.sevenDay.remainingPercent+'%</div><div class="mc-sub">Resets in '+fmtCountdown(codex.sevenDay.resetsAt)+'</div><div class="mc-sub" style="white-space:normal">'+fmtResetExact(codex.sevenDay.resetsAt)+'</div><div class="bar"><div class="bar-fill" style="width:'+codex.sevenDay.remainingPercent+'%;background:'+pctColor(codex.sevenDay.remainingPercent)+'"></div></div></div>'
+    +'<div class="mc" id="metric-codex-5h"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div class="mc-label">'+codex5Label+'</div><div class="mc-badge" data-codex-timer>Resets in '+fmtCountdown(codex.fiveHour.resetsAt)+'</div></div><div class="mc-value" style="color:'+pctColor(codex.fiveHour.remainingPercent)+'">'+codex.fiveHour.remainingPercent+'%</div><div class="mc-sub" style="white-space:normal">'+fmtResetExact(codex.fiveHour.resetsAt)+'</div><div class="bar"><div class="bar-fill" style="width:'+codex.fiveHour.remainingPercent+'%;background:'+pctColor(codex.fiveHour.remainingPercent)+'"></div></div></div>'
+    +'<div class="mc" id="metric-codex-7d"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div class="mc-label">'+codex7Label+'</div><div class="mc-badge" data-codex-timer>Resets in '+fmtCountdown(codex.sevenDay.resetsAt)+'</div></div><div class="mc-value" style="color:'+pctColor(codex.sevenDay.remainingPercent)+'">'+codex.sevenDay.remainingPercent+'%</div><div class="mc-sub" style="white-space:normal">'+fmtResetExact(codex.sevenDay.resetsAt)+'</div><div class="bar"><div class="bar-fill" style="width:'+codex.sevenDay.remainingPercent+'%;background:'+pctColor(codex.sevenDay.remainingPercent)+'"></div></div></div>'
     +'</div>';
 }
 function continuationItem(s){
@@ -2238,13 +2239,16 @@ function updateMetrics(d){
 function setCodexCard(id,w,label){
   const card=document.getElementById(id);
   if(!card)return;
+  const labelEl=card.querySelector('.mc-label');
   const valueEl=card.querySelector('.mc-value');
   const subEls=card.querySelectorAll('.mc-sub');
+  const timerEl=card.querySelector('[data-codex-timer]');
   const barFill=card.querySelector('.bar-fill');
   if(!w||!w.resetsAt){
+    if(labelEl)labelEl.textContent=label;
+    if(timerEl)timerEl.textContent='Resets in –';
     if(valueEl)valueEl.textContent='–';
     if(subEls[0])subEls[0].textContent='No data yet';
-    if(subEls[1])subEls[1].textContent='';
     if(barFill){
       const bar=card.querySelector('.bar');
       if(bar)bar.style.display='block';
@@ -2256,10 +2260,11 @@ function setCodexCard(id,w,label){
     return;
   }
   const c=pctColor(w.remainingPercent);
+  if(labelEl)labelEl.textContent=label;
+  if(timerEl)timerEl.textContent='Resets in '+fmtCountdown(w.resetsAt);
   if(valueEl)valueEl.style.color=c;
   if(valueEl)valueEl.textContent=w.remainingPercent+'%';
-  if(subEls[0])subEls[0].textContent='Resets in '+fmtCountdown(w.resetsAt);
-  if(subEls[1])subEls[1].textContent=fmtResetExact(w.resetsAt);
+  if(subEls[0])subEls[0].textContent=fmtResetExact(w.resetsAt);
   if(barFill){
     const bar=card.querySelector('.bar');
     if(bar)bar.style.display='block';
@@ -2268,7 +2273,6 @@ function setCodexCard(id,w,label){
     barFill.style.width=w.remainingPercent+'%';
     barFill.style.backgroundColor=c;
   }
-  if(card.querySelector('.mc-label'))card.querySelector('.mc-label').textContent=label;
 }
 function render(d){
   _d=d;
