@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Firecrawl Local Wrapper - Auto-shutdown after 15min idle
-# Routes all requests through localhost:3051
+# Routes all requests through localhost:3055
 # All requests logged and parameter-validated
 
 set -euo pipefail
@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="${SCRIPT_DIR}/logs/firecrawl.log"
 LASTACCESS_FILE="${SCRIPT_DIR}/.lastaccess"
 
-FIRECRAWL_URL="http://localhost:3051"
+FIRECRAWL_URL="http://localhost:3055"
 
 # Hard caps
 MAX_PAGES_HARD_CAP=50
@@ -42,7 +42,7 @@ update_last_access() {
 }
 
 is_running() {
-    curl -sf "${FIRECRAWL_URL}/v1/crawl" -X POST -H 'Content-Type: application/json' -d '{"url":"http://localhost"}' > /dev/null 2>&1 || curl -sf "http://localhost:3051" > /dev/null 2>&1
+    curl -sf "${FIRECRAWL_URL}/v1/crawl" -X POST -H 'Content-Type: application/json' -d '{"url":"http://localhost"}' > /dev/null 2>&1 || curl -sf "http://localhost:3055" > /dev/null 2>&1
 }
 
 check_idle_shutdown() {

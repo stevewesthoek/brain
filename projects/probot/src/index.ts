@@ -43,9 +43,27 @@ async function main(): Promise<void> {
 
   if (config.dashboardPort > 0) {
     const dashboard = createDashboardServer(app);
-    dashboard.listen(config.dashboardPort, "0.0.0.0", () => {
-      const url = config.dashboardUrl || `http://${config.hostname}:${config.dashboardPort}`;
-      console.log(`Dashboard running at ${url}`);
+    await new Promise<void>((resolve, reject) => {
+      const onError = (error: NodeJS.ErrnoException): void => {
+        dashboard.off("listening", onListening);
+        reject(error);
+      };
+      const onListening = (): void => {
+        dashboard.off("error", onError);
+        const url = config.dashboardUrl || `http://${config.hostname}:${config.dashboardPort}`;
+        console.log(`Dashboard running at ${url}`);
+        resolve();
+      };
+      dashboard.once("error", onError);
+      dashboard.once("listening", onListening);
+      dashboard.listen(config.dashboardPort, "0.0.0.0");
+    }).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === "EADDRINUSE") {
+        console.error(`Dashboard port ${config.dashboardPort} is already in use.`);
+      } else {
+        console.error("Dashboard failed to start.", error);
+      }
+      throw error;
     });
   }
 

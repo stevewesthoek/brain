@@ -136,6 +136,20 @@ end tell
   }
 }
 
+async function getMemoryFreePercent(): Promise<number | null> {
+  try {
+    const { stdout } = await execFileAsync("memory_pressure", ["-Q", "-v", "1"], {
+      timeout: 2000,
+    });
+    const match = stdout.match(/System-wide memory free percentage:\s*(\d+)%/i);
+    if (!match?.[1]) return null;
+    const value = Number(match[1]);
+    return Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── New Relic helpers ────────────────────────────────────────────────────────
 
 interface NRHost {
@@ -1269,11 +1283,10 @@ function clearLocalAppStartingState(name: string): void {
 }
 
 async function getDashboardData(app: AppContext) {
-  const memTotal = os.totalmem();
-  const memUsed  = memTotal - os.freemem();
   const load     = os.loadavg();
   const googleAds = getGoogleAdsMetrics();
   const mutations = getMutationsData();
+  const memoryFreePercent = await getMemoryFreePercent();
   const [sessions, continuationCards, nrHealth, umami, domains, stripe, dokploy, tunnels] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
@@ -1302,9 +1315,7 @@ async function getDashboardData(app: AppContext) {
     machine: {
       loadAvg1:    Math.round((load[0] ?? 0) * 100) / 100,
       cpuCount:    os.cpus().length,
-      memUsedGB:   Math.round(memUsed  / 1073741824 * 10) / 10,
-      memTotalGB:  Math.round(memTotal / 1073741824 * 10) / 10,
-      memPercent:  Math.round((memUsed / memTotal) * 100),
+      memFreePercent: memoryFreePercent,
     },
     codexUsage,
     nrHealth,
@@ -1345,7 +1356,8 @@ const HTML = `<!DOCTYPE html>
   --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
   --accent:#7c5af0;--accent-d:rgba(124,90,240,0.13);
   --green:#34d399;--green-d:rgba(52,211,153,0.11);
-  --amber:#fbbf24;--amber-d:rgba(251,191,36,0.11);
+  --yellow:#facc15;--yellow-d:rgba(250,204,21,0.11);
+  --orange:#fb923c;--orange-d:rgba(251,146,60,0.11);
   --red:#f87171;--red-d:rgba(248,113,113,0.11);
   --gray:#4b5563;--gray-d:rgba(75,85,99,0.15);
   --text:#f0f0f8;--muted:#6b7280;--subtle:#374151;
@@ -1370,12 +1382,12 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;margin-bottom:12px;flex-shrink:0}
 @media(max-width:1100px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:640px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.mc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px}
+.mc{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0)),var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px}
 .mc-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:3px}
 .mc-value{font-size:17px;font-weight:600;font-family:var(--mono);letter-spacing:-.5px;line-height:1.2}
 .mc-sub{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bar{height:2px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden}
-.bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.bar{height:7px;background:rgba(255,255,255,0.06);border-radius:999px;margin-top:8px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04)}
+.bar-fill{height:100%;border-radius:999px;transition:width .35s ease,background-color .2s ease;box-shadow:0 0 10px rgba(255,255,255,0.08),0 0 14px rgba(255,255,255,0.06)}
 /* ── tabs ── */
 .tab-nav{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;flex-shrink:0}
 .tab-btn{padding:7px 15px;font-size:12px;font-weight:500;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:color .15s,border-color .15s;font-family:var(--font);display:flex;align-items:center;gap:6px;margin-bottom:-1px;white-space:nowrap}
@@ -1598,7 +1610,13 @@ function uptime(s){
   const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
   return h<24?h+'h '+m+'m':Math.floor(h/24)+'d '+(h%24)+'h';
 }
-function pctColor(p){return p>50?'var(--green)':p>20?'var(--amber)':'var(--red)';}
+function pctColor(p){return p>50?'var(--green)':p>20?'var(--yellow)':'var(--red)';}
+function severityColor(p){
+  if(p<=25)return'var(--green)';
+  if(p<=50)return'var(--yellow)';
+  if(p<=75)return'var(--orange)';
+  return'var(--red)';
+}
 function fmtCountdown(iso){
   if(!iso)return'No data';
   const resetTs=new Date(iso).getTime();
@@ -1747,15 +1765,19 @@ function codexCard(l,w){
 }
 function renderMetrics(m,mc,codex){
   const cpu=Math.min(100,Math.round((mc.loadAvg1/mc.cpuCount)*100));
-  const cc=cpu>80?'var(--red)':cpu>50?'var(--amber)':'var(--accent)';
-  const mc2=mc.memPercent>85?'var(--red)':mc.memPercent>60?'var(--amber)':'var(--accent)';
+  const cc=severityColor(cpu);
+  const memPct=typeof mc.memFreePercent==='number'?mc.memFreePercent:null;
+  const memBarPct=memPct===null?0:100-memPct;
+  const mc2=memPct===null?'var(--muted)':severityColor(memBarPct);
   return'<div class="metrics fade">'
-    +statCard('CPU Load',mc.loadAvg1.toFixed(2),mc.cpuCount+'-core · '+cpu+'%',cpu,cc)
-    +statCard('Memory',mc.memUsedGB+' GB',mc.memTotalGB+' GB · '+mc.memPercent+'%',mc.memPercent,mc2)
-    +statCard('Uptime',uptime(m.probotUptimeSeconds),'ProBot daemon',null,null)
-    +statCard('Host',esc(m.hostname),'local',null,null)
-    +codexCard('Codex · 5h',codex.fiveHour)
-    +codexCard('Codex · 7d',codex.sevenDay)
+    +'<div class="mc" id="metric-cpu"><div class="mc-label">CPU Load</div><div class="mc-value">'+mc.loadAvg1.toFixed(2)+'</div><div class="mc-sub">'+mc.cpuCount+'-core · '+cpu+'%</div><div class="bar"><div class="bar-fill" style="width:'+cpu+'%;background:'+cc+'"></div></div></div>'
+    +(memPct===null
+      ?'<div class="mc" id="metric-mem"><div class="mc-label">Memory Pressure</div><div class="mc-value">–</div><div class="mc-sub">memory_pressure unavailable</div></div>'
+      :'<div class="mc" id="metric-mem"><div class="mc-label">Memory Pressure</div><div class="mc-value">'+memPct+'% free</div><div class="mc-sub">actual macOS reading</div><div class="bar"><div class="bar-fill" style="width:'+memBarPct+'%;background:'+mc2+'"></div></div></div>')
+    +'<div class="mc" id="metric-uptime"><div class="mc-label">Uptime</div><div class="mc-value">'+uptime(m.probotUptimeSeconds)+'</div><div class="mc-sub">ProBot daemon</div></div>'
+    +'<div class="mc" id="metric-host"><div class="mc-label">Host</div><div class="mc-value">'+esc(m.hostname)+'</div><div class="mc-sub">local</div></div>'
+    +'<div class="mc" id="metric-codex-5h"><div class="mc-label">Codex · 5h</div><div class="mc-value" style="color:'+pctColor(codex.fiveHour.remainingPercent)+'">'+codex.fiveHour.remainingPercent+'%</div><div class="mc-sub">Resets in '+fmtCountdown(codex.fiveHour.resetsAt)+'</div><div class="mc-sub" style="white-space:normal">'+fmtResetExact(codex.fiveHour.resetsAt)+'</div><div class="bar"><div class="bar-fill" style="width:'+codex.fiveHour.remainingPercent+'%;background:'+pctColor(codex.fiveHour.remainingPercent)+'"></div></div></div>'
+    +'<div class="mc" id="metric-codex-7d"><div class="mc-label">Codex · 7d</div><div class="mc-value" style="color:'+pctColor(codex.sevenDay.remainingPercent)+'">'+codex.sevenDay.remainingPercent+'%</div><div class="mc-sub">Resets in '+fmtCountdown(codex.sevenDay.resetsAt)+'</div><div class="mc-sub" style="white-space:normal">'+fmtResetExact(codex.sevenDay.resetsAt)+'</div><div class="bar"><div class="bar-fill" style="width:'+codex.sevenDay.remainingPercent+'%;background:'+pctColor(codex.sevenDay.remainingPercent)+'"></div></div></div>'
     +'</div>';
 }
 function continuationItem(s){
@@ -2116,6 +2138,83 @@ function renderLocalApps(data){
   html+='</div>';
   return html;
 }
+function setCardState(id,value,sub,barPct,barColor){
+  const card=document.getElementById(id);
+  if(!card)return;
+  const valueEl=card.querySelector('.mc-value');
+  const subEl=card.querySelector('.mc-sub');
+  const barFill=card.querySelector('.bar-fill');
+  if(valueEl&&value!==undefined)valueEl.textContent=value;
+  if(subEl&&sub!==undefined)subEl.textContent=sub;
+  if(barFill){
+    if(barPct===null||barPct===undefined){
+      const bar=card.querySelector('.bar');
+      if(bar)bar.style.display='none';
+    }else{
+      const bar=card.querySelector('.bar');
+      if(bar)bar.style.display='block';
+      barFill.style.display='block';
+      barFill.style.height='100%';
+      barFill.style.width=barPct+'%';
+      if(barColor)barFill.style.backgroundColor=barColor;
+    }
+  }
+}
+function updateMetrics(d){
+  document.getElementById('host').textContent=d.meta.hostname;
+  document.getElementById('upd').textContent='updated '+age(d.meta.updatedAt);
+  const cpu=Math.min(100,Math.round((d.machine.loadAvg1/d.machine.cpuCount)*100));
+  const cpuColor=severityColor(cpu);
+  setCardState('metric-cpu',d.machine.loadAvg1.toFixed(2),d.machine.cpuCount+'-core · '+cpu+'%',cpu,cpuColor);
+  const memPct=typeof d.machine.memFreePercent==='number'?d.machine.memFreePercent:null;
+  if(memPct===null){
+    setCardState('metric-mem','–','memory_pressure unavailable',0,'var(--muted)');
+  }else{
+    const memBarPct=100-memPct;
+    setCardState('metric-mem',memPct+'% free','actual macOS reading',memBarPct,severityColor(memBarPct));
+  }
+  setCardState('metric-uptime',uptime(d.meta.probotUptimeSeconds),'ProBot daemon',null,null);
+  setCardState('metric-host',d.meta.hostname,'local',null,null);
+  const c5=d.codexUsage.fiveHour;
+  const c7=d.codexUsage.sevenDay;
+  setCodexCard('metric-codex-5h',c5,'Codex · 5h');
+  setCodexCard('metric-codex-7d',c7,'Codex · 7d');
+}
+function setCodexCard(id,w,label){
+  const card=document.getElementById(id);
+  if(!card)return;
+  const valueEl=card.querySelector('.mc-value');
+  const subEls=card.querySelectorAll('.mc-sub');
+  const barFill=card.querySelector('.bar-fill');
+  if(!w||!w.resetsAt){
+    if(valueEl)valueEl.textContent='–';
+    if(subEls[0])subEls[0].textContent='No data yet';
+    if(subEls[1])subEls[1].textContent='';
+    if(barFill){
+      const bar=card.querySelector('.bar');
+      if(bar)bar.style.display='block';
+      barFill.style.display='block';
+      barFill.style.height='100%';
+      barFill.style.width='0%';
+      barFill.style.backgroundColor='var(--muted)';
+    }
+    return;
+  }
+  const c=pctColor(w.remainingPercent);
+  if(valueEl)valueEl.style.color=c;
+  if(valueEl)valueEl.textContent=w.remainingPercent+'%';
+  if(subEls[0])subEls[0].textContent='Resets in '+fmtCountdown(w.resetsAt);
+  if(subEls[1])subEls[1].textContent=fmtResetExact(w.resetsAt);
+  if(barFill){
+    const bar=card.querySelector('.bar');
+    if(bar)bar.style.display='block';
+    barFill.style.display='block';
+    barFill.style.height='100%';
+    barFill.style.width=w.remainingPercent+'%';
+    barFill.style.backgroundColor=c;
+  }
+  if(card.querySelector('.mc-label'))card.querySelector('.mc-label').textContent=label;
+}
 function render(d){
   _d=d;
   document.getElementById('host').textContent=d.meta.hostname;
@@ -2156,7 +2255,13 @@ async function fetchData(){
   try{
     const r=await fetch('/api/data');
     if(!r.ok)throw new Error('HTTP '+r.status);
-    render(await r.json());
+    const data=await r.json();
+    if(!_d){
+      render(data);
+      return;
+    }
+    _d=data;
+    updateMetrics(data);
   }catch(e){
     document.getElementById('upd').textContent='fetch failed';
   }
@@ -2165,7 +2270,7 @@ function refresh(){
   const b=document.getElementById('refresh-btn');b.textContent='↻ Loading…';
   fetchData().finally(()=>{b.textContent='↻ Refresh';});
 }
-setInterval(fetchData,30000);
+setInterval(fetchData,3000);
 setInterval(()=>{if(_d)document.getElementById('upd').textContent='updated '+age(_d.meta.updatedAt);},60000);
 fetchData();
 async function localAppStart(btn,name){
