@@ -150,9 +150,11 @@ async function getMemoryFreePercent(): Promise<number | null> {
   }
 }
 
-function getMemoryStats() {
+function getMemoryStats(freePercent: number | null) {
   const totalBytes = os.totalmem();
-  const usedBytes = totalBytes - os.freemem();
+  const usedBytes = freePercent===null
+    ? totalBytes - os.freemem()
+    : Math.round(totalBytes * (100 - freePercent) / 100);
   return {
     totalBytes,
     usedBytes,
@@ -1328,7 +1330,7 @@ async function getDashboardData(app: AppContext) {
   const memoryFreePercent = await getMemoryFreePercent();
   const gpuUtilizationPercent = await getGpuUtilizationPercent();
   const gpuCoreCount = await getGpuCoreCount();
-  const memoryStats = getMemoryStats();
+  const memoryStats = getMemoryStats(memoryFreePercent);
   const [sessions, continuationCards, nrHealth, umami, domains, stripe, dokploy, tunnels] = await Promise.all([
     buildSessionOverview(
       app.config.claudeProjectsDir,
@@ -1820,11 +1822,11 @@ function renderMetrics(m,mc,codex){
   const codex5Label='Codex · 5h';
   const codex7Label='Codex · 7d';
   return'<div class="metrics fade">'
-    +'<div class="mc" id="metric-cpu"><div class="mc-label">CPU Load</div><div class="mc-value">'+mc.loadAvg1.toFixed(2)+'</div><div class="mc-sub">'+mc.cpuCount+'-core · '+cpu+'%</div><div class="bar"><div class="bar-fill" style="width:'+cpu+'%;background:'+cc+'"></div></div></div>'
+    +'<div class="mc" id="metric-cpu"><div class="mc-label">CPU Load</div><div class="mc-value">'+mc.loadAvg1.toFixed(2)+' core</div><div class="mc-sub">'+mc.cpuCount+' cores · '+cpu+'% load</div><div class="bar"><div class="bar-fill" style="width:'+cpu+'%;background:'+cc+'"></div></div></div>'
     +(memPct===null
       ?'<div class="mc" id="metric-mem"><div class="mc-label">Memory Pressure</div><div class="mc-value">–</div><div class="mc-sub">memory_pressure unavailable</div></div>'
       :'<div class="mc" id="metric-mem"><div class="mc-label">Memory Pressure</div><div class="mc-value">'+mc.memUsedGb+' GB</div><div class="mc-sub">'+mc.memTotalGb+' GB · '+memPct+'% free</div><div class="bar"><div class="bar-fill" style="width:'+memBarPct+'%;background:'+mc2+'"></div></div></div>')
-    +'<div class="mc" id="metric-gpu"><div class="mc-label">GPU Load</div><div class="mc-value">'+(gpuPct===null?'–':gpuCores+'-core · '+gpuPct+'%')+'</div><div class="mc-sub">'+(gpuPct===null?'gpu stats unavailable':gpuCores+' GPU cores · '+gpuPct+'% load')+'</div>'+(gpuPct===null?'':'<div class="bar"><div class="bar-fill" style="width:'+gpuPct+'%;background:'+gpuColor+'"></div></div>')+'</div>'
+    +'<div class="mc" id="metric-gpu"><div class="mc-label">GPU Load</div><div class="mc-value">'+(gpuPct===null?'–':gpuCores+' core')+'</div><div class="mc-sub">'+(gpuPct===null?'gpu stats unavailable':gpuPct+'% load · '+gpuCores+' GPU cores')+'</div>'+(gpuPct===null?'':'<div class="bar"><div class="bar-fill" style="width:'+gpuPct+'%;background:'+gpuColor+'"></div></div>')+'</div>'
     +'<div class="mc" id="metric-system"><div class="mc-label">Uptime</div><div class="mc-value">'+uptime(m.probotUptimeSeconds)+'</div><div class="mc-sub">ProBot daemon</div></div>'
     +'<div class="mc" id="metric-codex-5h"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div class="mc-label">'+codex5Label+'</div><div class="mc-badge" data-codex-timer>Resets in '+fmtCountdown(codex.fiveHour.resetsAt)+'</div></div><div class="mc-value" style="color:'+pctColor(codex.fiveHour.remainingPercent)+'">'+codex.fiveHour.remainingPercent+'%</div><div class="mc-sub" style="white-space:normal">'+fmtResetExact(codex.fiveHour.resetsAt)+'</div><div class="bar"><div class="bar-fill" style="width:'+codex.fiveHour.remainingPercent+'%;background:'+pctColor(codex.fiveHour.remainingPercent)+'"></div></div></div>'
     +'<div class="mc" id="metric-codex-7d"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div class="mc-label">'+codex7Label+'</div><div class="mc-badge" data-codex-timer>Resets in '+fmtCountdown(codex.sevenDay.resetsAt)+'</div></div><div class="mc-value" style="color:'+pctColor(codex.sevenDay.remainingPercent)+'">'+codex.sevenDay.remainingPercent+'%</div><div class="mc-sub" style="white-space:normal">'+fmtResetExact(codex.sevenDay.resetsAt)+'</div><div class="bar"><div class="bar-fill" style="width:'+codex.sevenDay.remainingPercent+'%;background:'+pctColor(codex.sevenDay.remainingPercent)+'"></div></div></div>'
@@ -2215,7 +2217,7 @@ function updateMetrics(d){
   document.getElementById('upd').textContent='updated '+age(d.meta.updatedAt);
   const cpu=Math.min(100,Math.round((d.machine.loadAvg1/d.machine.cpuCount)*100));
   const cpuColor=severityColor(cpu);
-  setCardState('metric-cpu',d.machine.loadAvg1.toFixed(2),d.machine.cpuCount+'-core · '+cpu+'%',cpu,cpuColor);
+  setCardState('metric-cpu',d.machine.loadAvg1.toFixed(2)+' core',d.machine.cpuCount+' cores · '+cpu+'% load',cpu,cpuColor);
   const memPct=typeof d.machine.memFreePercent==='number'?d.machine.memFreePercent:null;
   if(memPct===null){
     setCardState('metric-mem','–','memory_pressure unavailable',0,'var(--muted)');
@@ -2228,7 +2230,7 @@ function updateMetrics(d){
   if(gpuPct===null){
     setCardState('metric-gpu','–','gpu stats unavailable',0,'var(--muted)');
   }else{
-    setCardState('metric-gpu',gpuCores+'-core · '+gpuPct+'%',gpuCores+' GPU cores · '+gpuPct+'% load',gpuPct,severityColor(gpuPct));
+    setCardState('metric-gpu',gpuCores+' core',gpuPct+'% load · '+gpuCores+' GPU cores',gpuPct,severityColor(gpuPct));
   }
   setCardState('metric-system',uptime(d.meta.probotUptimeSeconds),'ProBot daemon',null,null);
   const c5=d.codexUsage.fiveHour;
