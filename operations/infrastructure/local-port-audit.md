@@ -4,7 +4,7 @@
 
 Reviewed and normalized local app and database ports for:
 
-- `brain-bridge`
+- `buildflow`
 - `firecrawl`
 - `prochat`
 - `xgrow`
@@ -45,14 +45,14 @@ Compatibility window note:
 
 | Project | Before | After | Notes |
 |---|---:|---:|---|
-| Brain Bridge | `3054` | `3054` | Stayed on policy; registry now tracks the OpenAPI health probe. |
+| BuildFlow | `3054` | `3054` | Stayed on policy; registry now tracks the OpenAPI health probe. |
 | Firecrawl | `3002` | `3055` / `5443` | Registry now matches the actual self-host port and moves PostgreSQL into the reserved 54xx range. |
 | ProChat | `3056` / `5433` | `3056` / `5434` | App port stayed; local Postgres moved into the reserved 54xx range without colliding with Firecrawl. |
 | xGrow | `7080` / `5445` | `7080` / `5445` | Already compliant; only runtime fallbacks and docs were aligned to 7080. |
 
 ## Verified Health Checks
 
-- Brain Bridge: `http://localhost:3054/api/openapi`
+- BuildFlow: `http://localhost:3054/api/openapi`
 - Firecrawl: `http://localhost:3055/v0/health/liveness`
 - ProChat: `http://localhost:3056/api/health`
 - xGrow: `http://localhost:7080/api/dashboard/stats`
@@ -78,17 +78,17 @@ Compatibility window note:
 - No repo-local port change was required
 - Registry now uses the actual local self-host entrypoint and health check
 
-### Brain Bridge
+### BuildFlow
 
 - No repo-local port change was required
 - Registry already matches the app port and OpenAPI health probe
 
 ## Commands
 
-### Brain Bridge
+### BuildFlow
 
 ```bash
-cd ~/Repos/stevewesthoek/brain-bridge
+cd ~/Repos/stevewesthoek/buildflow
 bash start-all.sh
 ```
 

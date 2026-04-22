@@ -498,7 +498,7 @@ Billing-specific service principals (separate from the AI provisioner/destroyer 
 
 Note: ADC and OAuth credentials are at `~/.config/gcloud/application_default_credentials.json`. Legacy credentials for 3 accounts (info@prochat.tools, steve@yeshua.academy, westhoek@hotmail.com) at `~/.config/gcloud/legacy_credentials/`.
 
-## Brain Bridge — Relay Server & ChatGPT Actions API
+## BuildFlow — Relay Server & ChatGPT Actions API
 
 ### Relay Server (WebSocket bridge for local agents)
 
@@ -506,15 +506,15 @@ Self-hosted relay server on OrbStack. Port: `3053`. Bridges ChatGPT actions and 
 
 | Credential | Storage | Purpose | Rights/Scope | Expiry | Rotation | Regenerate |
 |------------|---------|---------|--------------|--------|----------|-----------|
-| `RELAY_ADMIN_TOKEN` | `~/.config/brain-bridge/.env.relay` (mode 600, gitignored) | Bearer token for relay admin endpoints (`/api/sessions/*`, `/api/admin/*`) | Admin-only: device registry, session management, request audit | No automatic expiry | Rotate if compromised or after 90 days | `openssl rand -hex 32` |
+| `RELAY_ADMIN_TOKEN` | `~/.config/buildflow/.env.relay` (mode 600, gitignored) | Bearer token for relay admin endpoints (`/api/sessions/*`, `/api/admin/*`) | Admin-only: device registry, session management, request audit | No automatic expiry | Rotate if compromised or after 90 days | `openssl rand -hex 32` |
 | `RELAY_DATA_DIR` | Docker compose env or container volume | Filesystem path for relay state persistence (token hashes, device registry, session logs, audit trail) | Read/write for relay process only | N/A | N/A | N/A |
 | `RELAY_ENABLE_DEFAULT_TOKENS` | Docker compose env | Flag: enable dev tokens for local testing only (must be `false` in production) | Read-only config | N/A | Change before prod deploy | N/A |
 | `BRIDGE_PORT` | Docker compose env | TCP port for relay WebSocket + HTTP server (default: 3053) | Read-only config | N/A | Change if port conflict | N/A |
 
 **Account Details:**
-- Service: Brain Bridge Relay (WebSocket bridge + session management)
+- Service: BuildFlow Relay (WebSocket bridge + session management)
 - Deployment: OrbStack Docker Compose (or local dev via `pnpm`)
-- Data directory: `~/.brainbridge` locally, or `/var/lib/brainbridge` in container
+- Data directory: `~/.buildflow` locally, or `/var/lib/buildflow` in container
 - Auth scheme: HTTP Bearer token (optional, enabled if `RELAY_ADMIN_TOKEN` is set)
 - Protected endpoints: `/api/sessions/*`, `/api/admin/*` (if token configured)
 - Public endpoints: `/api/register`, `/api/commands`, `/health`, `/ready`
@@ -537,15 +537,15 @@ Self-hosted relay server on OrbStack. Port: `3053`. Bridges ChatGPT actions and 
 **Local environment setup:**
 ```bash
 # Copy template
-cp packages/bridge/.env.relay ~/.config/brain-bridge/.env.relay
+cp packages/bridge/.env.relay ~/.config/buildflow/.env.relay
 
 # Set admin token if deploying with auth
-echo "RELAY_ADMIN_TOKEN=$(openssl rand -hex 32)" >> ~/.config/brain-bridge/.env.relay
-echo "RELAY_ENABLE_DEFAULT_TOKENS=false" >> ~/.config/brain-bridge/.env.relay
+echo "RELAY_ADMIN_TOKEN=$(openssl rand -hex 32)" >> ~/.config/buildflow/.env.relay
+echo "RELAY_ENABLE_DEFAULT_TOKENS=false" >> ~/.config/buildflow/.env.relay
 
 # Start relay (local dev)
-cd ~/Repos/stevewesthoek/brain-bridge
-export $(cat ~/.config/brain-bridge/.env.relay | xargs)
+cd ~/Repos/stevewesthoek/buildflow
+export $(cat ~/.config/buildflow/.env.relay | xargs)
 pnpm dev  # runs all services, relay on :3053
 
 # Or use docker-compose (production-like)
@@ -554,37 +554,37 @@ curl http://localhost:3053/ready
 ```
 
 **Container deployment (OrbStack):**
-- Image: Built from `Dockerfile` (multi-stage, non-root user `brainbridge:1000`)
-- Volume: `brainbridge-data:/var/lib/brainbridge` (persisted across restarts)
+- Image: Built from `Dockerfile` (multi-stage, non-root user `buildflow:1000`)
+- Volume: `buildflow-data:/var/lib/buildflow` (persisted across restarts)
 - Health check: GET `/ready` endpoint (tests data dir writability)
 - Compose file: `docker-compose.yml` (uses external env file: `.env.relay`)
 
 **Local credentials file path:**
-- `~/.config/brain-bridge/.env.relay` (gitignored, mode 600)
-- template: `brain-bridge/packages/bridge/.env.relay` (committed, no secrets)
+- `~/.config/buildflow/.env.relay` (gitignored, mode 600)
+- template: `buildflow/packages/bridge/.env.relay` (committed, no secrets)
 
 ---
 
 ### ChatGPT Actions API (Next.js web app on port 3054)
 
-Public read-only API for ChatGPT Custom Actions. Public endpoint: `https://brainbridge.prochat.tools`
+Public read-only API for ChatGPT Custom Actions. Public endpoint: `https://buildflow.prochat.tools`
 
 | Variable | File | Purpose | Rotation | Regenerate |
 |----------|------|---------|----------|-----------|
-| `BRAIN_BRIDGE_ACTION_TOKEN` | `~/.config/brain-bridge/.env` | Bearer token for `/api/actions/*` endpoints (search, read, search-and-read) — required for ChatGPT Custom GPT authentication | No automatic expiry; rotate before sharing with new users or if compromised | Generate new with `openssl rand -hex 32` |
+| `BUILDFLOW_ACTION_TOKEN` | `~/.config/buildflow/.env` | Bearer token for `/api/actions/*` endpoints (search, read, search-and-read) — required for ChatGPT Custom GPT authentication | No automatic expiry; rotate before sharing with new users or if compromised | Generate new with `openssl rand -hex 32` |
 
 **Account Details:**
-- Service: Brain Bridge API (read-only ChatGPT Actions)
+- Service: BuildFlow API (read-only ChatGPT Actions)
 - Deployment: Cloudflare tunnel → localhost:3054 (Next.js web app)
 - Auth scheme: HTTP Bearer token (required for all `/api/actions/*` requests)
 - Protected endpoints: `/api/actions/search`, `/api/actions/read`, `/api/actions/search-and-read`
 - Unprotected: `/api/openapi` (schema), `/api/relay/*`, `/api/bridge/*`
 - Status: ✅ PRODUCTION (Phase 3.6, deployed 2026-04-16)
-- Documentation: `brain-bridge/DEPLOYMENT.md`
+- Documentation: `buildflow/DEPLOYMENT.md`
 
 **Local environment setup:**
 ```bash
-source ~/.config/brain-bridge/.env
+source ~/.config/buildflow/.env
 npm run dev  # Web app loads token from env var
 ```
 
@@ -592,7 +592,7 @@ npm run dev  # Web app loads token from env var
 - Path: Custom GPT → Configure → Actions
 - Authentication type: API Key
 - Auth scheme: Bearer
-- Schema: `brain-bridge/docs/openapi.chatgpt.json`
+- Schema: `buildflow/docs/openapi.chatgpt.json`
 
 ---
 

@@ -2,18 +2,18 @@
 
 set -e
 
-BRAIN_BRIDGE_DIR="${BRAIN_BRIDGE_DIR:-/Users/Office/Repos/stevewesthoek/brain-bridge}"
+BUILDFLOW_DIR="${BUILDFLOW_DIR:-/Users/Office/Repos/stevewesthoek/buildflow}"
 VAULT_DIR="${VAULT_DIR:-/Users/Office/Repos/stevewesthoek/brain}"
 LOG_DIR="/tmp"
 
 # Load token from local config if not already set
-if [ -z "$BRAIN_BRIDGE_ACTION_TOKEN" ] && [ -f "$HOME/.config/brain-bridge/.env" ]; then
-  export $(grep BRAIN_BRIDGE_ACTION_TOKEN "$HOME/.config/brain-bridge/.env" | xargs)
+if [ -z "$BUILDFLOW_ACTION_TOKEN" ] && [ -f "$HOME/.config/buildflow/.env" ]; then
+  export $(grep BUILDFLOW_ACTION_TOKEN "$HOME/.config/buildflow/.env" | xargs)
 fi
 
-RELAY_LOG="$LOG_DIR/brainbridge-bridge.log"
-AGENT_LOG="$LOG_DIR/brainbridge-agent.log"
-WEB_LOG="$LOG_DIR/brainbridge-web.log"
+RELAY_LOG="$LOG_DIR/buildflow-bridge.log"
+AGENT_LOG="$LOG_DIR/buildflow-agent.log"
+WEB_LOG="$LOG_DIR/buildflow-web.log"
 
 RELAY_PORT=3053
 AGENT_PORT=3052
@@ -26,15 +26,15 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 log() {
-  echo -e "${GREEN}[Brain Bridge]${NC} $1"
+  echo -e "${GREEN}[BuildFlow]${NC} $1"
 }
 
 error() {
-  echo -e "${RED}[Brain Bridge Error]${NC} $1" >&2
+  echo -e "${RED}[BuildFlow Error]${NC} $1" >&2
 }
 
 warn() {
-  echo -e "${YELLOW}[Brain Bridge]${NC} $1"
+  echo -e "${YELLOW}[BuildFlow]${NC} $1"
 }
 
 check_port() {
@@ -50,7 +50,7 @@ kill_port() {
 }
 
 start() {
-  log "Starting Brain Bridge stack..."
+  log "Starting BuildFlow stack..."
 
   # Safety: kill any existing processes
   kill_port $RELAY_PORT
@@ -59,7 +59,7 @@ start() {
 
   # Start relay first
   log "Starting relay on port $RELAY_PORT..."
-  cd "$BRAIN_BRIDGE_DIR/packages/bridge"
+  cd "$BUILDFLOW_DIR/packages/bridge"
   node dist/server.js > "$RELAY_LOG" 2>&1 &
   RELAY_PID=$!
   log "Relay started (PID: $RELAY_PID)"
@@ -84,7 +84,7 @@ start() {
 
   # Connect and index vault
   log "Connecting vault at $VAULT_DIR..."
-  cd "$BRAIN_BRIDGE_DIR"
+  cd "$BUILDFLOW_DIR"
   node packages/cli/dist/index.js connect "$VAULT_DIR" >> "$AGENT_LOG" 2>&1 || true
 
   log "Indexing vault..."
@@ -101,16 +101,16 @@ start() {
 
   # Start web app
   log "Starting web app on port $WEB_PORT..."
-  cd "$BRAIN_BRIDGE_DIR/apps/web"
-  if [ -n "$BRAIN_BRIDGE_ACTION_TOKEN" ]; then
-    export BRAIN_BRIDGE_ACTION_TOKEN="$BRAIN_BRIDGE_ACTION_TOKEN"
+  cd "$BUILDFLOW_DIR/apps/web"
+  if [ -n "$BUILDFLOW_ACTION_TOKEN" ]; then
+    export BUILDFLOW_ACTION_TOKEN="$BUILDFLOW_ACTION_TOKEN"
   fi
   npm run dev > "$WEB_LOG" 2>&1 &
   WEB_PID=$!
   log "Web app started (PID: $WEB_PID)"
   sleep 3
 
-  log "All Brain Bridge components started"
+  log "All BuildFlow components started"
   log "Logs:"
   log "  Relay:  $RELAY_LOG"
   log "  Agent:  $AGENT_LOG"
@@ -118,17 +118,17 @@ start() {
 }
 
 stop() {
-  log "Stopping Brain Bridge stack..."
+  log "Stopping BuildFlow stack..."
 
   kill_port $WEB_PORT
   kill_port $AGENT_PORT
   kill_port $RELAY_PORT
 
-  log "All Brain Bridge components stopped"
+  log "All BuildFlow components stopped"
 }
 
 status() {
-  log "Checking Brain Bridge stack status..."
+  log "Checking BuildFlow stack status..."
   local all_healthy=1
 
   # Check relay
