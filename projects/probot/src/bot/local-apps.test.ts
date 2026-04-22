@@ -54,28 +54,28 @@ test("normalize expanded-only entry", () => {
   assert.equal(app.notes, "note");
 });
 
-test("normalize dual-compatible Brain Bridge entry", () => {
+test("normalize dual-compatible BuildFlow entry", () => {
   const app = normalizeLocalApp({
-    name: "Brain Bridge",
+    name: "BuildFlow",
     port: 3054,
     appPort: 3054,
     url: "http://localhost:3054",
     appUrl: "http://localhost:3054",
     check: "http://localhost:3054/api/openapi",
     healthCheck: "http://localhost:3054/api/openapi",
-    start: "bash ~/Repos/stevewesthoek/brain-bridge/start-all.sh",
-    startCommand: "bash ~/Repos/stevewesthoek/brain-bridge/start-all.sh",
-    stop: "bash ~/Repos/stevewesthoek/brain-bridge/stop-all.sh",
-    stopCommand: "bash ~/Repos/stevewesthoek/brain-bridge/stop-all.sh",
-    description: "Brain Bridge",
+    start: "bash ~/Repos/stevewesthoek/buildflow/start-all.sh",
+    startCommand: "bash ~/Repos/stevewesthoek/buildflow/start-all.sh",
+    stop: "bash ~/Repos/stevewesthoek/buildflow/stop-all.sh",
+    stopCommand: "bash ~/Repos/stevewesthoek/buildflow/stop-all.sh",
+    description: "BuildFlow",
   });
 
   assert.ok(app);
   assert.equal(app.port, 3054);
   assert.equal(app.url, "http://localhost:3054");
   assert.equal(app.check, "http://localhost:3054/api/openapi");
-  assert.equal(app.start, "bash ~/Repos/stevewesthoek/brain-bridge/start-all.sh");
-  assert.equal(app.stop, "bash ~/Repos/stevewesthoek/brain-bridge/stop-all.sh");
+  assert.equal(app.start, "bash ~/Repos/stevewesthoek/buildflow/start-all.sh");
+  assert.equal(app.stop, "bash ~/Repos/stevewesthoek/buildflow/stop-all.sh");
 });
 
 test("normalize entry with missing optional stop", () => {
@@ -167,6 +167,6 @@ test("normalize invalid entry without name", () => {
 test("classify current start command shapes", () => {
   assert.equal(classifyLocalAppStartCommand("cd ~/Repos/prochattools/web/prochat && npm run dev"), "foreground");
   assert.equal(classifyLocalAppStartCommand("cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d"), "background");
-  assert.equal(classifyLocalAppStartCommand("bash ~/Repos/stevewesthoek/brain-bridge/start-all.sh"), "foreground");
+  assert.equal(classifyLocalAppStartCommand("bash ~/Repos/stevewesthoek/buildflow/start-all.sh"), "foreground");
   assert.equal(classifyLocalAppStartCommand("cd ~/Repos/prochattools/saas/xgrow && npm run dev > /tmp/xgrow.log 2>&1 &"), "background");
 });

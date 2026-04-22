@@ -58,12 +58,35 @@ New code should prefer the expanded fields. Legacy readers may keep using the ol
 | ProBot | 7070 | - | ProBot dashboard and automation daemon | `cd ~/Repos/stevewesthoek/brain/projects/probot && npm start > /tmp/probot.log 2>&1 &` |
 | Firecrawl | 3055 | 5443 | Web scraping and research API | `cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d` |
 | ProChat | 3056 | 5434 | ProChat marketing and conversion site | `cd ~/Repos/prochattools/web/prochat && npm run dev` |
-| xGrow | 7080 | 5445 | X (Twitter) growth automation | `cd ~/Repos/prochattools/saas/xgrow && npm run dev > /tmp/xgrow.log 2>&1 &` |
+| JPV Bootcamp | 3000 | 5444 | JPV Bootcamp landing page, Stripe provisioning, and WordPress sync | `cd ~/Repos/prochattools/clients/jc-citadel/jpv-bootcamp && npm run dev` |
+| xGrow | 7080 | 5445 | X (Twitter) growth automation | `cd ~/Repos/prochattools/saas/xgrow && docker compose -f docker-compose.postgres.yml up -d postgres && npm run dev > /tmp/xgrow.log 2>&1 &` |
 | Google Ads API | 8001 | - | Google Ads webhook and API server | `supervisorctl start google-ads-http-server` |
 | ComfyUI | 8188 | - | Stable Diffusion image generation UI | `echo 'Manual start required'` |
 | Family Finance | 3060 | - | Multi-account family finance tracker | `cd ~/Repos/stevewesthoek/family-finance && npm run dev > /tmp/family-finance.log 2>&1 &` |
 | Fala | 3050 | - | Portuguese language learning app | `echo 'Manual start required'` |
-| Brain Bridge | 3054 | - | Unified lifecycle for agent, web, and relay | `bash ~/Repos/stevewesthoek/brain-bridge/start-all.sh` |
+| BuildFlow | 3054 | - | Unified lifecycle for agent, web, and relay | `bash ~/Repos/stevewesthoek/buildflow/start-all.sh` |
+
+## OrbStack database inventory
+
+The standalone Postgres stacks under `operations/database/standalone/` use these reserved ports:
+
+| App | Host Port | Database |
+|-----|-----------|----------|
+| Says the Bible | 5441 | `saysthebible` |
+| ProChat | 5442 | `prochat` |
+| Cedula | 5443 | `cedula` |
+| JPV Bootcamp | 5444 | `jpvbootcamp` |
+| Oliveto Organizing | 5445 | `olivetoorganizing` |
+| StatusLink | 5446 | `statuslink` |
+| Via di Eden | 5447 | `viadieden` |
+| Resend | 5448 | `resend` |
+| ProKit Studio | 5449 | `prokitstudio` |
+| SaaSKit Studio | 5450 | `saaskitstudio` |
+| OpenFund | 5451 | `openfund` |
+| ProKit | 5455 | `prokit` |
+| SaaSKit | 5457 | `saaskit` |
+
+Only JPV Bootcamp is currently running in OrbStack in this session. The other entries are reserved stacks that remain documented for consistency.
 
 ## How ProBot loads this file
 

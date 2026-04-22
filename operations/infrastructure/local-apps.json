@@ -63,16 +63,37 @@
     "notes": "Local bootstrap and docs now reserve PostgreSQL port 5434 for this repo."
   },
   {
+    "name": "JPV Bootcamp",
+    "repoPath": "/Users/Office/Repos/prochattools/clients/jc-citadel/jpv-bootcamp",
+    "port": 3000,
+    "appPort": 3000,
+    "url": "http://localhost:3000",
+    "appUrl": "http://localhost:3000",
+    "check": "http://localhost:3000",
+    "healthCheck": "http://localhost:3000",
+    "start": "cd ~/Repos/prochattools/clients/jc-citadel/jpv-bootcamp && npm run dev",
+    "startCommand": "cd ~/Repos/prochattools/clients/jc-citadel/jpv-bootcamp && npm run dev",
+    "stop": null,
+    "stopCommand": null,
+    "description": "JPV Bootcamp landing page, Stripe provisioning, and WordPress sync",
+    "databaseEngine": "PostgreSQL",
+    "databaseServiceName": "postgres",
+    "databasePort": 5444,
+    "databaseName": "jpvbootcamp",
+    "databaseUser": "postgres",
+    "notes": "Local OrbStack compose lives at brain/operations/database/standalone/jpvbootcamp/docker-compose.yml and publishes host port 5444."
+  },
+  {
     "name": "xGrow",
     "repoPath": "/Users/Office/Repos/prochattools/saas/xgrow",
     "port": 7080,
     "appPort": 7080,
     "url": "http://localhost:7080",
     "appUrl": "http://localhost:7080",
-    "check": "http://localhost:7080/api/dashboard/stats",
-    "healthCheck": "http://localhost:7080/api/dashboard/stats",
-    "start": "cd ~/Repos/prochattools/saas/xgrow && npm run dev > /tmp/xgrow.log 2>&1 &",
-    "startCommand": "cd ~/Repos/prochattools/saas/xgrow && npm run dev > /tmp/xgrow.log 2>&1 &",
+    "check": "http://localhost:7080/api/health",
+    "healthCheck": "http://localhost:7080/api/health",
+    "start": "cd ~/Repos/prochattools/saas/xgrow && docker compose -f docker-compose.postgres.yml up -d postgres && npm run dev > /tmp/xgrow.log 2>&1 &",
+    "startCommand": "cd ~/Repos/prochattools/saas/xgrow && docker compose -f docker-compose.postgres.yml up -d postgres && npm run dev > /tmp/xgrow.log 2>&1 &",
     "stop": null,
     "stopCommand": null,
     "description": "X (Twitter) growth automation",
@@ -81,7 +102,7 @@
     "databasePort": 5445,
     "databaseName": "xgrow_dev",
     "databaseUser": "xgrow",
-    "notes": "Dedicated postgres compose file maps host 5445 to the container."
+    "notes": "ProBot start now brings up the dedicated postgres container before launching the app. The compose file maps host 5445 to the container."
   },
   {
     "name": "Google Ads API",
@@ -168,24 +189,24 @@
     "notes": "Manual launch only; no local database."
   },
   {
-    "name": "Brain Bridge",
-    "repoPath": "/Users/Office/Repos/stevewesthoek/brain-bridge",
+    "name": "BuildFlow",
+    "repoPath": "/Users/Office/Repos/stevewesthoek/buildflow",
     "port": 3054,
     "appPort": 3054,
     "url": "http://localhost:3054",
     "appUrl": "http://localhost:3054",
     "check": "http://localhost:3054/api/openapi",
     "healthCheck": "http://localhost:3054/api/openapi",
-    "start": "bash ~/Repos/stevewesthoek/brain-bridge/start-all.sh",
-    "startCommand": "bash ~/Repos/stevewesthoek/brain-bridge/start-all.sh",
-    "stop": "bash ~/Repos/stevewesthoek/brain-bridge/stop-all.sh",
-    "stopCommand": "bash ~/Repos/stevewesthoek/brain-bridge/stop-all.sh",
-    "description": "Brain Bridge: unified lifecycle for agent (3052), web (3054), and relay (3053)",
+    "start": "bash ~/Repos/stevewesthoek/buildflow/start-all.sh",
+    "startCommand": "bash ~/Repos/stevewesthoek/buildflow/start-all.sh",
+    "stop": "bash ~/Repos/stevewesthoek/buildflow/stop-all.sh",
+    "stopCommand": "bash ~/Repos/stevewesthoek/buildflow/stop-all.sh",
+    "description": "BuildFlow: unified lifecycle for agent (3052), web (3054), and relay (3053)",
     "databaseEngine": null,
     "databaseServiceName": null,
     "databasePort": null,
     "databaseName": null,
     "databaseUser": null,
-    "notes": "Requires OrbStack with Docker daemon running and ~/.config/brain-bridge/.env.relay."
+    "notes": "Requires OrbStack with Docker daemon running and ~/.config/buildflow/.env.relay."
   }
 ]

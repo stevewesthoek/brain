@@ -10,7 +10,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test --import tsx src/bot/local-apps.test.ts"
+    "test": "tsx --test src/bot/local-apps.test.ts",
+    "ci": "npm run typecheck && npm test"
   },
   "dependencies": {
     "@slack/bolt": "^4.6.0",
