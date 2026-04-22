@@ -11,7 +11,14 @@ import { buildRecentContinuationCards } from "../services/control-plane.js";
 import { getCodexUsage } from "../services/codex-usage.js";
 import { getDokployStatus } from "../services/dokploy.js";
 import { getCloudflareTunnels } from "../services/cloudflare-tunnels.js";
-import { buildLocalAppsStatus, findLocalApp, launchLocalAppStartCommand, loadLocalApps, resolveLocalAppCwd, waitForLocalAppHealth } from "./local-apps.js";
+import {
+  buildLocalAppsStatus,
+  findLocalApp,
+  launchLocalAppStartCommand,
+  loadLocalApps,
+  resolveLocalAppCwd,
+  waitForLocalAppHealth,
+} from "./local-apps.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -34,6 +41,7 @@ const FAVICON_SVG = `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3
 </svg>`;
 
 const START_TIME = Date.now();
+const LOCAL_APP_STARTING_STATES = new Map<string, { startedAt: number; startupTimeoutMs: number | null }>();
 
 // ─── Data helpers ────────────────────────────────────────────────────────────
 
@@ -1246,7 +1254,18 @@ function getLocalAppStopCommand(name: string): string | null {
 }
 
 async function getLocalAppsStatus() {
-  return buildLocalAppsStatus(loadLocalApps());
+  return buildLocalAppsStatus(loadLocalApps(), fetch, { startingApps: LOCAL_APP_STARTING_STATES });
+}
+
+function setLocalAppStartingState(name: string, startupTimeoutMs: number | null): void {
+  LOCAL_APP_STARTING_STATES.set(name, {
+    startedAt: Date.now(),
+    startupTimeoutMs,
+  });
+}
+
+function clearLocalAppStartingState(name: string): void {
+  LOCAL_APP_STARTING_STATES.delete(name);
 }
 
 async function getDashboardData(app: AppContext) {
@@ -1514,6 +1533,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .local-app-header{display:flex;align-items:center;gap:8px;font-weight:500}
 .local-app-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
 .local-app-status.running{color:var(--green)}
+.local-app-status.starting{color:var(--amber)}
 .local-app-status.stopped{color:var(--red)}
 .local-app-actions{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
 .local-app-btn{padding:5px 10px;font-size:10px;background:var(--border);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text);transition:all .15s}
@@ -2015,6 +2035,42 @@ function renderCloudflareTunnels(data){
   });
   return h;
 }
+function renderLocalAppCard(app){
+  const transient=window.__localAppTransient?.[app.name] || null;
+  const effectiveStatus=transient?.status || app.status;
+  const isRunning=effectiveStatus==='running';
+  const isStarting=effectiveStatus==='starting';
+  const isStopping=effectiveStatus==='stopping';
+  const statusClass=isRunning?'running':isStarting?'starting':isStopping?'stopping':'stopped';
+  const statusDot=isRunning?'&#9679;':isStarting?'&#9696;':isStopping?'&#9696;':'&#9675;';
+  let html='<div class="local-app-card" data-local-app-card="'+esc(app.name)+'">';
+  html+='<div class="local-app-header">';
+  html+='<span class="local-app-dot" style="font-size:14px">'+statusDot+'</span>';
+  html+='<span style="flex:1"><strong>'+esc(app.name)+'</strong></span>';
+  html+='<span style="font-size:10px;color:var(--muted)">:'+app.port+'</span>';
+  html+='</div>';
+  if(app.description)html+='<div style="font-size:10px;color:var(--muted);margin-bottom:2px">'+esc(app.description)+'</div>';
+  html+='<div class="local-app-status '+statusClass+'" data-local-app-status="'+esc(app.name)+'">';
+  html+='<span>'+esc(effectiveStatus.toUpperCase())+'</span>';
+  if(app.lastSeen)html+=' &middot; last '+esc(age(app.lastSeen));
+  if(app.lastDuration)html+=' &middot; '+esc(app.lastDuration);
+  if(isStarting)html+=' &middot; launching';
+  html+='</div>';
+  html+='<div class="local-app-actions" data-local-app-actions="'+esc(app.name)+'">';
+  if(app.name!=='ProBot'){
+    if(!isRunning){
+      html+='<button class="local-app-btn" data-action="start" onclick="localAppStart(this,&quot;'+esc(app.name)+'&quot;)"'+(isStarting||isStopping?' disabled':'')+'>'+(isStarting?'Starting…':isStopping?'Stopping…':'Start')+'</button>';
+    }else{
+      html+='<button class="local-app-btn danger" data-action="stop" onclick="localAppStop(this,&quot;'+esc(app.name)+'&quot;)">Stop</button>';
+    }
+  }
+  if(app.url){
+    html+='<a href="'+esc(app.url)+'" target="_blank" class="local-app-btn" style="text-decoration:none;display:inline-block">Open ↗</a>';
+  }
+  html+='</div>';
+  html+='</div>';
+  return html;
+}
 function renderLocalApps(data){
   if(!data)return'<div class="nr-err">Local apps data unavailable</div>';
   if(data.error)return'<div class="nr-err">'+esc(data.error)+'</div>';
@@ -2023,36 +2079,7 @@ function renderLocalApps(data){
   const running=data.apps.filter(a=>a.status==='running').length;
   if(running>0)html+='<span class="badge b-live" style="margin-left:8px">'+running+' running</span>';
   html+='<div class="local-app-grid fade">';
-  data.apps.forEach(function(app){
-    const isRunning=app.status==='running';
-    const statusClass=isRunning?'running':'stopped';
-    const statusDot=isRunning?'&#9679;':'&#9675;';
-    html+='<div class="local-app-card">';
-    html+='<div class="local-app-header">';
-    html+='<span style="font-size:14px">'+statusDot+'</span>';
-    html+='<span style="flex:1"><strong>'+esc(app.name)+'</strong></span>';
-    html+='<span style="font-size:10px;color:var(--muted)">:'+app.port+'</span>';
-    html+='</div>';
-    if(app.description)html+='<div style="font-size:10px;color:var(--muted);margin-bottom:2px">'+esc(app.description)+'</div>';
-    html+='<div class="local-app-status '+statusClass+'">';
-    html+='<span>'+esc(app.status.toUpperCase())+'</span>';
-    if(app.lastSeen)html+=' &middot; last '+esc(age(app.lastSeen));
-    if(app.lastDuration)html+=' &middot; '+esc(app.lastDuration);
-    html+='</div>';
-    html+='<div class="local-app-actions">';
-    if(app.name!=='ProBot'){
-      if(!isRunning){
-        html+='<button class="local-app-btn" onclick="localAppStart(this,&quot;'+esc(app.name)+'&quot;)">Start</button>';
-      }else{
-        html+='<button class="local-app-btn danger" onclick="localAppStop(this,&quot;'+esc(app.name)+'&quot;)">Stop</button>';
-      }
-    }
-    if(app.url){
-      html+='<a href="'+esc(app.url)+'" target="_blank" class="local-app-btn" style="text-decoration:none;display:inline-block">Open ↗</a>';
-    }
-    html+='</div>';
-    html+='</div>';
-  });
+  data.apps.forEach(function(app){ html+=renderLocalAppCard(app); });
   html+='</div>';
   return html;
 }
@@ -2110,21 +2137,44 @@ setInterval(()=>{if(_d)document.getElementById('upd').textContent='updated '+age
 fetchData();
 async function localAppStart(btn,name){
   const o=btn.textContent;btn.disabled=true;btn.textContent='Starting...';
+  setLocalAppTransient(name,{status:'starting'});
+  syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
   try{
     const r=await fetch('/api/local-apps/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
-    btn.textContent=d.message||'Started';
-    setTimeout(()=>{btn.disabled=false;btn.textContent=o;localAppsRefresh();},1500);
+    btn.textContent=d.message||'Start initiated';
+    syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+    pollLocalAppUntilRunning(name);
   }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
 }
 async function localAppStop(btn,name){
   const o=btn.textContent;btn.disabled=true;btn.textContent='Stopping...';
+  setLocalAppTransient(name,{status:'stopping'});
+  syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
   try{
     const r=await fetch('/api/local-apps/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
     btn.textContent=d.message||'Stopped';
-    setTimeout(()=>{btn.disabled=false;btn.textContent=o;localAppsRefresh();},1500);
+    setTimeout(()=>{
+      btn.disabled=false;
+      btn.textContent=o;
+      clearLocalAppTransient(name);
+      syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+    },1500);
   }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+}
+function findLocalAppCard(name){
+  return Array.from(document.querySelectorAll('[data-local-app-card]')).find(el=>el.getAttribute('data-local-app-card')===name) || null;
+}
+async function syncLocalAppCard(name){
+  const card=findLocalAppCard(name);
+  if(!card)return;
+  const r=await fetch('/api/local-apps');
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const data=await r.json();
+  const app=(data.apps||[]).find(a=>a.name===name);
+  if(!app)return;
+  card.outerHTML=renderLocalAppCard(app);
 }
 async function localAppsRefresh(){
   try{
@@ -2139,6 +2189,51 @@ async function localAppsRefresh(){
     console.error('Local apps refresh failed:',e);
     document.getElementById('tab-local-apps').innerHTML='<div class="nr-err">Failed to load: '+esc(String(e))+'</div>';
   }
+}
+function getLocalAppTransient(name){
+  window.__localAppTransient=window.__localAppTransient||{};
+  return window.__localAppTransient[name]||null;
+}
+function setLocalAppTransient(name,value){
+  window.__localAppTransient=window.__localAppTransient||{};
+  window.__localAppTransient[name]=value;
+}
+function clearLocalAppTransient(name){
+  if(window.__localAppTransient) delete window.__localAppTransient[name];
+}
+function pollLocalAppUntilRunning(name){
+  const startedAt=Date.now();
+  const maxWaitMs=120000;
+  const tick=async()=>{
+    try{
+      const r=await fetch('/api/local-apps');
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const data=await r.json();
+      const app=(data.apps||[]).find(a=>a.name===name);
+      if(app){
+        const card=findLocalAppCard(name);
+        if(card) card.outerHTML=renderLocalAppCard(app);
+      }
+      if(app&&app.status==='running'){
+        clearLocalAppTransient(name);
+        return;
+      }
+      if(Date.now()-startedAt>=maxWaitMs){
+        clearLocalAppTransient(name);
+        await syncLocalAppCard(name);
+        return;
+      }
+      setTimeout(tick,2000);
+    }catch(e){
+      if(Date.now()-startedAt>=maxWaitMs){
+        clearLocalAppTransient(name);
+        await syncLocalAppCard(name);
+        return;
+      }
+      setTimeout(tick,2000);
+    }
+  };
+  setTimeout(tick,1500);
 }
 </script>
 </body>
@@ -2269,16 +2364,27 @@ export function createDashboardServer(app: AppContext): http.Server {
             return;
           }
           try {
-            launchLocalAppStartCommand(cmd, resolveLocalAppCwd(app));
-            const healthy = await waitForLocalAppHealth(app);
-            if (!healthy) {
-              res.writeHead(500, { "Content-Type": "application/json" });
-              res.end(JSON.stringify({ ok: false, error: "App did not become healthy within the timeout" }));
-              return;
-            }
+            setLocalAppStartingState(payload.name, app?.startupTimeoutMs ?? 30000);
+            launchLocalAppStartCommand(cmd, resolveLocalAppCwd(app), app);
+            const startupTimeoutMs = app?.startupTimeoutMs ?? 30000;
+            void waitForLocalAppHealth(app, fetch, startupTimeoutMs).then((healthy) => {
+              if (healthy) {
+                clearLocalAppStartingState(payload.name);
+                console.log(`[LocalApp] ${payload.name} reached healthy state after start`);
+              } else {
+                console.log(
+                  `[LocalApp] ${payload.name} start initiated; health not confirmed within ${startupTimeoutMs}ms`,
+                );
+                clearLocalAppStartingState(payload.name);
+              }
+            }).catch((err) => {
+              console.error(`[LocalApp] ${payload.name} start health check failed:`, String(err));
+              clearLocalAppStartingState(payload.name);
+            });
             res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: true, message: "Started and healthy" }));
+            res.end(JSON.stringify({ ok: true, message: "Start initiated" }));
           } catch (e) {
+            clearLocalAppStartingState(payload.name);
             throw new Error(`Failed to start ${payload.name}: ${String(e)}`);
           }
           return;
@@ -2293,6 +2399,7 @@ export function createDashboardServer(app: AppContext): http.Server {
             return;
           }
           try {
+            clearLocalAppStartingState(payload.name);
             execFileAsync("/bin/bash", ["-c", cmd], { cwd: app ? resolveLocalAppCwd(app) : os.homedir(), maxBuffer: 10 * 1024 * 1024 })
               .catch(e => console.error(`[LocalApp] ${payload.name} stop error:`, e.message));
             res.writeHead(200, { "Content-Type": "application/json" });

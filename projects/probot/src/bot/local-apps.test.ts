@@ -117,6 +117,7 @@ test("buildLocalAppsStatus fails safely on missing health check", async () => {
         stop: null,
         description: "",
         repoPath: null,
+        startupTimeoutMs: null,
         databaseEngine: null,
         databaseServiceName: null,
         databasePort: null,
@@ -133,6 +134,43 @@ test("buildLocalAppsStatus fails safely on missing health check", async () => {
 
   assert.equal(fetchCalls.length, 0);
   assert.equal(result.apps[0]?.status, "stopped");
+});
+
+test("buildLocalAppsStatus keeps an app starting during its startup window", async () => {
+  const result = await buildLocalAppsStatus(
+    [
+      {
+        name: "Booting",
+        port: 3009,
+        url: "http://localhost:3009",
+        check: "http://localhost:3009/health",
+        start: "npm run dev",
+        stop: null,
+        description: "",
+        repoPath: null,
+        startupTimeoutMs: 120000,
+        databaseEngine: null,
+        databaseServiceName: null,
+        databasePort: null,
+        databaseName: null,
+        databaseUser: null,
+        notes: null,
+      },
+    ],
+    async () => {
+      throw new Error("not ready");
+    },
+    {
+      startingApps: {
+        Booting: {
+          startedAt: Date.now(),
+          startupTimeoutMs: 120000,
+        },
+      },
+    },
+  );
+
+  assert.equal(result.apps[0]?.status, "starting");
 });
 
 test("waitForLocalAppHealth resolves when health turns ok", async () => {

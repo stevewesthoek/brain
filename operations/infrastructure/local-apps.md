@@ -31,6 +31,7 @@ Each entry in `local-apps.json` is a JSON object with these fields:
 | `healthCheck` | string | yes | URL ProBot pings to determine running/stopped |
 | `startCommand` | string | yes | Shell command to start the app |
 | `stopCommand` | string \| null | no | Shell command to stop the app, if one exists |
+| `startupTimeoutMs` | number \| null | no | Maximum time ProBot waits for the app to become healthy after start |
 | `description` | string | yes | One-line description shown in the dashboard card |
 | `databaseEngine` | string \| null | no | Database engine used locally, if any |
 | `databaseServiceName` | string \| null | no | Database container or service name, if any |
@@ -56,7 +57,7 @@ New code should prefer the expanded fields. Legacy readers may keep using the ol
 | Name | App Port | DB Port | Description | Start Command |
 |------|----------|---------|-------------|---------------|
 | ProBot | 7070 | - | ProBot dashboard and automation daemon | `cd ~/Repos/stevewesthoek/brain/projects/probot && npm start > /tmp/probot.log 2>&1 &` |
-| Says the Bible | 3058 | 5441 | Says the Bible main app and admin panel | `cd ~/Repos/prochattools/web/says-the-bible && PORT=3058 npm run dev` |
+| Says the Bible | 3058 | 5441 | Says the Bible main app and admin panel | `./node_modules/.bin/next dev -p $PORT` |
 | Firecrawl | 3055 | 5443 | Web scraping and research API | `cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d` |
 | ProChat | 3056 | 5434 | ProChat marketing and conversion site | `cd ~/Repos/prochattools/web/prochat && npm run dev` |
 | JPV Bootcamp | 3000 | 5444 | JPV Bootcamp landing page, Stripe provisioning, and WordPress sync | `cd ~/Repos/prochattools/clients/jc-citadel/jpv-bootcamp && npm run dev` |
@@ -107,7 +108,11 @@ File path hardcoded in `projects/probot/src/bot/dashboard.ts`:
 ~/Repos/stevewesthoek/brain/operations/infrastructure/local-apps.json
 ```
 
-For each app, ProBot makes a GET request to `healthCheck` with a 1-second timeout. If it gets a 2xx response the app is **running**; otherwise **stopped**.
+For each app, ProBot makes a GET request to `healthCheck` with a 5-second timeout. If it gets a 2xx response the app is **running**; otherwise **stopped**.
+ProBot starts apps from their `repoPath` and injects `PORT` from the registry when a port is defined, so commands can stay repo-relative and avoid stale hardcoded paths.
+For local dashboard launches, prefer direct app binaries like `./node_modules/.bin/next dev -p $PORT` over `npm run dev` when the package has a slow `predev` chain.
+Apps may also set `startupTimeoutMs` in `local-apps.json` when their boot path is slower than the default 30 seconds.
+The dashboard start button is non-blocking: it flips the card into a `STARTING` state immediately and polls until the app becomes healthy or the startup timeout elapses.
 
 ## Editing rules
 

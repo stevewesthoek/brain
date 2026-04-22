@@ -29,8 +29,8 @@
     "appUrl": "http://localhost:3058/admin",
     "check": "http://localhost:3058/api/health",
     "healthCheck": "http://localhost:3058/api/health",
-    "start": "cd ~/Repos/prochattools/web/says-the-bible && PORT=3058 npm run dev",
-    "startCommand": "cd ~/Repos/prochattools/web/says-the-bible && PORT=3058 npm run dev",
+    "start": "./node_modules/.bin/next dev -p $PORT",
+    "startCommand": "./node_modules/.bin/next dev -p $PORT",
     "stop": null,
     "stopCommand": null,
     "description": "Says the Bible main app and admin panel",
@@ -39,7 +39,8 @@
     "databasePort": 5441,
     "databaseName": "saysthebible",
     "databaseUser": "saysthebible",
-    "notes": "Local dev runs on reserved port 3058 and opens directly to /admin. The production Dockerfile still uses PORT=3000."
+    "startupTimeoutMs": 120000,
+    "notes": "ProBot runs this from repoPath and injects PORT=3058 at launch. Local dev opens directly to /admin. This avoids npm predev bootstrap work on every dashboard start. The production Dockerfile still uses PORT=3000."
   },
   {
     "name": "Firecrawl",

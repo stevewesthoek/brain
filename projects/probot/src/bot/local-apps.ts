@@ -12,12 +12,23 @@ export type NormalizedLocalApp = {
   stop: string | null;
   description: string;
   repoPath: string | null;
+  startupTimeoutMs: number | null;
   databaseEngine: string | null;
   databaseServiceName: string | null;
   databasePort: number | null;
   databaseName: string | null;
   databaseUser: string | null;
   notes: string | null;
+};
+
+export type LocalAppStartState = {
+  startedAt: number;
+  startupTimeoutMs: number | null;
+};
+
+export type LocalAppsStatusOptions = {
+  startingApps?: Map<string, LocalAppStartState> | Record<string, LocalAppStartState>;
+  now?: number;
 };
 
 type RawLocalApp = {
@@ -32,6 +43,7 @@ type RawLocalApp = {
   startCommand?: unknown;
   stop?: unknown;
   stopCommand?: unknown;
+  startupTimeoutMs?: unknown;
   description?: unknown;
   repoPath?: unknown;
   databaseEngine?: unknown;
@@ -51,6 +63,7 @@ const LOCAL_APPS_CONFIG_PATH = path.join(
   "infrastructure",
   "local-apps.json",
 );
+const LOCAL_APP_HEALTH_REQUEST_TIMEOUT_MS = 5_000;
 
 function readString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
@@ -77,6 +90,7 @@ export function normalizeLocalApp(raw: RawLocalApp): NormalizedLocalApp | null {
     stop: readStringOrNull(raw.stop ?? raw.stopCommand),
     description: readString(raw.description, ""),
     repoPath: readStringOrNull(raw.repoPath),
+    startupTimeoutMs: readNumberOrNull(raw.startupTimeoutMs),
     databaseEngine: readStringOrNull(raw.databaseEngine),
     databaseServiceName: readStringOrNull(raw.databaseServiceName),
     databasePort: readNumberOrNull(raw.databasePort),
@@ -111,11 +125,29 @@ export function classifyLocalAppStartCommand(command: string): "foreground" | "b
   return "foreground";
 }
 
-export function launchLocalAppStartCommand(command: string, cwd: string): void {
+export function launchLocalAppStartCommand(
+  command: string,
+  cwd: string,
+  app: NormalizedLocalApp | null = null,
+): void {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+  };
+
+  // Let app entries declare a port once in the registry and keep the shell
+  // command itself generic. This avoids stale hard-coded PORT values.
+  const inferredPort =
+    app?.port ??
+    Number.parseInt(command.match(/(?:^|\s)PORT=(\d+)(?:\s|$)/)?.[1] ?? "", 10);
+  if (!Number.isNaN(inferredPort) && inferredPort > 0) {
+    env.PORT = String(inferredPort);
+  }
+
   const child = spawn("/bin/bash", ["-lc", command], {
     cwd,
     detached: true,
     stdio: "ignore",
+    env,
   });
   child.unref();
 }
@@ -127,30 +159,48 @@ export function resolveLocalAppCwd(app: NormalizedLocalApp | null): string {
 export async function buildLocalAppsStatus(
   apps: NormalizedLocalApp[],
   fetchImpl: typeof fetch = fetch,
+  options: LocalAppsStatusOptions = {},
 ): Promise<{ apps: Array<{ name: string; port: number | null; url: string; description: string; status: string; lastSeen: null; lastDuration: null }> }> {
-  const statusApps: Array<{ name: string; port: number | null; url: string; description: string; status: string; lastSeen: null; lastDuration: null }> = [];
-  for (const app of apps) {
-    let status = "stopped";
-    try {
+  const startingApps =
+    options.startingApps instanceof Map
+      ? options.startingApps
+      : new Map(Object.entries(options.startingApps ?? {}));
+  const now = options.now ?? Date.now();
+  const statusApps = await Promise.all(
+    apps.map(async (app) => {
+      const startupState = startingApps.get(app.name) ?? null;
+      const startupTimeoutMs = startupState?.startupTimeoutMs ?? null;
+      const startupDeadline = startupState ? startupState.startedAt + (startupTimeoutMs ?? 30_000) : null;
+      const withinStartupWindow = startupDeadline !== null ? now < startupDeadline : false;
+
+      let status = "stopped";
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 1000);
-      if (!app.check) throw new Error(`Missing health check for ${app.name}`);
-      const response = await fetchImpl(app.check, { signal: controller.signal });
-      clearTimeout(timeout);
-      if (response.ok) status = "running";
-    } catch {
-      status = "stopped";
-    }
-    statusApps.push({
-      name: app.name,
-      port: app.port,
-      url: app.url,
-      description: app.description,
-      status,
-      lastSeen: null,
-      lastDuration: null,
-    });
-  }
+      const timeout = setTimeout(() => controller.abort(), LOCAL_APP_HEALTH_REQUEST_TIMEOUT_MS);
+      try {
+        if (!app.check) throw new Error(`Missing health check for ${app.name}`);
+        const response = await fetchImpl(app.check, { signal: controller.signal });
+        if (response.ok) {
+          status = "running";
+        } else if (withinStartupWindow) {
+          status = "starting";
+        }
+      } catch {
+        status = withinStartupWindow ? "starting" : "stopped";
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      return {
+        name: app.name,
+        port: app.port,
+        url: app.url,
+        description: app.description,
+        status,
+        lastSeen: null,
+        lastDuration: null,
+      };
+    }),
+  );
   return { apps: statusApps };
 }
 
@@ -162,11 +212,15 @@ export async function waitForLocalAppHealth(
   if (!app?.check) return false;
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), LOCAL_APP_HEALTH_REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetchImpl(app.check, { signal: AbortSignal.timeout(1000) });
+      const response = await fetchImpl(app.check, { signal: controller.signal });
       if (response.ok) return true;
     } catch {
       // keep polling until timeout
+    } finally {
+      clearTimeout(timeout);
     }
     await new Promise(resolve => setTimeout(resolve, 1000));
   }

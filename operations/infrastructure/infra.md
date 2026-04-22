@@ -16,6 +16,8 @@ Related local control-plane inventory:
 - `operations/infrastructure/local-apps.json` — **canonical** local runtime registry for app ports, database ports, and health checks on the `Office` Mac
 - `operations/infrastructure/local-apps.md` — human-readable runbook and inventory mirror for the canonical registry
 - The registry is in a compatibility window: expanded fields are preferred, but legacy aliases remain in the JSON so older consumers keep working.
+- ProBot starts apps from `repoPath` and injects `PORT` from the registry when available, so local app commands can stay repo-relative and avoid stale hardcoded paths.
+- For apps with expensive `predev` work, the local registry should point ProBot at a direct dev binary such as `./node_modules/.bin/next dev -p $PORT` rather than `npm run dev`.
 
 ## Local Applications (`Office` Mac)
 
@@ -24,7 +26,7 @@ All locally-running apps on the `Office` Mac are indexed in:
 - **`operations/infrastructure/local-apps.md`** — human-readable runbook with schema docs, reserved port policy, and inventory table
 
 The registry is dual-compatible during the migration window:
-- new consumers should read `appPort`, `appUrl`, `healthCheck`, `startCommand`, and `stopCommand`
+- new consumers should read `appPort`, `appUrl`, `healthCheck`, `startCommand`, `stopCommand`, and `startupTimeoutMs`
 - legacy consumers may continue to use `port`, `url`, `check`, `start`, and `stop`
 - both sets of fields are kept aligned in `local-apps.json`
 
