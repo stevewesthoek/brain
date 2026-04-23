@@ -320,17 +320,17 @@ ory list identities --project <project-id>
 
 Authentication platform for multiple applications (FALLBACK/legacy). Dashboard: https://dashboard.clerk.com
 
-**Status:** Active but migrating to Ory
+**Status:** Legacy only; shared auth now runs through ProChat UI + Ory backend
 
 | Credential | Storage | Purpose | Rotation | Regenerate |
 |------------|---------|---------|----------|-----------|
-| `CLERK_SECRET_KEY` | `~/.config/clerk/.env` | Live secret key for prochat.tools app — API access, user management, webhooks | No automatic expiry; rotate if compromised | [Dashboard → API Keys](https://dashboard.clerk.com/apps) → Secret Key → Regenerate |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `~/.config/clerk/.env` | Live publishable key for prochat.tools app — frontend auth | No automatic expiry; rotate if compromised | [Dashboard → API Keys](https://dashboard.clerk.com/apps) → Publishable Key → Regenerate |
+| `CLERK_SECRET_KEY` | `~/.config/clerk/.env` | Legacy secret key for apps not yet migrated | No automatic expiry; rotate if compromised | [Dashboard → API Keys](https://dashboard.clerk.com/apps) → Secret Key → Regenerate |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `~/.config/clerk/.env` | Legacy publishable key for apps not yet migrated | No automatic expiry; rotate if compromised | [Dashboard → API Keys](https://dashboard.clerk.com/apps) → Publishable Key → Regenerate |
 
 **Account Details:**
 - CLI installed at: `~/bin/clerk`
 - Version: 0.0.2-canary (2026-04-12)
-- Primary app: prochat.tools (live keys configured)
+- Primary app: legacy only; ProChat now fronts Ory for shared auth
 - Credentials file: `~/.config/clerk/.env` (gitignored, mode 600)
 - Runbook: `operations/runbooks/clerk-cli.md`
 - Skill: `brain/ai/skills/custom/clerk/SKILL.md`

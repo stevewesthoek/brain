@@ -2,7 +2,8 @@
 
 **Status:** In Progress  
 **Date Started:** 2026-04-12  
-**Primary Auth:** Ory (auth.prochat.tools)  
+**Primary Auth UI:** ProChat (`https://prochat.tools`)  
+**Auth Backend:** Ory (`https://auth.prochat.tools`)  
 **Fallback Auth:** Clerk (legacy, migrating)
 
 ---
@@ -14,9 +15,9 @@ Internet
   ↓
 Cloudflare (wildcard *.prochat.tools)
   ↓
-Dokploy Tunnel (auth.prochat.tools)
+ProChat shared auth UI (`prochat.tools/sign-in` and `/sign-up`)
   ↓
-Ory Container (Docker)
+Ory Kratos public/admin endpoints (`auth.prochat.tools` / `auth-admin.prochat.tools`)
   ↓
 Supabase PostgreSQL (ory_prod database)
 ```
@@ -36,7 +37,7 @@ Supabase PostgreSQL (ory_prod database)
 - [ ] Update credentials index
 - [ ] Create auto-provisioning script for new domains
 - [ ] Test user creation/management via CLI
-- [ ] Document Clerk → Ory migration strategy
+- [ ] Document Clerk → ProChat UI → Ory migration strategy
 
 ## Database Configuration
 
