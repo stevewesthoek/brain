@@ -156,6 +156,22 @@ export function resolveLocalAppCwd(app: NormalizedLocalApp | null): string {
   return app?.repoPath ?? os.homedir();
 }
 
+export function resolveLocalAppLifecycleCommand(
+  app: NormalizedLocalApp | null,
+  kind: "start" | "stop",
+): string | null {
+  const explicitCommand = kind === "start" ? app?.start : app?.stop;
+  if (explicitCommand) return explicitCommand;
+
+  if (!app?.repoPath) return null;
+
+  const scriptName = kind === "start" ? "start-local.sh" : "stop-local.sh";
+  const scriptPath = path.join(app.repoPath, "scripts", "dev", scriptName);
+  if (!fs.existsSync(scriptPath)) return null;
+
+  return `bash scripts/dev/${scriptName}`;
+}
+
 export async function buildLocalAppsStatus(
   apps: NormalizedLocalApp[],
   fetchImpl: typeof fetch = fetch,

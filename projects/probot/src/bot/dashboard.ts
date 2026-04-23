@@ -17,6 +17,7 @@ import {
   launchLocalAppStartCommand,
   loadLocalApps,
   resolveLocalAppCwd,
+  resolveLocalAppLifecycleCommand,
   waitForLocalAppHealth,
 } from "./local-apps.js";
 
@@ -1301,11 +1302,11 @@ function getLocalAppPort(name: string): number | null {
 }
 
 function getLocalAppStartCommand(name: string): string | null {
-  return findLocalApp(name)?.start ?? null;
+  return resolveLocalAppLifecycleCommand(findLocalApp(name), "start");
 }
 
 function getLocalAppStopCommand(name: string): string | null {
-  return findLocalApp(name)?.stop ?? null;
+  return resolveLocalAppLifecycleCommand(findLocalApp(name), "stop");
 }
 
 async function getLocalAppsStatus() {
@@ -2354,10 +2355,10 @@ async function localAppStop(btn,name){
     const r=await fetch('/api/local-apps/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
     btn.textContent=d.message||'Stopped';
+    pollLocalAppUntilStopped(name);
     setTimeout(()=>{
       btn.disabled=false;
       btn.textContent=o;
-      clearLocalAppTransient(name);
       syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
     },1500);
   }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
@@ -2409,12 +2410,40 @@ function pollLocalAppUntilRunning(name){
       if(!r.ok)throw new Error('HTTP '+r.status);
       const data=await r.json();
       const app=(data.apps||[]).find(a=>a.name===name);
-      if(app){
-        const card=findLocalAppCard(name);
-        if(card) card.outerHTML=renderLocalAppCard(app);
-      }
       if(app&&app.status==='running'){
         clearLocalAppTransient(name);
+        await syncLocalAppCard(name);
+        return;
+      }
+      if(Date.now()-startedAt>=maxWaitMs){
+        clearLocalAppTransient(name);
+        await syncLocalAppCard(name);
+        return;
+      }
+      setTimeout(tick,2000);
+    }catch(e){
+      if(Date.now()-startedAt>=maxWaitMs){
+        clearLocalAppTransient(name);
+        await syncLocalAppCard(name);
+        return;
+      }
+      setTimeout(tick,2000);
+    }
+  };
+  setTimeout(tick,1500);
+}
+function pollLocalAppUntilStopped(name){
+  const startedAt=Date.now();
+  const maxWaitMs=120000;
+  const tick=async()=>{
+    try{
+      const r=await fetch('/api/local-apps');
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const data=await r.json();
+      const app=(data.apps||[]).find(a=>a.name===name);
+      if(!app||app.status==='stopped'){
+        clearLocalAppTransient(name);
+        await syncLocalAppCard(name);
         return;
       }
       if(Date.now()-startedAt>=maxWaitMs){

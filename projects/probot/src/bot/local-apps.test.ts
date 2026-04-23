@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildLocalAppsStatus, classifyLocalAppStartCommand, normalizeLocalApp, waitForLocalAppHealth } from "./local-apps.js";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { buildLocalAppsStatus, classifyLocalAppStartCommand, normalizeLocalApp, resolveLocalAppLifecycleCommand, waitForLocalAppHealth } from "./local-apps.js";
 
 test("normalize legacy-only entry", () => {
   const app = normalizeLocalApp({
@@ -207,4 +210,23 @@ test("classify current start command shapes", () => {
   assert.equal(classifyLocalAppStartCommand("cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d"), "background");
   assert.equal(classifyLocalAppStartCommand("bash ~/Repos/stevewesthoek/buildflow/start-all.sh"), "foreground");
   assert.equal(classifyLocalAppStartCommand("cd ~/Repos/prochattools/saas/xgrow && npm run dev > /tmp/xgrow.log 2>&1 &"), "background");
+});
+
+test("resolve lifecycle commands from repo-local helper scripts", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "probot-local-app-"));
+  fs.mkdirSync(path.join(tmp, "scripts", "dev"), { recursive: true });
+  fs.writeFileSync(path.join(tmp, "scripts", "dev", "start-local.sh"), "#!/bin/bash\n");
+  fs.writeFileSync(path.join(tmp, "scripts", "dev", "stop-local.sh"), "#!/bin/bash\n");
+
+  const app = normalizeLocalApp({
+    name: "Repo Local",
+    repoPath: tmp,
+    appPort: 3058,
+    appUrl: "http://localhost:3058",
+    healthCheck: "http://localhost:3058/health",
+  });
+
+  assert.ok(app);
+  assert.equal(resolveLocalAppLifecycleCommand(app, "start"), "bash scripts/dev/start-local.sh");
+  assert.equal(resolveLocalAppLifecycleCommand(app, "stop"), "bash scripts/dev/stop-local.sh");
 });
