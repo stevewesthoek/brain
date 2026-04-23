@@ -1449,6 +1449,8 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 /* ── unified badge (basis: repo card style) ── */
 .badge{font-size:10px;font-weight:500;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;display:inline-block}
 .b-fresh{background:var(--green-d);color:var(--green);border:1px solid rgba(52,211,153,.2)}
+.b-soon{background:var(--orange-d);color:var(--orange);border:1px solid rgba(249,115,22,.2)}
+.b-warn{background:var(--yellow-d);color:var(--yellow);border:1px solid rgba(250,204,21,.2)}
 .b-stale{background:var(--amber-d);color:var(--amber);border:1px solid rgba(251,191,36,.2)}
 .b-old{background:var(--red-d);color:var(--red);border:1px solid rgba(248,113,113,.2)}
 .b-none{background:var(--gray-d);color:var(--gray);border:1px solid rgba(75,85,99,.2)}
@@ -1666,6 +1668,13 @@ function severityColor(p){
   if(p<=50)return'var(--yellow)';
   if(p<=75)return'var(--orange)';
   return'var(--red)';
+}
+function domainExpiryTier(days){
+  if(days===null)return'unknown';
+  if(days<=30)return'critical';
+  if(days<=60)return'renewing';
+  if(days<=90)return'watching';
+  return'green';
 }
 function fmtCountdown(iso){
   if(!iso)return'No data';
@@ -1950,9 +1959,9 @@ function renderUmami(data){
 }
 function expiryStyle(days){
   if(days===null)return{color:'var(--gray)',border:'#374151'};
-  if(days<30)return{color:'var(--red)',border:'var(--red)'};
-  if(days<90)return{color:'var(--amber)',border:'var(--amber)'};
-  if(days<180)return{color:'#86efac',border:'#86efac'};
+  if(days<=30)return{color:'var(--red)',border:'var(--red)'};
+  if(days<=60)return{color:'var(--orange)',border:'var(--orange)'};
+  if(days<=90)return{color:'var(--yellow)',border:'var(--yellow)'};
   return{color:'var(--green)',border:'var(--green)'};
 }
 function domainCard(d){
@@ -2095,11 +2104,13 @@ function renderDomains(data){
   if(!data)return'<div class="nr-err">Cloudflare not configured.</div>';
   if(data.error&&!data.domains.length)return'<div class="nr-err">Domains: '+esc(data.error)+'</div>';
   if(!data.domains.length)return'<div class="empty">No domains found.</div>';
-  const urgent=data.domains.filter(d=>d.daysUntilExpiry!==null&&d.daysUntilExpiry<30).length;
-  const warning=data.domains.filter(d=>d.daysUntilExpiry!==null&&d.daysUntilExpiry>=30&&d.daysUntilExpiry<90).length;
+  const urgent=data.domains.filter(d=>domainExpiryTier(d.daysUntilExpiry)==='critical').length;
+  const warning=data.domains.filter(d=>domainExpiryTier(d.daysUntilExpiry)==='renewing').length;
+  const watch=data.domains.filter(d=>domainExpiryTier(d.daysUntilExpiry)==='watching').length;
   let hd='<div class="sec-hd"><span class="sec-title">Domains</span><span class="sec-count">'+data.domains.length+'</span>';
   if(urgent)hd+='<span class="badge b-old" style="margin-left:8px">'+urgent+' critical</span>';
-  if(warning)hd+='<span class="badge b-stale" style="margin-left:4px">'+warning+' renewing soon</span>';
+  if(warning)hd+='<span class="badge b-soon" style="margin-left:4px">'+warning+' soon</span>';
+  if(watch)hd+='<span class="badge b-warn" style="margin-left:4px">'+watch+' approaching</span>';
   if(data.cachedAt)hd+='<span style="font-size:10px;color:var(--subtle);margin-left:auto">cached '+age(data.cachedAt)+'</span>';
   hd+='</div>';
   return hd+'<div class="dom-grid fade">'+data.domains.map(domainCard).join('')+'</div>';
