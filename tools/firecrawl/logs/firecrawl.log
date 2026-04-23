@@ -52,3 +52,31 @@
 [2026-04-15 22:46:26] REQUEST | URL: https://www.reddit.com/r/ObsidianMD/wiki/index | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
 [2026-04-15 22:46:26] REQUEST | URL: https://nicolevanderhoeven.com/blog/20230116-obsidian-vault-structures/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
 [2026-04-15 22:46:27] REQUEST | URL: https://nicolevanderhoeven.com/blog/20230116-obsidian-vault-structures/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-04-22 23:34:17] Idle timeout reached after 15 minutes - shutting down
+[2026-04-22 23:34:17] Idle timeout reached after 15 minutes - shutting down
+[2026-04-22 23:34:17] Idle timeout reached after 15 minutes - shutting down
+[2026-04-22 23:34:17] Idle timeout reached after 15 minutes - shutting down
+[2026-04-22 23:34:17] Idle timeout reached after 15 minutes - shutting down
+[2026-04-22 23:34:18] REQUEST | URL: https://help.pinterest.com/en/business/article/pinterest-product-specs | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: failed_idle_shutdown
+[2026-04-22 23:34:18] REQUEST | URL: https://www.facebook.com/business/ads/photo-ad-format | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: failed_idle_shutdown
+[2026-04-22 23:34:18] REQUEST | URL: https://help.shopify.com/en/manual/online-sales-channels/marketplaces/google/getting-setup/syncing-products | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: failed_idle_shutdown
+[2026-04-22 23:34:18] REQUEST | URL: https://blog.youtube/news-and-events/thumbnails-your-videos-billboard-on | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: failed_idle_shutdown
+[2026-04-22 23:34:18] REQUEST | URL: https://help.shopify.com/en/manual/online-sales-channels/shop/manage/shop-store/customize/product-page | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: failed_idle_shutdown
+[2026-04-22 23:34:47] Health check: FAILED
+[2026-04-22 23:36:01] Health check: FAILED
+[2026-04-22 23:36:12] REQUEST | URL: https://blog.youtube/news-and-events/thumbnails-your-videos-billboard-on | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: failed_health_check
+[2026-04-22 23:36:40] Health check: FAILED
+[2026-04-22 23:38:02] REQUEST | URL: https://help.youtube.com/youtube/answer/72431 | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: executing
+[2026-04-22 23:38:03] REQUEST | URL: https://help.youtube.com/youtube/answer/72431 | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: success
+[2026-04-22 23:38:56] REQUEST | URL: https://blog.youtube/news-and-events/thumbnails-your-videos-billboard-on | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: executing
+[2026-04-22 23:38:56] REQUEST | URL: https://www.facebook.com/business/ads/photo-ad-format | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: executing
+[2026-04-22 23:38:56] REQUEST | URL: https://business.pinterest.com/creative-best-practices/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: executing
+[2026-04-22 23:38:56] REQUEST | URL: https://help.shopify.com/en/manual/products/product-media/product-media-types | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: executing
+[2026-04-22 23:38:57] REQUEST | URL: https://blog.youtube/news-and-events/thumbnails-your-videos-billboard-on | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: success
+[2026-04-22 23:38:57] REQUEST | URL: https://help.shopify.com/en/manual/products/product-media/product-media-types | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: success
+[2026-04-22 23:38:59] REQUEST | URL: https://www.facebook.com/business/ads/photo-ad-format | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: success
+[2026-04-22 23:39:01] REQUEST | URL: https://business.pinterest.com/creative-best-practices/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: success
+[2026-04-22 23:39:07] REQUEST | URL: https://business.pinterest.com/en-gb/creative-best-practices/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: executing
+[2026-04-22 23:39:11] REQUEST | URL: https://business.pinterest.com/en-gb/creative-best-practices/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: success
+[2026-04-22 23:39:20] REQUEST | URL: https://help.pinterest.com/en/business/article/pinterest-product-specs | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: executing
+[2026-04-22 23:39:22] REQUEST | URL: https://help.pinterest.com/en/business/article/pinterest-product-specs | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 120 | PROXY: none | STATUS: success
