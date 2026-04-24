@@ -11,6 +11,12 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 
 ## Entries
 
+- Date: 2026-04-24
+- Decision: Treat the Codex warning "Some enabled skills were not included in the model-visible skills list for this session" as a signal that the task likely needs `investigate` when the work is root-cause debugging or process tracing.
+- Context: The warning appeared in a debugging session that was tracing an open-handle path, lingering Prisma clients, timers, and CLI exit behavior. The task pattern matched systematic investigation rather than a generic coding or UI skill.
+- Impact: When a similar warning appears during debugging-heavy work, explicitly naming `investigate` should help load the right skill context and reduce ambiguity. This is an inference for interpretation only, not a global routing rule.
+- Rollback: Remove this entry if the warning is later shown to map to a different skill or if the interpretation stops being useful.
+
 - Date: 2026-04-15
 - Decision: Pivot Firecrawl from Dokploy VPS deployment to local on-demand Docker Compose with auto-lifecycle management.
 - Context: VPS-hosted Firecrawl (firecrawl.prochat.tools on Dokploy) consumed fixed infrastructure resources even during idle periods. Local on-demand setup reduces resource consumption by starting Firecrawl only when needed and auto-shutting down after 15 minutes of inactivity.
