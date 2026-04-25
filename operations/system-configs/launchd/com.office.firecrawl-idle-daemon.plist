@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.office.firecrawl-idle-daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/Office/Repos/stevewesthoek/brain/tools/firecrawl/firecrawl-idle-daemon.sh</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/Office/Repos/stevewesthoek/brain/tools/firecrawl/logs/daemon-stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/Office/Repos/stevewesthoek/brain/tools/firecrawl/logs/daemon-stderr.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/Office/Repos/stevewesthoek/brain/tools/firecrawl</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/Office</string>
+    </dict>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>
