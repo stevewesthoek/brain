@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Firecrawl Local Wrapper - Auto-shutdown after 15min idle
+# Firecrawl Local Wrapper - Auto-startup and Auto-shutdown after 15min idle
 # Routes all requests through localhost:3055
+# Auto-starts OrbStack and Firecrawl if not running
 # All requests logged and parameter-validated
 
 set -euo pipefail
@@ -11,6 +12,8 @@ LOG_FILE="${SCRIPT_DIR}/logs/firecrawl.log"
 LASTACCESS_FILE="${SCRIPT_DIR}/.lastaccess"
 
 FIRECRAWL_URL="http://localhost:3055"
+STARTUP_TIMEOUT=60  # seconds to wait for Firecrawl to start
+STARTUP_CHECK_INTERVAL=2  # check every 2 seconds
 
 # Hard caps
 MAX_PAGES_HARD_CAP=50
@@ -43,6 +46,65 @@ update_last_access() {
 
 is_running() {
     curl -sf "${FIRECRAWL_URL}/v1/crawl" -X POST -H 'Content-Type: application/json' -d '{"url":"http://localhost"}' > /dev/null 2>&1 || curl -sf "http://localhost:3055" > /dev/null 2>&1
+}
+
+ensure_orbstack_running() {
+    log "Checking OrbStack status..."
+
+    # Check if OrbStack is running (via orb CLI)
+    if ! command -v orb &> /dev/null; then
+        log "WARNING: OrbStack CLI (orb) not found in PATH"
+        return 0  # Continue anyway — Docker might still work
+    fi
+
+    if ! orb status > /dev/null 2>&1; then
+        log "OrbStack is not running, starting it..."
+        orb start > /dev/null 2>&1 || {
+            log "WARNING: Could not start OrbStack via CLI, trying manual start..."
+            open -a OrbStack > /dev/null 2>&1 || log "WARNING: Could not start OrbStack application"
+        }
+        sleep 5  # Give OrbStack time to start
+    else
+        log "OrbStack is already running"
+    fi
+}
+
+ensure_firecrawl_running() {
+    log "Ensuring Firecrawl is running..."
+
+    # Quick check first
+    if is_running; then
+        log "Firecrawl is already running"
+        return 0
+    fi
+
+    log "Firecrawl not responding, starting docker-compose..."
+    cd "$SCRIPT_DIR"
+
+    # Try to start containers
+    if ! docker compose up -d > /dev/null 2>&1; then
+        log "ERROR: Failed to start docker-compose"
+        return 1
+    fi
+
+    log "Docker Compose started, waiting for Firecrawl to be ready..."
+
+    # Wait for Firecrawl to respond
+    local elapsed=0
+    while [ $elapsed -lt $STARTUP_TIMEOUT ]; do
+        if is_running; then
+            log "✅ Firecrawl is now running"
+            return 0
+        fi
+
+        sleep $STARTUP_CHECK_INTERVAL
+        elapsed=$((elapsed + STARTUP_CHECK_INTERVAL))
+        echo -n "." >&2
+    done
+
+    log "ERROR: Firecrawl did not start within ${STARTUP_TIMEOUT}s"
+    echo "" >&2
+    return 1
 }
 
 check_idle_shutdown() {
@@ -95,11 +157,13 @@ execute_request() {
         return 1
     fi
 
-    if ! is_running; then
-        log_request "$url" "$mode" "$max_pages" "$max_depth" "$timeout" "$proxy" "failed_health_check"
-        echo "ERROR: Firecrawl is not responding" >&2
+    # Auto-startup: ensure OrbStack and Firecrawl are running
+    ensure_orbstack_running || log "WARNING: Could not ensure OrbStack is running"
+    ensure_firecrawl_running || {
+        log_request "$url" "$mode" "$max_pages" "$max_depth" "$timeout" "$proxy" "failed_startup"
+        echo "ERROR: Failed to start Firecrawl. Check logs at: $LOG_FILE" >&2
         return 1
-    fi
+    }
 
     local payload
     case "$mode" in
@@ -138,14 +202,21 @@ main() {
     local cmd="${1:-help}"
     case "$cmd" in
         health)
-            if is_running && check_idle_shutdown; then
-                echo "✅ Firecrawl healthy"
+            ensure_orbstack_running || log "WARNING: Could not ensure OrbStack is running"
+            ensure_firecrawl_running || {
+                echo "❌ Failed to start Firecrawl"
+                log "Health check: FAILED"
+                return 1
+            }
+
+            if check_idle_shutdown; then
+                echo "✅ Firecrawl healthy and ready"
                 log "Health check: OK"
                 update_last_access
                 return 0
             else
-                echo "❌ Firecrawl not responding or idle shutdown triggered"
-                log "Health check: FAILED"
+                echo "❌ Firecrawl idle shutdown was triggered"
+                log "Health check: FAILED (idle shutdown)"
                 return 1
             fi
             ;;

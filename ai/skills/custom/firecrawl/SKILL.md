@@ -5,15 +5,16 @@ description: "Default tool for ALL web data tasks — searching the internet, sc
 
 # /firecrawl — Local On-Demand Web Scraping API
 
-**Default web research tool for Claude Code, Codex, and Gemini.** Local Docker-based Firecrawl with auto-lifecycle management (starts on-demand, idles down after 15 minutes). All requests routed through wrapper at `brain/tools/firecrawl/firecrawl-wrapper.sh`.
+**Default web research tool for Claude Code, Codex, and Gemini.** Local Docker-based Firecrawl with auto-startup and auto-shutdown lifecycle management. All requests routed through wrapper at `brain/tools/firecrawl/firecrawl-wrapper.sh`.
 
 - **Token efficiency**: 75–90% reduction vs raw HTML (returns clean markdown)
-- **AI-agnostic**: Works with Claude Code, Codex, Gemini Flash (single source of truth)
-- **Auto-managed**: Starts on first request, shuts down after 15-minute idle timeout
+- **AI-agnostic**: Works with Claude Code, Codex, Gemini Flash, and IDE plugins (single source of truth)
+- **Auto-infrastructure**: Auto-starts OrbStack and Docker containers on first use; idles down after 15-minute timeout
+- **Database auto-recovery**: Always checks if database is running; starts if needed (no manual intervention required)
 - **Replaces**: `/browse` (QA tool, retired), `WebFetch` (token-heavy HTML), ad-hoc web searching
 - **Safe defaults**: Hard caps on crawl depth and pages; domain-scoped crawling
 - **Auditable**: All requests logged to `brain/tools/firecrawl/logs/firecrawl.log`
-- **Managed wrapper**: Validates parameters, enforces caps, handles timeouts, manages lifecycle
+- **Background daemon**: Idle-daemon monitors activity and auto-shuts down containers after 15 minutes
 
 ---
 
@@ -176,21 +177,40 @@ Check `"success": true` before proceeding. If false, log the error and retry wit
 
 ## Lifecycle Management
 
-**Automatic startup:** Wrapper detects first request and starts Docker Compose if not running
+**Automatic startup:** 
+- Wrapper checks OrbStack status and starts if needed
+- Detects if Docker containers are down and auto-starts them
+- Waits for Firecrawl API to respond (up to 60s)
+- No manual intervention required
 
-**Automatic shutdown:** After 15 minutes of inactivity, Firecrawl stops automatically to free resources
+**Automatic shutdown:** 
+- Background idle-daemon monitors activity
+- After 15 minutes of no requests, automatically stops containers
+- Runs as launchd service: `com.office.firecrawl-idle-daemon`
 
 **Manual control:**
 ```bash
-# Start Firecrawl manually
-cd brain/tools/firecrawl && docker-compose up -d
+# Check status (all services)
+firecrawl-status
+
+# Start Firecrawl (auto-starts everything if needed)
+firecrawl health
 
 # Stop Firecrawl manually
 cd brain/tools/firecrawl && docker-compose down
 
-# Check current status
-brain/tools/firecrawl/firecrawl-wrapper.sh health
+# Restart idle daemon
+launchctl restart com.office.firecrawl-idle-daemon
+
+# View daemon logs
+tail -f brain/tools/firecrawl/logs/daemon-stdout.log
 ```
+
+**Daemon management:**
+- Installed as: `~/Library/LaunchAgents/com.office.firecrawl-idle-daemon.plist`
+- Auto-loads on Mac startup
+- To disable: `launchctl unload ~/Library/LaunchAgents/com.office.firecrawl-idle-daemon.plist`
+- To enable: `launchctl load ~/Library/LaunchAgents/com.office.firecrawl-idle-daemon.plist`
 
 ---
 
@@ -214,6 +234,49 @@ Configured via `brain/tools/firecrawl/docker-compose.yml`:
 
 ---
 
+## Troubleshooting
+
+**Issue: "Firecrawl is not responding" error**
+
+This is now **impossible** — the wrapper auto-starts everything. But if you still see this:
+- Check OrbStack: `orb status` (start if needed: `orb start`)
+- Check Docker: `docker ps` (verify Docker daemon is running)
+- Check daemon: `launchctl list com.office.firecrawl-idle-daemon`
+- View logs: `firecrawl logs` or `firecrawl-status`
+
+**Issue: Daemon not running**
+
+```bash
+# Check if daemon is loaded
+launchctl list | grep firecrawl-idle-daemon
+
+# Reload daemon
+launchctl unload ~/Library/LaunchAgents/com.office.firecrawl-idle-daemon.plist
+launchctl load ~/Library/LaunchAgents/com.office.firecrawl-idle-daemon.plist
+
+# Check daemon logs
+tail -f brain/tools/firecrawl/logs/daemon-stdout.log
+```
+
+**Issue: Containers not shutting down after 15 minutes**
+
+- Daemon may not be running (see above)
+- Manual shutdown: `cd brain/tools/firecrawl && docker compose down`
+- Restart daemon: `launchctl restart com.office.firecrawl-idle-daemon`
+
+**Issue: OrbStack not starting**
+
+```bash
+# Try CLI start
+orb start
+
+# If that fails, try manual start
+open -a OrbStack
+
+# Check status
+orb status
+```
+
 ## Do's and Don'ts
 
 ### ✅ Do
@@ -223,6 +286,7 @@ Configured via `brain/tools/firecrawl/docker-compose.yml`:
 - Preprocess large results with Gemini Flash before passing to Claude
 - Cache results if doing duplicate research (don't re-fetch the same URL)
 - Check `"success": true` in response before using data
+- Let the wrapper auto-manage startup/shutdown (hands-off operation)
 
 ### ❌ Don't
 
@@ -231,6 +295,7 @@ Configured via `brain/tools/firecrawl/docker-compose.yml`:
 - Repeatedly scrape the same URL (cache it)
 - Use for interactive browser testing (form fills, clicks)
 - Bypass markdown processing (raw JSON is messy)
+- Manually manage containers unnecessarily (let auto-daemon handle it)
 
 ---
 
