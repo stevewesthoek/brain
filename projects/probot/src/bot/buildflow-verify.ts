@@ -256,10 +256,12 @@ async function killPorts(ports: number[]): Promise<BuildflowVerifyStepResult[]> 
   return results;
 }
 
-function launchPersistentProcess(command: string, args: string[], cwd: string, env: NodeJS.ProcessEnv) {
+function launchPersistentProcess(command: string, args: string[], cwd: string, env: NodeJS.ProcessEnv, logPath: string) {
   const stdoutChunks: string[] = [];
   const stderrChunks: string[] = [];
-  const child = spawn(command, args, {
+  const quotedCommand = [command, ...args].map((part) => `'${part.replaceAll("'", "'\"'\"'")}'`).join(" ");
+  const script = `cd '${cwd.replaceAll("'", "'\"'\"'")}' && nohup ${quotedCommand} > '${logPath.replaceAll("'", "'\"'\"'")}' 2>&1 < /dev/null &`;
+  const child = spawn("/bin/bash", ["-lc", script], {
     cwd,
     env,
     shell: false,
@@ -319,8 +321,8 @@ export async function runBuildflowRestartAndVerification(): Promise<BuildflowVer
       ...process.env,
       BUILDFLOW_ACTION_TOKEN: token,
     };
-    const cli = launchPersistentProcess("pnpm", ["--dir", "packages/cli", "dev"], buildflowRoot, startEnv);
-    const web = launchPersistentProcess("pnpm", ["--dir", "apps/web", "dev"], buildflowRoot, startEnv);
+    const cli = launchPersistentProcess("pnpm", ["--dir", "packages/cli", "dev"], buildflowRoot, startEnv, "/tmp/buildflow-cli.log");
+    const web = launchPersistentProcess("pnpm", ["--dir", "apps/web", "dev"], buildflowRoot, startEnv, "/tmp/buildflow-web.log");
 
     const healthTimeoutMs = Math.min(60 * 1000, Math.max(1, deadlineAt - Date.now()));
     const agentHealthy = await ensureHealthy("http://127.0.0.1:3052/health", healthTimeoutMs);

@@ -1650,14 +1650,16 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .local-app-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
 .local-app-status.running{color:var(--green)}
 .local-app-status.starting{color:var(--amber)}
+.local-app-status.restarting{color:var(--amber)}
+.local-app-status.verifying{color:var(--amber)}
 .local-app-status.stopped{color:var(--red)}
 .local-app-actions{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
 .local-app-btn{padding:5px 10px;font-size:10px;background:var(--border);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text);transition:all .15s}
 .local-app-btn:hover{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
 .local-app-btn.danger{color:var(--red);border-color:rgba(248,113,113,.2)}
 .local-app-btn.danger:hover{background:rgba(248,113,113,.1);border-color:var(--red)}
-.local-app-btn.success{color:#16a34a;border-color:rgba(22,163,74,.25)}
-.local-app-btn.success:hover{background:rgba(22,163,74,.08);border-color:#16a34a}
+.local-app-btn.success{color:var(--green);border-color:rgba(52,211,153,.25)}
+.local-app-btn.success:hover{background:var(--green-d);border-color:var(--green)}
 .local-app-btn.warn{color:#dc2626;border-color:rgba(220,38,38,.25)}
 .local-app-btn.warn:hover{background:rgba(220,38,38,.08);border-color:#dc2626}
 .buildflow-verify-panel{margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:rgba(255,255,255,.02);font-size:10px}
@@ -2215,17 +2217,21 @@ function renderCloudflareTunnels(data){
 }
 function renderLocalAppCard(app){
   const transient=window.__localAppTransient?.[app.name] || null;
-  const verify=app.name==='BuildFlow' ? (window.__buildflowVerify?.result || app.buildflowVerify || null) : null;
-  const verifyRunning=app.name==='BuildFlow' ? Boolean(window.__buildflowVerify?.running || app.buildflowVerifyRunning) : false;
-  const verifyExpanded=app.name==='BuildFlow' ? Boolean(window.__buildflowVerify?.expanded || app.buildflowVerifyExpanded) : false;
-  const restartVerify=app.name==='BuildFlow' ? (window.__buildflowRestartVerify?.result || app.buildflowRestartVerify || null) : null;
-  const restartVerifyRunning=app.name==='BuildFlow' ? Boolean(window.__buildflowRestartVerify?.running || app.buildflowRestartVerifyRunning) : false;
+  const buildflowState=app.name==='BuildFlow' ? (window.__buildflowVerifyState || null) : null;
+  const verify=app.name==='BuildFlow' ? getBuildFlowVisibleResult(app, 'verify') : null;
+  const verifyRunning=app.name==='BuildFlow' ? Boolean(buildflowState?.mode==='verify' && buildflowState?.running) : false;
+  const verifyExpanded=app.name==='BuildFlow' ? Boolean(buildflowState?.expanded || app.buildflowVerifyExpanded) : false;
+  const restartRunning=app.name==='BuildFlow' ? Boolean(buildflowState?.mode==='restart-and-verify' && buildflowState?.running) : false;
+  const restartResult=app.name==='BuildFlow' ? getBuildFlowVisibleResult(app, 'restart-and-verify') : null;
+  const buildflowBusy=app.name==='BuildFlow' && (verifyRunning || restartRunning);
   const effectiveStatus=transient?.status || app.status;
   const isRunning=effectiveStatus==='running';
   const isStarting=effectiveStatus==='starting';
   const isStopping=effectiveStatus==='stopping';
-  const statusClass=isRunning?'running':isStarting?'starting':isStopping?'stopping':'stopped';
-  const statusDot=isRunning?'&#9679;':isStarting?'&#9696;':isStopping?'&#9696;':'&#9675;';
+  const isRestarting=effectiveStatus==='restarting';
+  const isVerifying=effectiveStatus==='verifying';
+  const statusClass=isRunning?'running':isRestarting?'restarting':isVerifying?'verifying':isStarting?'starting':isStopping?'stopping':'stopped';
+  const statusDot=isRunning?'&#9679;':isRestarting?'&#9696;':isVerifying?'&#9696;':isStarting?'&#9696;':isStopping?'&#9696;':'&#9675;';
   let html='<div class="local-app-card" data-local-app-card="'+esc(app.name)+'">';
   html+='<div class="local-app-header">';
   html+='<span class="local-app-dot" style="font-size:14px">'+statusDot+'</span>';
@@ -2238,23 +2244,25 @@ function renderLocalAppCard(app){
   if(app.lastSeen)html+=' &middot; last '+esc(age(app.lastSeen));
   if(app.lastDuration)html+=' &middot; '+esc(app.lastDuration);
   if(isStarting)html+=' &middot; launching';
+  if(isRestarting)html+=' &middot; restarting';
+  if(isVerifying)html+=' &middot; verifying';
   html+='</div>';
   html+='<div class="local-app-actions" data-local-app-actions="'+esc(app.name)+'">';
   if(app.name!=='ProBot'){
     if(app.name==='BuildFlow'){
-      const verifyLabel=verifyRunning?'Verifying...':verify?.ok===true?'Verified':verify?.ok===false?'Failed':'Verify';
-      const verifyClass=verifyRunning?'':verify?.ok===true?'success':verify?.ok===false?'warn':'';
-      html+='<button class="local-app-btn '+verifyClass+'" data-action="verify" onclick="localAppVerify(this,&quot;'+esc(app.name)+'&quot;)"'+(verifyRunning?' disabled':'')+'>'+esc(verifyLabel)+'</button>';
-      const restartVerifyLabel=restartVerifyRunning?'Restarting...':restartVerify?.ok===true?'Verified':restartVerify?.ok===false?'Failed':'Restart + Verify';
-      const restartVerifyClass=restartVerifyRunning?'':restartVerify?.ok===true?'success':restartVerify?.ok===false?'warn':'';
-      html+='<button class="local-app-btn '+restartVerifyClass+'" data-action="restart-and-verify" onclick="localAppRestartAndVerify(this,&quot;'+esc(app.name)+'&quot;)"'+(restartVerifyRunning?' disabled':'')+'>'+esc(restartVerifyLabel)+'</button>';
-      if(verify || restartVerify){
+      const verifyLabel=buildflowActionLabel('Verify', verifyRunning, verify);
+      const verifyClass=buildflowActionClass(verifyRunning, verify);
+      html+='<button class="local-app-btn '+verifyClass+'" data-action="verify" onclick="localAppVerify(this,&quot;'+esc(app.name)+'&quot;)"'+(buildflowBusy||verifyRunning?' disabled':'')+'>'+esc(verifyLabel)+'</button>';
+      const restartLabel=buildflowRestartLabel(restartRunning, restartResult);
+      const restartClass=buildflowActionClass(restartRunning, restartResult);
+      html+='<button class="local-app-btn '+restartClass+'" data-action="restart" onclick="localAppRestart(this,&quot;'+esc(app.name)+'&quot;)"'+(buildflowBusy||restartRunning?' disabled':'')+'>'+esc(restartLabel)+'</button>';
+      if(verify || restartResult){
         html+='<button class="local-app-btn" data-action="verify-details" onclick="toggleBuildFlowVerifyDetails()" type="button">View details</button>';
       }
     }
-    if(!isRunning){
+    if(!isRunning && !isRestarting){
       html+='<button class="local-app-btn" data-action="start" onclick="localAppStart(this,&quot;'+esc(app.name)+'&quot;)"'+(isStarting||isStopping?' disabled':'')+'>'+(isStarting?'Starting…':isStopping?'Stopping…':'Start')+'</button>';
-    }else{
+    }else if(!isRestarting){
       if(app.restartable){
         html+='<button class="local-app-btn" data-action="restart" onclick="localAppRestart(this,&quot;'+esc(app.name)+'&quot;)">Restart</button>';
       }
@@ -2267,12 +2275,41 @@ function renderLocalAppCard(app){
   html+='</div>';
   if(app.name==='BuildFlow'){
     const latestVerify = getLatestBuildFlowVerifyResult(app);
-    if(latestVerify){
-      html+=renderBuildFlowVerifyDetails(latestVerify, verifyExpanded);
+    if(latestVerify || app.buildflowVerify || app.buildflowRestartVerify){
+      html+=renderBuildFlowVerifyDetails({
+        latest: latestVerify,
+        verify: app.buildflowVerify || null,
+        restartVerify: app.buildflowRestartVerify || null,
+        lifecycleStatus: effectiveStatus,
+      }, verifyExpanded);
     }
   }
   html+='</div>';
   return html;
+}
+function buildflowActionLabel(baseLabel, running, result){
+  if(running) return baseLabel==='Restart' ? 'Restarting...' : 'Verifying...';
+  if(result?.ok===true) return baseLabel + ' OK';
+  if(result?.ok===false) return baseLabel + ' failed';
+  return baseLabel;
+}
+function buildflowActionClass(running, result){
+  if(running) return '';
+  if(result?.ok===true) return 'success';
+  if(result?.ok===false) return 'warn';
+  return '';
+}
+function buildflowRestartLabel(running, result){
+  if(running) return 'Restarting...';
+  if(result?.ok===true) return 'Restart OK';
+  if(result?.ok===false) return 'Restart failed';
+  return 'Restart';
+}
+function getBuildFlowVisibleResult(app, mode){
+  const state=window.__buildflowVerifyState || {};
+  const serverResult=mode==='verify' ? app.buildflowVerify || null : app.buildflowRestartVerify || null;
+  if(state.result && state.mode===mode) return state.result;
+  return serverResult;
 }
 function getLatestBuildFlowVerifyResult(app){
   const state=window.__buildflowVerifyState || {};
@@ -2284,15 +2321,24 @@ function getLatestBuildFlowVerifyResult(app){
   }
   return verify || restartVerify;
 }
-function renderBuildFlowVerifyDetails(result,expanded){
-  const steps=Array.isArray(result.steps)?result.steps:[];
+function renderBuildFlowVerifyDetails(bundle,expanded){
+  const latest=bundle.latest || null;
+  const verify=bundle.verify || null;
+  const restartVerify=bundle.restartVerify || null;
+  const steps=Array.isArray(latest?.steps)?latest.steps:[];
   let html='<div class="buildflow-verify-panel" data-buildflow-verify-panel="1" style="display:'+(expanded?'block':'none')+'">';
-  const modeLabel=result.mode==='restart-and-verify'?'Restart + Verify':'Verify';
-  html+='<div class="buildflow-verify-summary"><strong>BuildFlow Verification</strong><span>'+esc(result.status.toUpperCase())+'</span></div>';
-  html+='<div style="color:var(--muted);margin-top:4px">Run type: '+esc(modeLabel)+'</div>';
-  html+='<div style="color:var(--muted)">Started: '+esc(result.startedAt)+' · Finished: '+esc(result.finishedAt)+' · Duration: '+esc(String(Math.round(result.durationMs/1000)))+'s</div>';
-  if(result.failedStep)html+='<div style="margin-top:4px"><strong>Failed step:</strong> '+esc(result.failedStep)+'</div>';
-  if(result.error)html+='<div style="margin-top:4px"><strong>Error:</strong> '+esc(result.error)+'</div>';
+  html+='<div class="buildflow-verify-summary"><strong>BuildFlow Verification</strong><span>'+esc((latest?.status || 'not run').toUpperCase())+'</span></div>';
+  html+='<div style="color:var(--muted);margin-top:4px">Run type: '+esc(latest?.mode==='restart-and-verify'?'Restart + Verify':'Verify')+'</div>';
+  html+='<div style="color:var(--muted)">Lifecycle status: '+esc(bundle.lifecycleStatus.toUpperCase())+'</div>';
+  if(latest){
+    html+='<div style="color:var(--muted)">Started: '+esc(latest.startedAt)+' · Finished: '+esc(latest.finishedAt)+' · Duration: '+esc(String(Math.round(latest.durationMs/1000)))+'s</div>';
+    if(latest.failedStep)html+='<div style="margin-top:4px"><strong>Failed step:</strong> '+esc(latest.failedStep)+'</div>';
+    if(latest.error)html+='<div style="margin-top:4px"><strong>Error:</strong> '+esc(latest.error)+'</div>';
+  }
+  if(latest?.ok===true && bundle.lifecycleStatus!=='running'){
+    html+='<div style="margin-top:4px;color:var(--yellow)">Verification passed, but current app status is stopped.</div>';
+  }
+  html+='<div style="margin-top:10px"><strong>Last check:</strong> '+esc((latest?.ok===true?'passed':latest?.ok===false?'failed':'not run'))+'</div>';
   steps.forEach(function(step,idx){
     html+='<details class="buildflow-verify-step" '+(idx===0?'open':'')+'>';
     html+='<summary>'+esc(step.name)+' · '+esc(step.ok?'passed':'failed')+' · exit '+esc(String(step.exitCode))+'</summary>';
@@ -2462,43 +2508,71 @@ fetchData();
 async function localAppStart(btn,name){
   const o=btn.textContent;btn.disabled=true;btn.textContent='Starting...';
   setLocalAppTransient(name,{status:'starting'});
-  syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+  scheduleLocalAppsAutoRefresh();
   try{
     const r=await fetch('/api/local-apps/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
     btn.textContent=d.message||'Start initiated';
-    syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
-    pollLocalAppUntilRunning(name);
+    scheduleLocalAppsAutoRefresh();
   }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
 }
 async function localAppStop(btn,name){
   const o=btn.textContent;btn.disabled=true;btn.textContent='Stopping...';
   setLocalAppTransient(name,{status:'stopping'});
-  syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+  scheduleLocalAppsAutoRefresh();
   try{
     const r=await fetch('/api/local-apps/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
     btn.textContent=d.message||'Stopped';
-    pollLocalAppUntilStopped(name);
-    setTimeout(()=>{
-      btn.disabled=false;
-      btn.textContent=o;
-      syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
-    },1500);
+    scheduleLocalAppsAutoRefresh();
+    setTimeout(()=>{btn.disabled=false;btn.textContent=o;},1500);
   }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
 }
 async function localAppRestart(btn,name){
   const o=btn.textContent;btn.disabled=true;btn.textContent='Restarting...';
-  setLocalAppTransient(name,{status:'stopping'});
-  syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+  setLocalAppTransient(name,{status:'restarting'});
+  if(name==='BuildFlow'){
+    window.__buildflowVerifyState=window.__buildflowVerifyState||{mode:'restart-and-verify',running:false,result:null,expanded:false};
+    window.__buildflowVerifyState.mode='restart-and-verify';
+    window.__buildflowVerifyState.running=true;
+    window.__buildflowVerifyState.expanded=false;
+  }
+  scheduleLocalAppsAutoRefresh();
   try{
-    const r=await fetch('/api/local-apps/restart',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    const endpoint=name==='BuildFlow' ? '/api/local-apps/buildflow/restart-and-verify' : '/api/local-apps/restart';
+    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
+    if(name==='BuildFlow'){
+      if(!r.ok || d.ok!==true || d.status!=='passed'){
+        throw new Error(d.error || d.message || 'BuildFlow restart failed');
+      }
+      window.__buildflowVerifyState={mode:'restart-and-verify',running:false,result:d,expanded:true};
+      clearLocalAppTransient(name);
+      btn.disabled=false;
+      btn.textContent='Restart OK';
+      btn.classList.remove('warn');
+      btn.classList.add('success');
+      scheduleLocalAppsAutoRefresh();
+      showBuildFlowVerifyDetails(true);
+      return;
+    }
+    clearLocalAppTransient(name);
+    btn.disabled=false;
     btn.textContent=d.message||'Restart initiated';
-    setLocalAppTransient(name,{status:'starting'});
-    syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
-    pollLocalAppUntilRunning(name);
-  }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+    scheduleLocalAppsAutoRefresh();
+  }catch(e){
+    const msg=String(e.message||e);
+    clearLocalAppTransient(name);
+    btn.disabled=false;
+    btn.textContent=name==='BuildFlow' ? 'Restart failed' : o;
+    if(name==='BuildFlow'){
+      window.__buildflowVerifyState={mode:'restart-and-verify',running:false,result:{mode:'restart-and-verify',ok:false,status:'failed',error:msg,steps:[],startedAt:new Date().toISOString(),finishedAt:new Date().toISOString(),durationMs:0},expanded:true};
+      btn.classList.remove('success');
+      btn.classList.add('warn');
+      showBuildFlowVerifyDetails(true);
+    }
+    scheduleLocalAppsAutoRefresh();
+  }
 }
 async function localAppVerify(btn,name){
   const o=btn.textContent;
@@ -2508,8 +2582,8 @@ async function localAppVerify(btn,name){
   window.__buildflowVerifyState.mode='verify';
   window.__buildflowVerifyState.running=true;
   window.__buildflowVerifyState.expanded=false;
-  setLocalAppTransient(name,{status:'starting'});
-  syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+  setLocalAppTransient(name,{status:'verifying'});
+  scheduleLocalAppsAutoRefresh();
   try{
     const r=await fetch('/api/local-apps/buildflow/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
@@ -2518,55 +2592,22 @@ async function localAppVerify(btn,name){
     }
     window.__buildflowVerifyState={mode:'verify',running:false,result:d,expanded:true};
     btn.disabled=false;
-    btn.textContent='Verified';
+    btn.textContent='Verify OK';
     btn.classList.remove('warn');
     btn.classList.add('success');
-    syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+    clearLocalAppTransient(name);
+    scheduleLocalAppsAutoRefresh();
     showBuildFlowVerifyDetails(true);
   }catch(e){
     const msg=String(e.message||e);
     const result=window.__buildflowVerifyState?.result || null;
     window.__buildflowVerifyState={mode:'verify',running:false,result:result||{mode:'verify',ok:false,status:'failed',error:msg,steps:[],startedAt:new Date().toISOString(),finishedAt:new Date().toISOString(),durationMs:0},expanded:true};
     btn.disabled=false;
-    btn.textContent='Failed';
+    btn.textContent='Verify failed';
     btn.classList.remove('success');
     btn.classList.add('warn');
-    syncLocalAppCard(name).catch(err=>console.error('Local app card sync failed:',err));
-    showBuildFlowVerifyDetails(true);
-  }
-}
-async function localAppRestartAndVerify(btn,name){
-  const o=btn.textContent;
-  btn.disabled=true;
-  btn.textContent='Restarting...';
-  window.__buildflowVerifyState=window.__buildflowVerifyState||{mode:'restart-and-verify',running:false,result:null,expanded:false};
-  window.__buildflowVerifyState.mode='restart-and-verify';
-  window.__buildflowVerifyState.running=true;
-  window.__buildflowVerifyState.expanded=false;
-  setLocalAppTransient(name,{status:'stopping'});
-  syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
-  try{
-    const r=await fetch('/api/local-apps/buildflow/restart-and-verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
-    const d=await r.json();
-    if(!r.ok || d.ok!==true || d.status!=='passed'){
-      throw new Error(d.error || d.message || 'BuildFlow restart + verification failed');
-    }
-    window.__buildflowVerifyState={mode:'restart-and-verify',running:false,result:d,expanded:true};
-    btn.disabled=false;
-    btn.textContent='Verified';
-    btn.classList.remove('warn');
-    btn.classList.add('success');
-    syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
-    showBuildFlowVerifyDetails(true);
-  }catch(e){
-    const msg=String(e.message||e);
-    const result=window.__buildflowVerifyState?.result || null;
-    window.__buildflowVerifyState={mode:'restart-and-verify',running:false,result:result||{mode:'restart-and-verify',ok:false,status:'failed',error:msg,steps:[],startedAt:new Date().toISOString(),finishedAt:new Date().toISOString(),durationMs:0},expanded:true};
-    btn.disabled=false;
-    btn.textContent='Failed';
-    btn.classList.remove('success');
-    btn.classList.add('warn');
-    syncLocalAppCard(name).catch(err=>console.error('Local app card sync failed:',err));
+    clearLocalAppTransient(name);
+    scheduleLocalAppsAutoRefresh();
     showBuildFlowVerifyDetails(true);
   }
 }
@@ -2597,15 +2638,47 @@ async function syncLocalAppCard(name){
   if(!app)return;
   card.outerHTML=renderLocalAppCard(app);
 }
+function hasActiveLocalAppActivity(data){
+  const apps=Array.isArray(data?.apps) ? data.apps : [];
+  if(apps.some((app)=>['starting','stopping','restarting'].includes(app.status))) return true;
+  return Boolean(apps.some((app)=>app.name==='BuildFlow' && (app.buildflowVerifyRunning || app.buildflowRestartVerifyRunning))) || Boolean(window.__buildflowVerifyState?.running);
+}
+async function refreshLocalAppsPanel(){
+  const panel=document.getElementById('tab-local-apps');
+  if(!panel) return null;
+  const r=await fetch('/api/local-apps');
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const data=await r.json();
+  panel.innerHTML=renderLocalApps(data);
+  return data;
+}
+function scheduleLocalAppsAutoRefresh(){
+  window.__localAppsAutoRefresh=window.__localAppsAutoRefresh||{active:false,timer:null};
+  const state=window.__localAppsAutoRefresh;
+  if(state.active) return;
+  state.active=true;
+  const tick=async()=>{
+    try{
+      const data=await refreshLocalAppsPanel();
+      if(!hasActiveLocalAppActivity(data)){
+        state.active=false;
+        state.timer=null;
+        return;
+      }
+    }catch(e){
+      console.error('Local apps auto-refresh failed:',e);
+    }
+    state.timer=setTimeout(tick,1500);
+  };
+  state.timer=setTimeout(tick,250);
+}
 async function localAppsRefresh(){
   try{
     const panel=document.getElementById('tab-local-apps');
     if(!panel)return;
     panel.innerHTML='<div class="loading"><div class="spin"></div>Loading...</div>';
-    const r=await fetch('/api/local-apps');
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    panel.innerHTML=renderLocalApps(data);
+    const data=await refreshLocalAppsPanel();
+    if(data && hasActiveLocalAppActivity(data)) scheduleLocalAppsAutoRefresh();
   }catch(e){
     console.error('Local apps refresh failed:',e);
     document.getElementById('tab-local-apps').innerHTML='<div class="nr-err">Failed to load: '+esc(String(e))+'</div>';
@@ -2621,68 +2694,6 @@ function setLocalAppTransient(name,value){
 }
 function clearLocalAppTransient(name){
   if(window.__localAppTransient) delete window.__localAppTransient[name];
-}
-function pollLocalAppUntilRunning(name){
-  const startedAt=Date.now();
-  const maxWaitMs=120000;
-  const tick=async()=>{
-    try{
-      const r=await fetch('/api/local-apps');
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      const data=await r.json();
-      const app=(data.apps||[]).find(a=>a.name===name);
-      if(app&&app.status==='running'){
-        clearLocalAppTransient(name);
-        await syncLocalAppCard(name);
-        return;
-      }
-      if(Date.now()-startedAt>=maxWaitMs){
-        clearLocalAppTransient(name);
-        await syncLocalAppCard(name);
-        return;
-      }
-      setTimeout(tick,2000);
-    }catch(e){
-      if(Date.now()-startedAt>=maxWaitMs){
-        clearLocalAppTransient(name);
-        await syncLocalAppCard(name);
-        return;
-      }
-      setTimeout(tick,2000);
-    }
-  };
-  setTimeout(tick,1500);
-}
-function pollLocalAppUntilStopped(name){
-  const startedAt=Date.now();
-  const maxWaitMs=120000;
-  const tick=async()=>{
-    try{
-      const r=await fetch('/api/local-apps');
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      const data=await r.json();
-      const app=(data.apps||[]).find(a=>a.name===name);
-      if(!app||app.status==='stopped'){
-        clearLocalAppTransient(name);
-        await syncLocalAppCard(name);
-        return;
-      }
-      if(Date.now()-startedAt>=maxWaitMs){
-        clearLocalAppTransient(name);
-        await syncLocalAppCard(name);
-        return;
-      }
-      setTimeout(tick,2000);
-    }catch(e){
-      if(Date.now()-startedAt>=maxWaitMs){
-        clearLocalAppTransient(name);
-        await syncLocalAppCard(name);
-        return;
-      }
-      setTimeout(tick,2000);
-    }
-  };
-  setTimeout(tick,1500);
 }
 </script>
 </body>
