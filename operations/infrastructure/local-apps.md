@@ -31,6 +31,7 @@ Each entry in `local-apps.json` is a JSON object with these fields:
 | `healthCheck` | string | yes | URL ProBot pings to determine running/stopped |
 | `startCommand` | string | yes | Shell command to start the app |
 | `stopCommand` | string \| null | no | Shell command to stop the app, if one exists |
+| `restartCommand` | string \| null | no | Shell command to restart the app or multi-service stack, if one exists |
 | `startupTimeoutMs` | number \| null | no | Maximum time ProBot waits for the app to become healthy after start |
 | `description` | string | yes | One-line description shown in the dashboard card |
 | `databaseEngine` | string \| null | no | Database engine used locally, if any |
@@ -49,6 +50,7 @@ For every entry, the following aliases are kept in sync:
 - `check` mirrors `healthCheck`
 - `start` mirrors `startCommand`
 - `stop` mirrors `stopCommand`
+- `restart` mirrors `restartCommand`
 
 New code should prefer the expanded fields. Legacy readers may keep using the old names until they are fully migrated.
 
@@ -110,13 +112,35 @@ File path hardcoded in `projects/probot/src/bot/dashboard.ts`:
 
 For each app, ProBot makes a GET request to `healthCheck` with a 5-second timeout. If it gets a 2xx response the app is **running**; otherwise **stopped**.
 ProBot starts apps from their `repoPath` and injects `PORT` from the registry when a port is defined, so commands can stay repo-relative and avoid stale hardcoded paths.
+The dashboard restart action is registry-driven:
+
+- if `restartCommand` exists, ProBot runs that helper for the app
+- otherwise ProBot uses the shared stop/start lifecycle and waits for stop and health recovery
+- if an app has multi-service or cleanup requirements, put them in a dedicated helper script and reference it from `restartCommand`
+
+Current custom restart helpers:
+
+- `BuildFlow` -> `~/Repos/stevewesthoek/buildflow/restart-all.sh`
+- `xGrow` -> `~/Repos/prochattools/saas/xgrow/restart-xgrow.sh`
+
+Current explicit stop helpers:
+
+- `Says the Bible` -> `~/Repos/prochattools/web/says-the-bible/scripts/dev/stop-local.sh`
+- `ComfyUI` -> `~/.local/bin/comfyui-stop`
+- `Firecrawl` -> `~/Repos/stevewesthoek/brain/tools/firecrawl/stop-firecrawl.sh`
+- `BuildFlow` -> `~/Repos/stevewesthoek/buildflow/stop-all.sh`
+- `xGrow` -> `~/Repos/prochattools/saas/xgrow/stop-xgrow.sh`
+
 For local dashboard launches, prefer a restart-safe wrapper script when the package has a slow `predev` chain or when editors need a one-click restart path.
 Apps may also set `startupTimeoutMs` in `local-apps.json` when their boot path is slower than the default 30 seconds.
 The dashboard start button is non-blocking: it flips the card into a `STARTING` state immediately and polls until the app becomes healthy or the startup timeout elapses.
+The restart button is only shown for running apps so the control surface stays consistent and avoids ambiguous states.
 
 ## Editing rules
 
 1. Edit `operations/infrastructure/local-apps.json` first.
 2. Keep this markdown table aligned with the JSON registry.
-3. Update repo-local config/docs at the same time if a reserved port changes.
-4. Never recycle a retired port for a different local app or database.
+3. New apps should provide `startCommand`, `stopCommand`, and, when needed, `restartCommand`.
+4. Keep lifecycle helpers repo-local and registry-driven rather than hardcoding dashboard-specific exceptions.
+5. Update repo-local config/docs at the same time if a reserved port changes.
+6. Never recycle a retired port for a different local app or database.

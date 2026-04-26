@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { buildLocalAppsStatus, classifyLocalAppStartCommand, normalizeLocalApp, resolveLocalAppLifecycleCommand, waitForLocalAppHealth } from "./local-apps.js";
+import { buildLocalAppsStatus, classifyLocalAppStartCommand, normalizeLocalApp, resolveLocalAppLifecycleCommand, resolveLocalAppRestartCommand, waitForLocalAppHealth } from "./local-apps.js";
 
 test("normalize legacy-only entry", () => {
   const app = normalizeLocalApp({
@@ -33,6 +33,7 @@ test("normalize expanded-only entry", () => {
     healthCheck: "http://localhost:3054/api/openapi",
     startCommand: "bash start.sh",
     stopCommand: "bash stop.sh",
+    restartCommand: "bash restart.sh",
     repoPath: "/tmp/app",
     databaseEngine: "PostgreSQL",
     databaseServiceName: "postgres",
@@ -48,6 +49,7 @@ test("normalize expanded-only entry", () => {
   assert.equal(app.check, "http://localhost:3054/api/openapi");
   assert.equal(app.start, "bash start.sh");
   assert.equal(app.stop, "bash stop.sh");
+  assert.equal(app.restart, "bash restart.sh");
   assert.equal(app.repoPath, "/tmp/app");
   assert.equal(app.databaseEngine, "PostgreSQL");
   assert.equal(app.databaseServiceName, "postgres");
@@ -118,6 +120,7 @@ test("buildLocalAppsStatus fails safely on missing health check", async () => {
         check: "",
         start: "npm run dev",
         stop: null,
+        restart: null,
         description: "",
         repoPath: null,
         startupTimeoutMs: null,
@@ -137,6 +140,7 @@ test("buildLocalAppsStatus fails safely on missing health check", async () => {
 
   assert.equal(fetchCalls.length, 0);
   assert.equal(result.apps[0]?.status, "stopped");
+  assert.equal(result.apps[0]?.restartable, true);
 });
 
 test("buildLocalAppsStatus keeps an app starting during its startup window", async () => {
@@ -149,6 +153,7 @@ test("buildLocalAppsStatus keeps an app starting during its startup window", asy
         check: "http://localhost:3009/health",
         start: "npm run dev",
         stop: null,
+        restart: null,
         description: "",
         repoPath: null,
         startupTimeoutMs: 120000,
@@ -174,6 +179,7 @@ test("buildLocalAppsStatus keeps an app starting during its startup window", asy
   );
 
   assert.equal(result.apps[0]?.status, "starting");
+  assert.equal(result.apps[0]?.restartable, true);
 });
 
 test("waitForLocalAppHealth resolves when health turns ok", async () => {
@@ -229,4 +235,18 @@ test("resolve lifecycle commands from repo-local helper scripts", () => {
   assert.ok(app);
   assert.equal(resolveLocalAppLifecycleCommand(app, "start"), "bash scripts/dev/start-local.sh");
   assert.equal(resolveLocalAppLifecycleCommand(app, "stop"), "bash scripts/dev/stop-local.sh");
+});
+
+test("resolve explicit restart command when present", () => {
+  const app = normalizeLocalApp({
+    name: "Restartable",
+    appPort: 3001,
+    appUrl: "http://localhost:3001",
+    healthCheck: "http://localhost:3001/health",
+    startCommand: "npm run dev",
+    restartCommand: "bash restart-all.sh",
+  });
+
+  assert.ok(app);
+  assert.equal(resolveLocalAppRestartCommand(app), "bash restart-all.sh");
 });

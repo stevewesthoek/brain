@@ -100,6 +100,20 @@ Dashboard-specific services:
 
 - `control-plane.ts` — session ranking and continuation card building
 - `approvals.ts` — approval workflow state and callbacks
+- `local-apps.ts` — local app registry normalization, lifecycle command resolution, and status polling for the dashboard
+
+## Local Apps dashboard model
+
+The Local Apps tab follows one registry-driven lifecycle model for all apps:
+
+1. Each app declares a `startCommand`.
+2. Each app should declare a `stopCommand` when graceful shutdown is possible.
+3. Apps that need multi-service cleanup or custom sequencing may declare a `restartCommand`.
+4. The dashboard restart action uses `restartCommand` first when it exists.
+5. If no `restartCommand` exists, ProBot uses the shared stop-clean-start fallback.
+6. Restart is only exposed for running apps, so the control remains semantically correct.
+
+The goal is to keep onboarding consistent: new apps should follow the same start, stop, and restart shape, with helper scripts used only when an app needs specificity.
 
 Future:
 

@@ -20,6 +20,7 @@ It is intentionally not a general-purpose agent platform. The goal is fast remot
 - Local SQLite state for approvals and event logging
 - Session overview for Claude and Codex
 - Optional local dashboard with machine, session, scheduler, and AI usage status
+- Local Apps dashboard with registry-driven start, stop, and restart controls
 - Text note capture
 - Brain search
 - File search and approved file send
@@ -165,6 +166,19 @@ The dashboard reuses the same continuation ranking and suggestion logic, with a 
 - **Sessions tab** — best next sessions as a card grid
   - each card shows the tool badge, repo, intent label, age, multi-line headline, and the suggested `continue N` command
   - **Open in Ghostty** button opens Ghostty, `cd`s to the repo, and automatically resumes the session; uses TCP socket address detection so it works when the dashboard is accessed through a Cloudflare tunnel or reverse proxy as well as direct localhost
+
+### Local Apps dashboard contract
+
+The Local Apps tab is registry-driven and should stay uniform across all onboarded apps:
+
+- every app has a `startCommand`
+- every app should have a `stopCommand` when clean shutdown is possible
+- apps that need special lifecycle handling may define a `restartCommand`
+- the dashboard restart action is generic and should defer to `restartCommand` when present
+- if no `restartCommand` exists, ProBot falls back to the shared stop-clean-start flow
+- restart is only shown for running apps, because the control is meant to restart an already-running service
+
+When adding new apps to the dashboard, prefer repo-local helper scripts over embedding app-specific restart logic in ProBot itself.
 
 ### Dashboard Dokploy Tab
 

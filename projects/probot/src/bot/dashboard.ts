@@ -18,6 +18,7 @@ import {
   loadLocalApps,
   resolveLocalAppCwd,
   resolveLocalAppLifecycleCommand,
+  resolveLocalAppRestartCommand,
   waitForLocalAppHealth,
 } from "./local-apps.js";
 
@@ -1309,6 +1310,10 @@ function getLocalAppStopCommand(name: string): string | null {
   return resolveLocalAppLifecycleCommand(findLocalApp(name), "stop");
 }
 
+function getLocalAppRestartCommand(name: string): string | null {
+  return resolveLocalAppRestartCommand(findLocalApp(name));
+}
+
 async function getLocalAppsStatus() {
   return buildLocalAppsStatus(loadLocalApps(), fetch, { startingApps: LOCAL_APP_STARTING_STATES });
 }
@@ -1322,6 +1327,32 @@ function setLocalAppStartingState(name: string, startupTimeoutMs: number | null)
 
 function clearLocalAppStartingState(name: string): void {
   LOCAL_APP_STARTING_STATES.delete(name);
+}
+
+async function waitForLocalAppStopped(app: ReturnType<typeof findLocalApp>, timeoutMs: number): Promise<boolean> {
+  if (!app?.check) return true;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5_000);
+    try {
+      const response = await fetch(app.check, { signal: controller.signal });
+      if (!response.ok) return true;
+    } catch {
+      return true;
+    } finally {
+      clearTimeout(timeout);
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  return false;
+}
+
+async function forceStopLocalAppByPort(app: ReturnType<typeof findLocalApp>): Promise<void> {
+  const port = app?.port;
+  if (!port) return;
+  const stopCmd = `pids=$(lsof -ti tcp:${port} || true); if [ -n "$pids" ]; then kill -TERM $pids; sleep 2; still=$(lsof -ti tcp:${port} || true); if [ -n "$still" ]; then kill -KILL $still; fi; fi`;
+  await execFileAsync("/bin/bash", ["-c", stopCmd], { cwd: resolveLocalAppCwd(app), maxBuffer: 10 * 1024 * 1024 });
 }
 
 async function getDashboardData(app: AppContext) {
@@ -2177,8 +2208,8 @@ function renderLocalAppCard(app){
     if(!isRunning){
       html+='<button class="local-app-btn" data-action="start" onclick="localAppStart(this,&quot;'+esc(app.name)+'&quot;)"'+(isStarting||isStopping?' disabled':'')+'>'+(isStarting?'Starting…':isStopping?'Stopping…':'Start')+'</button>';
     }else{
-      if(app.start){
-        html+='<button class="local-app-btn" data-action="restart" onclick="localAppStart(this,&quot;'+esc(app.name)+'&quot;)">Restart</button>';
+      if(app.restartable){
+        html+='<button class="local-app-btn" data-action="restart" onclick="localAppRestart(this,&quot;'+esc(app.name)+'&quot;)">Restart</button>';
       }
       html+='<button class="local-app-btn danger" data-action="stop" onclick="localAppStop(this,&quot;'+esc(app.name)+'&quot;)">Stop</button>';
     }
@@ -2372,6 +2403,19 @@ async function localAppStop(btn,name){
       btn.textContent=o;
       syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
     },1500);
+  }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+}
+async function localAppRestart(btn,name){
+  const o=btn.textContent;btn.disabled=true;btn.textContent='Restarting...';
+  setLocalAppTransient(name,{status:'stopping'});
+  syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+  try{
+    const r=await fetch('/api/local-apps/restart',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    const d=await r.json();
+    btn.textContent=d.message||'Restart initiated';
+    setLocalAppTransient(name,{status:'starting'});
+    syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+    pollLocalAppUntilRunning(name);
   }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
 }
 function findLocalAppCard(name){
@@ -2625,6 +2669,63 @@ export function createDashboardServer(app: AppContext): http.Server {
           } catch (e) {
             clearLocalAppStartingState(payload.name);
             throw new Error(`Failed to start ${payload.name}: ${String(e)}`);
+          }
+          return;
+        }
+
+        if (url === "/api/local-apps/restart" && payload.name) {
+          const app = findLocalApp(payload.name);
+          if (!app) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "App not found" }));
+            return;
+          }
+          const restartCommand = getLocalAppRestartCommand(payload.name);
+          const stopCommand = getLocalAppStopCommand(payload.name);
+          const startCommand = getLocalAppStartCommand(payload.name);
+          if (!restartCommand && !startCommand) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "App not found or cannot be restarted" }));
+            return;
+          }
+          try {
+            const startupTimeoutMs = app.startupTimeoutMs ?? 30000;
+            clearLocalAppStartingState(payload.name);
+            setLocalAppStartingState(payload.name, startupTimeoutMs);
+            if (restartCommand) {
+              execFileAsync("/bin/bash", ["-c", restartCommand], { cwd: resolveLocalAppCwd(app), maxBuffer: 10 * 1024 * 1024 })
+                .catch(e => console.error(`[LocalApp] ${payload.name} restart error:`, e.message));
+            } else {
+              if (stopCommand) {
+                await execFileAsync("/bin/bash", ["-c", stopCommand], { cwd: resolveLocalAppCwd(app), maxBuffer: 10 * 1024 * 1024 });
+              } else {
+                await forceStopLocalAppByPort(app);
+              }
+              const stopped = await waitForLocalAppStopped(app, startupTimeoutMs);
+              if (!stopped) {
+                throw new Error(`Timed out waiting for ${payload.name} to stop`);
+              }
+              launchLocalAppStartCommand(startCommand!, resolveLocalAppCwd(app), app);
+            }
+            void waitForLocalAppHealth(app, fetch, startupTimeoutMs).then((healthy) => {
+              if (healthy) {
+                clearLocalAppStartingState(payload.name);
+                console.log(`[LocalApp] ${payload.name} reached healthy state after restart`);
+              } else {
+                console.log(
+                  `[LocalApp] ${payload.name} restart initiated; health not confirmed within ${startupTimeoutMs}ms`,
+                );
+                clearLocalAppStartingState(payload.name);
+              }
+            }).catch((err) => {
+              console.error(`[LocalApp] ${payload.name} restart health check failed:`, String(err));
+              clearLocalAppStartingState(payload.name);
+            });
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true, message: "Restart initiated" }));
+          } catch (e) {
+            clearLocalAppStartingState(payload.name);
+            throw new Error(`Failed to restart ${payload.name}: ${String(e)}`);
           }
           return;
         }

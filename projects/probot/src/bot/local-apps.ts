@@ -10,6 +10,7 @@ export type NormalizedLocalApp = {
   check: string;
   start: string | null;
   stop: string | null;
+  restart: string | null;
   description: string;
   repoPath: string | null;
   startupTimeoutMs: number | null;
@@ -43,6 +44,8 @@ type RawLocalApp = {
   startCommand?: unknown;
   stop?: unknown;
   stopCommand?: unknown;
+  restart?: unknown;
+  restartCommand?: unknown;
   startupTimeoutMs?: unknown;
   description?: unknown;
   repoPath?: unknown;
@@ -88,6 +91,7 @@ export function normalizeLocalApp(raw: RawLocalApp): NormalizedLocalApp | null {
     check: readString(raw.check ?? raw.healthCheck, ""),
     start: readStringOrNull(raw.start ?? raw.startCommand),
     stop: readStringOrNull(raw.stop ?? raw.stopCommand),
+    restart: readStringOrNull(raw.restart ?? raw.restartCommand),
     description: readString(raw.description, ""),
     repoPath: readStringOrNull(raw.repoPath),
     startupTimeoutMs: readNumberOrNull(raw.startupTimeoutMs),
@@ -172,11 +176,16 @@ export function resolveLocalAppLifecycleCommand(
   return `bash scripts/dev/${scriptName}`;
 }
 
+export function resolveLocalAppRestartCommand(app: NormalizedLocalApp | null): string | null {
+  if (app?.restart) return app.restart;
+  return null;
+}
+
 export async function buildLocalAppsStatus(
   apps: NormalizedLocalApp[],
   fetchImpl: typeof fetch = fetch,
   options: LocalAppsStatusOptions = {},
-): Promise<{ apps: Array<{ name: string; port: number | null; url: string; description: string; status: string; lastSeen: null; lastDuration: null }> }> {
+): Promise<{ apps: Array<{ name: string; port: number | null; url: string; description: string; status: string; restartable: boolean; lastSeen: null; lastDuration: null }> }> {
   const startingApps =
     options.startingApps instanceof Map
       ? options.startingApps
@@ -212,6 +221,7 @@ export async function buildLocalAppsStatus(
         url: app.url,
         description: app.description,
         status,
+        restartable: Boolean(app.restart || app.stop || app.start || app.port),
         lastSeen: null,
         lastDuration: null,
       };
