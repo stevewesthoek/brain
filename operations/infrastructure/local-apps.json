@@ -219,8 +219,8 @@
     "appPort": 3054,
     "url": "http://localhost:3054",
     "appUrl": "http://localhost:3054",
-    "check": "http://localhost:3054/api/openapi",
-    "healthCheck": "http://localhost:3054/api/openapi",
+    "check": "http://localhost:3054/api/unified-health",
+    "healthCheck": "http://localhost:3054/api/unified-health",
     "start": "bash ~/Repos/stevewesthoek/buildflow/start-all.sh",
     "startCommand": "bash ~/Repos/stevewesthoek/buildflow/start-all.sh",
     "stop": "bash ~/Repos/stevewesthoek/buildflow/stop-all.sh",
@@ -233,6 +233,6 @@
     "databasePort": null,
     "databaseName": null,
     "databaseUser": null,
-    "notes": "Requires OrbStack with Docker daemon running and ~/.config/buildflow/.env.relay."
+    "notes": "Requires OrbStack with Docker daemon running and ~/.config/buildflow/.env.relay. Health check validates all three services (agent, relay, web) are healthy."
   }
 ]
