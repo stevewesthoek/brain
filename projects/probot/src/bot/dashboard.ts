@@ -22,6 +22,8 @@ import {
   waitForLocalAppHealth,
 } from "./local-apps.js";
 import { runBuildflowRestartAndVerification, runBuildflowVerification, type BuildflowVerifyResult } from "./buildflow-verify.js";
+import { checkForUpdates, capturePreUpdateState, readPreUpdateState, clearPreUpdateState, type UpdateCheck } from "../services/updates.js";
+import { stopAllLocalApps, restoreSystemAfterUpdate, gracefulShutdown, spawnUpdateAndRestart, type UpdateResult } from "./update-orchestrator.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -51,6 +53,12 @@ const BUILDFLOW_VERIFY_STATE = new Map<string, {
   verifyResult: BuildflowVerifyResult | null;
   restartAndVerifyResult: BuildflowVerifyResult | null;
 }>();
+
+let UPDATE_CHECK_STATE: { cached: UpdateCheck | null; cachedAt: number } = {
+  cached: null,
+  cachedAt: 0,
+};
+let UPDATE_IN_PROGRESS = false;
 
 // ─── Data helpers ────────────────────────────────────────────────────────────
 
@@ -2702,7 +2710,7 @@ function clearLocalAppTransient(name){
 // ─── Server ──────────────────────────────────────────────────────────────────
 
 export function createDashboardServer(app: AppContext): http.Server {
-  return http.createServer(async (req, res) => {
+  const server = http.createServer(async (req, res) => {
     const url = req.url ?? "/";
 
     if (req.method === "POST" && url === "/api/local/ghostty") {
@@ -3038,6 +3046,112 @@ export function createDashboardServer(app: AppContext): http.Server {
       return;
     }
 
+    // ─── Update System Endpoints ─────────────────────────────────────────────
+
+    if (url === "/api/system/updates") {
+      try {
+        // Cache update check for 5 minutes to avoid expensive checks
+        const now = Date.now();
+        if (UPDATE_CHECK_STATE.cached && now - UPDATE_CHECK_STATE.cachedAt < 5 * 60 * 1000) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            ...UPDATE_CHECK_STATE.cached,
+            inProgress: UPDATE_IN_PROGRESS,
+          }));
+          return;
+        }
+
+        const updates = await checkForUpdates();
+        UPDATE_CHECK_STATE = { cached: updates, cachedAt: now };
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          ...updates,
+          inProgress: UPDATE_IN_PROGRESS,
+        }));
+      } catch (err) {
+        console.error("[Updates] Check failed:", String(err));
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(err), hasUpdates: false }));
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url === "/api/system/perform-update") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Update actions are only enabled on localhost." }));
+        return;
+      }
+
+      if (UPDATE_IN_PROGRESS) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Update already in progress" }));
+        return;
+      }
+
+      try {
+        UPDATE_IN_PROGRESS = true;
+
+        // Get list of running apps
+        const allApps = loadLocalApps();
+        const appStatus = await buildLocalAppsStatus(allApps, fetch);
+        const runningApps = appStatus.apps
+          .filter(a => a.status === "running")
+          .map(a => a.name);
+
+        console.log(`[Updates] Captured ${runningApps.length} running apps before update`);
+
+        // Capture state for restoration after update
+        capturePreUpdateState(runningApps, 7070, process.pid ?? null);
+
+        // Stop all running apps
+        console.log("[Updates] Stopping all running apps...");
+        await stopAllLocalApps(runningApps);
+
+        // Graceful ProBot shutdown
+        console.log("[Updates] Graceful ProBot shutdown...");
+        await gracefulShutdown(5000);
+
+        // Spawn update subprocess and exit
+        console.log("[Updates] Spawning update subprocess...");
+        spawnUpdateAndRestart();
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          ok: true,
+          message: "Update initiated. ProBot will restart automatically.",
+          runningAppsCount: runningApps.length,
+        }));
+
+        // Exit ProBot to let subprocess take over
+        setTimeout(() => {
+          console.log("[Updates] Exiting for update...");
+          process.exit(0);
+        }, 1000);
+      } catch (err) {
+        UPDATE_IN_PROGRESS = false;
+        console.error("[Updates] Failed to initiate update:", String(err));
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(err) }));
+      }
+      return;
+    }
+
+    if (url === "/api/system/restore-after-update") {
+      try {
+        console.log("[Updates] Post-restart restoration endpoint called");
+        const result = await restoreSystemAfterUpdate();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+      } catch (err) {
+        console.error("[Updates] Restoration failed:", String(err));
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(err), success: false }));
+      }
+      return;
+    }
+
     if (url === "/api/data") {
       try {
         const data = await getDashboardData(app);
@@ -3068,4 +3182,22 @@ export function createDashboardServer(app: AppContext): http.Server {
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not found");
   });
+
+  // After server is created, check if we need to restore services after an update
+  server.once("listening", () => {
+    // Schedule restoration check for next tick to avoid blocking server startup
+    setImmediate(async () => {
+      const preState = readPreUpdateState();
+      if (preState) {
+        console.log("[Updates] Found pre-update state. Initiating service restoration...");
+        try {
+          await restoreSystemAfterUpdate();
+        } catch (err) {
+          console.error("[Updates] Automatic restoration failed:", String(err));
+        }
+      }
+    });
+  });
+
+  return server;
 }
