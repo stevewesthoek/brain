@@ -2533,7 +2533,7 @@ function refresh(){
 }
 setInterval(fetchData,3000);
 setInterval(()=>{if(_d)document.getElementById('upd').textContent='updated '+age(_d.meta.updatedAt);},60000);
-setInterval(checkForUpdates,30000);
+setInterval(checkForUpdates,15*60*1000);
 fetchData();
 checkForUpdates();
 async function checkForUpdates(){
