@@ -5,7 +5,38 @@ description: Upgrades existing websites and apps to premium quality. Audits curr
 
 # Redesign Skill
 
-## How This Works
+## Iteration Workflow
+
+When redesigning an existing project:
+
+1. **Surface assumptions** before making large changes
+   - "I'm assuming the primary color should be [X]"
+   - "Layout will change to [Y] because [reason]"
+   - "Typography will shift to [font] because [reason]"
+
+2. **Create a visible first improvement or audit excerpt early**
+   - Show one key section redesigned (hero, header, card component)
+   - Get feedback before continuing to the rest of the site
+   - Iterate on the small example before rolling out everywhere
+
+3. **Iterate through content, layout, visual polish, and states**
+   - Content: fix copywriting, names, placeholder data
+   - Layout: alignment, spacing, grid structure
+   - Visual: colors, typography, shadows, depth
+   - States: hover, active, focus, loading, empty, error
+
+4. **Verify in browser or with available tests**
+   - Open the site and manually test after each major change
+   - Run tests if the project has them
+   - Check mobile/tablet/desktop responsiveness
+   - Confirm existing functionality is not broken
+
+5. **Keep changes targeted and reviewable**
+   - Do not rewrite entire components if a CSS fix will work
+   - Small, focused commits over massive refactors
+   - Make each change independently testable
+
+## How This Works (Core Process)
 
 When applied to an existing project, follow this sequence:
 

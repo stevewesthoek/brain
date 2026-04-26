@@ -48,10 +48,13 @@ python3 ai/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack nextjs
 python3 ai/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack shadcn
 ```
 
-## How to use with the web-design skill
-1. Run `--design-system` for the project.
-2. Apply style + palette + typography output to the web-design spec.
-3. Use stack guidance to shape component choices and spacing rules.
+## Role in Design Stack
+
+**Searchable intelligence layer.** Supports other skills; does not route or own persistent brand truth.
+
+Use for: palette/type lookup, stack-specific rules, UX patterns, chart guidance.
+
+Do not use for: main design entry (`/web-design`), persistent system (`/design-system`), or artifacts (`/huashu-design`).
 
 ## Data location
 All data lives in:

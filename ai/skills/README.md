@@ -21,6 +21,21 @@ skills/
 5. New custom skills: add source to `custom/`, then symlink from `active/`.
 6. Do not store tool-internal config, caches, or runtime state here.
 
+## Design Skill Routing
+
+For the full design workflow and skill coordination, see `../design-systems/design-stack.md`.
+
+**Quick reference:**
+
+- `design-system` — persistent `DESIGN.md` / `brand-spec.md`
+- `web-design` — implementation-ready web/SaaS UI specs
+- `ui-ux-pro-max` — searchable UI/UX intelligence and research support
+- `taste-skill` — premium taste and anti-slop guardrails
+- `redesign-skill` — safe existing-project redesign
+- `huashu-design` — HTML-native visual production artifacts (prototypes, decks, animations, exports)
+
+All design skills read `DESIGN.md` and `brand-spec.md` for consistency.
+
 ## Maintenance
 
 The skill library is pruned monthly to prevent token overhead and signal dilution.

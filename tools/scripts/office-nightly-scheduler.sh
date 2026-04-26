@@ -262,15 +262,15 @@ run_skill_prune() {
 
   local timeout_seconds="${SKILL_PRUNE_TIMEOUT_SECONDS:-300}"
   local prune_log="$LOG_DIR/skill-prune.log"
-  local claude_bin
-  claude_bin="$(command -v claude 2>/dev/null || echo 'claude')"
+  local prune_script="${SKILL_PRUNE_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/skill-prune-report.sh}"
   local command
-  command=$(printf 'cd %q && %q --print %q >> %q 2>&1' \
-    "$HOME/Repos/stevewesthoek/brain" \
-    "$claude_bin" \
-    "/skill-prune" \
-    "$prune_log"
-  )
+
+  if [[ ! -x "$prune_script" ]]; then
+    log "skipping job=skill-prune reason=missing_script path=$prune_script"
+    return 0
+  fi
+
+  command=$(printf '%q >> %q 2>&1' "$prune_script" "$prune_log")
 
   if run_job "skill-prune" "$timeout_seconds" "$command" "$prune_log"; then
     printf '%s\n' "$month_key" > "$last_prune_file"

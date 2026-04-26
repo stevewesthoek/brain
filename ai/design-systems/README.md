@@ -1,4 +1,28 @@
-# Design Systems Library
+# Design Systems
+
+## Quick Links
+
+- **[Design Stack](design-stack.md)** — How all design skills work together (routing, workflows, end-to-end examples)
+- **[Design Systems Library](#design-systems-library)** — Catalog of 30+ reusable design systems
+
+## Design Stack Overview
+
+The design ecosystem consists of six complementary skills that work together:
+
+| Skill | Purpose | Output |
+|-------|---------|--------|
+| `/design-system` | Persistent design truth | `DESIGN.md` + `brand-spec.md` |
+| `/web-design` | Implementation-ready web specs | Style, layout, tokens, components |
+| `/huashu-design` | HTML-native visual production | Prototypes, decks, animations, exports |
+| `/ui-ux-pro-max` | Searchable UI/UX intelligence | Palette/type/pattern research |
+| `/taste-skill` | Premium quality guardrails | Anti-slop rules, polish |
+| `/redesign-skill` | Safe existing-code improvement | Targeted design fixes |
+
+**For the full design workflow, routing decisions, and end-to-end examples, read [`design-stack.md`](design-stack.md).**
+
+---
+
+## Design Systems Library
 
 **awesome-design-md is the default design tool for all web UI work.** Plain-text DESIGN.md files that any AI agent can read. No tokens wasted on MCP overhead. No Figma exports. Just markdown.
 

@@ -17,11 +17,22 @@ description: "Use when the user asks for web design work (landing pages, SaaS ap
 - Align output to the fixed stack: Next.js, TypeScript, TailwindCSS, shadcn/ui.
 - Avoid dark patterns or manipulative UX.
 
-## Default workflow (out-of-the-box)
-If UI-UX Pro Max data is available, always:
-1) Generate a design system with UI-UX Pro Max.
-2) Apply its style + palette + typography to the output spec.
-If the catalog is missing, fall back to the local style catalog.
+## Skill Routing
+
+- **Use `/design-system`** to establish persistent design tokens if missing
+- **Use `/ui-ux-pro-max`** only for supplementary research (palette, type, UX rules)
+- **Apply `/taste-skill` guardrails** to avoid generic patterns and maintain quality
+- **Use `/redesign-skill`** instead for existing codebase improvements
+- **Hand off to `/huashu-design`** when user asks for artifacts (prototype, deck, animation, export, critique)
+
+## Default Workflow
+
+1. **Check for `DESIGN.md`** — read existing tokens if present
+2. **Check for `brand-spec.md`** — use brand-token truth if present
+3. **Call `/design-system`** if brand consistency needed but no tokens exist
+4. **Use `/ui-ux-pro-max`** only for supplementary research
+5. **Apply `/taste-skill`** quality guardrails to output
+6. **Route to `/huashu-design`** if user wants artifact (prototype, deck, animation, export, critique)
 
 ## Intake (ask only what is missing)
 Ask for:
@@ -38,12 +49,14 @@ Ask for:
 - If user wants "modern" and "premium": suggest Glassmorphism or Liquid Glass.
 - If user wants "playful": suggest Claymorphism or Vibrant + Block-Based.
 
-## UI-UX Pro Max integration
-Design-system command:
+## Optional UI-UX Pro Max research
+Use only if DESIGN.md is missing, no clear style exists, or extra palette/typography/UX lookup is needed.
+
+Command:
 ```
 python3 ai/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system -p "<Project Name>"
 ```
-Then apply its style + palette + typography outputs to this spec.
+Apply output as supplementary research; do not let it override your style direction.
 
 ## Output format (strict)
 Return a concise, implementation-ready design spec:

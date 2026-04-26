@@ -11,6 +11,32 @@ Default design orchestrator for all web UI work. awesome-design-md provides plai
 **Fallback:** Stitch (explicit use only)  
 **Works with:** Claude Code (primary), Codex, Gemini Flash, any tool that reads markdown
 
+## Brand Asset Protocol
+
+For specific, real brands:
+
+1. **Existing project assets first** — Check project files, codebase, or user-provided assets
+2. **Official web/press assets second** — If web access available, use brand press pages or official guidelines
+3. **Ask if unavailable** — If web access unavailable or no assets found, ask user for assets
+4. **Mark assumptions** — If assets unavailable, clearly state assumptions about colors/fonts/brand
+5. **Document in `brand-spec.md`** — CSS variables (`--brand-primary`, `--brand-surface`, `--brand-text`, etc.)
+6. **Store as source of truth** — `brand-spec.md` is the factual brand-token reference
+7. **Consumed by all skills** — `/web-design`, `/huashu-design`, `/redesign-skill` read both `DESIGN.md` and `brand-spec.md`
+
+**Example `brand-spec.md`:**
+```
+## Brand Spec — prochat.tools
+
+### Colors
+- --brand-primary: #4c6fff (primary action)
+- --brand-surface: #f9fafb (backgrounds)
+- --brand-text: #0b1220 (dark text)
+
+### Typography
+- Primary font: Host Grotesk (all text)
+- Heading weight: 700
+```
+
 ---
 
 ## What This Skill Does

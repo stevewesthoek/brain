@@ -106,6 +106,8 @@ To guarantee a premium, non-generic output, you MUST strictly avoid these common
 
 ### Typography
 * **NO Inter Font:** Banned. Use `Geist`, `Outfit`, `Cabinet Grotesk`, or `Satoshi`.
+* **Use `text-wrap: pretty` / `text-wrap: balance`:** For polished headlines and body copy in HTML/web deliverables
+* **Avoid fake serif defaults:** Do not use serif fonts as default display faces unless the design explicitly requires them
 * **NO Oversized H1s:** The first heading should not scream. Control hierarchy with weight and color, not just massive scale.
 * **Serif Constraints:** Use Serif fonts ONLY for creative/editorial designs. **NEVER** use Serif on clean Dashboards.
 
