@@ -1,6 +1,7 @@
 #!/bin/bash
 # skill-prune-report.sh — Production-grade REPORT mode (output-only, never destructive)
 # Monthly scheduler: runs REPORT only, generates candidate reports, never modifies files
+# Safe by design: no file modifications, no deletions, no quarantines
 
 set -euo pipefail
 
@@ -14,13 +15,36 @@ REPORT_OUTPUT_DIR="runtime/local/skill-prune"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 TIMESTAMP_FILE=$(date -u +"%Y-%m-%d-%H%M%S")
 
-# Validate config exists
+# --- Dependency checks ---
+
+require_command() {
+    local cmd=$1
+    if ! command -v "$cmd" &>/dev/null; then
+        echo "ERROR: Required command '$cmd' not found" >&2
+        exit 1
+    fi
+}
+
+# Check required commands
+require_command "jq"
+require_command "stat"
+require_command "find"
+require_command "date"
+
+# Check optional command for email
+if [[ "${SKILL_PRUNE_EMAIL_ENABLED:-0}" == "1" ]]; then
+    if ! command -v "gws" &>/dev/null; then
+        echo "WARNING: SKILL_PRUNE_EMAIL_ENABLED=1 but 'gws' command not found" >&2
+    fi
+fi
+
+# --- Validate directories ---
+
 if [[ ! -f "$CONFIG_FILE" ]]; then
     echo "ERROR: $CONFIG_FILE not found" >&2
     exit 1
 fi
 
-# Validate active skills dir exists
 if [[ ! -d "$SKILLS_ACTIVE_DIR" ]]; then
     echo "ERROR: $SKILLS_ACTIVE_DIR not found" >&2
     exit 1
@@ -29,7 +53,8 @@ fi
 # Create report output directory
 mkdir -p "$REPORT_OUTPUT_DIR"
 
-# Load config (using jq)
+# --- Load config ---
+
 PROTECTED_SKILLS=$(jq -r '.protected_skills[]' "$CONFIG_FILE" 2>/dev/null | sort | tr '\n' ' ' || true)
 PROTECTED_CATEGORIES=$(jq -r '.protected_categories[]' "$CONFIG_FILE" 2>/dev/null | tr '\n' '|' | sed 's/|$//' || true)
 STALE_THRESHOLD_DAYS=${SKILL_PRUNE_STALE_DAYS:-180}
@@ -153,14 +178,23 @@ done
         [[ $i -gt 0 ]] && echo "    },"
         echo "    {"
         echo "      \"skill\": \"$skill\","
+        echo "      \"source_path\": \"ai/skills/custom/learned/$skill\","
         echo "      \"finding\": \"Stale >$STALE_THRESHOLD_DAYS days\","
-        echo "      \"recommendation\": \"quarantine\""
+        echo "      \"recommendation\": \"quarantine\","
+        echo "      \"risk\": \"low\","
+        echo "      \"protected\": false,"
+        echo "      \"actions\": {"
+        echo "        \"keep\": \"action://skill-prune/keep?skill=$skill\","
+        echo "        \"quarantine\": \"action://skill-prune/quarantine?skill=$skill\","
+        echo "        \"delete\": \"action://skill-prune/delete?skill=$skill\""
+        echo "      }"
         if [[ $i -eq $((${#CANDIDATES[@]} - 1)) ]]; then
             echo "    }"
         fi
     done
 
-    echo "  ]"
+    echo "  ],"
+    echo "  \"_info\": \"Action links are placeholders. Manual control via shell scripts: skill-prune-quarantine.sh, skill-prune-delete.sh\""
     echo "}"
 } > "$REPORT_OUTPUT_DIR/latest.json"
 
@@ -194,14 +228,17 @@ $BODY_TEXT
 EMAILEOF
 )
 
-        # Encode to base64 URL-safe (for Gmail raw format)
-        EMAIL_B64=$(echo -n "$EMAIL_MSG" | base64 | tr '+/' '-_' | tr -d '=')
+        # Encode to base64 URL-safe (for Gmail raw format) — ensure single line output
+        EMAIL_B64=$(echo -n "$EMAIL_MSG" | base64 | tr -d '\n' | tr '+/' '-_' | tr -d '=')
 
         # Send via GWS Gmail API (userId in --params, message in --json)
-        if "$GWS_BIN" gmail users messages send --params '{"userId": "me"}' --json "{\"raw\": \"$EMAIL_B64\"}" 2>&1 | grep -q '"id"'; then
+        GWS_OUTPUT=$("$GWS_BIN" gmail users messages send --params '{"userId": "me"}' --json "{\"raw\": \"$EMAIL_B64\"}" 2>&1 || true)
+        if echo "$GWS_OUTPUT" | grep -q '"id"'; then
             echo "✓ Email sent to $EMAIL_TO"
         else
             echo "WARNING: Failed to send email via GWS Gmail" >&2
+            echo "  Check: gws auth status" >&2
+            echo "  Reauthenticate: gws auth login" >&2
         fi
     fi
 fi

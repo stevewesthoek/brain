@@ -271,10 +271,10 @@ run_skill_prune() {
     return 0
   fi
 
-  # Load skill-prune config if it exists
+  # Load skill-prune config if it exists (safe quoting for config path)
   local config_cmd=""
   if [[ -f "$prune_config" ]]; then
-    config_cmd="source $prune_config && "
+    config_cmd=$(printf 'source %q && ' "$prune_config")
   fi
 
   command=$(printf '%s%q >> %q 2>&1' "$config_cmd" "$prune_script" "$prune_log")

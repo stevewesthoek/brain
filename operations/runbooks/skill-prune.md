@@ -284,7 +284,7 @@ The office-nightly-scheduler automatically refreshes the GWS token daily:
 # Status: Visible in ProBot dashboard (nightly scheduler jobs)
 ```
 
-This ensures emails never fail due to authentication expiration. The token stays fresh and valid automatically, managed centrally through the unified scheduler.
+This improves email reliability and surfaces auth failures early. However, **Google may still require manual reauthentication** at any time. Daily token refresh reduces (but does not eliminate) the risk of email failures.
 
 ### Monthly prevention
 Tracks last run month in `~/.local/state/office-scheduler/skill-prune.last-month` to prevent double-runs.
@@ -332,25 +332,30 @@ Verify `stat -f` is available (macOS BSD). Script falls back to GNU `find` if no
 ## Manual Workflow Example
 
 ```bash
-# 1. Monthly scheduler runs (7th of month)
-# Generates report → runtime/local/skill-prune/latest.md
+# 1. Monthly scheduler runs (7th of month, 03:00 Lisbon)
+# Generates report → runtime/local/skill-prune/latest.md + latest.json
+# Optional: Email sent to configured address
 
 # 2. Review report and identify candidate
 # $ cat runtime/local/skill-prune/latest.md
 # Shows: old-custom-skill (stale 200+ days)
 
-# 3. Quarantine the skill (manual decision)
-bash tools/scripts/skill-prune-quarantine.sh old-custom-skill
-# Symlink moved to quarantine/
-# Manifest created
-# Source preserved
+# 3. Record keep decision (optional, if you want to keep it)
+bash tools/scripts/skill-prune-keep.sh old-custom-skill "Still used occasionally"
+# Audit entry logged, skill remains active
 
-# 4. Wait 30 days (or monitor for confirmation)
+# 4. Quarantine the skill (manual decision)
+bash tools/scripts/skill-prune-quarantine.sh old-custom-skill
+# Symlink moved to quarantine/YYYY-MM/old-custom-skill.symlink
+# Manifest created with recovery commands
+# Source folder preserved in ai/skills/custom/learned/old-custom-skill
+
+# 5. Wait 30 days (until quarantine age >= 30 days)
 # Ensure no unintended side effects
 
-# 5. Delete the skill (manual confirmation)
+# 6. Delete the skill (manual confirmation, git must be clean)
 bash tools/scripts/skill-prune-delete.sh old-custom-skill
-# Source folder deleted
+# Source folder deleted: ai/skills/custom/learned/old-custom-skill
 # Manifest updated with deletion timestamp
 
 # Done — skill removed cleanly with full audit trail

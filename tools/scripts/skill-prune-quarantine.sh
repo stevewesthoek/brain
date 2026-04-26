@@ -2,7 +2,7 @@
 # skill-prune-quarantine.sh — Manual QUARANTINE mode (requires confirmation, symlink-only)
 # Disables a skill by moving its active symlink to quarantine
 # Source folder is PRESERVED for recovery
-# Requires explicit user approval
+# Requires explicit user approval and path safety validation
 
 set -euo pipefail
 
@@ -16,7 +16,33 @@ QUARANTINE_DIR="ai/skills/quarantine"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 MONTH_DIR=$(date -u +"%Y-%m")
 
-# Validate arguments
+# --- Helper functions ---
+
+validate_skill_name() {
+    local name=$1
+    # Only allow alphanumeric, dots, underscores, hyphens (no slashes, no .., no spaces)
+    if ! [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]]; then
+        return 1
+    fi
+    return 0
+}
+
+require_command() {
+    local cmd=$1
+    if ! command -v "$cmd" &>/dev/null; then
+        echo "ERROR: Required command '$cmd' not found" >&2
+        exit 1
+    fi
+}
+
+is_protected() {
+    local skill=$1
+    local protected_skills=$2
+    [[ " $protected_skills " =~ " $skill " ]] && return 0 || return 1
+}
+
+# --- Validate arguments ---
+
 if [[ $# -lt 1 ]]; then
     echo "Usage: skill-prune-quarantine.sh <skill-name> [--force]"
     echo ""
@@ -31,6 +57,16 @@ fi
 SKILL_NAME="$1"
 FORCE_FLAG="${2:-}"
 
+# Validate skill name format
+if ! validate_skill_name "$SKILL_NAME"; then
+    echo "ERROR: Invalid skill name '$SKILL_NAME'"
+    echo "Allowed: alphanumeric, dots, underscores, hyphens only"
+    exit 1
+fi
+
+# Require essential commands
+require_command "jq"
+
 # Validate config exists
 if [[ ! -f "$CONFIG_FILE" ]]; then
     echo "ERROR: $CONFIG_FILE not found"
@@ -41,21 +77,21 @@ fi
 PROTECTED_SKILLS=$(jq -r '.protected_skills[]' "$CONFIG_FILE" 2>/dev/null | sort | tr '\n' ' ')
 QUARANTINE_REQUIRES_CONFIRMATION=$(jq -r '.quarantine_requires_confirmation' "$CONFIG_FILE" 2>/dev/null)
 
-# Helper: check if skill is protected
-is_protected() {
-    local skill=$1
-    [[ " $PROTECTED_SKILLS " =~ " $skill " ]] && return 0 || return 1
-}
+# --- Path safety validation ---
 
-# --- Validation ---
-
-if is_protected "$SKILL_NAME"; then
+if is_protected "$SKILL_NAME" "$PROTECTED_SKILLS"; then
     echo "ERROR: Skill '$SKILL_NAME' is protected and cannot be quarantined"
     echo "Protected skills are intentional and exempt from pruning."
     exit 1
 fi
 
 ACTIVE_SYMLINK="$SKILLS_ACTIVE_DIR/$SKILL_NAME"
+
+# Verify active symlink is within active directory
+if ! [[ "$ACTIVE_SYMLINK" == "$SKILLS_ACTIVE_DIR/"* ]]; then
+    echo "ERROR: Active symlink path escapes safe scope"
+    exit 1
+fi
 
 if [[ ! -L "$ACTIVE_SYMLINK" ]]; then
     echo "ERROR: Skill '$SKILL_NAME' is not an active symlink at $ACTIVE_SYMLINK"
@@ -95,7 +131,7 @@ if [[ "$QUARANTINE_REQUIRES_CONFIRMATION" == "true" && "$FORCE_FLAG" != "--force
     echo ""
     echo "Action:"
     echo "  1. Move symlink: $ACTIVE_SYMLINK → $QUARANTINE_DIR/$MONTH_DIR/$SKILL_NAME.symlink"
-    echo "  2. Create manifest: $QUARANTINE_DIR/$MONTH_DIR/manifest.md"
+    echo "  2. Create/update manifest: $QUARANTINE_DIR/$MONTH_DIR/manifest.md"
     echo "  3. Source folder PRESERVED at: $SOURCE_PATH"
     echo ""
     read -p "Confirm quarantine? (yes/no): " confirm
@@ -112,18 +148,20 @@ mkdir -p "$QUARANTINE_DIR/$MONTH_DIR"
 # Move symlink to quarantine
 mv "$ACTIVE_SYMLINK" "$QUARANTINE_DIR/$MONTH_DIR/$SKILL_NAME.symlink"
 
-# --- Write manifest ---
+# --- Write manifest (append-only for new skill sections) ---
 
 MANIFEST_FILE="$QUARANTINE_DIR/$MONTH_DIR/manifest.md"
 
-# Append to or create manifest
+# Write header only if manifest doesn't exist
+if [[ ! -f "$MANIFEST_FILE" ]]; then
+    {
+        echo "# Quarantine Manifest — $MONTH_DIR"
+        echo ""
+    } > "$MANIFEST_FILE"
+fi
+
+# Append new skill section (no nested headers)
 {
-    echo "# Quarantine Manifest — $MONTH_DIR"
-    echo ""
-    if [[ -f "$MANIFEST_FILE" ]]; then
-        tail -n +2 "$MANIFEST_FILE"  # Skip header if already exists
-    fi
-    echo ""
     echo "## $SKILL_NAME"
     echo ""
     echo "- **Quarantined at:** $TIMESTAMP"
@@ -153,7 +191,8 @@ MANIFEST_FILE="$QUARANTINE_DIR/$MONTH_DIR/manifest.md"
     fi
     echo ""
     echo "- **Status:** quarantined"
-} > "$MANIFEST_FILE"
+    echo ""
+} >> "$MANIFEST_FILE"
 
 # --- Output ---
 
