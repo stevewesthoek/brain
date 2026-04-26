@@ -669,3 +669,4 @@ All detected credentials have been categorized. Run `sync-credentials` to check 
 | `UMAMI_PASSWORD` | `~/.config/probot/.env` | 2026-04-15 |
 | `WHATSAPP_APP_ID` | `~/.config/whatsapp/.env` | 2026-04-15 |
 | `DOKPLOY_API_HEADER` | `~/.config/dokploy/.env` | 2026-04-15 |
+| `BRAIN_BRIDGE_ACTION_TOKEN` | `~/.config/brain-bridge/.env` | 2026-04-24 |
