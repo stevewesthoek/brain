@@ -144,11 +144,28 @@ done
     else
         echo "## Candidates for Quarantine"
         echo ""
-        echo "| Skill | Status |"
-        echo "|-------|--------|"
+        echo "| Skill | Finding | Recommendation | Risk | Keep | Quarantine | Delete |"
+        echo "|-------|---------|----------------|------|------|------------|--------|"
         for skill in "${CANDIDATES[@]}"; do
-            echo "| $skill | Stale (>$STALE_THRESHOLD_DAYS days) |"
+            echo "| $skill | Stale (>$STALE_THRESHOLD_DAYS days) | Review and quarantine if unused | low | \`action://skill-prune/keep?skill=$skill\` | \`action://skill-prune/quarantine?skill=$skill\` | \`action://skill-prune/delete?skill=$skill\` |"
         done
+        echo ""
+        echo "**Action links are placeholders** until ProBot/manual action endpoints exist. For now, use the manual shell commands below."
+        echo ""
+        echo "## Manual Actions"
+        echo ""
+        echo "After reviewing candidates, use these commands:"
+        echo ""
+        echo "\`\`\`bash"
+        echo "# Keep a skill (audit log only, non-destructive)"
+        echo "bash tools/scripts/skill-prune-keep.sh <skill-name> 'Reason for keeping'"
+        echo ""
+        echo "# Quarantine a skill (symlink-only, source preserved)"
+        echo "bash tools/scripts/skill-prune-quarantine.sh <skill-name>"
+        echo ""
+        echo "# Delete a quarantined skill (requires 30-day quarantine age)"
+        echo "bash tools/scripts/skill-prune-delete.sh <skill-name>"
+        echo "\`\`\`"
         echo ""
     fi
 
@@ -178,7 +195,10 @@ done
         [[ $i -gt 0 ]] && echo "    },"
         echo "    {"
         echo "      \"skill\": \"$skill\","
+        echo "      \"active_path\": \"ai/skills/active/$skill\","
         echo "      \"source_path\": \"ai/skills/custom/learned/$skill\","
+        echo "      \"source_type\": \"custom-learned\","
+        echo "      \"category\": \"learned-gotcha\","
         echo "      \"finding\": \"Stale >$STALE_THRESHOLD_DAYS days\","
         echo "      \"recommendation\": \"quarantine\","
         echo "      \"risk\": \"low\","
@@ -194,7 +214,7 @@ done
     done
 
     echo "  ],"
-    echo "  \"_info\": \"Action links are placeholders. Manual control via shell scripts: skill-prune-quarantine.sh, skill-prune-delete.sh\""
+    echo "  \"_info\": \"Action links are placeholders until ProBot/manual action endpoints exist. Use shell scripts for manual actions: skill-prune-keep.sh, skill-prune-quarantine.sh, skill-prune-delete.sh\""
     echo "}"
 } > "$REPORT_OUTPUT_DIR/latest.json"
 

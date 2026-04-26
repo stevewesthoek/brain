@@ -41,6 +41,22 @@ is_protected() {
     [[ " $protected_skills " =~ " $skill " ]] && return 0 || return 1
 }
 
+resolve_symlink_target() {
+    local symlink_path=$1
+    local target=$2
+    local symlink_dir
+
+    symlink_dir="$(cd "$(dirname "$symlink_path")" && pwd)"
+
+    if [[ "$target" = /* ]]; then
+        # Absolute path
+        cd "$target" 2>/dev/null && pwd
+    else
+        # Relative path — resolve relative to symlink's directory
+        cd "$symlink_dir/$target" 2>/dev/null && pwd
+    fi
+}
+
 # --- Validate arguments ---
 
 if [[ $# -lt 1 ]]; then
@@ -100,20 +116,107 @@ fi
 
 SYMLINK_TARGET=$(readlink "$ACTIVE_SYMLINK")
 
-# Determine source type (custom-learned, vendor, etc)
+# --- Strict symlink target validation ---
+
+# Refuse unsupported symlink patterns
 if [[ "$SYMLINK_TARGET" == ../custom/learned/* ]]; then
+    # Learned skill symlink target must match skill name exactly
+    if [[ "$SYMLINK_TARGET" != "../custom/learned/$SKILL_NAME" ]]; then
+        echo "ERROR: Learned skill symlink target mismatch"
+        echo "Skill: $SKILL_NAME"
+        echo "Expected target: ../custom/learned/$SKILL_NAME"
+        echo "Actual target: $SYMLINK_TARGET"
+        exit 1
+    fi
+
     SOURCE_TYPE="custom-learned"
     SOURCE_PATH="$SKILLS_CUSTOM_LEARNED_DIR/$SKILL_NAME"
+    RESOLVED_SOURCE_PATH=$(resolve_symlink_target "$ACTIVE_SYMLINK" "$SYMLINK_TARGET" 2>/dev/null || echo "")
+
+    if [[ -z "$RESOLVED_SOURCE_PATH" ]]; then
+        echo "ERROR: Could not resolve learned skill target: $SYMLINK_TARGET"
+        exit 1
+    fi
+
+    # Verify resolved path is inside ai/skills/
+    if ! [[ "$RESOLVED_SOURCE_PATH" == "$REPO_ROOT/ai/skills/"* ]]; then
+        echo "ERROR: Resolved symlink target escapes repo skill tree"
+        echo "Target: $SYMLINK_TARGET"
+        echo "Resolved: $RESOLVED_SOURCE_PATH"
+        exit 1
+    fi
+
+    # Verify resolved path is inside ai/skills/custom/learned/
+    if ! [[ "$RESOLVED_SOURCE_PATH" == "$REPO_ROOT/ai/skills/custom/learned/"* ]]; then
+        echo "ERROR: Resolved symlink target is not inside ai/skills/custom/learned/"
+        echo "Target: $SYMLINK_TARGET"
+        echo "Resolved: $RESOLVED_SOURCE_PATH"
+        exit 1
+    fi
+
 elif [[ "$SYMLINK_TARGET" == ../vendors/* ]]; then
     SOURCE_TYPE="vendor"
-    SOURCE_PATH="ai/skills/$SYMLINK_TARGET"
+    # Normalize vendor SOURCE_PATH: strip "../vendors/" and prepend "ai/skills/vendors/"
+    VENDOR_RELATIVE="${SYMLINK_TARGET#../vendors/}"
+    SOURCE_PATH="ai/skills/vendors/$VENDOR_RELATIVE"
+    RESOLVED_SOURCE_PATH=$(resolve_symlink_target "$ACTIVE_SYMLINK" "$SYMLINK_TARGET" 2>/dev/null || echo "")
+
+    if [[ -z "$RESOLVED_SOURCE_PATH" ]]; then
+        echo "ERROR: Could not resolve vendor skill target: $SYMLINK_TARGET"
+        exit 1
+    fi
+
+    # Verify resolved path is inside ai/skills/
+    if ! [[ "$RESOLVED_SOURCE_PATH" == "$REPO_ROOT/ai/skills/"* ]]; then
+        echo "ERROR: Resolved symlink target escapes repo skill tree"
+        echo "Target: $SYMLINK_TARGET"
+        echo "Resolved: $RESOLVED_SOURCE_PATH"
+        exit 1
+    fi
+
+    # Verify resolved path is inside ai/skills/vendors/
+    if ! [[ "$RESOLVED_SOURCE_PATH" == "$REPO_ROOT/ai/skills/vendors/"* ]]; then
+        echo "ERROR: Resolved symlink target is not inside ai/skills/vendors/"
+        echo "Target: $SYMLINK_TARGET"
+        echo "Resolved: $RESOLVED_SOURCE_PATH"
+        exit 1
+    fi
+
 else
-    SOURCE_TYPE="unknown"
-    SOURCE_PATH="$SYMLINK_TARGET"
+    echo "ERROR: Unsupported active skill symlink target: $SYMLINK_TARGET"
+    echo "Allowed patterns:"
+    echo "  - ../custom/learned/<skill-name>"
+    echo "  - ../vendors/<vendor>/<skill-name>"
+    exit 1
 fi
 
-if [[ ! -d "$SOURCE_PATH" ]]; then
-    echo "ERROR: Source folder not found at $SOURCE_PATH"
+# Verify source folder exists and is a directory
+if [[ ! -d "$RESOLVED_SOURCE_PATH" ]]; then
+    echo "ERROR: Source folder not found at $RESOLVED_SOURCE_PATH"
+    echo "Skill: $SKILL_NAME"
+    exit 1
+fi
+
+# --- Check for duplicate quarantine ---
+
+# Look for existing quarantine symlink for this skill in any month
+if find "$QUARANTINE_DIR" -type l -name "$SKILL_NAME.symlink" 2>/dev/null | grep -q .; then
+    EXISTING_QUARANTINE=$(find "$QUARANTINE_DIR" -type l -name "$SKILL_NAME.symlink" 2>/dev/null | head -1)
+    QUARANTINE_MONTH=$(echo "$EXISTING_QUARANTINE" | grep -oE '[0-9]{4}-[0-9]{2}')
+    MANIFEST_FILE="$QUARANTINE_DIR/$QUARANTINE_MONTH/manifest.md"
+    echo "ERROR: Skill '$SKILL_NAME' is already quarantined"
+    echo "Location: $EXISTING_QUARANTINE"
+    echo "Month: $QUARANTINE_MONTH"
+    echo ""
+    echo "To recover, inspect the manifest and recreate the symlink:"
+    echo "  cat $MANIFEST_FILE"
+    echo ""
+    echo "Recovery command from manifest (Recreation section):"
+    echo "  ln -s ../custom/learned/$SKILL_NAME $ACTIVE_SYMLINK"
+    echo ""
+    echo "To force re-quarantine (not recommended):"
+    echo "  rm \"$EXISTING_QUARANTINE\""
+    echo "  bash tools/scripts/skill-prune-quarantine.sh $SKILL_NAME"
     exit 1
 fi
 
@@ -172,6 +275,7 @@ fi
     echo "- **Reason:** Manual quarantine"
     echo "- **Risk:** low"
     echo "- **Source folder:** $SOURCE_PATH (PRESERVED)"
+    echo "- **Resolved source:** $RESOLVED_SOURCE_PATH"
     echo "- **Source type:** $SOURCE_TYPE"
     echo ""
     echo "### Recovery"

@@ -13,16 +13,24 @@ description: Production-grade monthly skill library pruning — REPORT mode only
 
 ## REPORT Mode (Automated — Safe)
 
-**Default mode. Only allowed in scheduler automation.**
+**Default mode. Only allowed in scheduler automation. Fully automated with no manual steps required.**
 
-REPORT mode:
-- Inventories active skills and classifies each
-- Identifies candidates for action (unused, redundant, stale, overlapping, project-specific, low-value)
-- Protects intentional workflow/design/operational skills (see `prune-config.json`)
-- Produces markdown and JSON reports only
+REPORT mode automatically:
+- Inventories all active skills from `ai/skills/active/`
+- Checks staleness: identifies skills not modified for >= 180 days
+- Protects intentional workflow/design/operational skills (44 skills in `prune-config.json`)
+- Outputs human-readable (markdown) and machine-readable (JSON) reports
 - **Never modifies any files**
 - **Never deletes symlinks or folders**
 - **Never quarantines anything**
+
+### What is NOT automated:
+
+The following require manual review and explicit approval:
+- **Quality gate assessment:** Report identifies stale skills, but whether a skill is actually unused requires human judgment
+- **Redundancy detection:** Report does not detect overlapping/duplicate skills automatically
+- **Quarantine decisions:** Never automatic — requires manual review and explicit `skill-prune-quarantine.sh` command
+- **Delete decisions:** Never automatic — requires manual review, prior quarantine, and explicit `skill-prune-delete.sh` command
 
 ### REPORT Output
 
@@ -294,7 +302,7 @@ The office-nightly-scheduler runs `run_gws_token_refresh()` daily to keep GWS au
 gws gmail users getProfile --params '{"userId": "me"}'
 ```
 
-This prevents authentication expiration and ensures reliable email delivery.
+Daily token refresh improves reliability and surfaces auth failures early, but Google may still require manual reauthentication.
 
 Then the report script automatically sends via GWS Gmail API:
 - Prepares RFC 2822 format email (From: me, To: ..., Subject: ...)

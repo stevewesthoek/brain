@@ -33,6 +33,18 @@ require_command() {
     fi
 }
 
+extract_manifest_section() {
+    local manifest_file=$1
+    local skill_name=$2
+    # Extract section for requested skill only: from "## <skill>" to next "## " or EOF
+    awk -v skill="$skill_name" '
+        BEGIN { in_section=0 }
+        $0 == "## " skill { in_section=1; print; next }
+        /^## / && in_section { exit }
+        in_section { print }
+    ' "$manifest_file"
+}
+
 is_protected() {
     local skill=$1
     local protected_skills=$2
@@ -66,8 +78,25 @@ if [[ $# -lt 1 ]]; then
 fi
 
 SKILL_NAME="$1"
-FORCE_FLAG="${2:-}"
-FORCE_DIRTY="${3:-}"
+FORCE_FLAG=""
+FORCE_DIRTY=""
+
+# Parse flags in any order
+shift
+for arg in "$@"; do
+    case "$arg" in
+        --force)
+            FORCE_FLAG="--force"
+            ;;
+        --force-dirty)
+            FORCE_DIRTY="--force-dirty"
+            ;;
+        *)
+            echo "ERROR: Unknown flag '$arg'"
+            exit 1
+            ;;
+    esac
+done
 
 # Validate skill name format
 if ! validate_skill_name "$SKILL_NAME"; then
@@ -116,16 +145,25 @@ fi
 
 MANIFEST_FOUND=false
 QUARANTINE_TIME=""
+MANIFEST_STATUS=""
 MANIFEST_PATH=""
+MANIFEST_SECTION=""
 
 # Use find instead of globstar (macOS Bash 3.2 compat)
 while IFS= read -r manifest_file; do
     if grep -q "## $SKILL_NAME" "$manifest_file"; then
         MANIFEST_FOUND=true
-
-        # Extract quarantine timestamp (portable: no grep -oP)
-        QUARANTINE_TIME=$(awk -F': ' '/Quarantined at:/ {print $2; exit}' "$manifest_file" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         MANIFEST_PATH="$manifest_file"
+
+        # Extract ENTIRE section for THIS skill (section-specific)
+        MANIFEST_SECTION=$(extract_manifest_section "$manifest_file" "$SKILL_NAME")
+
+        # Extract quarantine timestamp from section only (portable: no gawk match)
+        QUARANTINE_TIME=$(printf "%s\n" "$MANIFEST_SECTION" | sed -n 's/.*Quarantined at:[* ]*//p' | head -1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+        # Extract status from section only
+        MANIFEST_STATUS=$(printf "%s\n" "$MANIFEST_SECTION" | sed -n 's/.*Status:[* ]*//p' | head -1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
         break
     fi
 done < <(find "$QUARANTINE_DIR" -type f -name manifest.md 2>/dev/null || true)
@@ -136,10 +174,34 @@ if [[ "$MANIFEST_FOUND" != "true" ]]; then
     exit 1
 fi
 
-# Verify manifest shows quarantined status
-if ! grep -q "Status: quarantined" "$MANIFEST_PATH"; then
-    echo "ERROR: Manifest does not show quarantined status"
+# Verify we extracted timestamp
+if [[ -z "$QUARANTINE_TIME" ]]; then
+    echo "ERROR: Could not parse quarantine timestamp from manifest"
     echo "File: $MANIFEST_PATH"
+    echo "Skill: $SKILL_NAME"
+    exit 1
+fi
+
+# Verify status exists and is correct
+if [[ -z "$MANIFEST_STATUS" ]]; then
+    echo "ERROR: Could not parse status from manifest"
+    echo "File: $MANIFEST_PATH"
+    echo "Skill: $SKILL_NAME"
+    exit 1
+fi
+
+if [[ "$MANIFEST_STATUS" == "deleted" ]]; then
+    echo "ERROR: Skill '$SKILL_NAME' is already deleted"
+    echo "Status: $MANIFEST_STATUS"
+    echo "File: $MANIFEST_PATH"
+    exit 1
+fi
+
+if [[ "$MANIFEST_STATUS" != "quarantined" ]]; then
+    echo "ERROR: Manifest status is not 'quarantined'"
+    echo "Current status: $MANIFEST_STATUS"
+    echo "File: $MANIFEST_PATH"
+    echo "Skill: $SKILL_NAME"
     exit 1
 fi
 
@@ -199,12 +261,17 @@ fi
 
 rm -rf "$SOURCE_PATH"
 
-# --- Update manifest ---
+# --- Update manifest with scoped deletion audit ---
 
 {
+    echo ""
+    echo "### Deletion audit — $SKILL_NAME — $TIMESTAMP"
+    echo ""
+    echo "- **Skill:** $SKILL_NAME"
     echo "- **Status:** deleted"
     echo "- **Deleted at:** $TIMESTAMP"
     echo "- **Deletion operator:** $(whoami)"
+    echo "- **Deleted source:** $SOURCE_PATH"
 } >> "$MANIFEST_PATH"
 
 # --- Output ---
