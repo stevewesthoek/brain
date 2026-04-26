@@ -197,11 +197,11 @@ EMAILEOF
         # Encode to base64 URL-safe (for Gmail raw format)
         EMAIL_B64=$(echo -n "$EMAIL_MSG" | base64 | tr '+/' '-_' | tr -d '=')
 
-        # Send via GWS Gmail API
-        if "$GWS_BIN" gmail users messages send --params "{\"userId\": \"me\", \"body\": {\"raw\": \"$EMAIL_B64\"}}" 2>&1 | grep -q '"id"'; then
+        # Send via GWS Gmail API (userId in --params, message in --json)
+        if "$GWS_BIN" gmail users messages send --params '{"userId": "me"}' --json "{\"raw\": \"$EMAIL_B64\"}" 2>&1 | grep -q '"id"'; then
             echo "✓ Email sent to $EMAIL_TO"
         else
-            echo "WARNING: Failed to send email via GWS Gmail (requires 'gws auth login')" >&2
+            echo "WARNING: Failed to send email via GWS Gmail" >&2
         fi
     fi
 fi

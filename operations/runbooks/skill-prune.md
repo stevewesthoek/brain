@@ -264,13 +264,26 @@ Then the report script sends via GWS Gmail:
 # Prepare RFC 2822 format email
 # Encode to base64 URL-safe (Gmail raw message format)
 # Send via GWS Gmail API
-gws gmail users messages send --params '{"userId": "me", "body": {"raw": "base64-encoded-message"}}'
+gws gmail users messages send --params '{"userId": "me"}' --json '{"raw": "base64-encoded-message"}'
 ```
 
 **Requirements:**
 - GWS CLI installed and authenticated (`gws auth login`)
 - Gmail API enabled in Google Cloud project
 - User account with Gmail access
+
+**Permanent Authentication (Stays Logged In):**
+
+A LaunchAgent automatically refreshes the GWS token daily:
+
+```bash
+# LaunchAgent: ~/Library/LaunchAgents/com.office.gws-token-refresh.plist
+# Runs daily (every 86400 seconds / 24 hours)
+# Calls: gws gmail users getProfile (refresh token without sending mail)
+# Status: launchctl list | grep gws-token-refresh
+```
+
+This ensures emails never fail due to authentication expiration. The token stays fresh and valid automatically.
 
 ### Monthly prevention
 Tracks last run month in `~/.local/state/office-scheduler/skill-prune.last-month` to prevent double-runs.
