@@ -173,8 +173,8 @@ async function runSteps(mode: BuildflowVerifyResult["mode"], buildflowRoot: stri
   }
 }
 
-function getBuildflowVerificationSteps(): StepSpec[] {
-  return [
+function getBuildflowVerificationSteps(localOnly: boolean = false): StepSpec[] {
+  const steps: StepSpec[] = [
     { name: "verify:dashboard", command: "pnpm", args: ["verify:dashboard"] },
     { name: "verify-write-contracts", command: "node", args: ["scripts/verify-write-contracts.mjs"] },
     {
@@ -183,13 +183,18 @@ function getBuildflowVerificationSteps(): StepSpec[] {
       args: ["verify:gpt-actions"],
       env: { PUBLIC_BASE_URL: "http://127.0.0.1:3054" },
     },
-    {
+  ];
+
+  if (!localOnly) {
+    steps.push({
       name: "verify:gpt-actions public",
       command: "pnpm",
       args: ["verify:gpt-actions"],
       env: { PUBLIC_BASE_URL: "https://buildflow.prochat.tools" },
-    },
-  ];
+    });
+  }
+
+  return steps;
 }
 
 async function ensureHealthy(url: string, timeoutMs: number): Promise<boolean> {
@@ -353,7 +358,7 @@ export async function runBuildflowRestartAndVerification(): Promise<BuildflowVer
       );
     }
 
-    const verifyResult = await runSteps("restart-and-verify", buildflowRoot, token, getBuildflowVerificationSteps(), Math.max(1, deadlineAt - Date.now()));
+    const verifyResult = await runSteps("restart-and-verify", buildflowRoot, token, getBuildflowVerificationSteps(true), Math.max(1, deadlineAt - Date.now()));
     restartStepResults.push(...verifyResult.steps);
     if (!verifyResult.ok) {
       return {
