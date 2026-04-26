@@ -136,6 +136,33 @@ Apps may also set `startupTimeoutMs` in `local-apps.json` when their boot path i
 The dashboard start button is non-blocking: it flips the card into a `STARTING` state immediately and polls until the app becomes healthy or the startup timeout elapses.
 The restart button is only shown for running apps so the control surface stays consistent and avoids ambiguous states.
 
+## BuildFlow Orchestrator
+
+BuildFlow (port 3054) uses a production-grade orchestrator to manage three services:
+
+- **Agent** (port 3052) - Local CLI server for vault operations
+- **Relay** (port 3053) - Docker-based bridge for device coordination
+- **Web** (port 3054) - Next.js dashboard UI
+
+The orchestrator (`buildflow-orchestrator.sh`) provides:
+
+✅ **Fact-checking** — lsof/ps/curl verification at each step
+✅ **Atomic operations** — All-or-nothing, no partial states
+✅ **Graceful shutdown** — SIGTERM→SIGKILL escalation
+✅ **Health verification** — Unified endpoint validates all three services
+✅ **Audit trail** — Full event log in `.buildflow/events.log`
+✅ **OrbStack-only** — No Docker Desktop assumptions
+
+**Health verification:**
+```
+GET http://localhost:3054/api/unified-health
+→ 200 OK if all services healthy
+→ 503 UNAVAILABLE if any service unhealthy
+```
+
+For complete BuildFlow orchestrator documentation, see:
+`buildflow/ORCHESTRATOR_GUIDE.md` and `buildflow/PROBOT_INTEGRATION.md`
+
 ## Editing rules
 
 1. Edit `operations/infrastructure/local-apps.json` first.
@@ -144,3 +171,4 @@ The restart button is only shown for running apps so the control surface stays c
 4. Keep lifecycle helpers repo-local and registry-driven rather than hardcoding dashboard-specific exceptions.
 5. Update repo-local config/docs at the same time if a reserved port changes.
 6. Never recycle a retired port for a different local app or database.
+7. **BuildFlow:** Do not edit start/stop/restart commands; they invoke the canonical orchestrator script. Update in buildflow repo only.
