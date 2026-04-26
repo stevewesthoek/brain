@@ -21,6 +21,7 @@ import {
   resolveLocalAppRestartCommand,
   waitForLocalAppHealth,
 } from "./local-apps.js";
+import { runBuildflowRestartAndVerification, runBuildflowVerification, type BuildflowVerifyResult } from "./buildflow-verify.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -44,6 +45,12 @@ const FAVICON_SVG = `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3
 
 const START_TIME = Date.now();
 const LOCAL_APP_STARTING_STATES = new Map<string, { startedAt: number; startupTimeoutMs: number | null }>();
+const BUILDFLOW_VERIFY_STATE = new Map<string, {
+  running: boolean;
+  mode: "verify" | "restart-and-verify" | null;
+  verifyResult: BuildflowVerifyResult | null;
+  restartAndVerifyResult: BuildflowVerifyResult | null;
+}>();
 
 // ─── Data helpers ────────────────────────────────────────────────────────────
 
@@ -1315,7 +1322,21 @@ function getLocalAppRestartCommand(name: string): string | null {
 }
 
 async function getLocalAppsStatus() {
-  return buildLocalAppsStatus(loadLocalApps(), fetch, { startingApps: LOCAL_APP_STARTING_STATES });
+  const status = await buildLocalAppsStatus(loadLocalApps(), fetch, { startingApps: LOCAL_APP_STARTING_STATES });
+  return {
+    ...status,
+    apps: status.apps.map((app) => {
+      if (app.name !== "BuildFlow") return app;
+      const buildflowState = BUILDFLOW_VERIFY_STATE.get("BuildFlow");
+      return {
+        ...app,
+        buildflowVerify: buildflowState?.verifyResult ?? null,
+        buildflowVerifyRunning: buildflowState?.running === true && buildflowState.mode === "verify",
+        buildflowRestartVerify: buildflowState?.restartAndVerifyResult ?? null,
+        buildflowRestartVerifyRunning: buildflowState?.running === true && buildflowState.mode === "restart-and-verify",
+      };
+    }),
+  };
 }
 
 function setLocalAppStartingState(name: string, startupTimeoutMs: number | null): void {
@@ -1635,6 +1656,16 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .local-app-btn:hover{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
 .local-app-btn.danger{color:var(--red);border-color:rgba(248,113,113,.2)}
 .local-app-btn.danger:hover{background:rgba(248,113,113,.1);border-color:var(--red)}
+.local-app-btn.success{color:#16a34a;border-color:rgba(22,163,74,.25)}
+.local-app-btn.success:hover{background:rgba(22,163,74,.08);border-color:#16a34a}
+.local-app-btn.warn{color:#dc2626;border-color:rgba(220,38,38,.25)}
+.local-app-btn.warn:hover{background:rgba(220,38,38,.08);border-color:#dc2626}
+.buildflow-verify-panel{margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:rgba(255,255,255,.02);font-size:10px}
+.buildflow-verify-summary{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}
+.buildflow-verify-summary code,.buildflow-verify-panel pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+.buildflow-verify-panel pre{white-space:pre-wrap;word-break:break-word;margin:4px 0 0;padding:6px;border-radius:4px;background:rgba(0,0,0,.18);max-height:160px;overflow:auto}
+.buildflow-verify-step{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08)}
+.buildflow-verify-step summary{cursor:pointer}
 </style>
 </head>
 <body>
@@ -2184,6 +2215,11 @@ function renderCloudflareTunnels(data){
 }
 function renderLocalAppCard(app){
   const transient=window.__localAppTransient?.[app.name] || null;
+  const verify=app.name==='BuildFlow' ? (window.__buildflowVerify?.result || app.buildflowVerify || null) : null;
+  const verifyRunning=app.name==='BuildFlow' ? Boolean(window.__buildflowVerify?.running || app.buildflowVerifyRunning) : false;
+  const verifyExpanded=app.name==='BuildFlow' ? Boolean(window.__buildflowVerify?.expanded || app.buildflowVerifyExpanded) : false;
+  const restartVerify=app.name==='BuildFlow' ? (window.__buildflowRestartVerify?.result || app.buildflowRestartVerify || null) : null;
+  const restartVerifyRunning=app.name==='BuildFlow' ? Boolean(window.__buildflowRestartVerify?.running || app.buildflowRestartVerifyRunning) : false;
   const effectiveStatus=transient?.status || app.status;
   const isRunning=effectiveStatus==='running';
   const isStarting=effectiveStatus==='starting';
@@ -2205,6 +2241,17 @@ function renderLocalAppCard(app){
   html+='</div>';
   html+='<div class="local-app-actions" data-local-app-actions="'+esc(app.name)+'">';
   if(app.name!=='ProBot'){
+    if(app.name==='BuildFlow'){
+      const verifyLabel=verifyRunning?'Verifying...':verify?.ok===true?'Verified':verify?.ok===false?'Failed':'Verify';
+      const verifyClass=verifyRunning?'':verify?.ok===true?'success':verify?.ok===false?'warn':'';
+      html+='<button class="local-app-btn '+verifyClass+'" data-action="verify" onclick="localAppVerify(this,&quot;'+esc(app.name)+'&quot;)"'+(verifyRunning?' disabled':'')+'>'+esc(verifyLabel)+'</button>';
+      const restartVerifyLabel=restartVerifyRunning?'Restarting...':restartVerify?.ok===true?'Verified':restartVerify?.ok===false?'Failed':'Restart + Verify';
+      const restartVerifyClass=restartVerifyRunning?'':restartVerify?.ok===true?'success':restartVerify?.ok===false?'warn':'';
+      html+='<button class="local-app-btn '+restartVerifyClass+'" data-action="restart-and-verify" onclick="localAppRestartAndVerify(this,&quot;'+esc(app.name)+'&quot;)"'+(restartVerifyRunning?' disabled':'')+'>'+esc(restartVerifyLabel)+'</button>';
+      if(verify || restartVerify){
+        html+='<button class="local-app-btn" data-action="verify-details" onclick="toggleBuildFlowVerifyDetails()" type="button">View details</button>';
+      }
+    }
     if(!isRunning){
       html+='<button class="local-app-btn" data-action="start" onclick="localAppStart(this,&quot;'+esc(app.name)+'&quot;)"'+(isStarting||isStopping?' disabled':'')+'>'+(isStarting?'Starting…':isStopping?'Stopping…':'Start')+'</button>';
     }else{
@@ -2218,6 +2265,41 @@ function renderLocalAppCard(app){
     html+='<a href="'+esc(app.url)+'" target="_blank" class="local-app-btn" style="text-decoration:none;display:inline-block">Open ↗</a>';
   }
   html+='</div>';
+  if(app.name==='BuildFlow'){
+    const latestVerify = getLatestBuildFlowVerifyResult(app);
+    if(latestVerify){
+      html+=renderBuildFlowVerifyDetails(latestVerify, verifyExpanded);
+    }
+  }
+  html+='</div>';
+  return html;
+}
+function getLatestBuildFlowVerifyResult(app){
+  const state=window.__buildflowVerifyState || {};
+  if(state.result) return state.result;
+  const verify=app.buildflowVerify || null;
+  const restartVerify=app.buildflowRestartVerify || null;
+  if(verify && restartVerify){
+    return new Date((restartVerify.finishedAt||0)).getTime() >= new Date((verify.finishedAt||0)).getTime() ? restartVerify : verify;
+  }
+  return verify || restartVerify;
+}
+function renderBuildFlowVerifyDetails(result,expanded){
+  const steps=Array.isArray(result.steps)?result.steps:[];
+  let html='<div class="buildflow-verify-panel" data-buildflow-verify-panel="1" style="display:'+(expanded?'block':'none')+'">';
+  const modeLabel=result.mode==='restart-and-verify'?'Restart + Verify':'Verify';
+  html+='<div class="buildflow-verify-summary"><strong>BuildFlow Verification</strong><span>'+esc(result.status.toUpperCase())+'</span></div>';
+  html+='<div style="color:var(--muted);margin-top:4px">Run type: '+esc(modeLabel)+'</div>';
+  html+='<div style="color:var(--muted)">Started: '+esc(result.startedAt)+' · Finished: '+esc(result.finishedAt)+' · Duration: '+esc(String(Math.round(result.durationMs/1000)))+'s</div>';
+  if(result.failedStep)html+='<div style="margin-top:4px"><strong>Failed step:</strong> '+esc(result.failedStep)+'</div>';
+  if(result.error)html+='<div style="margin-top:4px"><strong>Error:</strong> '+esc(result.error)+'</div>';
+  steps.forEach(function(step,idx){
+    html+='<details class="buildflow-verify-step" '+(idx===0?'open':'')+'>';
+    html+='<summary>'+esc(step.name)+' · '+esc(step.ok?'passed':'failed')+' · exit '+esc(String(step.exitCode))+'</summary>';
+    html+='<div><div><strong>stdout</strong></div><pre>'+esc(step.stdout||'')+'</pre></div>';
+    html+='<div><div><strong>stderr</strong></div><pre>'+esc(step.stderr||'')+'</pre></div>';
+    html+='</details>';
+  });
   html+='</div>';
   return html;
 }
@@ -2417,6 +2499,90 @@ async function localAppRestart(btn,name){
     syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
     pollLocalAppUntilRunning(name);
   }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+}
+async function localAppVerify(btn,name){
+  const o=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='Verifying...';
+  window.__buildflowVerifyState=window.__buildflowVerifyState||{mode:'verify',running:false,result:null,expanded:false};
+  window.__buildflowVerifyState.mode='verify';
+  window.__buildflowVerifyState.running=true;
+  window.__buildflowVerifyState.expanded=false;
+  setLocalAppTransient(name,{status:'starting'});
+  syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+  try{
+    const r=await fetch('/api/local-apps/buildflow/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    const d=await r.json();
+    if(!r.ok || d.ok!==true || d.status!=='passed'){
+      throw new Error(d.error || d.message || 'BuildFlow verification failed');
+    }
+    window.__buildflowVerifyState={mode:'verify',running:false,result:d,expanded:true};
+    btn.disabled=false;
+    btn.textContent='Verified';
+    btn.classList.remove('warn');
+    btn.classList.add('success');
+    syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+    showBuildFlowVerifyDetails(true);
+  }catch(e){
+    const msg=String(e.message||e);
+    const result=window.__buildflowVerifyState?.result || null;
+    window.__buildflowVerifyState={mode:'verify',running:false,result:result||{mode:'verify',ok:false,status:'failed',error:msg,steps:[],startedAt:new Date().toISOString(),finishedAt:new Date().toISOString(),durationMs:0},expanded:true};
+    btn.disabled=false;
+    btn.textContent='Failed';
+    btn.classList.remove('success');
+    btn.classList.add('warn');
+    syncLocalAppCard(name).catch(err=>console.error('Local app card sync failed:',err));
+    showBuildFlowVerifyDetails(true);
+  }
+}
+async function localAppRestartAndVerify(btn,name){
+  const o=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='Restarting...';
+  window.__buildflowVerifyState=window.__buildflowVerifyState||{mode:'restart-and-verify',running:false,result:null,expanded:false};
+  window.__buildflowVerifyState.mode='restart-and-verify';
+  window.__buildflowVerifyState.running=true;
+  window.__buildflowVerifyState.expanded=false;
+  setLocalAppTransient(name,{status:'stopping'});
+  syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+  try{
+    const r=await fetch('/api/local-apps/buildflow/restart-and-verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    const d=await r.json();
+    if(!r.ok || d.ok!==true || d.status!=='passed'){
+      throw new Error(d.error || d.message || 'BuildFlow restart + verification failed');
+    }
+    window.__buildflowVerifyState={mode:'restart-and-verify',running:false,result:d,expanded:true};
+    btn.disabled=false;
+    btn.textContent='Verified';
+    btn.classList.remove('warn');
+    btn.classList.add('success');
+    syncLocalAppCard(name).catch(e=>console.error('Local app card sync failed:',e));
+    showBuildFlowVerifyDetails(true);
+  }catch(e){
+    const msg=String(e.message||e);
+    const result=window.__buildflowVerifyState?.result || null;
+    window.__buildflowVerifyState={mode:'restart-and-verify',running:false,result:result||{mode:'restart-and-verify',ok:false,status:'failed',error:msg,steps:[],startedAt:new Date().toISOString(),finishedAt:new Date().toISOString(),durationMs:0},expanded:true};
+    btn.disabled=false;
+    btn.textContent='Failed';
+    btn.classList.remove('success');
+    btn.classList.add('warn');
+    syncLocalAppCard(name).catch(err=>console.error('Local app card sync failed:',err));
+    showBuildFlowVerifyDetails(true);
+  }
+}
+function showBuildFlowVerifyDetails(forceOpen){
+  const panel=document.querySelector('[data-buildflow-verify-panel="1"]');
+  if(!panel)return;
+  window.__buildflowVerifyState=window.__buildflowVerifyState||{mode:'verify',running:false,result:null,expanded:false};
+  window.__buildflowVerifyState.expanded=forceOpen===false?false:true;
+  panel.style.display=forceOpen===false?'none':'block';
+}
+function toggleBuildFlowVerifyDetails(){
+  const panel=document.querySelector('[data-buildflow-verify-panel="1"]');
+  if(!panel)return;
+  window.__buildflowVerifyState=window.__buildflowVerifyState||{mode:'verify',running:false,result:null,expanded:false};
+  window.__buildflowVerifyState.expanded=panel.style.display==='none' || !panel.style.display;
+  panel.style.display=panel.style.display==='none' || !panel.style.display ? 'block' : 'none';
 }
 function findLocalAppCard(name){
   return Array.from(document.querySelectorAll('[data-local-app-card]')).find(el=>el.getAttribute('data-local-app-card')===name) || null;
@@ -2623,6 +2789,108 @@ export function createDashboardServer(app: AppContext): http.Server {
       } catch (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: String(err) }));
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url === "/api/local-apps/buildflow/verify") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, status: "failed", error: "BuildFlow verification is only enabled on localhost." }));
+        return;
+      }
+      if (BUILDFLOW_VERIFY_STATE.get("BuildFlow")?.running) {
+        res.writeHead(409, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, status: "running", error: "BuildFlow verification is already running." }));
+        return;
+      }
+      const current = BUILDFLOW_VERIFY_STATE.get("BuildFlow");
+      BUILDFLOW_VERIFY_STATE.set("BuildFlow", {
+        running: true,
+        mode: "verify",
+        verifyResult: current?.verifyResult ?? null,
+        restartAndVerifyResult: current?.restartAndVerifyResult ?? null,
+      });
+      try {
+        const result = await runBuildflowVerification();
+        BUILDFLOW_VERIFY_STATE.set("BuildFlow", {
+          running: false,
+          mode: "verify",
+          verifyResult: result,
+          restartAndVerifyResult: current?.restartAndVerifyResult ?? null,
+        });
+        res.writeHead(result.ok ? 200 : 500, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+        res.end(JSON.stringify(result));
+      } catch (err) {
+        const failure = {
+          mode: "verify" as const,
+          ok: false,
+          status: "failed" as const,
+          startedAt: new Date().toISOString(),
+          finishedAt: new Date().toISOString(),
+          durationMs: 0,
+          error: String(err),
+          steps: [],
+        };
+        BUILDFLOW_VERIFY_STATE.set("BuildFlow", {
+          running: false,
+          mode: "verify",
+          verifyResult: failure,
+          restartAndVerifyResult: current?.restartAndVerifyResult ?? null,
+        });
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(failure));
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url === "/api/local-apps/buildflow/restart-and-verify") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, status: "failed", error: "BuildFlow restart + verification is only enabled on localhost." }));
+        return;
+      }
+      if (BUILDFLOW_VERIFY_STATE.get("BuildFlow")?.running) {
+        res.writeHead(409, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, status: "running", error: "BuildFlow verification is already running." }));
+        return;
+      }
+      const current = BUILDFLOW_VERIFY_STATE.get("BuildFlow");
+      BUILDFLOW_VERIFY_STATE.set("BuildFlow", {
+        running: true,
+        mode: "restart-and-verify",
+        verifyResult: current?.verifyResult ?? null,
+        restartAndVerifyResult: current?.restartAndVerifyResult ?? null,
+      });
+      try {
+        const result = await runBuildflowRestartAndVerification();
+        BUILDFLOW_VERIFY_STATE.set("BuildFlow", {
+          running: false,
+          mode: "restart-and-verify",
+          verifyResult: current?.verifyResult ?? null,
+          restartAndVerifyResult: result,
+        });
+        res.writeHead(result.ok ? 200 : 500, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+        res.end(JSON.stringify(result));
+      } catch (err) {
+        const failure = {
+          mode: "restart-and-verify" as const,
+          ok: false,
+          status: "failed" as const,
+          startedAt: new Date().toISOString(),
+          finishedAt: new Date().toISOString(),
+          durationMs: 0,
+          error: String(err),
+          steps: [],
+        };
+        BUILDFLOW_VERIFY_STATE.set("BuildFlow", {
+          running: false,
+          mode: "restart-and-verify",
+          verifyResult: current?.verifyResult ?? null,
+          restartAndVerifyResult: failure,
+        });
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(failure));
       }
       return;
     }
