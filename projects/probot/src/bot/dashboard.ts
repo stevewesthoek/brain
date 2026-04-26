@@ -1682,8 +1682,8 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 .local-app-btn.danger:hover{background:rgba(248,113,113,.1);border-color:var(--red)}
 .local-app-btn.success{color:var(--green);border-color:rgba(52,211,153,.25)}
 .local-app-btn.success:hover{background:var(--green-d);border-color:var(--green)}
-.local-app-btn.warn{color:#dc2626;border-color:rgba(220,38,38,.25)}
-.local-app-btn.warn:hover{background:rgba(220,38,38,.08);border-color:#dc2626}
+.local-app-btn.warn{color:var(--red);border-color:rgba(248,113,113,.2)}
+.local-app-btn.warn:hover{background:rgba(248,113,113,.1);border-color:var(--red)}
 .buildflow-verify-panel{margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:rgba(255,255,255,.02);font-size:10px}
 .buildflow-verify-summary{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}
 .buildflow-verify-summary code,.buildflow-verify-panel pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
