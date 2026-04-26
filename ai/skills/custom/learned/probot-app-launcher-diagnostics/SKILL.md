@@ -38,10 +38,10 @@ When a start command fails due to missing prerequisites (OrbStack down, Docker n
    orbctl status  # or just try: docker ps
    ```
 
-2. **Run the script manually** to see the actual error:
+2. **Run the orchestrator manually** to see the actual error:
    ```bash
    cd ~/Repos/stevewesthoek/buildflow
-   bash start-all.sh  # actual error output visible here
+   bash buildflow-orchestrator.sh start  # actual error output visible here (production-grade)
    ```
 
 3. **Check the logs** ProBot wrote (if any):
@@ -61,7 +61,7 @@ When a start command fails due to missing prerequisites (OrbStack down, Docker n
 **For BuildFlow specifically:**
 ```bash
 orbctl start  # Start OrbStack if not running
-# Then use ProBot dashboard or: cd ~/Repos/stevewesthoek/buildflow && ./start-all.sh
+# Then use ProBot dashboard or: cd ~/Repos/stevewesthoek/buildflow && ./buildflow-orchestrator.sh start
 ```
 
 **For any local app:**
@@ -81,5 +81,5 @@ orbctl start  # Start OrbStack if not running
 
 Repo: stevewesthoek/brain (ProBot + BuildFlow)  
 Discovered: 2026-04-26  
-Area: `projects/probot/src/bot/{local-apps.ts, dashboard.ts}` and `buildflow/start-all.sh`  
+Area: `projects/probot/src/bot/{local-apps.ts, dashboard.ts}` and `buildflow/buildflow-orchestrator.sh`  
 Trigger: Node 14.1 update exposed the issue after native module rebuild

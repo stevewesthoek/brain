@@ -167,11 +167,11 @@ cat ~/.probot/update-restore-state.json
 ### Manually restart a single service:
 
 ```bash
-# BuildFlow example
-cd ~/Repos/stevewesthoek/buildflow && ./start-all.sh
+# BuildFlow example (uses production-grade orchestrator)
+cd ~/Repos/stevewesthoek/buildflow && ./buildflow-orchestrator.sh restart
 
 # Or any app from local-apps registry
-cd <app-repo> && bash start-all.sh  # or similar
+cd <app-repo> && bash <start-script>  # as defined in local-apps.json
 ```
 
 ### Check logs for specific errors:
@@ -248,8 +248,8 @@ Manually restore one service:
 # Go to service directory
 cd ~/Repos/stevewesthoek/buildflow
 
-# Run the start script directly
-./start-all.sh
+# Run the orchestrator directly (production-grade)
+./buildflow-orchestrator.sh start
 
 # Watch output for errors
 ```
@@ -415,7 +415,7 @@ cat ~/.probot/update-restore-state.json 2>/dev/null || echo "No pre-update state
 
 **Behind the scenes:**
 
-1. `buildflow/start-all.sh` stops BuildFlow (port 3052, 3053, 3054)
+1. `buildflow/buildflow-orchestrator.sh stop` stops BuildFlow (port 3052, 3053, 3054) - production-grade with fact-checking
 2. `firecrawl/stop-firecrawl.sh` stops Firecrawl (port 3055)
 3. ProBot shuts down gracefully
 4. Update subprocess runs: `npm install && npm rebuild && npm start`

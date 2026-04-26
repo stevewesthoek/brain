@@ -221,18 +221,18 @@
     "appUrl": "http://localhost:3054",
     "check": "http://localhost:3054/api/unified-health",
     "healthCheck": "http://localhost:3054/api/unified-health",
-    "start": "bash ~/Repos/stevewesthoek/buildflow/start-all.sh",
-    "startCommand": "bash ~/Repos/stevewesthoek/buildflow/start-all.sh",
-    "stop": "bash ~/Repos/stevewesthoek/buildflow/stop-all.sh",
-    "stopCommand": "bash ~/Repos/stevewesthoek/buildflow/stop-all.sh",
-    "restart": "bash ~/Repos/stevewesthoek/buildflow/restart-all.sh",
-    "restartCommand": "bash ~/Repos/stevewesthoek/buildflow/restart-all.sh",
+    "start": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh start",
+    "startCommand": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh start",
+    "stop": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh stop",
+    "stopCommand": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh stop",
+    "restart": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh restart",
+    "restartCommand": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh restart",
     "description": "BuildFlow: unified lifecycle for agent (3052), web (3054), and relay (3053)",
     "databaseEngine": null,
     "databaseServiceName": null,
     "databasePort": null,
     "databaseName": null,
     "databaseUser": null,
-    "notes": "Requires OrbStack with Docker daemon running and ~/.config/buildflow/.env.relay. Health check validates all three services (agent, relay, web) are healthy."
+    "notes": "Uses production-grade orchestrator with fact-checking, atomic operations, and graceful shutdown. Requires OrbStack with Docker daemon running and ~/.config/buildflow/.env.relay. Health check validates all three services (agent, relay, web) are healthy."
   }
 ]

@@ -68,7 +68,7 @@ New code should prefer the expanded fields. Legacy readers may keep using the ol
 | ComfyUI | 8188 | - | Stable Diffusion image generation UI | `~/.local/bin/comfyui-start` |
 | Family Finance | 3060 | - | Multi-account family finance tracker | `cd ~/Repos/stevewesthoek/family-finance && npm run dev > /tmp/family-finance.log 2>&1 &` |
 | Fala | 3050 | - | Portuguese language learning app | `echo 'Manual start required'` |
-| BuildFlow | 3054 | - | Unified lifecycle for agent, web, and relay | `bash ~/Repos/stevewesthoek/buildflow/start-all.sh` |
+| BuildFlow | 3054 | - | Unified lifecycle for agent (3052), web (3054), and relay (3053) | `bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh start` |
 
 ## OrbStack database inventory
 
@@ -120,7 +120,7 @@ The dashboard restart action is registry-driven:
 
 Current custom restart helpers:
 
-- `BuildFlow` -> `~/Repos/stevewesthoek/buildflow/restart-all.sh`
+- `BuildFlow` -> `~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh restart` (production-grade orchestrator with fact-checking)
 - `xGrow` -> `~/Repos/prochattools/saas/xgrow/restart-xgrow.sh`
 
 Current explicit stop helpers:
@@ -128,7 +128,7 @@ Current explicit stop helpers:
 - `Says the Bible` -> `~/Repos/prochattools/web/says-the-bible/scripts/dev/stop-local.sh`
 - `ComfyUI` -> `~/.local/bin/comfyui-stop`
 - `Firecrawl` -> `~/Repos/stevewesthoek/brain/tools/firecrawl/stop-firecrawl.sh`
-- `BuildFlow` -> `~/Repos/stevewesthoek/buildflow/stop-all.sh`
+- `BuildFlow` -> `~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh stop` (production-grade orchestrator with fact-checking)
 - `xGrow` -> `~/Repos/prochattools/saas/xgrow/stop-xgrow.sh`
 
 For local dashboard launches, prefer a restart-safe wrapper script when the package has a slow `predev` chain or when editors need a one-click restart path.

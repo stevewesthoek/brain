@@ -89,7 +89,7 @@ Compatibility window note:
 
 ```bash
 cd ~/Repos/stevewesthoek/buildflow
-bash start-all.sh
+bash buildflow-orchestrator.sh start
 ```
 
 ### Firecrawl
