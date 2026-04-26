@@ -274,16 +274,17 @@ gws gmail users messages send --params '{"userId": "me"}' --json '{"raw": "base6
 
 **Permanent Authentication (Stays Logged In):**
 
-A LaunchAgent automatically refreshes the GWS token daily:
+The office-nightly-scheduler automatically refreshes the GWS token daily:
 
 ```bash
-# LaunchAgent: ~/Library/LaunchAgents/com.office.gws-token-refresh.plist
-# Runs daily (every 86400 seconds / 24 hours)
-# Calls: gws gmail users getProfile (refresh token without sending mail)
-# Status: launchctl list | grep gws-token-refresh
+# Scheduler job: run_gws_token_refresh()
+# Runs: Every night (part of office-nightly-scheduler.sh)
+# Action: Calls gws gmail users getProfile (refresh token without sending mail)
+# Log: ~/.local/state/office-scheduler/gws-token-refresh.log
+# Status: Visible in ProBot dashboard (nightly scheduler jobs)
 ```
 
-This ensures emails never fail due to authentication expiration. The token stays fresh and valid automatically.
+This ensures emails never fail due to authentication expiration. The token stays fresh and valid automatically, managed centrally through the unified scheduler.
 
 ### Monthly prevention
 Tracks last run month in `~/.local/state/office-scheduler/skill-prune.last-month` to prevent double-runs.

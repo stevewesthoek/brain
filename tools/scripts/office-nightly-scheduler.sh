@@ -314,6 +314,18 @@ run_google_ads_sync() {
   run_job "google-ads-sync" "$timeout_seconds" "$command" "$sync_log"
 }
 
+run_gws_token_refresh() {
+  local timeout_seconds="${GWS_TOKEN_REFRESH_TIMEOUT_SECONDS:-60}"
+  local token_log="$LOG_DIR/gws-token-refresh.log"
+  local command
+
+  # Refresh GWS token daily to keep authentication active
+  # Prevents "reauth required" errors during skill-prune email sends
+  command="gws gmail users getProfile --params '{\"userId\": \"me\"}' >> $token_log 2>&1"
+
+  run_job "gws-token-refresh" "$timeout_seconds" "$command" "$token_log"
+}
+
 render_runtime_report() {
   if [[ -x "$REPORT_SCRIPT" ]]; then
     OFFICE_SCHEDULER_STATE_DIR="$STATE_DIR" \
@@ -429,6 +441,9 @@ main() {
 
   # Google Ads daily sync — never stops chain, lightweight (< 2 minutes typically)
   run_google_ads_sync || log "warning google-ads-sync failed but chain continues"
+
+  # GWS token refresh — daily, keeps auth fresh for skill-prune emails, never stops chain
+  run_gws_token_refresh || log "warning gws-token-refresh failed but chain continues"
 
   # ING Bank Statement download — runs on the 1st of each month, never stops chain
   run_ing_bank_statement_download || log "warning ing-bank-statement-download failed but chain continues"

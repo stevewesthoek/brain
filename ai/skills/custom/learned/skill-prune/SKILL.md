@@ -278,18 +278,28 @@ cd $HOME/Repos/stevewesthoek/brain && \
 
 **Email (optional):**
 
-Set environment variables in scheduler config or `.env`:
+Set environment variables in scheduler config:
 
 ```bash
+~/.local/state/office-scheduler/skill-prune.env
 export SKILL_PRUNE_EMAIL_ENABLED=1
 export SKILL_PRUNE_EMAIL_TO=your-email@example.com
 export GWS_BIN=gws  # optional, defaults to gws
 ```
 
+**Automatic token refresh:**
+
+The office-nightly-scheduler runs `run_gws_token_refresh()` daily to keep GWS auth fresh:
+```bash
+gws gmail users getProfile --params '{"userId": "me"}'
+```
+
+This prevents authentication expiration and ensures reliable email delivery.
+
 Then the report script automatically sends via GWS Gmail API:
 - Prepares RFC 2822 format email (From: me, To: ..., Subject: ...)
 - Encodes to base64 URL-safe format (Gmail raw message format)
-- Sends via: `gws gmail users messages send --params '{...}'`
+- Sends via: `gws gmail users messages send --params '{"userId": "me"}' --json '{"raw": "..."}'`
 - Subject: "Skill Prune Report — April 2026"
 - Body: Markdown report content
 
