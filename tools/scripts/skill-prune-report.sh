@@ -168,6 +168,44 @@ done
 cp "$REPORT_OUTPUT_DIR/latest.md" "$REPORT_OUTPUT_DIR/${TIMESTAMP_FILE}.md" 2>/dev/null || true
 cp "$REPORT_OUTPUT_DIR/latest.json" "$REPORT_OUTPUT_DIR/${TIMESTAMP_FILE}.json" 2>/dev/null || true
 
+# --- Optional: Send email via GWS Gmail ---
+
+if [[ "${SKILL_PRUNE_EMAIL_ENABLED:-0}" == "1" ]]; then
+    EMAIL_TO="${SKILL_PRUNE_EMAIL_TO:-}"
+    GWS_BIN="${GWS_BIN:-gws}"
+
+    if [[ -z "$EMAIL_TO" ]]; then
+        echo "WARNING: SKILL_PRUNE_EMAIL_ENABLED=1 but SKILL_PRUNE_EMAIL_TO not set" >&2
+    elif ! command -v "$GWS_BIN" &>/dev/null; then
+        echo "WARNING: GWS not found at $GWS_BIN (email not sent)" >&2
+    else
+        # Prepare email body (base64 encoded for Gmail API)
+        SUBJECT="Skill Prune Report — $(date -u +"%B %Y")"
+        BODY_TEXT=$(cat "$REPORT_OUTPUT_DIR/latest.md")
+
+        # Create RFC 2822 format email
+        EMAIL_MSG=$(cat <<EMAILEOF
+From: me
+To: $EMAIL_TO
+Subject: $SUBJECT
+Content-Type: text/plain; charset="UTF-8"
+
+$BODY_TEXT
+EMAILEOF
+)
+
+        # Encode to base64 URL-safe (for Gmail raw format)
+        EMAIL_B64=$(echo -n "$EMAIL_MSG" | base64 | tr '+/' '-_' | tr -d '=')
+
+        # Send via GWS Gmail API
+        if "$GWS_BIN" gmail users messages send --params "{\"userId\": \"me\", \"body\": {\"raw\": \"$EMAIL_B64\"}}" 2>&1 | grep -q '"id"'; then
+            echo "✓ Email sent to $EMAIL_TO"
+        else
+            echo "WARNING: Failed to send email via GWS Gmail (requires 'gws auth login')" >&2
+        fi
+    fi
+fi
+
 # --- Output summary ---
 echo "✓ Skill prune report generated"
 echo "  - Markdown: $REPORT_OUTPUT_DIR/latest.md"

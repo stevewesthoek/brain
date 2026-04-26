@@ -246,6 +246,32 @@ For each learned skill, confirm ALL THREE:
 bash tools/scripts/skill-prune-report.sh
 ```
 
+### Email notifications (optional)
+
+Enable email delivery via GWS Gmail API:
+
+```bash
+# Set in scheduler config or shell environment
+export SKILL_PRUNE_EMAIL_ENABLED=1
+export SKILL_PRUNE_EMAIL_TO=your-email@example.com
+
+# Optional: specify GWS binary (defaults to 'gws')
+export GWS_BIN=gws
+```
+
+Then the report script sends via GWS Gmail:
+```bash
+# Prepare RFC 2822 format email
+# Encode to base64 URL-safe (Gmail raw message format)
+# Send via GWS Gmail API
+gws gmail users messages send --params '{"userId": "me", "body": {"raw": "base64-encoded-message"}}'
+```
+
+**Requirements:**
+- GWS CLI installed and authenticated (`gws auth login`)
+- Gmail API enabled in Google Cloud project
+- User account with Gmail access
+
 ### Monthly prevention
 Tracks last run month in `~/.local/state/office-scheduler/skill-prune.last-month` to prevent double-runs.
 

@@ -264,7 +264,7 @@ For each learned skill, confirm it passes ALL THREE:
 
 - Mode: REPORT only
 - Outputs: `runtime/local/skill-prune/latest.md`, `latest.json`
-- Email: If `SKILL_PRUNE_EMAIL_ENABLED=1` and provider configured, send report to `SKILL_PRUNE_EMAIL_TO`
+- Email: Optional via GWS (if `SKILL_PRUNE_EMAIL_ENABLED=1`)
 - No file modifications
 - No symlink changes
 - No quarantine or delete
@@ -275,6 +275,23 @@ For each learned skill, confirm it passes ALL THREE:
 cd $HOME/Repos/stevewesthoek/brain && \
   bash tools/scripts/skill-prune-report.sh
 ```
+
+**Email (optional):**
+
+Set environment variables in scheduler config or `.env`:
+
+```bash
+export SKILL_PRUNE_EMAIL_ENABLED=1
+export SKILL_PRUNE_EMAIL_TO=your-email@example.com
+export GWS_BIN=gws  # optional, defaults to gws
+```
+
+Then the report script automatically sends via GWS Gmail API:
+- Prepares RFC 2822 format email (From: me, To: ..., Subject: ...)
+- Encodes to base64 URL-safe format (Gmail raw message format)
+- Sends via: `gws gmail users messages send --params '{...}'`
+- Subject: "Skill Prune Report — April 2026"
+- Body: Markdown report content
 
 ---
 
