@@ -1526,6 +1526,20 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
 /* ── header refresh ── */
 .btn{background:var(--card);border:1px solid var(--border2);color:var(--muted);padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;transition:all .15s;font-family:var(--font)}
 .btn:hover{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
+/* ── update banner ── */
+.update-banner{display:none;background:linear-gradient(135deg,rgba(248,113,113,0.15),rgba(251,146,60,0.1));border-bottom:2px solid var(--red);padding:12px 24px;align-items:center;gap:16px;color:var(--text);font-size:13px}
+.update-banner.show{display:flex}
+.update-banner.updating{background:linear-gradient(135deg,rgba(250,204,21,0.15),rgba(251,146,60,0.1));border-bottom-color:var(--yellow)}
+.update-banner.success{background:linear-gradient(135deg,rgba(52,211,153,0.15),rgba(34,197,94,0.1));border-bottom-color:var(--green)}
+.update-banner.success .banner-status::before{content:"✓ "}
+.update-banner-content{flex:1}
+.banner-title{font-weight:600;margin-bottom:2px}
+.banner-status{font-size:12px;color:var(--muted)}
+.update-banner button{background:var(--red);color:white;border:none;padding:6px 14px;border-radius:5px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;flex-shrink:0}
+.update-banner.updating button{background:var(--yellow)}
+.update-banner.success button{display:none}
+.update-banner button:hover{opacity:0.8;transform:translateY(-1px)}
+.update-banner button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
 /* ── section header ── */
 .sec-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .sec-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
@@ -1692,6 +1706,13 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
       <span class="updated" id="upd">—</span>
       <button class="btn" id="refresh-btn" onclick="refresh()">↻ Refresh</button>
     </div>
+  </div>
+  <div class="update-banner" id="update-banner">
+    <div class="update-banner-content">
+      <div class="banner-title" id="banner-title">Update Available</div>
+      <div class="banner-status" id="banner-status">Checking...</div>
+    </div>
+    <button id="update-btn" onclick="performUpdate()" disabled>Update Now</button>
   </div>
 </header>
 <div class="layout">
@@ -2512,7 +2533,55 @@ function refresh(){
 }
 setInterval(fetchData,3000);
 setInterval(()=>{if(_d)document.getElementById('upd').textContent='updated '+age(_d.meta.updatedAt);},60000);
+setInterval(checkForUpdates,30000);
 fetchData();
+checkForUpdates();
+async function checkForUpdates(){
+  try{
+    const r=await fetch('/api/system/updates');
+    const d=await r.json();
+    const banner=document.getElementById('update-banner');
+    const btn=document.getElementById('update-btn');
+    const title=document.getElementById('banner-title');
+    const status=document.getElementById('banner-status');
+    if(!d.hasUpdates||d.inProgress){
+      banner.classList.remove('show');
+      return;
+    }
+    banner.classList.add('show');
+    title.textContent='Update Available';
+    status.textContent=d.details;
+    btn.disabled=false;
+  }catch(e){
+    console.error('Update check failed:',e);
+  }
+}
+async function performUpdate(){
+  const banner=document.getElementById('update-banner');
+  const btn=document.getElementById('update-btn');
+  const title=document.getElementById('banner-title');
+  const status=document.getElementById('banner-status');
+  if(!confirm('Update ProBot? Services will be restarted automatically.'))return;
+  btn.disabled=true;
+  banner.classList.add('updating');
+  title.textContent='Updating...';
+  status.textContent='Stopping services, updating, and restoring...';
+  try{
+    const r=await fetch('/api/system/perform-update',{method:'POST',headers:{'Content-Type':'application/json'}});
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error||'Update failed');
+    title.textContent='Update in Progress';
+    status.textContent=d.message;
+    setTimeout(()=>{location.reload();},3000);
+  }catch(e){
+    banner.classList.remove('updating');
+    banner.classList.add('show');
+    btn.disabled=false;
+    title.textContent='Update Failed';
+    status.textContent=String(e);
+    console.error('Update error:',e);
+  }
+}
 async function localAppStart(btn,name){
   const o=btn.textContent;btn.disabled=true;btn.textContent='Starting...';
   setLocalAppTransient(name,{status:'starting'});
