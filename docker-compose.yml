@@ -1,0 +1,44 @@
+services:
+  ory:
+    image: oryd/kratos:v1.3.1
+    container_name: ory-kratos
+    restart: unless-stopped
+    command: serve -c /etc/config/kratos/kratos.yml
+    environment:
+      - DSN=postgresql://ory_user:RGEY48GX1jDmhIQ935dG0qiLLGCeohfr@10.0.2.4:5433/ory_prod?sslmode=disable
+      - NODE_ENV=production
+    ports:
+      - "4433:4433"
+      - "4434:4434"
+    volumes:
+      - ory-config:/etc/config/kratos:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4434/health/alive"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ory-public.rule=Host(`auth.prochat.tools`)
+      - traefik.http.routers.ory-public.entrypoints=websecure
+      - traefik.http.routers.ory-public.tls=true
+      - traefik.http.routers.ory-public.tls.certResolver=letsencrypt
+      - traefik.http.services.ory-public.loadbalancer.server.port=4433
+      - traefik.http.routers.ory-public.service=ory-public
+      - traefik.http.routers.ory-admin.rule=Host(`auth-admin.prochat.tools`)
+      - traefik.http.routers.ory-admin.entrypoints=websecure
+      - traefik.http.routers.ory-admin.tls=true
+      - traefik.http.routers.ory-admin.tls.certResolver=letsencrypt
+      - traefik.http.services.ory-admin.loadbalancer.server.port=4434
+      - traefik.http.routers.ory-admin.service=ory-admin
+    networks:
+      - dokploy-network
+
+volumes:
+  ory-config:
+    external: true
+
+networks:
+  dokploy-network:
+    external: true
