@@ -263,6 +263,7 @@ run_skill_prune() {
   local timeout_seconds="${SKILL_PRUNE_TIMEOUT_SECONDS:-300}"
   local prune_log="$LOG_DIR/skill-prune.log"
   local prune_script="${SKILL_PRUNE_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/skill-prune-report.sh}"
+  local prune_config="${SKILL_PRUNE_CONFIG:-$STATE_DIR/skill-prune.env}"
   local command
 
   if [[ ! -x "$prune_script" ]]; then
@@ -270,7 +271,13 @@ run_skill_prune() {
     return 0
   fi
 
-  command=$(printf '%q >> %q 2>&1' "$prune_script" "$prune_log")
+  # Load skill-prune config if it exists
+  local config_cmd=""
+  if [[ -f "$prune_config" ]]; then
+    config_cmd="source $prune_config && "
+  fi
+
+  command=$(printf '%s%q >> %q 2>&1' "$config_cmd" "$prune_script" "$prune_log")
 
   if run_job "skill-prune" "$timeout_seconds" "$command" "$prune_log"; then
     printf '%s\n' "$month_key" > "$last_prune_file"
