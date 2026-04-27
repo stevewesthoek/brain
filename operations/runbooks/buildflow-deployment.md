@@ -6,10 +6,11 @@ BuildFlow is a managed relay service that routes ChatGPT Custom Actions to local
 
 **Key characteristics:**
 - **Single public domain:** `buildflow.prochat.tools`
-- **One Dokploy application** containing both relay (3053) and web (3054) services
-- **Internal routing:** nginx/Traefik proxy routes paths to correct backend
+- **One Dokploy application** containing relay (3053), web (3055), and internal proxy (3054)
+- **Internal routing:** proxy routes paths to correct backend (relay vs web)
 - **Persistent state:** relay data (tokens, audit logs) stored in Docker volume
-- **Multi-user:** token-scoped routing via `RELAY_ADMIN_TOKEN` and per-device tokens
+- **Device routing:** token-scoped routing via per-device tokens (relay maps token → deviceId)
+- **Admin access:** `RELAY_ADMIN_TOKEN` protects admin endpoints only
 - **Managed relay:** `BUILDFLOW_BACKEND_MODE=relay-agent` with device token authentication
 
 ---
@@ -20,13 +21,13 @@ BuildFlow is a managed relay service that routes ChatGPT Custom Actions to local
 
 ```
 https://buildflow.prochat.tools/
-├── /api/openapi              → web (3054)      [GET, no auth]
-├── /api/actions/search       → web (3054)      [POST, Bearer: BUILDFLOW_ACTION_TOKEN]
-├── /api/actions/read         → web (3054)      [POST, Bearer: BUILDFLOW_ACTION_TOKEN]
-├── /api/actions/search-and-read → web (3054)   [POST, Bearer: BUILDFLOW_ACTION_TOKEN]
-├── /dashboard                → web (3054)      [GET, local-only assumption]
+├── /api/openapi              → web (3055)      [GET, no auth]
+├── /api/actions/search       → web (3055)      [POST, Bearer: user device token]
+├── /api/actions/read         → web (3055)      [POST, Bearer: user device token]
+├── /api/actions/search-and-read → web (3055)   [POST, Bearer: user device token]
+├── /dashboard                → web (3055)      [GET, local-only assumption]
 ├── /api/register             → relay (3053)    [POST, no auth]
-├── wss://api/bridge/ws       → relay (3053)    [WebSocket, device token]
+├── wss://buildflow.prochat.tools/api/bridge/ws → relay (3053) [WebSocket, device token]
 ├── /health                   → relay (3053)    [GET, no auth; no device IDs]
 ├── /ready                    → relay (3053)    [GET, no auth; readiness probe]
 ├── /api/admin/devices        → relay (3053)    [GET, Bearer: RELAY_ADMIN_TOKEN]
@@ -40,17 +41,17 @@ https://buildflow.prochat.tools/
 
 ```
 Container (ghcr.io/stevewesthoek/buildflow:latest)
-├── Internal proxy (nginx or Traefik Lite) listening on port 3054
+├── Internal proxy (nginx, express, or fastify) listening on port 3054 (public container port)
 │   └── Routes paths to correct internal backend (relay vs web)
 ├── Relay server (port 3053, internal only)
 │   ├── POST /api/register       → device token generation
 │   ├── WebSocket /api/bridge/ws → connected devices
 │   ├── GET /health              → aggregate operational status only
 │   ├── GET /ready               → startup validation
-│   └── GET/POST /api/admin/*    → admin endpoints (auth required)
-├── Web app (port 3054, internal only)
+│   └── GET/POST /api/admin/*    → admin endpoints (RELAY_ADMIN_TOKEN auth)
+├── Web app (port 3055, internal only)
 │   ├── GET /api/openapi         → ChatGPT schema
-│   ├── POST /api/actions/*      → ChatGPT action proxy
+│   ├── POST /api/actions/*      → forwards user device token to relay
 │   └── GET /dashboard           → dashboard UI
 └── Persistent volume: /var/lib/buildflow/ (mounted from Dokploy)
     ├── relay-tokens.json
@@ -61,14 +62,27 @@ Container (ghcr.io/stevewesthoek/buildflow:latest)
 ```
 
 **Routing model:**
-- Dokploy reverse proxy routes ALL traffic to container port 3054
-- Internal container proxy (`nginx.conf` or equivalent) splits paths to relay (3053) and web (3054)
-- Relay and web servers do NOT listen on public ports; only internal communication
+- Dokploy reverse proxy routes ALL external traffic to container port 3054
+- Internal proxy (port 3054) splits requests based on path:
+  - `/api/admin/*` → relay (3053)
+  - `/api/register`, `/api/bridge/ws`, `/health`, `/ready` → relay (3053)
+  - `/api/actions/*`, `/api/openapi`, `/dashboard` → web (3055)
+- Relay and web servers do NOT listen on public ports; only proxy and internal communication
+- Web app forwards incoming Bearer tokens directly to relay for authentication
 
-**Assumption: BuildFlow Dockerfile includes internal routing**
-- This architecture assumes BuildFlow image contains nginx or lightweight proxy configuration
-- Phase 1 provisioning will verify Dockerfile actually builds this topology
-- If not, alternative: two separate Dokploy apps (requires path-based routing or two domains)
+**⚠️ BLOCKER — BuildFlow Dockerfile does NOT currently support this topology**
+- **Current state (verified 2026-04-27):** Dockerfile only builds packages/bridge (relay on port 3053)
+- **Missing:** apps/web service, internal proxy routing, port 3054 exposure
+- **Impact:** Cannot deploy single-container topology as documented
+- **Required fix (BuildFlow repo):** Update Dockerfile to:
+  1. Build both packages/bridge (relay) and apps/web (Next.js)
+  2. Include express/fastify/nginx proxy config for internal routing
+  3. Expose port 3054 as public entry point (proxy)
+  4. Route /api/admin/* → relay (3053), /api/actions/* → web (3055)
+  5. Build multi-process container (relay + web + proxy) or use init system
+- **Alternative interim approach:** Deploy relay on Dokploy separately (port 3053 only) OR use two separate Dokploy apps
+- **Next step:** Create implementation task in BuildFlow repo to update Dockerfile for production topology
+- **Phase 1 status:** PAUSED — awaiting BuildFlow Dockerfile updates
 
 ---
 
@@ -118,28 +132,31 @@ This boundary ensures the relay remains replaceable, stateless, and future-proof
 **Critical for production:**
 
 ```bash
-# Relay authentication
+# Relay authentication (admin endpoints only)
 RELAY_ADMIN_TOKEN=<strong-32-byte-hex-token>     # Generate: openssl rand -hex 32
 RELAY_ENABLE_DEFAULT_TOKENS=false                  # Disable dev tokens in production
-
-# Web app authentication
-BUILDFLOW_ACTION_TOKEN=<strong-32-byte-hex-token> # Generate: openssl rand -hex 32
 
 # Runtime
 NODE_ENV=production
 BRIDGE_PORT=3053
 RELAY_DATA_DIR=/var/lib/buildflow
 
-# Web app backend mode
+# Web app backend mode (routes to relay)
 BUILDFLOW_BACKEND_MODE=relay-agent
 
 # Phase 5C (optional relay proxy auth)
 RELAY_PROXY_TOKEN=<token-if-needed>
 ```
 
-**Do NOT set these unless needed:**
-- `LOCAL_AGENT_URL` (only for local dev mode; production uses relay)
-- `RELAY_ENABLE_DEFAULT_TOKENS` (must be `false` for production)
+**Optional/Legacy:**
+- `BUILDFLOW_ACTION_TOKEN` — Only if BuildFlow runtime still requires it for local/direct mode testing. Hosted relay mode routes user device tokens, not a shared global action token.
+- `LOCAL_AGENT_URL` — Only for local dev mode; production uses relay
+
+**Device Authentication Model:**
+- Users register devices via `/api/register` (no token required, returns unique device token)
+- Users authenticate subsequent requests with their unique device token in Bearer header
+- Relay maps token → deviceId and enforces permissions
+- Web app forwards user's Bearer token to relay; relay validates and routes
 
 ### 3. Persistent Volume
 
@@ -282,10 +299,10 @@ After deployment, verify each item:
 - [ ] `GET https://buildflow.prochat.tools/ready` returns `200 OK`
 - [ ] `GET https://buildflow.prochat.tools/health` returns 200 with status (no device IDs exposed)
 - [ ] `GET https://buildflow.prochat.tools/api/openapi` returns OpenAPI 3.1.0 schema
-- [ ] `POST https://buildflow.prochat.tools/api/register` (no token) returns device registration
-- [ ] `wss://buildflow.prochat.tools/api/bridge/ws` WebSocket upgrade works
+- [ ] `POST https://buildflow.prochat.tools/api/register` (no token) returns device registration with token
+- [ ] `wss://buildflow.prochat.tools/api/bridge/ws` WebSocket upgrade works with device token
 - [ ] `POST /api/actions/search` without token returns 401
-- [ ] `POST /api/actions/search` with valid token returns 200 (if local device connected)
+- [ ] `POST /api/actions/search` with valid user device token returns 200 (if device connected)
 - [ ] `GET /api/admin/devices` without token returns 401
 - [ ] `GET /api/admin/devices` with `RELAY_ADMIN_TOKEN` returns device list
 - [ ] Local BuildFlow still responsive on localhost:3054
@@ -426,9 +443,9 @@ ssh dokploy "docker exec buildflow-relay rm /var/lib/buildflow/relay-requests.js
 | **GitHub Repo** | stevewesthoek/buildflow |
 | **Image** | ghcr.io/stevewesthoek/buildflow:latest |
 | **Public Domain** | buildflow.prochat.tools |
-| **Public Port** | 3054 (HTTPS) |
-| **Relay Port** | 3053 (internal) |
-| **Web Port** | 3054 (internal) |
+| **Public Container Port** | 3054 (HTTPS, internal proxy) |
+| **Relay Port** | 3053 (internal, not public) |
+| **Web Port** | 3055 (internal, not public) |
 | **Volume** | buildflow-data |
 | **Volume Mount** | /var/lib/buildflow |
 | **Deployment Workflow** | .github/workflows/deploy.yml |
