@@ -166,6 +166,7 @@ Projects and workloads verified through the Dokploy API on 2026-04-03:
 - Compose: `jpvbootcamp`
 
 `Web`
+- App: `BuildFlow` (managed relay for ChatGPT Custom Actions)
 - App: `Yeshua Academy`
 - App: `Yeshua Academy Finance`
 - App: `ProChat`
@@ -355,6 +356,7 @@ Dokploy UI: `https://dokploy.prochat.tools`
 
 | Domain | App | Project | Status | Notes |
 |--------|-----|---------|--------|-------|
+| `buildflow.prochat.tools` | BuildFlow | Web | Pending provisioning | Managed relay for ChatGPT Custom Actions; router to connected local devices. Status: phase 1 provisioning plan documented. |
 | `dokploy.prochat.tools` | — | Ops | Online | Dokploy UI |
 | `n8n.prochat.tools` | n8n | Ops | Online | Workflow automation |
 | `firecrawl.prochat.tools` | Firecrawl | Ops | Online | Web scraping & search API; PostgreSQL in Docker volume `firecrawl_pgdata`; replaces `/browse` and WebFetch for research |

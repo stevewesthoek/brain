@@ -167,6 +167,7 @@ curl -s -X POST "https://dokploy.prochat.tools/api/application.deploy" \
 
 | App | Repo | Dokploy App ID |
 |-----|------|----------------|
+| BuildFlow | stevewesthoek/buildflow | (to be assigned on provisioning) |
 | Via di Eden | prochattools/via-di-eden | 34heLjzG-klSB3ja7ZSG5 |
 | Proofly | prochattools/proofly | ub3NVzkB14Q-i3mNrIp0W |
 | Says the Bible | prochattools/says-the-bible | FKwPG6tveeYFrbSsLmQA1 |
