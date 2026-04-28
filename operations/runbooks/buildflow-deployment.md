@@ -70,19 +70,18 @@ Container (ghcr.io/stevewesthoek/buildflow:latest)
 - Relay and web servers do NOT listen on public ports; only proxy and internal communication
 - Web app forwards incoming Bearer tokens directly to relay for authentication
 
-**⚠️ BLOCKER — BuildFlow Dockerfile does NOT currently support this topology**
-- **Current state (verified 2026-04-27):** Dockerfile only builds packages/bridge (relay on port 3053)
-- **Missing:** apps/web service, internal proxy routing, port 3054 exposure
-- **Impact:** Cannot deploy single-container topology as documented
-- **Required fix (BuildFlow repo):** Update Dockerfile to:
-  1. Build both packages/bridge (relay) and apps/web (Next.js)
-  2. Include express/fastify/nginx proxy config for internal routing
-  3. Expose port 3054 as public entry point (proxy)
-  4. Route /api/admin/* → relay (3053), /api/actions/* → web (3055)
-  5. Build multi-process container (relay + web + proxy) or use init system
-- **Alternative interim approach:** Deploy relay on Dokploy separately (port 3053 only) OR use two separate Dokploy apps
-- **Next step:** Create implementation task in BuildFlow repo to update Dockerfile for production topology
-- **Phase 1 status:** PAUSED — awaiting BuildFlow Dockerfile updates
+**✅ DOCKERFILE TOPOLOGY VERIFIED & GHCR IMAGE AVAILABLE**
+- **Docker topology:** BuildFlow commit 3473303 verified locally with correct topology
+- **Verified components:**
+  - Proxy listens on port 3054 (public container port)
+  - Relay runs on internal port 3053 with /ready, /health, /api/admin endpoints
+  - Web app runs on internal port 3055 with /api/openapi, /api/actions endpoints
+  - All endpoints return correct status codes and JSON responses
+- **GHCR image available:**
+  - ghcr.io/stevewesthoek/buildflow:latest (verified latest tag)
+  - ghcr.io/stevewesthoek/buildflow:88136d73b2c5f0163b16d882d1fd4f7daf754e0b (specific SHA)
+  - GitHub Actions workflow configured and builds on every push to main
+- **Phase 1 status:** PROVISIONING TO DOKPLOY
 
 ---
 
