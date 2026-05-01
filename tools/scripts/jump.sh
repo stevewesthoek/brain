@@ -1,24 +1,21 @@
 #!/usr/bin/env bash
+
 # jump — quick repo navigator.
-# Invoked as the `jump` shell function (defined in ~/.zshrc).
-#
 # Lists all repos across ~/Repos (sorted by most recently used).
-# On selection, cd to that repo.
-#
-# Repo list is cached at ~/.claude/cache/repos.json and rescanned in the
-# background on every run to stay fresh. Usage timestamps are tracked in
-# ~/.claude/cache/repo_usage.json so recently opened repos float to the top.
+# On selection, outputs the path so the shell can cd to it.
 
 CACHE_FILE="$HOME/.claude/cache/repos.json"
 USAGE_FILE="$HOME/.claude/cache/repo_usage.json"
 REPOS_ROOT="$HOME/Repos"
 
+# Scan repos and cache them
 scan_to_cache() {
-  python3 - "$REPOS_ROOT" "$CACHE_FILE" <<'PYEOF'
+  python3 - "$REPOS_ROOT" "$CACHE_FILE" << 'PYSCRIPT'
 import os, sys, json
 
 root, cache = sys.argv[1], sys.argv[2]
 os.makedirs(os.path.dirname(cache), exist_ok=True)
+
 repos = []
 for dirpath, dirnames, _ in os.walk(root):
     dirnames[:] = sorted(d for d in dirnames if d != '.git')
@@ -33,12 +30,14 @@ for dirpath, dirnames, _ in os.walk(root):
 repos.sort(key=lambda r: (r['account'], r['name']))
 with open(cache, 'w') as f:
     json.dump(repos, f)
-PYEOF
+PYSCRIPT
 }
 
+# Record usage timestamp
 record_usage() {
-  python3 - "$USAGE_FILE" "$1" <<'PYEOF'
-import json, sys, os, time
+  local path="$1"
+  python3 - "$USAGE_FILE" "$path" << 'PYSCRIPT'
+import json, os, time, sys
 
 usage_file, path = sys.argv[1], sys.argv[2]
 usage = {}
@@ -48,37 +47,40 @@ if os.path.exists(usage_file):
 usage[path] = time.time()
 with open(usage_file, 'w') as f:
     json.dump(usage, f)
-PYEOF
+PYSCRIPT
 }
 
-# Bootstrap cache if missing
-[[ ! -f "$CACHE_FILE" ]] && scan_to_cache
+# Generate sorted repo list
+get_repo_list() {
+  python3 - "$CACHE_FILE" "$USAGE_FILE" << 'PYSCRIPT'
+import json, os, sys
 
-# Rescan in background to keep cache fresh
-scan_to_cache &
-SCAN_PID=$!
+cache_file, usage_file = sys.argv[1], sys.argv[2]
 
-# Generate repo list to temp file
-TEMP_LIST=$(mktemp)
-python3 - "$CACHE_FILE" "$USAGE_FILE" "$TEMP_LIST" <<'PYEOF'
-import json, sys, os
-
-with open(sys.argv[1]) as f:
+with open(cache_file) as f:
     repos = json.load(f)
 
 usage = {}
-if os.path.exists(sys.argv[2]):
-    with open(sys.argv[2]) as f:
+if os.path.exists(usage_file):
+    with open(usage_file) as f:
         usage = json.load(f)
 
 repos.sort(key=lambda r: (-usage.get(r['path'], 0), r['account'], r['name']))
-with open(sys.argv[3], 'w') as out:
-    for r in repos:
-        out.write(f"{r['account']}/{r['name']}\t{r['path']}\n")
-PYEOF
+for r in repos:
+    print(f"{r['account']}/{r['name']}\t{r['path']}")
+PYSCRIPT
+}
 
-# Pick repo via fzf
-selected=$(cat "$TEMP_LIST" | fzf \
+# Bootstrap cache if missing
+if [[ ! -f "$CACHE_FILE" ]]; then
+  scan_to_cache >/dev/null 2>&1
+fi
+
+# Rescan in background
+scan_to_cache >/dev/null 2>&1 &
+
+# Get repo list and prompt with fzf
+selected=$(get_repo_list 2>/dev/null | fzf \
   --prompt="  jump to repo: " \
   --height=50% \
   --layout=reverse \
@@ -88,15 +90,11 @@ selected=$(cat "$TEMP_LIST" | fzf \
   --preview='echo "  {2}"' \
   --preview-window='down:1:wrap' \
   --bind='tab:down,btab:up' \
-  2>/dev/null)
+  2>/dev/null) || true
 
-rm -f "$TEMP_LIST"
-kill "$SCAN_PID" 2>/dev/null
-wait "$SCAN_PID" 2>/dev/null || true
-
-[[ -z "$selected" ]] && exit 0
-
-selected_path=$(echo "$selected" | cut -f2)
-record_usage "$selected_path"
-
-echo "$selected_path"
+# Extract path and output it
+if [[ -n "$selected" ]]; then
+  selected_path=$(echo "$selected" | cut -f2)
+  record_usage "$selected_path" >/dev/null 2>&1 &
+  printf '%s\n' "$selected_path"
+fi
