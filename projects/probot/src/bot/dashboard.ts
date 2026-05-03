@@ -21,6 +21,11 @@ import {
   resolveLocalAppRestartCommand,
   waitForLocalAppHealth,
 } from "./local-apps.js";
+import {
+  runExclusiveLocalAppOperation,
+  stopLocalAppCleanly,
+  waitForLocalAppPortFree,
+} from "./local-app-lifecycle.js";
 import { runBuildflowRestartAndVerification, runBuildflowVerification, type BuildflowVerifyResult } from "./buildflow-verify.js";
 import { checkForUpdates, capturePreUpdateState, readPreUpdateState, clearPreUpdateState, type UpdateCheck } from "../services/updates.js";
 import { stopAllLocalApps, restoreSystemAfterUpdate, gracefulShutdown, spawnUpdateAndRestart, type UpdateResult } from "./update-orchestrator.js";
@@ -1345,31 +1350,6 @@ function clearLocalAppStartingState(name: string): void {
   LOCAL_APP_STARTING_STATES.delete(name);
 }
 
-async function waitForLocalAppStopped(app: ReturnType<typeof findLocalApp>, timeoutMs: number): Promise<boolean> {
-  if (!app?.check) return true;
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5_000);
-    try {
-      const response = await fetch(app.check, { signal: controller.signal });
-      if (!response.ok) return true;
-    } catch {
-      return true;
-    } finally {
-      clearTimeout(timeout);
-    }
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-  return false;
-}
-
-async function forceStopLocalAppByPort(app: ReturnType<typeof findLocalApp>): Promise<void> {
-  const port = app?.port;
-  if (!port) return;
-  const stopCmd = `pids=$(lsof -ti tcp:${port} || true); if [ -n "$pids" ]; then kill -TERM $pids; sleep 2; still=$(lsof -ti tcp:${port} || true); if [ -n "$still" ]; then kill -KILL $still; fi; fi`;
-  await execFileAsync("/bin/bash", ["-c", stopCmd], { cwd: resolveLocalAppCwd(app), maxBuffer: 10 * 1024 * 1024 });
-}
 
 async function getDashboardData(app: AppContext) {
   const load     = os.loadavg();
@@ -2233,8 +2213,9 @@ function renderLocalAppCard(app){
   const isStopping=effectiveStatus==='stopping';
   const isRestarting=effectiveStatus==='restarting';
   const isVerifying=effectiveStatus==='verifying';
-  const statusClass=isRunning?'running':isRestarting?'restarting':isVerifying?'verifying':isStarting?'starting':isStopping?'stopping':'stopped';
-  const statusDot=isRunning?'&#9679;':isRestarting?'&#9696;':isVerifying?'&#9696;':isStarting?'&#9696;':isStopping?'&#9696;':'&#9675;';
+  const isBlocked=effectiveStatus==='blocked';
+  const statusClass=isRunning?'running':isRestarting?'restarting':isVerifying?'verifying':isStarting?'starting':isStopping?'stopping':isBlocked?'blocked':'stopped';
+  const statusDot=isRunning?'&#9679;':isRestarting?'&#9696;':isVerifying?'&#9696;':isStarting?'&#9696;':isStopping?'&#9696;':isBlocked?'&#9696;':'&#9675;';
   let html='<div class="local-app-card" data-local-app-card="'+esc(app.name)+'">';
   html+='<div class="local-app-header">';
   html+='<span class="local-app-dot" style="font-size:14px">'+statusDot+'</span>';
@@ -2252,13 +2233,15 @@ function renderLocalAppCard(app){
   html+='</div>';
   html+='<div class="local-app-actions" data-local-app-actions="'+esc(app.name)+'">';
   if(app.name!=='ProBot'){
-    if(!isRunning && !isRestarting){
+    if(!isRunning && !isRestarting && !isBlocked){
       html+='<button class="local-app-btn" data-action="start" onclick="localAppStart(this,&quot;'+esc(app.name)+'&quot;)"'+(isStarting||isStopping?' disabled':'')+'>'+(isStarting?'Starting…':isStopping?'Stopping…':'Start')+'</button>';
-    }else if(!isRestarting){
-      if(app.restartable){
+    }else if(!isRestarting || isBlocked){
+      if(app.restartable && (isRunning || isBlocked)){
         html+='<button class="local-app-btn" data-action="restart" onclick="localAppRestart(this,&quot;'+esc(app.name)+'&quot;)">Restart</button>';
       }
-      html+='<button class="local-app-btn danger" data-action="stop" onclick="localAppStop(this,&quot;'+esc(app.name)+'&quot;)">Stop</button>';
+      if(isRunning || isBlocked){
+        html+='<button class="local-app-btn danger" data-action="stop" onclick="localAppStop(this,&quot;'+esc(app.name)+'&quot;)">Stop</button>';
+      }
     }
   }
   if(app.url){
@@ -2472,39 +2455,127 @@ async function performUpdate(){
     console.error('Update error:',e);
   }
 }
+async function updateLocalAppCardUI(name,patch){
+  const card=findLocalAppCard(name);
+  if(!card)return;
+  if(patch.status!==undefined){
+    setLocalAppTransient(name,{status:patch.status});
+    const statusEl=card.querySelector('[data-local-app-status]');
+    if(statusEl){
+      const isRunning=patch.status==='running';
+      const isStarting=patch.status==='starting';
+      const isStopping=patch.status==='stopping';
+      const isRestarting=patch.status==='restarting';
+      const isFailed=patch.status==='failed';
+      const statusClass=isRunning?'running':isRestarting?'restarting':isStarting?'starting':isStopping?'stopping':isFailed?'failed':'stopped';
+      statusEl.className='local-app-status '+statusClass;
+      let statusText=patch.status.toUpperCase();
+      if(isStarting)statusText+=' · launching';
+      if(isRestarting)statusText+=' · restarting';
+      if(patch.error)statusText+=' · '+patch.error;
+      if(patch.message)statusText+=' · '+patch.message;
+      statusEl.innerHTML='<span>'+esc(statusText)+'</span>';
+    }
+    const dotEl=card.querySelector('.local-app-dot');
+    if(dotEl){
+      const dots={running:'&#9679;',starting:'&#9696;',stopping:'&#9696;',restarting:'&#9696;',failed:'&#9675;'};
+      dotEl.innerHTML=dots[patch.status]||'&#9675;';
+    }
+  }
+  if(patch.disabled!==undefined){
+    const btns=card.querySelectorAll('button[data-action]');
+    btns.forEach(b=>{b.disabled=patch.disabled;});
+  }
+}
+async function pollLocalAppUntilStable(name,maxMs=60000){
+  const startTime=Date.now();
+  const poll=async()=>{
+    if(Date.now()-startTime>maxMs){
+      updateLocalAppCardUI(name,{status:'failed',error:'Poll timeout',disabled:false});
+      clearLocalAppTransient(name);
+      return;
+    }
+    try{
+      const r=await fetch('/api/local-apps');
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const data=await r.json();
+      const app=(data.apps||[]).find(a=>a.name===name);
+      if(!app){
+        updateLocalAppCardUI(name,{status:'failed',error:'App not found',disabled:false});
+        clearLocalAppTransient(name);
+        return;
+      }
+      updateLocalAppCardUI(name,{status:app.status});
+      if(app.status==='starting'){
+        setTimeout(poll,1000);
+      }else{
+        updateLocalAppCardUI(name,{disabled:false});
+        clearLocalAppTransient(name);
+      }
+    }catch(e){
+      console.error('Poll failed for',name,e);
+      if(Date.now()-startTime>maxMs){
+        updateLocalAppCardUI(name,{status:'failed',error:'Poll timeout',disabled:false});
+        clearLocalAppTransient(name);
+      }else{
+        setTimeout(poll,2000);
+      }
+    }
+  };
+  poll();
+}
 async function localAppStart(btn,name){
-  const o=btn.textContent;btn.disabled=true;btn.textContent='Starting...';
-  setLocalAppTransient(name,{status:'starting'});
-  scheduleLocalAppsAutoRefresh();
+  const o=btn.textContent;
+  updateLocalAppCardUI(name,{status:'starting',disabled:true});
   try{
     const r=await fetch('/api/local-apps/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
-    btn.textContent=d.message||'Start initiated';
-    scheduleLocalAppsAutoRefresh();
-  }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+    if(r.status===409){
+      updateLocalAppCardUI(name,{status:'failed',error:d.error,disabled:false});
+      return;
+    }
+    if(r.status===200){
+      updateLocalAppCardUI(name,{status:'running',disabled:false});
+      return;
+    }
+    if(r.status===202){
+      updateLocalAppCardUI(name,{status:'starting',disabled:true,message:d.message});
+      pollLocalAppUntilStable(name);
+      return;
+    }
+    updateLocalAppCardUI(name,{status:'failed',error:d.error,disabled:false});
+  }catch(e){
+    updateLocalAppCardUI(name,{status:'failed',error:e.message,disabled:false});
+  }
 }
 async function localAppStop(btn,name){
-  const o=btn.textContent;btn.disabled=true;btn.textContent='Stopping...';
-  setLocalAppTransient(name,{status:'stopping'});
-  scheduleLocalAppsAutoRefresh();
+  const o=btn.textContent;
+  updateLocalAppCardUI(name,{status:'stopping',disabled:true});
   try{
     const r=await fetch('/api/local-apps/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
-    btn.textContent=d.message||'Stopped';
-    scheduleLocalAppsAutoRefresh();
-    setTimeout(()=>{btn.disabled=false;btn.textContent=o;},1500);
-  }catch(e){btn.disabled=false;btn.textContent=o;alert('Error: '+e.message);}
+    if(r.status===409){
+      updateLocalAppCardUI(name,{status:'failed',error:d.error,disabled:false});
+      return;
+    }
+    if(r.status===200){
+      updateLocalAppCardUI(name,{status:'stopped',disabled:false});
+      return;
+    }
+    updateLocalAppCardUI(name,{status:'failed',error:d.error,disabled:false});
+  }catch(e){
+    updateLocalAppCardUI(name,{status:'failed',error:e.message,disabled:false});
+  }
 }
 async function localAppRestart(btn,name){
-  const o=btn.textContent;btn.disabled=true;btn.textContent='Restarting...';
-  setLocalAppTransient(name,{status:'restarting'});
+  const o=btn.textContent;
   if(name==='BuildFlow'){
     window.__buildflowVerifyState=window.__buildflowVerifyState||{mode:'restart-and-verify',running:false,result:null,expanded:false};
     window.__buildflowVerifyState.mode='restart-and-verify';
     window.__buildflowVerifyState.running=true;
     window.__buildflowVerifyState.expanded=false;
   }
-  scheduleLocalAppsAutoRefresh();
+  updateLocalAppCardUI(name,{status:'restarting',disabled:true});
   try{
     const endpoint=name==='BuildFlow' ? '/api/local-apps/buildflow/restart-and-verify' : '/api/local-apps/restart';
     const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
@@ -2515,30 +2586,31 @@ async function localAppRestart(btn,name){
       }
       window.__buildflowVerifyState={mode:'restart-and-verify',running:false,result:d,expanded:true};
       clearLocalAppTransient(name);
-      btn.disabled=false;
-      btn.textContent='Restart OK';
-      btn.classList.remove('warn');
-      btn.classList.add('success');
-      scheduleLocalAppsAutoRefresh();
+      updateLocalAppCardUI(name,{status:'running',disabled:false});
       showBuildFlowVerifyDetails(true);
       return;
     }
-    clearLocalAppTransient(name);
-    btn.disabled=false;
-    btn.textContent=d.message||'Restart initiated';
-    scheduleLocalAppsAutoRefresh();
+    if(r.status===409){
+      updateLocalAppCardUI(name,{status:'failed',error:d.error,disabled:false});
+      return;
+    }
+    if(r.status===200){
+      updateLocalAppCardUI(name,{status:'running',disabled:false});
+      return;
+    }
+    if(r.status===202){
+      updateLocalAppCardUI(name,{status:'starting',disabled:true,message:d.message});
+      pollLocalAppUntilStable(name);
+      return;
+    }
+    updateLocalAppCardUI(name,{status:'failed',error:d.error,disabled:false});
   }catch(e){
     const msg=String(e.message||e);
-    clearLocalAppTransient(name);
-    btn.disabled=false;
-    btn.textContent=name==='BuildFlow' ? 'Restart failed' : o;
     if(name==='BuildFlow'){
       window.__buildflowVerifyState={mode:'restart-and-verify',running:false,result:{mode:'restart-and-verify',ok:false,status:'failed',error:msg,steps:[],startedAt:new Date().toISOString(),finishedAt:new Date().toISOString(),durationMs:0},expanded:true};
-      btn.classList.remove('success');
-      btn.classList.add('warn');
       showBuildFlowVerifyDetails(true);
     }
-    scheduleLocalAppsAutoRefresh();
+    updateLocalAppCardUI(name,{status:'failed',error:msg,disabled:false});
   }
 }
 function findLocalAppCard(name){
@@ -2834,35 +2906,88 @@ export function createDashboardServer(app: AppContext): http.Server {
 
         if (url === "/api/local-apps/start" && payload.name) {
           const app = findLocalApp(payload.name);
-          const cmd = app?.start ?? null;
-          if (!cmd) {
+          if (!app) {
             res.writeHead(404, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "App not found or cannot be started" }));
+            res.end(JSON.stringify({ ok: false, app: payload.name, error: "App not found" }));
+            return;
+          }
+          const startCommand = resolveLocalAppLifecycleCommand(app, "start");
+          if (!startCommand) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, app: payload.name, error: "App cannot be started (no start command)" }));
             return;
           }
           try {
-            setLocalAppStartingState(payload.name, app?.startupTimeoutMs ?? 30000);
-            launchLocalAppStartCommand(cmd, resolveLocalAppCwd(app), app);
-            const startupTimeoutMs = app?.startupTimeoutMs ?? 30000;
-            void waitForLocalAppHealth(app, fetch, startupTimeoutMs).then((healthy) => {
-              if (healthy) {
-                clearLocalAppStartingState(payload.name);
-                console.log(`[LocalApp] ${payload.name} reached healthy state after start`);
-              } else {
-                console.log(
-                  `[LocalApp] ${payload.name} start initiated; health not confirmed within ${startupTimeoutMs}ms`,
-                );
+            const result = await runExclusiveLocalAppOperation(payload.name, async () => {
+              const startupTimeoutMs = app.startupTimeoutMs ?? 30000;
+              let portFree = false;
+              let healthy = false;
+              let statusCode = 500;
+
+              try {
+                // Stop any existing instance cleanly
+                await stopLocalAppCleanly(app);
+
+                // Confirm port is free
+                portFree = await waitForLocalAppPortFree(app, 5000);
+                if (!portFree) {
+                  throw new Error(`Port ${app.port} still in use after stop attempt`);
+                }
+
+                // Set starting state and launch
+                setLocalAppStartingState(payload.name, startupTimeoutMs);
+                launchLocalAppStartCommand(startCommand, resolveLocalAppCwd(app), app);
+
+                // Wait for health
+                healthy = await waitForLocalAppHealth(app, fetch, startupTimeoutMs);
+                if (healthy) {
+                  console.log(`[LocalApp] ${payload.name} reached healthy state after start`);
+                  statusCode = 200;
+                } else {
+                  console.log(`[LocalApp] ${payload.name} start initiated; health not confirmed within ${startupTimeoutMs}ms`);
+                  statusCode = 202;
+                }
+
+                return {
+                  ok: true,
+                  app: payload.name,
+                  action: "start" as const,
+                  status: healthy ? ("running" as const) : ("starting" as const),
+                  portFree,
+                  healthy,
+                  statusCode,
+                  message: healthy ? undefined : "Start launched; health not confirmed yet",
+                };
+              } catch (err) {
+                console.error(`[LocalApp] ${payload.name} start failed:`, String(err));
+                return {
+                  ok: false,
+                  app: payload.name,
+                  action: "start" as const,
+                  status: ("failed" as const),
+                  portFree,
+                  healthy,
+                  statusCode: 500,
+                  error: String(err),
+                };
+              } finally {
                 clearLocalAppStartingState(payload.name);
               }
-            }).catch((err) => {
-              console.error(`[LocalApp] ${payload.name} start health check failed:`, String(err));
-              clearLocalAppStartingState(payload.name);
             });
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: true, message: "Start initiated" }));
+
+            const statusCode = result.statusCode;
+            delete (result as any).statusCode;
+            res.writeHead(statusCode, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
           } catch (e) {
-            clearLocalAppStartingState(payload.name);
-            throw new Error(`Failed to start ${payload.name}: ${String(e)}`);
+            if (String(e).includes("already running")) {
+              res.writeHead(409, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+            } else {
+              clearLocalAppStartingState(payload.name);
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+            }
           }
           return;
         }
@@ -2871,75 +2996,145 @@ export function createDashboardServer(app: AppContext): http.Server {
           const app = findLocalApp(payload.name);
           if (!app) {
             res.writeHead(404, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "App not found" }));
+            res.end(JSON.stringify({ ok: false, app: payload.name, error: "App not found" }));
             return;
           }
-          const restartCommand = getLocalAppRestartCommand(payload.name);
-          const stopCommand = getLocalAppStopCommand(payload.name);
-          const startCommand = getLocalAppStartCommand(payload.name);
-          if (!restartCommand && !startCommand) {
-            res.writeHead(404, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "App not found or cannot be restarted" }));
+          const startCommand = resolveLocalAppLifecycleCommand(app, "start");
+          if (!startCommand) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, app: payload.name, error: "App cannot be restarted (no start command)" }));
             return;
           }
           try {
-            const startupTimeoutMs = app.startupTimeoutMs ?? 30000;
-            clearLocalAppStartingState(payload.name);
-            setLocalAppStartingState(payload.name, startupTimeoutMs);
-            if (restartCommand) {
-              execFileAsync("/bin/bash", ["-c", restartCommand], { cwd: resolveLocalAppCwd(app), maxBuffer: 10 * 1024 * 1024 })
-                .catch(e => console.error(`[LocalApp] ${payload.name} restart error:`, e.message));
-            } else {
-              if (stopCommand) {
-                await execFileAsync("/bin/bash", ["-c", stopCommand], { cwd: resolveLocalAppCwd(app), maxBuffer: 10 * 1024 * 1024 });
-              } else {
-                await forceStopLocalAppByPort(app);
-              }
-              const stopped = await waitForLocalAppStopped(app, startupTimeoutMs);
-              if (!stopped) {
-                throw new Error(`Timed out waiting for ${payload.name} to stop`);
-              }
-              launchLocalAppStartCommand(startCommand!, resolveLocalAppCwd(app), app);
-            }
-            void waitForLocalAppHealth(app, fetch, startupTimeoutMs).then((healthy) => {
-              if (healthy) {
+            const result = await runExclusiveLocalAppOperation(payload.name, async () => {
+              const startupTimeoutMs = app.startupTimeoutMs ?? 30000;
+              let portFree = false;
+              let healthy = false;
+              let statusCode = 500;
+
+              try {
                 clearLocalAppStartingState(payload.name);
-                console.log(`[LocalApp] ${payload.name} reached healthy state after restart`);
-              } else {
-                console.log(
-                  `[LocalApp] ${payload.name} restart initiated; health not confirmed within ${startupTimeoutMs}ms`,
-                );
+                setLocalAppStartingState(payload.name, startupTimeoutMs);
+
+                // Stop any existing instance cleanly
+                const stopResult = await stopLocalAppCleanly(app);
+                if (!stopResult.portFree) {
+                  console.warn(`[LocalApp] ${payload.name} port not freed after stop: ${stopResult.forceStop.error}`);
+                }
+
+                // Confirm port is free
+                portFree = await waitForLocalAppPortFree(app, 5000);
+                if (!portFree) {
+                  throw new Error(`Port ${app.port} still in use after stop`);
+                }
+
+                // Launch the start command
+                launchLocalAppStartCommand(startCommand, resolveLocalAppCwd(app), app);
+
+                // Wait for health
+                healthy = await waitForLocalAppHealth(app, fetch, startupTimeoutMs);
+                if (healthy) {
+                  console.log(`[LocalApp] ${payload.name} reached healthy state after restart`);
+                  statusCode = 200;
+                } else {
+                  console.log(`[LocalApp] ${payload.name} restart initiated; health not confirmed within ${startupTimeoutMs}ms`);
+                  statusCode = 202;
+                }
+
+                return {
+                  ok: true,
+                  app: payload.name,
+                  action: "restart" as const,
+                  status: healthy ? ("running" as const) : ("starting" as const),
+                  portFree,
+                  healthy,
+                  statusCode,
+                  message: healthy ? undefined : "Restart launched; health not confirmed yet",
+                };
+              } catch (err) {
+                console.error(`[LocalApp] ${payload.name} restart failed:`, String(err));
+                return {
+                  ok: false,
+                  app: payload.name,
+                  action: "restart" as const,
+                  status: ("failed" as const),
+                  portFree,
+                  healthy,
+                  statusCode: 500,
+                  error: String(err),
+                };
+              } finally {
                 clearLocalAppStartingState(payload.name);
               }
-            }).catch((err) => {
-              console.error(`[LocalApp] ${payload.name} restart health check failed:`, String(err));
-              clearLocalAppStartingState(payload.name);
             });
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: true, message: "Restart initiated" }));
+
+            const statusCode = result.statusCode;
+            delete (result as any).statusCode;
+            res.writeHead(statusCode, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
           } catch (e) {
-            clearLocalAppStartingState(payload.name);
-            throw new Error(`Failed to restart ${payload.name}: ${String(e)}`);
+            if (String(e).includes("already running")) {
+              res.writeHead(409, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+            } else {
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+            }
           }
           return;
         }
 
         if (url === "/api/local-apps/stop" && payload.name) {
           const app = findLocalApp(payload.name);
-          const cmd = getLocalAppStopCommand(payload.name);
-          if (!cmd) {
+          if (!app) {
             res.writeHead(404, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "App not found or cannot be stopped" }));
+            res.end(JSON.stringify({ ok: false, app: payload.name, error: "App not found" }));
             return;
           }
           try {
-            clearLocalAppStartingState(payload.name);
-            execFileAsync("/bin/bash", ["-c", cmd], { cwd: app ? resolveLocalAppCwd(app) : os.homedir(), maxBuffer: 10 * 1024 * 1024 })
-              .catch(e => console.error(`[LocalApp] ${payload.name} stop error:`, e.message));
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: true, message: "Stopping..." }));
+            const result = await runExclusiveLocalAppOperation(payload.name, async () => {
+              try {
+                clearLocalAppStartingState(payload.name);
+                const stopResult = await stopLocalAppCleanly(app);
+
+                if (stopResult.ok) {
+                  console.log(`[LocalApp] ${payload.name} stopped successfully`);
+                } else {
+                  console.warn(`[LocalApp] ${payload.name} stop completed with issues:`, stopResult.error);
+                }
+
+                return {
+                  ok: stopResult.ok,
+                  app: payload.name,
+                  action: "stop" as const,
+                  status: stopResult.portFree ? ("stopped" as const) : ("failed" as const),
+                  portFree: stopResult.portFree,
+                  error: stopResult.error,
+                };
+              } catch (err) {
+                console.error(`[LocalApp] ${payload.name} stop failed:`, String(err));
+                return {
+                  ok: false,
+                  app: payload.name,
+                  action: "stop" as const,
+                  status: ("failed" as const),
+                  portFree: false,
+                  error: String(err),
+                };
+              }
+            });
+
+            const statusCode = result.ok ? 200 : 500;
+            res.writeHead(statusCode, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
           } catch (e) {
-            throw new Error(`Failed to stop ${payload.name}: ${String(e)}`);
+            if (String(e).includes("already running")) {
+              res.writeHead(409, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+            } else {
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+            }
           }
           return;
         }

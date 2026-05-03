@@ -1,7 +1,7 @@
 import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { clearPreUpdateState, readPreUpdateState, capturePreUpdateState } from "../services/updates.js";
-import { findLocalApp, buildLocalAppsStatus, launchLocalAppStartCommand, resolveLocalAppCwd, resolveLocalAppLifecycleCommand, loadLocalApps } from "./local-apps.js";
+import { clearPreUpdateState, readPreUpdateState } from "../services/updates.js";
+import { findLocalApp, launchLocalAppStartCommand, resolveLocalAppCwd, resolveLocalAppLifecycleCommand } from "./local-apps.js";
 import { waitForLocalAppHealth } from "./local-apps.js";
 
 const execFileAsync = promisify(execFile);
@@ -37,7 +37,6 @@ const STARTUP_ORDER = [
  * Critical apps stop first, then dependencies.
  */
 export async function stopAllLocalApps(appNames: string[]): Promise<void> {
-  const allApps = loadLocalApps();
   const stopOrder = [...STARTUP_ORDER].reverse();
 
   for (const appName of stopOrder) {
@@ -233,9 +232,10 @@ export async function restoreSystemAfterUpdate(): Promise<UpdateResult> {
   }
 
   const errors: string[] = [];
+  let restored: UpdateResult["restored"] = [];
 
   try {
-    await restoreRunningApps(preState);
+    restored = await restoreRunningApps(preState);
     clearPreUpdateState();
     console.log("[Update] System restoration complete");
   } catch (err) {
@@ -243,7 +243,6 @@ export async function restoreSystemAfterUpdate(): Promise<UpdateResult> {
     console.error("[Update] Restoration failed:", String(err));
   }
 
-  const restored = await restoreRunningApps(preState);
   return {
     success: errors.length === 0,
     updateApplied: true,

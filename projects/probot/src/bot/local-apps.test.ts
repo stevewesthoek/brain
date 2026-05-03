@@ -4,6 +4,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { buildLocalAppsStatus, classifyLocalAppStartCommand, normalizeLocalApp, resolveLocalAppLifecycleCommand, resolveLocalAppRestartCommand, waitForLocalAppHealth } from "./local-apps.js";
+import {
+  runExclusiveLocalAppOperation,
+  waitForLocalAppPortFree,
+  forceStopLocalAppPort,
+} from "./local-app-lifecycle.js";
 
 test("normalize legacy-only entry", () => {
   const app = normalizeLocalApp({
@@ -252,4 +257,214 @@ test("resolve explicit restart command when present", () => {
 
   assert.ok(app);
   assert.equal(resolveLocalAppRestartCommand(app), "bash restart-all.sh");
+});
+
+test("runExclusiveLocalAppOperation allows one operation and releases lock", async () => {
+  let callCount = 0;
+  const result = await runExclusiveLocalAppOperation("TestApp", async () => {
+    callCount += 1;
+    return "success";
+  });
+
+  assert.equal(result, "success");
+  assert.equal(callCount, 1);
+
+  // Lock should be released, so we can run it again
+  const result2 = await runExclusiveLocalAppOperation("TestApp", async () => {
+    callCount += 1;
+    return "success2";
+  });
+
+  assert.equal(result2, "success2");
+  assert.equal(callCount, 2);
+});
+
+test("runExclusiveLocalAppOperation rejects overlapping operation for same app", async () => {
+  let error: Error | null = null;
+
+  // Start an operation that will take time
+  const promise1 = runExclusiveLocalAppOperation("ConflictApp", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return "done";
+  });
+
+  // Immediately try to start another operation on the same app
+  try {
+    await runExclusiveLocalAppOperation("ConflictApp", async () => {
+      return "should not run";
+    });
+  } catch (err) {
+    error = err as Error;
+  }
+
+  // Wait for the first one to finish
+  const result = await promise1;
+
+  assert.ok(error);
+  assert.ok(error.message.includes("Local app operation already running for ConflictApp"));
+  assert.equal(result, "done");
+});
+
+test("waitForLocalAppPortFree returns true for app without port", async () => {
+  const app = normalizeLocalApp({
+    name: "NoPort",
+    appUrl: "http://localhost:3000",
+    healthCheck: "http://localhost:3000/health",
+  });
+
+  // App has no port defined
+  assert.equal(app?.port, null);
+
+  const free = await waitForLocalAppPortFree(app, 1000);
+  assert.equal(free, true);
+});
+
+test("forceStopLocalAppPort returns ok for app without port", async () => {
+  const app = normalizeLocalApp({
+    name: "NoPort",
+    appUrl: "http://localhost:3000",
+    healthCheck: "http://localhost:3000/health",
+  });
+
+  assert.equal(app?.port, null);
+
+  const result = await forceStopLocalAppPort(app);
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.pids, []);
+  assert.deepEqual(result.killed, []);
+  assert.equal(result.error, undefined);
+});
+
+test("buildLocalAppsStatus shows stopped for failed health check with no port listeners", async () => {
+  const app = normalizeLocalApp({
+    name: "NoListenersApp",
+    appPort: 9999,
+    appUrl: "http://localhost:9999",
+    healthCheck: "http://localhost:9999/health",
+    startCommand: "npm run dev",
+  });
+  assert.ok(app);
+
+  const result = await buildLocalAppsStatus(
+    [app],
+    async () => {
+      throw new Error("Health check failed");
+    },
+    {
+      portOccupiedChecker: async () => false,
+    },
+  );
+
+  assert.equal(result.apps.length, 1);
+  assert.equal(result.apps[0]?.status, "stopped");
+});
+
+test("buildLocalAppsStatus shows blocked for failed health check with occupied port", async () => {
+  const app = normalizeLocalApp({
+    name: "BlockedApp",
+    appPort: 3000,
+    appUrl: "http://localhost:3000",
+    healthCheck: "http://localhost:3000/health",
+    startCommand: "npm run dev",
+  });
+  assert.ok(app);
+
+  const result = await buildLocalAppsStatus(
+    [app],
+    async () => {
+      throw new Error("Health check failed");
+    },
+    {
+      portOccupiedChecker: async () => true,
+    },
+  );
+
+  assert.equal(result.apps.length, 1);
+  assert.equal(result.apps[0]?.status, "blocked");
+});
+
+test("buildLocalAppsStatus shows starting for failed health check within startup window", async () => {
+  const app = normalizeLocalApp({
+    name: "StartingApp",
+    appPort: 9998,
+    appUrl: "http://localhost:9998",
+    healthCheck: "http://localhost:9998/health",
+    startCommand: "npm run dev",
+    startupTimeoutMs: 60000,
+  });
+  assert.ok(app);
+
+  const now = Date.now();
+  const startingApps = new Map([
+    [
+      "StartingApp",
+      {
+        startedAt: now - 5000, // started 5 seconds ago
+        startupTimeoutMs: 60000, // 60 second timeout
+      },
+    ],
+  ]);
+
+  const result = await buildLocalAppsStatus(
+    [app],
+    async () => {
+      throw new Error("Health check failed");
+    },
+    { startingApps, now, portOccupiedChecker: async () => true },
+  );
+
+  assert.equal(result.apps.length, 1);
+  assert.equal(result.apps[0]?.status, "starting");
+});
+
+test("buildLocalAppsStatus shows blocked for failed health check with occupied port within startup window", async () => {
+  const app = normalizeLocalApp({
+    name: "BlockedInStartupApp",
+    appPort: 9997,
+    appUrl: "http://localhost:9997",
+    healthCheck: "http://localhost:9997/health",
+    startCommand: "npm run dev",
+    startupTimeoutMs: 60000,
+  });
+  assert.ok(app);
+
+  const now = Date.now();
+  const startingApps = new Map([
+    [
+      "BlockedInStartupApp",
+      {
+        startedAt: now - 70000, // started 70 seconds ago (past 60s timeout)
+        startupTimeoutMs: 60000,
+      },
+    ],
+  ]);
+
+  const result = await buildLocalAppsStatus(
+    [app],
+    async () => {
+      throw new Error("Health check failed");
+    },
+    { startingApps, now, portOccupiedChecker: async () => true },
+  );
+
+  assert.equal(result.apps.length, 1);
+  assert.equal(result.apps[0]?.status, "blocked");
+});
+
+test("buildLocalAppsStatus shows running for successful health check", async () => {
+  const app = normalizeLocalApp({
+    name: "HealthyApp",
+    appPort: 3001,
+    appUrl: "http://localhost:3001",
+    healthCheck: "http://localhost:3001/health",
+    startCommand: "npm run dev",
+  });
+  assert.ok(app);
+
+  const result = await buildLocalAppsStatus([app], async () => {
+    return { ok: true } as any;
+  });
+
+  assert.equal(result.apps.length, 1);
+  assert.equal(result.apps[0]?.status, "running");
 });

@@ -54,6 +54,22 @@ For every entry, the following aliases are kept in sync:
 
 New code should prefer the expanded fields. Legacy readers may keep using the old names until they are fully migrated.
 
+## Unified ProBot local-app orchestrator principle
+
+The ProBot dashboard must use one centralized lifecycle path for every Local Apps action. Individual applications may expose repo-local helper scripts, but the dashboard must call them only through the ProBot local-app orchestrator and the canonical registry. No dashboard button should directly implement one-off start, stop, or restart behavior outside that shared path.
+
+The registry defines app identity, reserved port, health check, repo path, startup timeout, and lifecycle commands. The orchestrator owns the runtime sequence and must treat the reserved app port as authoritative runtime state.
+
+Required lifecycle semantics:
+
+1. **Start means clean start**: inspect the reserved port, stop any known current session, verify the port is free, start from `repoPath` with `PORT` injected from the registry, then wait for health.
+2. **Stop means verified stop**: run the registry stop command when present, clear remaining listeners on the reserved port when needed, and verify the health check is down or the port is free.
+3. **Restart means stop + verified free port + start**: never spawn a second session on the same reserved port.
+4. **Operations must be serialized per app**: overlapping clicks or API calls for the same app must not race each other.
+5. **The card is the refresh unit**: after a lifecycle action, ProBot should return or poll the affected app/card status instead of forcing a full dashboard reload.
+
+For new local applications, add the app to `local-apps.json` first and provide lifecycle commands that can be safely called by the centralized orchestrator. Prefer repo-local helper scripts for app-specific cleanup, but keep the orchestration rules in ProBot so all apps behave consistently.
+
 ## Current inventory
 
 | Name | App Port | DB Port | Description | Start Command |

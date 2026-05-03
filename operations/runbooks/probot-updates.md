@@ -94,7 +94,13 @@ The notification shows exactly what needs updating and why.
    - If service responds with 200 OK, mark as "running"
    - If timeout, mark as "failed" but continue (don't block other services)
 
-5. **Report status** to dashboard:
+5. **Single-pass restoration invariant**:
+   - The post-update endpoint must call the Local Apps restoration sequence exactly once per pre-update state file.
+   - Restoration results must be stored and returned from that same pass.
+   - The pre-update state file must be cleared only after that restoration pass completes.
+   - ProBot must never call the restore sequence a second time while building the response, because that can launch duplicate app sessions on the same reserved ports.
+
+6. **Report status** to dashboard:
    - ✅ Success: "Update complete. All 7 services restored."
    - ⚠️ Partial: "Update complete. Service X failed to restore: [error]"
    - ❌ Failure: "Update failed: [error]. See runbook for recovery."

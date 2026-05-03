@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { spawn } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
+import { isPortOccupied } from "./local-app-ports.js";
 
 export type NormalizedLocalApp = {
   name: string;
@@ -30,6 +31,7 @@ export type LocalAppStartState = {
 export type LocalAppsStatusOptions = {
   startingApps?: Map<string, LocalAppStartState> | Record<string, LocalAppStartState>;
   now?: number;
+  portOccupiedChecker?: (port: number | null) => Promise<boolean>;
 };
 
 type RawLocalApp = {
@@ -191,6 +193,7 @@ export async function buildLocalAppsStatus(
       ? options.startingApps
       : new Map(Object.entries(options.startingApps ?? {}));
   const now = options.now ?? Date.now();
+  const checkPortOccupied = options.portOccupiedChecker ?? isPortOccupied;
   const statusApps = await Promise.all(
     apps.map(async (app) => {
       const startupState = startingApps.get(app.name) ?? null;
@@ -208,9 +211,31 @@ export async function buildLocalAppsStatus(
           status = "running";
         } else if (withinStartupWindow) {
           status = "starting";
+        } else {
+          // Health check failed and not in startup window
+          // Check if port is occupied — if so, app is "blocked" (port occupied but unhealthy)
+          try {
+            const portOccupied = await checkPortOccupied(app.port);
+            status = portOccupied ? "blocked" : "stopped";
+          } catch (err) {
+            // Port check failed, assume stopped
+            status = "stopped";
+          }
         }
       } catch {
-        status = withinStartupWindow ? "starting" : "stopped";
+        if (withinStartupWindow) {
+          status = "starting";
+        } else {
+          // Health check fetch failed and not in startup window
+          // Check if port is occupied — if so, app is "blocked"
+          try {
+            const portOccupied = await checkPortOccupied(app.port);
+            status = portOccupied ? "blocked" : "stopped";
+          } catch (err) {
+            // Port check failed, assume stopped
+            status = "stopped";
+          }
+        }
       } finally {
         clearTimeout(timeout);
       }
