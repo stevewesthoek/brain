@@ -61,4 +61,11 @@ sessions() {
   bash ~/Repos/stevewesthoek/brain/tools/scripts/sessions.sh
 }
 
+jump() {
+  local path=$(/Users/Office/.local/bin/jump)
+  if [[ -n "$path" && -d "$path" ]]; then
+    cd "$path"
+  fi
+}
+
 export PATH=$HOME/bin:$PATH
