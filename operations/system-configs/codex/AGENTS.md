@@ -29,6 +29,13 @@ Why: NotebookLM was installed in Codex config but not Claude. This prevents asym
 
 When: Whenever you hear "install X", "add Y skill", "set up Z MCP", immediately ask to run the skill first.
 
+**After activating or installing any skill**, do NOT assume skill installation is complete until the sync check passes:
+```bash
+node tools/scripts/sync-ai-skills.mjs --dry-run && node tools/scripts/sync-ai-skills.mjs && node tools/scripts/sync-ai-skills.mjs --check
+```
+
+The check exit code tells you if sync succeeded (0) or failed (1). Only proceed after it passes.
+
 ---
 
 ## If you are the entry point (no Claude orchestrating)

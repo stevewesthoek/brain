@@ -32,6 +32,24 @@ enabled = true
 [plugins."vercel@openai-curated"]
 enabled = false
 
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."browser-use@openai-bundled"]
+enabled = true
+
+[plugins."build-macos-apps@openai-curated"]
+enabled = true
+
+[plugins."remotion@openai-curated"]
+enabled = true
+
 [projects."/Users/Office/Repos/stevewesthoek/brain"]
 trust_level = "trusted"
 
@@ -68,5 +86,18 @@ trust_level = "trusted"
 [projects."/private/tmp"]
 trust_level = "trusted"
 
+[projects."/Users/Office/Repos/stevewesthoek/family-finance"]
+trust_level = "trusted"
+
 [tui.model_availability_nux]
 "gpt-5.5" = 4
+
+[marketplaces.openai-bundled]
+last_updated = "2026-05-02T22:11:46Z"
+source_type = "local"
+source = "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[marketplaces.openai-primary-runtime]
+last_updated = "2026-05-02T22:54:27Z"
+source_type = "local"
+source = "/Users/Office/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
