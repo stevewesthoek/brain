@@ -34,6 +34,31 @@ Each subdir may contain a mix of:
 When reading this folder, prefer explicit portable config files. Do not mistake runtime artifacts for canonical reference material.
 Credentials and client secrets never belong in tracked config. Use an ignored local overlay or template when a tool needs machine-only secrets.
 
+## Skill Exports
+
+**Hardened invariant: only activated skills are exported.**
+
+All AI/IDE consumers see the same active skill set from `ai/skills/active/` via symlinks managed by `tools/scripts/sync-ai-skills.mjs`:
+
+| Tool | Export Location | Mode | Symlink Target |
+|------|-----------------|------|---|
+| Claude Code | `claude/skills` | root symlink | `ai/skills/active` |
+| Codex | `codex/skills/user` | root symlink | `ai/skills/active` |
+| Gemini CLI | `gemini/skills` | root symlink | `ai/skills/active` |
+| Cursor | `cursor/skills` | root symlink | `ai/skills/active` |
+| Kiro | `kiro/skills` | per-skill entries | each active skill |
+| Antigravity | `gemini/antigravity/skills` | root symlink | `ai/skills/active` |
+
+**Vendor and custom skill source folders are not exposed directly** unless they are activated through `ai/skills/active/`. After any skill install:
+
+```bash
+node tools/scripts/sync-ai-skills.mjs --dry-run
+node tools/scripts/sync-ai-skills.mjs
+node tools/scripts/sync-ai-skills.mjs --check  # Must exit 0
+```
+
+The `--check` command verifies that every active skill is visible at the top-level path for each consumer (e.g., `operations/system-configs/claude/skills/<skill>/SKILL.md`). Only commit skill installations after `--check` passes.
+
 ## What to edit vs. what to leave alone
 
 - Safe to edit: `CLAUDE.md`, `AGENTS.md`, `config.toml`, `rules/default.rules`, `.zshrc`, `ghostty/config`, `starship/starship.toml`, `git/gitconfig`, `git/gitconfig-demo`, `git/ignore`, and any file described as portable config in the subdir

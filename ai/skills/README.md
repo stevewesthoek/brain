@@ -33,6 +33,7 @@ For the full design workflow and skill coordination, see `../design-systems/desi
 - `taste-skill` — premium taste and anti-slop guardrails
 - `redesign-skill` — safe existing-project redesign
 - `huashu-design` — HTML-native visual production artifacts (prototypes, decks, animations, exports)
+- `impeccable` — tactical frontend polish, anti-slop audits, hardening, and live visual iteration; reads `DESIGN.md` / `brand-spec.md`; does not replace `design-system`
 
 All design skills read `DESIGN.md` and `brand-spec.md` for consistency.
 
@@ -56,3 +57,26 @@ The skill library is pruned monthly to prevent token overhead and signal dilutio
 **Target Size:** < 20 learned gotcha skills. Operational tools (`dokploy`, `gh`, `aws`, etc.) and workflow process skills are exempt from the count.
 
 **Workflow Guide:** See `custom/learned/skill-prune/SKILL.md` for complete documentation.
+
+## Sync / Export to AI Tools
+
+**Invariant: `active/` is the only canonical skill export surface for all AI/IDE consumers.**
+
+After installing or activating any skill in `active/`, you **must** run the sync script to make it available to all consumers:
+
+```bash
+# Preview what will change
+node tools/scripts/sync-ai-skills.mjs --dry-run --verbose
+
+# Apply the sync
+node tools/scripts/sync-ai-skills.mjs
+
+# Verify sync is complete and ALL active skills are reachable at top-level paths
+node tools/scripts/sync-ai-skills.mjs --check
+```
+
+A passing `--check` means:
+- Every active skill is visible at `<consumer-target>/<skill>/SKILL.md` for all consumers
+- Claude Code, Codex, Gemini, Cursor, Kiro, and Antigravity all see the same active skill set
+
+**Never manually copy skills into tool-specific folders.** The sync script is the sole source of truth for exporting skills. Vendor and custom source folders must remain hidden unless explicitly activated through `active/`.

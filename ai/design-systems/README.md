@@ -7,7 +7,7 @@
 
 ## Design Stack Overview
 
-The design ecosystem consists of six complementary skills that work together:
+The design ecosystem consists of seven complementary skills that work together:
 
 | Skill | Purpose | Output |
 |-------|---------|--------|
@@ -17,8 +17,21 @@ The design ecosystem consists of six complementary skills that work together:
 | `/ui-ux-pro-max` | Searchable UI/UX intelligence | Palette/type/pattern research |
 | `/taste-skill` | Premium quality guardrails | Anti-slop rules, polish |
 | `/redesign-skill` | Safe existing-code improvement | Targeted design fixes |
+| `/impeccable` | Tactical polish & iteration | Audits, hardening, live variants, refinement |
 
 **For the full design workflow, routing decisions, and end-to-end examples, read [`design-stack.md`](design-stack.md).**
+
+### About /impeccable
+
+`/impeccable` is an optional tactical layer on top of the existing design stack. It does **not** replace `/design-system` (brand truth), `/web-design` (spec creation), `/huashu-design` (artifact production), or `/redesign-skill` (codebase improvement). It complements them by providing:
+
+- **Audits & critique:** accessibility, performance, responsive behavior, anti-patterns
+- **Hardening:** edge cases, error states, i18n, text overflow, empty states, loading states
+- **Polish:** final quality passes before shipping
+- **Visual iteration:** live browser experimentation with variants and refinements
+- **Tactical commands:** bolder, quieter, distill, typeset, layout, colorize, animate, delight, overdrive
+
+Use `/impeccable` when you need frontend polish, anti-slop detection, or live visual iteration. It reads `DESIGN.md` and `brand-spec.md` for consistency with the rest of the stack.
 
 ---
 

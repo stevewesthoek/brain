@@ -7,6 +7,7 @@ This directory contains the canonical Docker Compose definitions for the local P
 | App | Container | Host Port | Database | Status |
 |------|-----------|-----------|----------|--------|
 | JPV Bootcamp | `jpvbootcamp-postgres-1` | `5444` | `jpvbootcamp` | running |
+| Family Finance | `familyfinance-postgres-1` | `5452` | `family_finance` | running |
 
 ## Canonical standalone database map
 
@@ -15,6 +16,7 @@ These are the reserved local Postgres stacks tracked in brain. A port, once assi
 | App | Compose directory | Host Port | Database | User | Notes |
 |-----|-------------------|-----------|----------|------|-------|
 | Cedula | `operations/database/standalone/cedula` | `5443` | `cedula` | `postgres` | Reserved local PostgreSQL stack. |
+| Family Finance | `operations/database/standalone/familyfinance` | `5452` | `family_finance` | `postgres` | Reserved local PostgreSQL stack for local-only household finance app. |
 | JPV Bootcamp | `operations/database/standalone/jpvbootcamp` | `5444` | `jpvbootcamp` | `postgres` | Empty local database for Stripe/WordPress provisioning repro. |
 | Oliveto Organizing | `operations/database/standalone/olivetoorganizing` | `5445` | `olivetoorganizing` | `postgres` | Reserved local PostgreSQL stack. |
 | OpenFund | `operations/database/standalone/openfund` | `5451` | `openfund` | `postgres` | Reserved local PostgreSQL stack. |

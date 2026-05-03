@@ -16,6 +16,13 @@ Claude Code instructions for the `machine-brain` repo — AI infrastructure, sys
 
 Before installing ANY skill, CLI, or MCP server: run `/brain-universal-capability-install`. All three engines (Claude, Codex, Gemini) must be configured simultaneously.
 
+After activating or installing a skill, export it to all configured AI/IDE consumers by running:
+```bash
+node tools/scripts/sync-ai-skills.mjs --dry-run && node tools/scripts/sync-ai-skills.mjs && node tools/scripts/sync-ai-skills.mjs --check
+```
+
+This syncs active skills to Claude Code, Codex, Gemini CLI, Cursor, Kiro, and Antigravity. The check should pass before continuing with other work.
+
 ## Workspace rules
 
 1. Do not work in brain root unless the task is about the brain repo itself.

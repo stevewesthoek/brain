@@ -193,6 +193,29 @@ which {tool-name}
 # Should return: /path/to/binary (one shared location)
 ```
 
+### Step 8.5 — Sync skills to all tool consumers (mandatory)
+
+After installing or activating any skill in `ai/skills/active/`, run the hardened skill sync script to export it to all consumers:
+
+```bash
+# Preview changes
+node tools/scripts/sync-ai-skills.mjs --dry-run --verbose
+
+# Apply sync
+node tools/scripts/sync-ai-skills.mjs
+
+# Verify: all active skills must be reachable at top-level paths for all consumers
+node tools/scripts/sync-ai-skills.mjs --check
+```
+
+The `--check` command **must exit 0** before proceeding. This proves every active skill is visible at `<consumer-target>/<skill>/SKILL.md` for all six consumers (Claude Code, Codex, Gemini, Cursor, Kiro, Antigravity).
+
+Invariant: All AI/IDE consumers see the same active skill set. Vendor and custom source folders are not exposed directly unless explicitly activated through `ai/skills/active/`.
+
+**Do not commit skill installations until `--check` passes.**
+
+See: `tools/scripts/sync-ai-skills.mjs`, `ai/skills/README.md`, and `operations/system-configs/README.md` for full documentation.
+
 ### Step 9 — Commit together
 
 All changes — skill, config updates, MCP entries, CLI documentation — **in one commit**:

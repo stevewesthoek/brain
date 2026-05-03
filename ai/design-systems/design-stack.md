@@ -1,10 +1,10 @@
-# Design Stack — Six Complementary Skills
+# Design Stack — Seven Complementary Skills
 
-One persistent design truth (`DESIGN.md` + `brand-spec.md`), six complementary skills. Each has clear primary ownership; controlled overlap is allowed for handoffs.
+One persistent design truth (`DESIGN.md` + `brand-spec.md`), seven complementary skills. Each has clear primary ownership; controlled overlap is allowed for handoffs.
 
 ---
 
-## The Six Skills
+## The Seven Skills
 
 | Skill | Role | Outputs |
 |-------|------|---------|
@@ -14,6 +14,7 @@ One persistent design truth (`DESIGN.md` + `brand-spec.md`), six complementary s
 | `/ui-ux-pro-max` | Research support layer | Palette/typography/UX/chart/stack lookup |
 | `/taste-skill` | Quality guardrails | Anti-slop rules, premium execution standards |
 | `/redesign-skill` | Safe code improvement | Targeted design fixes in existing codebase |
+| `/impeccable` | Tactical polish & iteration | Audits, hardening, live variants, command-driven refinement |
 
 ---
 
@@ -64,6 +65,14 @@ One persistent design truth (`DESIGN.md` + `brand-spec.md`), six complementary s
 - Enforce `/taste-skill` guardrails on output from other skills
 - Does not route; applied to everything
 
+### Tactical Frontend Polish & Live Iteration
+→ **`/impeccable`**
+- Audit findings, polish passes, hardening fixes, visual variants
+- Command-driven refinement: `audit`, `polish`, `harden`, `bolder`, `quieter`, `distill`, `typeset`, `layout`, `colorize`, `animate`, `delight`, `overdrive`
+- Live browser visual variant iteration
+- Reads `DESIGN.md` and `brand-spec.md` if present
+- Does not own persistent brand truth; acts as tactical layer on top of existing design stack
+
 ---
 
 ## End-to-End Workflows
@@ -81,6 +90,10 @@ One persistent design truth (`DESIGN.md` + `brand-spec.md`), six complementary s
 3. Developer or /taste-skill
    → Implement using DESIGN.md guidance
    → Apply taste-skill rules
+
+4. /impeccable polish/audit (optional)
+   → Final quality pass
+   → Detect and fix anti-patterns
 ```
 
 ### Redesign Existing Website
@@ -94,7 +107,11 @@ One persistent design truth (`DESIGN.md` + `brand-spec.md`), six complementary s
 2. /design-system (if significant changes)
    → Document new system in DESIGN.md
 
-3. Deploy & verify
+3. /impeccable audit/harden (optional)
+   → Final quality checks
+   → Harden edge cases, error states, responsive behavior
+
+4. Deploy & verify
 ```
 
 ### Interactive Prototype / Proof-of-Concept
@@ -129,6 +146,13 @@ One persistent design truth (`DESIGN.md` + `brand-spec.md`), six complementary s
 ### Design Critique / Audit
 
 ```
+1. /impeccable critique
+   → UX design review with heuristic scoring
+   → Audit 5+ dimensions (typography, color, layout, motion, interaction)
+   → Show findings and recommendations
+
+OR
+
 1. /huashu-design
    → Audit 5 dimensions (typography, color, layout, motion, branding)
    → Show before/after visuals
@@ -175,6 +199,14 @@ One persistent design truth (`DESIGN.md` + `brand-spec.md`), six complementary s
 
 7. **Do not redesign code with `/huashu-design`.** Use `/redesign-skill` for code changes; use `/huashu-design` for prototypes/artifacts.
 
+8. **Do not use `/impeccable` to replace brand truth.** It does not own `DESIGN.md` or `brand-spec.md`. Must read and respect existing design documentation.
+
+9. **Do not use `/impeccable` as the default design-system creator.** If `/design-system` is appropriate, use that first.
+
+10. **Do not use `/impeccable` to replace `/huashu-design` for decks, prototypes, or export artifacts.** Use `/huashu-design` for production-grade artifacts unless the user explicitly wants Impeccable's live/variant workflow.
+
+11. **Do not use `/impeccable` to replace `/redesign-skill` for safe codebase-wide redesign.** Use `/redesign-skill` for structural changes; use `/impeccable` for tactical refinement and polish.
+
 ---
 
 ## Quick Decision Tree
@@ -182,6 +214,10 @@ One persistent design truth (`DESIGN.md` + `brand-spec.md`), six complementary s
 ```
 Does the project need persistent design tokens, or lack DESIGN.md/brand-spec.md with brand consistency needed?
   → Yes: /design-system
+  → No: Continue
+
+Is it final frontend polish, anti-slop detection, tactical audit, edge-case hardening, or live visual iteration?
+  → Yes: /impeccable
   → No: Continue
 
 Is it a visual artifact (prototype, deck, animation, export)?

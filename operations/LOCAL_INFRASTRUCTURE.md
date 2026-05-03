@@ -10,6 +10,12 @@ This document tracks all locally-running applications, their ports, and configur
 | **ProBot Dashboard** | 7070 | ProBot control plane dashboard | `stevewesthoek/brain/projects/probot` | (see ProBot docs) | Main monitoring and management UI |
 | **App 1** | 3050 | [Description] | [Path] | [Command] | [Notes] |
 
+## Local Database Ports
+
+| Application | Port | Database | Compose Path | Notes |
+|-------------|------|----------|--------------|-------|
+| **Family Finance** | 5452 | `family_finance` | `operations/database/standalone/familyfinance/docker-compose.yml` | Reserved standalone OrbStack Postgres stack. |
+
 ## Port Allocation Policy
 
 - **3000–3999**: Development & testing (ephemeral, first-come-first-served)
@@ -49,5 +55,5 @@ EXPOSE 7080
 
 ---
 
-**Last Updated:** 2026-04-12  
+**Last Updated:** 2026-04-29  
 **Maintained By:** Claude Code
