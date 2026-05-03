@@ -14,6 +14,7 @@ Utility scripts and wrappers for local workflows on this machine.
 - `scripts/render-office-scheduler-report.sh` — renders a markdown snapshot of the latest nightly scheduler state and durations to `runtime/local/office-scheduler/latest-run.md`
 - `scripts/probot-continue.sh` — deterministic SSH + tmux continuation helper used by ProBot resume guidance
 - `scripts/azure-inventory.sh` — exports a machine-readable inventory of Azure subscriptions, resource groups, and resources for all logged-in Azure accounts
+- `scripts/sync-ai-skills.mjs` — syncs active shared skills from `ai/skills/active/` to all configured AI/IDE tool consumers (Claude Code, Codex, Gemini, Cursor, Kiro, Antigravity); run after installing or activating any skill
 
 ## Rule
 
