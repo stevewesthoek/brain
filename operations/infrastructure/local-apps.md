@@ -79,7 +79,7 @@ For new local applications, add the app to `local-apps.json` first and provide l
 | Firecrawl | 3055 | 5443 | Web scraping and research API | `cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d` |
 | ProChat | 3056 | 5434 | ProChat marketing and conversion site | `cd ~/Repos/prochattools/web/prochat && npm run dev` |
 | Via di Eden | 3057 | 5447 | Via di Eden client website with TinaCloud CMS | `cd ~/Repos/stevewesthoek/brain/operations/database/standalone/viadieden && docker compose up -d && cd ~/Repos/prochattools/clients/via-di-eden && bash scripts/dev/start-local.sh` |
-| Olive To Organizing | 3059 | 5445 | Olive To Organizing client website with TinaCloud CMS | `cd ~/Repos/stevewesthoek/brain/operations/database/standalone/olivetoorganizing && docker compose up -d && cd ~/Repos/prochattools/clients/olive-to-organizing && bash scripts/dev/start-local.sh` |
+| Olive To Organizing | 3059 | 5453 | Olive To Organizing client website with TinaCloud CMS | `cd ~/Repos/stevewesthoek/brain/operations/database/standalone/olivetoorganizing && docker compose up -d && cd ~/Repos/prochattools/clients/olive-to-organizing && bash scripts/dev/start-local.sh` |
 | JPV Bootcamp | 3000 | 5444 | JPV Bootcamp landing page, Stripe provisioning, and WordPress sync | `cd ~/Repos/prochattools/clients/jc-citadel/jpv-bootcamp && npm run dev` |
 | xGrow | 7080 | 5445 | X (Twitter) growth automation | `cd ~/Repos/prochattools/saas/xgrow && docker compose -f docker-compose.postgres.yml up -d postgres && npm run dev > /tmp/xgrow.log 2>&1 &` |
 | Google Ads API | 8001 | - | Google Ads webhook and API server | `supervisorctl start google-ads-http-server` |
@@ -98,7 +98,7 @@ The standalone Postgres stacks under `operations/database/standalone/` use these
 | ProChat | 5442 | `prochat` |
 | Cedula | 5443 | `cedula` |
 | JPV Bootcamp | 5444 | `jpvbootcamp` |
-| Oliveto Organizing | 5445 | `olivetoorganizing` |
+| Oliveto Organizing | 5453 | `olivetoorganizing` |
 | StatusLink | 5446 | `statuslink` |
 | Via di Eden | 5447 | `viadieden` |
 | Resend | 5448 | `resend` |
