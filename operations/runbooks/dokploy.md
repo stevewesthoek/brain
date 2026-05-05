@@ -108,12 +108,13 @@ curl -s -X POST "https://dokploy.prochat.tools/api/application.deploy" \
 ```bash
 # All app statuses
 source ~/.config/dokploy/.env
-curl -s "https://dokploy.prochat.tools/api/project.all" \
-  -H "x-api-key: $DOKPLOY_API_KEY" | grep -o '"name":"[^"]*","applicationStatus":"[^"]*"'
+curl -sS "$DOKPLOY_URL/project.all" \
+  -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool | head -100
 
-# Specific app
-curl -s "https://dokploy.prochat.tools/api/application.one?applicationId=<app-id>" \
-  -H "x-api-key: $DOKPLOY_API_KEY" | grep -o '"applicationStatus":"[^"]*"'
+# Specific app status
+source ~/.config/dokploy/.env
+curl -sS "$DOKPLOY_URL/application.one?applicationId=<app-id>" \
+  -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool
 
 # Docker Swarm replicas
 ssh dokploy "docker service ls --format 'table {{.Name}}\t{{.Image}}\t{{.Replicas}}'"
@@ -121,6 +122,48 @@ ssh dokploy "docker service ls --format 'table {{.Name}}\t{{.Image}}\t{{.Replica
 # Container logs
 ssh dokploy "docker service logs <service-name> --tail 50"
 ```
+
+---
+
+## Dokploy API reference
+
+All Dokploy API calls use the central credential file `~/.config/dokploy/.env` and the header `x-api-key`.
+
+**Central credential location:**
+```
+~/.config/dokploy/.env
+```
+
+Required variables:
+```text
+DOKPLOY_API_KEY=[your-api-key]
+DOKPLOY_URL=https://dokploy.prochat.tools/api
+DOKPLOY_API_HEADER=x-api-key
+```
+
+**Safe, non-secret discovery pattern:**
+
+```bash
+source ~/.config/dokploy/.env
+
+# List all projects and apps (no secrets in output)
+curl -sS "$DOKPLOY_URL/project.all" \
+  -H "$DOKPLOY_API_HEADER: $DOKPLOY_API_KEY" \
+  | python3 -m json.tool | head -80
+```
+
+**Important:** 
+- Never print `$DOKPLOY_API_KEY` in logs or output
+- Do not copy the API key into repo docs, scripts, or GitHub secrets (except repo-specific GitHub Actions secrets)
+- Use environment variables and redirection to keep credentials out of command history
+- The packaged `dokploy-cli verify` command is unreliable (returns 401); use direct API calls instead
+
+**Common endpoints:**
+- `GET $DOKPLOY_URL/project.all` — list all projects and apps
+- `GET $DOKPLOY_URL/application.one?applicationId=<id>` — get app details
+- `POST $DOKPLOY_URL/application.deploy` — trigger app deployment
+- `POST $DOKPLOY_URL/application.update` — update app config
+- `DELETE $DOKPLOY_URL/application.delete` — delete application (use with caution)
 
 ---
 
@@ -137,7 +180,7 @@ Apps with `CMD ["bash", "scripts/runtime/start-prod.sh"]` run a deploy gate befo
 If any required env var is missing, the gate skips (setup mode) and starts the app directly.
 
 **Required Dokploy env vars for deploy gate apps:**
-- `APP_SLUG` — normalized repo name (lowercase, no separators: `olive-to-organizing` → `olivetoorganizing`)
+- `APP_SLUG` — normalized repo name (lowercase, no separators: `oliveto-organizing` → `olivetoorganizing`)
 - `SYSTEM_DATABASE_URL` — connection to shared postgres (system user with createdb privileges)
 - `TENANT_DB_PASSWORD` — password for the per-app database user
 - Bind mount: `/var/backups/pgdump` host → `/var/backups/pgdump` container (read-write)
@@ -165,18 +208,21 @@ curl -s -X POST "https://dokploy.prochat.tools/api/application.deploy" \
 
 ## App inventory (Dokploy IDs)
 
-| App | Repo | Dokploy App ID |
-|-----|------|----------------|
-| BuildFlow | stevewesthoek/buildflow | (to be assigned on provisioning) |
-| Via di Eden | prochattools/via-di-eden | 34heLjzG-klSB3ja7ZSG5 |
-| Proofly | prochattools/proofly | ub3NVzkB14Q-i3mNrIp0W |
-| Says the Bible | prochattools/says-the-bible | FKwPG6tveeYFrbSsLmQA1 |
-| JPV Bootcamp | prochattools/jpv-bootcamp | aPR9SvYn_JvGdMTk3CzeI |
-| Olive to Organizing | prochattools/olive-to-organizing | xBuP3eoiwNO5l2qY_N_1h |
-| ProChat | prochattools/prochat | QmLMK77LC0zEKE_qxGQ4L |
-| Yeshua Academy | yeshuaacademy/yeshuaacademy | kPspytKHjCLuis1ijCnhB |
-| Yeshua Finance | yeshuaacademy/finance | rUyCCZYOE0TIKoUKkqSGQ |
-| Status Link | prochattools/statuslink | 1hooC9kE4Yn5SXmYI9DLg |
+| App | Repo | Dokploy App ID | Status |
+|-----|------|----------------|--------|
+| BuildFlow | stevewesthoek/buildflow | (to be assigned on provisioning) | Pending |
+| Via di Eden | prochattools/via-di-eden | 34heLjzG-klSB3ja7ZSG5 | Active |
+| Proofly | prochattools/proofly | ub3NVzkB14Q-i3mNrIp0W | Active |
+| Says the Bible | prochattools/says-the-bible | FKwPG6tveeYFrbSsLmQA1 | Active |
+| JPV Bootcamp | prochattools/jpv-bootcamp | aPR9SvYn_JvGdMTk3CzeI | Active |
+| Oliveto Organizing | prochattools/oliveto-organizing | xBuP3eoiwNO5l2qY_N_1h | Active |
+| ProChat | prochattools/prochat | QmLMK77LC0zEKE_qxGQ4L | Active |
+| Yeshua Academy | yeshuaacademy/yeshuaacademy | kPspytKHjCLuis1ijCnhB | Active |
+| Yeshua Finance | yeshuaacademy/finance | rUyCCZYOE0TIKoUKkqSGQ | Active |
+| Status Link | prochattools/statuslink | 1hooC9kE4Yn5SXmYI9DLg | Active |
+
+**Deleted (local-only apps):**
+- Family Finance (app ID: `uMrNEbM2ROMb8z6PD3-O0`) — deleted 2026-05-03, local-only app maintained at localhost:3060 via ProBot
 
 ---
 

@@ -36,7 +36,7 @@ _Generated: 2026-03-29_
 
 | App | Dokploy ID | Current schema | Target DB | Notes |
 |-----|------------|----------------|-----------|-------|
-| Olive to Organizing | `xBuP3eoiwNO5l2qY_N_1h` | `tenant_olivetoorganizing` | `olivetoorganizing` | 0 tables in prod |
+| Oliveto Organizing | `xBuP3eoiwNO5l2qY_N_1h` | `tenant_olivetoorganizing` | `olivetoorganizing` | 0 tables in prod |
 | Via di Eden | `34heLjzG-klSB3ja7ZSG5` | `tenant_viadieden` | `viadieden` | 0 tables in prod |
 
 ### Already done — skip
@@ -120,7 +120,7 @@ BEFORE:  postgresql://tenant_saaskitstudio_user:${TENANT_DB_PASSWORD}@10.0.2.4:5
 AFTER:   postgresql://saaskitstudio_user:<pass>@10.0.2.4:5433/saaskitstudio
 ```
 
-### Olive to Organizing
+### Oliveto Organizing
 ```
 BEFORE:  postgresql://tenant_olivetoorganizing_user:<pass>@10.0.2.4:5433/postgres?schema=tenant_olivetoorganizing
 AFTER:   postgresql://olivetoorganizing_user:<pass>@10.0.2.4:5433/olivetoorganizing
@@ -193,7 +193,7 @@ Apps affected: Cedula, ProKit Studio, SaaSKit Studio, ProChat Accountant, Proofl
 | ProChat | Uses `tenant_dev` — dev environment only, not matching prod |
 | Cedula | `localhost:5433`, `?schema=tenant_cedula` ✓ |
 | JPV Bootcamp | `localhost:5433`, `?schema=tenant_jpvbootcamp` ✓ (note: prod has no schema param) |
-| Olive to Organizing | Uses `tenant_dev` — dev only |
+| Oliveto Organizing | Uses `tenant_dev` — dev only |
 | Via di Eden | Uses `tenant_dev` — dev only |
 | Status Link | `localhost:5433`, `?schema=tenant_statuslink` ✓ |
 | Proofly | `localhost:5433/proofly` ✓ (already on own DB model) |
@@ -207,7 +207,7 @@ Apps affected: Cedula, ProKit Studio, SaaSKit Studio, ProChat Accountant, Proofl
 ## Phase 0 Conclusion
 
 **Ready to proceed to Phase 1** for the following apps (no blockers):
-- JPV Bootcamp, Open Fund, Free Resend, Status Link, Says the Bible, ProChat, Olive to Organizing, Via di Eden
+- JPV Bootcamp, Open Fund, Free Resend, Status Link, Says the Bible, ProChat, Oliveto Organizing, Via di Eden
 
 **Blocked pending resolution:**
 - Cedula, ProKit Studio, SaaSKit Studio — resolve `${TENANT_DB_PASSWORD}`

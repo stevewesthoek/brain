@@ -34,7 +34,7 @@ NEW_RELIC_REGION=EU
 | `cloudpanel` | Hetzner (91.99.71.221) | Active (legacy) |
 
 **Docker container monitoring** is enabled on `dokploy` via `nri-docker`.  
-**PostgreSQL monitoring** (`nri-postgresql`) runs on `dokploy` targeting Supabase at `10.0.2.4:5433` via the read-only `newrelic_monitor` role.  
+**PostgreSQL monitoring** (`nri-postgresql`) runs on `dokploy` targeting Supabase at `100.71.31.88:5433` (Azure Tailscale IP, not 10.0.2.4 which is stale) via the read-only `newrelic_monitor` role.  
 **Docker log forwarding** is enabled via fluent-bit (`/etc/newrelic-infra/logging.d/docker.yml`).
 
 ### APM (Node.js / Next.js apps)
@@ -44,7 +44,7 @@ All 12 Dokploy apps have:
 - `NODE_OPTIONS=--require newrelic` set in Dokploy env
 - `NEW_RELIC_APP_NAME` and `NEW_RELIC_LICENSE_KEY` set in Dokploy env
 
-Apps: ProChat, Says the Bible, Cedula, Yeshua Academy, Yeshua Academy Finance, Olive to Organizing, JPV Bootcamp, JCCP Holdings, Via di Eden, Status Link, Proofly, xGrow.
+Apps: ProChat, Says the Bible, Cedula, Yeshua Academy, Yeshua Academy Finance, Oliveto Organizing, JPV Bootcamp, JCCP Holdings, Via di Eden, Status Link, Proofly, xGrow.
 
 APM data appears after first deploy of each app.
 
@@ -56,7 +56,7 @@ APM data appears after first deploy of each app.
 | Cedula | https://cedula.prochat.tools |
 | Yeshua Academy | https://yeshua.academy |
 | Yeshua Academy Finance | https://finance.yeshua.academy |
-| Olive to Organizing | https://olivetoorganizing.com |
+| Oliveto Organizing | https://olivetoorganizing.com |
 | JPV Bootcamp | https://jpvbootcamp.com |
 | Status Link | https://onestatus.link |
 | Proofly | https://proofly.xyz |

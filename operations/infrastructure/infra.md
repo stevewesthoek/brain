@@ -32,7 +32,7 @@ The registry is dual-compatible during the migration window:
 - legacy consumers may continue to use `port`, `url`, `check`, `start`, and `stop`
 - both sets of fields are kept aligned in `local-apps.json`
 
-Current inventory: ProBot (7070), Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), Via di Eden (3057 / DB 5447), Olive To Organizing (3059 / DB 5453), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060 / DB 5452), Fala (3050), BuildFlow (3054).
+Current inventory: ProBot (7070), Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), Via di Eden (3057 / DB 5447), Oliveto Organizing (3059 / DB 5453), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060 / DB 5452), Fala (3050), BuildFlow (3054).
 
 To add a new local app, edit `local-apps.json` — the ProBot "Local Apps" tab updates immediately.
 
@@ -176,7 +176,7 @@ Projects and workloads verified through the Dokploy API on 2026-04-03:
 - App: `Cedula`
 
 `Clients`
-- App: `Olive to Organizing`
+- App: `Oliveto Organizing`
 - App: `JPV Bootcamp`
 - App: `JCCP Holdings`
 - App: `Via di Eden`
@@ -368,7 +368,7 @@ Dokploy UI: `https://dokploy.prochat.tools`
 | `prochat.tools` | ProChat | Web | Online | — |
 | `saysthebible.com` | Says the Bible | Web | Online | — |
 | `cedula.prochat.tools` | Cedula | Web | Online | — |
-| `olivetoorganizing.com` | Olive to Organizing | Clients | Online | — |
+| `olivetoorganizing.com` | Oliveto Organizing | Clients | Online | — |
 | `jpvbootcamp.com` | JPV Bootcamp | Clients | Online | — |
 | `jccp-management.pro` | JCCP Holdings | Clients | Online | Added to Dokploy tunnel 2026-04-04 |
 | `lean.diet` | — | TBD | Parked | Added to Dokploy tunnel 2026-04-04; domain repurposed, new project not yet created |

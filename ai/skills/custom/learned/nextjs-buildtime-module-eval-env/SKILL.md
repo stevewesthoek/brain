@@ -55,6 +55,6 @@ RUN npm run build
 - Some apps validate `APP_BASE_URL` at module level as well — check `src/lib/public-base-url.ts` equivalents
 
 ## Context
-Repo: prochattools stack (prochat, says-the-bible, olive-to-organizing, jpv-bootcamp, xgrow)
+Repo: prochattools stack (prochat, says-the-bible, oliveto-organizing, jpv-bootcamp, xgrow)
 Discovered: 2026-04-06
 Area: Dockerfile builder stage — src/libs/prisma.ts, src/libs/resend.ts, src/libs/stripe-env.ts
