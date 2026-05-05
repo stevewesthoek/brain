@@ -32,7 +32,7 @@ The registry is dual-compatible during the migration window:
 - legacy consumers may continue to use `port`, `url`, `check`, `start`, and `stop`
 - both sets of fields are kept aligned in `local-apps.json`
 
-Current inventory: ProBot (7070), Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060), Fala (3050), BuildFlow (3054).
+Current inventory: ProBot (7070), Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), Via di Eden (3057 / DB 5447), Olive To Organizing (3059 / DB 5445), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060 / DB 5452), Fala (3050), BuildFlow (3054).
 
 To add a new local app, edit `local-apps.json` — the ProBot "Local Apps" tab updates immediately.
 
@@ -409,10 +409,40 @@ The Hetzner server is the **old** CloudPanel. Migrated sites have been removed f
 Known sites still present on Hetzner server filesystem (not yet deleted):
 - `jccp-management.pro` — requires manual deletion via Hetzner CloudPanel UI at `https://91.99.71.221:8443`
 
+## Application-Specific Notes
+
+### Family Finance
+- **Status**: Local-only application; no production deployment
+- **Registry**: `local-apps.json` entry with name `"Family Finance"` — canonical configuration source
+- **Canonical local execution**: One way only — ProBot dashboard manages lifecycle
+  - **App port**: `3060` (http://localhost:3060)
+  - **Database**: OrbStack PostgreSQL at `localhost:5452/family_finance`
+  - **Start command**: `npm run dev` (ProBot injects `PORT=3060`)
+  - **Database service**: `docker compose up` from `operations/database/standalone/familyfinance/docker-compose.yml`
+- **ProBot integration**: 
+  - ProBot dashboard reads `local-apps.json` Family Finance entry on every page load (no restart needed)
+  - "Local Apps" tab in ProBot shows Family Finance with start/stop/health controls
+  - ProBot reserves ports 3060 and 5452; only ProBot may manage startup/shutdown
+- **Dokploy**: ❌ No active deployment; historical production Dokploy app was deleted 2026-05-03 (ID: uMrNEbM2ROMb8z6PD3-O0)
+- **Supabase**: ❌ No production database; all data is local only
+- **Manual execution**: ⚠️ Avoid `npm run dev` outside ProBot; use ProBot dashboard instead to ensure port isolation and health-check compliance
+- **Reference**: Canonical local database compose at `operations/database/standalone/familyfinance/docker-compose.yml`
+- **Constraint**: Future agents must not create Family Finance databases on production Supabase, must not attempt to deploy to Dokploy, and must only verify local OrbStack runtime via ProBot dashboard
+
 ## Gaps / TODO
 
 - Confirm domain names for remaining Dokploy apps (ProChat Accountant, Egg Cooker, Free Resend, kutt, umami, boilerplates).
 - Delete `jccp-management.pro` site files from Hetzner server via CloudPanel UI.
+- Supabase database password rotation (currently expired; not blocking Family Finance which is local-only)
+- Optional: Clean up stale Cloudflare DNS record for `finance.prochat.tools` (no longer routes anywhere)
+
+Completed (2026-05-03):
+- ✅ Dokploy API access restored (new key provisioned; direct API calls via `$DOKPLOY_URL/project.all` verified working)
+- ✅ Dokploy CLI caveat documented (packaged `dokploy-cli verify/list` returns 401; use direct API instead)
+- ✅ Supabase host corrected from stale 10.0.2.4 to Azure Tailscale IP 100.71.31.88 in all docs
+- ✅ Family Finance Dokploy app deleted (production app ID: uMrNEbM2ROMb8z6PD3-O0)
+- ✅ Family Finance finalized as local-only with canonical infra.md documentation
+- ✅ ProBot dashboard confirmed as sole execution interface for Family Finance lifecycle
 
 Last updated:
-- 2026-04-04 WEST
+- 2026-05-03 WEST (Family Finance finalization + CLI access repair)

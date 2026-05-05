@@ -78,11 +78,13 @@ For new local applications, add the app to `local-apps.json` first and provide l
 | Says the Bible | 3058 | 5441 | Says the Bible main app and admin panel | `bash scripts/dev/start-local.sh` |
 | Firecrawl | 3055 | 5443 | Web scraping and research API | `cd ~/Repos/stevewesthoek/brain/tools/firecrawl && docker compose up -d` |
 | ProChat | 3056 | 5434 | ProChat marketing and conversion site | `cd ~/Repos/prochattools/web/prochat && npm run dev` |
+| Via di Eden | 3057 | 5447 | Via di Eden client website with TinaCloud CMS | `cd ~/Repos/stevewesthoek/brain/operations/database/standalone/viadieden && docker compose up -d && cd ~/Repos/prochattools/clients/via-di-eden && bash scripts/dev/start-local.sh` |
+| Olive To Organizing | 3059 | 5445 | Olive To Organizing client website with TinaCloud CMS | `cd ~/Repos/stevewesthoek/brain/operations/database/standalone/olivetoorganizing && docker compose up -d && cd ~/Repos/prochattools/clients/olive-to-organizing && bash scripts/dev/start-local.sh` |
 | JPV Bootcamp | 3000 | 5444 | JPV Bootcamp landing page, Stripe provisioning, and WordPress sync | `cd ~/Repos/prochattools/clients/jc-citadel/jpv-bootcamp && npm run dev` |
 | xGrow | 7080 | 5445 | X (Twitter) growth automation | `cd ~/Repos/prochattools/saas/xgrow && docker compose -f docker-compose.postgres.yml up -d postgres && npm run dev > /tmp/xgrow.log 2>&1 &` |
 | Google Ads API | 8001 | - | Google Ads webhook and API server | `supervisorctl start google-ads-http-server` |
 | ComfyUI | 8188 | - | Stable Diffusion image generation UI | `~/.local/bin/comfyui-start` |
-| Family Finance | 3060 | - | Multi-account family finance tracker | `cd ~/Repos/stevewesthoek/family-finance && npm run dev > /tmp/family-finance.log 2>&1 &` |
+| Family Finance | 3060 | 5452 | Local-only household finance tracker | `cd ~/Repos/stevewesthoek/brain/operations/database/standalone/familyfinance && docker compose up -d && cd ~/Repos/stevewesthoek/family-finance && PORT=3060 NEXT_PUBLIC_APP_URL=http://localhost:3060 npm run dev > /tmp/family-finance.log 2>&1 &` |
 | Fala | 3050 | - | Portuguese language learning app | `echo 'Manual start required'` |
 | BuildFlow | 3054 | - | Unified lifecycle for agent (3052), web (3054), and relay (3053) | `bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh start` |
 
@@ -103,6 +105,7 @@ The standalone Postgres stacks under `operations/database/standalone/` use these
 | ProKit Studio | 5449 | `prokitstudio` |
 | SaaSKit Studio | 5450 | `saaskitstudio` |
 | OpenFund | 5451 | `openfund` |
+| Family Finance | 5452 | `family_finance` |
 | ProKit | 5455 | `prokit` |
 | SaaSKit | 5457 | `saaskit` |
 
@@ -146,11 +149,13 @@ Current explicit stop helpers:
 - `Firecrawl` -> `~/Repos/stevewesthoek/brain/tools/firecrawl/stop-firecrawl.sh`
 - `BuildFlow` -> `~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh stop` (production-grade orchestrator with fact-checking)
 - `xGrow` -> `~/Repos/prochattools/saas/xgrow/stop-xgrow.sh`
+- `Olive To Organizing` -> `~/Repos/prochattools/clients/olive-to-organizing/scripts/dev/stop-local.sh`
 
 For local dashboard launches, prefer a restart-safe wrapper script when the package has a slow `predev` chain or when editors need a one-click restart path.
 Apps may also set `startupTimeoutMs` in `local-apps.json` when their boot path is slower than the default 30 seconds.
 The dashboard start button is non-blocking: it flips the card into a `STARTING` state immediately and polls until the app becomes healthy or the startup timeout elapses.
 The restart button is only shown for running apps so the control surface stays consistent and avoids ambiguous states.
+Olive To Organizing local Tina admin is available at `http://localhost:3059/admin/index.html`.
 
 ## BuildFlow Orchestrator
 
