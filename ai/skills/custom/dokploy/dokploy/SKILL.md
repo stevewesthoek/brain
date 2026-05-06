@@ -1,14 +1,14 @@
 ---
 name: dokploy
-description: "Use when the user asks to deploy, manage, or inspect applications on the Dokploy server. Uses Dokploy CLI exclusively. Server: https://dokploy.prochat.tools"
+description: "Use when the user asks to deploy, manage, or inspect applications on the Dokploy server. Uses direct Dokploy API (curl) or GitHub Actions workflows. Server: https://dokploy.prochat.tools"
 ---
 
 # Dokploy
 
 ## What this skill is for
-Help manage deployments, applications, databases, and projects on the self-hosted Dokploy server at `https://dokploy.prochat.tools` — via the **Dokploy CLI** (direct commands) or the **REST API** (curl, GitHub Actions).
+Help manage deployments, applications, databases, and projects on the self-hosted Dokploy server at `https://dokploy.prochat.tools` — via direct **REST API** (curl, GitHub Actions) or programmatic operations.
 
-The Dokploy CLI is the single, preferred interface. Do not use or reference any MCP server for Dokploy.
+For discovery and inspection tasks, use the **direct Dokploy API** with curl (most reliable). The packaged `dokploy-cli` binary exists but has compatibility issues with `verify` and `list` commands — use direct API instead. Do not use or reference any MCP server for Dokploy.
 
 ## Use this skill when
 - Deploying or redeploying an application on Dokploy
@@ -49,40 +49,44 @@ This file is the single source of truth for Dokploy credentials — used by Clau
 > Important: `dokploy` in the shell is aliased to `ssh dokploy` (SSH shortcut to the server).
 > Always invoke the CLI via `~/.local/bin/dokploy-cli` to avoid the alias conflict.
 
-## Layer 1 — CLI (all interactive and scripted operations)
+## Layer 1 — Direct API (all discovery and scripted operations)
 
-```bash
-~/.local/bin/dokploy-cli --version   # @dokploy/cli v0.2.8
-~/.local/bin/dokploy-cli --help
-```
-
-Common operations:
+The direct Dokploy API via curl is the most reliable method for inspection and scripted operations:
 ```bash
 # List all projects and apps
 source ~/.config/dokploy/.env
-curl -s -X GET "https://dokploy.prochat.tools/api/project.all" \
+curl -sS "$DOKPLOY_URL/project.all" \
+  -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool | head -80
+
+# Get specific app details
+source ~/.config/dokploy/.env
+curl -sS "$DOKPLOY_URL/application.one?applicationId=<app-id>" \
   -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool
 
 # Deploy an application
 source ~/.config/dokploy/.env
-curl -s -X POST "https://dokploy.prochat.tools/api/application.deploy" \
+curl -sS -X POST "$DOKPLOY_URL/application.deploy" \
   -H "x-api-key: $DOKPLOY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"applicationId": "<app-id>"}'
-
-# Get app details
-source ~/.config/dokploy/.env
-curl -s -X GET "https://dokploy.prochat.tools/api/application.one?applicationId=<app-id>" \
-  -H "x-api-key: $DOKPLOY_API_KEY" | python3 -m json.tool
+  -d '{"applicationId": "<app-id>", "title": "Deploy via API", "description": "Triggered by agent"}'
 ```
+
+### Packaged CLI status
+
+The `~/.local/bin/dokploy-cli` binary (v0.2.8) exists but has compatibility issues:
+- `dokploy-cli verify` returns 401 Unauthorized
+- `dokploy-cli project list` returns 401 Unauthorized
+- **Do not rely on CLI for discovery tasks.** Use direct API calls instead.
 
 ## Layer 2 — GitHub Actions (automated CI/CD)
 
-Reusable workflow template: `brain/operations/deploy/dokploy-deploy.yml`
+For CI/CD deployments that trigger automatically on push:
+
+Reusable workflow template: `brain/operations/deploy/dokploy-image-deploy.yml`
 
 Required GitHub secrets per repo:
-- `DOKPLOY_API_KEY` — copy from `~/.config/dokploy/.env`
-- `DOKPLOY_APP_ID` — found in app settings in the Dokploy dashboard
+- `DOKPLOY_API_KEY` — set once from `~/.config/dokploy/.env` (do not commit)
+- `DOKPLOY_APP_ID` — found via direct API call or Dokploy dashboard UI
 
 ## Recommended workflow — new app deployment
 
@@ -96,18 +100,31 @@ Required GitHub secrets per repo:
 7. Push to main → auto-deploy triggers
 ```
 
-## Recommended workflow — manual redeploy
+## Recommended workflow — manual redeploy (without code change)
 
 ```bash
 source ~/.config/dokploy/.env
-curl -s -X POST "https://dokploy.prochat.tools/api/application.deploy" \
+curl -sS -X POST "$DOKPLOY_URL/application.deploy" \
   -H "x-api-key: $DOKPLOY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"applicationId": "<your-app-id>"}'
+  -d '{
+    "applicationId": "<your-app-id>",
+    "title": "Manual redeploy",
+    "description": "Triggered via API"
+  }'
 ```
 
-## Notes
-- CLI binary: `~/.local/bin/dokploy-cli` → symlink to `@dokploy/cli@0.2.8` (nvm node v24.12.0)
-- Credentials: `~/.config/dokploy/.env` — local only, never in any repo
-- Dokploy server: `https://dokploy.prochat.tools`
-- This skill applies to both Claude Code and Codex — both use CLI/curl, not MCP
+## Reference
+
+- **Credentials file**: `~/.config/dokploy/.env` (local, never committed)
+  - Contains: `DOKPLOY_API_KEY`, `DOKPLOY_URL`, `DOKPLOY_API_HEADER`, `GHCR_DOKPLOY_PULL_PAT`
+  - Single source of truth — do not copy API key into repos, scripts, or docs
+- **Dokploy server**: `https://dokploy.prochat.tools`
+- **API base**: `https://dokploy.prochat.tools/api`
+- **CLI binary**: `~/.local/bin/dokploy-cli` (v0.2.8) — installed but unreliable for verify/list
+- **Runbook**: `operations/runbooks/dokploy.md` (deployment pipeline, app setup)
+- **App inventory**: See `operations/runbooks/dokploy.md` for Dokploy app IDs
+- **CLI diagnostics**: See `operations/infrastructure/CLI_ACCESS_REPAIR.md`
+- **Family Finance constraint**: Local-only app — must not be added to Dokploy (app deleted 2026-05-03)
+
+This skill applies to both Claude Code and Codex — both use direct API, not MCP or packaged CLI.

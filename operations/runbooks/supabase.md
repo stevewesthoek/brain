@@ -3,20 +3,85 @@
 ## Purpose
 Central reference for database provisioning, workflow, and safety across local and production environments.
 
+**IMPORTANT: Family Finance is local-only and must never use production Supabase.** Family Finance uses only OrbStack PostgreSQL at `localhost:5452/family_finance`. Do not create Family Finance databases on production Supabase.
+
 ## Database Architecture
 
 | Environment | Database | Managed by | Connection |
 |---|---|---|---|
 | **Local** | Plain PostgreSQL in OrbStack | docker-compose | `localhost:544X` (per-app unique port) |
-| **Production** | Full self-hosted Supabase | Dokploy | Tailscale VPN: `100.71.31.88:5433` |
+| **Production** | Full self-hosted Supabase (Azure VM vm-supabase) | Dokploy | Tailscale VPN: `100.71.31.88:5433` (canonical; not 10.0.2.4 which is stale) |
 
 ## Supabase CLI: Unified Workflow Tool
 
 Supabase CLI is the central tool for both environments:
 - **Locally:** Manages migrations and types against plain PostgreSQL
-- **Production:** Manages migrations and types against full Supabase
+- **Production:** Manages migrations and types against self-hosted Supabase on Azure VM
 
 Use `~/.local/bin/supabase-cli` (not bare `supabase` — that's an SSH alias).
+
+### CLI Status (2026-05-03)
+
+✅ **Supabase CLI is OPERATIONAL**
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| Binary | ✅ Working | `/Users/Office/.local/bin/supabase-cli` v2.84.2 |
+| Self-hosted access | ✅ Working | Connects to production Supabase at 100.71.31.88:5433 |
+| Authentication | ✅ Restored | Admin password valid and verified |
+| Migration commands | ✅ Working | `migration list`, `migration up`, `migration down` functional |
+| Central credential | ✅ Present | `~/.config/supabase/.env` with valid connection string |
+
+### Supabase CLI Reference
+
+**Central credential location:**
+```text
+~/.config/supabase/.env
+```
+
+Expected variables:
+```text
+SYSTEM_DATABASE_URL="postgresql://supabase_admin:PASSWORD@100.71.31.88:5433/postgres?schema=public"
+SUPABASE_HOST="100.71.31.88"
+SUPABASE_PORT="5433"
+SUPABASE_ADMIN_USER="supabase_admin"
+```
+
+**Self-hosted production access pattern (required):**
+
+All commands for production Supabase must use this pattern:
+
+```bash
+PGSSLMODE=disable ~/.local/bin/supabase-cli <command> \
+  --db-url "postgresql://supabase_admin:PASSWORD@100.71.31.88:5433/postgres"
+```
+
+**Why `PGSSLMODE=disable`?**
+- The self-hosted Supabase instance on Azure does not have TLS configured
+- Direct PostgreSQL connections require this flag to bypass TLS verification
+- Local OrbStack databases use `PGSSLMODE=disable` for the same reason
+
+**Common commands:**
+
+```bash
+# List migrations from production
+PGSSLMODE=disable ~/.local/bin/supabase-cli migration list \
+  --db-url "postgresql://supabase_admin:PASSWORD@100.71.31.88:5433/postgres"
+
+# Apply pending migrations
+PGSSLMODE=disable ~/.local/bin/supabase-cli migration up \
+  --db-url "postgresql://supabase_admin:PASSWORD@100.71.31.88:5433/postgres"
+
+# Pull production schema (requires psql)
+PGSSLMODE=disable ~/.local/bin/supabase-cli db pull \
+  --db-url "postgresql://supabase_admin:PASSWORD@100.71.31.88:5433/postgres"
+```
+
+**Important notes:**
+- Do not echo or print the password in commands
+- Use environment variables for credential storage
+- Never copy production credentials into scripts or repos
+- Supabase Cloud commands (`projects list`, `projects info`) are not configured — they require `SUPABASE_ACCESS_TOKEN` which is only needed if managing Supabase Cloud projects (we use self-hosted only)
 
 ## Provisioning a New Application's Local Database
 
