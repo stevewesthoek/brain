@@ -1,4 +1,4 @@
-model = "gpt-5.4-mini"
+model = "gpt-5.5"
 model_reasoning_effort = "low"
 personality = "pragmatic"
 # Full-access mode removes harness approval prompts for normal work.
@@ -87,6 +87,9 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/Users/Office/Repos/stevewesthoek/family-finance"]
+trust_level = "trusted"
+
+[projects."/Users/Office/Repos/prochattools/clients/oliveto-organizing"]
 trust_level = "trusted"
 
 [tui.model_availability_nux]
