@@ -1,3 +1,28 @@
+# HISTORICAL: Family Finance App (finance.prochat.tools)
+
+## Status
+
+**⚠️ THIS PLAN IS OBSOLETE.** 
+
+Family Finance is now **local-only** and will not be deployed to Dokploy, Supabase production, or finance.prochat.tools. The production deployment plan documented here is historical reference only.
+
+### Current Active State
+
+- **Runtime**: Local-only Next.js + OrbStack Postgres
+- **Database**: `family_finance` on `localhost:5452` (Brain-managed standalone)
+- **URL**: `http://localhost:3000` (development only)
+- **Auth**: Simple shared household password gate (replacing Ory)
+- **Deployment**: Not deployed. No public domain.
+- **Dokploy**: No Family Finance app.
+- **Supabase production**: No Family Finance project.
+- **Ory**: Will be removed as part of auth simplification.
+
+See [`~/Repos/stevewesthoek/family-finance/docs/`](../../family-finance/docs/) for current architecture and [`brain/operations/database/standalone/familyfinance/`](../../operations/database/standalone/familyfinance/) for the canonical local database.
+
+---
+
+## Historical Context (Do Not Use)
+
 # Plan: Family Finance App (finance.prochat.tools)
 
 ## Context
