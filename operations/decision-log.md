@@ -11,6 +11,13 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 
 ## Entries
 
+- Date: 2026-05-07 (Phase 2)
+- Decision: Automatic invisible memory injection on session start and mid-session recall-intent triggers
+- Context: Phase 1 implemented memory infrastructure (IDs, mem-search script, progressive disclosure), but required manual invocation. Phase 2 makes memory truly automatic and invisible: detect recall-intent phrases naturally and inject matching memory entries without user thinking about hooks or commands.
+- Impact: (1) Enhanced `inject-handoff.sh` to extract keywords from user's first prompt on session start, auto-search memory, prepend matching entries as `--- Memory context ---` block; (2) New `memory-recall-hook.sh` UserPromptSubmit hook detects 15+ recall-intent trigger phrases ("what did we", "remind me", "do we have", "what settings", etc.) and injects matching memory as `--- Memory recall ---` block into mid-session prompts; (3) Non-trigger prompts have zero cost (grep only, ~0ms passthrough); (4) Cap output at 5 entries/100-200 tokens max to keep injection lean; (5) Updated all three engine configs (CLAUDE.md, AGENTS.md, GEMINI.md) to explain auto-injection and guide usage; (6) Fully AI-agnostic: works on Claude Code, Codex, Gemini CLI with same mechanism.
+- Rationale: Invisible automation is the ultimate UX — user talks naturally, memory surfaces automatically at the right time, zero mental overhead. Achieves "stupid-proof, fool-proof" goal: no commands to remember, no hooks to invoke, just conversation.
+- Rollback: (1) Remove memory-recall-hook.sh; (2) Revert inject-handoff.sh to Phase 1 version (remove keyword extraction + memory search block); (3) Remove memory-recall-hook entry from settings.json UserPromptSubmit; (4) Revert CLAUDE.md, AGENTS.md, GEMINI.md to remove auto-injection docs; (5) All Phase 1 memory infrastructure remains intact and functional.
+
 - Date: 2026-05-07
 - Decision: Memory system upgrade — observation IDs, progressive disclosure, mem-search script
 - Context: Analysis of claude-mem (73k GitHub stars) revealed three additive improvements worth adopting to enhance our existing 4-layer memory model. All changes are purely additive (no behavior changes, no breaking changes, backward-compatible).

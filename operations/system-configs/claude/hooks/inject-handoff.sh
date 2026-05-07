@@ -72,15 +72,37 @@ const out = [
 process.stdout.write(out);
 " "$HANDOFF_CONTENT" 2>/dev/null || echo "")
 
+# NEW: Extract keywords from current prompt and search memory on session start
+# This triggers only on fresh sessions (same guard as above: < 4 lines in transcript)
+MEMORY_CONTEXT=""
+if [ -n "$CURRENT_PROMPT" ]; then
+  # Extract 1-3 meaningful keywords from the user's first prompt
+  KEYWORDS=$(printf '%s' "$CURRENT_PROMPT" | tr '[:upper:]' '[:lower:]' | \
+    sed -E 's/[^a-z0-9 ]//g' | \
+    tr ' ' '\n' | \
+    grep -v -E '^(the|a|an|in|on|at|to|for|of|and|or|but|is|are|was|were|be|do|did|what|when|where|why|how|which|who|if|that|this|from|with|by|as|we|you|i|me|us|him|her|it|they|them|our|your)$' | \
+    head -3 | \
+    paste -sd ' ' - || echo "")
+
+  # If keywords found, search memory and cap at 5 entries
+  if [ -n "$KEYWORDS" ]; then
+    SEARCH_RESULT=$(bash ~/.local/bin/mem-search $KEYWORDS 2>/dev/null | head -5 || echo "")
+    if [ -n "$SEARCH_RESULT" ]; then
+      MEMORY_CONTEXT=$(printf '\n--- Memory context ---\n%s\n---\n' "$SEARCH_RESULT")
+    fi
+  fi
+fi
+
 if [ -z "$BRIEF" ]; then
   echo "$INPUT"
   exit 0
 fi
 
-# Output modified JSON with brief prepended to the prompt
+# Output modified JSON with memory context + brief prepended to the prompt
 node -e "
 const d = JSON.parse(process.argv[1]);
-const brief = process.argv[2];
-d.prompt = brief + (d.prompt || '');
+const memory = process.argv[2];
+const brief = process.argv[3];
+d.prompt = memory + brief + (d.prompt || '');
 process.stdout.write(JSON.stringify(d));
-" "$INPUT" "$BRIEF" 2>/dev/null || echo "$INPUT"
+" "$INPUT" "$MEMORY_CONTEXT" "$BRIEF" 2>/dev/null || echo "$INPUT"

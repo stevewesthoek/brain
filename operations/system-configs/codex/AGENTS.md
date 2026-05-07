@@ -228,6 +228,10 @@ mem-search --id mem-ref-001   # fetch full file
 
 Progressive disclosure: index first → filter → fetch full only when needed. Saves ~10x tokens at scale.
 
+**Automatic memory injection (Claude orchestrates):**
+
+When Claude orchestrates you for a task, memory entries may be prepended to the context as `--- Memory context ---` or `--- Memory recall ---` blocks. These are authoritative memory from previous sessions. Use them naturally in your response without mentioning the mechanism. You do not need to request memory manually — Claude's hooks inject relevant entries automatically based on keyword detection and recall-intent triggers.
+
 ---
 
 ## Behavior rules
