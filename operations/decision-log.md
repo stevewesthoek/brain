@@ -11,6 +11,13 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 
 ## Entries
 
+- Date: 2026-05-07 (Design System Integration)
+- Decision: Unified `/design` master orchestrator + `design-motion-principles` integration
+- Context: Design system had 11 powerful skills (design-consultation, design-system, web-design, plan-design-review, design-review, huashu-design, redesign-skill, taste-skill, soft-skill, output-skill, ui-ux-pro-max) with no unified entry point. Users had to know which skill to invoke for which situation. kylezantos/design-motion-principles (393 stars) provides a systematic 3-designer motion audit framework. Goal: stupid-proof single natural-language entry point covering all design scenarios.
+- Impact: (1) New `/design` master orchestrator at `brain/ai/skills/custom/design/SKILL.md` — single entry point, three workflows (NEW/MIMIC/UPGRADE), four project types (SAAS/LANDING/FUNNEL/WEBSITE), auto-sequences all 11 skills; (2) New `design-motion-principles` vendor skill at `brain/ai/skills/vendors/kylezantos/` with SKILL.md + 9 reference files fetched from GitHub (Emil, Jakub, Jhey, audit checklist, common mistakes, accessibility, performance, technical principles, output format); (3) Motion audit integrated into all three design workflows at post-build stage; (4) `/web-design` updated with motion audit reference in Motion Plan section; (5) `/design-review` updated with Phase 4b motion audit integration; (6) All three engine configs updated (CLAUDE.md, AGENTS.md, GEMINI.md); (7) brain/CLAUDE.md updated; (8) Symlinks created in active/; (9) AI-agnostic: works identically on Claude Code, Codex, Gemini, Cursor, Kiro.
+- Rationale: One natural-language entry point removes the cognitive overhead of knowing 11 skill names. Motion audit adds systematic quality layer previously absent. DESIGN.md as source of truth ensures cross-session and cross-AI continuity.
+- Rollback: Remove `brain/ai/skills/active/design` and `brain/ai/skills/active/design-motion-principles` symlinks; remove `brain/ai/skills/custom/design/` and `brain/ai/skills/vendors/kylezantos/` directories; revert CLAUDE.md, AGENTS.md, GEMINI.md, brain/CLAUDE.md, web-design/SKILL.md, design-review/SKILL.md edits.
+
 - Date: 2026-05-07 (Phase 2)
 - Decision: Automatic invisible memory injection on session start and mid-session recall-intent triggers
 - Context: Phase 1 implemented memory infrastructure (IDs, mem-search script, progressive disclosure), but required manual invocation. Phase 2 makes memory truly automatic and invisible: detect recall-intent phrases naturally and inject matching memory entries without user thinking about hooks or commands.

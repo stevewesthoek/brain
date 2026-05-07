@@ -161,6 +161,7 @@ For Apify web scraping and data extraction, use the shared `/apify` skill at `br
 For Yeshua Academy nonprofit Google Ads automation, use the shared `/google-ads` skill at `brain/ai/skills/custom/google-ads/google-ads-automation/`. This stack is Ad Grants-only until the docs say otherwise.
 For Stripe CLI auth, profile handling, and ProBot dashboard semantics, use the canonical runbook at `brain/operations/runbooks/stripe-cli-and-probot.md`.
 For RTK token-output optimization, use the shared `/rtk` skill at `brain/ai/skills/custom/rtk/SKILL.md`. In Codex shell commands, prefer explicit `rtk` prefixes for noisy output (`rtk git status`, `rtk rg "pattern" .`, `rtk npm test`). Use raw commands or `rtk proxy <command>` when exact full output is required. Runbook: `brain/operations/runbooks/rtk.md`.
+For ALL design work (new projects, reference mimics, existing site upgrades), use the shared `/design` orchestrator at `brain/ai/skills/custom/design/SKILL.md` — it is the single natural-language entry point that sequences all 11 design skills automatically. For motion audits specifically, use `/design-motion-principles` at `brain/ai/skills/vendors/kylezantos/design-motion-principles/SKILL.md`.
 
 ---
 

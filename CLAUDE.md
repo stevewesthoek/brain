@@ -23,6 +23,12 @@ node tools/scripts/sync-ai-skills.mjs --dry-run && node tools/scripts/sync-ai-sk
 
 This syncs active skills to Claude Code, Codex, Gemini CLI, Cursor, Kiro, and Antigravity. The check should pass before continuing with other work.
 
+## Design system
+
+For ALL design work, use `/design` — the master orchestrator. It accepts natural language, classifies the scenario (new project / reference mimic / existing upgrade) and project type (SaaS / landing / funnel / website), and sequences all 11 design skills automatically. No commands to remember, no skill names to know.
+
+For motion audits specifically, `/design-motion-principles` audits via Emil Kowalski (restraint), Jakub Krehel (polish), and Jhey Tompkins (delight) — context-weighted to project type. The `/design` orchestrator invokes this automatically at the right stage.
+
 ## Workspace rules
 
 1. Do not work in brain root unless the task is about the brain repo itself.
