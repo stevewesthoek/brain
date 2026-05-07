@@ -9,10 +9,12 @@ Operational docs, helper scripts, deployment notes, and selected synced system c
 - `infrastructure/` — infrastructure and architecture docs
 - `runbooks/` — repeatable procedures
   - **`gemini-preprocessing-hook.md`** — Gemini Flash auto-preprocessing for large inputs in Claude Code. Reduces context 70-80% on fetches/reads >20k tokens. See file for tuning and debugging.
+  - **`rtk.md`** — RTK shell-output token optimization for Claude, Codex, and Gemini sessions, including verification and rollback.
 - `scripts/` — executable helpers
 - `snippets/` — reusable command or content fragments
 - `system-configs/` — curated synced tool and machine config
   - **`claude/hooks/gemini-preprocess-hook.sh`** — PostToolUse hook (Read, WebFetch). Installed in `~/.claude/hooks/` via symlink. Active by default.
+  - **`claude/hooks/rtk-safe-bash-hook.sh`** — PreToolUse hook (Bash). Preserves risky-command guardrails before RTK rewrite.
 
 ## Rule
 

@@ -12,6 +12,7 @@ It is the canonical home for Claude Code global config. Files here are loaded by
 - `hooks/` — lightweight global preflight scripts used by Claude Code hooks
   - `gemini-preprocess-hook.sh` — Automatically compresses large inputs (>5k tokens) with Gemini Flash (free) before Claude processes them. Saves 70-80% on input tokens. Triggers on Read/WebFetch. See `brain/operations/runbooks/gemini-preprocessing-hook.md` for full docs.
   - `check-risky-command.sh` — PreToolUse safety check for Bash commands
+  - `rtk-safe-bash-hook.sh` — PreToolUse Bash wrapper that runs `check-risky-command.sh` first, then RTK command rewriting for token savings. See `brain/operations/runbooks/rtk.md`.
   - `check-sensitive-edit.sh` — PreToolUse check for sensitive file edits
   - `sync-env-hook.sh` — PostToolUse sync of `.env` files to credentials index
   - `inject-handoff.sh` — UserPromptSubmit hook for session handoff injection
