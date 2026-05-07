@@ -105,3 +105,39 @@
 [2026-04-25 18:09:08] [DAEMON] Idle timeout reached (15 min) - shutting down containers
 [2026-04-25 18:09:10] [DAEMON] Containers shut down
 [2026-04-26 09:56:19] [DAEMON] Firecrawl Idle Daemon started (checking every 30s, timeout: 15min)
+[2026-05-06 22:14:21] Checking OrbStack status...
+[2026-05-06 22:14:21] Checking OrbStack status...
+[2026-05-06 22:14:21] Checking OrbStack status...
+[2026-05-06 22:14:21] Checking OrbStack status...
+[2026-05-06 22:14:21] OrbStack is already running
+[2026-05-06 22:14:21] OrbStack is already running
+[2026-05-06 22:14:21] Ensuring Firecrawl is running...
+[2026-05-06 22:14:21] Ensuring Firecrawl is running...
+[2026-05-06 22:14:21] OrbStack is already running
+[2026-05-06 22:14:21] Ensuring Firecrawl is running...
+[2026-05-06 22:14:21] Firecrawl is already running
+[2026-05-06 22:14:21] Firecrawl is already running
+[2026-05-06 22:14:21] REQUEST | URL: https://www.esko.com/products/comply | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-05-06 22:14:21] REQUEST | URL: https://barkod.studio/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-05-06 22:14:22] OrbStack is already running
+[2026-05-06 22:14:22] Ensuring Firecrawl is running...
+[2026-05-06 22:14:22] Firecrawl is already running
+[2026-05-06 22:14:22] REQUEST | URL: https://www.gs1.org/standards/get-barcodes | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-05-06 22:14:22] Firecrawl is already running
+[2026-05-06 22:14:22] REQUEST | URL: https://www.neodynamic.com/products/barcode/docker | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-05-06 22:14:23] REQUEST | URL: https://barkod.studio/ | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-05-06 22:14:23] REQUEST | URL: https://www.gs1.org/standards/get-barcodes | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-05-06 22:14:24] REQUEST | URL: https://www.esko.com/products/comply | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-05-06 22:14:26] REQUEST | URL: https://www.neodynamic.com/products/barcode/docker | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-05-06 22:29:46] [DAEMON] Idle timeout reached (15 min) - shutting down containers
+[2026-05-06 22:29:48] [DAEMON] Containers shut down
+[2026-05-07 10:32:07] Checking OrbStack status...
+[2026-05-07 10:32:07] OrbStack is already running
+[2026-05-07 10:32:07] Ensuring Firecrawl is running...
+[2026-05-07 10:32:07] Firecrawl not responding, starting docker-compose...
+[2026-05-07 10:32:20] Docker Compose started, waiting for Firecrawl to be ready...
+[2026-05-07 10:32:26] ✅ Firecrawl is now running
+[2026-05-07 10:32:26] REQUEST | URL: https://github.com/thedotmack/claude-mem | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-05-07 10:32:28] REQUEST | URL: https://github.com/thedotmack/claude-mem | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-05-07 10:47:34] [DAEMON] Idle timeout reached (15 min) - shutting down containers
+[2026-05-07 10:47:37] [DAEMON] Containers shut down
