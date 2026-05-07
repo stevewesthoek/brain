@@ -11,6 +11,13 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 
 ## Entries
 
+- Date: 2026-05-07
+- Decision: Memory system upgrade — observation IDs, progressive disclosure, mem-search script
+- Context: Analysis of claude-mem (73k GitHub stars) revealed three additive improvements worth adopting to enhance our existing 4-layer memory model. All changes are purely additive (no behavior changes, no breaking changes, backward-compatible).
+- Impact: (1) Every memory file now has a unique ID in frontmatter (mem-{type}-NNN); (2) New `mem-search.sh` shell script at `brain/tools/scripts/mem-search.sh` with symlink at `~/.local/bin/mem-search` provides three-layer access (index → search → ID fetch); (3) Progressive disclosure pattern documented in all three engine configs (CLAUDE.md, AGENTS.md, GEMINI.md) saves ~10x tokens at scale; (4) Memory directory created at `~/.claude/projects/-Users-Office-Repos-stevewesthoek-brain/memory/` with MEMORY.md index and seed project memory entry; (5) Fully AI-agnostic (works on Claude Code, Codex, Gemini CLI, all IDEs via shell access); (6) Script uses only standard bash/grep/find (no dependencies).
+- Rationale: IDs make memory entries citable in future decisions. Progressive disclosure (index → search → full content) provides token efficiency at scale. Shell script ensures universal access across all AI engines and IDEs. Three improvements together complete the claude-mem analysis and solidify the memory system.
+- Rollback: (1) Remove `brain/tools/scripts/mem-search.sh` and `~/.local/bin/mem-search` symlink; (2) Delete `~/.claude/projects/-Users-Office-Repos-stevewesthoek-brain/memory/` directory; (3) Revert doc changes in `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `brain/CLAUDE.md` to remove mem-search references and ID convention docs; (4) All existing memory behavior, hooks, and schemas remain unchanged and continue working.
+
 - Date: 2026-04-24
 - Decision: Treat the Codex warning "Some enabled skills were not included in the model-visible skills list for this session" as a signal that the task likely needs `investigate` when the work is root-cause debugging or process tracing.
 - Context: The warning appeared in a debugging session that was tracing an open-handle path, lingering Prisma clients, timers, and CLI exit behavior. The task pattern matched systematic investigation rather than a generic coding or UI skill.
@@ -236,3 +243,8 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Rationale: Dockerfile contract was thorough and BuildFlow implementation met all requirements. Local verification confirms topology is production-ready. Phase 1 can now proceed with GHCR image pull and Dokploy application creation.
 - Next: Phase 1 Dokploy provisioning — create BuildFlow app in Web project, configure GHCR pull credentials, set environment variables, deploy, and verify endpoints.
 - Rollback: Not applicable; Dockerfile blocker is resolved and docs are updated. If Phase 1 provisioning fails, address specific Dokploy issue and retry.
+## 2026-05-07 — RTK adopted for AI shell-output token optimization
+
+- Decision: Install RTK globally and integrate it as the default shell-output compression layer for Claude Code, Codex, and Gemini CLI sessions.
+- Reason: Shell-heavy AI coding loops waste model context on noisy CLI output; RTK reduces output tokens while preserving useful status, diff, test, build, and search signals.
+- Impact: Claude Bash commands now pass through `rtk-safe-bash-hook.sh`, which runs the existing risky-command guard before RTK rewrite. Gemini uses an RTK `BeforeTool` hook. Codex has an RTK awareness file and instructions to prefix noisy commands with `rtk`. Rollback is documented in `operations/runbooks/rtk.md`.

@@ -89,6 +89,18 @@ brain/ (machine-brain)   ← AI infrastructure, system config, skills
 
 For credential conventions, see `operations/standards/api-standards.md`. For testing/QA procedures, see `operations/runbooks/testing.md`. For deployment rules, see `operations/runbooks/deploy.md`. For model tracking and cost transparency, see `operations/runbooks/model-tracking-reference.md`.
 
+## RTK token-output optimization
+
+RTK is installed globally (`rtk 0.39.0`) to reduce shell-command token output in AI sessions. Use `/rtk` for guidance and `operations/runbooks/rtk.md` for install, verification, and rollback.
+
+- Claude Code: Bash commands pass through `~/.claude/hooks/rtk-safe-bash-hook.sh`, which runs `check-risky-command.sh` first, then RTK rewrite.
+- Codex and Gemini: prefer explicit `rtk` prefixes for noisy shell commands unless a native hook has already rewritten them.
+- Use raw commands or `rtk proxy <command>` when exact full output is required.
+
+## Memory system
+
+Use `mem-search` for AI-agnostic memory index lookup (search → ID → full content). See `~/.claude/CLAUDE.md` for detailed docs on observation IDs and progressive disclosure.
+
 ## ProBot Updates (Controlled & Safe)
 
 **CRITICAL: All updates are manual and controlled. No automatic silent updates.**

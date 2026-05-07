@@ -51,6 +51,28 @@ When ending a meaningful session:
 2. Update the relevant repo `CLAUDE.md` or `decision-log.md` if needed.
 3. Prefer concise, durable memory over verbose history.
 
+# Memory IDs and search
+
+Every memory file has a unique ID in its frontmatter: `id: mem-{type}-{NNN}`.
+
+Use IDs to cite past decisions in handoffs and session context:
+> "See mem-feedback-003 for why we avoid mocking the database in tests."
+
+**Progressive disclosure — always use this order to minimize token cost:**
+
+1. `mem-search` — list the full index (~1-2 lines per entry)
+2. `mem-search <keyword>` — filter to relevant entries by ID
+3. `mem-search --id <id>` — fetch full content only for the IDs that matter
+
+**Never read all memory files at once.** The index is the entry point. This pattern saves ~10x tokens at scale.
+
+```bash
+# Examples
+mem-search                    # list all entries
+mem-search database           # find entries mentioning database
+mem-search --id mem-user-001  # fetch full content by ID
+```
+
 # Repo CLAUDE.md template
 
 When asked to add a `CLAUDE.md` to a new repo, use this baseline and expand with project-specific context:
@@ -86,6 +108,7 @@ Global skills are available in every session — only note the ones relevant to 
 - Codex: [yes/no] — use `/codex` for AI-assisted code review and adversarial challenge mode
 - Gemini: [yes/no] — use `/gemini` for large-context preprocessing and free-tier Flash analysis
 - Handoff: [yes/no] — use `/handoff` for session start/end compressed handoffs and `.ai/` memory system setup
+- RTK: [yes] — use `/rtk` for token-optimized shell output. Bash commands are routed through `~/.claude/hooks/rtk-safe-bash-hook.sh`, which preserves the risky-command guard before rewriting safe commands to `rtk ...`. Runbook: `brain/operations/runbooks/rtk.md`
 
 ## Memory
 Use this file for repo-specific decisions, commands, and constraints.

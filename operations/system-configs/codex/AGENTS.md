@@ -160,6 +160,7 @@ For self-hosted n8n CLI work, use the shared `/n8n` skill at `brain/ai/skills/cu
 For Apify web scraping and data extraction, use the shared `/apify` skill at `brain/ai/skills/custom/apify/` ($50/mo total = 10 accounts × $5 each, round-robin rotation with deduplication patterns A/B/C, n8n webhook integration for automated workflows).
 For Yeshua Academy nonprofit Google Ads automation, use the shared `/google-ads` skill at `brain/ai/skills/custom/google-ads/google-ads-automation/`. This stack is Ad Grants-only until the docs say otherwise.
 For Stripe CLI auth, profile handling, and ProBot dashboard semantics, use the canonical runbook at `brain/operations/runbooks/stripe-cli-and-probot.md`.
+For RTK token-output optimization, use the shared `/rtk` skill at `brain/ai/skills/custom/rtk/SKILL.md`. In Codex shell commands, prefer explicit `rtk` prefixes for noisy output (`rtk git status`, `rtk rg "pattern" .`, `rtk npm test`). Use raw commands or `rtk proxy <command>` when exact full output is required. Runbook: `brain/operations/runbooks/rtk.md`.
 
 ---
 
@@ -215,6 +216,18 @@ Codex
 | Hard-won codebase-specific pattern | Run the shared `/learner` skill and save it in `brain/ai/skills/custom/learned/` |
 | Everything else | `.ai/current.md` only — ephemeral |
 
+**Memory IDs and search (AI-agnostic):**
+
+Every memory file has a unique ID: `mem-{type}-{NNN}`. Use `mem-search` to access entries without reading all files:
+
+```bash
+mem-search                    # list index
+mem-search <keyword>          # filter entries
+mem-search --id mem-ref-001   # fetch full file
+```
+
+Progressive disclosure: index first → filter → fetch full only when needed. Saves ~10x tokens at scale.
+
 ---
 
 ## Behavior rules
@@ -229,3 +242,5 @@ Codex
 - Always pause for confirmation before destructive, credential-sensitive, database, deploy, external-state, financial, or ambiguous high-blast-radius actions.
 - Never expose secrets or silently overwrite user work.
 - After significant decisions, note what should be written to `decision-log.md`.
+
+@/Users/Office/.codex/RTK.md

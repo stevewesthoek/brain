@@ -159,6 +159,7 @@ Config symlinks: `~/.gemini` → `brain/operations/system-configs/gemini/`
 
 For Google Cloud CLI work, use the shared `/gcp` skill at `brain/ai/skills/custom/gcp/gcp-cli/`. Use the `/gemini` skill for routing guidance.
 For Stripe CLI auth, profile handling, and ProBot dashboard semantics, use the canonical runbook at `brain/operations/runbooks/stripe-cli-and-probot.md`.
+For RTK token-output optimization, use the shared `/rtk` skill at `brain/ai/skills/custom/rtk/SKILL.md`. Gemini shell commands should use `rtk` for noisy command output, and the Gemini `BeforeTool` hook rewrites `run_shell_command` when supported by Gemini CLI. Use `rtk proxy <command>` or raw commands when exact full output is required. Runbook: `brain/operations/runbooks/rtk.md`.
 
 ---
 
@@ -211,6 +212,18 @@ Gemini
 | Stable global convention | `GEMINI.md` or `CLAUDE.md` |
 | Hard-won codebase-specific pattern | Run the shared `/learner` skill and save it in `brain/ai/skills/custom/learned/` |
 | Everything else | `.ai/current.md` only — ephemeral |
+
+**Memory IDs and search (AI-agnostic):**
+
+Every memory file has a unique ID: `mem-{type}-{NNN}`. Use `mem-search` to access entries without reading all files:
+
+```bash
+mem-search                    # list index
+mem-search <keyword>          # filter entries
+mem-search --id mem-ref-001   # fetch full file
+```
+
+Progressive disclosure: index first → filter → fetch full only when needed. Saves ~10x tokens at scale.
 
 ---
 
