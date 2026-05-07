@@ -21,6 +21,8 @@ Three AI engines work together. Claude always orchestrates — route sub-tasks b
 
 **Cost priority:** Gemini Flash (free) > Haiku (cheapest paid) > Codex low > Codex mini > Sonnet > Codex standard > Opus / Codex max
 
+**Shell-output discipline:** Use RTK for noisy shell commands before spending model context on raw terminal output. RTK complements routing; it does not replace Gemini preprocessing, Firecrawl, handoffs, or model escalation rules.
+
 ---
 
 ## Claude model tiers
@@ -159,6 +161,8 @@ Common task types and the skills that compose well together.
 | End of any session | `/handoff pause` → `/learner` (if warranted) |
 
 Don't chain skills speculatively. Add a step only if it has clear value for that task.
+
+Use `/rtk` or explicit `rtk` prefixes for shell-heavy loops before escalating models due to noisy output. If RTK output is too compressed for the task, rerun the specific command raw or through `rtk proxy`.
 
 ---
 
