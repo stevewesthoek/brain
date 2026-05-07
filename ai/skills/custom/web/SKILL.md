@@ -38,7 +38,9 @@ Apply these silently — never explain them to the user.
 - **Apify for scale (50+ URLs or daily jobs).** For production-volume or scheduled multi-URL operations, use apify. Don't use browse or firecrawl for bulk work.
 - **Cookie-import before interacting with authenticated pages.** Use `browse cookie-import-browser` to transfer real browser cookies into the headless session. Always ask which browser (Chrome, Arc, Brave, Edge) if unclear.
 - **Save auth profiles for recurring tasks.** After a successful login, immediately run `web-auth save <name>` to preserve the session. On subsequent runs, restore with `web-auth restore <name>` — no re-login. Profiles persist across sessions and tools (`~/.web-profiles/`).
-- **Handoff for CAPTCHA or MFA.** If a site blocks headless or requires MFA: use `browse handoff` to pass control to visible Chrome, then `browse resume` to return to AI control.
+- **Anti-Bot: Proactive first, handoff last.** Before reaching for handoff, apply anti-bot techniques in order: (1) Use cookie-import (most effective); (2) Add randomized delays; (3) Rotate user-agent; (4) Use Apify if site has aggressive cloud-based blocking; (5) Handoff only as last resort.
+- **Checkpoint bulk scripts.** Any Playwright script processing 10+ items or expected to run >2 minutes should use checkpoint/resume. Save state every N items. Resume from last checkpoint on restart.
+- **Selector fallback for third-party sites.** When writing Playwright scripts against sites you don't control, use a fallback chain: exact selector → getByText → getByRole → getByLabel → log + skip/handoff. Never let a single stale selector kill an entire run.
 - **Codegen first for new Playwright scripts.** Use `npx playwright codegen <url>` to record base actions, then refine the generated script.
 
 ---
@@ -267,6 +269,81 @@ Common patterns by use case:
 | Data extraction | Navigate → `page.evaluate()` → return structured data |
 | E2E test | `npx playwright test` with `expect()` assertions |
 | Scheduled job | Wrap in script, add to nightly scheduler plist |
+
+### D3.5 Anti-Bot Techniques (for third-party sites)
+
+When targeting sites with anti-bot protection, apply these techniques in order:
+
+**1. Randomized Delays**
+```javascript
+// Random delay between 1500ms and 4500ms before actions
+await page.waitForTimeout(Math.random() * 3000 + 1500);
+```
+
+**2. User-Agent Rotation**
+```javascript
+const context = await browser.newContext({
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...',
+});
+// Or via headers: await page.setExtraHTTPHeaders({'User-Agent': '...'})
+```
+
+**3. Viewport Randomization**
+```javascript
+const viewport = [
+  { width: 1920, height: 1080 },
+  { width: 1366, height: 768 },
+  { width: 1440, height: 900 },
+][Math.floor(Math.random() * 3)];
+const context = await browser.newContext({ viewport });
+```
+
+**4. Disable Automation Flags**
+```javascript
+const browser = await chromium.launch({
+  args: ['--disable-blink-features=AutomationControlled'],
+});
+await page.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => false }));
+```
+
+**Escalation rule:** If local evasion techniques fail after 2 attempts, switch to Apify (cloud proxy beats local headers).
+
+### D3.6 Checkpoint / Resume Pattern (for bulk/multi-step scripts)
+
+For any script processing 10+ items or expected to run >2 minutes, use checkpoint/resume. This allows resuming from where you left off if the script crashes.
+
+Pattern template (copy-paste ready):
+```javascript
+const CHECKPOINT = './.scrape-checkpoint.json';
+
+function loadCheckpoint() {
+  return fs.existsSync(CHECKPOINT)
+    ? JSON.parse(fs.readFileSync(CHECKPOINT, 'utf-8'))
+    : { index: 0, results: [] };
+}
+
+function saveCheckpoint(state) {
+  fs.writeFileSync(CHECKPOINT, JSON.stringify(state, null, 2));
+}
+
+// In main loop:
+const state = loadCheckpoint();
+if (state.index > 0) console.log(`Resuming from item ${state.index}`);
+
+for (let i = state.index; i < items.length; i++) {
+  // Process items[i]
+  const result = await processItem(page, items[i]);
+  state.results.push(result);
+  state.index = i + 1;
+  
+  // Save checkpoint every 10 items
+  if (i % 10 === 0) saveCheckpoint(state);
+}
+
+// Clean up checkpoint on successful completion
+fs.unlinkSync(CHECKPOINT);
+console.log(`Done. Processed ${state.results.length} items.`);
+```
 
 ### D4. Wire to scheduler or n8n (if recurring)
 
