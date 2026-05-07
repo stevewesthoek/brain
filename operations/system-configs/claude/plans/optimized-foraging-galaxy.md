@@ -1,202 +1,294 @@
-# Plan: /video — Master Video Orchestrator Skill
+# Plan: Viral Flow Phase 5 — Community & Polish
 
 ## Context
 
-The user produces video content for YouTube, TikTok, Instagram Reels, LinkedIn, Facebook, Bluesky, and X — in three primary formats: narrated slideshows (static image + TTS), short-form reels/clips, and talking-head/AI avatar videos. They need a single natural-language entry point that orchestrates the full video production lifecycle: write → voice → compose → design → post.
+Viral Flow (github.com/stevewesthoek/viralflow) is a complete content strategy engine at v0.1.0. Phase 4 built the brain integration (the `/viral-flow` skill, `/video` orchestrator STRATEGY layer). Phase 5 takes it from a local dev tool to a published, community-ready npm package.
 
-The orchestrator must match the exact structural pattern of the existing `/code`, `/web`, and `/design` skills: YAML frontmatter, Standing Laws, classified Workflows (A–F), Tool Reference Map, Routing Guide, AI-Agnostic section, and Underlying Tools section. It must be registered in all four config files and synced.
-
----
-
-## What Gets Created / Modified
-
-| Action | Path |
-|--------|------|
-| **CREATE** new skill | `brain/ai/skills/custom/video/SKILL.md` |
-| **CREATE** active symlink | `brain/ai/skills/active/video -> ../custom/video` |
-| **EDIT** repo CLAUDE.md | Add `## Video, media & production` section |
-| **EDIT** `~/.claude/CLAUDE.md` | Add `/video` to Available skills line |
-| **EDIT** AGENTS.md | Add `/video` to Workspace layout section |
-| **EDIT** GEMINI.md | Add `/video` to Workspace layout section |
-| **RUN** sync + check | `node tools/scripts/sync-ai-skills.mjs` |
+Key confirmed decisions:
+- **CLI**: Build a real working CLI (currently a stub that only prints help)
+- **Platform adapters**: Build YouTube + TikTok built-in upload adapters
+- **Browser UI**: Defer to Phase 6; when built, it integrates into the existing ProBot dashboard (brain repo at `projects/probot/src/bot/dashboard.ts`), NOT a new standalone dashboard
 
 ---
 
-## SKILL.md Structure (matches /web and /code pattern exactly)
+## Sub-phases and Execution Order
 
-### Frontmatter
-```yaml
----
-name: video
-description: >
-  Single natural-language entry point for all video production work — writing scripts, 
-  generating voiceovers, composing video assets, designing thumbnails, and posting to 
-  YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, and X. Routes automatically 
-  to /stb-pipeline (narrated slideshows), /ffmpeg (audio/video composition), 
-  /design (thumbnails and motion), and platform posting workflows. AI-agnostic, IDE-agnostic.
----
+```
+P5.1  Code Quality Fixes          (prerequisites — unblock everything else)
+P5.2  Package Publication Prep    (package.json, .env.example, .npmignore, docs)
+P5.3  Real CLI                    (viral-flow discover / script / post / analyze)
+P5.4  YouTube + TikTok Adapters   (concrete PostingOrchestrator adapters)
+P5.5  Additional Discovery Sources (Twitter/X + TikTok trends)
+P5.6  Performance Optimization    (caching, batch speed)
+P5.7  v0.4.0 Release             (docs, release notes, npm publish, brain sync)
 ```
 
-### Title
-`# Video — Master Orchestrator`
+P5.1 and P5.2 must complete first. P5.3–P5.6 can run in parallel after that. P5.7 is the final gate.
 
 ---
 
-## Six Workflows
+## P5.1: Code Quality Fixes
 
-### A: WRITE
-Script and story generation for any video format.
-- Sub-steps: classify format → extract key message → write script with Claude → structure for TTS (SSML if Microsoft, plain if ElevenLabs/OpenAI)
-- Trigger: "write a script", "create a story for", "write narration for"
+**Repo:** `/Users/Office/Repos/stevewesthoek/viralflow`
 
-### B: VOICE
-TTS audio generation — routes to the right TTS service based on project.
-- Sub-steps: detect service (Microsoft MSTTS / ElevenLabs / OpenAI) → generate audio → save to production folder → quality check duration
-- Microsoft: SSML with `<mstts:express-as>` tags (reuse STB pattern)
-- ElevenLabs: API call with selected voice ID
-- OpenAI: `/v1/audio/speech` endpoint
-- Trigger: "generate voiceover", "TTS for this script", "make audio from this"
+### Fix 1: Remove Math.random() placeholders — `src/brain/learning.ts` lines ~209–210
+- **Problem:** `prefers_longform: Math.random() > 0.5` and `prefers_shortform: Math.random() > 0.5` are non-deterministic in production
+- **Fix:** Add `analyzeFormatPreference()` helper that inspects recorded performance data: if avg view_duration for longform > shortform → `prefers_longform = true`. If no data yet → `null` (unknown, not a random guess).
 
-### C: COMPOSE
-Video composition — combines audio, visuals, captions.
-- Sub-step A: **Narrated slideshow** (STB pattern) → static image + audio → ffmpeg render → YouTube/landscape MP4
-- Sub-step B: **Short-form reel** → vertical crop (9:16) + audio + captions → TikTok/Reels MP4
-- Sub-step C: **Talking-head** → delegate to HeyGen API (service-agnostic stub, wirable later)
-- Sub-step D: **Audio-first** → waveform + still → ffmpeg render
-- Trigger: "render the video", "compose this", "make the reel"
+### Fix 2: Replace hardcoded heuristics — `src/analyze/index.ts`
+- **Problem:** `best_engagement_time: 'evening'` and `average_view_duration: '45%'` are static strings
+- **Fix:** Compute `best_engagement_time` by grouping recorded performance by post timestamp hour → find peak engagement hour. Compute `average_view_duration` as mean of all `view_duration` values. Fall back to `null` if no data.
 
-### D: DESIGN
-Thumbnails, covers, and motion graphics.
-- Routes to `/design` orchestrator for thumbnail design
-- Routes to `/ffmpeg` for video intro/outro overlays
-- Routes to `/taste-skill` for visual polish
-- Trigger: "make a thumbnail", "design the cover", "create an intro"
-
-### E: POST
-Upload and schedule to platforms — routes by platform.
-- YouTube: `ytdlp` or manual (documented) + schedule via YouTube Studio API stub
-- TikTok: manual posting workflow (TikTok API restricted) + documented automation path
-- Instagram: documented + n8n webhook trigger pattern
-- LinkedIn / Facebook: documented + n8n/Make webhook trigger pattern
-- Bluesky / X: documented API path (ATProto + Twitter v2)
-- Standing rule: always tag, always add description, always check format spec before posting
-- Trigger: "post this to YouTube", "upload to TikTok", "schedule for Instagram"
-
-### F: PIPELINE
-Full end-to-end pipeline for a series or batch.
-- Chains A → B → C → D → E in sequence with checkpointing between stages
-- Reuses STB Pipeline's monthly batch pattern (checkpoint/resume)
-- Trigger: "run the full pipeline", "produce episode X", "batch produce"
+### Fix 3: Inaccurate ABOUT.md claims
+- **Problem:** Says "Zero dependencies (core)" — package has 4 runtime deps (axios, dotenv, joi, winston)
+- **Fix:** Update to: "Minimal dependencies: axios (HTTP), dotenv (env config), joi (validation), winston (logging). Zero cloud service dependencies — runs fully local."
 
 ---
 
-## Standing Video Laws (flat bullet format, matching /web)
+## P5.2: Package Publication Prep
 
-1. **Script before everything.** Never generate audio or video before the script is approved. All other steps are blocked until WRITE completes.
-2. **Format-first rendering.** Every render step must know its target platform before starting. Landscape (16:9) for YouTube long-form, vertical (9:16) for TikTok/Reels/Shorts, square (1:1) for LinkedIn/Facebook feed.
-3. **Checkpoint all batch runs.** Any pipeline producing 3+ assets must use checkpoint/resume (STB pattern). Save state after each stage. Resume from last checkpoint on failure.
-4. **TTS is project-scoped.** Each video series has one TTS voice. Do not mix voices within a series. Document the voice ID in the project config.
-5. **Never overwrite source assets.** Raw narration audio, source images, and original scripts are read-only inputs. All processed outputs go to `/production/` subdirectory.
-6. **Thumbnail always before posting.** Every video must have a thumbnail designed and reviewed before any platform upload. No bare-title cards.
-7. **Platform spec check before encode.** Verify target platform's current spec (bitrate, resolution, duration cap, aspect ratio) before final ffmpeg render. Specs change — always check.
-8. **Asset inventory on completion.** After any pipeline run, log all produced assets (path, duration, platform, upload status) to the project's `production/manifest.json`.
+**Repo:** `/Users/Office/Repos/stevewesthoek/viralflow`
+
+### 2a. Add `files` field to package.json
+```json
+"files": ["dist", "README.md", "ABOUT.md", "ARCHITECTURE.md", "LICENSE"]
+```
+
+### 2b. Add `exports` map to package.json
+```json
+"exports": {
+  ".": {
+    "import": "./dist/index.js",
+    "require": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  }
+}
+```
+
+### 2c. Create `.npmignore`
+Exclude: `src/`, `tests/`, `coverage/`, `.github/`, `*.test.ts`, `IMPLEMENTATION_PLAN.md`, `LAUNCH.md`, `CONTRIBUTORS.md`, `COMMUNITY.md`.
+
+### 2d. Create `.env.example`
+Document all required env vars:
+- `YOUTUBE_API_KEY` — discovery (falls back to mock if unset)
+- `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` — discovery (falls back to mock if unset)
+- `YOUTUBE_OAUTH_CLIENT_ID`, `YOUTUBE_OAUTH_CLIENT_SECRET`, `YOUTUBE_OAUTH_REDIRECT_URI` — posting adapter
+- `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET` — posting adapter
+- `TWITTER_BEARER_TOKEN` — Twitter discovery source (Phase 5.5)
+- `TIKTOK_RESEARCH_CLIENT_KEY` — TikTok trends source (Phase 5.5)
+- `VIRAL_FLOW_CACHE_TTL_MINUTES` — optional, defaults to 60
+
+### 2e. Create missing `docs/` files
+Currently referenced in README/ABOUT but absent:
+- `docs/API.md` — complete public API reference
+- `docs/EXAMPLES.md` — 5 real-world scenarios with code
+- `docs/CONTRIBUTING.md` — how to add discovery sources, platform adapters
+
+### 2f. Bump version to 0.4.0 in package.json
+Skips 0.2.x and 0.3.x to align with documented roadmap (ABOUT.md states "v0.4.0 Community Release").
+
+### 2g. Register credentials in brain credential system
+- Create `~/.config/viralflow/.env` (mode 600, gitignored) with actual API keys
+- Add entry to `brain/operations/accounts/credentials-index.md`
 
 ---
 
-## Tool Reference Map
+## P5.3: Real CLI
 
-| Tool | Skill path | Use when |
-|------|-----------|----------|
-| `/stb-pipeline` | `custom/stb-pipeline/SKILL.md` | Narrated slideshow episodes — TTS + audio mix + YouTube render (battle-tested pipeline) |
-| `/ffmpeg` | `custom/ffmpeg/ffmpeg/SKILL.md` | Audio mixing, video composition, format conversion, resampling, crop/scale |
-| `/design` | `custom/design/SKILL.md` | Thumbnails, covers, motion graphics, visual polish |
-| `/taste-skill` | `custom/taste-skill/taste-skill/SKILL.md` | Visual quality bar — review and improve thumbnails and motion |
-| `/design-motion-principles` | `vendors/kylezantos/design-motion-principles/SKILL.md` | Motion audit for intros/outros/transitions |
-| `/notebooklm` | (CLI) | Pre-production research — synthesize source material into scripts |
-| `/n8n` | `custom/n8n/SKILL.md` | Platform posting automation via webhook triggers (Instagram, LinkedIn, Facebook) |
-| HeyGen | (future stub) | Talking-head avatar video — wired in when API key available |
-| ElevenLabs | (future stub) | High-quality TTS — wired in when API key available |
-| Microsoft MSTTS | (via STB pattern) | Production-ready TTS — reuse existing SSML rendering pipeline |
+**Repo:** `/Users/Office/Repos/stevewesthoek/viralflow`
+**File:** `src/cli.ts` (full rewrite from stub)
+
+### Commands to implement:
+```bash
+viral-flow discover [--keywords "AI automation"] [--icp "B2B founders"] [--limit 5]
+viral-flow angles <topic> [--format youtube|tiktok|linkedin] [--count 15]
+viral-flow hooks <topic> [--angle "..."] [--count 3]
+viral-flow script <topic> [--angle "..."] [--hook "..."] [--format longform|shortform]
+viral-flow analyze [--channel <id>] [--days 30]
+viral-flow post <video-path> --platform youtube|tiktok [--title "..."] [--schedule "ISO date"]
+viral-flow accounts list
+viral-flow accounts add --platform youtube --name "My Channel"
+```
+
+### Implementation rules:
+- Use Node.js built-in `process.argv` parsing — no external CLI framework (keep deps minimal)
+- Each command maps directly to existing module functions (`discover()`, `generateAngles()`, etc.)
+- Output: clean formatted text to stdout (same format AI skill presents to users)
+- Errors: stderr with exit code 1
+- `--json` flag on all commands for machine-readable / n8n-compatible output
+
+### New test file: `tests/cli.test.ts`
+Test each command's argument parsing and output format using `child_process.spawn`.
 
 ---
 
-## Natural Language Routing Guide (key rows)
+## P5.4: YouTube + TikTok Posting Adapters
 
-| User says | Workflow | Primary tool |
-|-----------|----------|--------------|
-| "write a script for a video about X" | A: WRITE | Claude (direct) |
-| "write narration / SSML for episode X" | A: WRITE | STB pattern |
-| "generate voiceover / TTS for this script" | B: VOICE | MSTTS / ElevenLabs / OpenAI |
-| "render the video / compose this" | C: COMPOSE | ffmpeg |
-| "make a YouTube video from this audio + image" | C: COMPOSE (A) | ffmpeg (STB pattern) |
-| "make a TikTok reel / Shorts / vertical clip" | C: COMPOSE (B) | ffmpeg (9:16 crop) |
-| "create a talking-head video" | C: COMPOSE (C) | HeyGen (stub) |
-| "make a thumbnail / design the cover" | D: DESIGN | /design orchestrator |
-| "post this to YouTube" | E: POST | YouTube API / yt-dlp |
-| "upload to TikTok / Instagram / Reels" | E: POST | n8n webhook / manual |
-| "post to LinkedIn / Facebook / Bluesky / X" | E: POST | n8n / platform API |
-| "run the full pipeline for episode X" | F: PIPELINE | A→B→C→D→E chain |
-| "batch produce N episodes" | F: PIPELINE | STB batch pattern + checkpoint |
-| "schedule posting for this week" | E: POST | n8n scheduling |
+**Repo:** `/Users/Office/Repos/stevewesthoek/viralflow`
 
----
+### New files:
+- `src/posting/adapters/youtube.ts` — `YouTubeAdapter implements PlatformAdapter`
+- `src/posting/adapters/tiktok.ts` — `TikTokAdapter implements PlatformAdapter`
+- `src/posting/adapters/index.ts` — exports both
+- Update `src/posting/index.ts` — auto-register adapters when env keys present
 
-## Files to Modify
+### YouTube adapter:
+- OAuth2 using `YOUTUBE_OAUTH_CLIENT_ID` / `YOUTUBE_OAUTH_CLIENT_SECRET`
+- `upload()` → YouTube Data API v3 `videos.insert` with resumable upload
+- `schedule()` → sets `status.publishAt` on the video resource
+- `getStatus()` → polls `videos.list` for processing status
+- Token refresh handling (store refresh token in AccountManager credentials field)
 
-### 1. brain/CLAUDE.md
-Add new section after the `## Web, browser & automation` section:
+### TikTok adapter:
+- OAuth2 using `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET`
+- `upload()` → TikTok Content Posting API v2 (`/v2/post/publish/video/init/` → `/v2/post/publish/video/upload/`)
+- Map platform strategy to TikTok `privacy_level`
+- Note in adapter: TikTok API requires verified developer account; document clearly
 
-```markdown
-## Video, media & production
-
-For ALL video-related work — writing scripts, generating voiceovers, composing video
-assets, designing thumbnails, and posting to platforms — use `/video`. The master 
-orchestrator classifies intent and routes automatically to `/stb-pipeline` (narrated 
-slideshows), `/ffmpeg` (audio/video composition), `/design` (thumbnails and motion), 
-and platform posting workflows. No tool names or commands needed — just describe the task.
-
-Underlying tools remain independent and directly callable: users can still invoke 
-`/stb-pipeline`, `/ffmpeg`, `/design`, `/n8n` directly if they prefer.
-```
-
-### 2. operations/system-configs/claude/CLAUDE.md — Available skills line
-Add to the comma-separated list:
-```
-`/video` (primary video/media orchestrator — natural language, all video production and posting scenarios),
-```
-
-### 3. operations/system-configs/codex/AGENTS.md — Workspace layout section
-Add after the `/web` line:
-```
-For ALL video and media work (script writing, TTS/voiceover, video composition, thumbnail design, platform posting to YouTube/TikTok/Instagram/LinkedIn/Facebook/Bluesky/X), use the shared `/video` orchestrator at `brain/ai/skills/custom/video/SKILL.md` — single natural-language entry point that routes to `/stb-pipeline` (narrated episodes), `/ffmpeg` (audio/video composition), `/design` (thumbnails), and platform posting workflows. Underlying tools remain independently callable.
-```
-
-### 4. operations/system-configs/gemini/GEMINI.md — Workspace layout section
-Add after the `/web` line:
-```
-For ALL video and media work (script writing, TTS/voiceover, video composition, thumbnail design, platform posting to YouTube/TikTok/Instagram/LinkedIn/Facebook/Bluesky/X), use the shared `/video` orchestrator at `brain/ai/skills/custom/video/SKILL.md` — single natural-language entry point that routes to `/stb-pipeline`, `/ffmpeg`, `/design`, and platform posting workflows. **Gemini's role in video:** excel at preprocessing large video transcripts, batch script review, and multi-episode planning (1M context window handles full series scripts); compress findings before handing production to Claude.
-```
+### New test files:
+- `tests/adapters/youtube.test.ts` — mock googleapis HTTP client, test upload + schedule + status
+- `tests/adapters/tiktok.test.ts` — mock fetch, test upload init + chunk + status poll
 
 ---
 
-## Implementation Order
+## P5.5: Additional Discovery Sources
 
-1. Create `brain/ai/skills/custom/video/` directory
-2. Write `brain/ai/skills/custom/video/SKILL.md` (full orchestrator, matching /web and /code pattern)
-3. Create symlink: `ln -s ../custom/video brain/ai/skills/active/video`
-4. Edit `brain/CLAUDE.md` — add Video section
-5. Edit `operations/system-configs/claude/CLAUDE.md` — add to Available skills list
-6. Edit `operations/system-configs/codex/AGENTS.md` — add to Workspace layout
-7. Edit `operations/system-configs/gemini/GEMINI.md` — add to Workspace layout
-8. Run sync: `node tools/scripts/sync-ai-skills.mjs --dry-run && node tools/scripts/sync-ai-skills.mjs && node tools/scripts/sync-ai-skills.mjs --check`
-9. Commit all changes together
+**Repo:** `/Users/Office/Repos/stevewesthoek/viralflow`
+
+### `src/discover/twitter.ts` — TwitterSource
+- `TwitterSource implements DiscoverySource`
+- Twitter API v2 `GET /2/tweets/search/recent` with keyword queries + `min_retweets` filter
+- Env: `TWITTER_BEARER_TOKEN` — falls back to mock if unset
+- Trend score: normalized from retweet_count + like_count (0-100)
+
+### `src/discover/tiktok-trends.ts` — TikTokTrendsSource
+- `TikTokTrendsSource implements DiscoverySource`
+- TikTok Research API `/v2/research/hashtag/query/` for trending hashtags
+- Env: `TIKTOK_RESEARCH_CLIENT_KEY` (separate from posting — TikTok Research API requires its own app)
+- Trend score: from hashtag video_count growth over 7 days
+
+### Update `src/discover/index.ts`
+Auto-register both sources when their env keys are present (same pattern as YouTube and Reddit).
 
 ---
 
-## Verification
+## P5.6: Performance Optimization
 
-- `ls brain/ai/skills/active/video` — symlink exists
-- `cat brain/ai/skills/active/video/SKILL.md | head -5` — YAML frontmatter present
-- `node tools/scripts/sync-ai-skills.mjs --check` — exits 0
-- `/video` resolves in Claude Code session (invoke skill, verify it loads)
-- Grep `CLAUDE.md` and `AGENTS.md` for "video" — registration lines present
+**Repo:** `/Users/Office/Repos/stevewesthoek/viralflow`
+
+### 6a. Discovery caching — `src/discover/index.ts`
+- Cache layer in `discover()`: check `~/.viral-flow/cache/discover-{hash}.json` before API calls
+- Cache key: hash of `{ keywords, icp_filter, sources }`
+- TTL: 1 hour (configurable via `VIRAL_FLOW_CACHE_TTL_MINUTES`)
+- Return cached results with `cached: true` flag on cache hit
+
+### 6b. Batch script parallelism — `src/script/index.ts`
+- Add `buildScripts(topics: Topic[]): Promise<Script[]>` alongside existing `buildScript()`
+- Run up to 3 concurrent generations using `Promise.all` with chunking (chunk size 3)
+
+### 6c. Brain write buffering — `src/brain/persistence.ts`
+- Current: reads/writes entire brain JSON on every `learn()` call
+- Add dirty-flag pattern: buffer writes, flush every 30s or on `process.exit`
+- Prevents excessive disk I/O during batch production runs (10+ videos/session)
+
+---
+
+## P5.7: v0.4.0 Release
+
+### 7a. Full test suite
+```bash
+cd /Users/Office/Repos/stevewesthoek/viralflow && npm test
+```
+Must pass: 0 failures. Update test count in README badge.
+
+### 7b. Build and validate npm tarball
+```bash
+npm run build && npm pack --dry-run
+```
+Verify tarball contains only: `dist/`, README, ABOUT, ARCHITECTURE, LICENSE. Verify `viral-flow` CLI works.
+
+### 7c. Create `CHANGELOG.md`
+Document all v0.4.0 changes: real CLI, YouTube/TikTok adapters, Twitter/TikTok discovery, caching, bug fixes.
+
+### 7d. npm publish
+```bash
+npm publish --access public
+```
+Verify badge resolves at `https://www.npmjs.com/package/viralflow`.
+
+### 7e. Update brain files
+- `brain/ai/skills/custom/viral-flow/SKILL.md` — update to v0.4.0, npm URL, Phase 6 ProBot note
+- `brain/operations/runbooks/viral-flow-video-orchestrator-integration.md` — check off Phase 5, add Phase 6 stub
+- `brain/CLAUDE.md` — add npm install path + credential convention for viralflow
+
+### 7f. Run brain skill sync
+```bash
+cd /Users/Office/Repos/stevewesthoek/brain
+node tools/scripts/sync-ai-skills.mjs --check
+```
+
+### 7g. GitHub release
+```bash
+cd /Users/Office/Repos/stevewesthoek/viralflow
+git tag v0.4.0 && git push origin v0.4.0
+```
+Create GitHub release with CHANGELOG content as body.
+
+---
+
+## Files Touched
+
+### viralflow repo
+| File | Action |
+|------|--------|
+| `src/brain/learning.ts` | Fix Math.random() → real inference |
+| `src/analyze/index.ts` | Fix hardcoded heuristics → computed |
+| `src/cli.ts` | Full rewrite — 8 real commands |
+| `src/posting/adapters/youtube.ts` | New |
+| `src/posting/adapters/tiktok.ts` | New |
+| `src/posting/adapters/index.ts` | New |
+| `src/posting/index.ts` | Auto-register adapters |
+| `src/discover/twitter.ts` | New |
+| `src/discover/tiktok-trends.ts` | New |
+| `src/discover/index.ts` | Caching + register new sources |
+| `src/script/index.ts` | Add `buildScripts()` batch |
+| `src/brain/persistence.ts` | Dirty-flag write buffering |
+| `package.json` | files, exports, v0.4.0 |
+| `.env.example` | New |
+| `.npmignore` | New |
+| `ABOUT.md` | Fix "Zero dependencies" claim |
+| `CHANGELOG.md` | New |
+| `docs/API.md` | New |
+| `docs/EXAMPLES.md` | New |
+| `docs/CONTRIBUTING.md` | New |
+| `tests/cli.test.ts` | New |
+| `tests/adapters/youtube.test.ts` | New |
+| `tests/adapters/tiktok.test.ts` | New |
+
+### brain repo
+| File | Action |
+|------|--------|
+| `ai/skills/custom/viral-flow/SKILL.md` | v0.4.0 ref, npm URL, Phase 6 ProBot note |
+| `operations/runbooks/viral-flow-video-orchestrator-integration.md` | Check off Phase 5, add Phase 6 stub |
+| `CLAUDE.md` | npm install path + credential convention |
+| `operations/accounts/credentials-index.md` | Add viralflow entry |
+| `~/.config/viralflow/.env` | Create (mode 600, gitignored) |
+
+---
+
+## Verification Checklist
+
+- [ ] `npm test` — all tests pass, 0 failures
+- [ ] `npm pack --dry-run` — tarball has only dist + docs, no src/tests
+- [ ] `./dist/cli.js discover --keywords "AI"` — returns topics (real or mock)
+- [ ] YouTube adapter unit test passes with mocked googleapis
+- [ ] TikTok adapter unit test passes with mocked fetch
+- [ ] `npm publish --access public` — package live at npmjs.com/package/viralflow
+- [ ] `brain node tools/scripts/sync-ai-skills.mjs --check` — SYNC CHECK PASSED
+- [ ] `/viral-flow` skill in Claude Code routes correctly after update
+
+---
+
+## Phase 6 Note (Deferred — Do Not Build in Phase 5)
+
+Browser UI integration = **ProBot dashboard tab only**. The ProBot dashboard lives at `brain/projects/probot/src/bot/dashboard.ts`. Phase 6 adds a "Viral Flow" panel there (recent topics, hook performance, brain insights). **Do NOT create a standalone dashboard.** One unified dashboard.

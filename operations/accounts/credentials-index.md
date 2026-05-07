@@ -657,6 +657,25 @@ ProBot integration for xGrow status and cron monitoring.
 
 ---
 
+## Viral Flow — Content Strategy Engine
+
+Discovery API keys, posting adapters, and agent brain configuration.
+
+| Variable | File | Purpose | Rotation | Regenerate |
+|----------|------|---------|----------|-----------|
+| `YOUTUBE_API_KEY` | `~/.config/viralflow/.env` | YouTube Data API v3 — topic discovery | Check quota in Google Cloud Console | [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → YouTube Data API v3 |
+| `REDDIT_CLIENT_ID` | `~/.config/viralflow/.env` | Reddit OAuth — topic discovery | Static unless revoked | [Reddit Apps](https://www.reddit.com/prefs/apps) → "personal use" script |
+| `REDDIT_CLIENT_SECRET` | `~/.config/viralflow/.env` | Reddit OAuth secret | Static unless revoked | Same as above |
+| `YOUTUBE_OAUTH_CLIENT_ID` | `~/.config/viralflow/.env` | YouTube OAuth — posting adapter | Check expiry in GCP console | Google Cloud Console → APIs & Services → Credentials |
+| `YOUTUBE_OAUTH_CLIENT_SECRET` | `~/.config/viralflow/.env` | YouTube OAuth secret — posting adapter | Check expiry in GCP console | Same as above |
+| `YOUTUBE_OAUTH_REDIRECT_URI` | `~/.config/viralflow/.env` | OAuth redirect (default: `http://localhost:3000/oauth/callback`) | Static | Same as above |
+| `TIKTOK_CLIENT_KEY` | `~/.config/viralflow/.env` | TikTok Content Posting API — posting adapter | Check expiry in TikTok Developer Portal | [TikTok Developer Portal](https://developer.tiktok.com/) → Credentials |
+| `TIKTOK_CLIENT_SECRET` | `~/.config/viralflow/.env` | TikTok Content Posting API secret | Check expiry in TikTok Developer Portal | Same as above |
+| `TWITTER_BEARER_TOKEN` | `~/.config/viralflow/.env` | Twitter API v2 — trending topic discovery | Check in Twitter Developer Portal | [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard) → Apps → Credentials |
+| `TIKTOK_RESEARCH_CLIENT_KEY` | `~/.config/viralflow/.env` | TikTok Research API (separate from posting) — hashtag trends | Check expiry in TikTok Developer Portal | [TikTok Developer Portal](https://developer.tiktok.com/) — separate app |
+
+---
+
 ## Pending — empty
 
 All detected credentials have been categorized. Run `sync-credentials` to check for new entries.
