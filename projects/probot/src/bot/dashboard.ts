@@ -1816,90 +1816,92 @@ function renderViralFlowStudio(status){
   const minAgo=Math.floor((now-updateTime)/60000);
   const freshText=minAgo===0?'just now':minAgo===1?'1m ago':minAgo+'m ago';
 
-  let html='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;padding:20px;grid-auto-flow:dense">';
+  let html='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:20px">';
 
   // Header with refresh button and timestamp
-  html+='<div style="grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding:12px;background:#f0f4f8;border-radius:6px;border:1px solid #ddd">';
-  html+='<div style="font-size:0.9em;color:#666">Last updated: <strong>'+freshText+'</strong></div>';
-  html+='<button onclick="refreshViralFlowPanel()" style="padding:6px 12px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em">🔄 Refresh</button>';
+  html+='<div style="grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--card);border-radius:6px;border:1px solid var(--border)">';
+  html+='<div style="font-size:0.9em;color:var(--muted)">Last updated: <strong style="color:var(--text)">'+freshText+'</strong></div>';
+  html+='<button onclick="refreshViralFlowPanel()" style="padding:6px 12px;background:var(--accent);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;font-weight:600">🔄 Refresh</button>';
   html+='</div>';
 
   // Panel 1: Content Strategy
-  html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc">';
-  html+='<h3 style="margin:0 0 12px;font-size:1.1em">📚 Content Strategy</h3>';
-  html+='<div style="max-height:250px;overflow-y:auto;font-size:0.9em">';
+  html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">📚 Content Strategy</h3>';
+  html+='<div style="max-height:250px;overflow-y:auto;font-size:0.85em">';
   if(activeTopics?.length){
     activeTopics.forEach(t=>{
-      html+='<div style="padding:8px;margin-bottom:8px;border-left:3px solid #007bff;background:white;border-radius:4px"><strong>'+esc(t.title.substring(0,40))+'</strong><br><span style="color:#666">📈 '+t.trend_score+'%</span></div>';
+      html+='<div style="padding:8px;margin-bottom:8px;border-left:3px solid var(--accent);background:rgba(124,90,240,0.08);border-radius:4px;color:var(--text)"><strong>'+esc(t.title.substring(0,40))+'</strong><br><span style="color:var(--muted);font-size:0.85em">📈 '+t.trend_score+'%</span></div>';
     });
   }else{
-    html+='<p style="color:#999;text-align:center">No topics discovered</p>';
+    html+='<p style="color:var(--muted);text-align:center;margin:20px 0">No topics discovered</p>';
   }
-  html+='</div></section>';
+  html+='</div></div>';
 
-  // Panel 2: Brain Insights
-  html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc">';
-  html+='<h3 style="margin:0 0 12px;font-size:1.1em">🧠 Audience Insights</h3>';
-  html+='<div style="font-size:0.9em;line-height:1.6">';
-  html+='<div style="padding:8px;margin-bottom:6px;background:white;border-radius:4px"><strong>Videos:</strong> '+performanceMetrics.total_videos+'</div>';
-  html+='<div style="padding:8px;margin-bottom:6px;background:white;border-radius:4px"><strong>Total Views:</strong> '+(performanceMetrics.total_views||0).toLocaleString()+'</div>';
-  html+='<div style="padding:8px;margin-bottom:6px;background:white;border-radius:4px"><strong>Engagement:</strong> '+(performanceMetrics.avg_engagement_rate*100).toFixed(1)+'%</div>';
-  html+='<div style="padding:8px;background:white;border-radius:4px"><strong>Accounts:</strong> '+accountCount+'</div>';
-  html+='</div></section>';
+  // Panel 2: Audience Insights
+  html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">🧠 Audience Insights</h3>';
+  html+='<div style="font-size:0.85em;line-height:1.8">';
+  html+='<div style="padding:8px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Videos:</span> <strong>'+performanceMetrics.total_videos+'</strong></div>';
+  html+='<div style="padding:8px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Total Views:</span> <strong>'+(performanceMetrics.total_views||0).toLocaleString()+'</strong></div>';
+  html+='<div style="padding:8px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Engagement:</span> <strong>'+(performanceMetrics.avg_engagement_rate*100).toFixed(1)+'%</strong></div>';
+  html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Accounts:</span> <strong>'+accountCount+'</strong></div>';
+  html+='</div></div>';
 
   // Panel 3: Batch Status
-  html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc">';
-  html+='<h3 style="margin:0 0 12px;font-size:1.1em">⚙️ Batch Status</h3>';
+  html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">⚙️ Batch Status</h3>';
   if(batchStatus){
     html+='<div style="font-size:0.85em">';
-    html+='<div style="margin-bottom:10px"><strong>Stage:</strong> '+esc(batchStatus.stage)+'</div>';
+    html+='<div style="margin-bottom:10px;color:var(--text)"><span style="color:var(--muted)">Stage:</span> <strong>'+esc(batchStatus.stage)+'</strong></div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
-    const stages=['discover','script','voice','post'];
+    const stages=['discover','script','voice','compose','design','post'];
     stages.forEach(stage=>{
       const prog=batchStatus.progress[stage];
       const isComplete=prog?.completed===true;
-      html+='<div style="padding:6px;text-align:center;border-radius:4px;background:'+(isComplete?'#d4edda':'#f8f9fa')+';border:1px solid #ddd">'+(isComplete?'✓':'○')+' '+stage+'</div>';
+      const isInProgress=prog?.in_progress===true;
+      const bgColor=isComplete?'rgba(52,211,153,0.15)':isInProgress?'rgba(124,90,240,0.15)':'rgba(255,255,255,0.05)';
+      const textColor=isComplete?'var(--green)':isInProgress?'var(--accent)':'var(--muted)';
+      html+='<div style="padding:6px;text-align:center;border-radius:4px;background:'+bgColor+';border:1px solid rgba(255,255,255,0.1);color:'+textColor+';font-size:0.8em">'+(isComplete?'✓':isInProgress?'●':'○')+' '+stage+'</div>';
     });
     html+='</div>';
-    html+='<button onclick="alert(\'Resume functionality coming soon\')" style="margin-top:10px;width:100%;padding:6px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em">Resume</button>';
+    html+='<button onclick="alert(&quot;Resume functionality coming soon&quot;)" style="margin-top:10px;width:100%;padding:6px;background:var(--accent);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;font-weight:600">Resume</button>';
     html+='</div>';
   }else{
-    html+='<p style="color:#999;text-align:center">No active batch</p>';
+    html+='<p style="color:var(--muted);text-align:center;margin:20px 0">No active batch</p>';
   }
-  html+='</section>';
+  html+='</div>';
 
-  // Panel 4: Performance (spans 2 rows)
-  html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc;grid-row:span 2">';
-  html+='<h3 style="margin:0 0 12px;font-size:1.1em">📊 Top Videos</h3>';
-  html+='<div style="max-height:300px;overflow-y:auto;font-size:0.85em">';
+  // Panel 4: Top Videos (spans 2 rows)
+  html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;grid-row:span 2">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">📊 Top Videos</h3>';
+  html+='<div style="max-height:350px;overflow-y:auto;font-size:0.85em">';
   if(performanceMetrics.top_videos?.length){
-    performanceMetrics.top_videos.slice(0,8).forEach(v=>{
-      html+='<div style="padding:8px;margin-bottom:6px;border-left:2px solid #28a745;background:white;border-radius:4px"><strong>'+esc(v.title.substring(0,30))+'</strong><br><span style="color:#666">'+v.views.toLocaleString()+' views</span></div>';
+    performanceMetrics.top_videos.slice(0,10).forEach(v=>{
+      html+='<div style="padding:8px;margin-bottom:8px;border-left:3px solid var(--green);background:rgba(52,211,153,0.08);border-radius:4px;color:var(--text)"><strong>'+esc(v.title.substring(0,35))+'</strong><br><span style="color:var(--muted);font-size:0.85em">'+v.views.toLocaleString()+' views</span></div>';
     });
   }else{
-    html+='<p style="color:#999;text-align:center">No videos yet</p>';
+    html+='<p style="color:var(--muted);text-align:center;margin:20px 0">No videos yet</p>';
   }
-  html+='</div></section>';
+  html+='</div></div>';
 
   // Panel 5: Recent Scripts (spans 2 rows)
-  html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc;grid-row:span 2">';
-  html+='<h3 style="margin:0 0 12px;font-size:1.1em">✍️ Recent Scripts</h3>';
-  html+='<div style="max-height:300px;overflow-y:auto;font-size:0.85em">';
+  html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;grid-row:span 2">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">✍️ Recent Scripts</h3>';
+  html+='<div style="max-height:350px;overflow-y:auto;font-size:0.85em">';
   if(recentScripts?.length){
-    recentScripts.slice(0,8).forEach(s=>{
-      html+='<div style="padding:8px;margin-bottom:6px;border-left:2px solid #fd7e14;background:white;border-radius:4px"><strong>'+esc(s.title.substring(0,30))+'</strong><br><span style="color:#666">'+s.format+' • '+s.estimated_duration+'m</span></div>';
+    recentScripts.slice(0,10).forEach(s=>{
+      html+='<div style="padding:8px;margin-bottom:8px;border-left:3px solid var(--orange);background:rgba(251,146,60,0.08);border-radius:4px;color:var(--text)"><strong>'+esc(s.title.substring(0,35))+'</strong><br><span style="color:var(--muted);font-size:0.85em">'+s.format+' • '+s.estimated_duration+'m</span></div>';
     });
   }else{
-    html+='<p style="color:#999;text-align:center">No scripts yet</p>';
+    html+='<p style="color:var(--muted);text-align:center;margin:20px 0">No scripts yet</p>';
   }
-  html+='</div></section>';
+  html+='</div></div>';
 
   html+='</div>';
 
   // Footer with account count note
-  html+='<div style="grid-column:1/-1;text-align:right;padding:12px;font-size:0.85em;color:#666">'+accountCount+' accounts connected • Polling every 10s</div>';
+  html+='<div style="grid-column:1/-1;text-align:right;padding:12px 20px;font-size:0.85em;color:var(--muted)">'+accountCount+' accounts connected • Polling every 10s</div>';
 
-  html+='</div>';
   return html;
 }
 
@@ -3453,69 +3455,130 @@ export function createDashboardServer(app: AppContext): http.Server {
     // ─── Viral Flow API endpoints ─────────────────────────────────────────────
     if (url.startsWith("/api/viral-flow/")) {
       try {
-        const { getViralFlowStatus, getTopics, getBrainInsights, getAccounts, addAccount, getPerformanceMetrics, getBatchStatus } = await import("../services/viral-flow.js");
+        // Safely import Viral Flow service with error handling
+        let viralFlowService: any;
+        try {
+          viralFlowService = await import("../services/viral-flow.js");
+        } catch (importErr) {
+          console.error("[Viral Flow] Import failed:", String(importErr));
+          res.writeHead(503, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Viral Flow service unavailable", detail: String(importErr) }));
+          return;
+        }
+
+        const { getViralFlowStatus, getTopics, getBrainInsights, getAccounts, addAccount, getPerformanceMetrics, getBatchStatus } = viralFlowService;
+
+        // Verify all functions exist before proceeding
+        if (!getViralFlowStatus || !getTopics || !getBrainInsights || !getAccounts || !getPerformanceMetrics || !getBatchStatus) {
+          console.error("[Viral Flow] One or more required functions are missing");
+          res.writeHead(503, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Viral Flow service incomplete" }));
+          return;
+        }
 
         if (url === "/api/viral-flow/status") {
-          const status = await getViralFlowStatus();
-          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
-          res.end(JSON.stringify(status));
+          try {
+            const status = await getViralFlowStatus();
+            res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+            res.end(JSON.stringify(status));
+          } catch (err) {
+            console.error("[Viral Flow] Status endpoint error:", String(err));
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Failed to get viral flow status", detail: String(err) }));
+          }
           return;
         }
 
         if (url === "/api/viral-flow/topics") {
-          const topics = await getTopics();
-          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
-          res.end(JSON.stringify(topics));
+          try {
+            const topics = await getTopics();
+            res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+            res.end(JSON.stringify(topics));
+          } catch (err) {
+            console.error("[Viral Flow] Topics endpoint error:", String(err));
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Failed to get topics", detail: String(err) }));
+          }
           return;
         }
 
         if (url === "/api/viral-flow/brain") {
-          const insights = await getBrainInsights();
-          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
-          res.end(JSON.stringify(insights));
+          try {
+            const insights = await getBrainInsights();
+            res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+            res.end(JSON.stringify(insights));
+          } catch (err) {
+            console.error("[Viral Flow] Brain endpoint error:", String(err));
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Failed to get brain insights", detail: String(err) }));
+          }
           return;
         }
 
         if (url === "/api/viral-flow/accounts") {
-          const accounts = await getAccounts();
-          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
-          res.end(JSON.stringify(accounts));
+          try {
+            const accounts = await getAccounts();
+            res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+            res.end(JSON.stringify(accounts));
+          } catch (err) {
+            console.error("[Viral Flow] Accounts endpoint error:", String(err));
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Failed to get accounts", detail: String(err) }));
+          }
           return;
         }
 
         if (url === "/api/viral-flow/performance") {
-          const metrics = await getPerformanceMetrics();
-          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
-          res.end(JSON.stringify(metrics));
+          try {
+            const metrics = await getPerformanceMetrics();
+            res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+            res.end(JSON.stringify(metrics));
+          } catch (err) {
+            console.error("[Viral Flow] Performance endpoint error:", String(err));
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Failed to get performance metrics", detail: String(err) }));
+          }
           return;
         }
 
         if (url === "/api/viral-flow/batch") {
-          const batch = await getBatchStatus();
-          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
-          res.end(JSON.stringify(batch));
+          try {
+            const batch = await getBatchStatus();
+            res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+            res.end(JSON.stringify(batch));
+          } catch (err) {
+            console.error("[Viral Flow] Batch endpoint error:", String(err));
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Failed to get batch status", detail: String(err) }));
+          }
           return;
         }
 
         if (req.method === "POST" && url === "/api/viral-flow/accounts/add") {
-          if (!isLocalDashboardRequest(req)) {
-            res.writeHead(403, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "Viral Flow actions are only enabled on localhost." }));
-            return;
+          try {
+            if (!isLocalDashboardRequest(req)) {
+              res.writeHead(403, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: "Viral Flow actions are only enabled on localhost." }));
+              return;
+            }
+            let body = "";
+            for await (const chunk of req) body += chunk;
+            const payload = JSON.parse(body) as Record<string, unknown>;
+
+            const result = await addAccount({
+              id: String(payload.id ?? ""),
+              platform: String(payload.platform ?? "youtube") as "youtube" | "tiktok" | "instagram" | "linkedin" | "facebook",
+              name: String(payload.name ?? ""),
+              status: "active",
+            });
+
+            res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
+          } catch (err) {
+            console.error("[Viral Flow] Add account endpoint error:", String(err));
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Failed to add account", detail: String(err) }));
           }
-          let body = "";
-          for await (const chunk of req) body += chunk;
-          const payload = JSON.parse(body) as Record<string, unknown>;
-
-          const result = await addAccount({
-            id: String(payload.id ?? ""),
-            platform: String(payload.platform ?? "youtube") as "youtube" | "tiktok" | "instagram" | "linkedin" | "facebook",
-            name: String(payload.name ?? ""),
-            status: "active",
-          });
-
-          res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify(result));
           return;
         }
 
@@ -3523,8 +3586,9 @@ export function createDashboardServer(app: AppContext): http.Server {
         res.end(JSON.stringify({ error: "Viral Flow endpoint not found" }));
         return;
       } catch (err) {
+        console.error("[Viral Flow] Unexpected error:", String(err));
         res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: String(err) }));
+        res.end(JSON.stringify({ error: "Viral Flow service error", detail: String(err) }));
       }
       return;
     }
