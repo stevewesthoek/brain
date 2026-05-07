@@ -2216,7 +2216,7 @@ function renderLocalAppCard(app){
   const isBlocked=effectiveStatus==='blocked';
   const statusClass=isRunning?'running':isRestarting?'restarting':isVerifying?'verifying':isStarting?'starting':isStopping?'stopping':isBlocked?'blocked':'stopped';
   const statusDot=isRunning?'&#9679;':isRestarting?'&#9696;':isVerifying?'&#9696;':isStarting?'&#9696;':isStopping?'&#9696;':isBlocked?'&#9696;':'&#9675;';
-  let html='<div class="local-app-card" data-local-app-card="'+esc(app.name)+'">';
+  let html='<div class="local-app-card" id="local-app-'+esc(app.name.replace(/[^a-z0-9]/gi,'-').toLowerCase())+'" data-local-app-card="'+esc(app.name)+'">';
   html+='<div class="local-app-header">';
   html+='<span class="local-app-dot" style="font-size:14px">'+statusDot+'</span>';
   html+='<span style="flex:1"><strong>'+esc(app.name)+'</strong></span>';
@@ -2396,8 +2396,29 @@ async function fetchData(){
     }
     _d=data;
     updateMetrics(data);
+    refreshLocalAppCardsGranular(data);
   }catch(e){
     document.getElementById('upd').textContent='fetch failed';
+  }
+}
+async function refreshLocalAppCardsGranular(fullData){
+  if(!fullData || !fullData.localApps || !Array.isArray(fullData.localApps.apps)) return;
+  const incoming=fullData.localApps.apps;
+  const cached=_d && _d.localApps && Array.isArray(_d.localApps.apps) ? _d.localApps.apps : [];
+  const cachedMap=new Map(cached.map(a=>[a.name,a]));
+  for(const incomingApp of incoming){
+    const cachedApp=cachedMap.get(incomingApp.name);
+    if(!cachedApp) continue;
+    const statusChanged=incomingApp.status !== cachedApp.status;
+    const healthChanged=incomingApp.health !== cachedApp.health;
+    if(!statusChanged && !healthChanged) continue;
+    const cardId='local-app-'+incomingApp.name.replace(/[^a-z0-9]/gi,'-').toLowerCase();
+    const cardEl=document.getElementById(cardId);
+    if(!cardEl) continue;
+    const html=renderLocalAppCard(incomingApp);
+    const tmp=document.createElement('div');
+    tmp.innerHTML=html;
+    cardEl.replaceWith(tmp.firstElementChild);
   }
 }
 function refresh(){
