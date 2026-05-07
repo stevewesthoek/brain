@@ -79,6 +79,7 @@ Return a concise, implementation-ready design spec:
 5) **Motion plan**
 - 2-4 meaningful animations (page load, staggered reveals, marquee, etc.).
 - Always include reduced-motion fallback.
+- *After build: run `/design-motion-principles` for a systematic motion audit via Emil Kowalski (restraint), Jakub Krehel (polish), and Jhey Tompkins (delight) lenses — context-weighted to project type.*
 
 6) **Accessibility checks**
 - Contrast targets, focus states, keyboard path.

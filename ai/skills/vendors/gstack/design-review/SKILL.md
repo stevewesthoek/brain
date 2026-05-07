@@ -758,6 +758,18 @@ Evaluate:
 
 ---
 
+## Phase 4b — Motion Design Audit (always run)
+
+After the interaction flow review, invoke `/design-motion-principles` to audit motion and animation specifically:
+- Context reconnaissance (project type → designer weighting)
+- Motion gap analysis (conditional renders without AnimatePresence)
+- Per-designer audit: Emil (restraint), Jakub (polish), Jhey (delight)
+- Accessibility: `prefers-reduced-motion` mandatory check
+
+Motion findings are incorporated into the Phase 7 triage alongside visual findings.
+
+---
+
 ## Phase 5: Cross-Page Consistency
 
 Compare screenshots and observations across pages for:
