@@ -215,3 +215,19 @@
 [2026-05-07 11:45:20] Firecrawl is already running
 [2026-05-07 11:45:20] REQUEST | URL: https://api.github.com/repos/kylezantos/design-motion-principles/contents/skills/design-motion-principles/references | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
 [2026-05-07 11:45:20] REQUEST | URL: https://api.github.com/repos/kylezantos/design-motion-principles/contents/skills/design-motion-principles/references | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-05-07 12:00:38] [DAEMON] Idle timeout reached (15 min) - shutting down containers
+[2026-05-07 12:00:40] [DAEMON] Containers shut down
+[2026-05-07 12:00:42] Checking OrbStack status...
+[2026-05-07 12:00:42] OrbStack is already running
+[2026-05-07 12:00:42] Ensuring Firecrawl is running...
+[2026-05-07 12:00:42] Firecrawl not responding, starting docker-compose...
+[2026-05-07 12:00:49] Docker Compose started, waiting for Firecrawl to be ready...
+[2026-05-07 12:00:53] ✅ Firecrawl is now running
+[2026-05-07 12:00:53] REQUEST | URL: https://raw.githubusercontent.com/pbakaus/impeccable/main/SKILL.md | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-05-07 12:00:53] REQUEST | URL: https://raw.githubusercontent.com/pbakaus/impeccable/main/SKILL.md | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-05-07 12:01:02] Checking OrbStack status...
+[2026-05-07 12:01:02] OrbStack is already running
+[2026-05-07 12:01:02] Ensuring Firecrawl is running...
+[2026-05-07 12:01:02] Firecrawl is already running
+[2026-05-07 12:01:02] REQUEST | URL: https://github.com/pbakaus/impeccable | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-05-07 12:01:04] REQUEST | URL: https://github.com/pbakaus/impeccable | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
