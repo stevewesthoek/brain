@@ -35,6 +35,14 @@ For ALL web-related work — internet research, browser testing, authenticated i
 
 Underlying tools remain independent and directly callable: users can still invoke `/firecrawl`, `/browse`, `/playwright`, `/apify` directly if they prefer.
 
+## Codebase comprehension & architecture
+
+For ALL codebase-related work — mapping project structure, understanding architecture, finding dependencies, querying cross-module relationships, extracting design rationale — use `/graphify`. The master orchestrator turns any folder (code, docs, PDFs, images, videos) into a queryable knowledge graph with interactive visualization. No commands, no API knowledge needed — just describe what you want to know about your project.
+
+Single command `/graphify .` generates: `graph.html` (interactive visualization), `GRAPH_REPORT.md` (god nodes + surprising connections + suggested questions), `graph.json` (queryable data for future sessions).
+
+Underlying tool (`graphifyy` CLI) remains independent and directly callable: power users can still invoke `graphify query`, `graphify path`, `graphify explain` directly if they prefer.
+
 ## Workspace rules
 
 1. Do not work in brain root unless the task is about the brain repo itself.
