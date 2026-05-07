@@ -231,3 +231,19 @@
 [2026-05-07 12:01:02] Firecrawl is already running
 [2026-05-07 12:01:02] REQUEST | URL: https://github.com/pbakaus/impeccable | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
 [2026-05-07 12:01:04] REQUEST | URL: https://github.com/pbakaus/impeccable | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-05-07 12:16:17] [DAEMON] Idle timeout reached (15 min) - shutting down containers
+[2026-05-07 12:16:20] [DAEMON] Containers shut down
+[2026-05-07 13:28:25] Checking OrbStack status...
+[2026-05-07 13:28:26] OrbStack is already running
+[2026-05-07 13:28:26] Ensuring Firecrawl is running...
+[2026-05-07 13:28:26] Firecrawl not responding, starting docker-compose...
+[2026-05-07 13:28:33] Docker Compose started, waiting for Firecrawl to be ready...
+[2026-05-07 13:28:37] ✅ Firecrawl is now running
+[2026-05-07 13:28:37] REQUEST | URL: https://github.com/dembrandt/dembrandt | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-05-07 13:28:38] REQUEST | URL: https://github.com/dembrandt/dembrandt | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-05-07 13:28:39] Checking OrbStack status...
+[2026-05-07 13:28:39] OrbStack is already running
+[2026-05-07 13:28:39] Ensuring Firecrawl is running...
+[2026-05-07 13:28:39] Firecrawl is already running
+[2026-05-07 13:28:39] REQUEST | URL: https://raw.githubusercontent.com/dembrandt/dembrandt/main/README.md | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
+[2026-05-07 13:28:39] REQUEST | URL: https://raw.githubusercontent.com/dembrandt/dembrandt/main/README.md | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success

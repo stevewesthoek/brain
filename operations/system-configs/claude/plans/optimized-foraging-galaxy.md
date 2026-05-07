@@ -1,39 +1,89 @@
-# Plan: Design System Integration — Unified Orchestrator + Motion Audit
+# Plan: Dembrandt Integration — Design Token Extraction from Live URLs
 
 ## Context
 
-The existing design system has 11 powerful skills but no unified entry point. Users must remember which skill applies to which situation. The goal is:
+The `/design` orchestrator (14-skill unified entry point) is fully installed and working. It handles three workflows: NEW (from scratch), MIMIC (reference URL or screenshot), UPGRADE (existing site).
 
-1. **One entry point** — `/design` — that accepts pure natural language
-2. **Three scenario workflows** — New project, Screenshot mimic, Existing upgrade
-3. **Four project types** — SaaS, website, funnel, landing page
-4. **Integrated motion audit** — `design-motion-principles` added to all post-build workflows
-5. **AI-agnostic** — Works identically on Claude Code, Codex, Gemini, all IDEs
-6. **Zero command memory** — Users just describe what they want
+**Current gap:** In Workflow B (MIMIC), step B1 uses `/firecrawl` to scrape a reference URL — which returns markdown text. It cannot extract computed CSS values: actual hex colors, font stacks, spacing scales, border-radius values, or component patterns. The user just said:
 
-No existing skill content changes in meaning. All changes are additive. The /design orchestrator is the new glue layer.
+> "I should just be able to say something like, 'Hey, I want to make a new website based on this URL,' and then I give the URL. The design orchestrator knows exactly that it needs to use dembrandt to extract the design tokens."
+
+**dembrandt** fills this gap exactly: it runs a real Chromium browser, calls `getComputedStyle()` on the live DOM, and outputs structured design tokens — including a `--design-md` flag that generates a `DESIGN.md` in the Google Stitch spec format, which is identical to what our toolchain already uses.
+
+**Why it's a strong addition:**
+- Unique capability: computed CSS extraction via real browser — firecrawl cannot do this
+- `--design-md` output is directly compatible with our DESIGN.md toolchain (zero format translation)
+- No API key, MIT license, free, runs locally via `npx dembrandt <url>`
+- MCP server available (7 tools) for optional future Claude Code native integration
+- 1,816 stars in 5.5 months — active, maintained, high-quality
 
 ---
 
-## What Is Being Built
+## What Changes
 
-### New: `/design` Master Orchestrator Skill
-A single `SKILL.md` that:
-- Triggers on any design-related natural language
-- Runs one intake question
-- Detects scenario (NEW / MIMIC / UPGRADE) and project type (SaaS / landing / funnel / website)
-- Sequences the right skills in the right order
-- Integrates motion audit natively at the post-build stage
-- Never requires the user to remember another skill name
+### 1. Create vendor skill: `brain/ai/skills/vendors/dembrandt/dembrandt/SKILL.md`
 
-### New: `design-motion-principles` Vendor Skill
-- Copied from `github.com/kylezantos/design-motion-principles`
-- All 8 reference files fetched and stored locally
-- Integrated into post-build pipeline for ALL three workflows
+Documents the dembrandt CLI with all relevant flags, usage patterns, output format, and limitations. This is the source of truth for how any AI engine uses it.
 
-### Updated: `web-design` and `design-review`
-- One-line addition to each pointing to motion audit at the right stage
-- No existing content removed
+Key content:
+- Install: `npx dembrandt <url>` (no global install needed)
+- Primary command: `npx dembrandt <url> --design-md` → outputs `DESIGN.md`
+- For dark-mode sites: add `--dark-mode`
+- For JS-heavy/slow sites: add `--slow`
+- For multi-page sites: add `--pages 3` (analyzes homepage + N discovered pages)
+- For Cloudflare-protected sites: `--browser=firefox`
+- Limitations: confidence scoring noise (browser defaults scored high), bot-protected sites may block, single-author project
+
+### 2. Create active symlink: `brain/ai/skills/active/dembrandt`
+`→ ../vendors/dembrandt/dembrandt`
+
+### 3. Update `/design` orchestrator — `brain/ai/skills/custom/design/SKILL.md`
+
+**Update B1 (Reference Analysis):**
+
+Current B1:
+```
+### B1. Reference Analysis
+- If URL: scrape with `/firecrawl`, extract full content as markdown
+- If image: analyze visually in full detail
+- Extract and document explicitly: color palette (HEX + OKLCH), typography stack, spacing rhythm, layout pattern, motion style, component patterns
+```
+
+New B1:
+```
+### B1. Reference Analysis
+- If URL: run `/dembrandt` first (`npx dembrandt <url> --design-md`) → produces DESIGN.md with actual computed design tokens (colors, typography, spacing, border-radius, shadows, components)
+  - If the site is JS-heavy or slow to load: add `--slow`
+  - If the site uses dark mode: add `--dark-mode`
+  - If bot-protected (Cloudflare etc.): add `--browser=firefox`
+  - If you need multi-page coverage: add `--pages 3`
+  - After token extraction: scrape with `/firecrawl` for layout structure, content patterns, and copy (dembrandt gets tokens, firecrawl gets structure)
+- If image only (no URL): analyze visually in full detail
+- From both sources, document explicitly: color palette (HEX + OKLCH), typography stack, spacing rhythm, layout pattern, motion style, component patterns
+- Apply two-order AI slop test: identify what to mimic vs. what to improve
+- Apply taste-skill filter: note any banned patterns in the source and flag them for removal
+```
+
+**Update natural language routing table:**
+
+Add one row:
+| "make a website based on this URL / extract tokens from this site / based on this reference URL" | Run `/dembrandt` (B1 URL path) → continue Workflow B |
+
+**Update Skill Reference Map:**
+
+Add one row:
+| `/dembrandt` | Extracts computed CSS design tokens from live URL (colors, type, spacing) → DESIGN.md | B1 (when URL provided) |
+
+**Update AI-Agnostic Operation note:**
+
+Add under Persistent source-of-truth files: mention that when DESIGN.md is generated by dembrandt, it uses the Google Stitch spec format — same as design-consultation output, fully compatible.
+
+### 4. Run sync check after install
+```bash
+node tools/scripts/sync-ai-skills.mjs --dry-run && node tools/scripts/sync-ai-skills.mjs && node tools/scripts/sync-ai-skills.mjs --check
+```
+
+### 5. Commit and push
 
 ---
 
@@ -41,308 +91,192 @@ A single `SKILL.md` that:
 
 | File | What |
 |------|------|
-| `brain/ai/skills/vendors/kylezantos/design-motion-principles/SKILL.md` | Main skill (fetched from GitHub) |
-| `brain/ai/skills/vendors/kylezantos/design-motion-principles/references/*.md` | 8 reference files (fetched from GitHub) |
-| `brain/ai/skills/active/design-motion-principles` | Symlink → `../vendors/kylezantos/design-motion-principles` |
-| `brain/ai/skills/custom/design/SKILL.md` | Master orchestrator — full content below |
-| `brain/ai/skills/active/design` | Symlink → `../custom/design` |
+| `brain/ai/skills/vendors/dembrandt/dembrandt/SKILL.md` | Vendor skill documenting CLI usage, flags, output formats, limitations |
+| `brain/ai/skills/active/dembrandt` | Symlink → `../vendors/dembrandt/dembrandt` |
 
 ## Files to Update
 
 | File | Change |
 |------|--------|
-| `brain/ai/skills/custom/web-design/SKILL.md` | Add motion audit reference in Motion Plan section |
-| `brain/ai/skills/vendors/gstack/design-review/SKILL.md` | Add motion audit as step after Phase 4 |
-| `brain/CLAUDE.md` | Add `/design` as primary design entry point |
-| `brain/operations/system-configs/codex/AGENTS.md` | Add `/design` orchestrator note |
-| `brain/operations/system-configs/gemini/GEMINI.md` | Add `/design` orchestrator note |
-| `/Users/Office/.claude/CLAUDE.md` | Add `design` + `design-motion-principles` to available skills list |
-| `brain/operations/decision-log.md` | Append integration decision |
-
-## Run After
-
-```bash
-node tools/scripts/sync-ai-skills.mjs --dry-run && \
-  node tools/scripts/sync-ai-skills.mjs && \
-  node tools/scripts/sync-ai-skills.mjs --check
-```
+| `brain/ai/skills/custom/design/SKILL.md` | B1 updated with dembrandt as primary URL extraction step; routing table + skill map updated |
 
 ---
 
-## `/design` Orchestrator SKILL.md (Full Content)
+## SKILL.md Content (dembrandt vendor skill)
 
 ```markdown
 ---
-name: design
-description: Master design orchestrator. The single entry point for ALL design work. Accepts natural language. Detects scenario (new project / screenshot mimic / existing upgrade), project type (SaaS / website / funnel / landing page), and sequences the full design pipeline automatically — brand foundation, spec, review, motion audit, visual QA, and polish. No commands to remember. Just describe what you need.
+name: dembrandt
+description: Extract computed CSS design tokens (colors, typography, spacing, border-radius, shadows, components) from any live website URL using a real Chromium browser. Outputs DESIGN.md in Google Stitch spec format — directly compatible with the design orchestrator toolchain. No API key required. Used automatically by the /design orchestrator in Workflow B (reference mimic) when a URL is provided.
 ---
 
-# Design — Master Orchestrator
+# dembrandt — Design Token Extractor
 
-You are the **single entry point** for all design work. When the user says anything design-related — **this skill runs**. No other skill needs to be named by the user.
+Extracts design tokens from any live website using Playwright + Chromium. Reads computed CSS via `getComputedStyle()` — not static files. Returns real values: actual hex codes, full font stacks, computed spacing scales, border-radius, shadows, and component patterns.
 
-**Natural language triggers (non-exhaustive):**
-- "design a landing page for my SaaS"
-- "I have a screenshot of a site I want to mimic"
-- "my website looks outdated, fix it"
-- "build me a funnel"
-- "make this look premium"
-- "I need a design system"
-- "the animations feel off"
-- "redesign my app"
-- "make it look like Stripe / Linear / Vercel"
+## When This Skill Runs
 
----
+The `/design` orchestrator invokes this automatically in Workflow B, step B1, when the user provides a URL reference. You do not need to invoke it manually.
 
-## Step 0: Intake (One Question)
+## Install
 
-Ask ONE question that covers all routing information:
+No global install required. Use npx:
+```bash
+npx dembrandt <url>
+```
 
-> **"Tell me about your design task:**
-> 1. **What are you building?** (landing page / SaaS app / website / funnel / something else)
-> 2. **Starting point?**
->    - A) New project — starting from scratch
->    - B) Reference/screenshot — you have a site you want to mimic or a vibe reference
->    - C) Existing project — you have code or a live site to improve
-> 3. **Vibe?** (e.g., minimal and clean / bold and loud / enterprise / playful / premium luxury)
-> 4. **Primary goal?** (e.g., sign-ups / explain a product / sell something / build credibility)"
+Node.js 18+ required. Playwright/Chromium downloads automatically on first run (~170MB).
 
-Wait for response before routing.
+## Primary Command
 
----
+```bash
+npx dembrandt <url> --design-md
+```
 
-## Step 1: Classify Scenario + Project Type
+Generates `DESIGN.md` in the current directory using the Google Stitch spec format — directly compatible with the design orchestrator's DESIGN.md toolchain.
 
-From the intake, determine:
+## Key Flags
 
-**Scenario (pick one):**
-- `NEW` — no existing code or design
-- `MIMIC` — has screenshot, URL, or "like X" reference
-- `UPGRADE` — has existing code or live site
+| Flag | When to use |
+|------|------------|
+| `--design-md` | Always — generates DESIGN.md for design orchestrator |
+| `--dark-mode` | If the reference site uses a dark color scheme |
+| `--slow` | For JS-heavy or lazy-hydrated sites (3x longer timeouts: 24s) |
+| `--browser=firefox` | For Cloudflare-protected or bot-blocking sites |
+| `--pages 3` | Analyze homepage + 3 discovered pages (more complete token coverage) |
+| `--pages 10 --sitemap` | Multi-page via sitemap for thorough brand-wide analysis |
+| `--json-only` | Output raw JSON to terminal for programmatic use |
+| `--dtcg` | Export W3C Design Tokens Community Group format |
+| `--brand-guide` | Generate a PDF brand guide |
 
-**Project type (pick one):**
-- `SAAS` — dashboard, app, tool, productivity product
-- `LANDING` — single-page: hero + feature sections + CTA
-- `FUNNEL` — multi-step conversion flow (opt-in, checkout, waitlist)
-- `WEBSITE` — multi-page brand or marketing site
+## What It Extracts
 
-**Motion defaults by project type** (used when running `/design-motion-principles`):
+- **Colors** — semantic roles, full palette with hex values, CSS custom properties
+- **Typography** — font families, sizes, weights, line heights, sources (Google Fonts, local, CDN)
+- **Spacing** — margin/padding scales, gap values
+- **Borders** — radius values, widths, styles, border colors
+- **Shadows** — box-shadow and drop-shadow values
+- **Components** — buttons, badges, inputs, links (computed styles)
+- **Breakpoints** — detected responsive breakpoints
+- **Frameworks** — detected CSS frameworks (confidence score)
 
-| Type | Primary motion lens | Secondary | Rationale |
-|------|--------------------|-----------| ---------|
-| SAAS | Emil (restraint, speed) | Jakub (polish) | High-frequency interactions |
-| LANDING | Jakub (polish) | Jhey (delight, selective) | Impression-first |
-| FUNNEL | Emil (fast, minimal) | Jakub (trust signals) | Reduce friction |
-| WEBSITE | Jakub (polish) | Emil or Jhey (by brand) | Brand-driven |
+## Output Compatibility
 
----
+`--design-md` uses the **Google Stitch spec** format — the same format produced by `/design-consultation`. DESIGN.md generated by dembrandt can be directly consumed by `/web-design`, `/redesign-skill`, `/taste-skill`, and all other build-stage skills with zero conversion.
 
-## Workflow A: New Project
+## Limitations
 
-**Trigger:** Scenario = NEW
+- **Bot-protected sites** (Cloudflare, aggressive anti-bot): use `--browser=firefox`; if still blocked, fall back to manual token extraction via `/firecrawl` + visual analysis
+- **Confidence noise**: framework detection can produce false positives (browser defaults may score high); treat confidence < 0.7 as unreliable
+- **Dynamic content**: tokens from JS-rendered components may be incomplete; use `--slow` for better coverage
+- **Private/auth-gated sites**: cannot extract tokens from pages requiring login
 
-Execute these steps in order. Each step completes before the next begins.
+## MCP Server (Optional)
 
-### A1. Brand Foundation → `/design-consultation`
-- Builds the complete design system through conversation
-- Proposes aesthetic, typography, color, spacing, motion as one coherent package
-- Produces `DESIGN.md` at project root + HTML preview page
-- **STOP:** User approves DESIGN.md before proceeding
+For Claude Code native integration without subprocess calls:
 
-### A2. Design Spec → `/web-design`
-- Reads `DESIGN.md` tokens
-- Produces section-by-section layout + component list + motion plan
-- Output: implementation-ready spec (7 sections: direction, layout map, visual tokens, component list, motion plan, accessibility, build notes)
-- Apply project type context from Step 1
+```bash
+claude mcp add --transport stdio dembrandt -- npx -y dembrandt-mcp
+```
 
-### A3. Pre-Build Gate → `/plan-design-review`
-- Reviews spec before any code is written
-- Audits across 7 dimensions: IA, interaction states, journey, AI slop, design system, responsive/a11y, unresolved decisions
-- Reaches 10/10 on all dimensions before marking complete
-- Hard stop: do not build until design-review passes
+7 tools available: `get_design_tokens`, `get_color_palette`, `get_typography`, `get_component_styles`, `get_surfaces`, `get_spacing`, `get_brand_identity`.
 
-### A4. Build
-- Implementation by user or AI
-- `/taste-skill` guardrails applied throughout
-- `/output-skill` for full code generation if needed
-- `/huashu-design` if prototype, HTML demo, or deck needed at any point
+The MCP server is optional — the CLI via bash is the primary integration path in the design orchestrator.
 
-### A5. Motion Audit → `/design-motion-principles`
-- Run after first working build
-- Use project type → motion defaults table from Step 1
-- Performs: context reconnaissance → motion gap analysis → per-designer audit (Emil / Jakub / Jhey)
-- MANDATORY: checks `prefers-reduced-motion` support
-- **STOP:** User approves motion direction before fixes are applied
+## After Running
 
-### A6. Visual QA → `/design-review`
-- Full 80-item visual audit on live/running site
-- Phases: first impression → design system extraction → page-by-page audit → interaction flow → cross-page consistency → fix loop (atomic commits)
-- Produces Design Score (A-F) + AI Slop Score (A-F)
-
-### A7. Final Polish (optional)
-- `/soft-skill` — if user wants agency-tier $150k+ look
-- `/taste-skill` — final quality pass
-
----
-
-## Workflow B: Screenshot / Reference Mimic
-
-**Trigger:** Scenario = MIMIC
-
-### B1. Reference Analysis
-- If URL: scrape and screenshot with `/firecrawl`
-- If image: analyze visually
-- Extract and state clearly: color palette, typography, spacing rhythm, layout pattern, motion style
-- Identify what to mimic vs. what to improve (apply taste-skill filter: remove AI slop even if present in source)
-
-### B2. Brand Capture → `/design-system`
-- Documents extracted tokens in `DESIGN.md` and `brand-spec.md`
-- Marks observed tokens vs. inferred
-- Fast-track (skip full consultation): reference is the guide
-
-### B3. Design Spec → `/web-design`
-- Uses reference + `DESIGN.md` as direction
-- Applies project type context from Step 1
-- `/taste-skill` guardrails applied
-
-### B4. Prototype → `/huashu-design`
-- Builds matching HTML prototype for approval before full build
-- **STOP:** User approves prototype direction before full implementation
-
-### B5. Build
-- Implementation by user or AI
-- `/output-skill` for full code generation if needed
-
-### B6. Motion Audit → `/design-motion-principles`
-- Focus: does motion match the reference's intent?
-- Motion defaults: use project type table from Step 1
-- Motion gap analysis (find conditional renders without animation)
-- MANDATORY: `prefers-reduced-motion` check
-
-### B7. Visual QA → `/design-review` (after full build)
-- Same as Workflow A Step A6
-
----
-
-## Workflow C: Existing Site Upgrade
-
-**Trigger:** Scenario = UPGRADE
-
-### C1. Current State Audit → `/design-review`
-- Full visual audit on existing live site or codebase
-- First impression → systematic 80-item audit → interaction flow → consistency
-- Produces Design Score (A-F) + AI Slop Score (A-F)
-- Triages findings by High / Medium / Polish impact
-- **STOP:** User reviews triage list before fixes begin
-
-### C2. Motion Audit → `/design-motion-principles`
-- Run AFTER visual audit (C1), BEFORE making fixes
-- Use project type → motion defaults table from Step 1
-- Critical: motion gap analysis (finds conditional renders without AnimatePresence)
-- Outputs motion findings alongside visual findings from C1
-
-### C3. Targeted Fixes → `/redesign-skill`
-- Applies findings from C1 + C2
-- Fix priority: font → color → hover/active states → layout/spacing → component patterns → loading/empty/error states → typography polish
-- NEVER rewrites entire codebase — targeted changes only
-- Works with existing stack; never migrates frameworks
-
-### C4. Premium Polish (optional) → `/soft-skill`
-- Only if user explicitly asks for agency-tier uplift
-- Applied after `/redesign-skill` — final layer only
-
-### C5. Quality Verification → `/taste-skill`
-- Final guardrail pass confirming nothing regressed
-
----
-
-## Design Skill Reference (Full Map)
-
-| Skill | Runs in | What it does |
-|-------|---------|--------------|
-| `/design-consultation` | A1 | Creates DESIGN.md + HTML preview from scratch via consultation |
-| `/design-system` | B2, all scenarios as needed | Copies/updates DESIGN.md brand tokens |
-| `/web-design` | A2, B3 | Section-by-section design spec |
-| `/plan-design-review` | A3 | Pre-build 7-dimension design audit (reaches 10/10) |
-| `/design-review` | A6, B7, C1 | Post-build 80-item visual QA + fix loop |
-| `/design-motion-principles` | A5, B6, C2 | Motion audit via Emil / Jakub / Jhey lenses |
-| `/redesign-skill` | C3 | Targeted code improvements from audit findings |
-| `/taste-skill` | A4+A7, B3+B5, C5 | Premium quality guardrails (applied throughout) |
-| `/soft-skill` | A7, C4 (optional) | Agency-tier $150k+ visual uplift |
-| `/huashu-design` | A4, B4 | HTML-native prototypes, demos, decks, animations |
-| `/output-skill` | A4, B5 | Prevents lazy code truncation |
-| `/ui-ux-pro-max` | A2, B3 (supplementary) | Design pattern research, stack-specific rules |
-
----
-
-## AI-Agnostic Operation
-
-This orchestrator is plain markdown. All chained skills are plain markdown. All outputs are markdown (`DESIGN.md`, design specs, audit reports) or HTML (prototypes, preview pages). Nothing requires MCP, specific IDE plugins, or proprietary tooling.
-
-**Works identically on:**
-- **Claude Code** — invoke `/design` or talk naturally; hooks auto-inject `DESIGN.md` context via handoff system
-- **Codex CLI** — invoke `/design` or natural language; reads `.ai/current.md` for session context
-- **Gemini CLI** — invoke `/design`; especially useful for B1 reference analysis (1M token context window handles large screenshots and reference sites)
-- **Cursor, Kiro, any IDE** — all skills synced via `brain/ai/skills/active/`
-
-**Source of truth:** `DESIGN.md` at project root — any AI reads it, any AI updates it, same format always.
-
-**No memory required.** Just say what you want. The orchestrator handles routing.
+1. Review the generated `DESIGN.md` — verify extracted palette against visual inspection
+2. Check for noise: remove browser-default values that don't reflect the site's intentional design
+3. Pass `DESIGN.md` to `/web-design` as the design spec source
+4. Use color strategy classification (Restrained / Committed / Full palette / Drenched) to characterize the reference's approach
 ```
 
 ---
 
-## Integration Points in Existing Skills
+## Design Orchestrator B1 Updated Content
 
-### Update: `web-design/SKILL.md`
-In the "Motion Plan" output section, add one line after existing motion content:
-> *After build: run `/design-motion-principles` for a systematic motion audit via Emil Kowalski (restraint), Jakub Krehel (polish), and Jhey Tompkins (delight) lenses — context-weighted to project type.*
+Replace the current B1 block in `brain/ai/skills/custom/design/SKILL.md`:
 
-### Update: `design-review/SKILL.md`
-After Phase 4 (Interaction Flow Review), add:
-> **Phase 4b — Motion Design Audit (always run)**
-> After the interaction flow review, invoke `/design-motion-principles` to audit motion and animation specifically:
-> - Context reconnaissance (project type → designer weighting)
-> - Motion gap analysis (conditional renders without AnimatePresence)
-> - Per-designer audit: Emil (restraint), Jakub (polish), Jhey (delight)
-> - Accessibility: `prefers-reduced-motion` mandatory check
-> Motion findings are incorporated into the Phase 7 triage alongside visual findings.
+**Old B1:**
+```
+### B1. Reference Analysis
+- If URL: scrape with `/firecrawl`, extract full content as markdown
+- If image: analyze visually in full detail
+- Extract and document explicitly: color palette (HEX + OKLCH), typography stack, spacing rhythm, layout pattern, motion style, component patterns
+- Apply **two-order AI slop test**: identify what to mimic vs. what to improve
+- Apply **taste-skill filter**: note any banned patterns in the source and flag them as things to remove even if present in reference
+```
+
+**New B1:**
+```
+### B1. Reference Analysis
+- **If URL provided:**
+  1. Extract design tokens: `npx dembrandt <url> --design-md` → produces `DESIGN.md` with computed colors (hex), typography stack, spacing, border-radius, shadows, and component patterns
+     - JS-heavy or slow site: add `--slow`
+     - Dark-mode site: add `--dark-mode`
+     - Bot-protected (Cloudflare): add `--browser=firefox`
+     - Multi-page coverage needed: add `--pages 3`
+  2. Extract layout + content structure: `/firecrawl` scrape → markdown for section structure, copy patterns, and component arrangement
+  3. Review `DESIGN.md` for noise: remove browser defaults that don't reflect intentional design; flag confidence < 0.7 values
+- **If image only (no URL):** analyze visually in full detail; extract palette, type, spacing, layout, motion manually
+- From both sources, document: color palette (HEX + OKLCH), typography stack, spacing rhythm, layout pattern, motion style, component patterns
+- Apply **color strategy classification** to the reference: Restrained / Committed / Full palette / Drenched
+- Apply **two-order AI slop test**: identify what to mimic vs. what to improve
+- Apply **taste-skill filter**: note any banned patterns in the source and flag them for removal even if present in reference
+```
+
+---
+
+## Routing Table Addition
+
+Add one row to the Natural Language → Routing Guide table:
+
+| User says | Route to |
+|-----------|----------|
+| "based on this URL / make something like [URL] / extract tokens from / mimic this site [URL]" | Run dembrandt B1 URL path → continue Workflow B |
+
+---
+
+## Skill Reference Map Addition
+
+Add one row:
+
+| `/dembrandt` | Extracts computed CSS design tokens from live URL → DESIGN.md (Google Stitch format) | B1 when URL provided |
 
 ---
 
 ## Verification
 
 ```bash
-# 1. Verify design-motion-principles skill installed
-ls brain/ai/skills/active/design-motion-principles
-cat brain/ai/skills/vendors/kylezantos/design-motion-principles/SKILL.md | head -5
+# 1. Verify vendor skill exists
+ls brain/ai/skills/vendors/dembrandt/dembrandt/SKILL.md
 
-# 2. Verify /design orchestrator installed
-ls brain/ai/skills/active/design
-cat brain/ai/skills/custom/design/SKILL.md | head -5
+# 2. Verify active symlink
+ls -la brain/ai/skills/active/dembrandt
 
-# 3. Verify all reference files present (8 total)
-ls brain/ai/skills/vendors/kylezantos/design-motion-principles/references/
-
-# 4. Verify skills sync passes
+# 3. Verify sync passes
 node tools/scripts/sync-ai-skills.mjs --check
 
-# 5. Verify design-review updated
-grep -q "design-motion-principles" brain/ai/skills/vendors/gstack/design-review/SKILL.md
+# 4. Verify dembrandt appears in design orchestrator B1
+grep -n "dembrandt" brain/ai/skills/custom/design/SKILL.md
 
-# 6. Verify web-design updated
-grep -q "design-motion-principles" brain/ai/skills/custom/web-design/SKILL.md
+# 5. Verify routing table updated
+grep -n "extract tokens" brain/ai/skills/custom/design/SKILL.md
 
-# 7. Verify CLAUDE.md updated
-grep -q "^- \`/design\`" /Users/Office/.claude/CLAUDE.md
+# 6. Spot-check dembrandt CLI works
+npx dembrandt --version 2>/dev/null || echo "needs first-time download"
+
+# 7. Test actual extraction (optional — requires network)
+npx dembrandt stripe.com --design-md --slow
 ```
 
 ---
 
 ## What Does NOT Change
 
-- The content of any existing skill (no rewrites, only additive notes)
-- The routing.md policy
-- Any hook, settings.json, or session lifecycle
-- The symlink structure in active/
-- Any memory system from Phase 1 + Phase 2
+- The content of any existing skill (no rewrites to web-design, design-review, etc.)
+- The routing policy
+- Hooks, settings.json, or session lifecycle
+- The symlink structure in active/ (only adding, not removing)
+- Any memory system
+- Workflows A and C (dembrandt only touches B1 — the reference URL path)
