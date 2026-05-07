@@ -23,6 +23,20 @@ node tools/scripts/sync-ai-skills.mjs --dry-run && node tools/scripts/sync-ai-sk
 
 This syncs active skills to Claude Code, Codex, Gemini CLI, Cursor, Kiro, and Antigravity. The check should pass before continuing with other work.
 
+## Code, understand, improve, fix, review, build, document, ship
+
+For ALL coding work — understanding your codebase, improving code quality, fixing bugs, reviewing code, building features, documenting modules, or shipping code — use `/code`. The master orchestrator accepts any natural language, classifies your intent (understand/improve/fix/review/build/document/ship/template), and routes automatically through the right toolchain. No skill names, no commands, no tool knowledge required — just describe what you need.
+
+When you say "this code is spaghetti, clean it up" or "something is broken" or "review my code" or "ship this", the orchestrator:
+1. Maps your codebase with `/graphify` (if needed) to understand structure and dependencies
+2. Plans changes with `/plan-eng-review` (for refactors/builds)
+3. Investigates bugs with `/investigate` (for fixes)
+4. Reviews code with `/review` (always before shipping, escalates to `/codex` for high-risk changes)
+5. Ships with `/ship` (PR creation, bump version, changelog)
+6. Extracts patterns with `/learner` (after complex debugging or to create reusable templates)
+
+Underlying tools remain independent and directly callable: power users can still invoke `/graphify`, `/investigate`, `/review`, `/ship`, etc. directly if they prefer.
+
 ## Design system
 
 For ALL design work, use `/design` — the master orchestrator. It accepts any natural language, classifies the scenario (new project / reference mimic / existing upgrade) and project type (SaaS / landing / funnel / website), and sequences all 14 design skills automatically in the right order for that scenario. No commands, no skill names, no hooks to remember — just describe the goal.
