@@ -1767,6 +1767,20 @@ function fmtReset(iso){
 }
 /* Viral Flow polling manager */
 window.__viralFlowPolling={active:false,statusTimer:null,metricsTimer:null,batchTimer:null,lastUpdate:null};
+async function refreshViralFlowPanel(){
+  try{
+    const r=await fetch('/api/viral-flow/status');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    const panel=document.getElementById('tab-viral-flow');
+    if(panel) panel.innerHTML=renderViralFlowStudio(data);
+    window.__viralFlowPolling.lastUpdate=new Date();
+  }catch(e){
+    console.error('Viral Flow refresh error:',e);
+    const panel=document.getElementById('tab-viral-flow');
+    if(panel) panel.innerHTML='<div style="padding:20px;color:#dc3545"><strong>⚠️ Failed to refresh:</strong> '+esc(String(e))+'</div>'+panel.innerHTML;
+  }
+}
 function startViralFlowPolling(){
   const state=window.__viralFlowPolling;
   if(state.active) return;
@@ -1795,9 +1809,20 @@ function stopViralFlowPolling(){
 /* Viral Flow rendering functions */
 function renderViralFlowStudio(status){
   if(!status) return '<div class="nr-err">Failed to load studio data</div>';
-  const {activeTopics,recentScripts,batchStatus,accountCount,performanceMetrics}=status;
+  const {activeTopics,recentScripts,batchStatus,accountCount,performanceMetrics,lastUpdated}=status;
+
+  const now=new Date();
+  const updateTime=lastUpdated?new Date(lastUpdated):now;
+  const minAgo=Math.floor((now-updateTime)/60000);
+  const freshText=minAgo===0?'just now':minAgo===1?'1m ago':minAgo+'m ago';
 
   let html='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;padding:20px;grid-auto-flow:dense">';
+
+  // Header with refresh button and timestamp
+  html+='<div style="grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding:12px;background:#f0f4f8;border-radius:6px;border:1px solid #ddd">';
+  html+='<div style="font-size:0.9em;color:#666">Last updated: <strong>'+freshText+'</strong></div>';
+  html+='<button onclick="refreshViralFlowPanel()" style="padding:6px 12px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em">🔄 Refresh</button>';
+  html+='</div>';
 
   // Panel 1: Content Strategy
   html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc">';
@@ -1870,7 +1895,23 @@ function renderViralFlowStudio(status){
   html+='</div></section>';
 
   html+='</div>';
+
+  // Footer with account count note
+  html+='<div style="grid-column:1/-1;text-align:right;padding:12px;font-size:0.85em;color:#666">'+accountCount+' accounts connected • Polling every 10s</div>';
+
+  html+='</div>';
   return html;
+}
+
+/* Viral Flow account management (async fetch helper) */
+async function getViralFlowAccounts(){
+  try{
+    const r=await fetch('/api/viral-flow/accounts');
+    if(!r.ok) return [];
+    return(await r.json()).accounts||[];
+  }catch{
+    return[];
+  }
 }
 
 /* tab switching */
