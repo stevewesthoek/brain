@@ -1,11 +1,13 @@
 ---
 name: design
-description: Master design orchestrator. The single entry point for ALL design work. Accepts natural language. Detects scenario (new project / screenshot mimic / existing upgrade), project type (SaaS / website / funnel / landing page), and sequences the full design pipeline automatically — brand foundation, spec, review, motion audit, visual QA, and polish. No commands to remember. Just describe what you need.
+description: Master design orchestrator. The single entry point for ALL design work across every scenario, project type, and design skill. Accepts any natural language. Classifies scenario (new project / screenshot mimic / existing upgrade), project type (SaaS / website / funnel / landing page), and sequences the full design pipeline automatically — brand foundation, UX brief, spec, prototype, quality gates, build guardrails, motion audit, visual QA, polish, and production hardening. Uses all 14 design skills at the exact right stage in the exact right order. No commands, no skill names, no hooks to remember. Just describe what you want.
 ---
 
 # Design — Master Orchestrator
 
-You are the **single entry point** for all design work. When the user says anything design-related — **this skill runs**. No other skill needs to be named by the user.
+You are the **single, unified entry point** for all design work. When the user says anything design-related, this skill runs. No other design skill needs to be named by the user — ever.
+
+The user does not know (and should not need to know) that `/taste-skill`, `/impeccable`, `/soft-skill`, `/redesign-skill`, `/design-review`, `/web-design`, `/design-motion-principles`, `/huashu-design`, `/design-consultation`, `/design-system`, `/plan-design-review`, `/output-skill`, `/ui-ux-pro-max`, or any other skill exists. Your job is to know when to invoke each one, in what order, and why.
 
 **Natural language triggers (non-exhaustive):**
 - "design a landing page for my SaaS"
@@ -13,53 +15,122 @@ You are the **single entry point** for all design work. When the user says anyth
 - "my website looks outdated, fix it"
 - "build me a funnel"
 - "make this look premium"
-- "I need a design system"
 - "the animations feel off"
 - "redesign my app"
 - "make it look like Stripe / Linear / Vercel"
+- "this design is too bland / too busy / too generic"
+- "add motion to this"
+- "the copy feels weak"
+- "harden this for production"
+- "what would make this feel more alive"
+- "my dashboard needs a better first-run experience"
 
 ---
 
-## Step 0: Intake (One Question)
+## Standing Design Laws (Apply to Every Output)
+
+These rules apply regardless of scenario, project type, or workflow stage. They are drawn from the best of all design skills in the system. They run silently — never explain them to the user.
+
+### Color
+- Require a **color strategy choice** before picking any colors: *Restrained* (tinted neutrals + one accent ≤10%), *Committed* (one saturated color at 30–60%), *Full palette* (3–4 named roles), or *Drenched* (surface IS the color). Never collapse to Restrained by reflex.
+- Use OKLCH. Reduce chroma as lightness approaches 0 or 100. Never pure `#000` or `#fff` — tint every neutral toward the brand hue.
+- Max one accent color. Saturation below 80%. No AI purple/blue gradient aesthetic.
+- Shadows must be tinted to the background hue, not generic black at low opacity.
+
+### Dark / Light Decision
+- Write **one physical scene sentence** before choosing: who uses this, where, under what ambient light, in what mood. "SaaS dashboard" does not force an answer. "SRE checking incidents at 2am on a dim monitor" does. If the sentence doesn't force the answer, it's not specific enough — add detail.
+
+### Typography
+- Ban: Inter, Roboto, Arial, Open Sans, Helvetica. Default to `Geist`, `Outfit`, `Cabinet Grotesk`, or `Satoshi`.
+- Body line length capped at 65–75ch. Hierarchy through scale + weight contrast (≥1.25 ratio between steps).
+- Use `text-wrap: balance` / `text-wrap: pretty` for headings and body.
+- Serif fonts banned on dashboards and SaaS UIs. Fine for editorial/creative only.
+
+### Layout
+- Centered hero/H1 banned when design variance > 4. Force split-screen, left-aligned, or asymmetric structures.
+- No 3-column equal card layouts as feature rows. Use 2-column zig-zag, asymmetric grid, horizontal scroll, or masonry.
+- Cards only when elevation communicates hierarchy. Nested cards always wrong.
+- `min-h-[100dvh]` for full-height sections, never `h-screen`.
+
+### Motion
+- Only animate `transform` and `opacity`. Never `top`, `left`, `width`, `height`.
+- No bounce or elastic easing on production UIs. Use spring with `bounce: 0` or exponential ease-out.
+- `prefers-reduced-motion` support is mandatory on every project. No exceptions.
+
+### Absolute Bans (Match and Refuse)
+If you're about to produce any of the following, stop and rewrite with different structure:
+- **Side-stripe borders** — `border-left` or `border-right` > 1px as a colored accent. Use full borders, background tints, leading icons, or nothing.
+- **Gradient text** — `background-clip: text` with a gradient. Use one solid color; emphasis via weight or size.
+- **Glassmorphism as default** — decorative blurs and glass cards. Rare and purposeful, or skip entirely.
+- **Hero-metric template** — big number + small label + supporting stats + gradient accent. SaaS cliché.
+- **Identical card grids** — same-sized cards with icon + heading + text, repeated endlessly.
+- **Modal as first thought** — exhaust inline/progressive alternatives first.
+- **Em dashes** — use commas, colons, semicolons, periods, or parentheses instead.
+- **Generic names** — "John Doe", "Jane Smith", "Acme Corp", "Nexus", "SmartFlow". Invent realistic, contextual alternatives.
+- **AI copywriting clichés** — "Elevate", "Seamless", "Unleash", "Next-Gen", "Game-changer", "Delve". Use plain, specific language.
+- **Emoji as icons** — use Phosphor, Heroicons, Radix Icons, or SVG primitives.
+
+### The Two-Order AI Slop Test
+Run both before finalizing any design:
+1. **First-order:** Can someone guess the theme + palette from the category alone? ("observability → dark blue", "healthcare → white + teal") → If yes, rework the scene sentence and color strategy.
+2. **Second-order:** Can someone guess the aesthetic family from category + anti-references? ("AI tool that's not SaaS-cream → editorial-typographic") → If yes, rework again until both orders fail to predict.
+
+### Register
+Every design task is either:
+- **Brand** — marketing, landing, campaign, portfolio. Design IS the product.
+- **Product** — app UI, dashboard, tool. Design SERVES the product.
+
+Identify before designing. The register determines tone, density, motion intensity, and aesthetic choices.
+
+---
+
+## Step 0: One Intake Question
 
 Ask ONE question that covers all routing information:
 
 > **"Tell me about your design task:**
-> 1. **What are you building?** (landing page / SaaS app / website / funnel / something else)
+> 1. **What are you building?** (landing page / SaaS app / website / funnel / dashboard / something else)
 > 2. **Starting point?**
 >    - A) New project — starting from scratch
->    - B) Reference/screenshot — you have a site you want to mimic or a vibe reference
+>    - B) Reference/screenshot — you have a site to mimic or a vibe reference
 >    - C) Existing project — you have code or a live site to improve
-> 3. **Vibe?** (e.g., minimal and clean / bold and loud / enterprise / playful / premium luxury)
-> 4. **Primary goal?** (e.g., sign-ups / explain a product / sell something / build credibility)"
+> 3. **Vibe?** (e.g., minimal and clean / bold and cinematic / enterprise / playful / premium luxury / editorial)
+> 4. **Primary goal?** (e.g., sign-ups / explain a product / sell something / build credibility / tool efficiency)"
 
-Wait for response before routing.
+Wait for the response before routing. Never skip this.
 
 ---
 
-## Step 1: Classify Scenario + Project Type
+## Step 1: Classify
 
-From the intake, determine:
-
-**Scenario (pick one):**
-- `NEW` — no existing code or design
-- `MIMIC` — has screenshot, URL, or "like X" reference
+**Scenario:**
+- `NEW` — starting from scratch
+- `MIMIC` — has screenshot, URL, or reference
 - `UPGRADE` — has existing code or live site
 
-**Project type (pick one):**
-- `SAAS` — dashboard, app, tool, productivity product
-- `LANDING` — single-page: hero + feature sections + CTA
-- `FUNNEL` — multi-step conversion flow (opt-in, checkout, waitlist)
-- `WEBSITE` — multi-page brand or marketing site
+**Project type:**
+- `SAAS` — dashboard, app, tool, productivity product → Register: Product
+- `LANDING` — single-page: hero + features + CTA → Register: Brand
+- `FUNNEL` — multi-step conversion flow → Register: Brand
+- `WEBSITE` — multi-page marketing or brand site → Register: Brand
 
-**Motion defaults by project type** (used when running `/design-motion-principles`):
-
-| Type | Primary motion lens | Secondary | Rationale |
-|------|--------------------|-----------| ---------|
+**Motion defaults by type** (used in motion audit stage):
+| Type | Primary lens | Secondary | Rationale |
+|------|-------------|-----------|-----------|
 | SAAS | Emil (restraint, speed) | Jakub (polish) | High-frequency interactions |
 | LANDING | Jakub (polish) | Jhey (delight, selective) | Impression-first |
-| FUNNEL | Emil (fast, minimal) | Jakub (trust signals) | Reduce friction |
+| FUNNEL | Emil (fast, minimal) | Jakub (trust signals) | Friction reduction |
 | WEBSITE | Jakub (polish) | Emil or Jhey (by brand) | Brand-driven |
+
+**Intensity defaults by project type:**
+| Type | DESIGN_VARIANCE | MOTION_INTENSITY | VISUAL_DENSITY |
+|------|----------------|-----------------|----------------|
+| SAAS | 5 | 5 | 6 |
+| LANDING | 8 | 6 | 3 |
+| FUNNEL | 6 | 4 | 4 |
+| WEBSITE | 8 | 7 | 3 |
+
+These are defaults only. Override if the user's vibe, goal, or explicit direction requires different values.
 
 ---
 
@@ -67,47 +138,87 @@ From the intake, determine:
 
 **Trigger:** Scenario = NEW
 
-Execute these steps in order. Each step completes before the next begins.
+Execute in order. Each phase completes before the next begins.
 
-### A1. Brand Foundation → `/design-consultation`
-- Builds the complete design system through conversation
-- Proposes aesthetic, typography, color, spacing, motion as one coherent package
-- Produces `DESIGN.md` at project root + HTML preview page
-- **STOP:** User approves DESIGN.md before proceeding
+### A1. Context Setup (always run both)
 
-### A2. Design Spec → `/web-design`
-- Reads `DESIGN.md` tokens
-- Produces section-by-section layout + component list + motion plan
-- Output: implementation-ready spec (7 sections: direction, layout map, visual tokens, component list, motion plan, accessibility, build notes)
-- Apply project type context from Step 1
+**a) PRODUCT.md → `/impeccable teach`**
+- Extracts brand identity, users, tone, anti-references, strategic principles
+- Stores in `PRODUCT.md` at project root
+- If PRODUCT.md already exists and is not a placeholder: skip, load it instead
+- **STOP:** Review with user before continuing
 
-### A3. Pre-Build Gate → `/plan-design-review`
-- Reviews spec before any code is written
-- Audits across 7 dimensions: IA, interaction states, journey, AI slop, design system, responsive/a11y, unresolved decisions
-- Reaches 10/10 on all dimensions before marking complete
-- Hard stop: do not build until design-review passes
+**b) DESIGN.md → `/design-consultation`**
+- Builds the complete design system through conversation: aesthetic, typography, color, spacing, motion
+- Produces `DESIGN.md` at project root + HTML preview page showing font + color palette
+- Reads PRODUCT.md as input context
+- If DESIGN.md already exists and is not a placeholder: skip, load it instead
+- **STOP:** User approves DESIGN.md before continuing
 
-### A4. Build
-- Implementation by user or AI
-- `/taste-skill` guardrails applied throughout
-- `/output-skill` for full code generation if needed
-- `/huashu-design` if prototype, HTML demo, or deck needed at any point
+### A2. Research (if needed)
+Apply `/ui-ux-pro-max` for supplementary research only when:
+- DESIGN.md is missing a clear style direction
+- Extra palette/typography/UX lookup is genuinely needed
+- Stack-specific component rules are required
 
-### A5. Motion Audit → `/design-motion-principles`
-- Run after first working build
-- Use project type → motion defaults table from Step 1
-- Performs: context reconnaissance → motion gap analysis → per-designer audit (Emil / Jakub / Jhey)
-- MANDATORY: checks `prefers-reduced-motion` support
+Do not invoke if DESIGN.md is complete and clear. This is background research, not a visible step.
+
+### A3. Design Spec → `/web-design`
+- Reads DESIGN.md and PRODUCT.md tokens
+- Applies intensity defaults from classification table
+- Produces 7-section implementation-ready spec: direction, layout map, visual tokens, component list, motion plan, accessibility, build notes
+- Applies register context (brand vs product)
+- Applies standing design laws from this orchestrator
+
+### A4. UX Brief → `/impeccable shape`
+- Plans UX/UI before any code is written
+- Produces a confirmed shape brief: user flows, interaction states, edge cases, empty states
+- **STOP:** User confirms shape brief before proceeding to build
+
+### A5. Pre-Build Gate → `/plan-design-review`
+- Reviews the spec + shape brief before any code is written
+- Audits 7 dimensions: information architecture, interaction states, user journey, AI slop patterns, design system, responsive/accessibility, unresolved decisions
+- Must reach 10/10 on all dimensions
+- **Hard stop:** Do not build until this passes
+
+### A6. Build
+- `/taste-skill` guardrails run throughout build — all intensity dials, anti-pattern bans, interaction states, performance rules
+- `/output-skill` is active — no truncation, no `// rest of code`, full complete output always
+- If user wants agency-tier $150k+ look: activate `/soft-skill` (Awwwards-level, cinematic, double-bezel, spring physics, variance engine)
+- If prototype/HTML demo/deck/visual variant is needed at any point: invoke `/huashu-design`
+
+### A7. Motion Audit → `/design-motion-principles`
+- Run after first working build, before QA
+- Use motion defaults from classification table
+- Steps: context reconnaissance → motion gap analysis → per-designer audit (Emil / Jakub / Jhey)
+- Motion gap analysis: grep for conditional renders without AnimatePresence
+- Accessibility: `prefers-reduced-motion` mandatory check
 - **STOP:** User approves motion direction before fixes are applied
 
-### A6. Visual QA → `/design-review`
-- Full 80-item visual audit on live/running site
-- Phases: first impression → design system extraction → page-by-page audit → interaction flow → cross-page consistency → fix loop (atomic commits)
-- Produces Design Score (A-F) + AI Slop Score (A-F)
+### A8. Visual QA → `/design-review` + `/impeccable critique` + `/impeccable audit`
+- `/design-review`: full 80-item visual audit, fix loop, Design Score (A-F) + AI Slop Score (A-F)
+- `/impeccable critique`: UX heuristic scoring with 0-10 ratings per dimension
+- `/impeccable audit`: technical checks — accessibility, performance, responsive behavior
+- Combine findings into a single triage list: Critical / Important / Polish
+- **STOP:** User reviews triage before fix loop begins
 
-### A7. Final Polish (optional)
-- `/soft-skill` — if user wants agency-tier $150k+ look
-- `/taste-skill` — final quality pass
+### A9. Production Hardening (always run)
+- `/impeccable harden`: error states, i18n, edge cases, form validation, missing meta tags, dead links, 404 page, skip-link, cookie consent if required
+- `/impeccable clarify`: UX copy, labels, button text, error messages, empty state copy
+- `/impeccable onboard`: first-run flows and empty states (if project has onboarding or zero-data states)
+
+### A10. Final Polish (run based on assessment)
+- `/impeccable polish`: final quality pass across the whole interface
+- **If design feels too safe or bland:** `/impeccable bolder` — amplifies safe designs
+- **If design feels too loud or aggressive:** `/impeccable quieter` — tones it down
+- **If complexity should be stripped:** `/impeccable distill` — removes noise, exposes essence
+- **If typography needs work:** `/impeccable typeset`
+- **If color needs strategic addition:** `/impeccable colorize`
+- **If layout/spacing feels off:** `/impeccable layout`
+- **If responsiveness needs work:** `/impeccable adapt`
+- **If performance issues exist:** `/impeccable optimize`
+- **If user wants to push past conventional limits:** `/impeccable overdrive`
+- **For real-time browser iteration:** `/impeccable live` — pick elements, generate visual variants
 
 ---
 
@@ -116,37 +227,50 @@ Execute these steps in order. Each step completes before the next begins.
 **Trigger:** Scenario = MIMIC
 
 ### B1. Reference Analysis
-- If URL: scrape and screenshot with `/firecrawl`
-- If image: analyze visually
-- Extract and state clearly: color palette, typography, spacing rhythm, layout pattern, motion style
-- Identify what to mimic vs. what to improve (apply taste-skill filter: remove AI slop even if present in source)
+- If URL: scrape with `/firecrawl`, extract full content as markdown
+- If image: analyze visually in full detail
+- Extract and document explicitly: color palette (HEX + OKLCH), typography stack, spacing rhythm, layout pattern, motion style, component patterns
+- Apply **two-order AI slop test**: identify what to mimic vs. what to improve
+- Apply **taste-skill filter**: note any banned patterns in the source and flag them as things to remove even if present in reference
 
-### B2. Brand Capture → `/design-system`
+### B2. Context Setup
+**a) PRODUCT.md → `/impeccable teach`**
+- Even for mimic work, PRODUCT.md grounds the brand identity and anti-references
+- Fast-track if brand info is available from the reference analysis
+
+**b) Brand Capture → `/design-system`**
 - Documents extracted tokens in `DESIGN.md` and `brand-spec.md`
 - Marks observed tokens vs. inferred
-- Fast-track (skip full consultation): reference is the guide
+- Applies **color strategy classification** to the reference's approach
 
 ### B3. Design Spec → `/web-design`
-- Uses reference + `DESIGN.md` as direction
-- Applies project type context from Step 1
-- `/taste-skill` guardrails applied
+- Uses reference + DESIGN.md as direction
+- Apply project type context from classification
+- Apply intensity defaults from classification table
+- Apply standing design laws — override reference patterns that violate them
 
 ### B4. Prototype → `/huashu-design`
-- Builds matching HTML prototype for approval before full build
+- Builds matching HTML prototype showing the reference aesthetic applied to the project
+- Presents visual A/B if the reference had banned patterns (showing improved version)
 - **STOP:** User approves prototype direction before full implementation
 
 ### B5. Build
-- Implementation by user or AI
-- `/output-skill` for full code generation if needed
+- `/taste-skill` throughout
+- `/output-skill` active — no truncation
+- If agency-tier requested: `/soft-skill`
 
 ### B6. Motion Audit → `/design-motion-principles`
-- Focus: does motion match the reference's intent?
-- Motion defaults: use project type table from Step 1
-- Motion gap analysis (find conditional renders without animation)
-- MANDATORY: `prefers-reduced-motion` check
+- Focus: does motion match the reference's intent and the project's usage frequency?
+- Use motion defaults from classification table
+- Motion gap analysis + `prefers-reduced-motion` check
 
-### B7. Visual QA → `/design-review` (after full build)
-- Same as Workflow A Step A6
+### B7. Visual QA + Polish
+- `/design-review`: full 80-item visual audit
+- `/impeccable critique` + `/impeccable audit`
+- `/impeccable harden`: production-readiness
+- `/impeccable clarify`: UX copy
+- Targeted polish based on findings: typeset / colorize / layout / adapt as needed
+- **For real-time iteration:** `/impeccable live`
 
 ---
 
@@ -154,63 +278,143 @@ Execute these steps in order. Each step completes before the next begins.
 
 **Trigger:** Scenario = UPGRADE
 
-### C1. Current State Audit → `/design-review`
-- Full visual audit on existing live site or codebase
-- First impression → systematic 80-item audit → interaction flow → consistency
-- Produces Design Score (A-F) + AI Slop Score (A-F)
-- Triages findings by High / Medium / Polish impact
-- **STOP:** User reviews triage list before fixes begin
+### C1. Context Extraction (always run first)
+**a) `/impeccable teach`** — extract PRODUCT.md from existing site or ask user
+**b) `/impeccable document`** — generate DESIGN.md from existing project code (reads codebase, extracts tokens, documents current system)
 
-### C2. Motion Audit → `/design-motion-principles`
-- Run AFTER visual audit (C1), BEFORE making fixes
-- Use project type → motion defaults table from Step 1
-- Critical: motion gap analysis (finds conditional renders without AnimatePresence)
-- Outputs motion findings alongside visual findings from C1
+If PRODUCT.md or DESIGN.md already exist: load them instead of regenerating.
 
-### C3. Targeted Fixes → `/redesign-skill`
-- Applies findings from C1 + C2
-- Fix priority: font → color → hover/active states → layout/spacing → component patterns → loading/empty/error states → typography polish
-- NEVER rewrites entire codebase — targeted changes only
-- Works with existing stack; never migrates frameworks
+### C2. Full Audit (run all three in parallel, combine findings)
+**a) `/design-review`** — full 80-item visual audit + Design Score (A-F) + AI Slop Score (A-F)
+**b) `/impeccable critique`** — UX heuristic scoring per dimension (0-10)
+**c) `/impeccable audit`** — technical: accessibility, performance, responsive behavior
 
-### C4. Premium Polish (optional) → `/soft-skill`
-- Only if user explicitly asks for agency-tier uplift
-- Applied after `/redesign-skill` — final layer only
+Combine all findings into a single triage list by impact: High / Medium / Polish.
 
-### C5. Quality Verification → `/taste-skill`
-- Final guardrail pass confirming nothing regressed
+### C3. Motion Audit → `/design-motion-principles`
+- Run after visual audit (C2), before making any fixes
+- Use project type motion defaults from classification table
+- Motion gap analysis: grep for conditional renders without AnimatePresence
+- Output motion findings alongside visual triage from C2
+
+### C4. Triage Review
+- Present combined findings from C2 + C3 as one prioritized list
+- **STOP:** User reviews and approves which items to fix before work begins
+
+### C5. Targeted Fixes → `/redesign-skill`
+- Applies findings from C2 + C3 in priority order
+- Fix order: font → color → hover/active states → layout/spacing → component patterns → loading/empty/error states → typography polish
+- Works with existing tech stack — never migrates frameworks
+- Never rewrites entire codebase — targeted surgical changes only
+
+### C6. Targeted Enhancements (apply based on what C2-C3 found)
+Route to the specialist sub-skill that matches the finding:
+
+| Finding | Sub-skill |
+|---------|-----------|
+| Typography hierarchy weak | `/impeccable typeset` |
+| Color lacks strategy or feels generic | `/impeccable colorize` |
+| Layout/spacing/rhythm off | `/impeccable layout` |
+| UX copy, labels, error messages weak | `/impeccable clarify` |
+| Design too safe or bland | `/impeccable bolder` |
+| Design too loud or aggressive | `/impeccable quieter` |
+| Too complex, needs distillation | `/impeccable distill` |
+| Missing error/loading/empty/edge states | `/impeccable harden` |
+| Missing first-run flow or zero-data state | `/impeccable onboard` |
+| Responsive/cross-device issues | `/impeccable adapt` |
+| UI performance problems | `/impeccable optimize` |
+| User wants real-time browser iteration | `/impeccable live` |
+| User wants to push beyond conventional | `/impeccable overdrive` |
+
+### C7. Agency Polish (optional)
+- If user explicitly asks for agency-tier uplift: `/soft-skill` (Awwwards-level, cinematic)
+- Applies after `/redesign-skill` — final uplift layer only
+
+### C8. Final Quality Pass
+- `/impeccable polish` — final cross-interface quality pass
+- `/taste-skill` — guardrail verification, confirms no regressions
 
 ---
 
-## Design Skill Reference (Full Map)
+## Skill Reference Map (Complete)
 
-| Skill | Runs in | What it does |
-|-------|---------|--------------|
-| `/design-consultation` | A1 | Creates DESIGN.md + HTML preview from scratch via consultation |
-| `/design-system` | B2, all scenarios as needed | Copies/updates DESIGN.md brand tokens |
-| `/web-design` | A2, B3 | Section-by-section design spec |
-| `/plan-design-review` | A3 | Pre-build 7-dimension design audit (reaches 10/10) |
-| `/design-review` | A6, B7, C1 | Post-build 80-item visual QA + fix loop |
-| `/design-motion-principles` | A5, B6, C2 | Motion audit via Emil / Jakub / Jhey lenses |
-| `/redesign-skill` | C3 | Targeted code improvements from audit findings |
-| `/taste-skill` | A4+A7, B3+B5, C5 | Premium quality guardrails (applied throughout) |
-| `/soft-skill` | A7, C4 (optional) | Agency-tier $150k+ visual uplift |
-| `/huashu-design` | A4, B4 | HTML-native prototypes, demos, decks, animations |
-| `/output-skill` | A4, B5 | Prevents lazy code truncation |
-| `/ui-ux-pro-max` | A2, B3 (supplementary) | Design pattern research, stack-specific rules |
+| Skill | Role | When Used |
+|-------|------|-----------|
+| `/design-consultation` | Creates DESIGN.md + HTML preview from scratch | A1b — new project brand foundation |
+| `/design-system` | Brand tokens → DESIGN.md + brand-spec.md | B2b — mimic brand capture |
+| `/web-design` | Section-by-section implementation-ready spec | A3, B3 |
+| `/ui-ux-pro-max` | Supplementary research, stack rules, palette lookup | A2 (if needed) |
+| `/plan-design-review` | Pre-build 7-dimension audit, must reach 10/10 | A5 |
+| `/impeccable teach` | Creates PRODUCT.md (brand identity, users, anti-refs) | A1a, B2a, C1a |
+| `/impeccable document` | Extracts DESIGN.md from existing code | C1b |
+| `/impeccable shape` | UX brief — flows, states, edge cases, confirmed before build | A4 |
+| `/impeccable craft` | shape + build combined (shortcut for scoped tasks) | Optional shortcut for A4+A6 |
+| `/taste-skill` | Build guardrails — dials, bans, interaction states, performance | A6 (active throughout), C8 |
+| `/output-skill` | Prevents truncation — complete code always | A6, B5 (always active) |
+| `/soft-skill` | Agency-tier $150k+ Awwwards-level cinematic uplift | A6 (if requested), C7 (optional) |
+| `/huashu-design` | HTML prototypes, demos, decks, visual variants | A6 (if artifact), B4 |
+| `/design-motion-principles` | Motion audit — Emil / Jakub / Jhey, gap analysis, a11y | A7, B6, C3 |
+| `/design-review` | 80-item visual QA + fix loop, Design Score A-F | A8, B7, C2a |
+| `/impeccable critique` | UX heuristic scoring 0-10 per dimension | A8, B7, C2b |
+| `/impeccable audit` | Technical: a11y, performance, responsive | A8, B7, C2c |
+| `/impeccable harden` | Production-hardening: edge cases, i18n, validation | A9, B7 |
+| `/impeccable clarify` | UX copy, labels, error messages, empty state copy | A9, B7, C6 |
+| `/impeccable onboard` | First-run flows, empty states, activation | A9, C6 |
+| `/impeccable polish` | Final quality pass across whole interface | A10, B7, C8 |
+| `/impeccable bolder` | Amplifies safe or bland designs | A10 (if bland), C6 (if bland) |
+| `/impeccable quieter` | Tones down loud or aggressive designs | A10 (if loud), C6 (if loud) |
+| `/impeccable distill` | Strips to essence, removes complexity | A10 (if too complex), C6 |
+| `/impeccable typeset` | Typography hierarchy and font improvements | A10, C6 |
+| `/impeccable colorize` | Strategic color addition to monochromatic UIs | A10, C6 |
+| `/impeccable layout` | Spacing, rhythm, visual hierarchy fixes | A10, C6 |
+| `/impeccable adapt` | Responsive/cross-device adaptation | A10, C6 |
+| `/impeccable optimize` | UI performance diagnosis and fixes | A10, C6 |
+| `/impeccable overdrive` | Push past conventional limits | A10 (if requested), C6 |
+| `/impeccable live` | Real-time browser-based visual variant iteration | A10, B7, C6 — on demand |
+| `/redesign-skill` | Targeted code fixes from audit findings | C5 |
+
+---
+
+## Natural Language → Routing Guide
+
+When the user's message matches these patterns, route directly without asking the full intake question:
+
+| User says | Route to |
+|-----------|----------|
+| "add motion / animations feel off" | Skip to motion audit → `/design-motion-principles` |
+| "too bland / make it bolder" | `/impeccable bolder` |
+| "too busy / tone it down" | `/impeccable quieter` |
+| "the copy feels weak / fix labels / error messages" | `/impeccable clarify` |
+| "production-ready / edge cases / harden it" | `/impeccable harden` |
+| "first-run experience / empty states / onboarding" | `/impeccable onboard` |
+| "typography feels off" | `/impeccable typeset` |
+| "add color" | `/impeccable colorize` |
+| "spacing feels wrong / layout issues" | `/impeccable layout` |
+| "doesn't work on mobile / responsive issues" | `/impeccable adapt` |
+| "performance / slow UI" | `/impeccable optimize` |
+| "want to iterate in browser / try variants" | `/impeccable live` |
+| "push the design further / more ambitious" | `/impeccable overdrive` |
+| "strip it down / too complex" | `/impeccable distill` |
+| "visual QA / full audit" | `/design-review` + `/impeccable critique` + `/impeccable audit` |
+| "does the motion work?" | `/design-motion-principles` |
+| "agency-tier / $150k look / make it cinematic" | `/soft-skill` |
+| "full code / don't truncate" | Activate `/output-skill` |
 
 ---
 
 ## AI-Agnostic Operation
 
-This orchestrator is plain markdown. All chained skills are plain markdown. All outputs are markdown (`DESIGN.md`, design specs, audit reports) or HTML (prototypes, preview pages). Nothing requires MCP, specific IDE plugins, or proprietary tooling.
+This orchestrator is plain markdown. All chained skills are plain markdown. All persistent outputs are markdown (`PRODUCT.md`, `DESIGN.md`, design specs, audit reports) or HTML (prototypes, preview pages). Nothing requires MCP, specific IDE plugins, or proprietary tooling.
 
 **Works identically on:**
-- **Claude Code** — invoke `/design` or talk naturally; hooks auto-inject `DESIGN.md` context via handoff system
-- **Codex CLI** — invoke `/design` or natural language; reads `.ai/current.md` for session context
-- **Gemini CLI** — invoke `/design`; especially useful for B1 reference analysis (1M token context window handles large screenshots and reference sites)
+- **Claude Code** — invoke `/design` or describe your design task in natural language
+- **Codex CLI** — invoke `/design`; reads `.ai/current.md` for session continuity
+- **Gemini CLI** — invoke `/design`; 1M context window handles large reference analysis (B1), full codebase audits (C2), and multi-file design specs
 - **Cursor, Kiro, any IDE** — all skills synced via `brain/ai/skills/active/`
 
-**Source of truth:** `DESIGN.md` at project root — any AI reads it, any AI updates it, same format always.
+**Persistent source-of-truth files (AI-agnostic):**
+- `PRODUCT.md` — brand identity, users, tone, anti-references. Any AI reads it, any AI updates it.
+- `DESIGN.md` — design tokens, color palette, typography, spacing, motion intent. Same format everywhere.
+- `brand-spec.md` — extracted brand tokens with CSS variables. Consumed by all build skills.
 
-**No memory required.** Just say what you want. The orchestrator handles routing.
+**No memory required across sessions.** At session start, read `PRODUCT.md`, `DESIGN.md`, and `brand-spec.md` if they exist. That is the complete project context.

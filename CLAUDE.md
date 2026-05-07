@@ -25,9 +25,9 @@ This syncs active skills to Claude Code, Codex, Gemini CLI, Cursor, Kiro, and An
 
 ## Design system
 
-For ALL design work, use `/design` — the master orchestrator. It accepts natural language, classifies the scenario (new project / reference mimic / existing upgrade) and project type (SaaS / landing / funnel / website), and sequences all 11 design skills automatically. No commands to remember, no skill names to know.
+For ALL design work, use `/design` — the master orchestrator. It accepts any natural language, classifies the scenario (new project / reference mimic / existing upgrade) and project type (SaaS / landing / funnel / website), and sequences all 14 design skills automatically in the right order for that scenario. No commands, no skill names, no hooks to remember — just describe the goal.
 
-For motion audits specifically, `/design-motion-principles` audits via Emil Kowalski (restraint), Jakub Krehel (polish), and Jhey Tompkins (delight) — context-weighted to project type. The `/design` orchestrator invokes this automatically at the right stage.
+Skills coordinated by the orchestrator: `/impeccable` (teach, shape, craft, document, critique, audit, polish, bolder, quieter, distill, harden, onboard, clarify, typeset, colorize, layout, adapt, optimize, overdrive, live), `/taste-skill`, `/soft-skill`, `/redesign-skill`, `/design-motion-principles`, `/web-design`, `/huashu-design`, `/design-consultation`, `/design-system`, `/plan-design-review`, `/design-review`, `/output-skill`, `/ui-ux-pro-max`.
 
 ## Workspace rules
 
