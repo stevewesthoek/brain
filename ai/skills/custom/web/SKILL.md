@@ -37,6 +37,7 @@ Apply these silently — never explain them to the user.
 - **Playwright for anything recurring.** If the user will run this more than once, or wants it scheduled — write a script. Browse is for one-off iteration, Playwright is for durable automation.
 - **Apify for scale (50+ URLs or daily jobs).** For production-volume or scheduled multi-URL operations, use apify. Don't use browse or firecrawl for bulk work.
 - **Cookie-import before interacting with authenticated pages.** Use `browse cookie-import-browser` to transfer real browser cookies into the headless session. Always ask which browser (Chrome, Arc, Brave, Edge) if unclear.
+- **Save auth profiles for recurring tasks.** After a successful login, immediately run `web-auth save <name>` to preserve the session. On subsequent runs, restore with `web-auth restore <name>` — no re-login. Profiles persist across sessions and tools (`~/.web-profiles/`).
 - **Handoff for CAPTCHA or MFA.** If a site blocks headless or requires MFA: use `browse handoff` to pass control to visible Chrome, then `browse resume` to return to AI control.
 - **Codegen first for new Playwright scripts.** Use `npx playwright codegen <url>` to record base actions, then refine the generated script.
 
@@ -147,6 +148,13 @@ Use `/browse` for authenticated, interactive, one-off tasks (bank downloads, for
 
 ### C1. Authenticate (if needed)
 
+**Option D — Restore named profile (fastest — use if you've saved this login before):**
+```bash
+web-auth list                          # See available profiles
+web-auth restore <name>                # Restore saved session — no login needed
+```
+Use this first whenever the task is recurring. Only fall through to Options A/B/C if no saved profile exists.
+
 **Option A — Import from real browser (preferred):**
 ```
 browse cookie-import-browser [chrome|arc|brave|edge] [--domain <domain>]
@@ -193,8 +201,10 @@ browse handoff "This site is blocking headless — please complete the challenge
 browse resume
 ```
 
-### C4. If this task will recur → upgrade to Workflow D
-If the user will do this again: say so and offer to write a Playwright script (Workflow D).
+### C4. If this task will recur → save profile + upgrade to Workflow D
+1. **Save the auth profile now** (don't wait): `web-auth save <name>` — next run starts from Option D (instant restore)
+2. **Offer to write a Playwright script** (Workflow D) that calls `web-auth restore <name>` at the start
+3. Suggest wiring to nightly scheduler or n8n if truly recurring
 
 ---
 
@@ -221,13 +231,17 @@ Records user interactions → outputs JS/TS script. Use this as the starting poi
 Playwright script anatomy:
 ```javascript
 const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
 
-  // Auth: load saved cookies (if needed)
-  // await context.addCookies(JSON.parse(fs.readFileSync('cookies.json')));
+  // Auth: restore named web-auth profile (if saved via `web-auth save <name>`)
+  // const profileData = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.web-profiles', '<name>.json')));
+  // await context.addCookies(profileData.cookies);
 
   const page = await context.newPage();
   await page.goto('<url>');
@@ -316,6 +330,7 @@ Standard n8n pattern:
 | `/browse` | `browse <command>` | Interactive browser | ✅ (cookie-import) | Persistent | Free | Testing, one-off auth flows, form interaction, screenshots |
 | `/playwright` | `npx playwright` | Scripted automation | ✅ (in script) | Programmatic | Free | Reusable scripts, E2E tests, scheduled automation |
 | `/apify` | `apify-multi` + n8n | Cloud actors | ✅ (built-in) | Per-run | $50/mo | 50+ URLs, daily monitoring, production-scale scraping |
+| `web-auth` | `web-auth save/restore/list/delete` | Auth profiles | — | Persistent | Free | Named session management — save once, restore across runs |
 
 ### Browse command quick-reference
 
@@ -349,6 +364,9 @@ Route directly to the right tool + command without asking the full intake questi
 | "check for JS errors" | browse | `goto` → `console --errors` |
 | "check accessibility" | browse | `goto` → `accessibility` |
 | "log into X" | browse | `cookie-import-browser` or `handoff` |
+| "use my saved X login / restore X profile / I already logged in before" | web-auth | `web-auth restore <name>` → `browse goto <url>` → continue workflow |
+| "save this login / remember this session" | web-auth | `web-auth save <name>` |
+| "show my saved logins / what profiles do I have" | web-auth | `web-auth list` |
 | "fill out this form" | browse | `goto` → `snapshot -i` → `fill` → `click` |
 | "download my bank statements (once)" | browse | `cookie-import-browser` → `goto` → `click` download |
 | "download my bank statements (automated)" | playwright | codegen → script with `waitForEvent('download')` |

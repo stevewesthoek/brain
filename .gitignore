@@ -136,3 +136,6 @@ operations/system-configs/shell/.zshrc.local
 
 # Security auto-approval log — local audit trail, not for git
 operations/security-auto-approvals.log
+
+# Web auth profiles — session tokens, never commit to git
+.web-profiles/
