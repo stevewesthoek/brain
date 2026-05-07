@@ -56,7 +56,7 @@ Classify directly from the user's message. Three dimensions: **Workflow** (what 
 
 | Workflow | Signals |
 |----------|---------|
-| **STRATEGY** | "find topics", "trending", "angles for", "hooks for", "discover", "what should I create" → routes to `/goviralbro-viral-flow` |
+| **STRATEGY** | "find topics", "trending", "angles for", "hooks for", "discover", "what should I create" → routes to `/viral-flow` |
 | **A: WRITE** | "script", "narration", "story", "write", "create dialogue", "outline" → with STRATEGY first (topic → angles → hooks → script) |
 | **B: VOICE** | "voiceover", "TTS", "generate audio", "narrate", "speech synthesis" |
 | **C: COMPOSE** | "render", "video", "reel", "compose", "combine audio + image", "make MP4" |
@@ -89,7 +89,7 @@ This workflow is powered by **Viral Flow** — the content strategy engine. It h
 ```
 User: "Find trending topics about AI automation for B2B founders"
         ↓
-Invoke /goviralbro-viral-flow DISCOVER
+Invoke /viral-flow DISCOVER
         ↓
 Returns: 5 ranked topics (trend + competition + audience fit)
         ↓
@@ -106,7 +106,7 @@ User selects one or asks for more
 ```
 User: "Generate angles for [topic]"
         ↓
-Invoke /goviralbro-viral-flow ANGLE
+Invoke /viral-flow ANGLE
         ↓
 Returns: 15 angles (5 per format: longform, shortform, LinkedIn)
         ↓
@@ -123,7 +123,7 @@ Each angle = Contrast Formula (old belief → new insight)
 ```
 User: "Generate hooks for [angle]"
         ↓
-Invoke /goviralbro-viral-flow HOOK
+Invoke /viral-flow HOOK
         ↓
 Returns: 3 hooks scored 0-100 based on:
   • Research-backed copywriting patterns (base)
@@ -144,7 +144,7 @@ Returns: 3 hooks scored 0-100 based on:
 ```
 User: "Build a script from [topic/angle/hook]"
         ↓
-Invoke /goviralbro-viral-flow SCRIPT
+Invoke /viral-flow SCRIPT
         ↓
 Returns: Complete script with:
   • Hook (opening, 10-20s)
@@ -526,7 +526,7 @@ Publish video. Within first hour, check:
 
 **What Happens:**
 ```
-↓ Orchestrator routes to /goviralbro-viral-flow
+↓ Orchestrator routes to /viral-flow
 
 🔥 DISCOVER: Found 5 trending topics on AI automation
   1. "AI replacing human jobs" (Trend: 92, ICP fit: 88)
@@ -557,7 +557,7 @@ Publish video. Within first hour, check:
 🎨 DESIGN: Making thumbnails via /design
   [Thumbnail 1: "No-code vs Engineers" with contrasting design...]
 
-📤 POST: Posting to YouTube and TikTok via /goviralbro-viral-flow
+📤 POST: Posting to YouTube and TikTok via /viral-flow
   ✓ YouTube: Posted (url)
   ✓ TikTok: Scheduled for tomorrow 3pm UTC
 
@@ -582,15 +582,15 @@ Ready to create video 2?
 
 **What Happens:**
 ```
-↓ /goviralbro-viral-flow DISCOVER
+↓ /viral-flow DISCOVER
   Trending in fitness: [5 topics]
 
-↓ /goviralbro-viral-flow ANGLE (format: shortform for Instagram)
+↓ /viral-flow ANGLE (format: shortform for Instagram)
   Generated 15 angles (5 per format)
 
 ✓ Showing top 3 angles for Instagram Reels
 
-↓ /goviralbro-viral-flow SCRIPT (format: shortform, x3)
+↓ /viral-flow SCRIPT (format: shortform, x3)
   Generated 3 complete scripts (45-60 seconds each)
 
 Ready to:
@@ -739,7 +739,7 @@ Pipeline complete. All episodes scripted, voiced, rendered, designed, and posted
 
 | Tool | Location | Use when |
 |------|----------|----------|
-| **`/goviralbro-viral-flow`** | **`custom/goviralbro-viral-flow/SKILL.md`** | **STRATEGY layer: discover topics, generate angles, score hooks, build scripts, analyze performance, post to platforms. Routes everything: topic → script → posting.** |
+| **`/viral-flow`** | **`custom/viral-flow/SKILL.md`** | **STRATEGY layer: discover topics, generate angles, score hooks, build scripts, analyze performance, post to platforms. Routes everything: topic → script → posting.** |
 | `/stb-pipeline` | `custom/stb-pipeline/SKILL.md` | Narrated slideshow episodes — SSML TTS + audio mixing + YouTube rendering (battle-tested) |
 | `/ffmpeg` | `custom/ffmpeg/ffmpeg/SKILL.md` | Audio mixing, video composition, format conversion, cropping, scaling, encoding |
 | `/design` | `custom/design/SKILL.md` | Thumbnail design, cover graphics, motion graphics, visual polish |
@@ -758,14 +758,14 @@ Pipeline complete. All episodes scripted, voiced, rendered, designed, and posted
 
 | User says | Workflow | Primary tool(s) |
 |-----------|----------|-----------------|
-| **"find trending topics about X"** | **STRATEGY: DISCOVER** | **`/goviralbro-viral-flow`** |
-| **"generate angles for this topic"** | **STRATEGY: ANGLE** | **`/goviralbro-viral-flow`** |
-| **"what hooks work for my audience?"** | **STRATEGY: HOOK** | **`/goviralbro-viral-flow`** |
-| **"build a script from this topic / angle / hook"** | **STRATEGY: SCRIPT** | **`/goviralbro-viral-flow`** |
-| **"how did my video perform?"** | **STRATEGY: ANALYZE** | **`/goviralbro-viral-flow`** |
-| **"post to YouTube and TikTok"** | **STRATEGY: POST** | **`/goviralbro-viral-flow`** |
-| **"manage my accounts / add a channel"** | **STRATEGY: ACCOUNT** | **`/goviralbro-viral-flow`** |
-| **"batch produce 5 videos on this topic"** | **STRATEGY: SERIES** | **`/goviralbro-viral-flow`** |
+| **"find trending topics about X"** | **STRATEGY: DISCOVER** | **`/viral-flow`** |
+| **"generate angles for this topic"** | **STRATEGY: ANGLE** | **`/viral-flow`** |
+| **"what hooks work for my audience?"** | **STRATEGY: HOOK** | **`/viral-flow`** |
+| **"build a script from this topic / angle / hook"** | **STRATEGY: SCRIPT** | **`/viral-flow`** |
+| **"how did my video perform?"** | **STRATEGY: ANALYZE** | **`/viral-flow`** |
+| **"post to YouTube and TikTok"** | **STRATEGY: POST** | **`/viral-flow`** |
+| **"manage my accounts / add a channel"** | **STRATEGY: ACCOUNT** | **`/viral-flow`** |
+| **"batch produce 5 videos on this topic"** | **STRATEGY: SERIES** | **`/viral-flow`** |
 | "write a script / narration / story" | A: WRITE | Claude (direct) or follow STRATEGY first |
 | "write SSML / narration for episode X" | A: WRITE | STB pattern (SSML reference) |
 | "generate voiceover / TTS from this script" | B: VOICE | MSTTS (STB) / ElevenLabs / OpenAI |
@@ -777,12 +777,12 @@ Pipeline complete. All episodes scripted, voiced, rendered, designed, and posted
 | "make podcast video / audio + waveform" | C: COMPOSE (D) | `/ffmpeg` + waveform filter |
 | "make a thumbnail / design the cover" | D: DESIGN | `/design` orchestrator |
 | "create an intro / outro graphic" | D: DESIGN | `/design` or `/ffmpeg` |
-| "post this to YouTube" | E: POST | YouTube Studio API (stub) / `/goviralbro-viral-flow` POST |
-| "upload to TikTok" | E: POST | `/goviralbro-viral-flow` POST or Manual / `/n8n` |
-| "upload to Instagram Reels" | E: POST | `/goviralbro-viral-flow` POST or `/n8n` webhook |
-| "post to LinkedIn / Facebook" | E: POST | `/goviralbro-viral-flow` POST or `/n8n` webhook |
-| "share on Bluesky / X" | E: POST | `/goviralbro-viral-flow` POST or X v2 API (stub) |
-| "schedule posting for tomorrow" | E: POST | `/goviralbro-viral-flow` POST or Platform scheduler / `/n8n` |
+| "post this to YouTube" | E: POST | YouTube Studio API (stub) / `/viral-flow` POST |
+| "upload to TikTok" | E: POST | `/viral-flow` POST or Manual / `/n8n` |
+| "upload to Instagram Reels" | E: POST | `/viral-flow` POST or `/n8n` webhook |
+| "post to LinkedIn / Facebook" | E: POST | `/viral-flow` POST or `/n8n` webhook |
+| "share on Bluesky / X" | E: POST | `/viral-flow` POST or X v2 API (stub) |
+| "schedule posting for tomorrow" | E: POST | `/viral-flow` POST or Platform scheduler / `/n8n` |
 | "run the full pipeline / batch produce" | F: PIPELINE | STRATEGY → A→B→C→D→E (checkpoint-resume) |
 | "produce episode X through Y" | F: PIPELINE | STRATEGY + STB batch pattern |
 | "monthly production run" | F: PIPELINE | STRATEGY + F1-F6 (complete workflow) |
