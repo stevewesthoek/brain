@@ -56,12 +56,13 @@ Classify directly from the user's message. Three dimensions: **Workflow** (what 
 
 | Workflow | Signals |
 |----------|---------|
-| **A: WRITE** | "script", "narration", "story", "write", "create dialogue", "outline" |
+| **STRATEGY** | "find topics", "trending", "angles for", "hooks for", "discover", "what should I create" → routes to `/goviralbro-viral-flow` |
+| **A: WRITE** | "script", "narration", "story", "write", "create dialogue", "outline" → with STRATEGY first (topic → angles → hooks → script) |
 | **B: VOICE** | "voiceover", "TTS", "generate audio", "narrate", "speech synthesis" |
 | **C: COMPOSE** | "render", "video", "reel", "compose", "combine audio + image", "make MP4" |
 | **D: DESIGN** | "thumbnail", "cover", "motion", "intro", "graphic", "polish visual" |
 | **E: POST** | "upload", "post", "publish", "schedule", "send to platform", "share" |
-| **F: PIPELINE** | "pipeline", "batch", "episode", "full production", "monthly", "series" |
+| **F: PIPELINE** | "pipeline", "batch", "episode", "full production", "monthly", "series" → integrates STRATEGY (topic→script) + A–E |
 
 | Format | Signals |
 |--------|---------|
@@ -77,9 +78,149 @@ Classify directly from the user's message. Three dimensions: **Workflow** (what 
 
 ---
 
+## Workflow STRATEGY: Content Discovery & Ideation
+
+**Trigger:** "find trending topics", "what should I create", "generate angles", "what hooks work", "discover content ideas"
+
+This workflow is powered by **Viral Flow** — the content strategy engine. It handles discovery → angles → hooks → scripting before production begins.
+
+### STRATEGY1. Discover Trending Topics
+
+```
+User: "Find trending topics about AI automation for B2B founders"
+        ↓
+Invoke /goviralbro-viral-flow DISCOVER
+        ↓
+Returns: 5 ranked topics (trend + competition + audience fit)
+        ↓
+User selects one or asks for more
+```
+
+**What happens:**
+- Viral Flow scans YouTube, Reddit, custom sources
+- Ranks by: trend_score (50%) + low-competition (30%) + ICP fit (20%)
+- Shows: title, trend score, competition, ICP fit, suggested angles preview
+
+### STRATEGY2. Generate 15 Unique Angles
+
+```
+User: "Generate angles for [topic]"
+        ↓
+Invoke /goviralbro-viral-flow ANGLE
+        ↓
+Returns: 15 angles (5 per format: longform, shortform, LinkedIn)
+        ↓
+Each angle = Contrast Formula (old belief → new insight)
+```
+
+**What happens:**
+- Viral Flow applies the Contrast Formula
+- Generates 5 angles per format (YouTube, TikTok, LinkedIn)
+- Shows: angle text, format, contrast pair, target emotion, recommended hook pattern
+
+### STRATEGY3. Generate 3 Compelling Hooks
+
+```
+User: "Generate hooks for [angle]"
+        ↓
+Invoke /goviralbro-viral-flow HOOK
+        ↓
+Returns: 3 hooks scored 0-100 based on:
+  • Research-backed copywriting patterns (base)
+  • Agent brain learning (what worked for YOUR audience)
+  • Emotional resonance + topic fit
+```
+
+**Hook patterns (6 research-backed):**
+1. Curiosity gap — "This one thing..."
+2. Fear/urgency — "By next Friday..."
+3. Benefit-driven — "Learn how to..."
+4. Contrarian — "Everyone's wrong about..."
+5. Pattern interrupt — "Stop scrolling"
+6. Social proof — "10M people learned..."
+
+### STRATEGY4. Build Production-Ready Script
+
+```
+User: "Build a script from [topic/angle/hook]"
+        ↓
+Invoke /goviralbro-viral-flow SCRIPT
+        ↓
+Returns: Complete script with:
+  • Hook (opening, 10-20s)
+  • Body (main ideas, 30-120s)
+  • CTA (closing)
+  • Estimated duration
+  • Key talking points
+  • Format-specific notes
+```
+
+**What happens:**
+- Viral Flow generates script with structure
+- Accounts for platform (YouTube, TikTok, LinkedIn format differences)
+- Ready for TTS or human voiceover
+- Passes to Workflow A: WRITE (if user needs editing)
+
+### STRATEGY5. Offer Next Steps
+
+After script generation:
+> "Script ready (4:32 longform). Next: generate voiceover (Workflow B) or post directly (Workflow E)?"
+
+---
+
+## When to Use STRATEGY vs Other Workflows
+
+| User Says | Route |
+|-----------|-------|
+| "Find topics about AI" | STRATEGY (Viral Flow discover) |
+| "Generate 15 angles" | STRATEGY (Viral Flow angle) |
+| "What hooks work?" | STRATEGY (Viral Flow hook) |
+| "Build a script" | STRATEGY (Viral Flow script) or A: WRITE (if user prefers manual) |
+| "I have a script, generate TTS" | B: VOICE (skip STRATEGY) |
+| "I have audio + image, render video" | C: COMPOSE (skip A, B, STRATEGY) |
+| "I have video ready, post it" | E: POST (skip everything else) |
+| "Full pipeline: topic to posting" | STRATEGY → A → B → C → D → E (F: PIPELINE) |
+
+---
+
+## Integration: STRATEGY + A: WRITE
+
+**When user has a script but needs tweaking:**
+
+1. STRATEGY generates production-ready script (D workflow)
+2. User reviews
+3. If edits needed → A: WRITE (use Claude directly)
+4. Approved script → B: VOICE (TTS generation)
+
+**Natural language example:**
+```
+User: "Create a video about AI safety. Find trends, generate angles, pick the best hook, and write me a script."
+
+↓ Orchestrator routes:
+
+STRATEGY: DISCOVER
+  ← "Found 5 trending topics on AI safety"
+
+STRATEGY: ANGLE
+  ← "Generated 15 angles. Here's the top one:"
+
+STRATEGY: HOOK
+  ← "Generated 3 hooks. Top scoring: [contrarian hook] (92%)"
+
+STRATEGY: SCRIPT
+  ← "Production-ready script (4:32 longform)"
+
+A: WRITE
+  ← "Script approved. Next: voiceover?"
+```
+
+---
+
 ## Workflow A: WRITE
 
 **Trigger:** "write a script", "create narration", "outline a story", "structure this for TTS"
+
+**Note:** This workflow is optional if STRATEGY + SCRIPT already generated production-ready content. Use Workflow A only if user needs manual scripting or heavy editing.
 
 ### A1. Classify video format and audience
 
@@ -376,6 +517,150 @@ Publish video. Within first hour, check:
 
 ---
 
+## User Experience Examples
+
+### Example 1: Natural Language (No Commands, No Skill Names)
+
+**User:**
+> "I want to create videos about AI automation for B2B SaaS founders. Find trending topics, generate angles, create compelling scripts, design thumbnails, and post to YouTube and TikTok. How many videos can I batch produce per week?"
+
+**What Happens:**
+```
+↓ Orchestrator routes to /goviralbro-viral-flow
+
+🔥 DISCOVER: Found 5 trending topics on AI automation
+  1. "AI replacing human jobs" (Trend: 92, ICP fit: 88)
+  2. "No-code AI tools shipping faster than engineers" (Trend: 87, ICP fit: 92)
+  [... 3 more topics ...]
+
+💡 ANGLE: Generated 15 angles for topic #2
+  Longform angles (YouTube):
+    • "No-code isn't replacing engineers—it's changing what coding means"
+    • "Why most no-code AI fails (and how to fix it)"
+  Shortform angles (TikTok):
+    • "Speed advantage: no-code vs engineers"
+    • "Cost comparison that might surprise you"
+  [... LinkedIn angles ...]
+
+🎣 HOOK: Generated 3 hooks for top angle
+  1. "Everyone's building no-code wrong" (92% confidence, contrarian)
+  2. "This no-code tool saved me 40 hours last month" (87% confidence, social proof)
+  3. "What nobody tells you about no-code" (81% confidence, curiosity gap)
+
+📝 SCRIPT: Production-ready script (4:32 longform)
+  [Full script with hook, body, CTA, key points...]
+
+✓ Script approved and ready for voiceover
+
+↓ Now in /video orchestrator
+
+🎨 DESIGN: Making thumbnails via /design
+  [Thumbnail 1: "No-code vs Engineers" with contrasting design...]
+
+📤 POST: Posting to YouTube and TikTok via /goviralbro-viral-flow
+  ✓ YouTube: Posted (url)
+  ✓ TikTok: Scheduled for tomorrow 3pm UTC
+
+BATCH RECOMMENDATION:
+  You can produce 3-4 videos/week sustainably:
+  • Monday: Topic discovery + angle generation
+  • Tuesday-Wednesday: Script + voiceover + composition
+  • Thursday: Design + thumbnails
+  • Friday-Saturday: Posting + scheduling + monitoring
+
+Ready to create video 2?
+```
+
+**No skill names, no commands, no API calls visible. Just natural language → results.**
+
+---
+
+### Example 2: Content Strategy Workflow
+
+**User:**
+> "What's trending in fitness right now? Generate angles that work for Instagram Reels. I want 3 short scripts."
+
+**What Happens:**
+```
+↓ /goviralbro-viral-flow DISCOVER
+  Trending in fitness: [5 topics]
+
+↓ /goviralbro-viral-flow ANGLE (format: shortform for Instagram)
+  Generated 15 angles (5 per format)
+
+✓ Showing top 3 angles for Instagram Reels
+
+↓ /goviralbro-viral-flow SCRIPT (format: shortform, x3)
+  Generated 3 complete scripts (45-60 seconds each)
+
+Ready to:
+  • Record with mobile phone (vertical 9:16)
+  • Send to voiceover artist
+  • Use TTS for narration
+  • Post directly to Instagram
+```
+
+**User only cares about:** trending topics → angles → scripts. The orchestrator handles routing to Viral Flow.
+
+---
+
+### Example 3: Full Production Pipeline
+
+**User:**
+> "Run the full pipeline for my fitness channel. Produce 4 episodes this week. Use my preferred YouTube format (educational, 5-10 minutes)."
+
+**What Happens:**
+```
+↓ STRATEGY + Workflows A-F:
+
+STRATEGY:
+  → Discover: Find 4 trending fitness topics
+  → Angles: Generate 15 angles per topic
+  → Hooks: Score 3 hooks per angle
+  → Scripts: Build 4 complete longform scripts (format: educational)
+
+A: WRITE
+  → Scripts approved for production
+
+B: VOICE
+  → TTS all 4 scripts (your configured voice/service)
+  → Output: 4 narration files
+
+C: COMPOSE
+  → Compose: image + audio → YouTube landscape MP4
+  → Output: 4 videos (1080p, 16:9, YouTube-ready)
+
+D: DESIGN
+  → Design 4 thumbnails (fitness hooks, high contrast, text bold)
+  → Output: 4 PNG files
+
+E: POST
+  → Post to YouTube channel (all 4 videos)
+  → Schedule for: Tue/Wed/Thu/Fri 10am UTC
+  → Add titles, descriptions, tags
+
+F: PIPELINE (Checkpoint Resume)
+  → Saves state after each stage
+  → If something fails, resume from last checkpoint
+  → All 4 episodes tracked in manifest.json
+
+FINAL MANIFEST:
+  episode-001:
+    script: ✓ production/scripts/ep1.md
+    audio: ✓ production/audio/ep1.wav
+    video: ✓ production/video/ep1.mp4
+    thumbnail: ✓ production/assets/ep1.png
+    youtube: ✓ posted 2026-05-08T10:00Z (URL)
+  [... episodes 2-4 ...]
+
+All 4 episodes produced and posted.
+Next week's batch ready to plan?
+```
+
+**User specifies: topic count, format, platform. Orchestrator handles everything.**
+
+---
+
 ## Workflow F: PIPELINE
 
 **Trigger:** "run the full pipeline", "batch produce episodes", "create episode X through Z", "monthly production run"
@@ -454,6 +739,7 @@ Pipeline complete. All episodes scripted, voiced, rendered, designed, and posted
 
 | Tool | Location | Use when |
 |------|----------|----------|
+| **`/goviralbro-viral-flow`** | **`custom/goviralbro-viral-flow/SKILL.md`** | **STRATEGY layer: discover topics, generate angles, score hooks, build scripts, analyze performance, post to platforms. Routes everything: topic → script → posting.** |
 | `/stb-pipeline` | `custom/stb-pipeline/SKILL.md` | Narrated slideshow episodes — SSML TTS + audio mixing + YouTube rendering (battle-tested) |
 | `/ffmpeg` | `custom/ffmpeg/ffmpeg/SKILL.md` | Audio mixing, video composition, format conversion, cropping, scaling, encoding |
 | `/design` | `custom/design/SKILL.md` | Thumbnail design, cover graphics, motion graphics, visual polish |
@@ -472,7 +758,15 @@ Pipeline complete. All episodes scripted, voiced, rendered, designed, and posted
 
 | User says | Workflow | Primary tool(s) |
 |-----------|----------|-----------------|
-| "write a script / narration / story" | A: WRITE | Claude (direct) |
+| **"find trending topics about X"** | **STRATEGY: DISCOVER** | **`/goviralbro-viral-flow`** |
+| **"generate angles for this topic"** | **STRATEGY: ANGLE** | **`/goviralbro-viral-flow`** |
+| **"what hooks work for my audience?"** | **STRATEGY: HOOK** | **`/goviralbro-viral-flow`** |
+| **"build a script from this topic / angle / hook"** | **STRATEGY: SCRIPT** | **`/goviralbro-viral-flow`** |
+| **"how did my video perform?"** | **STRATEGY: ANALYZE** | **`/goviralbro-viral-flow`** |
+| **"post to YouTube and TikTok"** | **STRATEGY: POST** | **`/goviralbro-viral-flow`** |
+| **"manage my accounts / add a channel"** | **STRATEGY: ACCOUNT** | **`/goviralbro-viral-flow`** |
+| **"batch produce 5 videos on this topic"** | **STRATEGY: SERIES** | **`/goviralbro-viral-flow`** |
+| "write a script / narration / story" | A: WRITE | Claude (direct) or follow STRATEGY first |
 | "write SSML / narration for episode X" | A: WRITE | STB pattern (SSML reference) |
 | "generate voiceover / TTS from this script" | B: VOICE | MSTTS (STB) / ElevenLabs / OpenAI |
 | "create audio / make the narration" | B: VOICE | `/ffmpeg` normalize (post-TTS) |
@@ -483,17 +777,17 @@ Pipeline complete. All episodes scripted, voiced, rendered, designed, and posted
 | "make podcast video / audio + waveform" | C: COMPOSE (D) | `/ffmpeg` + waveform filter |
 | "make a thumbnail / design the cover" | D: DESIGN | `/design` orchestrator |
 | "create an intro / outro graphic" | D: DESIGN | `/design` or `/ffmpeg` |
-| "post this to YouTube" | E: POST | YouTube Studio API (stub) / manual |
-| "upload to TikTok" | E: POST | Manual / `/n8n` webhook |
-| "upload to Instagram Reels" | E: POST | `/n8n` webhook |
-| "post to LinkedIn / Facebook" | E: POST | `/n8n` webhook |
-| "share on Bluesky / X" | E: POST | X v2 API (stub) / ATProto (stub) / manual |
-| "schedule posting for tomorrow" | E: POST | Platform scheduler / `/n8n` |
-| "run the full pipeline / batch produce" | F: PIPELINE | A→B→C→D→E (checkpoint-resume) |
-| "produce episode X through Y" | F: PIPELINE | STB batch pattern |
-| "monthly production run" | F: PIPELINE | F1-F6 (complete workflow) |
-| "what format should I use for TikTok?" | (none — info) | Answer: 1080×1920, <60s, vertical, 9:16 aspect |
-| "which platform should I post to first?" | (none — strategy) | Answer: YouTube first (SEO), then TikTok (engagement), then Instagram (reach) |
+| "post this to YouTube" | E: POST | YouTube Studio API (stub) / `/goviralbro-viral-flow` POST |
+| "upload to TikTok" | E: POST | `/goviralbro-viral-flow` POST or Manual / `/n8n` |
+| "upload to Instagram Reels" | E: POST | `/goviralbro-viral-flow` POST or `/n8n` webhook |
+| "post to LinkedIn / Facebook" | E: POST | `/goviralbro-viral-flow` POST or `/n8n` webhook |
+| "share on Bluesky / X" | E: POST | `/goviralbro-viral-flow` POST or X v2 API (stub) |
+| "schedule posting for tomorrow" | E: POST | `/goviralbro-viral-flow` POST or Platform scheduler / `/n8n` |
+| "run the full pipeline / batch produce" | F: PIPELINE | STRATEGY → A→B→C→D→E (checkpoint-resume) |
+| "produce episode X through Y" | F: PIPELINE | STRATEGY + STB batch pattern |
+| "monthly production run" | F: PIPELINE | STRATEGY + F1-F6 (complete workflow) |
+| "what format should I use for TikTok?" | (info) | Answer: 1080×1920, <60s, vertical, 9:16 aspect |
+| "which platform should I post to first?" | (strategy) | Answer: YouTube first (SEO), then TikTok (engagement), then Instagram (reach) |
 
 ---
 
