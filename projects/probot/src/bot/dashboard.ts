@@ -1689,6 +1689,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
     <button class="tab-btn" data-tab="domains">Domains <span class="tab-count" id="cnt-domains"></span></button>
     <button class="tab-btn" data-tab="tunnels">Tunnels <span class="tab-count" id="cnt-tunnels"></span></button>
     <button class="tab-btn" data-tab="local-apps">Local Apps <span class="tab-count" id="cnt-local-apps"></span></button>
+    <button class="tab-btn" data-tab="viral-flow">Studio <span class="tab-count" id="cnt-viral-flow"></span></button>
   </nav>
   <div class="tab-panel active" id="tab-sessions"><div class="loading"><div class="spin"></div>Loading...</div></div>
   <div class="tab-panel" id="tab-dokploy"></div>
@@ -1700,6 +1701,7 @@ header{border-bottom:1px solid var(--border);background:var(--surface);flex-shri
   <div class="tab-panel" id="tab-domains"></div>
   <div class="tab-panel" id="tab-tunnels"></div>
   <div class="tab-panel" id="tab-local-apps"></div>
+  <div class="tab-panel" id="tab-viral-flow"><div class="loading"><div class="spin"></div>Loading Studio...</div></div>
 </div>
 <script>
 let _d=null;
@@ -1763,6 +1765,87 @@ function fmtReset(iso){
   if(dm<=0)return'Resetting…';
   return dm<60?'in '+dm+'m':'in '+Math.floor(dm/60)+'h '+String(dm%60).padStart(2,'0')+'m';
 }
+/* Viral Flow rendering functions */
+function renderViralFlowStudio(status){
+  if(!status) return '<div class="nr-err">Failed to load studio data</div>';
+  const {activeTopics,recentScripts,batchStatus,accountCount,performanceMetrics}=status;
+
+  let html='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;padding:20px;grid-auto-flow:dense">';
+
+  // Panel 1: Content Strategy
+  html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc">';
+  html+='<h3 style="margin:0 0 12px;font-size:1.1em">📚 Content Strategy</h3>';
+  html+='<div style="max-height:250px;overflow-y:auto;font-size:0.9em">';
+  if(activeTopics?.length){
+    activeTopics.forEach(t=>{
+      html+='<div style="padding:8px;margin-bottom:8px;border-left:3px solid #007bff;background:white;border-radius:4px"><strong>'+esc(t.title.substring(0,40))+'</strong><br><span style="color:#666">📈 '+t.trend_score+'%</span></div>';
+    });
+  }else{
+    html+='<p style="color:#999;text-align:center">No topics discovered</p>';
+  }
+  html+='</div></section>';
+
+  // Panel 2: Brain Insights
+  html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc">';
+  html+='<h3 style="margin:0 0 12px;font-size:1.1em">🧠 Audience Insights</h3>';
+  html+='<div style="font-size:0.9em;line-height:1.6">';
+  html+='<div style="padding:8px;margin-bottom:6px;background:white;border-radius:4px"><strong>Videos:</strong> '+performanceMetrics.total_videos+'</div>';
+  html+='<div style="padding:8px;margin-bottom:6px;background:white;border-radius:4px"><strong>Total Views:</strong> '+(performanceMetrics.total_views||0).toLocaleString()+'</div>';
+  html+='<div style="padding:8px;margin-bottom:6px;background:white;border-radius:4px"><strong>Engagement:</strong> '+(performanceMetrics.avg_engagement_rate*100).toFixed(1)+'%</div>';
+  html+='<div style="padding:8px;background:white;border-radius:4px"><strong>Accounts:</strong> '+accountCount+'</div>';
+  html+='</div></section>';
+
+  // Panel 3: Batch Status
+  html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc">';
+  html+='<h3 style="margin:0 0 12px;font-size:1.1em">⚙️ Batch Status</h3>';
+  if(batchStatus){
+    html+='<div style="font-size:0.85em">';
+    html+='<div style="margin-bottom:10px"><strong>Stage:</strong> '+esc(batchStatus.stage)+'</div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+    const stages=['discover','script','voice','post'];
+    stages.forEach(stage=>{
+      const prog=batchStatus.progress[stage];
+      const isComplete=prog?.completed===true;
+      html+='<div style="padding:6px;text-align:center;border-radius:4px;background:'+(isComplete?'#d4edda':'#f8f9fa')+';border:1px solid #ddd">'+(isComplete?'✓':'○')+' '+stage+'</div>';
+    });
+    html+='</div>';
+    html+='<button onclick="alert(\'Resume functionality coming soon\')" style="margin-top:10px;width:100%;padding:6px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em">Resume</button>';
+    html+='</div>';
+  }else{
+    html+='<p style="color:#999;text-align:center">No active batch</p>';
+  }
+  html+='</section>';
+
+  // Panel 4: Performance (spans 2 rows)
+  html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc;grid-row:span 2">';
+  html+='<h3 style="margin:0 0 12px;font-size:1.1em">📊 Top Videos</h3>';
+  html+='<div style="max-height:300px;overflow-y:auto;font-size:0.85em">';
+  if(performanceMetrics.top_videos?.length){
+    performanceMetrics.top_videos.slice(0,8).forEach(v=>{
+      html+='<div style="padding:8px;margin-bottom:6px;border-left:2px solid #28a745;background:white;border-radius:4px"><strong>'+esc(v.title.substring(0,30))+'</strong><br><span style="color:#666">'+v.views.toLocaleString()+' views</span></div>';
+    });
+  }else{
+    html+='<p style="color:#999;text-align:center">No videos yet</p>';
+  }
+  html+='</div></section>';
+
+  // Panel 5: Recent Scripts (spans 2 rows)
+  html+='<section style="border:1px solid #ddd;border-radius:8px;padding:15px;background:#fafbfc;grid-row:span 2">';
+  html+='<h3 style="margin:0 0 12px;font-size:1.1em">✍️ Recent Scripts</h3>';
+  html+='<div style="max-height:300px;overflow-y:auto;font-size:0.85em">';
+  if(recentScripts?.length){
+    recentScripts.slice(0,8).forEach(s=>{
+      html+='<div style="padding:8px;margin-bottom:6px;border-left:2px solid #fd7e14;background:white;border-radius:4px"><strong>'+esc(s.title.substring(0,30))+'</strong><br><span style="color:#666">'+s.format+' • '+s.estimated_duration+'m</span></div>';
+    });
+  }else{
+    html+='<p style="color:#999;text-align:center">No scripts yet</p>';
+  }
+  html+='</div></section>';
+
+  html+='</div>';
+  return html;
+}
+
 /* tab switching */
 document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b));
@@ -1774,6 +1857,16 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>
       fetch('/api/local-apps')
         .then(r=>r.json())
         .then(data=>{panel.innerHTML=renderLocalApps(data);})
+        .catch(e=>{panel.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
+    }
+  }
+  if(b.dataset.tab==='viral-flow'){
+    const panel=document.getElementById('tab-viral-flow');
+    if(panel){
+      panel.innerHTML='<div class="loading"><div class="spin"></div>Loading Studio...</div>';
+      fetch('/api/viral-flow/status')
+        .then(r=>r.json())
+        .then(data=>{panel.innerHTML=renderViralFlowStudio(data);})
         .catch(e=>{panel.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
     }
   }
@@ -3280,6 +3373,85 @@ export function createDashboardServer(app: AppContext): http.Server {
         const data = await getDashboardData(app);
         res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache", "Access-Control-Allow-Origin": "*" });
         res.end(JSON.stringify(data));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(err) }));
+      }
+      return;
+    }
+
+    // ─── Viral Flow API endpoints ─────────────────────────────────────────────
+    if (url.startsWith("/api/viral-flow/")) {
+      try {
+        const { getViralFlowStatus, getTopics, getBrainInsights, getAccounts, addAccount, getPerformanceMetrics, getBatchStatus } = await import("../services/viral-flow.js");
+
+        if (url === "/api/viral-flow/status") {
+          const status = await getViralFlowStatus();
+          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+          res.end(JSON.stringify(status));
+          return;
+        }
+
+        if (url === "/api/viral-flow/topics") {
+          const topics = await getTopics();
+          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+          res.end(JSON.stringify(topics));
+          return;
+        }
+
+        if (url === "/api/viral-flow/brain") {
+          const insights = await getBrainInsights();
+          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+          res.end(JSON.stringify(insights));
+          return;
+        }
+
+        if (url === "/api/viral-flow/accounts") {
+          const accounts = await getAccounts();
+          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+          res.end(JSON.stringify(accounts));
+          return;
+        }
+
+        if (url === "/api/viral-flow/performance") {
+          const metrics = await getPerformanceMetrics();
+          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+          res.end(JSON.stringify(metrics));
+          return;
+        }
+
+        if (url === "/api/viral-flow/batch") {
+          const batch = await getBatchStatus();
+          res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+          res.end(JSON.stringify(batch));
+          return;
+        }
+
+        if (req.method === "POST" && url === "/api/viral-flow/accounts/add") {
+          if (!isLocalDashboardRequest(req)) {
+            res.writeHead(403, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Viral Flow actions are only enabled on localhost." }));
+            return;
+          }
+          let body = "";
+          for await (const chunk of req) body += chunk;
+          const payload = JSON.parse(body) as Record<string, unknown>;
+
+          const result = await addAccount({
+            id: String(payload.id ?? ""),
+            platform: String(payload.platform ?? "youtube") as "youtube" | "tiktok" | "instagram" | "linkedin" | "facebook",
+            name: String(payload.name ?? ""),
+            status: "active",
+          });
+
+          res.writeHead(result.success ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+          return;
+        }
+
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Viral Flow endpoint not found" }));
+        return;
       } catch (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: String(err) }));
