@@ -34,7 +34,7 @@ Once the problem is understood well enough, immediately hand execution back to t
 | `gemini-flash` | Gemini Flash | **Free** | Stronger free model for long-context synthesis, structured brief generation, and higher-quality preprocessing before paid models |
 | `cheap-prep` | Claude Haiku 4.5 | Cheapest paid | **Default paid agent** for coding, triage, commits, fixes, and reviews; retry once with better scope before escalating |
 | `coder-default` | Claude Sonnet 4.6 | Mid paid | Escalate from Haiku only after verified difficulty: repeated failure, tightly coupled multi-file reasoning, or stronger instruction-following needs |
-| `deep-architect` | Claude Opus 4.6 | Expensive | Escalate from Sonnet only for high-blast-radius decisions, repeated Sonnet failure, or load-bearing architecture work |
+| `deep-architect` | Claude Opus 4.7 (Bedrock) | Expensive | Escalate from Sonnet only for high-blast-radius decisions, repeated Sonnet failure, or load-bearing architecture work |
 | `codex` | Codex CLI (`gpt-5.4-mini`, medium default) | Paid subscription | Parallel task delegation, code review, advisory second opinion; escalate by effort first, then model |
 
 **Cost priority (rough):**
@@ -49,7 +49,7 @@ Once the problem is understood well enough, immediately hand execution back to t
   - Use Flash-Lite first for bulk preprocessing, extraction, and task shaping
   - Use Flash when Lite is too shallow or synthesis quality matters
   - Use Pro only for rare deep reasoning where free tiers are insufficient
-- **Claude**: Haiku 4.5 -> Sonnet 4.6 -> Opus 4.6
+- **Claude**: Haiku 4.5 -> Sonnet 4.6 -> Opus 4.7 (AWS Bedrock)
   - Escalate only after the current tier has had a fair pass count and the task still justifies it
   - Compact context before escalation when failure appears scope-related rather than intelligence-related
 - **Codex**: cheap -> default -> hard -> risk -> critical
@@ -57,7 +57,7 @@ Once the problem is understood well enough, immediately hand execution back to t
 
 **De-escalation ladders:**
 - **Gemini**: Pro -> Flash -> Flash-Lite
-- **Claude**: Opus 4.6 -> Sonnet 4.6 -> Haiku 4.5
+- **Claude**: Opus 4.7 / latest stable Bedrock Opus -> Sonnet 4.6 -> Haiku 4.5
 - **Codex**: critical -> risk -> hard -> default -> cheap
 
 ---
@@ -100,7 +100,7 @@ Route automatically on every task — do not ask the user which model to use.
    - the task requires tightly coupled multi-file reasoning, OR
    - stronger consistency or instruction-following is clearly needed
 
-5. **Escalate to `deep-architect`** (Claude Opus 4.6) only when:
+5. **Escalate to `deep-architect`** (Claude Opus 4.7 via AWS Bedrock) only when:
    - Sonnet has failed twice, AND/OR
    - the task has high blast radius (prod data, auth, billing, migrations, shared infra), AND/OR
    - the decision is load-bearing and hard to reverse

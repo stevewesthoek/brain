@@ -55,6 +55,12 @@ For ALL video-related work — writing scripts, generating voiceovers, composing
 
 Underlying tools remain independent and directly callable: users can still invoke `/stb-pipeline`, `/ffmpeg`, `/design`, `/n8n` directly if they prefer.
 
+### Viral Flow Content Discovery & Strategy
+
+For ALL viral content strategy work — discovering trending topics, generating angles, scoring hooks, building scripts, analyzing performance, and multi-platform posting — use `/goviralbro`. The master content orchestrator classifies intent and routes automatically to Viral Flow core workflows: DISCOVER (trending topics), ANGLE (unique framing), HOOK (compelling openings), SCRIPT (full video content), ANALYZE (performance tracking), POST (multi-platform uploading), ACCOUNT (account management), and SERIES (batch grouping). Platform-agnostic: posts to YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, X, and custom platforms. Single natural-language entry point — just describe the task in natural language.
+
+Underlying tool (`Viral Flow` npm package at `/Users/Office/Repos/stevewesthoek/viralflow`) remains independent and directly callable: users can still invoke Viral Flow CLI directly if they prefer.
+
 ## Codebase comprehension & architecture
 
 For ALL codebase-related work — mapping project structure, understanding architecture, finding dependencies, querying cross-module relationships, extracting design rationale — use `/graphify`. The master orchestrator turns any folder (code, docs, PDFs, images, videos) into a queryable knowledge graph with interactive visualization. No commands, no API knowledge needed — just describe what you want to know about your project.

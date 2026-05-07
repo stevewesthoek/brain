@@ -1,0 +1,20 @@
+{
+  "name": "machine-brain",
+  "version": "1.0.0",
+  "description": "AI infrastructure, system configs, and skills for Claude Code, Codex, and Gemini",
+  "private": true,
+  "scripts": {
+    "models:sync:bedrock": "bash tools/scripts/models-sync-bedrock.sh",
+    "models:validate": "bash tools/scripts/models-validate.sh",
+    "sync-ai-skills": "node tools/scripts/sync-ai-skills.mjs",
+    "sync-credentials": "bash tools/scripts/sync-credentials.sh"
+  },
+  "keywords": [
+    "claude",
+    "bedrock",
+    "models",
+    "ai-infrastructure"
+  ],
+  "author": "Steve Westhoek",
+  "license": "MIT"
+}

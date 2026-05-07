@@ -1,7 +1,7 @@
 ---
 name: deep-architect
 description: Use only for hard problems: complex architecture decisions, major migrations, high-blast-radius refactors, ambiguous design tradeoffs, or when coder-default has failed repeatedly. Always compact context with cheap-prep first before invoking.
-model: claude-opus-4-6
+model: us.anthropic.claude-opus-4-7
 tools:
   - Read
   - Edit
