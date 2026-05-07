@@ -682,12 +682,12 @@ The orchestrators route to Viral Flow (strategy) → `/video` → `/design` (thu
 ## AI-Agnostic & IDE-Agnostic Operation
 
 This skill is pure Markdown + routing. Works identically on:
-- **Claude Code** — `/video` or natural language (auto-triggers Viral Flow routing)
-- **Codex CLI** — `/video` or `/goviralbro`
-- **Gemini CLI** — `/video` or `/goviralbro` via CLI
+- **Claude Code** — `/video` (auto-routes to Viral Flow strategy) or use directly via natural language
+- **Codex CLI** — `/video` or invoke directly
+- **Gemini CLI** — `/video` or invoke directly
 - **Cursor** — `.cursor/rules.md` or command palette
-- **Kiro IDE/CLI** — `/video` or `/goviralbro`
-- **All IDEs** — via skill symlink at `brain/ai/skills/active/goviralbro-viral-flow`
+- **Kiro IDE/CLI** — `/video` or invoke directly
+- **All IDEs** — via skill symlink at `brain/ai/skills/active/viral-flow`
 
 **Underlying tool remains independent:**
 - Viral Flow is a standalone npm package at `/Users/Office/Repos/stevewesthoek/viralflow`
