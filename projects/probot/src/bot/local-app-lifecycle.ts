@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { NormalizedLocalApp } from "./local-apps.js";
-import { resolveLocalAppCwd, resolveLocalAppLifecycleCommand } from "./local-apps.js";
+import { buildLocalAppRuntimeEnv, resolveLocalAppCwd, resolveLocalAppLifecycleCommand } from "./local-apps.js";
 import { getPortOccupants } from "./local-app-ports.js";
 
 const execFileAsync = promisify(execFile);
@@ -206,6 +206,7 @@ export async function stopLocalAppCleanly(
           cwd,
           timeout: 30000,
           maxBuffer: 10 * 1024 * 1024,
+          env: buildLocalAppRuntimeEnv(app, stopCommand),
         });
         console.log(`[LocalAppLifecycle] Stop command completed for ${app.name}`);
       } catch (err) {

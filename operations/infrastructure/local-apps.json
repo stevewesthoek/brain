@@ -40,7 +40,11 @@
     "databaseName": "saysthebible",
     "databaseUser": "saysthebible",
     "startupTimeoutMs": 120000,
-    "notes": "ProBot runs this from repoPath and injects PORT=3058 at launch. Local dev opens directly to /admin. The start and stop scripts both operate on the 3058 listener so the app can be restarted cleanly from ProBot. The production Dockerfile still uses PORT=3000."
+    "runtime": {
+      "pathPrepend": ["/Users/Office/.nvm/versions/node/v20.20.2/bin"],
+      "notes": "Says the Bible uses Next.js 14 and must run locally with Node 20. This runtime override is app-specific and does not change ProBot or other local apps."
+    },
+    "notes": "ProBot runs this from repoPath and injects PORT=3058 at launch. Local dev opens directly to /admin. The start and stop scripts both operate on the 3058 listener so the app can be restarted cleanly from ProBot. The production Dockerfile still uses PORT=3000. Local runtime is pinned per-app to Node 20 through the runtime.pathPrepend override."
   },
   {
     "name": "Firecrawl",

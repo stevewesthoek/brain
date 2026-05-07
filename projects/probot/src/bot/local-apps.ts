@@ -4,6 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import { isPortOccupied } from "./local-app-ports.js";
 
+export type LocalAppRuntime = {
+  pathPrepend: string[];
+  env: Record<string, string>;
+  notes: string | null;
+};
+
 export type NormalizedLocalApp = {
   name: string;
   port: number | null;
@@ -15,6 +21,7 @@ export type NormalizedLocalApp = {
   description: string;
   repoPath: string | null;
   startupTimeoutMs: number | null;
+  runtime: LocalAppRuntime | null;
   databaseEngine: string | null;
   databaseServiceName: string | null;
   databasePort: number | null;
@@ -49,6 +56,7 @@ type RawLocalApp = {
   restart?: unknown;
   restartCommand?: unknown;
   startupTimeoutMs?: unknown;
+  runtime?: unknown;
   description?: unknown;
   repoPath?: unknown;
   databaseEngine?: unknown;
@@ -82,6 +90,31 @@ function readNumberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function readStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
+}
+
+function readStringRecord(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, string] => {
+      const [key, recordValue] = entry;
+      return key.length > 0 && typeof recordValue === "string";
+    }),
+  );
+}
+
+function readRuntime(value: unknown): LocalAppRuntime | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const runtime = value as { pathPrepend?: unknown; env?: unknown; notes?: unknown };
+  const pathPrepend = readStringArray(runtime.pathPrepend);
+  const env = readStringRecord(runtime.env);
+  const notes = readStringOrNull(runtime.notes);
+  if (pathPrepend.length === 0 && Object.keys(env).length === 0 && !notes) return null;
+  return { pathPrepend, env, notes };
+}
+
 export function normalizeLocalApp(raw: RawLocalApp): NormalizedLocalApp | null {
   const name = readString(raw.name, "");
   if (!name) return null;
@@ -97,6 +130,7 @@ export function normalizeLocalApp(raw: RawLocalApp): NormalizedLocalApp | null {
     description: readString(raw.description, ""),
     repoPath: readStringOrNull(raw.repoPath),
     startupTimeoutMs: readNumberOrNull(raw.startupTimeoutMs),
+    runtime: readRuntime(raw.runtime),
     databaseEngine: readStringOrNull(raw.databaseEngine),
     databaseServiceName: readStringOrNull(raw.databaseServiceName),
     databasePort: readNumberOrNull(raw.databasePort),
@@ -131,23 +165,39 @@ export function classifyLocalAppStartCommand(command: string): "foreground" | "b
   return "foreground";
 }
 
-export function launchLocalAppStartCommand(
-  command: string,
-  cwd: string,
-  app: NormalizedLocalApp | null = null,
-): void {
+export function buildLocalAppRuntimeEnv(
+  app: NormalizedLocalApp | null,
+  command: string | null = null,
+  baseEnv: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
-    ...process.env,
+    ...baseEnv,
+    ...(app?.runtime?.env ?? {}),
   };
+
+  const runtimePath = app?.runtime?.pathPrepend ?? [];
+  if (runtimePath.length > 0) {
+    env.PATH = [...runtimePath, baseEnv.PATH ?? ""].filter(Boolean).join(path.delimiter);
+  }
 
   // Let app entries declare a port once in the registry and keep the shell
   // command itself generic. This avoids stale hard-coded PORT values.
   const inferredPort =
     app?.port ??
-    Number.parseInt(command.match(/(?:^|\s)PORT=(\d+)(?:\s|$)/)?.[1] ?? "", 10);
+    Number.parseInt(command?.match(/(?:^|\s)PORT=(\d+)(?:\s|$)/)?.[1] ?? "", 10);
   if (!Number.isNaN(inferredPort) && inferredPort > 0) {
     env.PORT = String(inferredPort);
   }
+
+  return env;
+}
+
+export function launchLocalAppStartCommand(
+  command: string,
+  cwd: string,
+  app: NormalizedLocalApp | null = null,
+): void {
+  const env = buildLocalAppRuntimeEnv(app, command);
 
   const child = spawn("/bin/bash", ["-lc", command], {
     cwd,
@@ -181,6 +231,19 @@ export function resolveLocalAppLifecycleCommand(
 export function resolveLocalAppRestartCommand(app: NormalizedLocalApp | null): string | null {
   if (app?.restart) return app.restart;
   return null;
+}
+
+export function buildLocalAppRuntimeSummary(app: NormalizedLocalApp | null): string | null {
+  if (!app?.runtime) return null;
+  const parts: string[] = [];
+  if (app.runtime.pathPrepend.length > 0) {
+    parts.push(`PATH+${app.runtime.pathPrepend.join(path.delimiter)}`);
+  }
+  const envKeys = Object.keys(app.runtime.env);
+  if (envKeys.length > 0) {
+    parts.push(`env:${envKeys.sort().join(",")}`);
+  }
+  return parts.length > 0 ? parts.join("; ") : app.runtime.notes;
 }
 
 export async function buildLocalAppsStatus(

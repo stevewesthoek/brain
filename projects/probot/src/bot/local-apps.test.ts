@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { buildLocalAppsStatus, classifyLocalAppStartCommand, normalizeLocalApp, resolveLocalAppLifecycleCommand, resolveLocalAppRestartCommand, waitForLocalAppHealth } from "./local-apps.js";
+import { buildLocalAppRuntimeEnv, buildLocalAppsStatus, classifyLocalAppStartCommand, normalizeLocalApp, resolveLocalAppLifecycleCommand, resolveLocalAppRestartCommand, waitForLocalAppHealth } from "./local-apps.js";
 import {
   runExclusiveLocalAppOperation,
   waitForLocalAppPortFree,
@@ -91,6 +91,61 @@ test("normalize dual-compatible BuildFlow entry with orchestrator", () => {
   assert.equal(app.restart, "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh restart");
 });
 
+test("normalize per-app runtime config", () => {
+  const app = normalizeLocalApp({
+    name: "Runtime App",
+    appPort: 3058,
+    appUrl: "http://localhost:3058",
+    healthCheck: "http://localhost:3058/api/health",
+    startCommand: "npm run dev",
+    runtime: {
+      pathPrepend: ["/opt/custom-node/bin"],
+      env: { NODE_ENV: "development" },
+      notes: "App requires a custom runtime.",
+    },
+  });
+
+  assert.ok(app);
+  assert.deepEqual(app.runtime?.pathPrepend, ["/opt/custom-node/bin"]);
+  assert.deepEqual(app.runtime?.env, { NODE_ENV: "development" });
+  assert.equal(app.runtime?.notes, "App requires a custom runtime.");
+});
+
+test("buildLocalAppRuntimeEnv applies app runtime without changing unrelated apps", () => {
+  const customApp = normalizeLocalApp({
+    name: "Custom Runtime",
+    appPort: 3058,
+    appUrl: "http://localhost:3058",
+    healthCheck: "http://localhost:3058/api/health",
+    startCommand: "bash scripts/dev/start-local.sh",
+    runtime: {
+      pathPrepend: ["/Users/Office/.nvm/versions/node/v20.20.2/bin"],
+      env: { CUSTOM_RUNTIME: "1" },
+    },
+  });
+  const defaultApp = normalizeLocalApp({
+    name: "Default Runtime",
+    appPort: 3059,
+    appUrl: "http://localhost:3059",
+    healthCheck: "http://localhost:3059/api/health",
+    startCommand: "npm run dev",
+  });
+
+  assert.ok(customApp);
+  assert.ok(defaultApp);
+
+  const baseEnv = { PATH: "/usr/bin:/bin" } as NodeJS.ProcessEnv;
+  const customEnv = buildLocalAppRuntimeEnv(customApp, customApp.start, baseEnv);
+  const defaultEnv = buildLocalAppRuntimeEnv(defaultApp, defaultApp.start, baseEnv);
+
+  assert.equal(customEnv.PATH, "/Users/Office/.nvm/versions/node/v20.20.2/bin:/usr/bin:/bin");
+  assert.equal(customEnv.PORT, "3058");
+  assert.equal(customEnv.CUSTOM_RUNTIME, "1");
+  assert.equal(defaultEnv.PATH, "/usr/bin:/bin");
+  assert.equal(defaultEnv.PORT, "3059");
+  assert.equal(defaultEnv.CUSTOM_RUNTIME, undefined);
+});
+
 test("normalize entry with missing optional stop", () => {
   const app = normalizeLocalApp({
     name: "No Stop",
@@ -132,6 +187,7 @@ test("buildLocalAppsStatus fails safely on missing health check", async () => {
         description: "",
         repoPath: null,
         startupTimeoutMs: null,
+        runtime: null,
         databaseEngine: null,
         databaseServiceName: null,
         databasePort: null,
@@ -165,6 +221,7 @@ test("buildLocalAppsStatus keeps an app starting during its startup window", asy
         description: "",
         repoPath: null,
         startupTimeoutMs: 120000,
+        runtime: null,
         databaseEngine: null,
         databaseServiceName: null,
         databasePort: null,
