@@ -1,63 +1,3 @@
-# Plan: `/web` Orchestrator — Unified Web, Browser & Automation Entry Point
-
-## Context
-
-The user has four powerful but separate tools for web/browser/automation work:
-- `/firecrawl` — content extraction (markdown), no auth, stateless
-- `/browse` — interactive headless Chromium, 50+ commands, auth via cookie-import, visual QA
-- `/playwright` — scripted automation code, reusable scripts, E2E tests
-- `/apify` — cloud-scale bulk scraping, multi-account rotation, n8n integration
-
-**The problem:** Users must remember which tool handles which scenario, the right commands within each tool, and when to combine tools. The user said: *"I do not want to know all these commands. I wanted to be stupid-proof. I just want to talk in natural language."*
-
-**Solution:** A `/web` master orchestrator — the same pattern as `/design` — that accepts any web/browser/automation intent, classifies the scenario, and sequences the right tool(s) at the right granularity. Users say "log into my bank and download statements" — the orchestrator decides cookie-import → navigate → click → download.
-
----
-
-## What Is Being Built
-
-### `brain/ai/skills/custom/web/SKILL.md` — Web Master Orchestrator
-
-One SKILL.md that:
-- Triggers on any web, browser, automation, or scraping intent
-- Classifies into 5 scenarios: RESEARCH / TEST / INTERACT / AUTOMATE / SCALE
-- Identifies key modifiers: auth needed, one-time vs. recurring, single URL vs. bulk
-- Routes to exact tool + exact commands — not just "use firecrawl", but "use `firecrawl crawl <url> --deep`"
-- Handles combinations (e.g., browse for auth → firecrawl for extraction)
-- Natural language routing table covering 25+ trigger patterns
-
----
-
-## Files to Create
-
-| File | What |
-|------|------|
-| `brain/ai/skills/custom/web/SKILL.md` | Master orchestrator — full content below |
-| `brain/ai/skills/active/web` | Symlink → `../custom/web` |
-
-## Files to Update
-
-| File | Change |
-|------|--------|
-| `brain/CLAUDE.md` | Add web orchestrator section (same as design system section) |
-| `/Users/Office/.claude/CLAUDE.md` | Add `/web` to available skills list |
-| `brain/operations/system-configs/codex/AGENTS.md` | Add `/web` to Workspace layout |
-| `brain/operations/system-configs/gemini/GEMINI.md` | Add `/web` to Workspace layout |
-| `brain/operations/decision-log.md` | Append web orchestrator decision |
-
-## Run After
-
-```bash
-node tools/scripts/sync-ai-skills.mjs --dry-run && \
-  node tools/scripts/sync-ai-skills.mjs && \
-  node tools/scripts/sync-ai-skills.mjs --check
-```
-
----
-
-## Full SKILL.md Content
-
-```markdown
 ---
 name: web
 description: Master web, browser, and automation orchestrator. Single entry point for ALL web-related work — internet research, browser testing, authenticated interaction, reusable automation scripts, and bulk scraping. Accepts natural language. Classifies scenario (research / test / interact / automate / scale), identifies auth and recurrence requirements, and routes to the exact tool and exact commands needed. No skill names, no command syntax, no configuration to remember.
@@ -422,64 +362,39 @@ Route directly to the right tool + command without asking the full intake questi
 
 ---
 
-## AI-Agnostic Operation
+## AI-Agnostic & IDE-Agnostic Operation
 
-This orchestrator is plain markdown. All chained tools are CLI-based. Nothing requires MCP, specific IDE plugins, or proprietary tooling.
+This orchestrator is **pure markdown — zero vendor lock-in**.
+
+All chained tools are **CLI-based**, callable from any shell, any machine, any IDE.
 
 **Works identically on:**
 - **Claude Code** — invoke `/web` or describe your web task in natural language
 - **Codex CLI** — invoke `/web`
 - **Gemini CLI** — invoke `/web`; 1M context window handles large crawl outputs for preprocessing
-- **Cursor, Kiro, any IDE** — synced via `brain/ai/skills/active/`
+- **Cursor, Kiro, Windsurf, any IDE** — synced via `brain/ai/skills/active/web`
+- **Direct CLI** — all underlying tools still accessible and independent
 
-**Tool wrappers:**
+**Tool wrappers (CLI-based, reusable everywhere):**
 - firecrawl: `brain/tools/firecrawl/firecrawl-wrapper.sh` (auto-starts Docker; logs all requests)
-- browse: `browse <command>` CLI (auto-starts Chromium daemon; persistent session)
-- playwright: `npx playwright` (global install, Node.js 18+)
-- apify: `apify-multi <command>` + n8n webhook for token rotation
-```
+- browse: `browse <command>` (auto-starts Chromium daemon; persistent session state)
+- playwright: `npx playwright` (global Node.js install, works anywhere)
+- apify: `apify-multi <command>` (global npm package + n8n webhook for multi-account rotation)
+
+**Source of truth:** This SKILL.md file and the CLI tools it routes to. No MCP servers, no IDE-specific plugins, no cloud dependencies.
 
 ---
 
-## Brain CLAUDE.md Update
+## Underlying Tools Remain Independent
 
-Add a section after the "Design system" section:
+**Important:** The `/web` orchestrator is a *routing layer only*. It does **NOT replace** or constrain the underlying tools.
 
-```markdown
-## Web, browser & automation
+- Users can still invoke `/firecrawl`, `/browse`, `/playwright`, `/apify` directly
+- Users can still call CLI commands directly: `browse screenshot`, `npx playwright codegen`, etc.
+- Each tool has its own skill documentation and remains fully independent
+- The orchestrator is a convenience layer for users who prefer natural language routing
 
-For ALL web-related work — internet research, browser testing, authenticated interaction, reusable automations, and bulk scraping — use `/web`. The master orchestrator classifies intent and routes automatically to `/firecrawl` (research), `/browse` (interactive/testing), `/playwright` (reusable scripts), or `/apify` (scale). No tool names or commands needed — just describe the task.
-```
-
----
-
-## Verification
-
-```bash
-# 1. Verify skill exists
-ls brain/ai/skills/custom/web/SKILL.md
-
-# 2. Verify active symlink
-ls -la brain/ai/skills/active/web
-
-# 3. Verify sync passes
-node tools/scripts/sync-ai-skills.mjs --check
-
-# 4. Verify /web appears in global CLAUDE.md skills list
-grep "web" /Users/Office/.claude/CLAUDE.md
-
-# 5. Verify CLAUDE.md has web section
-grep -n "Web, browser" brain/CLAUDE.md
-
-# 6. Verify routing table present in skill
-grep -c "User says" brain/ai/skills/custom/web/SKILL.md
-```
-
----
-
-## What Does NOT Change
-
-- Content of /firecrawl, /browse, /playwright, /apify skills (no rewrites)
-- Routing policy
-- Hooks, settings.json, session lifecycle
-- Existing symlink structure
+**Decision tree for users:**
+- "I don't know which tool to use" → Use `/web` orchestrator (natural language routing)
+- "I know exactly which tool I want" → Call it directly (skip the orchestrator)
+- Both paths are equally valid and coexist.

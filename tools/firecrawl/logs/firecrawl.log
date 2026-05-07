@@ -247,3 +247,5 @@
 [2026-05-07 13:28:39] Firecrawl is already running
 [2026-05-07 13:28:39] REQUEST | URL: https://raw.githubusercontent.com/dembrandt/dembrandt/main/README.md | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: executing
 [2026-05-07 13:28:39] REQUEST | URL: https://raw.githubusercontent.com/dembrandt/dembrandt/main/README.md | MODE: scrape | MAX_PAGES: 25 | MAX_DEPTH: 2 | TIMEOUT: 60 | PROXY: none | STATUS: success
+[2026-05-07 13:44:01] [DAEMON] Idle timeout reached (15 min) - shutting down containers
+[2026-05-07 13:44:04] [DAEMON] Containers shut down

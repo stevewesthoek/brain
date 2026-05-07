@@ -29,6 +29,12 @@ For ALL design work, use `/design` — the master orchestrator. It accepts any n
 
 Skills coordinated by the orchestrator: `/impeccable` (teach, shape, craft, document, critique, audit, polish, bolder, quieter, distill, harden, onboard, clarify, typeset, colorize, layout, adapt, optimize, overdrive, live), `/taste-skill`, `/soft-skill`, `/redesign-skill`, `/design-motion-principles`, `/web-design`, `/huashu-design`, `/design-consultation`, `/design-system`, `/plan-design-review`, `/design-review`, `/output-skill`, `/ui-ux-pro-max`.
 
+## Web, browser & automation
+
+For ALL web-related work — internet research, browser testing, authenticated interaction, reusable automations, and bulk scraping — use `/web`. The master orchestrator classifies intent and routes automatically to `/firecrawl` (research), `/browse` (interactive/testing), `/playwright` (reusable scripts), or `/apify` (scale). No tool names or commands needed — just describe the task in natural language.
+
+Underlying tools remain independent and directly callable: users can still invoke `/firecrawl`, `/browse`, `/playwright`, `/apify` directly if they prefer.
+
 ## Workspace rules
 
 1. Do not work in brain root unless the task is about the brain repo itself.
