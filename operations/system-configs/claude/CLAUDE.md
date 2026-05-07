@@ -73,6 +73,24 @@ mem-search database           # find entries mentioning database
 mem-search --id mem-user-001  # fetch full content by ID
 ```
 
+## Automatic memory injection
+
+Memory is injected into your prompts automatically via two mechanisms:
+
+1. **Session start** — When you start a session after a break, the first prompt is scanned for keywords. Matching memory entries are prepended as `--- Memory context ---` block above the session handoff.
+
+2. **Mid-session recall** — When you ask a recall-intent question ("what did we decide about X?", "remind me about Y", "do we have a setting for Z?"), the hook system detects this automatically and injects matching memory entries as `--- Memory recall ---` block into your prompt.
+
+**You do not need to run `mem-search` manually or invoke any hooks.** The system is invisible. When you see `--- Memory context ---` or `--- Memory recall ---` blocks in your session context, read them naturally and use them in your response. Zero cognitive overhead.
+
+Trigger phrases detected automatically:
+- "what did we", "remind me", "do you remember", "do we have"
+- "previously", "last time", "we used to", "we always"
+- "what was the", "what is our", "what are our"
+- "why did we", "how did we", "what settings", "what config", "what decision", "what approach"
+
+Non-trigger prompts cost nothing (zero-cost passthrough).
+
 # Repo CLAUDE.md template
 
 When asked to add a `CLAUDE.md` to a new repo, use this baseline and expand with project-specific context:
