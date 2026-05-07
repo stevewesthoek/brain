@@ -1,207 +1,202 @@
-# Plan: Three Quick Wins for /web Orchestrator
+# Plan: /video — Master Video Orchestrator Skill
 
 ## Context
 
-Following a comparison of Scrapling vs the existing `/web` stack, the decision was to NOT integrate Scrapling (too much overlap, wrong problem space) but instead extract its best practices and apply them to the existing Playwright-based workflow. Three concrete gaps were identified:
+The user produces video content for YouTube, TikTok, Instagram Reels, LinkedIn, Facebook, Bluesky, and X — in three primary formats: narrated slideshows (static image + TTS), short-form reels/clips, and talking-head/AI avatar videos. They need a single natural-language entry point that orchestrates the full video production lifecycle: write → voice → compose → design → post.
 
-1. **No anti-bot guidance** — The web orchestrator only says "use handoff for CAPTCHA." No proactive evasion strategies documented anywhere.
-2. **No checkpoint/resume** — Playwright scripts restart from zero on failure. No mid-run state persistence.
-3. **No selector recovery** — Scripts hard-fail on selector changes. No fallback chain.
-
-Both files that cover Playwright are thin on these topics:
-- `brain/ai/skills/custom/web/SKILL.md` — 419 lines, has 3 sparse mentions of anti-bot (all just "use handoff"), zero on checkpoints, zero on selector recovery
-- `brain/operations/runbooks/playwright.md` — 150 lines, one throwaway line on selectors, nothing on anti-bot or checkpointing
-
-No `/playwright` skill directory exists — all Playwright knowledge lives in Workflow D of the web orchestrator and the runbook.
+The orchestrator must match the exact structural pattern of the existing `/code`, `/web`, and `/design` skills: YAML frontmatter, Standing Laws, classified Workflows (A–F), Tool Reference Map, Routing Guide, AI-Agnostic section, and Underlying Tools section. It must be registered in all four config files and synced.
 
 ---
 
-## What Gets Changed
+## What Gets Created / Modified
 
-| File | Change |
-|------|--------|
-| `brain/ai/skills/custom/web/SKILL.md` | 3 targeted additions (see below) |
-| `brain/operations/runbooks/playwright.md` | 3 new sections appended |
-
-No new files. No new skills. No config changes. No skill sync needed.
-
----
-
-## Change 1: Anti-Bot Best Practices
-
-### In `web/SKILL.md`
-
-**Location:** Standing Web Laws (lines 31–43) — expand the sparse "Handoff for CAPTCHA" law into a proper **"Anti-Bot: Proactive first, handoff last"** law.
-
-Replace the single-liner:
-```
-- **Handoff for CAPTCHA or MFA.**
-```
-With a proper multi-line law:
-```
-- **Anti-Bot: Proactive first, handoff last.** Before reaching for handoff, apply these in order:
-  1. Use cookie-import (real browser session — most effective, already documented)
-  2. Add randomized delays: `await page.waitForTimeout(Math.random() * 3000 + 1500)`
-  3. Rotate user-agent via `page.setExtraHTTPHeaders` or context `userAgent` option
-  4. Use Apify if the site has aggressive cloud-based blocking (cloud proxy beats local evasion)
-  5. Handoff only as last resort: `browse handoff "blocked — complete challenge"`
-```
-
-**Location:** Workflow D: Reusable Automation — after the script anatomy block, add a new **Anti-Bot Techniques** subsection (D3.5, before "D4. Wire to scheduler").
-
-Content: concrete Playwright snippets for delays, user-agent rotation, viewport randomization, and disabling `navigator.webdriver`.
-
-### In `playwright.md` runbook
-
-Append a new **"Anti-Bot Techniques"** section with:
-- Randomized delay snippet
-- User-agent rotation (3–4 realistic UAs)
-- Viewport randomization
-- Disable automation flags (`--disable-blink-features=AutomationControlled`)
-- When to escalate to Apify (rule of thumb: if local evasion fails after 2 attempts, use Apify)
+| Action | Path |
+|--------|------|
+| **CREATE** new skill | `brain/ai/skills/custom/video/SKILL.md` |
+| **CREATE** active symlink | `brain/ai/skills/active/video -> ../custom/video` |
+| **EDIT** repo CLAUDE.md | Add `## Video, media & production` section |
+| **EDIT** `~/.claude/CLAUDE.md` | Add `/video` to Available skills line |
+| **EDIT** AGENTS.md | Add `/video` to Workspace layout section |
+| **EDIT** GEMINI.md | Add `/video` to Workspace layout section |
+| **RUN** sync + check | `node tools/scripts/sync-ai-skills.mjs` |
 
 ---
 
-## Change 2: Checkpoint/Resume Template
+## SKILL.md Structure (matches /web and /code pattern exactly)
 
-### In `web/SKILL.md`
-
-**Location:** Workflow D — after the current script anatomy block (lines 231–259), add a new **Checkpoint Pattern** code block showing the 3-function pattern (load, save, cleanup) and how to wire it into the main loop.
-
-Wire it naturally into the script anatomy as a named pattern the AI should use when generating scripts for bulk/multi-step operations.
-
-Key rule to add to Standing Web Laws (or Workflow D preamble):
+### Frontmatter
+```yaml
+---
+name: video
+description: >
+  Single natural-language entry point for all video production work — writing scripts, 
+  generating voiceovers, composing video assets, designing thumbnails, and posting to 
+  YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, and X. Routes automatically 
+  to /stb-pipeline (narrated slideshows), /ffmpeg (audio/video composition), 
+  /design (thumbnails and motion), and platform posting workflows. AI-agnostic, IDE-agnostic.
+---
 ```
-- **Checkpoint bulk scripts.** Any Playwright script processing 10+ items or expected to run >2 minutes
-  should use checkpoint/resume. Save state every N items. Resume from last checkpoint on restart.
-```
 
-### In `playwright.md` runbook
-
-Append a **"Checkpoint / Resume Pattern"** section with a complete, copy-paste-ready template:
-```javascript
-const CHECKPOINT = './.scrape-checkpoint.json';
-
-function loadCheckpoint() {
-  return fs.existsSync(CHECKPOINT)
-    ? JSON.parse(fs.readFileSync(CHECKPOINT, 'utf-8'))
-    : { index: 0, results: [] };
-}
-
-function saveCheckpoint(state) {
-  fs.writeFileSync(CHECKPOINT, JSON.stringify(state, null, 2));
-}
-
-// In main loop:
-const state = loadCheckpoint();
-console.log(`Resuming from item ${state.index}`);
-
-for (let i = state.index; i < items.length; i++) {
-  // ... process items[i] ...
-  state.results.push(result);
-  state.index = i + 1;
-  if (i % 10 === 0) saveCheckpoint(state); // save every 10 items
-}
-
-fs.unlinkSync(CHECKPOINT); // clean up on completion
-```
+### Title
+`# Video — Master Orchestrator`
 
 ---
 
-## Change 3: Selector Recovery Wrapper
+## Six Workflows
 
-### In `web/SKILL.md`
+### A: WRITE
+Script and story generation for any video format.
+- Sub-steps: classify format → extract key message → write script with Claude → structure for TTS (SSML if Microsoft, plain if ElevenLabs/OpenAI)
+- Trigger: "write a script", "create a story for", "write narration for"
 
-**Location:** Workflow D script anatomy — add a note after the selector usage comments that any generated script should use the `findElement()` helper for any selector that touches third-party sites (not your own stable DOM).
+### B: VOICE
+TTS audio generation — routes to the right TTS service based on project.
+- Sub-steps: detect service (Microsoft MSTTS / ElevenLabs / OpenAI) → generate audio → save to production folder → quality check duration
+- Microsoft: SSML with `<mstts:express-as>` tags (reuse STB pattern)
+- ElevenLabs: API call with selected voice ID
+- OpenAI: `/v1/audio/speech` endpoint
+- Trigger: "generate voiceover", "TTS for this script", "make audio from this"
 
-Add a concise selector recovery rule to Standing Web Laws:
+### C: COMPOSE
+Video composition — combines audio, visuals, captions.
+- Sub-step A: **Narrated slideshow** (STB pattern) → static image + audio → ffmpeg render → YouTube/landscape MP4
+- Sub-step B: **Short-form reel** → vertical crop (9:16) + audio + captions → TikTok/Reels MP4
+- Sub-step C: **Talking-head** → delegate to HeyGen API (service-agnostic stub, wirable later)
+- Sub-step D: **Audio-first** → waveform + still → ffmpeg render
+- Trigger: "render the video", "compose this", "make the reel"
+
+### D: DESIGN
+Thumbnails, covers, and motion graphics.
+- Routes to `/design` orchestrator for thumbnail design
+- Routes to `/ffmpeg` for video intro/outro overlays
+- Routes to `/taste-skill` for visual polish
+- Trigger: "make a thumbnail", "design the cover", "create an intro"
+
+### E: POST
+Upload and schedule to platforms — routes by platform.
+- YouTube: `ytdlp` or manual (documented) + schedule via YouTube Studio API stub
+- TikTok: manual posting workflow (TikTok API restricted) + documented automation path
+- Instagram: documented + n8n webhook trigger pattern
+- LinkedIn / Facebook: documented + n8n/Make webhook trigger pattern
+- Bluesky / X: documented API path (ATProto + Twitter v2)
+- Standing rule: always tag, always add description, always check format spec before posting
+- Trigger: "post this to YouTube", "upload to TikTok", "schedule for Instagram"
+
+### F: PIPELINE
+Full end-to-end pipeline for a series or batch.
+- Chains A → B → C → D → E in sequence with checkpointing between stages
+- Reuses STB Pipeline's monthly batch pattern (checkpoint/resume)
+- Trigger: "run the full pipeline", "produce episode X", "batch produce"
+
+---
+
+## Standing Video Laws (flat bullet format, matching /web)
+
+1. **Script before everything.** Never generate audio or video before the script is approved. All other steps are blocked until WRITE completes.
+2. **Format-first rendering.** Every render step must know its target platform before starting. Landscape (16:9) for YouTube long-form, vertical (9:16) for TikTok/Reels/Shorts, square (1:1) for LinkedIn/Facebook feed.
+3. **Checkpoint all batch runs.** Any pipeline producing 3+ assets must use checkpoint/resume (STB pattern). Save state after each stage. Resume from last checkpoint on failure.
+4. **TTS is project-scoped.** Each video series has one TTS voice. Do not mix voices within a series. Document the voice ID in the project config.
+5. **Never overwrite source assets.** Raw narration audio, source images, and original scripts are read-only inputs. All processed outputs go to `/production/` subdirectory.
+6. **Thumbnail always before posting.** Every video must have a thumbnail designed and reviewed before any platform upload. No bare-title cards.
+7. **Platform spec check before encode.** Verify target platform's current spec (bitrate, resolution, duration cap, aspect ratio) before final ffmpeg render. Specs change — always check.
+8. **Asset inventory on completion.** After any pipeline run, log all produced assets (path, duration, platform, upload status) to the project's `production/manifest.json`.
+
+---
+
+## Tool Reference Map
+
+| Tool | Skill path | Use when |
+|------|-----------|----------|
+| `/stb-pipeline` | `custom/stb-pipeline/SKILL.md` | Narrated slideshow episodes — TTS + audio mix + YouTube render (battle-tested pipeline) |
+| `/ffmpeg` | `custom/ffmpeg/ffmpeg/SKILL.md` | Audio mixing, video composition, format conversion, resampling, crop/scale |
+| `/design` | `custom/design/SKILL.md` | Thumbnails, covers, motion graphics, visual polish |
+| `/taste-skill` | `custom/taste-skill/taste-skill/SKILL.md` | Visual quality bar — review and improve thumbnails and motion |
+| `/design-motion-principles` | `vendors/kylezantos/design-motion-principles/SKILL.md` | Motion audit for intros/outros/transitions |
+| `/notebooklm` | (CLI) | Pre-production research — synthesize source material into scripts |
+| `/n8n` | `custom/n8n/SKILL.md` | Platform posting automation via webhook triggers (Instagram, LinkedIn, Facebook) |
+| HeyGen | (future stub) | Talking-head avatar video — wired in when API key available |
+| ElevenLabs | (future stub) | High-quality TTS — wired in when API key available |
+| Microsoft MSTTS | (via STB pattern) | Production-ready TTS — reuse existing SSML rendering pipeline |
+
+---
+
+## Natural Language Routing Guide (key rows)
+
+| User says | Workflow | Primary tool |
+|-----------|----------|--------------|
+| "write a script for a video about X" | A: WRITE | Claude (direct) |
+| "write narration / SSML for episode X" | A: WRITE | STB pattern |
+| "generate voiceover / TTS for this script" | B: VOICE | MSTTS / ElevenLabs / OpenAI |
+| "render the video / compose this" | C: COMPOSE | ffmpeg |
+| "make a YouTube video from this audio + image" | C: COMPOSE (A) | ffmpeg (STB pattern) |
+| "make a TikTok reel / Shorts / vertical clip" | C: COMPOSE (B) | ffmpeg (9:16 crop) |
+| "create a talking-head video" | C: COMPOSE (C) | HeyGen (stub) |
+| "make a thumbnail / design the cover" | D: DESIGN | /design orchestrator |
+| "post this to YouTube" | E: POST | YouTube API / yt-dlp |
+| "upload to TikTok / Instagram / Reels" | E: POST | n8n webhook / manual |
+| "post to LinkedIn / Facebook / Bluesky / X" | E: POST | n8n / platform API |
+| "run the full pipeline for episode X" | F: PIPELINE | A→B→C→D→E chain |
+| "batch produce N episodes" | F: PIPELINE | STB batch pattern + checkpoint |
+| "schedule posting for this week" | E: POST | n8n scheduling |
+
+---
+
+## Files to Modify
+
+### 1. brain/CLAUDE.md
+Add new section after the `## Web, browser & automation` section:
+
+```markdown
+## Video, media & production
+
+For ALL video-related work — writing scripts, generating voiceovers, composing video
+assets, designing thumbnails, and posting to platforms — use `/video`. The master 
+orchestrator classifies intent and routes automatically to `/stb-pipeline` (narrated 
+slideshows), `/ffmpeg` (audio/video composition), `/design` (thumbnails and motion), 
+and platform posting workflows. No tool names or commands needed — just describe the task.
+
+Underlying tools remain independent and directly callable: users can still invoke 
+`/stb-pipeline`, `/ffmpeg`, `/design`, `/n8n` directly if they prefer.
 ```
-- **Selector fallback for third-party sites.** When writing Playwright scripts against sites you don't control,
-  use a fallback chain: exact selector → getByText → getByRole → getByLabel → log + skip/handoff.
-  Never let a single stale selector kill an entire run.
+
+### 2. operations/system-configs/claude/CLAUDE.md — Available skills line
+Add to the comma-separated list:
+```
+`/video` (primary video/media orchestrator — natural language, all video production and posting scenarios),
 ```
 
-### In `playwright.md` runbook
-
-Append a **"Selector Recovery (Resilient Element Finding)"** section with a complete `findElement()` helper:
-
-```javascript
-async function findElement(page, selector, fallbacks = {}) {
-  // 1. Exact selector (fastest)
-  try {
-    const el = page.locator(selector);
-    await el.waitFor({ state: 'visible', timeout: 3000 });
-    return el;
-  } catch {}
-
-  // 2. By visible text
-  if (fallbacks.text) {
-    try {
-      const el = page.getByText(fallbacks.text, { exact: false });
-      await el.waitFor({ state: 'visible', timeout: 3000 });
-      return el;
-    } catch {}
-  }
-
-  // 3. By ARIA role + name
-  if (fallbacks.role) {
-    try {
-      const el = page.getByRole(fallbacks.role, { name: fallbacks.name });
-      await el.waitFor({ state: 'visible', timeout: 3000 });
-      return el;
-    } catch {}
-  }
-
-  // 4. By aria-label
-  if (fallbacks.label) {
-    try {
-      const el = page.getByLabel(fallbacks.label);
-      await el.waitFor({ state: 'visible', timeout: 3000 });
-      return el;
-    } catch {}
-  }
-
-  // All failed — log context, skip or handoff
-  console.error(`[selector-fail] ${selector}`, JSON.stringify(fallbacks));
-  return null;
-}
+### 3. operations/system-configs/codex/AGENTS.md — Workspace layout section
+Add after the `/web` line:
+```
+For ALL video and media work (script writing, TTS/voiceover, video composition, thumbnail design, platform posting to YouTube/TikTok/Instagram/LinkedIn/Facebook/Bluesky/X), use the shared `/video` orchestrator at `brain/ai/skills/custom/video/SKILL.md` — single natural-language entry point that routes to `/stb-pipeline` (narrated episodes), `/ffmpeg` (audio/video composition), `/design` (thumbnails), and platform posting workflows. Underlying tools remain independently callable.
 ```
 
-Usage example:
-```javascript
-const submitBtn = await findElement(page, '#submit-btn', {
-  text: 'Submit',
-  role: 'button',
-  name: 'Submit',
-});
-if (!submitBtn) {
-  // log and skip, or: await page.pause(); // handoff
-} else {
-  await submitBtn.click();
-}
+### 4. operations/system-configs/gemini/GEMINI.md — Workspace layout section
+Add after the `/web` line:
+```
+For ALL video and media work (script writing, TTS/voiceover, video composition, thumbnail design, platform posting to YouTube/TikTok/Instagram/LinkedIn/Facebook/Bluesky/X), use the shared `/video` orchestrator at `brain/ai/skills/custom/video/SKILL.md` — single natural-language entry point that routes to `/stb-pipeline`, `/ffmpeg`, `/design`, and platform posting workflows. **Gemini's role in video:** excel at preprocessing large video transcripts, batch script review, and multi-episode planning (1M context window handles full series scripts); compress findings before handing production to Claude.
 ```
 
 ---
 
 ## Implementation Order
 
-1. Edit `brain/ai/skills/custom/web/SKILL.md`:
-   - Expand Standing Web Laws: anti-bot law + checkpoint law + selector fallback law (3 insertions)
-   - Add D3.5 Anti-Bot Techniques subsection in Workflow D
-   - Add checkpoint pattern to Workflow D script anatomy
-
-2. Edit `brain/operations/runbooks/playwright.md`:
-   - Append "Anti-Bot Techniques" section
-   - Append "Checkpoint / Resume Pattern" section
-   - Append "Selector Recovery (Resilient Element Finding)" section
-
-3. Commit + push
+1. Create `brain/ai/skills/custom/video/` directory
+2. Write `brain/ai/skills/custom/video/SKILL.md` (full orchestrator, matching /web and /code pattern)
+3. Create symlink: `ln -s ../custom/video brain/ai/skills/active/video`
+4. Edit `brain/CLAUDE.md` — add Video section
+5. Edit `operations/system-configs/claude/CLAUDE.md` — add to Available skills list
+6. Edit `operations/system-configs/codex/AGENTS.md` — add to Workspace layout
+7. Edit `operations/system-configs/gemini/GEMINI.md` — add to Workspace layout
+8. Run sync: `node tools/scripts/sync-ai-skills.mjs --dry-run && node tools/scripts/sync-ai-skills.mjs && node tools/scripts/sync-ai-skills.mjs --check`
+9. Commit all changes together
 
 ---
 
 ## Verification
 
-- Read both files after editing to confirm all 3 improvements land in the right places
-- Check that the Standing Web Laws remain coherent (no duplication, no contradictions)
-- Confirm the runbook sections are copy-paste-ready (full code, no TODOs)
-- Confirm SKILL.md changes are guidance-level (tell the AI what to do), not code-level (code belongs in the runbook)
+- `ls brain/ai/skills/active/video` — symlink exists
+- `cat brain/ai/skills/active/video/SKILL.md | head -5` — YAML frontmatter present
+- `node tools/scripts/sync-ai-skills.mjs --check` — exits 0
+- `/video` resolves in Claude Code session (invoke skill, verify it loads)
+- Grep `CLAUDE.md` and `AGENTS.md` for "video" — registration lines present

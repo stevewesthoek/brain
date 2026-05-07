@@ -49,6 +49,12 @@ For ALL web-related work — internet research, browser testing, authenticated i
 
 Underlying tools remain independent and directly callable: users can still invoke `/firecrawl`, `/browse`, `/playwright`, `/apify` directly if they prefer.
 
+## Video, media & production
+
+For ALL video-related work — writing scripts, generating voiceovers, composing video assets, designing thumbnails, and posting to platforms — use `/video`. The master orchestrator classifies intent and routes automatically to `/stb-pipeline` (narrated slideshows), `/ffmpeg` (audio/video composition), `/design` (thumbnails and motion), and platform posting workflows. No tool names or commands needed — just describe the task in natural language.
+
+Underlying tools remain independent and directly callable: users can still invoke `/stb-pipeline`, `/ffmpeg`, `/design`, `/n8n` directly if they prefer.
+
 ## Codebase comprehension & architecture
 
 For ALL codebase-related work — mapping project structure, understanding architecture, finding dependencies, querying cross-module relationships, extracting design rationale — use `/graphify`. The master orchestrator turns any folder (code, docs, PDFs, images, videos) into a queryable knowledge graph with interactive visualization. No commands, no API knowledge needed — just describe what you want to know about your project.
