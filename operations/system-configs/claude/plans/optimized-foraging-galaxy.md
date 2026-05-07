@@ -1,148 +1,348 @@
-# Plan: Memory Phase 2 — Automatic Invisible Memory Injection
+# Plan: Design System Integration — Unified Orchestrator + Motion Audit
 
 ## Context
 
-Phase 1 built the memory infrastructure (IDs, mem-search script, progressive disclosure). But it isn't automatic — you have to explicitly run `mem-search` or ask Claude to use it. The user wants zero mental overhead: just talk naturally, and relevant memory surfaces automatically.
+The existing design system has 11 powerful skills but no unified entry point. Users must remember which skill applies to which situation. The goal is:
 
-**Goal:** When you say "what did we decide about caching?" or "remind me what settings we use for firecrawl" — Claude should automatically detect this needs memory lookup, search, and inject the answer into context. No commands, no hooks to remember, no `mem-search` invocations. Invisible.
+1. **One entry point** — `/design` — that accepts pure natural language
+2. **Three scenario workflows** — New project, Screenshot mimic, Existing upgrade
+3. **Four project types** — SaaS, website, funnel, landing page
+4. **Integrated motion audit** — `design-motion-principles` added to all post-build workflows
+5. **AI-agnostic** — Works identically on Claude Code, Codex, Gemini, all IDEs
+6. **Zero command memory** — Users just describe what they want
 
----
-
-## Three Changes
-
-### 1. Enhance inject-handoff.sh — Keyword-triggered memory injection on session start
-
-**Current:** Inject-handoff reads `.ai/current.md` on fresh sessions and prepends goal/status/next steps.
-
-**Enhanced:** ALSO extract keywords from the user's FIRST prompt and run `mem-search <keywords>` to find matching memory entries. Inject their index matches into the prompt context — on top of the existing handoff brief.
-
-**How it works:**
-- Extract 1-3 meaningful keywords from the prompt text (skip stop words)
-- Run `mem-search <keywords>` — gets ~5-10 lines of index output
-- If relevant entries found: prepend a compact `--- Memory context ---` block above the handoff brief
-- Only on fresh sessions (same guard as existing: transcript < 4 lines)
-- Max 5 memory entries shown inline; if more than 5 matches, show IDs only
-
-This covers "remind me what we decided about X" at the START of a session.
-
-**File:** `brain/operations/system-configs/claude/hooks/inject-handoff.sh`
+No existing skill content changes in meaning. All changes are additive. The /design orchestrator is the new glue layer.
 
 ---
 
-### 2. New hook: `memory-recall-hook.sh` — Mid-session natural language memory trigger
+## What Is Being Built
 
-**What:** A new `UserPromptSubmit` hook that fires on EVERY prompt (not just session start). Detects recall-intent phrases and injects relevant memory into the current prompt.
+### New: `/design` Master Orchestrator Skill
+A single `SKILL.md` that:
+- Triggers on any design-related natural language
+- Runs one intake question
+- Detects scenario (NEW / MIMIC / UPGRADE) and project type (SaaS / landing / funnel / website)
+- Sequences the right skills in the right order
+- Integrates motion audit natively at the post-build stage
+- Never requires the user to remember another skill name
 
-**Trigger phrases detected (regex):**
-```
-- what did we (decide|say|agree|discuss|use)
-- remind me|do you remember|do we have
-- previously|last time|we used to|we always
-- what was the|what is our|what are our
-- why did we|how did we
-```
+### New: `design-motion-principles` Vendor Skill
+- Copied from `github.com/kylezantos/design-motion-principles`
+- All 8 reference files fetched and stored locally
+- Integrated into post-build pipeline for ALL three workflows
 
-**Algorithm:**
-1. Check prompt for trigger phrases
-2. If matched: extract noun keywords (skip verbs/pronouns/articles)
-3. Run `mem-search <keywords>` — get compact index
-4. If matches found: append a `--- Memory recall ---` block to the prompt
-5. Claude then sees the memory results and answers from them
-6. If no trigger + no matches: pass through unchanged (zero cost)
-
-**Cost:** Only runs when trigger detected. grep for trigger pattern costs ~0ms. mem-search itself only runs on matches — worst case 50ms. Pass-through is nearly instant.
-
-**File:** `brain/operations/system-configs/claude/hooks/memory-recall-hook.sh` (new)
-
-Register in `settings.json` under `UserPromptSubmit` hooks, after existing hooks.
+### Updated: `web-design` and `design-review`
+- One-line addition to each pointing to motion audit at the right stage
+- No existing content removed
 
 ---
 
-### 3. Document in CLAUDE.md + Codex/Gemini guidance
+## Files to Create
 
-Claude needs to understand it will receive memory context injected into prompts automatically, and should use it naturally. Codex and Gemini need equivalent guidance since they don't have hooks but will receive the same context when Claude orchestrates them.
+| File | What |
+|------|------|
+| `brain/ai/skills/vendors/kylezantos/design-motion-principles/SKILL.md` | Main skill (fetched from GitHub) |
+| `brain/ai/skills/vendors/kylezantos/design-motion-principles/references/*.md` | 8 reference files (fetched from GitHub) |
+| `brain/ai/skills/active/design-motion-principles` | Symlink → `../vendors/kylezantos/design-motion-principles` |
+| `brain/ai/skills/custom/design/SKILL.md` | Master orchestrator — full content below |
+| `brain/ai/skills/active/design` | Symlink → `../custom/design` |
 
-Add to `~/.claude/CLAUDE.md` Memory IDs section:
-> Memory is injected automatically on session start and on recall-intent prompts. When you see `--- Memory context ---` or `--- Memory recall ---` blocks prepended to a prompt, read and use them. You do not need to call mem-search manually — the hook system handles detection and injection.
-
-Add to `AGENTS.md` and `GEMINI.md` sessions lifecycle:
-> When receiving context blocks prefixed with `--- Memory context ---` or `--- Memory recall ---`, treat them as authoritative memory from previous sessions. Use them naturally in your response without mentioning the mechanism.
-
----
-
-## What Stays Unchanged
-
-- `auto-handoff.sh` — no changes
-- `settings.json` (except adding one new hook entry)
-- `.ai/current.md` schema — no changes
-- `mem-search.sh` — no changes (hooks call it internally)
-- All existing hook behavior — unchanged, new hook is additive
-
----
-
-## Trigger Design (Detailed)
-
-```bash
-TRIGGER_PATTERN="(what did we|remind me|do you remember|do we have|previously|last time|we used to|we always|what was the|what is our|what are our|why did we|how did we|what settings|what config|what decision|what approach)"
-```
-
-Keyword extraction (from prompt after trigger match):
-- Remove trigger phrase words
-- Remove stop words: "the a an in on at to for of and or but is are was were"  
-- Take first 3 remaining words as search terms
-- Join with space for single mem-search call
-
-Output cap: max 5 index lines to keep token cost minimal (~100-200 tokens max injection).
-
----
-
-## Files Modified
+## Files to Update
 
 | File | Change |
 |------|--------|
-| `brain/operations/system-configs/claude/hooks/inject-handoff.sh` | Add keyword extraction + memory search block at session start |
-| `brain/operations/system-configs/claude/hooks/memory-recall-hook.sh` | CREATE — mid-session trigger hook |
-| `brain/operations/system-configs/claude/settings.json` | Register new hook under UserPromptSubmit |
-| `/Users/Office/.claude/CLAUDE.md` | Explain auto-injection mechanism |
-| `brain/operations/system-configs/codex/AGENTS.md` | Add note: honor injected memory blocks |
-| `brain/operations/system-configs/gemini/GEMINI.md` | Add note: honor injected memory blocks |
-| `brain/operations/decision-log.md` | Append Phase 2 decision entry |
+| `brain/ai/skills/custom/web-design/SKILL.md` | Add motion audit reference in Motion Plan section |
+| `brain/ai/skills/vendors/gstack/design-review/SKILL.md` | Add motion audit as step after Phase 4 |
+| `brain/CLAUDE.md` | Add `/design` as primary design entry point |
+| `brain/operations/system-configs/codex/AGENTS.md` | Add `/design` orchestrator note |
+| `brain/operations/system-configs/gemini/GEMINI.md` | Add `/design` orchestrator note |
+| `/Users/Office/.claude/CLAUDE.md` | Add `design` + `design-motion-principles` to available skills list |
+| `brain/operations/decision-log.md` | Append integration decision |
+
+## Run After
+
+```bash
+node tools/scripts/sync-ai-skills.mjs --dry-run && \
+  node tools/scripts/sync-ai-skills.mjs && \
+  node tools/scripts/sync-ai-skills.mjs --check
+```
+
+---
+
+## `/design` Orchestrator SKILL.md (Full Content)
+
+```markdown
+---
+name: design
+description: Master design orchestrator. The single entry point for ALL design work. Accepts natural language. Detects scenario (new project / screenshot mimic / existing upgrade), project type (SaaS / website / funnel / landing page), and sequences the full design pipeline automatically — brand foundation, spec, review, motion audit, visual QA, and polish. No commands to remember. Just describe what you need.
+---
+
+# Design — Master Orchestrator
+
+You are the **single entry point** for all design work. When the user says anything design-related — **this skill runs**. No other skill needs to be named by the user.
+
+**Natural language triggers (non-exhaustive):**
+- "design a landing page for my SaaS"
+- "I have a screenshot of a site I want to mimic"
+- "my website looks outdated, fix it"
+- "build me a funnel"
+- "make this look premium"
+- "I need a design system"
+- "the animations feel off"
+- "redesign my app"
+- "make it look like Stripe / Linear / Vercel"
+
+---
+
+## Step 0: Intake (One Question)
+
+Ask ONE question that covers all routing information:
+
+> **"Tell me about your design task:**
+> 1. **What are you building?** (landing page / SaaS app / website / funnel / something else)
+> 2. **Starting point?**
+>    - A) New project — starting from scratch
+>    - B) Reference/screenshot — you have a site you want to mimic or a vibe reference
+>    - C) Existing project — you have code or a live site to improve
+> 3. **Vibe?** (e.g., minimal and clean / bold and loud / enterprise / playful / premium luxury)
+> 4. **Primary goal?** (e.g., sign-ups / explain a product / sell something / build credibility)"
+
+Wait for response before routing.
+
+---
+
+## Step 1: Classify Scenario + Project Type
+
+From the intake, determine:
+
+**Scenario (pick one):**
+- `NEW` — no existing code or design
+- `MIMIC` — has screenshot, URL, or "like X" reference
+- `UPGRADE` — has existing code or live site
+
+**Project type (pick one):**
+- `SAAS` — dashboard, app, tool, productivity product
+- `LANDING` — single-page: hero + feature sections + CTA
+- `FUNNEL` — multi-step conversion flow (opt-in, checkout, waitlist)
+- `WEBSITE` — multi-page brand or marketing site
+
+**Motion defaults by project type** (used when running `/design-motion-principles`):
+
+| Type | Primary motion lens | Secondary | Rationale |
+|------|--------------------|-----------| ---------|
+| SAAS | Emil (restraint, speed) | Jakub (polish) | High-frequency interactions |
+| LANDING | Jakub (polish) | Jhey (delight, selective) | Impression-first |
+| FUNNEL | Emil (fast, minimal) | Jakub (trust signals) | Reduce friction |
+| WEBSITE | Jakub (polish) | Emil or Jhey (by brand) | Brand-driven |
+
+---
+
+## Workflow A: New Project
+
+**Trigger:** Scenario = NEW
+
+Execute these steps in order. Each step completes before the next begins.
+
+### A1. Brand Foundation → `/design-consultation`
+- Builds the complete design system through conversation
+- Proposes aesthetic, typography, color, spacing, motion as one coherent package
+- Produces `DESIGN.md` at project root + HTML preview page
+- **STOP:** User approves DESIGN.md before proceeding
+
+### A2. Design Spec → `/web-design`
+- Reads `DESIGN.md` tokens
+- Produces section-by-section layout + component list + motion plan
+- Output: implementation-ready spec (7 sections: direction, layout map, visual tokens, component list, motion plan, accessibility, build notes)
+- Apply project type context from Step 1
+
+### A3. Pre-Build Gate → `/plan-design-review`
+- Reviews spec before any code is written
+- Audits across 7 dimensions: IA, interaction states, journey, AI slop, design system, responsive/a11y, unresolved decisions
+- Reaches 10/10 on all dimensions before marking complete
+- Hard stop: do not build until design-review passes
+
+### A4. Build
+- Implementation by user or AI
+- `/taste-skill` guardrails applied throughout
+- `/output-skill` for full code generation if needed
+- `/huashu-design` if prototype, HTML demo, or deck needed at any point
+
+### A5. Motion Audit → `/design-motion-principles`
+- Run after first working build
+- Use project type → motion defaults table from Step 1
+- Performs: context reconnaissance → motion gap analysis → per-designer audit (Emil / Jakub / Jhey)
+- MANDATORY: checks `prefers-reduced-motion` support
+- **STOP:** User approves motion direction before fixes are applied
+
+### A6. Visual QA → `/design-review`
+- Full 80-item visual audit on live/running site
+- Phases: first impression → design system extraction → page-by-page audit → interaction flow → cross-page consistency → fix loop (atomic commits)
+- Produces Design Score (A-F) + AI Slop Score (A-F)
+
+### A7. Final Polish (optional)
+- `/soft-skill` — if user wants agency-tier $150k+ look
+- `/taste-skill` — final quality pass
+
+---
+
+## Workflow B: Screenshot / Reference Mimic
+
+**Trigger:** Scenario = MIMIC
+
+### B1. Reference Analysis
+- If URL: scrape and screenshot with `/firecrawl`
+- If image: analyze visually
+- Extract and state clearly: color palette, typography, spacing rhythm, layout pattern, motion style
+- Identify what to mimic vs. what to improve (apply taste-skill filter: remove AI slop even if present in source)
+
+### B2. Brand Capture → `/design-system`
+- Documents extracted tokens in `DESIGN.md` and `brand-spec.md`
+- Marks observed tokens vs. inferred
+- Fast-track (skip full consultation): reference is the guide
+
+### B3. Design Spec → `/web-design`
+- Uses reference + `DESIGN.md` as direction
+- Applies project type context from Step 1
+- `/taste-skill` guardrails applied
+
+### B4. Prototype → `/huashu-design`
+- Builds matching HTML prototype for approval before full build
+- **STOP:** User approves prototype direction before full implementation
+
+### B5. Build
+- Implementation by user or AI
+- `/output-skill` for full code generation if needed
+
+### B6. Motion Audit → `/design-motion-principles`
+- Focus: does motion match the reference's intent?
+- Motion defaults: use project type table from Step 1
+- Motion gap analysis (find conditional renders without animation)
+- MANDATORY: `prefers-reduced-motion` check
+
+### B7. Visual QA → `/design-review` (after full build)
+- Same as Workflow A Step A6
+
+---
+
+## Workflow C: Existing Site Upgrade
+
+**Trigger:** Scenario = UPGRADE
+
+### C1. Current State Audit → `/design-review`
+- Full visual audit on existing live site or codebase
+- First impression → systematic 80-item audit → interaction flow → consistency
+- Produces Design Score (A-F) + AI Slop Score (A-F)
+- Triages findings by High / Medium / Polish impact
+- **STOP:** User reviews triage list before fixes begin
+
+### C2. Motion Audit → `/design-motion-principles`
+- Run AFTER visual audit (C1), BEFORE making fixes
+- Use project type → motion defaults table from Step 1
+- Critical: motion gap analysis (finds conditional renders without AnimatePresence)
+- Outputs motion findings alongside visual findings from C1
+
+### C3. Targeted Fixes → `/redesign-skill`
+- Applies findings from C1 + C2
+- Fix priority: font → color → hover/active states → layout/spacing → component patterns → loading/empty/error states → typography polish
+- NEVER rewrites entire codebase — targeted changes only
+- Works with existing stack; never migrates frameworks
+
+### C4. Premium Polish (optional) → `/soft-skill`
+- Only if user explicitly asks for agency-tier uplift
+- Applied after `/redesign-skill` — final layer only
+
+### C5. Quality Verification → `/taste-skill`
+- Final guardrail pass confirming nothing regressed
+
+---
+
+## Design Skill Reference (Full Map)
+
+| Skill | Runs in | What it does |
+|-------|---------|--------------|
+| `/design-consultation` | A1 | Creates DESIGN.md + HTML preview from scratch via consultation |
+| `/design-system` | B2, all scenarios as needed | Copies/updates DESIGN.md brand tokens |
+| `/web-design` | A2, B3 | Section-by-section design spec |
+| `/plan-design-review` | A3 | Pre-build 7-dimension design audit (reaches 10/10) |
+| `/design-review` | A6, B7, C1 | Post-build 80-item visual QA + fix loop |
+| `/design-motion-principles` | A5, B6, C2 | Motion audit via Emil / Jakub / Jhey lenses |
+| `/redesign-skill` | C3 | Targeted code improvements from audit findings |
+| `/taste-skill` | A4+A7, B3+B5, C5 | Premium quality guardrails (applied throughout) |
+| `/soft-skill` | A7, C4 (optional) | Agency-tier $150k+ visual uplift |
+| `/huashu-design` | A4, B4 | HTML-native prototypes, demos, decks, animations |
+| `/output-skill` | A4, B5 | Prevents lazy code truncation |
+| `/ui-ux-pro-max` | A2, B3 (supplementary) | Design pattern research, stack-specific rules |
+
+---
+
+## AI-Agnostic Operation
+
+This orchestrator is plain markdown. All chained skills are plain markdown. All outputs are markdown (`DESIGN.md`, design specs, audit reports) or HTML (prototypes, preview pages). Nothing requires MCP, specific IDE plugins, or proprietary tooling.
+
+**Works identically on:**
+- **Claude Code** — invoke `/design` or talk naturally; hooks auto-inject `DESIGN.md` context via handoff system
+- **Codex CLI** — invoke `/design` or natural language; reads `.ai/current.md` for session context
+- **Gemini CLI** — invoke `/design`; especially useful for B1 reference analysis (1M token context window handles large screenshots and reference sites)
+- **Cursor, Kiro, any IDE** — all skills synced via `brain/ai/skills/active/`
+
+**Source of truth:** `DESIGN.md` at project root — any AI reads it, any AI updates it, same format always.
+
+**No memory required.** Just say what you want. The orchestrator handles routing.
+```
+
+---
+
+## Integration Points in Existing Skills
+
+### Update: `web-design/SKILL.md`
+In the "Motion Plan" output section, add one line after existing motion content:
+> *After build: run `/design-motion-principles` for a systematic motion audit via Emil Kowalski (restraint), Jakub Krehel (polish), and Jhey Tompkins (delight) lenses — context-weighted to project type.*
+
+### Update: `design-review/SKILL.md`
+After Phase 4 (Interaction Flow Review), add:
+> **Phase 4b — Motion Design Audit (always run)**
+> After the interaction flow review, invoke `/design-motion-principles` to audit motion and animation specifically:
+> - Context reconnaissance (project type → designer weighting)
+> - Motion gap analysis (conditional renders without AnimatePresence)
+> - Per-designer audit: Emil (restraint), Jakub (polish), Jhey (delight)
+> - Accessibility: `prefers-reduced-motion` mandatory check
+> Motion findings are incorporated into the Phase 7 triage alongside visual findings.
 
 ---
 
 ## Verification
 
 ```bash
-# Test 1: Hook trigger detection (no session needed)
-echo '{"prompt":"what did we decide about firecrawl?","transcript_path":"/tmp/test.jsonl"}' \
-  | bash brain/operations/system-configs/claude/hooks/memory-recall-hook.sh
-# Expected: output JSON with "--- Memory recall ---" block injected into prompt
+# 1. Verify design-motion-principles skill installed
+ls brain/ai/skills/active/design-motion-principles
+cat brain/ai/skills/vendors/kylezantos/design-motion-principles/SKILL.md | head -5
 
-# Test 2: No trigger — passthrough
-echo '{"prompt":"write a hello world function","transcript_path":"/tmp/test.jsonl"}' \
-  | bash brain/operations/system-configs/claude/hooks/memory-recall-hook.sh
-# Expected: output JSON unchanged (exact passthrough)
+# 2. Verify /design orchestrator installed
+ls brain/ai/skills/active/design
+cat brain/ai/skills/custom/design/SKILL.md | head -5
 
-# Test 3: Session start injection
-# Create test transcript with 1 line, then run inject-handoff.sh
-# Expected: "--- Memory context ---" block + existing handoff brief
+# 3. Verify all reference files present (8 total)
+ls brain/ai/skills/vendors/kylezantos/design-motion-principles/references/
 
-# Test 4: Cost check — zero trigger cost
-# Run 20 non-trigger prompts through the hook and verify <1ms per prompt
-time for i in {1..20}; do
-  echo '{"prompt":"can you help me refactor this function?"}' | \
-    bash memory-recall-hook.sh > /dev/null
-done
+# 4. Verify skills sync passes
+node tools/scripts/sync-ai-skills.mjs --check
+
+# 5. Verify design-review updated
+grep -q "design-motion-principles" brain/ai/skills/vendors/gstack/design-review/SKILL.md
+
+# 6. Verify web-design updated
+grep -q "design-motion-principles" brain/ai/skills/custom/web-design/SKILL.md
+
+# 7. Verify CLAUDE.md updated
+grep -q "^- \`/design\`" /Users/Office/.claude/CLAUDE.md
 ```
 
 ---
 
-## Behavior Summary (End State)
+## What Does NOT Change
 
-| You say | What happens |
-|---------|--------------|
-| "what did we decide about routing?" | Hook detects recall intent → searches memory → injects matches → Claude answers from memory |
-| "remind me about the firecrawl setup" | Hook detects trigger → searches "firecrawl setup" → injects mem-project-001 summary → Claude explains |
-| "write me a hello world function" | Hook finds no trigger → zero cost passthrough |
-| Session start after break | inject-handoff extracts topic keywords from first prompt → searches memory → injects relevant entries + .ai/current.md brief |
-| "what settings do we use for docker?" | Hook detects "what settings" → searches "docker" → injects relevant ref memories → Claude answers |
+- The content of any existing skill (no rewrites, only additive notes)
+- The routing.md policy
+- Any hook, settings.json, or session lifecycle
+- The symlink structure in active/
+- Any memory system from Phase 1 + Phase 2
