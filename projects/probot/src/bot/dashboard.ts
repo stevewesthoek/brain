@@ -1765,6 +1765,33 @@ function fmtReset(iso){
   if(dm<=0)return'Resetting…';
   return dm<60?'in '+dm+'m':'in '+Math.floor(dm/60)+'h '+String(dm%60).padStart(2,'0')+'m';
 }
+/* Viral Flow polling manager */
+window.__viralFlowPolling={active:false,statusTimer:null,metricsTimer:null,batchTimer:null,lastUpdate:null};
+function startViralFlowPolling(){
+  const state=window.__viralFlowPolling;
+  if(state.active) return;
+  state.active=true;
+  const updateStudio=async()=>{
+    try{
+      const r=await fetch('/api/viral-flow/status');
+      if(!r.ok) return;
+      const data=await r.json();
+      const panel=document.getElementById('tab-viral-flow');
+      if(panel) panel.innerHTML=renderViralFlowStudio(data);
+      state.lastUpdate=new Date();
+    }catch(e){console.error('Viral Flow polling error:',e);}
+  };
+  updateStudio();
+  state.statusTimer=setInterval(updateStudio,10000);
+}
+function stopViralFlowPolling(){
+  const state=window.__viralFlowPolling;
+  if(!state.active) return;
+  state.active=false;
+  if(state.statusTimer) clearInterval(state.statusTimer);
+  state.statusTimer=null;
+}
+
 /* Viral Flow rendering functions */
 function renderViralFlowStudio(status){
   if(!status) return '<div class="nr-err">Failed to load studio data</div>';
@@ -1866,9 +1893,11 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>
       panel.innerHTML='<div class="loading"><div class="spin"></div>Loading Studio...</div>';
       fetch('/api/viral-flow/status')
         .then(r=>r.json())
-        .then(data=>{panel.innerHTML=renderViralFlowStudio(data);})
+        .then(data=>{panel.innerHTML=renderViralFlowStudio(data);startViralFlowPolling();})
         .catch(e=>{panel.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
     }
+  }else{
+    stopViralFlowPolling();
   }
 }));
 /* encode a value for use inside a double-quoted HTML attribute */
