@@ -8,6 +8,12 @@ const PORT_OCCUPANCY_IN_FLIGHT = new Map<number, Promise<string[]>>();
 const PORT_OCCUPANCY_CACHE_MS = 2000;
 const PORT_OCCUPANCY_TIMEOUT_MS = 2000;
 
+export function clearPortOccupancyCache(port: number | null): void {
+  if (!port) return;
+  PORT_OCCUPANCY_CACHE.delete(port);
+  PORT_OCCUPANCY_IN_FLIGHT.delete(port);
+}
+
 /**
  * Get PIDs currently listening on a specific port.
  * If port is null/undefined, return [].
@@ -37,7 +43,7 @@ export async function getPortOccupants(port: number | null): Promise<string[]> {
   // Create new in-flight promise
   const promise = (async () => {
     try {
-      const { stdout } = await execFileAsync("lsof", ["-ti", `tcp:${port}`], {
+      const { stdout } = await execFileAsync("lsof", ["-tiTCP:" + String(port), "-sTCP:LISTEN"], {
         encoding: "utf-8",
         timeout: PORT_OCCUPANCY_TIMEOUT_MS,
         maxBuffer: 1024 * 1024,

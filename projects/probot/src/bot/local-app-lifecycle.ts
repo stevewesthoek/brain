@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { NormalizedLocalApp } from "./local-apps.js";
 import { buildLocalAppRuntimeEnv, resolveLocalAppCwd, resolveLocalAppLifecycleCommand } from "./local-apps.js";
-import { getPortOccupants } from "./local-app-ports.js";
+import { clearPortOccupancyCache, getPortOccupants } from "./local-app-ports.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -50,9 +50,11 @@ export async function waitForLocalAppPortFree(
     if (free) {
       return true;
     }
+    clearPortOccupancyCache(app.port);
     await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
   }
 
+  clearPortOccupancyCache(app.port);
   return false;
 }
 
@@ -95,6 +97,7 @@ export async function forceStopLocalAppPort(app: NormalizedLocalApp | null): Pro
 
     // Wait briefly for graceful shutdown
     await new Promise((resolve) => setTimeout(resolve, 1000));
+    clearPortOccupancyCache(app.port);
 
     // Check if any are still listening
     occupants = await getLocalAppPortOccupants(app);
@@ -111,6 +114,8 @@ export async function forceStopLocalAppPort(app: NormalizedLocalApp | null): Pro
         console.warn(`[LocalAppLifecycle] Failed to send SIGKILL to ${pid}:`, String(err));
       }
     }
+
+    clearPortOccupancyCache(app.port);
 
     // Verify they're gone
     const remaining = await getLocalAppPortOccupants(app);

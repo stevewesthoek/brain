@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { buildLocalAppRuntimeEnv, buildLocalAppsStatus, classifyLocalAppStartCommand, normalizeLocalApp, resolveLocalAppLifecycleCommand, resolveLocalAppRestartCommand, waitForLocalAppHealth } from "./local-apps.js";
+import { clearPortOccupancyCache } from "./local-app-ports.js";
 import {
   runExclusiveLocalAppOperation,
   waitForLocalAppPortFree,
@@ -89,6 +90,11 @@ test("normalize dual-compatible BuildFlow entry with orchestrator", () => {
   assert.equal(app.start, "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh start");
   assert.equal(app.stop, "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh stop");
   assert.equal(app.restart, "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh restart");
+});
+
+test("clearPortOccupancyCache is safe for nullable ports", () => {
+  assert.doesNotThrow(() => clearPortOccupancyCache(null));
+  assert.doesNotThrow(() => clearPortOccupancyCache(3058));
 });
 
 test("normalize per-app runtime config", () => {
