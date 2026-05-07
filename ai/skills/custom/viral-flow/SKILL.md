@@ -1,11 +1,12 @@
 ---
-name: goviralbro-viral-flow
+name: viral-flow
 description: >
   Viral Flow — Content strategy layer for the video orchestrator. Discovers trending topics,
   generates unique angles, scores compelling hooks, builds production-ready scripts, analyzes
   performance, and routes videos to platforms. Single entry point for all content strategy
-  work within the video production pipeline. AI-agnostic, IDE-agnostic. Works with Claude
-  Code, Codex, Gemini, all IDEs.
+  work within the video production pipeline. Built on your own Viral Flow npm package 
+  (github.com/stevewesthoek/viralflow). AI-agnostic, IDE-agnostic. Works with Claude Code, 
+  Codex, Gemini, all IDEs.
 ---
 
 # Viral Flow: Content Strategy for Video Production
