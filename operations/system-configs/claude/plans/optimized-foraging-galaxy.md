@@ -1,485 +1,267 @@
-# Plan: `/web` Orchestrator — Unified Web, Browser & Automation Entry Point
+# Plan: Memory Orchestrator + Structural Facts
 
 ## Context
 
-The user has four powerful but separate tools for web/browser/automation work:
-- `/firecrawl` — content extraction (markdown), no auth, stateless
-- `/browse` — interactive headless Chromium, 50+ commands, auth via cookie-import, visual QA
-- `/playwright` — scripted automation code, reusable scripts, E2E tests
-- `/apify` — cloud-scale bulk scraping, multi-account rotation, n8n integration
+The current memory system has solid read/inject infrastructure (mem-search, two UserPromptSubmit hooks) but lacks:
+- A write path (no way to create memory entries from the CLI)
+- Structural facts (no queryable entity-predicate-object store)
+- A single orchestrator skill that unifies all memory operations
+- Natural language CAPTURE/FACTS/REVIEW intent detection in the hook
 
-**The problem:** Users must remember which tool handles which scenario, the right commands within each tool, and when to combine tools. The user said: *"I do not want to know all these commands. I wanted to be stupid-proof. I just want to talk in natural language."*
+The user wants: talk naturally, memory works. Black box. No commands. AI-agnostic, IDE-agnostic, single entry point for everything memory-related.
 
-**Solution:** A `/web` master orchestrator — the same pattern as `/design` — that accepts any web/browser/automation intent, classifies the scenario, and sequences the right tool(s) at the right granularity. Users say "log into my bank and download statements" — the orchestrator decides cookie-import → navigate → click → download.
-
----
-
-## What Is Being Built
-
-### `brain/ai/skills/custom/web/SKILL.md` — Web Master Orchestrator
-
-One SKILL.md that:
-- Triggers on any web, browser, automation, or scraping intent
-- Classifies into 5 scenarios: RESEARCH / TEST / INTERACT / AUTOMATE / SCALE
-- Identifies key modifiers: auth needed, one-time vs. recurring, single URL vs. bulk
-- Routes to exact tool + exact commands — not just "use firecrawl", but "use `firecrawl crawl <url> --deep`"
-- Handles combinations (e.g., browse for auth → firecrawl for extraction)
-- Natural language routing table covering 25+ trigger patterns
+**No MemPalace. No ChromaDB. No Python. Pure shell + JSONL + Markdown.**
 
 ---
 
-## Files to Create
+## What Gets Built
 
-| File | What |
-|------|------|
-| `brain/ai/skills/custom/web/SKILL.md` | Master orchestrator — full content below |
-| `brain/ai/skills/active/web` | Symlink → `../custom/web` |
+| File | Action | Purpose |
+|------|--------|---------|
+| `brain/tools/scripts/mem-facts.sh` | Create | JSONL-based structured facts engine |
+| `brain/tools/scripts/mem-write.sh` | Create | Write new/update memory entries + auto-dispatch facts |
+| `brain/tools/scripts/mem-search.sh` | Update | Add `--facts <keyword>` flag |
+| `~/.claude/hooks/memory-recall-hook.sh` | Replace | Expand from 1 intent to 4 (RECALL/CAPTURE/FACTS/REVIEW) |
+| `brain/ai/skills/custom/memory/SKILL.md` | Create | Master orchestrator skill |
+| `brain/ai/skills/active/memory` | Create symlink | `-> ../custom/memory` |
+| `~/.claude/projects/.../memory/facts.jsonl` | Create (empty) | Structural facts store |
+| `~/.local/bin/mem-write` | Create symlink | -> mem-write.sh |
+| `~/.local/bin/mem-facts` | Create symlink | -> mem-facts.sh |
+| `/Users/Office/.claude/CLAUDE.md` | Update | Add `/memory` to skills list |
+| `brain/CLAUDE.md` | Update | Memory section update (write path + orchestrator) |
+| `brain/operations/system-configs/codex/AGENTS.md` | Update | Memory promotion table + new tools |
+| `brain/operations/system-configs/gemini/GEMINI.md` | Update | Memory promotion table + new tools |
 
-## Files to Update
+---
 
-| File | Change |
-|------|--------|
-| `brain/CLAUDE.md` | Add web orchestrator section (same as design system section) |
-| `/Users/Office/.claude/CLAUDE.md` | Add `/web` to available skills list |
-| `brain/operations/system-configs/codex/AGENTS.md` | Add `/web` to Workspace layout |
-| `brain/operations/system-configs/gemini/GEMINI.md` | Add `/web` to Workspace layout |
-| `brain/operations/decision-log.md` | Append web orchestrator decision |
+## 1. facts.jsonl — Data Format
 
-## Run After
+Location: `~/.claude/projects/-Users-Office-Repos-stevewesthoek-brain/memory/facts.jsonl`
+One JSON object per line. Append-only. No array wrapping.
+
+```jsonl
+{"id":"fact-001","entity":"Steve","predicate":"role","object":"founder","valid_from":"2026-05-07","valid_to":null,"source":"session"}
+{"id":"fact-002","entity":"Steve","predicate":"prefers","object":"Haiku as default model","valid_from":"2026-05-07","valid_to":null,"source":"session"}
+```
+
+- `id`: `fact-NNN` zero-padded 3 digits
+- `entity`: subject, CamelCase for multi-word
+- `predicate`: relationship type (`role`, `prefers`, `uses`, `stack`, `deadline`, `avoids`, `owns`, `timezone`, `contact`, `location`)
+- `object`: free text, <100 chars
+- `valid_from`: required ISO `YYYY-MM-DD`
+- `valid_to`: `null` until invalidated, then ISO date
+- `source`: `"session"` or `"mem-{type}-NNN"`
+
+Invalidation = append new line with `valid_to` set (original line preserved). Active facts = lines where `valid_to` is null.
+
+---
+
+## 2. mem-facts.sh
+
+Location: `brain/tools/scripts/mem-facts.sh` → symlink `~/.local/bin/mem-facts`
+
+```
+Commands:
+  mem-facts add <entity> <predicate> <object> [--since YYYY-MM-DD] [--source ID]
+  mem-facts list [entity]
+  mem-facts search <keyword>
+  mem-facts invalidate <fact-id>
+```
+
+Key implementation details:
+- All JSON parsing via `grep -oE '"field":"([^"]*)"' | cut -d'"' -f4` — NO jq dependency
+- ID assignment: `$(wc -l < "$FACTS_FILE" | tr -d ' ')` + 1, zero-padded to 3 digits
+- `list` and `search` filter on `"valid_to":null` to show only active facts
+- `invalidate` appends modified copy with `valid_to` = today; never deletes original
+- Output format: `[fact-NNN] entity | predicate | object (since VALID_FROM, src: SOURCE)`
+
+---
+
+## 3. mem-write.sh
+
+Location: `brain/tools/scripts/mem-write.sh` → symlink `~/.local/bin/mem-write`
+
+```
+Commands:
+  mem-write user|feedback|project|ref <name> <description> [--body "..."] [--facts "e|p|o,e|p|o"]
+  mem-write update <id> [--name "..."] [--description "..."] [--body "..."]
+```
+
+Key implementation details:
+- ID assignment: scan MEMORY.md for `\[mem-{type}-` lines, find highest NNN, increment
+- Filename: `{type}_{slugified_name}_{NNN}.md` (slug = lowercase, spaces→underscores, strip non-alnum)
+- Writes file with frontmatter: `id`, `name`, `description`, `type`, `created`
+- Appends to MEMORY.md index: `- [mem-{type}-NNN] [name](filename.md) — description`
+- `--facts "e1|p1|o1,e2|p2|o2"` → calls `mem-facts add` as subprocess for each triple
+- `update` mode: finds file by ID (grep frontmatter), patches specific fields
+- Confirms: `Created mem-{type}-NNN: {filename}` or `Updated {id}`
+
+---
+
+## 4. mem-search.sh — Changes Only
+
+Add to top: `FACTS_FILE="${MEMORY_DIR}/facts.jsonl"`
+
+Add new case branch before `*`:
+```bash
+--facts)
+  keyword="${2:?Usage: mem-search --facts <keyword>}"
+  [ ! -f "$FACTS_FILE" ] && echo "(facts store empty)" && exit 0
+  grep -i "$keyword" "$FACTS_FILE" | grep '"valid_to":null' | while IFS= read -r line; do
+    id=$(...)  entity=$(...)  predicate=$(...)  object=$(...)  since=$(...)
+    echo "  [$id] $entity | $predicate | $object (since $since)"
+  done
+  ;;
+```
+
+---
+
+## 5. memory-recall-hook.sh — 4-Intent Expansion
+
+Complete replacement of existing file (same hook slot in settings.json, same filename).
+
+**Detection order (first match wins):**
+1. REVIEW — `"show all my memories|audit memory|what do I have saved|list all memories|show me everything saved|memory overview|full memory|show memory index|what have I saved"`
+2. FACTS — `"what do we know about|show facts|current status of|facts about|what facts|tell me about|what is the current|profile of|what do you know about"`
+3. CAPTURE — `"remember this|save this|note that|make a note|I prefer|I want you to know|keep in mind|store this|save that|add to memory|worth remembering|don't forget that|write this down|log this"`
+4. RECALL — existing pattern (unchanged)
+
+**Injection payloads:**
+
+RECALL (unchanged):
+```
+--- Memory recall ---
+[mem-search output, max 5 entries]
+---
+```
+
+CAPTURE:
+```
+--- Memory capture instructions ---
+The user wants to save something to memory. Steps:
+1. Type: user (personal info/prefs), feedback (how AI should behave), project (decisions/status), ref (URLs/tools)
+2. Dedup check: mem-search <keywords>
+3. Write: mem-write {type} "<name>" "<description>" --body "<content>"
+4. Extract facts (MANDATORY): mem-facts add "<entity>" "<predicate>" "<object>" --source <new-id>
+5. Confirm: "Saved as mem-{type}-NNN. Also recorded N fact(s)."
+Existing related entries:
+[mem-search output for extracted keywords, max 3]
+---
+```
+
+FACTS (entity extracted from prompt):
+```
+--- Facts context ---
+Known facts about [ENTITY]:
+[mem-facts list ENTITY output]
+Related memory entries:
+[mem-search ENTITY output, max 3]
+---
+```
+
+REVIEW:
+```
+--- Memory index ---
+[full mem-search output (no keyword)]
+Facts summary:
+[mem-facts list output]
+---
+```
+
+**Entity extraction for FACTS:** strip trigger phrase words from prompt, apply stop-word filter, take first 2 remaining words joined with space.
+
+---
+
+## 6. memory/SKILL.md — Orchestrator
+
+Location: `brain/ai/skills/custom/memory/SKILL.md`
+
+Frontmatter:
+```yaml
+---
+name: memory
+description: "Memory orchestrator. Single entry point for all memory operations — capturing preferences and facts, recalling past decisions, querying structured facts, reviewing saved entries, and maintaining/correcting memory. Accepts natural language. No commands to remember. AI-agnostic, IDE-agnostic. Works with Claude Code, Codex, and Gemini CLI."
+---
+```
+
+Sections (mirrors /web and /design pattern exactly):
+1. Role statement + 25+ natural language triggers
+2. Standing Memory Laws (Write / Fact / Recall / Review — run silently)
+3. Step 0: Classify (no intake question — classify from prompt directly)
+4. Workflow A: RECALL — progressive disclosure with mem-search
+5. Workflow B: CAPTURE — dedup → type select → mem-write → mem-facts (mandatory)
+6. Workflow C: FACT — direct mem-facts operations
+7. Workflow D: REVIEW — full index + facts + maintenance suggestions
+8. Workflow E: MAINTAIN — update, deprecate, correct
+9. Tool Reference Map (all mem-* commands)
+10. Natural Language → Routing Guide (25+ rows)
+11. AI-Agnostic & IDE-Agnostic Operation
+12. Underlying Tools Remain Independent
+
+---
+
+## 7. Config Updates
+
+**CLAUDE.md global:** Add `/memory` to available skills list
+**brain/CLAUDE.md:** Update Memory System section — add mem-write, mem-facts, /memory orchestrator, updated promotion table
+**AGENTS.md + GEMINI.md:** Update memory section to add mem-write, mem-facts, /memory reference
+
+---
+
+## 8. Sync
 
 ```bash
 node tools/scripts/sync-ai-skills.mjs --dry-run && \
-  node tools/scripts/sync-ai-skills.mjs && \
-  node tools/scripts/sync-ai-skills.mjs --check
-```
-
----
-
-## Full SKILL.md Content
-
-```markdown
----
-name: web
-description: Master web, browser, and automation orchestrator. Single entry point for ALL web-related work — internet research, browser testing, authenticated interaction, reusable automation scripts, and bulk scraping. Accepts natural language. Classifies scenario (research / test / interact / automate / scale), identifies auth and recurrence requirements, and routes to the exact tool and exact commands needed. No skill names, no command syntax, no configuration to remember.
----
-
-# Web — Master Orchestrator
-
-You are the **single entry point** for all web, browser, and automation work. When the user says anything related to browsing, scraping, testing, automating, or interacting with websites — this skill runs.
-
-The user does not know (and should not need to know) that `/firecrawl`, `/browse`, `/playwright`, or `/apify` exist, or which commands each supports. Your job is to know when to use each, at what granularity, in what order, and why.
-
-**Natural language triggers (non-exhaustive):**
-- "research this topic / find information about X"
-- "get the content of this URL"
-- "crawl this entire site"
-- "take a screenshot of my site"
-- "test this feature / verify this works"
-- "check my responsive layout"
-- "log into X and download Y"
-- "fill out this form"
-- "download my bank statements"
-- "automate posting on Twitter"
-- "write an E2E test for this flow"
-- "scrape competitor pricing every day"
-- "monitor this site for changes"
-- "I need to bypass the Twitter API"
-- "make a Playwright automation that does X"
-
----
-
-## Standing Web Laws (Always Active)
-
-Apply these silently — never explain them to the user.
-
-- **Firecrawl first for pure content.** If the task only needs page text/markdown and no auth, use firecrawl. Never use browse for read-only content extraction.
-- **Browse for anything stateful.** If the task requires login, clicks, form fills, or visual verification — use browse. It has persistent session state.
-- **Playwright for anything recurring.** If the user will run this more than once, or wants it scheduled — write a script. Browse is for one-off iteration, Playwright is for durable automation.
-- **Apify for scale (50+ URLs or daily jobs).** For production-volume or scheduled multi-URL operations, use apify. Don't use browse or firecrawl for bulk work.
-- **Cookie-import before interacting with authenticated pages.** Use `browse cookie-import-browser` to transfer real browser cookies into the headless session. Always ask which browser (Chrome, Arc, Brave, Edge) if unclear.
-- **Handoff for CAPTCHA or MFA.** If a site blocks headless or requires MFA: use `browse handoff` to pass control to visible Chrome, then `browse resume` to return to AI control.
-- **Codegen first for new Playwright scripts.** Use `npx playwright codegen <url>` to record base actions, then refine the generated script.
-
----
-
-## Step 0: Intake (One Question)
-
-Ask ONE question:
-
-> **"Tell me about your web task:**
-> 1. **What do you want to do?** (research/read a site / test your own site / log in and do something / write an automation / scrape at scale)
-> 2. **Auth needed?** Does it require logging in or does the site block bots? (yes / no / not sure)
-> 3. **One-time or recurring?** Is this a single run, or should it work repeatably / on a schedule?
-> 4. **URL(s)?** Single page, multiple pages, or open-ended search?"
-
-Wait for the response before routing.
-
----
-
-## Step 1: Classify
-
-**Scenario (pick one):**
-- `RESEARCH` — get content, data, or information from the web; no interaction needed
-- `TEST` — verify that your own site/app works correctly; visual confirmation
-- `INTERACT` — log in, fill forms, click, navigate, extract, or download on a third-party site
-- `AUTOMATE` — create a reusable script or scheduled automation
-- `SCALE` — bulk scraping, monitoring, or data collection across many URLs
-
-**Modifiers (detect from intake):**
-- `AUTH` — site requires login or has anti-bot measures
-- `RECURRING` — needs to run more than once or on a schedule
-- `BULK` — 50+ URLs or production-volume data needs
-
----
-
-## Workflow A: Research
-
-**Trigger:** Scenario = RESEARCH, no auth, no bulk
-
-Use `/firecrawl` exclusively. Firecrawl returns clean markdown — 75-90% token reduction vs raw HTML.
-
-### A1. Choose mode based on scope
-
-| Intent | Firecrawl command | When |
-|--------|------------------|------|
-| Read a single URL | `firecrawl-wrapper.sh scrape <url>` | "What does this page say?" |
-| Search the web | `firecrawl-wrapper.sh search <query>` | "Find information about X" |
-| Crawl a full site | `firecrawl-wrapper.sh crawl <url> [pages] [depth]` | "Get all pages from this site" |
-| Map all URLs | `firecrawl-wrapper.sh map <url>` | "What pages exist on this site?" |
-| Deep crawl | `firecrawl-wrapper.sh crawl <url> --deep` | Site is large or needs full coverage |
-
-### A2. Process output
-- Firecrawl returns markdown. Synthesize, summarize, or extract as needed.
-- For large crawls (>30k tokens): preprocess with Gemini Flash before synthesizing.
-
-### A3. If auth is needed
-Switch to Workflow C (INTERACT) — firecrawl cannot handle authenticated content.
-
----
-
-## Workflow B: Testing / QA
-
-**Trigger:** Scenario = TEST (testing your own site or verifying a deployment)
-
-Use `/browse` for all verification work. Browse has persistent Chromium state and 50+ commands for UI verification.
-
-### B1. Navigate and snapshot
-```
-browse goto <your-url>
-browse snapshot          # Accessibility tree + element refs
-browse screenshot        # Visual capture
-```
-
-### B2. Choose verification type
-
-| What to verify | Commands | Notes |
-|---------------|---------|-------|
-| Page looks correct | `screenshot`, `snapshot` | Evidence-based verification |
-| Form works | `snapshot -i` → `fill`, `click`, `text` | -i = interactive elements only |
-| Links are valid | `links` | All hrefs + text |
-| JS errors | `console --errors` | Filter to errors/warnings |
-| Responsive layout | `responsive [prefix]` | Saves mobile/tablet/desktop PNGs |
-| Before/after diff | `diff <url1> <url2>` | Text diff between states |
-| Performance | `perf` | Page load timings |
-| Accessibility | `accessibility` | Full ARIA tree |
-| Network requests | `network` | All requests, check for failures |
-| Specific element state | `is visible/hidden/enabled/checked <sel>` | State assertions |
-
-### B3. Interaction testing
-Use `snapshot -i` to get interactive element refs, then:
-```
-browse click @ref           # Click by ref
-browse fill @ref value      # Fill input by ref
-browse press Enter          # Submit
-browse screenshot           # Capture result
-```
-
-### B4. Document findings
-Produce a triage list: ✅ Pass / ⚠️ Warning / ❌ Fail — with screenshot paths as evidence.
-
----
-
-## Workflow C: One-Off Interaction
-
-**Trigger:** Scenario = INTERACT + one-time (not recurring)
-
-Use `/browse` for authenticated, interactive, one-off tasks (bank downloads, form submissions, social media actions, etc.).
-
-### C1. Authenticate (if needed)
-
-**Option A — Import from real browser (preferred):**
-```
-browse cookie-import-browser [chrome|arc|brave|edge] [--domain <domain>]
-```
-This transfers your real logged-in session to the headless browser. No re-login needed.
-
-**Option B — Manual login + handoff:**
-```
-browse goto <login-url>
-browse handoff "Please log in — I'll wait"
-# User logs in manually in visible Chrome
-browse resume
-```
-Use when Cookie import isn't sufficient (MFA, fresh CAPTCHA, etc.).
-
-**Option C — Script the login:**
-Only if the login page is simple (email + password, no MFA):
-```
-browse goto <login-url>
-browse fill #email youremail@example.com
-browse fill #password yourpassword
-browse click [type=submit]
-browse wait --networkidle
-```
-
-### C2. Navigate and act
-
-After authentication, use browse commands for the task:
-
-| Task type | Commands |
-|-----------|---------|
-| Navigate to a section | `goto <url>`, `click <nav-link>` |
-| Fill and submit a form | `snapshot -i` → `fill`, `select`, `click` |
-| Download a file | `click <download-button>`, `wait --networkidle` |
-| Extract data | `text`, `html [selector]`, `js <expression>` |
-| Take evidence screenshot | `screenshot` |
-| Handle a dialog | `dialog-accept` or `dialog-dismiss` before triggering |
-| Multiple tabs | `newtab <url>`, `tabs`, `tab <id>` |
-
-### C3. Handle anti-bot / CAPTCHA
-If the site blocks headless Chromium:
-```
-browse handoff "This site is blocking headless — please complete the challenge"
-browse resume
-```
-
-### C4. If this task will recur → upgrade to Workflow D
-If the user will do this again: say so and offer to write a Playwright script (Workflow D).
-
----
-
-## Workflow D: Reusable Automation / Script
-
-**Trigger:** Scenario = AUTOMATE, OR Scenario = INTERACT + recurring
-
-Use `/playwright` to generate a durable, reusable script. One-off exploration in browse first if needed, then codify.
-
-### D1. Clarify the trigger
-Ask (if not already clear):
-- Manual: user runs the script themselves when needed
-- Scheduled: runs on a cron/nightly (use nightly scheduler)
-- Event-driven: triggered by n8n workflow
-
-### D2. Generate base script (if interactive site)
-```bash
-npx playwright codegen <url>
-```
-Records user interactions → outputs JS/TS script. Use this as the starting point.
-
-### D3. Write or refine the script
-
-Playwright script anatomy:
-```javascript
-const { chromium } = require('playwright');
-
-(async () => {
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
-
-  // Auth: load saved cookies (if needed)
-  // await context.addCookies(JSON.parse(fs.readFileSync('cookies.json')));
-
-  const page = await context.newPage();
-  await page.goto('<url>');
-
-  // Task-specific actions
-  await page.fill('#selector', 'value');
-  await page.click('button');
-  await page.waitForLoadState('networkidle');
-
-  // Extract/save
-  const data = await page.evaluate(() => document.body.innerText);
-
-  await browser.close();
-})();
-```
-
-Common patterns by use case:
-
-| Use case | Key pattern |
-|----------|------------|
-| Bank statement download | Login → navigate → click download → `waitForEvent('download')` → save |
-| Social media posting | Login → navigate to compose → fill text → click post |
-| Data extraction | Navigate → `page.evaluate()` → return structured data |
-| E2E test | `npx playwright test` with `expect()` assertions |
-| Scheduled job | Wrap in script, add to nightly scheduler plist |
-
-### D4. Wire to scheduler or n8n (if recurring)
-
-**Nightly scheduler:** Add to `~/Library/LaunchAgents/com.office.nightly-scheduler.plist`
-**n8n workflow:** Trigger via Execute Command node → pass output to next node
-
-### D5. Save the script
-Save to the relevant project directory. Suggest adding to `CLAUDE.md` under Commands.
-
----
-
-## Workflow E: Scale / Bulk
-
-**Trigger:** Scenario = SCALE, or 50+ URLs, or daily monitoring
-
-Use `/apify` for production-volume scraping and recurring monitoring. Multi-account rotation keeps costs low ($50/mo total).
-
-### E1. Find or choose an actor
-- Apify Store has pre-built actors for most common targets (Twitter/X, LinkedIn, Google, Amazon, etc.)
-- CLI: `apify info <actor-name>` to see input schema
-- Custom actor: only when no existing actor fits
-
-### E2. Get next available account token
-```bash
-curl -s https://n8n.prochat.tools/webhook/apify-next-token
-```
-Returns the least-recently-used account token. Always use this — never hardcode a token.
-
-### E3. Choose deduplication pattern
-
-| Pattern | When | How |
-|---------|------|-----|
-| A — Paginated offset | Site has page 1, 2, 3... pagination | Split into N runs with different page ranges |
-| B — URL slices | Known URL list to scrape | Divide URL list into N equal chunks |
-| C — Post-hoc | No control over what actor returns | Collect all runs, deduplicate by key field after |
-
-### E4. Run and monitor
-```bash
-# Via apify-multi CLI
-apify-multi run <actor-name> <input-json> [account-index]
-
-# Poll for terminal state (SUCCEEDED / FAILED / TIMED-OUT / ABORTED)
-apify-multi status <run-id>
-
-# Fetch dataset
-apify-multi list <actor-name>
-```
-
-### E5. Wire to n8n for recurring jobs
-Standard n8n pattern:
-1. Cron trigger → get token (webhook) → start Apify run (HTTP Request)
-2. Wait node → poll terminal state → fetch dataset → process/store
-
----
-
-## Tool Reference Map (Complete)
-
-| Tool | Skill | Scope | Auth | State | Cost | Use when |
-|------|-------|-------|------|-------|------|---------|
-| `/firecrawl` | `firecrawl-wrapper.sh` | Read-only content | ❌ | Stateless | Free | Research, content extraction, full-site crawl |
-| `/browse` | `browse <command>` | Interactive browser | ✅ (cookie-import) | Persistent | Free | Testing, one-off auth flows, form interaction, screenshots |
-| `/playwright` | `npx playwright` | Scripted automation | ✅ (in script) | Programmatic | Free | Reusable scripts, E2E tests, scheduled automation |
-| `/apify` | `apify-multi` + n8n | Cloud actors | ✅ (built-in) | Per-run | $50/mo | 50+ URLs, daily monitoring, production-scale scraping |
-
-### Browse command quick-reference
-
-| Category | Commands |
-|---------|---------|
-| Navigate | `goto <url>`, `back`, `forward`, `reload`, `url` |
-| Read | `text`, `links`, `html [sel]`, `forms`, `accessibility` |
-| Interact | `click <sel>`, `fill <sel> <val>`, `select <sel> <val>`, `hover`, `press <key>`, `type <text>`, `scroll [sel]`, `upload <sel> <file>` |
-| Auth | `cookie-import-browser [browser] [--domain d]`, `cookie-import <json>`, `cookie <name>=<value>` |
-| Inspect | `snapshot`, `screenshot`, `attrs <sel>`, `js <expr>`, `css <sel> <prop>`, `is <prop> <sel>`, `console`, `network`, `perf`, `storage` |
-| Visual | `screenshot`, `responsive [prefix]`, `diff <url1> <url2>`, `pdf [path]` |
-| Tabs | `newtab [url]`, `tab <id>`, `tabs`, `closetab [id]` |
-| Handoff | `handoff [message]`, `resume` |
-
----
-
-## Natural Language → Routing Guide
-
-Route directly to the right tool + command without asking the full intake question when intent is clear:
-
-| User says | Tool | Specific action |
-|-----------|------|----------------|
-| "research X / find info about Y / what does this URL say" | firecrawl | `scrape <url>` |
-| "search the web for X" | firecrawl | `search <query>` |
-| "crawl this entire site" | firecrawl | `crawl <url> --deep` |
-| "what pages exist on this site?" | firecrawl | `map <url>` |
-| "take a screenshot" | browse | `goto <url>` → `screenshot` |
-| "test my site / check if X works" | browse | `goto` → `snapshot` → `is` checks |
-| "does my responsive layout look right?" | browse | `goto` → `responsive` |
-| "compare before and after" | browse | `diff <url1> <url2>` |
-| "check for JS errors" | browse | `goto` → `console --errors` |
-| "check accessibility" | browse | `goto` → `accessibility` |
-| "log into X" | browse | `cookie-import-browser` or `handoff` |
-| "fill out this form" | browse | `goto` → `snapshot -i` → `fill` → `click` |
-| "download my bank statements (once)" | browse | `cookie-import-browser` → `goto` → `click` download |
-| "download my bank statements (automated)" | playwright | codegen → script with `waitForEvent('download')` |
-| "post on Twitter / bypass API (once)" | browse | `cookie-import-browser` → `goto` → `fill` → `click` |
-| "post on Twitter / schedule posts (recurring)" | playwright | script with saved cookies + scheduler |
-| "write an E2E test" | playwright | `npx playwright codegen` → refine → `npx playwright test` |
-| "automate X / make a script that does Y" | playwright | codegen or write from scratch |
-| "scrape 100+ URLs / bulk data / competitors" | apify | `apify-multi run` + dedup pattern |
-| "monitor this daily / recurring scrape" | apify + n8n | actor + cron workflow |
-| "this site blocks bots / CAPTCHA" | browse | `handoff` → manual completion → `resume` |
-
----
-
-## AI-Agnostic Operation
-
-This orchestrator is plain markdown. All chained tools are CLI-based. Nothing requires MCP, specific IDE plugins, or proprietary tooling.
-
-**Works identically on:**
-- **Claude Code** — invoke `/web` or describe your web task in natural language
-- **Codex CLI** — invoke `/web`
-- **Gemini CLI** — invoke `/web`; 1M context window handles large crawl outputs for preprocessing
-- **Cursor, Kiro, any IDE** — synced via `brain/ai/skills/active/`
-
-**Tool wrappers:**
-- firecrawl: `brain/tools/firecrawl/firecrawl-wrapper.sh` (auto-starts Docker; logs all requests)
-- browse: `browse <command>` CLI (auto-starts Chromium daemon; persistent session)
-- playwright: `npx playwright` (global install, Node.js 18+)
-- apify: `apify-multi <command>` + n8n webhook for token rotation
-```
-
----
-
-## Brain CLAUDE.md Update
-
-Add a section after the "Design system" section:
-
-```markdown
-## Web, browser & automation
-
-For ALL web-related work — internet research, browser testing, authenticated interaction, reusable automations, and bulk scraping — use `/web`. The master orchestrator classifies intent and routes automatically to `/firecrawl` (research), `/browse` (interactive/testing), `/playwright` (reusable scripts), or `/apify` (scale). No tool names or commands needed — just describe the task.
-```
-
----
-
-## Verification
-
-```bash
-# 1. Verify skill exists
-ls brain/ai/skills/custom/web/SKILL.md
-
-# 2. Verify active symlink
-ls -la brain/ai/skills/active/web
-
-# 3. Verify sync passes
+node tools/scripts/sync-ai-skills.mjs && \
 node tools/scripts/sync-ai-skills.mjs --check
-
-# 4. Verify /web appears in global CLAUDE.md skills list
-grep "web" /Users/Office/.claude/CLAUDE.md
-
-# 5. Verify CLAUDE.md has web section
-grep -n "Web, browser" brain/CLAUDE.md
-
-# 6. Verify routing table present in skill
-grep -c "User says" brain/ai/skills/custom/web/SKILL.md
 ```
 
 ---
 
-## What Does NOT Change
+## 9. Verification
 
-- Content of /firecrawl, /browse, /playwright, /apify skills (no rewrites)
-- Routing policy
-- Hooks, settings.json, session lifecycle
-- Existing symlink structure
+```bash
+# Empty facts store created
+ls ~/.claude/projects/-Users-Office-Repos-stevewesthoek-brain/memory/facts.jsonl
+
+# mem-facts add/list/search/invalidate work
+mem-facts add "Steve" "prefers" "Haiku as default model"
+mem-facts list Steve
+mem-facts search "Haiku"
+mem-facts invalidate fact-001
+mem-facts list  # fact-001 gone from active list
+
+# mem-write creates entry + auto-writes facts
+mem-write user "Steve Westhoek" "Personal info and preferences" \
+  --body "Steve is founder of ProChat. Prefers concise responses." \
+  --facts "Steve|role|founder,Steve|company|ProChat"
+mem-search           # new entry visible in index
+mem-search --id mem-user-001
+mem-facts list Steve  # 2 new facts appear
+
+# mem-search --facts works
+mem-search --facts "Steve"
+
+# Hook detects 4 intents correctly
+echo '{"prompt":"remember this: I prefer Haiku"}' | bash ~/.claude/hooks/memory-recall-hook.sh | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.log(d.prompt)" | grep "capture instructions"
+echo '{"prompt":"what did we decide about models"}' | bash ~/.claude/hooks/memory-recall-hook.sh | node -e "..." | grep "Memory recall"
+echo '{"prompt":"what do we know about Steve"}' | bash ~/.claude/hooks/memory-recall-hook.sh | node -e "..." | grep "Facts context"
+echo '{"prompt":"show all my memories"}' | bash ~/.claude/hooks/memory-recall-hook.sh | node -e "..." | grep "Memory index"
+
+# Skill sync passes
+node tools/scripts/sync-ai-skills.mjs --check  # exit 0
+```
+
+---
+
+## Implementation Order
+
+1. Create `facts.jsonl` (empty)
+2. Create + test `mem-facts.sh` + symlink
+3. Create + test `mem-write.sh` + symlink
+4. Update `mem-search.sh` (add `--facts`)
+5. Replace `memory-recall-hook.sh` (4-intent version)
+6. Create `brain/ai/skills/custom/memory/SKILL.md` + symlink
+7. Update all 4 config files (CLAUDE.md global, brain/CLAUDE.md, AGENTS.md, GEMINI.md)
+8. Run sync + verify
+9. Commit

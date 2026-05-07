@@ -111,7 +111,21 @@ RTK is installed globally (`rtk 0.39.0`) to reduce shell-command token output in
 
 ## Memory system
 
-Use `mem-search` for AI-agnostic memory index lookup (search → ID → full content). See `~/.claude/CLAUDE.md` for detailed docs on observation IDs and progressive disclosure.
+**Single entry point:** Use `/memory` orchestrator for all memory operations (recall, capture, facts, review, maintain). Works with Claude Code, Codex, Gemini CLI, and all IDEs. Automatic intent detection via natural language — no commands to remember.
+
+**Write path:** `mem-write` creates/updates memory entries (types: user/feedback/project/ref) and auto-extracts facts to `mem-facts`.
+
+**Structured facts:** `mem-facts` manages entity-predicate-object facts in append-only JSONL. Commands: add/list/search/invalidate.
+
+**Read path:** `mem-search` queries memory files by keyword/ID. Also searches facts with `--facts` flag.
+
+**Tools are CLI-based and all independent:** Users can invoke `mem-write`, `mem-facts`, `mem-search` directly via shell. The `/memory` orchestrator is a convenience routing layer, not a replacement.
+
+**Progressive disclosure pattern:** Always `mem-search <keyword>` first (index + file matches). Only fetch full content for clearly relevant IDs.
+
+**Automatic memo detection:** UserPromptSubmit hook in `~/.claude/hooks/memory-recall-hook.sh` detects 4 intents (RECALL/CAPTURE/FACTS/REVIEW) and injects context automatically. User never needs to invoke the hook.
+
+See `brain/ai/skills/custom/memory/SKILL.md` for full orchestrator documentation and natural language routing table.
 
 ## ProBot Updates (Controlled & Safe)
 

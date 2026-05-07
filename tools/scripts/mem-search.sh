@@ -5,6 +5,7 @@
 #   mem-search <query>                  search index + files for keyword
 #   mem-search --id <mem-id>            show full content of a memory file
 #   mem-search --full <query>           show full content of all matches
+#   mem-search --facts <keyword>        search structural facts
 #
 # Works with: Claude Code, Codex CLI, Gemini CLI (shell access)
 # Dependencies: bash, grep, cat, find, cut (all standard)
@@ -13,8 +14,34 @@ set -euo pipefail
 
 MEMORY_DIR="$HOME/.claude/projects/-Users-Office-Repos-stevewesthoek-brain/memory"
 MEMORY_INDEX="$MEMORY_DIR/MEMORY.md"
+FACTS_FILE="$MEMORY_DIR/facts.jsonl"
 
 case "${1:-}" in
+  --facts)
+    # Layer 2.5: Search structural facts
+    keyword="${2:?Usage: mem-search --facts <keyword>}"
+    if [ ! -f "$FACTS_FILE" ]; then
+      echo "(facts store empty)"
+      exit 0
+    fi
+
+    grep -i "$keyword" "$FACTS_FILE" 2>/dev/null | while IFS= read -r line; do
+      # Only process lines where valid_to is null (active facts)
+      if ! printf '%s' "$line" | grep -q '"valid_to":null'; then
+        continue
+      fi
+
+      # Extract fields using grep+cut
+      id=$(printf '%s' "$line" | grep -oE '"id":"([^"]*)"' | cut -d'"' -f4)
+      entity=$(printf '%s' "$line" | grep -oE '"entity":"([^"]*)"' | cut -d'"' -f4)
+      predicate=$(printf '%s' "$line" | grep -oE '"predicate":"([^"]*)"' | cut -d'"' -f4)
+      object=$(printf '%s' "$line" | grep -oE '"object":"([^"]*)"' | cut -d'"' -f4)
+      since=$(printf '%s' "$line" | grep -oE '"valid_from":"([^"]*)"' | cut -d'"' -f4)
+
+      printf "  [%s] %s | %s | %s (since %s)\n" "$id" "$entity" "$predicate" "$object" "$since"
+    done
+    ;;
+
   --id)
     # Layer 3: Fetch full content by ID
     id="${2:?Usage: mem-search --id <mem-id>}"

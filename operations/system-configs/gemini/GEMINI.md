@@ -210,26 +210,33 @@ Gemini
 
 | What | Where |
 |------|-------|
+| User preference, feedback, or fact | `mem-write feedback/user` + `mem-facts add` (via `/memory` orchestrator) |
 | Confirmed architecture/workflow decision | `decision-log.md` — append |
 | Stable global convention | `GEMINI.md` or `CLAUDE.md` |
 | Hard-won codebase-specific pattern | Run the shared `/learner` skill and save it in `brain/ai/skills/custom/learned/` |
 | Everything else | `.ai/current.md` only — ephemeral |
 
-**Memory IDs and search (AI-agnostic):**
+**Memory operations (AI-agnostic) — Use `/memory` orchestrator:**
 
-Every memory file has a unique ID: `mem-{type}-{NNN}`. Use `mem-search` to access entries without reading all files:
+Single entry point for all memory work: recall past decisions, save preferences, query facts, review memory, maintain entries. Works identically on Claude Code, Codex, Gemini, all IDEs.
 
-```bash
-mem-search                    # list index
-mem-search <keyword>          # filter entries
-mem-search --id mem-ref-001   # fetch full file
-```
+Write-side tools:
+- `mem-write user|feedback|project|ref <name> <description> [--body "..."] [--facts "e|p|o,...]"` — create/update memory
+- `mem-facts add <entity> <predicate> <object>` — add structured fact
 
-Progressive disclosure: index first → filter → fetch full only when needed. Saves ~10x tokens at scale.
+Read-side tools:
+- `mem-search <keyword>` — keyword search
+- `mem-search --id <mem-id>` — fetch full entry by ID
+- `mem-search --facts <keyword>` — search facts
+- `mem-facts list [entity]` — list active facts
 
-**Automatic memory injection (Claude orchestrates):**
+Automatic intent detection (UserPromptSubmit hook):
+- User says "what did we decide" → `--- Memory recall ---` block injected
+- User says "remember this" → capture instructions injected
+- User says "what do we know about X" → facts context injected
+- User says "show all my memories" → full memory index injected
 
-When Claude orchestrates you for a task, memory entries may be prepended to the context as `--- Memory context ---` or `--- Memory recall ---` blocks. These are authoritative memory from previous sessions. Use them naturally in your response without mentioning the mechanism. You do not need to request memory manually — Claude's hooks inject relevant entries automatically based on keyword detection and recall-intent triggers.
+No manual invocation needed — the hook detects intent from natural language.
 
 ---
 
