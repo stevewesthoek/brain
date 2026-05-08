@@ -1,0 +1,14 @@
+{
+  "job_type": "render",
+  "video_id": "00000000-0000-4000-8000-000000000001",
+  "task_config": {
+    "video_id": "00000000-0000-4000-8000-000000000001",
+    "format_key": "vertical_1080x1920_9x16",
+    "input_video_path": "/absolute/path/to/source.mp4",
+    "input_audio_path": "/absolute/path/to/optional-audio.wav",
+    "input_image_path": "/absolute/path/to/optional-still.png",
+    "output_path": "/absolute/path/to/output/vertical_1080x1920_9x16.mp4",
+    "duration_seconds": 60,
+    "render_mode": "simple_transform"
+  }
+}

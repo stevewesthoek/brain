@@ -162,20 +162,19 @@ Each production package contains:
 - No Meta/Facebook API credential storage
 - Platform integration deferred to Phase 3 adapters
 
-### 3. No Database (Phase 2B)
-- No PostgreSQL schema implementation
-- Manifest is static JSON file per video
-- Job queue deferred to Phase 2B
+### 3. Database and Queue Were Deferred From Phase 2A, Then Implemented in Phase 2B
+- Phase 2A itself was specs-only and did not include PostgreSQL execution.
+- Phase 2B added the PostgreSQL-backed worker and durable production package records.
+- Phase 2C added real local FFmpeg/thumbnail adapters and optional Whisper.cpp caption execution.
 
-### 4. No Adapter Interface
-- No base adapter class
-- No adapter registry
-- Adapter architecture defined in specs; implementation deferred to Phase 3
+### 4. Posting Adapter Interface Is Still Deferred
+- No platform posting adapter is implemented in Phase 2A/2B/2C.
+- Posting jobs are intentionally Phase 2B-safe no-ops.
+- Adapter architecture remains Phase 3 work.
 
-### 5. No Resource Scheduler
-- No job pooling or prioritization
-- No thermal/RAM monitoring
-- Deferred to Phase 3 worker process
+### 5. Resource Scheduler Is Still Deferred
+- The worker can execute jobs and validate artifacts, but full resource-class scheduling is not implemented yet.
+- Thermal/RAM monitoring and worker-pool limits remain future work before scaling batches.
 
 ---
 
@@ -309,7 +308,7 @@ Render master format once (e.g., 1920x1080), derive others via FFmpeg:
 - Use **canonical timeline** for content-heavy, high-quality productions (avatars, talking heads, product videos)
 - Use **simple transform** for text-over-image, music videos, animations where centering is safe
 
-Both approaches supported by `format-specs.json`. Implementation in Phase 3 worker will respect `rendering_mode_default` per format.
+Both approaches are supported by `format-specs.json`. The Phase 2C worker uses FFmpeg for simple local transforms and still-image-plus-audio renders where enough local inputs are provided.
 
 ---
 
@@ -358,7 +357,7 @@ Both approaches supported by `format-specs.json`. Implementation in Phase 3 work
 - [x] `caption-specs.json` created with transcription + caption styles
 - [x] `production-package.schema.json` created and validates as JSON Schema
 - [x] `video-orchestrator-phase-2a-execution.md` created (this file)
-- [ ] Phase 2A implementation code created (deferred to Phase 2B, kept in specs phase)
+- [x] Phase 2B/2C implementation code created to consume these specs
 
 ### Verification
 - [x] JSON files are valid JSON (run `python -m json.tool` on each)
@@ -385,46 +384,46 @@ Both approaches supported by `format-specs.json`. Implementation in Phase 3 work
 
 ---
 
-## Next Review Checklist (Before Phase 2B Kickoff)
+## Next Review Checklist (Before Phase 3 Posting Adapters)
 
 Verify with implementer:
 
-- [ ] Specifications are clear and actionable
-- [ ] Format choices (5 formats) sufficient for all 9 platform targets?
-- [ ] Safe-zone rendering approach chosen (canonical timeline vs. simple transform)?
-- [ ] Whisper.cpp transcription acceptable as default, or upgrade to API?
-- [ ] Manifest schema matches implementation expectations
+- [x] Specifications are clear and actionable
+- [x] Format choices (5 formats) sufficient for all 9 platform targets
+- [x] Safe-zone rendering approach supports simple FFmpeg transform first
+- [ ] Whisper.cpp transcription acceptable as default once a local binary/model are configured
+- [x] Manifest schema matches implementation expectations
 - [ ] Platform specs match latest platform documentation (rules may change)
 - [ ] Any missing platforms or package targets to add?
 - [ ] Storage plan for manifest + all variants (estimated file count and size)?
 
 ---
 
-## Phase 2A → Phase 2B Handoff
+## Phase 2A → Phase 2B/2C Handoff
 
-**What Phase 2B will do with Phase 2A specs:**
+**What Phase 2B/2C does with Phase 2A specs:**
 
 1. **Implement PostgreSQL schema** to store video entities (separate from jobs)
    - Manifests will be serialized/stored in database per video_id
    - Queries will reference format-specs, platform-specs, caption-specs
 
 2. **Implement worker process** to execute rendering jobs
-   - Worker will call FFmpeg with specs from format-specs.json
-   - Worker will call Whisper.cpp with config from caption-specs.json
-   - Worker will generate manifests per production-package.schema.json
+   - Worker calls FFmpeg with specs from format-specs.json when local source media is provided
+   - Worker calls Whisper.cpp only when a compatible local binary and model path are configured
+   - Worker generates manifests per production-package.schema.json
 
 3. **Implement safe-zone rendering**
-   - Phase 2B will choose rendering mode per format
-   - Will test and verify against acceptance checklist above
+   - Phase 2C chooses local FFmpeg transform behavior per format
+   - Placeholder or invalid media remains excluded from upload-ready completeness
 
 4. **Implement caption integration**
-   - Phase 2B will integrate Whisper.cpp using caption-specs config
-   - Will generate SRT, VTT, JSON simultaneously
-   - Will burn-in captions where needed
+   - Phase 2C integrates Whisper.cpp using caption-specs config when available
+   - Generates or preserves SRT, VTT, JSON outputs
+   - Burn-in captions remain a later production quality pass
 
 5. **Implement manual upload instructions**
-   - Phase 2B will populate manual_steps per platform from platform-specs.json
-   - Will include file paths and metadata from manifest
+   - Phase 2B/2C populates manual_steps per platform from platform-specs.json
+   - Includes file paths, metadata, and local artifact provenance in the manifest
 
 **Phase 3 will do with Phase 2A + 2B:**
 
@@ -519,4 +518,3 @@ operations/runbooks/
 **Phase 2A Ready for Review**
 
 Next step: Submit specs to user/stakeholders for approval before Phase 2B implementation begins (Jun 10).
-

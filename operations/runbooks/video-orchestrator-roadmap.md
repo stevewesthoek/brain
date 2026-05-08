@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
 **Date Updated:** 2026-05-08 (Post-Review)  
-**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2B ready for implementation.  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2B complete; Phase 2C adds local production adapters before posting work.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Architecture:** Local-first production + platform adapters (not fully local publishing)
 
@@ -59,6 +59,7 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **0–1** | ✅ Done | Smart routing + 4 models installed | Models tested, thermal stable, local setup confirmed |
 | **2A** | May 30–Jun 10 | Production Package MVP | One video → platform-ready packages for all defined platform targets |
 | **2B** | Jun 10–Jun 20 | Local Queue MVP | Batch of 5 videos can fail mid-run and resume without lost work |
+| **2C** | Jun 20–Jun 27 | Local Production Adapters | FFmpeg render/thumbnail outputs and optional Whisper.cpp captions produce real local artifacts |
 | **3** | Jun 20–Jul 15 | Posting Adapters (Partial) | Reliable publishing to 1–2 authorized platforms; manual packages for the rest |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
 | **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |

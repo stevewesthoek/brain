@@ -1,0 +1,13 @@
+{
+  "job_type": "thumbnail",
+  "video_id": "00000000-0000-4000-8000-000000000001",
+  "task_config": {
+    "video_id": "00000000-0000-4000-8000-000000000001",
+    "format_key": "landscape_1920x1080_16x9",
+    "input_video_path": "/absolute/path/to/render.mp4",
+    "input_image_path": "/absolute/path/to/optional-cover.png",
+    "output_path": "/absolute/path/to/output/thumbnail.jpg",
+    "timecode": "00:00:03",
+    "method": "extracted_frame"
+  }
+}

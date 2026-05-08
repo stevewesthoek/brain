@@ -94,6 +94,7 @@ interface ProductionPackageManifest {
     required_fields: string[];
     optional_fields: string[];
   }>;
+  artifact_provenance?: Record<string, string>;
   verification: {
     status: 'complete' | 'incomplete' | 'errors' | 'warnings';
     completeness_percent: number;
@@ -123,6 +124,16 @@ type PlatformSpec = {
   title_rules?: { max_length?: number };
   description_rules?: { max_length?: number; allows_hashtags?: boolean };
   hashtags_rules?: { max_count?: number };
+};
+
+type CommandResult = {
+  stdout: string;
+  stderr: string;
+};
+
+type MediaMetadata = {
+  format?: { duration?: string; size?: string; format_name?: string };
+  streams?: Array<{ codec_type?: string; width?: number; height?: number; duration?: string }>;
 };
 
 export class VideoOrchestratorWorker {
@@ -295,10 +306,21 @@ export class VideoOrchestratorWorker {
     const spec = this.getFormatSpec(formatKey);
     if (!videoId || !spec) throw new Error(`Invalid render config for job ${job.job_id}`);
 
-    await this.runOptionalCommand(config.render_command);
-    await this.ensurePlaceholderFile(outputPath, `Render placeholder for ${videoId} ${formatKey}\n`);
+    let provenance = 'placeholder';
+    if (Array.isArray(config.render_command) && config.render_command.length > 0) {
+      await this.runOptionalCommand(config.render_command);
+      if (await this.isRealMediaFile(outputPath, { requireVideo: true })) provenance = 'custom_command';
+    } else if (await this.renderWithFfmpeg(config, spec, outputPath)) {
+      provenance = 'real_ffmpeg_render';
+    }
+
+    if (provenance === 'placeholder') {
+      await this.ensurePlaceholderFile(outputPath, `Render placeholder for ${videoId} ${formatKey}\n`);
+    }
+
     const stat = await fs.promises.stat(outputPath);
-    const duration = Number(config.duration_seconds ?? 0);
+    const metadata = await this.probeMedia(outputPath);
+    const duration = Number(metadata?.format?.duration ?? config.duration_seconds ?? 0);
 
     await this.execute(`
       INSERT INTO renders (video_id, format_key, file_path, resolution, aspect_ratio, duration_seconds, file_size_bytes, bitrate_kbps, rendering_mode)
@@ -314,6 +336,7 @@ export class VideoOrchestratorWorker {
         created_at = NOW()
     `, [videoId, formatKey, outputPath, spec.resolution, spec.aspect_ratio, duration, stat.size, spec.bitrate_target_kbps ?? 0, spec.rendering_mode_default ?? 'canonical_timeline']);
 
+    await this.emitEvent(job, 'render_artifact_ready', { output_path: outputPath, provenance, real_media: provenance !== 'placeholder' }, provenance === 'placeholder' ? 'warning' : 'info');
     await this.markJobSucceeded(job, outputPath);
   }
 
@@ -324,16 +347,18 @@ export class VideoOrchestratorWorker {
     const outputDir = String(config.output_dir ?? path.join(this.artifactRoot, 'captions', videoId));
     if (!videoId) throw new Error(`Invalid caption config for job ${job.job_id}`);
 
-    await this.runOptionalCommand(config.caption_command);
     await fs.promises.mkdir(outputDir, { recursive: true });
-    const outputs = [
-      { format: 'srt' as const, path: path.join(outputDir, `${language}.srt`), content: '1\n00:00:00,000 --> 00:00:01,000\nCaption pending transcription review.\n' },
-      { format: 'vtt' as const, path: path.join(outputDir, `${language}.vtt`), content: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nCaption pending transcription review.\n' },
-      { format: 'json' as const, path: path.join(outputDir, `${language}.json`), content: JSON.stringify([{ start: 0, end: 1, text: 'Caption pending transcription review.' }], null, 2) },
-    ];
+    let provenance = 'placeholder';
+    if (Array.isArray(config.caption_command) && config.caption_command.length > 0) {
+      await this.runOptionalCommand(config.caption_command);
+      provenance = await this.captionOutputsExist(outputDir, language) ? 'custom_command' : 'placeholder';
+    } else if (await this.transcribeWithWhisperCpp(config, outputDir, language)) {
+      provenance = 'real_whisper_cpp_caption';
+    }
+
+    const outputs = await this.ensureCaptionOutputs(outputDir, language, provenance === 'placeholder');
 
     for (const output of outputs) {
-      await this.ensurePlaceholderFile(output.path, output.content);
       await this.execute(`
         INSERT INTO captions (video_id, language, format, file_path, transcription_method, transcription_confidence)
         VALUES (${this.sqlParam(1, 'uuid')}, ${this.sqlParam(2)}, ${this.sqlParam(3)}, ${this.sqlParam(4)}, ${this.sqlParam(5)}, ${this.sqlParam(6, 'float')})
@@ -342,9 +367,10 @@ export class VideoOrchestratorWorker {
           transcription_method = EXCLUDED.transcription_method,
           transcription_confidence = EXCLUDED.transcription_confidence,
           created_at = NOW()
-      `, [videoId, language, output.format, output.path, 'whisper_cpp', Number(config.transcription_confidence ?? 0)]);
+      `, [videoId, language, output.format, output.path, provenance === 'placeholder' ? 'manual' : 'whisper_cpp', Number(config.transcription_confidence ?? (provenance === 'placeholder' ? 0 : 0.8))]);
     }
 
+    await this.emitEvent(job, 'caption_artifacts_ready', { output_dir: outputDir, provenance }, provenance === 'placeholder' ? 'warning' : 'info');
     await this.markJobSucceeded(job, outputDir);
   }
 
@@ -354,12 +380,23 @@ export class VideoOrchestratorWorker {
     const formatKey = String(config.format_key ?? 'landscape_1920x1080_16x9');
     const method = String(config.method ?? 'manual');
     const outputPath = String(config.output_path ?? path.join(this.artifactRoot, 'thumbnails', videoId, `${formatKey}.jpg`));
+    const spec = this.getFormatSpec(formatKey);
     if (!videoId) throw new Error(`Invalid thumbnail config for job ${job.job_id}`);
 
-    await this.runOptionalCommand(config.thumbnail_command);
-    await this.ensurePlaceholderFile(outputPath, `Thumbnail placeholder for ${videoId} ${formatKey}\n`);
+    let provenance = 'placeholder';
+    if (Array.isArray(config.thumbnail_command) && config.thumbnail_command.length > 0) {
+      await this.runOptionalCommand(config.thumbnail_command);
+      if (await this.isReadableImage(outputPath)) provenance = 'custom_command';
+    } else if (spec && await this.createThumbnailWithFfmpeg(config, spec, outputPath)) {
+      provenance = 'real_ffmpeg_thumbnail';
+    }
+
+    if (provenance === 'placeholder') {
+      await this.ensurePlaceholderFile(outputPath, `Thumbnail placeholder for ${videoId} ${formatKey}\n`);
+    }
+
     const stat = await fs.promises.stat(outputPath);
-    const generationMethod = ['generated_sdxl', 'generated_flux', 'extracted_frame', 'manual'].includes(method) ? method : 'manual';
+    const generationMethod = provenance === 'real_ffmpeg_thumbnail' ? 'extracted_frame' : ['generated_sdxl', 'generated_flux', 'extracted_frame', 'manual'].includes(method) ? method : 'manual';
 
     await this.execute(`
       INSERT INTO thumbnails (video_id, format_key, file_path, generation_method, extraction_timecode, file_size_bytes)
@@ -370,8 +407,9 @@ export class VideoOrchestratorWorker {
         extraction_timecode = EXCLUDED.extraction_timecode,
         file_size_bytes = EXCLUDED.file_size_bytes,
         created_at = NOW()
-    `, [videoId, formatKey, outputPath, generationMethod, config.extraction_timecode ?? null, stat.size]);
+    `, [videoId, formatKey, outputPath, generationMethod, config.timecode ?? config.extraction_timecode ?? null, stat.size]);
 
+    await this.emitEvent(job, 'thumbnail_artifact_ready', { output_path: outputPath, provenance, real_image: provenance !== 'placeholder' }, provenance === 'placeholder' ? 'warning' : 'info');
     await this.markJobSucceeded(job, outputPath);
   }
 
@@ -430,13 +468,32 @@ export class VideoOrchestratorWorker {
       format_key: String(thumbnail.format_key),
       path: String(thumbnail.file_path),
     }));
-    const placeholderPaths = new Set<string>();
-    for (const filePath of [
-      ...renderOutputs.map((item) => item.path),
-      ...captionOutputs.map((item) => item.path),
-      ...thumbnailOutputs.map((item) => item.path),
-    ]) {
-      if (await this.isPlaceholderArtifact(filePath)) placeholderPaths.add(filePath);
+    const nonProductionPaths = new Set<string>();
+    const captionPlaceholderPaths = new Set<string>();
+    const artifactProvenance: Record<string, string> = {};
+    for (const item of renderOutputs) {
+      if (await this.isRealMediaFile(item.path, { requireVideo: true })) {
+        artifactProvenance[item.path] = 'real_local_media';
+      } else {
+        nonProductionPaths.add(item.path);
+        artifactProvenance[item.path] = await this.isPlaceholderArtifact(item.path) ? 'placeholder' : 'invalid_media';
+      }
+    }
+    for (const item of thumbnailOutputs) {
+      if (await this.isReadableImage(item.path)) {
+        artifactProvenance[item.path] = 'real_local_media';
+      } else {
+        nonProductionPaths.add(item.path);
+        artifactProvenance[item.path] = await this.isPlaceholderArtifact(item.path) ? 'placeholder' : 'invalid_image';
+      }
+    }
+    for (const item of captionOutputs) {
+      if (await this.isPlaceholderArtifact(item.path)) {
+        captionPlaceholderPaths.add(item.path);
+        artifactProvenance[item.path] = 'placeholder';
+      } else {
+        artifactProvenance[item.path] = 'caption_file';
+      }
     }
 
     const packageTargets = this.platformSpecs.platforms.map((platform) => {
@@ -444,8 +501,8 @@ export class VideoOrchestratorWorker {
       const render = renderOutputs.find((item) => item.format_key === format?.format_key) ?? renderOutputs[0];
       const caption = captionOutputs.find((item) => item.format === 'srt') ?? captionOutputs[0];
       const thumbnail = thumbnailOutputs.find((item) => item.format_key === format?.format_key) ?? thumbnailOutputs[0];
-      const renderIsPlaceholder = render?.path ? placeholderPaths.has(render.path) : false;
-      const thumbnailIsPlaceholder = thumbnail?.path ? placeholderPaths.has(thumbnail.path) : false;
+      const renderIsProduction = render?.path ? !nonProductionPaths.has(render.path) : false;
+      const thumbnailIsProduction = thumbnail?.path ? !nonProductionPaths.has(thumbnail.path) : false;
       const adapterMode = this.selectAdapterMode(platform);
       const manualSteps = this.manualStepsFor(platform, render?.path ?? '', thumbnail?.path ?? '');
       const captionFiles = captionOutputs.map((item) => ({ language: item.language, format: item.format, path: item.path }));
@@ -467,7 +524,7 @@ export class VideoOrchestratorWorker {
         description: this.truncate(`Generated package for ${video.video_id}`, platform.description_rules?.max_length ?? 5000),
         hashtags,
         tags: [],
-        upload_ready: Boolean(render?.path && thumbnail?.path && !renderIsPlaceholder && !thumbnailIsPlaceholder),
+        upload_ready: Boolean(render?.path && thumbnail?.path && renderIsProduction && thumbnailIsProduction),
         manual_steps: manualSteps,
         known_limitations: platform.known_failure_modes ?? [],
         last_verified_at: this.toIsoDateTime(platform.last_verified_at),
@@ -494,15 +551,22 @@ export class VideoOrchestratorWorker {
     if (completeness < 100) {
       warnings.push({ severity: 'warning', stage: 'manifest', message: 'One or more package targets are missing production render or thumbnail assets.' });
     }
-    if (placeholderPaths.size > 0) {
+    if (nonProductionPaths.size > 0) {
       warnings.push({
         severity: 'warning',
         stage: 'manifest',
-        message: 'Placeholder artifacts are present. They are not production-ready media and were excluded from upload-ready completeness.',
+        message: 'Placeholder or invalid artifacts are present. They are not production-ready media and were excluded from upload-ready completeness.',
         affected_format_keys: [
-          ...renderOutputs.filter((item) => placeholderPaths.has(item.path)).map((item) => item.format_key),
-          ...thumbnailOutputs.filter((item) => placeholderPaths.has(item.path)).map((item) => item.format_key),
+          ...renderOutputs.filter((item) => nonProductionPaths.has(item.path)).map((item) => item.format_key),
+          ...thumbnailOutputs.filter((item) => nonProductionPaths.has(item.path)).map((item) => item.format_key),
         ],
+      });
+    }
+    if (captionPlaceholderPaths.size > 0) {
+      warnings.push({
+        severity: 'warning',
+        stage: 'caption',
+        message: 'Placeholder captions are present. Configure local Whisper.cpp and a model path for production caption files.',
       });
     }
     return {
@@ -522,6 +586,7 @@ export class VideoOrchestratorWorker {
         manual_fallback_available: manualFallbackAvailable,
       },
       manual_upload_instructions: manualUploadInstructions,
+      artifact_provenance: artifactProvenance,
       verification: {
         status: completeness === 100 && warnings.length === 0 ? 'complete' : warnings.length > 0 ? 'warnings' : 'incomplete',
         completeness_percent: completeness,
@@ -624,10 +689,245 @@ export class VideoOrchestratorWorker {
     return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
   }
 
+  private async commandExists(command: string): Promise<boolean> {
+    try {
+      await execFileAsync('/usr/bin/which', [command]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async runCommandChecked(command: string, args: string[], options: { cwd?: string } = {}): Promise<CommandResult> {
+    const { stdout, stderr } = await execFileAsync(command, args, {
+      cwd: options.cwd,
+      maxBuffer: 100 * 1024 * 1024,
+    });
+    return { stdout, stderr };
+  }
+
+  private async probeMedia(filePath: string): Promise<MediaMetadata | null> {
+    if (!await this.fileExists(filePath) || !await this.commandExists('ffprobe')) return null;
+    try {
+      const result = await this.runCommandChecked('ffprobe', [
+        '-v',
+        'quiet',
+        '-print_format',
+        'json',
+        '-show_format',
+        '-show_streams',
+        filePath,
+      ]);
+      return JSON.parse(result.stdout || '{}') as MediaMetadata;
+    } catch {
+      return null;
+    }
+  }
+
+  private async isRealMediaFile(
+    filePath: string,
+    requirements: { requireVideo?: boolean; requireAudio?: boolean } = {},
+  ): Promise<boolean> {
+    const stat = await this.safeStat(filePath);
+    if (!stat || stat.size <= 0 || await this.isPlaceholderArtifact(filePath)) return false;
+    const metadata = await this.probeMedia(filePath);
+    if (!metadata?.streams?.length) return false;
+    if (requirements.requireVideo && !metadata.streams.some((stream) => stream.codec_type === 'video')) return false;
+    if (requirements.requireAudio && !metadata.streams.some((stream) => stream.codec_type === 'audio')) return false;
+    return true;
+  }
+
+  private async isReadableImage(filePath: string): Promise<boolean> {
+    return this.isRealMediaFile(filePath, { requireVideo: true });
+  }
+
+  private async renderWithFfmpeg(config: Record<string, unknown>, spec: FormatSpec, outputPath: string): Promise<boolean> {
+    if (!await this.commandExists('ffmpeg') || !await this.commandExists('ffprobe')) return false;
+    const inputVideoPath = this.optionalString(config.input_video_path);
+    const inputAudioPath = this.optionalString(config.input_audio_path);
+    const inputImagePath = this.optionalString(config.input_image_path);
+    const durationSeconds = Number(config.duration_seconds ?? 0);
+    const [width, height] = this.parseResolution(spec.resolution);
+    const vf = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1`;
+    const tmpPath = this.tempOutputPath(outputPath);
+
+    try {
+      await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
+      if (inputVideoPath && await this.isRealMediaFile(inputVideoPath, { requireVideo: true })) {
+        const sourceHasAudio = await this.mediaHasStream(inputVideoPath, 'audio');
+        const args = ['-y', '-i', inputVideoPath];
+        if (inputAudioPath && await this.isRealMediaFile(inputAudioPath, { requireAudio: true })) args.push('-i', inputAudioPath);
+        args.push('-vf', vf, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-r', String(this.fpsFor(spec)));
+        if (inputAudioPath && await this.isRealMediaFile(inputAudioPath, { requireAudio: true })) {
+          args.push('-map', '0:v:0', '-map', '1:a:0', '-c:a', 'aac', '-b:a', '192k', '-shortest');
+        } else if (sourceHasAudio) {
+          args.push('-map', '0:v:0', '-map', '0:a:0?', '-c:a', 'aac', '-b:a', '192k');
+        } else {
+          args.push('-an');
+        }
+        if (durationSeconds > 0) args.push('-t', String(durationSeconds));
+        args.push('-movflags', '+faststart', tmpPath);
+        await this.runCommandChecked('ffmpeg', args);
+      } else if (
+        inputImagePath &&
+        inputAudioPath &&
+        await this.isReadableImage(inputImagePath) &&
+        await this.isRealMediaFile(inputAudioPath, { requireAudio: true })
+      ) {
+        const args = [
+          '-y',
+          '-loop',
+          '1',
+          '-i',
+          inputImagePath,
+          '-i',
+          inputAudioPath,
+          '-vf',
+          `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black,setsar=1`,
+          '-c:v',
+          'libx264',
+          '-preset',
+          'veryfast',
+          '-tune',
+          'stillimage',
+          '-c:a',
+          'aac',
+          '-b:a',
+          '192k',
+          '-pix_fmt',
+          'yuv420p',
+          '-r',
+          String(this.fpsFor(spec)),
+          '-shortest',
+        ];
+        if (durationSeconds > 0) args.push('-t', String(durationSeconds));
+        args.push('-movflags', '+faststart', tmpPath);
+        await this.runCommandChecked('ffmpeg', args);
+      } else {
+        return false;
+      }
+
+      if (!await this.isRealMediaFile(tmpPath, { requireVideo: true })) return false;
+      await fs.promises.rename(tmpPath, outputPath);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      await fs.promises.rm(tmpPath, { force: true });
+    }
+  }
+
+  private async transcribeWithWhisperCpp(config: Record<string, unknown>, outputDir: string, language: string): Promise<boolean> {
+    const modelPath = this.optionalString(config.whisper_model_path) ?? process.env.VIDEO_ORCHESTRATOR_WHISPER_MODEL;
+    if (!modelPath || !await this.fileExists(modelPath)) return false;
+
+    const configuredCommand = this.optionalString(config.whisper_command);
+    const candidates = configuredCommand ? [configuredCommand] : ['whisper-cli', 'whisper-cpp', 'main'];
+    const whisperCommand = await this.findWhisperCommand(candidates);
+    if (!whisperCommand) return false;
+
+    const audioPath = await this.resolveCaptionAudio(config, outputDir);
+    if (!audioPath) return false;
+
+    const outputPrefix = path.join(outputDir, language);
+    const args = ['-m', modelPath, '-f', audioPath, '-of', outputPrefix, '-osrt', '-ovtt', '-oj'];
+    if (language && language !== 'auto') args.push('-l', language);
+    try {
+      await this.runCommandChecked(whisperCommand, args);
+      return this.captionOutputsExist(outputDir, language);
+    } catch {
+      return false;
+    }
+  }
+
+  private async createThumbnailWithFfmpeg(config: Record<string, unknown>, spec: FormatSpec, outputPath: string): Promise<boolean> {
+    if (!await this.commandExists('ffmpeg') || !await this.commandExists('ffprobe')) return false;
+    const inputVideoPath = this.optionalString(config.input_video_path);
+    const inputImagePath = this.optionalString(config.input_image_path);
+    const timecode = String(config.timecode ?? config.extraction_timecode ?? '00:00:03');
+    const [width, height] = this.parseResolution(spec.resolution);
+    const vf = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1`;
+    const tmpPath = this.tempOutputPath(outputPath);
+
+    try {
+      await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
+      if (inputVideoPath && await this.isRealMediaFile(inputVideoPath, { requireVideo: true })) {
+        await this.runCommandChecked('ffmpeg', ['-y', '-ss', timecode, '-i', inputVideoPath, '-frames:v', '1', '-vf', vf, '-q:v', '2', tmpPath]);
+      } else if (inputImagePath && await this.isReadableImage(inputImagePath)) {
+        await this.runCommandChecked('ffmpeg', ['-y', '-i', inputImagePath, '-frames:v', '1', '-vf', vf, '-q:v', '2', tmpPath]);
+      } else {
+        return false;
+      }
+      if (!await this.isReadableImage(tmpPath)) return false;
+      await fs.promises.rename(tmpPath, outputPath);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      await fs.promises.rm(tmpPath, { force: true });
+    }
+  }
+
   private async runOptionalCommand(command: unknown): Promise<void> {
     if (!Array.isArray(command) || command.length === 0) return;
     const [bin, ...args] = command.map(String);
-    await execFileAsync(bin, args, { maxBuffer: 20 * 1024 * 1024 });
+    await this.runCommandChecked(bin, args);
+  }
+
+  private async ensureCaptionOutputs(outputDir: string, language: string, placeholder: boolean): Promise<Array<{ format: 'srt' | 'vtt' | 'json'; path: string }>> {
+    await fs.promises.mkdir(outputDir, { recursive: true });
+    const outputs = [
+      { format: 'srt' as const, path: path.join(outputDir, `${language}.srt`) },
+      { format: 'vtt' as const, path: path.join(outputDir, `${language}.vtt`) },
+      { format: 'json' as const, path: path.join(outputDir, `${language}.json`) },
+    ];
+    if (placeholder) {
+      await fs.promises.writeFile(outputs[0].path, '1\n00:00:00,000 --> 00:00:01,000\nCaption placeholder pending local Whisper.cpp transcription.\n');
+      await fs.promises.writeFile(outputs[1].path, 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nCaption placeholder pending local Whisper.cpp transcription.\n');
+      await fs.promises.writeFile(outputs[2].path, `${JSON.stringify([{ start: 0, end: 1, text: 'Caption placeholder pending local Whisper.cpp transcription.' }], null, 2)}\n`);
+      return outputs;
+    }
+
+    if (!await this.fileExists(outputs[1].path) && await this.fileExists(outputs[0].path)) {
+      const srt = await fs.promises.readFile(outputs[0].path, 'utf-8');
+      await fs.promises.writeFile(outputs[1].path, this.srtToVtt(srt));
+    }
+    if (!await this.fileExists(outputs[2].path)) {
+      await fs.promises.writeFile(outputs[2].path, `${JSON.stringify({ generated_from: 'whisper_cpp', language, note: 'JSON transcript was not emitted by the local command.' }, null, 2)}\n`);
+    }
+    return outputs;
+  }
+
+  private async captionOutputsExist(outputDir: string, language: string): Promise<boolean> {
+    return this.fileExists(path.join(outputDir, `${language}.srt`));
+  }
+
+  private async findWhisperCommand(candidates: string[]): Promise<string | null> {
+    for (const candidate of candidates) {
+      if (!await this.commandExists(candidate)) continue;
+      try {
+        const help = await this.runCommandChecked(candidate, ['--help']);
+        const text = `${help.stdout}\n${help.stderr}`;
+        if (text.includes('-osrt') && text.includes('-ovtt') && text.includes('-oj')) return candidate;
+      } catch {
+        if (candidate !== 'main') return candidate;
+      }
+    }
+    return null;
+  }
+
+  private async resolveCaptionAudio(config: Record<string, unknown>, outputDir: string): Promise<string | null> {
+    const inputAudioPath = this.optionalString(config.input_audio_path);
+    if (inputAudioPath && await this.isRealMediaFile(inputAudioPath, { requireAudio: true })) return inputAudioPath;
+    const inputVideoPath = this.optionalString(config.input_video_path);
+    if (!inputVideoPath || !await this.isRealMediaFile(inputVideoPath, { requireVideo: true }) || !await this.commandExists('ffmpeg')) return null;
+    const extractedPath = path.join(outputDir, 'extracted-audio-16khz-mono.wav');
+    try {
+      await this.runCommandChecked('ffmpeg', ['-y', '-i', inputVideoPath, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', extractedPath]);
+      return await this.isRealMediaFile(extractedPath, { requireAudio: true }) ? extractedPath : null;
+    } catch {
+      return null;
+    }
   }
 
   private async ensurePlaceholderFile(filePath: string, content: string): Promise<void> {
@@ -652,6 +952,52 @@ export class VideoOrchestratorWorker {
     } catch {
       return false;
     }
+  }
+
+  private async mediaHasStream(filePath: string, type: 'audio' | 'video'): Promise<boolean> {
+    const metadata = await this.probeMedia(filePath);
+    return metadata?.streams?.some((stream) => stream.codec_type === type) ?? false;
+  }
+
+  private async fileExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.promises.access(filePath, fs.constants.F_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async safeStat(filePath: string): Promise<fs.Stats | null> {
+    try {
+      return await fs.promises.stat(filePath);
+    } catch {
+      return null;
+    }
+  }
+
+  private optionalString(value: unknown): string | null {
+    return typeof value === 'string' && value.trim().length > 0 ? value : null;
+  }
+
+  private parseResolution(resolution: string): [number, number] {
+    const match = resolution.match(/^(\d+)x(\d+)$/);
+    if (!match) return [1920, 1080];
+    return [Number(match[1]), Number(match[2])];
+  }
+
+  private fpsFor(spec: FormatSpec): number {
+    const maybeFps = Number((spec as FormatSpec & { fps?: number }).fps);
+    return Number.isFinite(maybeFps) && maybeFps > 0 ? maybeFps : 24;
+  }
+
+  private tempOutputPath(outputPath: string): string {
+    const parsed = path.parse(outputPath);
+    return path.join(parsed.dir, `${parsed.name}.tmp-${process.pid}-${Date.now()}${parsed.ext}`);
+  }
+
+  private srtToVtt(srt: string): string {
+    return `WEBVTT\n\n${srt.replace(/^\d+\s*$/gm, '').replace(/,/g, '.')}`;
   }
 
   private truncate(value: string, maxLength: number): string {

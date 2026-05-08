@@ -1,0 +1,13 @@
+{
+  "job_type": "caption",
+  "video_id": "00000000-0000-4000-8000-000000000001",
+  "task_config": {
+    "video_id": "00000000-0000-4000-8000-000000000001",
+    "input_audio_path": "/absolute/path/to/audio.wav",
+    "input_video_path": "/absolute/path/to/source-with-audio.mp4",
+    "output_dir": "/absolute/path/to/output/captions",
+    "language": "en",
+    "whisper_command": "whisper-cli",
+    "whisper_model_path": "/absolute/path/to/ggml-base.en.bin"
+  }
+}

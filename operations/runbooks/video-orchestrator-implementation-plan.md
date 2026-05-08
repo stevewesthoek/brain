@@ -242,6 +242,18 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 
    Implementation note: render/caption/thumbnail commands are adapter hooks supplied through `task_config`. Without real commands, the worker writes explicit placeholder artifacts for queue/resume testing only; placeholders must not count as production-ready media.
 
+### Phase 2C: Local Production Adapters
+**Goal:** Replace placeholder-only execution with real local artifacts where local tools are available.
+
+**Implemented scope:**
+- FFmpeg render adapter for source video transforms and still-image-plus-audio MP4 generation
+- FFmpeg thumbnail extraction/resizing
+- Optional Whisper.cpp caption adapter when a compatible binary and model path are configured
+- `ffprobe` validation so text placeholders or corrupt media do not count as upload-ready
+- Manifest artifact provenance metadata and warnings for placeholder or invalid artifacts
+
+**Out of scope:** Phase 3 posting adapters, platform credentials, OAuth, cookies, `.env` changes, and platform API publishing.
+
 4. **State Transitions**
    - Video states: planned → scripted → voiced → assets_ready → captions_ready → composed → variants_ready → ready_to_post → partially_posted → posted → archived
    - Job states: pending → leased → running → (succeeded | failed | dead)
