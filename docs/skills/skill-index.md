@@ -37,9 +37,8 @@ Target size: about 20 active skills.
 Includes:
 
 ```text
-code, design, video, memory, review, qa, handoff, careful, guard,
-gh, firecrawl, playwright, ffmpeg, n8n, autoresearch, setup-deploy,
-skill-prune, skill-creator, brain-universal-capability-install
+code, design, video, memory, review, qa, handoff, careful,
+gh, firecrawl, playwright, ffmpeg, n8n, autoresearch
 ```
 
 If a listed skill source does not exist yet, the switcher will fail rather than silently skipping it.
