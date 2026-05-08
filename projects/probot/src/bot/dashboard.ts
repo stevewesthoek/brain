@@ -96,6 +96,49 @@ function isLocalDashboardRequest(req: http.IncomingMessage): boolean {
   return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1";
 }
 
+async function getVideoOrchestratorStatus(): Promise<Record<string, unknown>> {
+  const dbUrl = process.env.VIDEO_ORCHESTRATOR_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5450/video_orchestrator";
+  const sql = `
+    SELECT json_build_object(
+      'database_status', 'healthy',
+      'total_videos', (SELECT COUNT(*) FROM videos),
+      'total_accounts', (SELECT COUNT(*) FROM accounts),
+      'pending_jobs', (SELECT COUNT(*) FROM jobs WHERE job_status = 'pending'),
+      'running_jobs', (SELECT COUNT(*) FROM jobs WHERE job_status IN ('leased', 'running')),
+      'failed_jobs_7d', (SELECT COUNT(*) FROM jobs WHERE job_status IN ('failed', 'dead') AND created_at > NOW() - INTERVAL '7 days'),
+      'completed_packages', (SELECT COUNT(*) FROM production_packages WHERE package_status = 'complete'),
+      'timestamp', NOW()
+    ) AS status
+  `;
+
+  try {
+    const { stdout } = await execFileAsync("psql", [
+      dbUrl,
+      "--no-align",
+      "--tuples-only",
+      "--quiet",
+      "-v",
+      "ON_ERROR_STOP=1",
+      "-c",
+      sql,
+    ]);
+    return JSON.parse(stdout.trim() || "{}") as Record<string, unknown>;
+  } catch (err) {
+    console.error("[Video Orchestrator] Status check failed:", String(err));
+    return {
+      database_status: "disconnected",
+      total_videos: 0,
+      total_accounts: 0,
+      pending_jobs: 0,
+      running_jobs: 0,
+      failed_jobs_7d: 0,
+      completed_packages: 0,
+      timestamp: new Date().toISOString(),
+      error: "Video Orchestrator database is unavailable.",
+    };
+  }
+}
+
 async function openGhosttySession(directCommand: string, cwd: string, executeCommand: boolean = true): Promise<void> {
   if (!directCommand.trim()) throw new Error("directCommand is empty.");
   if (!cwd.trim()) throw new Error("cwd is empty.");
@@ -1772,12 +1815,12 @@ async function refreshViralFlowPanel(){
     const r=await fetch('/api/viral-flow/status');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
-    const panel=document.getElementById('tab-viral-flow');
+    const panel=document.getElementById('studio-content-strategy')||document.getElementById('tab-viral-flow');
     if(panel) panel.innerHTML=renderViralFlowStudio(data);
     window.__viralFlowPolling.lastUpdate=new Date();
   }catch(e){
     console.error('Viral Flow refresh error:',e);
-    const panel=document.getElementById('tab-viral-flow');
+    const panel=document.getElementById('studio-content-strategy')||document.getElementById('tab-viral-flow');
     if(panel) panel.innerHTML='<div style="padding:20px;color:#dc3545"><strong>⚠️ Failed to refresh:</strong> '+esc(String(e))+'</div>'+panel.innerHTML;
   }
 }
@@ -1790,7 +1833,7 @@ function startViralFlowPolling(){
       const r=await fetch('/api/viral-flow/status');
       if(!r.ok) return;
       const data=await r.json();
-      const panel=document.getElementById('tab-viral-flow');
+      const panel=document.getElementById('studio-content-strategy')||document.getElementById('tab-viral-flow');
       if(panel) panel.innerHTML=renderViralFlowStudio(data);
       state.lastUpdate=new Date();
     }catch(e){console.error('Viral Flow polling error:',e);}
@@ -1905,6 +1948,96 @@ function renderViralFlowStudio(status){
   return html;
 }
 
+function renderProductionStudioShell(){
+  return '<div style="padding:20px">'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+      '<button class="btn studio-subtab active" data-studio-subtab="content">Content Strategy</button>'+
+      '<button class="btn studio-subtab" data-studio-subtab="pipeline">Production Pipeline</button>'+
+    '</div>'+
+    '<div class="studio-panel" id="studio-content-strategy"></div>'+
+    '<div class="studio-panel" id="studio-production-pipeline" style="display:none"></div>'+
+  '</div>';
+}
+
+function bindProductionStudioSubtabs(){
+  document.querySelectorAll('.studio-subtab').forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll('.studio-subtab').forEach(x=>x.classList.toggle('active',x===btn));
+    const content=document.getElementById('studio-content-strategy');
+    const pipeline=document.getElementById('studio-production-pipeline');
+    const showPipeline=btn.dataset.studioSubtab==='pipeline';
+    if(content) content.style.display=showPipeline?'none':'block';
+    if(pipeline) pipeline.style.display=showPipeline?'block':'none';
+    if(showPipeline) refreshProductionPipelinePanel();
+    else refreshViralFlowPanel();
+  }));
+}
+
+function renderVideoOrchestratorStudio(status){
+  if(!status) return '<div class="nr-err">Failed to load video orchestrator status</div>';
+  const database_status=status.database_status||'unknown';
+  const total_videos=Number(status.total_videos||0);
+  const total_accounts=Number(status.total_accounts||0);
+  const pending_jobs=Number(status.pending_jobs||0);
+  const running_jobs=Number(status.running_jobs||0);
+  const failed_jobs_7d=Number(status.failed_jobs_7d||0);
+  const completed_packages=Number(status.completed_packages||0);
+  const updateTime=status.timestamp?new Date(status.timestamp):new Date();
+  const minAgo=Math.max(0,Math.floor((Date.now()-updateTime.getTime())/60000));
+  const freshText=minAgo===0?'just now':minAgo===1?'1m ago':minAgo+'m ago';
+  const dbColor=database_status==='healthy'?'var(--green)':database_status==='disconnected'?'var(--red)':'var(--yellow)';
+  const dbText=database_status==='healthy'?'Connected':database_status==='disconnected'?'Offline':'Checking';
+
+  let html='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">';
+  html+='<div style="grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--card);border-radius:6px;border:1px solid var(--border)">';
+  html+='<div style="font-size:0.9em;color:var(--muted)">Database: <strong style="color:'+dbColor+'">'+dbText+'</strong></div>';
+  html+='<div style="font-size:0.85em;color:var(--muted)">Last update: <strong>'+freshText+'</strong></div>';
+  html+='<button onclick="refreshProductionPipelinePanel()" style="padding:6px 12px;background:var(--accent);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;font-weight:600">Refresh</button>';
+  html+='</div>';
+
+  html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">Pipeline Status</h3>';
+  html+='<div style="font-size:0.85em;line-height:1.8">';
+  html+='<div style="padding:8px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Total Videos:</span> <strong>'+total_videos+'</strong></div>';
+  html+='<div style="padding:8px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Completed Packages:</span> <strong>'+completed_packages+'</strong></div>';
+  html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Completion Rate:</span> <strong>'+(total_videos>0?Math.round((completed_packages/total_videos)*100):0)+'%</strong></div>';
+  html+='</div></div>';
+
+  html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">Job Queue</h3>';
+  html+='<div style="font-size:0.85em;line-height:1.8">';
+  html+='<div style="padding:8px;margin-bottom:6px;background:rgba(52,211,153,0.15);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Running:</span> <strong style="color:var(--green)">'+running_jobs+'</strong></div>';
+  html+='<div style="padding:8px;margin-bottom:6px;background:rgba(124,90,240,0.15);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Pending:</span> <strong style="color:var(--accent)">'+pending_jobs+'</strong></div>';
+  html+='<div style="padding:8px;background:rgba(239,68,68,0.15);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Failed (7d):</span> <strong style="color:var(--red)">'+failed_jobs_7d+'</strong></div>';
+  html+='</div></div>';
+
+  html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">Accounts</h3>';
+  html+='<div style="font-size:0.85em;line-height:1.8">';
+  html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Connected Accounts:</span> <strong>'+total_accounts+'</strong></div>';
+  html+='<p style="color:var(--muted);text-align:center;margin:12px 0 0 0;font-size:0.8em">YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, X</p>';
+  html+='</div></div>';
+
+  html+='<div style="grid-column:1/-1;padding:12px 16px;background:var(--subtle);border-radius:6px;border:1px solid var(--border);font-size:0.85em;color:var(--muted)">';
+  html+='<strong style="color:var(--text)">Phase 2B:</strong> PostgreSQL production queue with durable manifests. Manual fallback remains available for all platform targets.';
+  if(status.error) html+='<div style="margin-top:8px;color:var(--red)">'+esc(status.error)+'</div>';
+  html+='</div></div>';
+  return html;
+}
+
+async function refreshProductionPipelinePanel(){
+  const panel=document.getElementById('studio-production-pipeline')||document.getElementById('tab-viral-flow');
+  if(!panel) return;
+  panel.innerHTML='<div class="loading"><div class="spin"></div>Loading Production Pipeline...</div>';
+  try{
+    const r=await fetch('/api/video-orchestrator/status');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    panel.innerHTML=renderVideoOrchestratorStudio(data);
+  }catch(e){
+    panel.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';
+  }
+}
+
 /* Viral Flow account management (async fetch helper) */
 async function getViralFlowAccounts(){
   try{
@@ -1933,11 +2066,20 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>
   if(b.dataset.tab==='viral-flow'){
     const panel=document.getElementById('tab-viral-flow');
     if(panel){
-      panel.innerHTML='<div class="loading"><div class="spin"></div>Loading Studio...</div>';
+      panel.innerHTML=renderProductionStudioShell();
+      bindProductionStudioSubtabs();
+      const content=document.getElementById('studio-content-strategy');
+      const pipeline=document.getElementById('studio-production-pipeline');
+      if(content) content.innerHTML='<div class="loading"><div class="spin"></div>Loading Studio...</div>';
+      if(pipeline) pipeline.innerHTML='<div class="loading"><div class="spin"></div>Loading Production Pipeline...</div>';
       fetch('/api/viral-flow/status')
         .then(r=>r.json())
-        .then(data=>{panel.innerHTML=renderViralFlowStudio(data);startViralFlowPolling();})
-        .catch(e=>{panel.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
+        .then(data=>{if(content)content.innerHTML=renderViralFlowStudio(data);startViralFlowPolling();})
+        .catch(e=>{if(content)content.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
+      fetch('/api/video-orchestrator/status')
+        .then(r=>r.json())
+        .then(data=>{if(pipeline)pipeline.innerHTML=renderVideoOrchestratorStudio(data);})
+        .catch(e=>{if(pipeline)pipeline.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
     }
   }else{
     stopViralFlowPolling();
@@ -3449,6 +3591,13 @@ export function createDashboardServer(app: AppContext): http.Server {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: String(err) }));
       }
+      return;
+    }
+
+    if (url === "/api/video-orchestrator/status") {
+      const status = await getVideoOrchestratorStatus();
+      res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+      res.end(JSON.stringify(status));
       return;
     }
 

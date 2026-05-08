@@ -93,11 +93,11 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - [ ] Generate production package for YouTube longform
 - [ ] Generate production package for TikTok (9:16)
 - [ ] Verify captions (SRT, VTT) correct
-- [ ] Verify all 8 platform packages created from one source
+- [ ] Verify all defined platform-target packages are created from one source
 - [ ] Manual upload package and confirm compatibility
 
 **Success Criteria:**
-- One source video generates complete production packages for all 8 target platforms
+- One source video generates complete production packages for all defined platform targets
 - Each package includes: video (correct format), captions, thumbnail, metadata
 - Manifest tracks all variants and states
 
@@ -213,45 +213,34 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 2. **Docker Compose Setup**
    ```yaml
    version: '3.8'
+   volumes:
+     data:
    services:
      postgres:
-       image: postgres:15-alpine
+       image: postgres:16
        environment:
          POSTGRES_DB: video_orchestrator
-         POSTGRES_USER: orchestrator
-         POSTGRES_PASSWORD: ${DB_PASSWORD}
+         POSTGRES_USER: postgres
+         POSTGRES_PASSWORD: postgres
        volumes:
-         - ~/.local/video-orchestrator/pg-data:/var/lib/postgresql/data
+         - data:/var/lib/postgresql/data
        ports:
-         - "5432:5432"
+         - "5450:5432"
    ```
 
-3. **Worker Process** (Python)
-   - Pull jobs from `jobs` table (job_state = 'pending')
-   - Lease job (prevent concurrent execution)
-   - Execute job (call appropriate skill: SDXL, Wave, FFmpeg, etc.)
-   - Update job_state to succeeded/failed
-   - Log events
-   - Auto-retry on failure (exponential backoff, max 3 retries)
+   Local default connection string: `postgres://postgres:postgres@localhost:5450/video_orchestrator`.
 
-   Pseudo-code:
-   ```python
-   class VideoWorker:
-     def pull_job(self):
-       # SELECT WHERE job_state='pending' LIMIT 1 FOR UPDATE
-       # Set leased_until to now + 5 min to prevent concurrent execution
-       
-     def execute_job(self, job):
-       if job.job_type == 'generation':
-         output = self.run_model(job.model, job.config)
-       elif job.job_type == 'rendering':
-         output = self.run_ffmpeg(job.config)
-       # ... etc
-       
-     def update_state(self, job_id, state, output=None, error=None):
-       # Update jobs table
-       # Log event to events table
-   ```
+3. **Worker Process** (TypeScript, implemented)
+   - File: `operations/specs/video-orchestrator/video-orchestrator-worker.ts`
+   - Pull jobs from `jobs` table (`job_status = 'pending'`)
+   - Lease jobs, transition to running, and write event records
+   - Execute Phase 2B-safe job types: render, caption, thumbnail, manifest, post no-op, analytics no-op
+   - Upsert durable records for renders, captions, thumbnails, and production packages
+   - Generate schema-valid production package manifests
+   - Mark placeholder artifacts as not upload-ready and emit manifest warnings
+   - Auto-retry on failure, then mark dead after max retries
+
+   Implementation note: render/caption/thumbnail commands are adapter hooks supplied through `task_config`. Without real commands, the worker writes explicit placeholder artifacts for queue/resume testing only; placeholders must not count as production-ready media.
 
 4. **State Transitions**
    - Video states: planned → scripted → voiced → assets_ready → captions_ready → composed → variants_ready → ready_to_post → partially_posted → posted → archived

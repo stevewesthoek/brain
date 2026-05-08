@@ -1,528 +1,520 @@
 {
-  "video_id": "test-vid-001",
-  "project_id": "proj-demo",
-  "series_id": "series-ai-automation",
-  "created_at": "2026-05-08T14:30:00Z",
-  "source_script_path": "/Users/Office/projects/demo/script.md",
-  "source_audio_path": "/Users/Office/projects/demo/narration.wav",
-  "source_assets": [
-    {
-      "asset_id": "bg-tech-001",
-      "asset_type": "image",
-      "path": "/Users/Office/projects/demo/backgrounds/tech.jpg",
-      "duration_seconds": null
-    },
-    {
-      "asset_id": "logo-intro",
-      "asset_type": "animation",
-      "path": "/Users/Office/projects/demo/animations/logo-intro.mp4",
-      "duration_seconds": 3
-    }
-  ],
-  "caption_outputs": [
-    {
-      "format": "srt",
-      "language": "en",
-      "path": "/Users/Office/projects/demo/output/captions/en.srt",
-      "transcription_method": "whisper_cpp",
-      "transcription_confidence": 0.92
-    },
-    {
-      "format": "vtt",
-      "language": "en",
-      "path": "/Users/Office/projects/demo/output/captions/en.vtt",
-      "transcription_method": "whisper_cpp",
-      "transcription_confidence": 0.92
-    },
-    {
-      "format": "json",
-      "language": "en",
-      "path": "/Users/Office/projects/demo/output/captions/en.json",
-      "transcription_method": "whisper_cpp",
-      "transcription_confidence": 0.92
-    }
-  ],
-  "render_outputs": [
-    {
-      "format_key": "landscape_1920x1080_16x9",
-      "path": "/Users/Office/projects/demo/output/renders/master-16x9.mp4",
-      "resolution": "1920x1080",
-      "aspect_ratio": "16:9",
-      "duration_seconds": 300,
-      "file_size_bytes": 450000000,
-      "bitrate_kbps": 5000,
-      "captions_burned": false
-    },
-    {
-      "format_key": "vertical_1080x1920_9x16",
-      "path": "/Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
-      "resolution": "1080x1920",
-      "aspect_ratio": "9:16",
-      "duration_seconds": 300,
-      "file_size_bytes": 350000000,
-      "bitrate_kbps": 3500,
-      "captions_burned": true
-    },
-    {
-      "format_key": "square_1080x1080_1x1",
-      "path": "/Users/Office/projects/demo/output/renders/square-1x1.mp4",
-      "resolution": "1080x1080",
-      "aspect_ratio": "1:1",
-      "duration_seconds": 300,
-      "file_size_bytes": 250000000,
-      "bitrate_kbps": 2500,
-      "captions_burned": true
-    },
-    {
-      "format_key": "portrait_1080x1350_4x5",
-      "path": "/Users/Office/projects/demo/output/renders/portrait-4x5.mp4",
-      "resolution": "1080x1350",
-      "aspect_ratio": "4:5",
-      "duration_seconds": 300,
-      "file_size_bytes": 300000000,
-      "bitrate_kbps": 3000,
-      "captions_burned": true
-    },
-    {
-      "format_key": "lightweight_1280x720_16x9",
-      "path": "/Users/Office/projects/demo/output/renders/lightweight-720p.mp4",
-      "resolution": "1280x720",
-      "aspect_ratio": "16:9",
-      "duration_seconds": 300,
-      "file_size_bytes": 150000000,
-      "bitrate_kbps": 2000,
-      "captions_burned": false
-    }
-  ],
-  "thumbnail_outputs": [
-    {
-      "format_key": "landscape_1920x1080_16x9",
-      "path": "/Users/Office/projects/demo/output/thumbnails/thumb-16x9.jpg",
-      "generation_method": "generated_sdxl",
-      "extraction_timecode": null
-    },
-    {
-      "format_key": "vertical_1080x1920_9x16",
-      "path": "/Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
-      "generation_method": "extracted_frame",
-      "extraction_timecode": "00:15:00"
-    },
-    {
-      "format_key": "square_1080x1080_1x1",
-      "path": "/Users/Office/projects/demo/output/thumbnails/thumb-1x1.jpg",
-      "generation_method": "extracted_frame",
-      "extraction_timecode": "00:15:00"
-    },
-    {
-      "format_key": "portrait_1080x1350_4x5",
-      "path": "/Users/Office/projects/demo/output/thumbnails/thumb-4x5.jpg",
-      "generation_method": "generated_sdxl",
-      "extraction_timecode": null
-    },
-    {
-      "format_key": "lightweight_1280x720_16x9",
-      "path": "/Users/Office/projects/demo/output/thumbnails/thumb-720p.jpg",
-      "generation_method": "extracted_frame",
-      "extraction_timecode": "00:10:00"
-    }
-  ],
-  "package_targets": [
-    {
-      "platform": "youtube",
-      "package_target": "long-form",
-      "account_target": null,
-      "adapter_mode": "api",
-      "adapter_status": "partially_supported",
-      "video_path": "/Users/Office/projects/demo/output/renders/master-16x9.mp4",
-      "video_duration_seconds": 300,
-      "captions": {
-        "primary_format": "srt",
-        "caption_files": [
-          {
-            "language": "en",
+    "video_id": "test-vid-001",
+    "project_id": "proj-demo",
+    "series_id": "series-ai-automation",
+    "created_at": "2026-05-08T14:30:00Z",
+    "source_script_path": "/Users/Office/projects/demo/script.md",
+    "source_audio_path": "/Users/Office/projects/demo/narration.wav",
+    "source_assets": [
+        {
+            "asset_id": "bg-tech-001",
+            "asset_type": "image",
+            "path": "/Users/Office/projects/demo/backgrounds/tech.jpg"
+        },
+        {
+            "asset_id": "logo-intro",
+            "asset_type": "animation",
+            "path": "/Users/Office/projects/demo/animations/logo-intro.mp4",
+            "duration_seconds": 3
+        }
+    ],
+    "caption_outputs": [
+        {
             "format": "srt",
-            "path": "/Users/Office/projects/demo/output/captions/en.srt"
-          },
-          {
             "language": "en",
+            "path": "/Users/Office/projects/demo/output/captions/en.srt",
+            "transcription_method": "whisper_cpp",
+            "transcription_confidence": 0.92
+        },
+        {
             "format": "vtt",
-            "path": "/Users/Office/projects/demo/output/captions/en.vtt"
-          }
-        ],
-        "caption_note": "upload as subtitle track via YouTube API or studio"
-      },
-      "thumbnail_path": "/Users/Office/projects/demo/output/thumbnails/thumb-16x9.jpg",
-      "title": "AI Automation for Founders: Complete Guide 2026",
-      "title_rules": {
-        "max_length": 100,
-        "requires_prefix": false,
-        "restricted_chars": []
-      },
-      "description": "Learn how to automate your business with AI in 2026. This comprehensive guide covers the latest trends, tools, and best practices for founders and entrepreneurs.\n\n⏰ Timestamps:\n0:00 - Introduction\n2:15 - AI Basics\n5:30 - Automation Tools\n8:45 - Real Examples\n12:00 - Getting Started\n\n🔗 Links:\n- AI News: https://example.com/ai\n- Tools: https://example.com/tools\n\n#AIAutomation #Founders #2026",
-      "description_rules": {
-        "max_length": 5000,
-        "requires_links": false,
-        "allows_hashtags": true,
-        "allows_timestamps": true
-      },
-      "hashtags": [
-        "#AIAutomation",
-        "#Founders",
-        "#TechTrends",
-        "#2026",
-        "#Entrepreneurship",
-        "#AI",
-        "#BusinessAutomation",
-        "#Tutorial",
-        "#Guide",
-        "#YouTube"
-      ],
-      "tags": [],
-      "upload_ready": true,
-      "manual_steps": [
-        "1. Go to https://studio.youtube.com",
-        "2. Click 'Create' → 'Upload video'",
-        "3. Upload the video file from: /Users/Office/projects/demo/output/renders/master-16x9.mp4",
-        "4. Set title and description from manifest",
-        "5. Add captions from: /Users/Office/projects/demo/output/captions/en.srt",
-        "6. Upload thumbnail from: /Users/Office/projects/demo/output/thumbnails/thumb-16x9.jpg",
-        "7. Add hashtags from manifest",
-        "8. Set visibility (Private, Unlisted, or Public)",
-        "9. Review and publish"
-      ],
-      "known_limitations": [
-        "OAuth token may expire; refresh if needed",
-        "Channel must not be restricted (no community strikes)",
-        "Video will be private by default; change visibility manually"
-      ],
-      "last_verified_at": "2026-05-08T14:30:00Z"
-    },
-    {
-      "platform": "youtube",
-      "package_target": "shorts",
-      "account_target": null,
-      "adapter_mode": "api",
-      "adapter_status": "partially_supported",
-      "video_path": "/Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
-      "video_duration_seconds": 60,
-      "captions": {
-        "primary_format": "hardcoded",
-        "caption_files": [
-          {
             "language": "en",
-            "format": "srt",
-            "path": "/Users/Office/projects/demo/output/captions/en.srt"
-          }
-        ],
-        "caption_note": "hardcoded into video; also available as SRT for YouTube if desired"
-      },
-      "thumbnail_path": "/Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
-      "title": "AI Automation in 60 Seconds",
-      "title_rules": {
-        "max_length": 100,
-        "requires_prefix": false,
-        "restricted_chars": []
-      },
-      "description": "Quick introduction to AI automation for founders. Full guide on our channel.\n\n#AIAutomation #Shorts #Founders #AI",
-      "description_rules": {
-        "max_length": 5000,
-        "requires_links": false,
-        "allows_hashtags": true,
-        "allows_timestamps": false
-      },
-      "hashtags": [
-        "#AIAutomation",
-        "#Shorts",
-        "#Founders",
-        "#AI",
-        "#Quick"
-      ],
-      "tags": [
-        "Shorts",
-        "Educational",
-        "Automation"
-      ],
-      "upload_ready": true,
-      "manual_steps": [
-        "1. Go to https://studio.youtube.com",
-        "2. Click 'Create' → 'Upload Shorts video'",
-        "3. Upload the video file: /Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
-        "4. Verify duration ≤60s and aspect ratio 9:16",
-        "5. Add title and description",
-        "6. Upload thumbnail: /Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
-        "7. Add hashtags from manifest",
-        "8. Review and publish"
-      ],
-      "known_limitations": [
-        "Must be 60 seconds or shorter",
-        "Aspect ratio must be exactly 9:16",
-        "Captions are burned into video"
-      ],
-      "last_verified_at": "2026-05-08T14:30:00Z"
-    },
-    {
-      "platform": "tiktok",
-      "package_target": "feed",
-      "account_target": null,
-      "adapter_mode": "manual",
-      "adapter_status": "manual_only",
-      "video_path": "/Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
-      "video_duration_seconds": 60,
-      "captions": {
-        "primary_format": "hardcoded",
-        "caption_files": [
-          {
+            "path": "/Users/Office/projects/demo/output/captions/en.vtt",
+            "transcription_method": "whisper_cpp",
+            "transcription_confidence": 0.92
+        },
+        {
+            "format": "json",
             "language": "en",
-            "format": "srt",
-            "path": "/Users/Office/projects/demo/output/captions/en.srt"
-          }
-        ],
-        "caption_note": "hardcoded into video only; TikTok does not support external captions"
-      },
-      "thumbnail_path": "/Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
-      "title": null,
-      "title_rules": {
-        "max_length": 2200,
-        "requires_prefix": false,
-        "restricted_chars": []
-      },
-      "description": "AI automation for founders. 🚀 Learn how to automate your business in 2026. #AIAutomation #Founders #TechTrends",
-      "description_rules": {
-        "max_length": 2200,
-        "requires_links": false,
-        "allows_hashtags": true,
-        "allows_timestamps": false
-      },
-      "hashtags": [
-        "#AIAutomation",
-        "#Founders",
-        "#TechTrends",
-        "#AI",
-        "#BusinessAutomation",
-        "#2026",
-        "#Automation",
-        "#Tutorial",
-        "#Education",
-        "#Tech"
-      ],
-      "tags": [
-        "Education",
-        "Technology",
-        "Tutorial"
-      ],
-      "upload_ready": true,
-      "manual_steps": [
-        "1. Open TikTok app on phone",
-        "2. Tap + (create) button",
-        "3. Tap 'Upload video'",
-        "4. Select video: /Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
-        "5. Add description/hashtags from manifest",
-        "6. Select cover frame from: /Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
-        "7. Set visibility and post"
-      ],
-      "known_limitations": [
-        "TikTok API is restricted; manual upload only",
-        "Captions must be hardcoded",
-        "Video should be under 10 minutes (60s shown as example)"
-      ],
-      "last_verified_at": "2026-05-08T14:30:00Z"
+            "path": "/Users/Office/projects/demo/output/captions/en.json",
+            "transcription_method": "whisper_cpp",
+            "transcription_confidence": 0.92
+        }
+    ],
+    "render_outputs": [
+        {
+            "format_key": "landscape_1920x1080_16x9",
+            "path": "/Users/Office/projects/demo/output/renders/master-16x9.mp4",
+            "resolution": "1920x1080",
+            "aspect_ratio": "16:9",
+            "duration_seconds": 300,
+            "file_size_bytes": 450000000,
+            "bitrate_kbps": 5000,
+            "captions_burned": false
+        },
+        {
+            "format_key": "vertical_1080x1920_9x16",
+            "path": "/Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
+            "resolution": "1080x1920",
+            "aspect_ratio": "9:16",
+            "duration_seconds": 300,
+            "file_size_bytes": 350000000,
+            "bitrate_kbps": 3500,
+            "captions_burned": true
+        },
+        {
+            "format_key": "square_1080x1080_1x1",
+            "path": "/Users/Office/projects/demo/output/renders/square-1x1.mp4",
+            "resolution": "1080x1080",
+            "aspect_ratio": "1:1",
+            "duration_seconds": 300,
+            "file_size_bytes": 250000000,
+            "bitrate_kbps": 2500,
+            "captions_burned": true
+        },
+        {
+            "format_key": "portrait_1080x1350_4x5",
+            "path": "/Users/Office/projects/demo/output/renders/portrait-4x5.mp4",
+            "resolution": "1080x1350",
+            "aspect_ratio": "4:5",
+            "duration_seconds": 300,
+            "file_size_bytes": 300000000,
+            "bitrate_kbps": 3000,
+            "captions_burned": true
+        },
+        {
+            "format_key": "lightweight_1280x720_16x9",
+            "path": "/Users/Office/projects/demo/output/renders/lightweight-720p.mp4",
+            "resolution": "1280x720",
+            "aspect_ratio": "16:9",
+            "duration_seconds": 300,
+            "file_size_bytes": 150000000,
+            "bitrate_kbps": 2000,
+            "captions_burned": false
+        }
+    ],
+    "thumbnail_outputs": [
+        {
+            "format_key": "landscape_1920x1080_16x9",
+            "path": "/Users/Office/projects/demo/output/thumbnails/thumb-16x9.jpg",
+            "generation_method": "generated_sdxl"
+        },
+        {
+            "format_key": "vertical_1080x1920_9x16",
+            "path": "/Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
+            "generation_method": "extracted_frame",
+            "extraction_timecode": "00:15:00"
+        },
+        {
+            "format_key": "square_1080x1080_1x1",
+            "path": "/Users/Office/projects/demo/output/thumbnails/thumb-1x1.jpg",
+            "generation_method": "extracted_frame",
+            "extraction_timecode": "00:15:00"
+        },
+        {
+            "format_key": "portrait_1080x1350_4x5",
+            "path": "/Users/Office/projects/demo/output/thumbnails/thumb-4x5.jpg",
+            "generation_method": "generated_sdxl"
+        },
+        {
+            "format_key": "lightweight_1280x720_16x9",
+            "path": "/Users/Office/projects/demo/output/thumbnails/thumb-720p.jpg",
+            "generation_method": "extracted_frame",
+            "extraction_timecode": "00:10:00"
+        }
+    ],
+    "package_targets": [
+        {
+            "platform": "youtube",
+            "package_target": "long-form",
+            "adapter_mode": "api",
+            "adapter_status": "partially_supported",
+            "video_path": "/Users/Office/projects/demo/output/renders/master-16x9.mp4",
+            "video_duration_seconds": 300,
+            "captions": {
+                "primary_format": "srt",
+                "caption_files": [
+                    {
+                        "language": "en",
+                        "format": "srt",
+                        "path": "/Users/Office/projects/demo/output/captions/en.srt"
+                    },
+                    {
+                        "language": "en",
+                        "format": "vtt",
+                        "path": "/Users/Office/projects/demo/output/captions/en.vtt"
+                    }
+                ],
+                "caption_note": "upload as subtitle track via YouTube API or studio"
+            },
+            "thumbnail_path": "/Users/Office/projects/demo/output/thumbnails/thumb-16x9.jpg",
+            "title": "AI Automation for Founders: Complete Guide 2026",
+            "title_rules": {
+                "max_length": 100,
+                "requires_prefix": false,
+                "restricted_chars": []
+            },
+            "description": "Learn how to automate your business with AI in 2026. This comprehensive guide covers the latest trends, tools, and best practices for founders and entrepreneurs.\n\n\u23f0 Timestamps:\n0:00 - Introduction\n2:15 - AI Basics\n5:30 - Automation Tools\n8:45 - Real Examples\n12:00 - Getting Started\n\n\ud83d\udd17 Links:\n- AI News: https://example.com/ai\n- Tools: https://example.com/tools\n\n#AIAutomation #Founders #2026",
+            "description_rules": {
+                "max_length": 5000,
+                "requires_links": false,
+                "allows_hashtags": true,
+                "allows_timestamps": true
+            },
+            "hashtags": [
+                "#AIAutomation",
+                "#Founders",
+                "#TechTrends",
+                "#2026",
+                "#Entrepreneurship",
+                "#AI",
+                "#BusinessAutomation",
+                "#Tutorial",
+                "#Guide",
+                "#YouTube"
+            ],
+            "tags": [],
+            "upload_ready": true,
+            "manual_steps": [
+                "1. Go to https://studio.youtube.com",
+                "2. Click 'Create' \u2192 'Upload video'",
+                "3. Upload the video file from: /Users/Office/projects/demo/output/renders/master-16x9.mp4",
+                "4. Set title and description from manifest",
+                "5. Add captions from: /Users/Office/projects/demo/output/captions/en.srt",
+                "6. Upload thumbnail from: /Users/Office/projects/demo/output/thumbnails/thumb-16x9.jpg",
+                "7. Add hashtags from manifest",
+                "8. Set visibility (Private, Unlisted, or Public)",
+                "9. Review and publish"
+            ],
+            "known_limitations": [
+                "OAuth token may expire; refresh if needed",
+                "Channel must not be restricted (no community strikes)",
+                "Video will be private by default; change visibility manually"
+            ],
+            "last_verified_at": "2026-05-08T14:30:00Z"
+        },
+        {
+            "platform": "youtube",
+            "package_target": "shorts",
+            "adapter_mode": "api",
+            "adapter_status": "partially_supported",
+            "video_path": "/Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
+            "video_duration_seconds": 60,
+            "captions": {
+                "primary_format": "hardcoded",
+                "caption_files": [
+                    {
+                        "language": "en",
+                        "format": "srt",
+                        "path": "/Users/Office/projects/demo/output/captions/en.srt"
+                    }
+                ],
+                "caption_note": "hardcoded into video; also available as SRT for YouTube if desired"
+            },
+            "thumbnail_path": "/Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
+            "title": "AI Automation in 60 Seconds",
+            "title_rules": {
+                "max_length": 100,
+                "requires_prefix": false,
+                "restricted_chars": []
+            },
+            "description": "Quick introduction to AI automation for founders. Full guide on our channel.\n\n#AIAutomation #Shorts #Founders #AI",
+            "description_rules": {
+                "max_length": 5000,
+                "requires_links": false,
+                "allows_hashtags": true,
+                "allows_timestamps": false
+            },
+            "hashtags": [
+                "#AIAutomation",
+                "#Shorts",
+                "#Founders",
+                "#AI",
+                "#Quick"
+            ],
+            "tags": [
+                "Shorts",
+                "Educational",
+                "Automation"
+            ],
+            "upload_ready": true,
+            "manual_steps": [
+                "1. Go to https://studio.youtube.com",
+                "2. Click 'Create' \u2192 'Upload Shorts video'",
+                "3. Upload the video file: /Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
+                "4. Verify duration \u226460s and aspect ratio 9:16",
+                "5. Add title and description",
+                "6. Upload thumbnail: /Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
+                "7. Add hashtags from manifest",
+                "8. Review and publish"
+            ],
+            "known_limitations": [
+                "Must be 60 seconds or shorter",
+                "Aspect ratio must be exactly 9:16",
+                "Captions are burned into video"
+            ],
+            "last_verified_at": "2026-05-08T14:30:00Z"
+        },
+        {
+            "platform": "tiktok",
+            "package_target": "feed",
+            "adapter_mode": "manual",
+            "adapter_status": "manual_only",
+            "video_path": "/Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
+            "video_duration_seconds": 60,
+            "captions": {
+                "primary_format": "hardcoded",
+                "caption_files": [
+                    {
+                        "language": "en",
+                        "format": "srt",
+                        "path": "/Users/Office/projects/demo/output/captions/en.srt"
+                    }
+                ],
+                "caption_note": "hardcoded into video only; TikTok does not support external captions"
+            },
+            "thumbnail_path": "/Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
+            "title": "",
+            "title_rules": {
+                "max_length": 2200,
+                "requires_prefix": false,
+                "restricted_chars": []
+            },
+            "description": "AI automation for founders. \ud83d\ude80 Learn how to automate your business in 2026. #AIAutomation #Founders #TechTrends",
+            "description_rules": {
+                "max_length": 2200,
+                "requires_links": false,
+                "allows_hashtags": true,
+                "allows_timestamps": false
+            },
+            "hashtags": [
+                "#AIAutomation",
+                "#Founders",
+                "#TechTrends",
+                "#AI",
+                "#BusinessAutomation",
+                "#2026",
+                "#Automation",
+                "#Tutorial",
+                "#Education",
+                "#Tech"
+            ],
+            "tags": [
+                "Education",
+                "Technology",
+                "Tutorial"
+            ],
+            "upload_ready": true,
+            "manual_steps": [
+                "1. Open TikTok app on phone",
+                "2. Tap + (create) button",
+                "3. Tap 'Upload video'",
+                "4. Select video: /Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
+                "5. Add description/hashtags from manifest",
+                "6. Select cover frame from: /Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
+                "7. Set visibility and post"
+            ],
+            "known_limitations": [
+                "TikTok API is restricted; manual upload only",
+                "Captions must be hardcoded",
+                "Video should be under 10 minutes (60s shown as example)"
+            ],
+            "last_verified_at": "2026-05-08T14:30:00Z"
+        },
+        {
+            "platform": "instagram",
+            "package_target": "reels",
+            "adapter_mode": "manual",
+            "adapter_status": "manual_only",
+            "video_path": "/Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
+            "video_duration_seconds": 60,
+            "captions": {
+                "primary_format": "hardcoded",
+                "caption_files": [
+                    {
+                        "language": "en",
+                        "format": "srt",
+                        "path": "/Users/Office/projects/demo/output/captions/en.srt"
+                    }
+                ],
+                "caption_note": "hardcoded into video; Instagram does not support external captions"
+            },
+            "thumbnail_path": "/Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
+            "title": "",
+            "title_rules": {
+                "max_length": 0,
+                "requires_prefix": false,
+                "restricted_chars": []
+            },
+            "description": "AI automation for founders \ud83d\ude80 Learn how to automate your business workflow today. #AIAutomation #Founders #TechTrends #2026 #Automation",
+            "description_rules": {
+                "max_length": 2200,
+                "requires_links": false,
+                "allows_hashtags": true,
+                "allows_timestamps": false
+            },
+            "hashtags": [
+                "#AIAutomation",
+                "#Founders",
+                "#TechTrends",
+                "#AI",
+                "#Automation",
+                "#2026",
+                "#Technology",
+                "#Business",
+                "#Tutorial",
+                "#Guide"
+            ],
+            "tags": [
+                "Business",
+                "Technology",
+                "Education"
+            ],
+            "upload_ready": true,
+            "manual_steps": [
+                "1. Open Instagram app",
+                "2. Tap + (create) button",
+                "3. Tap 'Reels'",
+                "4. Tap 'Upload video'",
+                "5. Select: /Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
+                "6. Add caption/hashtags from manifest",
+                "7. Select cover: /Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
+                "8. Share"
+            ],
+            "known_limitations": [
+                "Instagram API requires app review; manual upload recommended",
+                "Captions must be hardcoded",
+                "Aspect ratio should be 9:16 for Reels"
+            ],
+            "last_verified_at": "2026-05-08T14:30:00Z"
+        },
+        {
+            "platform": "bluesky",
+            "package_target": "feed",
+            "adapter_mode": "api",
+            "adapter_status": "partially_supported",
+            "video_path": "/Users/Office/projects/demo/output/renders/lightweight-1280x720_16x9.mp4",
+            "video_duration_seconds": 60,
+            "captions": {
+                "primary_format": "hardcoded",
+                "caption_files": [
+                    {
+                        "language": "en",
+                        "format": "srt",
+                        "path": "/Users/Office/projects/demo/output/captions/en.srt"
+                    }
+                ],
+                "caption_note": "hardcoded into video; Bluesky video support is emerging"
+            },
+            "thumbnail_path": "/Users/Office/projects/demo/output/thumbnails/thumb-720p.jpg",
+            "title": "",
+            "title_rules": {
+                "max_length": 0,
+                "requires_prefix": false,
+                "restricted_chars": []
+            },
+            "description": "AI automation for founders. Learn how to automate your business workflow today. #AIAutomation #Founders #TechTrends",
+            "description_rules": {
+                "max_length": 300,
+                "requires_links": false,
+                "allows_hashtags": true,
+                "allows_timestamps": false
+            },
+            "hashtags": [
+                "#AIAutomation",
+                "#Founders",
+                "#Tech",
+                "#AI",
+                "#2026"
+            ],
+            "tags": [],
+            "upload_ready": true,
+            "manual_steps": [
+                "1. Log into Bluesky (bsky.app)",
+                "2. Click 'Compose'",
+                "3. Upload video: /Users/Office/projects/demo/output/renders/lightweight-1280x720_16x9.mp4",
+                "4. Add text from manifest (max 300 chars)",
+                "5. Add hashtags",
+                "6. Publish"
+            ],
+            "known_limitations": [
+                "Bluesky video support is still emerging",
+                "Max 300 character text limit",
+                "Lightweight format recommended for file size"
+            ],
+            "last_verified_at": "2026-05-08T14:30:00Z"
+        }
+    ],
+    "adapter_status": {
+        "last_verified_at": "2026-05-08T14:30:00Z",
+        "all_adapters_ready": false,
+        "manual_fallback_available": true
     },
-    {
-      "platform": "instagram",
-      "package_target": "reels",
-      "account_target": null,
-      "adapter_mode": "manual",
-      "adapter_status": "manual_only",
-      "video_path": "/Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
-      "video_duration_seconds": 60,
-      "captions": {
-        "primary_format": "hardcoded",
-        "caption_files": [
-          {
-            "language": "en",
-            "format": "srt",
-            "path": "/Users/Office/projects/demo/output/captions/en.srt"
-          }
-        ],
-        "caption_note": "hardcoded into video; Instagram does not support external captions"
-      },
-      "thumbnail_path": "/Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
-      "title": null,
-      "title_rules": {
-        "max_length": 0,
-        "requires_prefix": false,
-        "restricted_chars": []
-      },
-      "description": "AI automation for founders 🚀 Learn how to automate your business workflow today. #AIAutomation #Founders #TechTrends #2026 #Automation",
-      "description_rules": {
-        "max_length": 2200,
-        "requires_links": false,
-        "allows_hashtags": true,
-        "allows_timestamps": false
-      },
-      "hashtags": [
-        "#AIAutomation",
-        "#Founders",
-        "#TechTrends",
-        "#AI",
-        "#Automation",
-        "#2026",
-        "#Technology",
-        "#Business",
-        "#Tutorial",
-        "#Guide"
-      ],
-      "tags": [
-        "Business",
-        "Technology",
-        "Education"
-      ],
-      "upload_ready": true,
-      "manual_steps": [
-        "1. Open Instagram app",
-        "2. Tap + (create) button",
-        "3. Tap 'Reels'",
-        "4. Tap 'Upload video'",
-        "5. Select: /Users/Office/projects/demo/output/renders/vertical-9x16.mp4",
-        "6. Add caption/hashtags from manifest",
-        "7. Select cover: /Users/Office/projects/demo/output/thumbnails/thumb-9x16.jpg",
-        "8. Share"
-      ],
-      "known_limitations": [
-        "Instagram API requires app review; manual upload recommended",
-        "Captions must be hardcoded",
-        "Aspect ratio should be 9:16 for Reels"
-      ],
-      "last_verified_at": "2026-05-08T14:30:00Z"
+    "manual_upload_instructions": {
+        "youtube_long_form": {
+            "platform": "youtube",
+            "package_target": "long-form",
+            "steps": [
+                "Go to YouTube Studio",
+                "Click Create \u2192 Upload video",
+                "Select video file",
+                "Add title, description, tags",
+                "Upload thumbnail",
+                "Add captions",
+                "Set visibility and publish"
+            ],
+            "required_fields": [
+                "title",
+                "description",
+                "video_file"
+            ],
+            "optional_fields": [
+                "captions",
+                "thumbnail",
+                "hashtags",
+                "chapters"
+            ]
+        },
+        "tiktok_feed": {
+            "platform": "tiktok",
+            "package_target": "feed",
+            "steps": [
+                "Open TikTok app",
+                "Tap + (create)",
+                "Select upload option",
+                "Choose video file",
+                "Add description",
+                "Select cover frame",
+                "Post"
+            ],
+            "required_fields": [
+                "video_file"
+            ],
+            "optional_fields": [
+                "description",
+                "hashtags",
+                "cover_frame"
+            ]
+        }
     },
-    {
-      "platform": "bluesky",
-      "package_target": "feed",
-      "account_target": null,
-      "adapter_mode": "api",
-      "adapter_status": "partially_supported",
-      "video_path": "/Users/Office/projects/demo/output/renders/lightweight-1280x720_16x9.mp4",
-      "video_duration_seconds": 60,
-      "captions": {
-        "primary_format": "hardcoded",
-        "caption_files": [
-          {
-            "language": "en",
-            "format": "srt",
-            "path": "/Users/Office/projects/demo/output/captions/en.srt"
-          }
-        ],
-        "caption_note": "hardcoded into video; Bluesky video support is emerging"
-      },
-      "thumbnail_path": "/Users/Office/projects/demo/output/thumbnails/thumb-720p.jpg",
-      "title": null,
-      "title_rules": {
-        "max_length": 0,
-        "requires_prefix": false,
-        "restricted_chars": []
-      },
-      "description": "AI automation for founders. Learn how to automate your business workflow today. #AIAutomation #Founders #TechTrends",
-      "description_rules": {
-        "max_length": 300,
-        "requires_links": false,
-        "allows_hashtags": true,
-        "allows_timestamps": false
-      },
-      "hashtags": [
-        "#AIAutomation",
-        "#Founders",
-        "#Tech",
-        "#AI",
-        "#2026"
-      ],
-      "tags": [],
-      "upload_ready": true,
-      "manual_steps": [
-        "1. Log into Bluesky (bsky.app)",
-        "2. Click 'Compose'",
-        "3. Upload video: /Users/Office/projects/demo/output/renders/lightweight-1280x720_16x9.mp4",
-        "4. Add text from manifest (max 300 chars)",
-        "5. Add hashtags",
-        "6. Publish"
-      ],
-      "known_limitations": [
-        "Bluesky video support is still emerging",
-        "Max 300 character text limit",
-        "Lightweight format recommended for file size"
-      ],
-      "last_verified_at": "2026-05-08T14:30:00Z"
-    }
-  ],
-  "adapter_status": {
-    "last_verified_at": "2026-05-08T14:30:00Z",
-    "all_adapters_ready": false,
-    "manual_fallback_available": true
-  },
-  "manual_upload_instructions": {
-    "youtube_long_form": {
-      "platform": "youtube",
-      "package_target": "long-form",
-      "steps": [
-        "Go to YouTube Studio",
-        "Click Create → Upload video",
-        "Select video file",
-        "Add title, description, tags",
-        "Upload thumbnail",
-        "Add captions",
-        "Set visibility and publish"
-      ],
-      "required_fields": [
-        "title",
-        "description",
-        "video_file"
-      ],
-      "optional_fields": [
-        "captions",
-        "thumbnail",
-        "hashtags",
-        "chapters"
-      ]
+    "verification": {
+        "status": "complete",
+        "completeness_percent": 100,
+        "all_formats_rendered": true,
+        "all_captions_generated": true,
+        "all_thumbnails_generated": true
     },
-    "tiktok_feed": {
-      "platform": "tiktok",
-      "package_target": "feed",
-      "steps": [
-        "Open TikTok app",
-        "Tap + (create)",
-        "Select upload option",
-        "Choose video file",
-        "Add description",
-        "Select cover frame",
-        "Post"
-      ],
-      "required_fields": [
-        "video_file"
-      ],
-      "optional_fields": [
-        "description",
-        "hashtags",
-        "cover_frame"
-      ]
-    }
-  },
-  "verification": {
-    "status": "complete",
-    "completeness_percent": 100,
-    "all_formats_rendered": true,
-    "all_captions_generated": true,
-    "all_thumbnails_generated": true
-  },
-  "errors": [],
-  "warnings": [
-    {
-      "severity": "info",
-      "stage": "render",
-      "message": "Some formats rendered with simple_transform (FFmpeg crop/scale) rather than canonical timeline",
-      "affected_format_keys": [
-        "square_1080x1080_1x1",
-        "lightweight_1280x720_16x9"
-      ],
-      "recommendation": "Output quality is acceptable for these formats; canonical timeline could be used if higher quality is needed"
-    }
-  ]
+    "errors": [],
+    "warnings": [
+        {
+            "severity": "info",
+            "stage": "render",
+            "message": "Some formats rendered with simple_transform (FFmpeg crop/scale) rather than canonical timeline",
+            "affected_format_keys": [
+                "square_1080x1080_1x1",
+                "lightweight_1280x720_16x9"
+            ],
+            "recommendation": "Output quality is acceptable for these formats; canonical timeline could be used if higher quality is needed"
+        }
+    ]
 }
