@@ -1,0 +1,18 @@
+{
+  "platform": "youtube",
+  "phase": "3E-C",
+  "client_id": "YOUR_CLIENT_ID_PLACEHOLDER.apps.googleusercontent.com",
+  "client_secret_policy": "not_stored_in_repo",
+  "redirect_uri": "http://127.0.0.1:8765/oauth/youtube/callback",
+  "scope": "https://www.googleapis.com/auth/youtube.upload",
+  "credential_reference": "keychain://video-orchestrator/youtube/example-account-placeholder",
+  "real_token_exchange_enabled": false,
+  "real_keychain_write_enabled": false,
+  "real_upload_enabled": false,
+  "notes": [
+    "Use real values only at runtime through local config outside the repo.",
+    "Do not commit real client secrets or token responses.",
+    "Prefer exchange directly to Keychain rather than printing raw token JSON."
+  ]
+}
+

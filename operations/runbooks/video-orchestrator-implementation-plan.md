@@ -442,6 +442,31 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - Future OAuth work has a defined local setup shape
 - Real upload remains gated behind later approval
 
+### Phase 3E-C: YouTube OAuth Token Exchange + Keychain Prototype (June 20 – July 15)
+**Goal:** Provide an explicitly gated CLI prototype for exchanging a YouTube authorization code and storing the resulting token JSON in macOS Keychain without enabling upload
+
+**Deliverables:**
+- Explicitly gated token exchange command
+- Explicitly gated Keychain read/write/delete commands
+- Token exchange and storage redaction summaries
+- Sample token exchange config and runbook
+
+**Behavior:**
+- No upload implementation
+- No browser automation
+- No `.env` or token file output
+- No Google client libraries
+- User must explicitly approve each sensitive operation
+
+**Testing:**
+- [ ] Token self-test passes without real tokens
+- [ ] Confirmation flags are required for sensitive commands
+- [ ] Redacted summaries never print raw token values
+
+**Success Criteria:**
+- Future upload work can validate the OAuth/token boundary safely
+- Manual fallback remains intact until explicit upload approval
+
 ### Phase 3X: Optional oMLX Local LLM Provider MVP (June 20 – July 15)
 **Goal:** Add a narrow local-only text provider for metadata variants without making oMLX required
 
