@@ -169,6 +169,7 @@ interface PostingAdapter {
 }
 
 type YouTubeDryRunConfig = {
+  credential_preflight_only?: boolean;
   privacy_status?: 'private' | 'unlisted' | 'public';
   made_for_kids?: boolean;
   category_id?: string | number;
@@ -1119,6 +1120,10 @@ export class VideoOrchestratorWorker {
       message: 'YouTube dry-run configuration validated.',
       warnings,
       metadata: {
+        credential_preflight_only: this.optionalBoolean(context.config.credential_preflight_only) ?? false,
+        credential_reference_present: this.optionalString(context.config.credential_reference) !== null,
+        real_oauth_enabled: false,
+        real_upload_enabled: false,
         privacy_status: privacyStatus,
         made_for_kids: youtubeConfig.made_for_kids ?? false,
         category_id: youtubeConfig.category_id ?? null,
@@ -1163,6 +1168,10 @@ export class VideoOrchestratorWorker {
       message: 'YouTube dry-run preflight completed.',
       warnings,
       metadata: {
+        credential_preflight_only: this.optionalBoolean(context.config.credential_preflight_only) ?? false,
+        credential_reference_present: this.optionalString(context.config.credential_reference) !== null,
+        real_oauth_enabled: false,
+        real_upload_enabled: false,
         idempotency_key: idempotencyKey,
         privacy_status: privacyStatus,
         title_length: context.target.title.length,
@@ -1189,6 +1198,10 @@ export class VideoOrchestratorWorker {
       output_path: null,
       warnings: [],
       metadata: {
+        credential_preflight_only: this.optionalBoolean(context.config.credential_preflight_only) ?? false,
+        credential_reference_present: this.optionalString(context.config.credential_reference) !== null,
+        real_oauth_enabled: false,
+        real_upload_enabled: false,
         would_upload: true,
         platform: 'youtube',
         package_target: context.target.package_target,
@@ -1926,6 +1939,10 @@ export class VideoOrchestratorWorker {
 
   private optionalString(value: unknown): string | null {
     return typeof value === 'string' && value.trim().length > 0 ? value : null;
+  }
+
+  private optionalBoolean(value: unknown): boolean | null {
+    return typeof value === 'boolean' ? value : null;
   }
 
   private resolveManualExportRoot(manualExportRoot: unknown): string {

@@ -63,8 +63,9 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **3A** | Jun 20–Jul 15 | Manual Upload Adapter | Export complete local upload packages with auditability and idempotent folder paths |
 | **3B** | Jun 20–Jul 15 | Posting Adapter Interface + Registry | Add a safe adapter contract with dry-run/blocked routing for non-manual modes |
 | **3C** | Jun 20–Jul 15 | YouTube Dry-Run Preflight | Validate YouTube package/config readiness without OAuth or upload |
+| **3D** | Jun 20–Jul 15 | YouTube Credential and OAuth Design | Define credential boundaries and approval gates without enabling upload |
 | **3X** | Jun 20–Jul 15 | Optional oMLX Local LLM Provider MVP | Add a localhost-only metadata variants provider for low-risk text tasks |
-| **3D** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after the registry is stable |
+| **3E** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
 | **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |
 
@@ -445,6 +446,34 @@ CREATE TABLE events (
 - ✅ Valid YouTube package/config pair passes dry-run preflight
 - ✅ Invalid config is blocked safely
 - ✅ Dry-run audit output includes upload intent and idempotency metadata
+
+---
+
+## Phase 3D: YouTube Credential and OAuth Design
+
+**Timeline:** June 20–July 15, 2026 (4 weeks)  
+**Goal:** Define the credential and OAuth boundary for a future YouTube upload adapter without enabling upload
+
+### 3.1: Credential Contract
+
+**Deliverables:**
+- Design-only credential contract JSON with placeholder-only values
+- Local callback path shape for localhost OAuth setup
+- DB reference model for Keychain-backed storage
+
+### 3.2: Safety Rules
+
+**Behavior:**
+- No OAuth execution
+- No token storage in repo files or `.env`
+- No YouTube API calls
+- No upload implementation
+- Manual fallback remains required
+
+### 3.3: Success Criteria
+- ✅ Credential boundaries are documented
+- ✅ Approval gate exists before any real upload phase
+- ✅ No secrets or token values are introduced
 
 ---
 

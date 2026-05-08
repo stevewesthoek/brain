@@ -367,6 +367,32 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - YouTube readiness can be checked without secrets or network access
 - Phase 3D can add real upload later without changing the dry-run contract
 
+### Phase 3D: YouTube Credential and OAuth Design (June 20 – July 15)
+**Goal:** Define the credential and OAuth boundary for a future YouTube upload adapter without enabling upload or secret handling
+
+**Deliverables:**
+- Design-only YouTube credential contract JSON
+- Localhost OAuth callback and PKCE-ready flow shape
+- Keychain-based token storage recommendation and DB reference model
+- Scope, quota, privacy, and approval-gate documentation
+- Manual fallback and duplicate-prevention rules
+
+**Behavior:**
+- No OAuth execution
+- No token storage in repo files or `.env`
+- No YouTube API calls
+- No upload implementation
+- Manual fallback remains required
+
+**Testing:**
+- [ ] Credential contract validates as JSON
+- [ ] Design notes capture approval gates before a real upload phase
+- [ ] No secrets or token values are introduced
+
+**Success Criteria:**
+- Future upload work has a clear credential boundary
+- Phase 3E can be implemented only after approval and storage decisions are intentionally made
+
 ### Phase 3X: Optional oMLX Local LLM Provider MVP (June 20 – July 15)
 **Goal:** Add a narrow local-only text provider for metadata variants without making oMLX required
 
