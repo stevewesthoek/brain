@@ -108,6 +108,53 @@ interface ProductionPackageRow {
   manifest_content: ProductionPackageManifest;
 }
 
+type PostingAdapterMode = 'manual' | 'api' | 'n8n' | 'browser_assisted' | 'disabled';
+
+type PostingAdapterStatus =
+  | 'supported'
+  | 'partially_supported'
+  | 'manual_only'
+  | 'blocked_pending_credentials'
+  | 'blocked_pending_app_review'
+  | 'blocked_api_restricted'
+  | 'disabled'
+  | 'not_implemented';
+
+type PostingPreflightStatus = 'ready' | 'blocked' | 'dry_run_only' | 'manual_fallback_available';
+
+interface PostingAdapterContext {
+  job: Job;
+  target: ProductionPackageManifest['package_targets'][number] & { source_manifest_path?: string };
+  manifest: ProductionPackageManifest;
+  config: Record<string, unknown>;
+}
+
+interface PostingAdapterStepResult {
+  status: string;
+  adapter_mode: PostingAdapterMode;
+  platform: string;
+  package_target: string;
+  output_path?: string;
+  external_id?: string;
+  message: string;
+  warnings: string[];
+  metadata?: Record<string, unknown>;
+}
+
+interface PostingAdapterResult extends PostingAdapterStepResult {
+  status: 'succeeded' | 'skipped' | 'blocked' | 'failed' | 'dry_run';
+}
+
+interface PostingAdapter {
+  mode: PostingAdapterMode;
+  name: string;
+  validateConfig(context: PostingAdapterContext): Promise<PostingAdapterStepResult>;
+  validateCredentials(context: PostingAdapterContext): Promise<PostingAdapterStepResult>;
+  preflight(context: PostingAdapterContext): Promise<PostingAdapterStepResult>;
+  execute(context: PostingAdapterContext): Promise<PostingAdapterResult>;
+  pollStatus(context: PostingAdapterContext): Promise<PostingAdapterStepResult>;
+}
+
 type FormatSpec = {
   format_key: string;
   target_platforms: string[];
@@ -431,21 +478,57 @@ export class VideoOrchestratorWorker {
   }
 
   private async executePostingJob(job: Job): Promise<void> {
-    const target = await this.resolveManualPostTarget(job);
-    if (target && this.shouldUseManualAdapter(target, job.task_config)) {
-      const outputPath = await this.exportManualUploadPackage(job, target);
-      await this.markJobSucceeded(job, outputPath);
-      return;
-    }
-
-    if (!target) {
-      await this.emitEvent(job, 'posting_skipped_phase_3', { reason: 'No matching package target found; posting adapters remain Phase 3.' }, 'warning');
+    const context = await this.resolvePostingContext(job);
+    if (!context) {
+      await this.emitEvent(job, 'posting_adapter_skipped', { reason: 'No matching package target found for posting job.' }, 'warning');
       await this.markJobSucceeded(job, null);
       return;
     }
 
-    await this.emitEvent(job, 'posting_skipped_phase_3', { reason: 'Posting adapters are Phase 3; package remains upload-ready/manual.', adapter_mode: target.adapter_mode ?? 'unknown' });
-    await this.markJobSucceeded(job, null);
+    const adapterMode = this.resolvePostingAdapterMode(context.target, context.config);
+    const adapter = this.getPostingAdapter(adapterMode, context.target);
+    await this.emitEvent(job, 'posting_adapter_selected', {
+      platform: context.target.platform,
+      package_target: context.target.package_target,
+      adapter_mode: adapter.mode,
+      adapter_name: adapter.name,
+    });
+
+    const configResult = await adapter.validateConfig(context);
+    if (configResult.status === 'blocked' || configResult.status === 'failed') {
+      await this.emitEvent(job, 'posting_adapter_blocked', { ...configResult }, 'warning');
+      await this.markJobSucceeded(job, null);
+      return;
+    }
+
+    const credentialResult = await adapter.validateCredentials(context);
+    const isDryRun = context.config.dry_run === true;
+    if ((credentialResult.status === 'blocked' || credentialResult.status === 'failed') && !isDryRun) {
+      await this.emitEvent(job, 'posting_adapter_blocked', { ...credentialResult }, 'warning');
+      await this.markJobSucceeded(job, null);
+      return;
+    }
+    if (credentialResult.status === 'blocked' || credentialResult.status === 'failed') {
+      await this.emitEvent(job, 'posting_adapter_blocked', { ...credentialResult, dry_run_continues: true }, 'warning');
+    }
+
+    const preflightResult = await adapter.preflight(context);
+    await this.emitEvent(job, 'posting_preflight_completed', { ...preflightResult }, preflightResult.status === 'blocked' ? 'warning' : 'info');
+
+    const executeResult = await adapter.execute(context);
+    if (executeResult.status === 'blocked' || executeResult.status === 'failed') {
+      await this.emitEvent(job, 'posting_adapter_blocked', { ...executeResult }, 'warning');
+      await this.markJobSucceeded(job, null);
+      return;
+    }
+
+    if (executeResult.status === 'dry_run' || executeResult.status === 'skipped') {
+      await this.emitEvent(job, 'posting_adapter_skipped', { ...executeResult }, 'warning');
+      await this.markJobSucceeded(job, executeResult.output_path ?? null);
+      return;
+    }
+
+    await this.markJobSucceeded(job, executeResult.output_path ?? null);
   }
 
   private async executeAnalyticsJob(job: Job): Promise<void> {
@@ -642,7 +725,7 @@ export class VideoOrchestratorWorker {
     `, [videoId, manifestPath, manifest, manifest.verification.completeness_percent, manifest.verification.status]);
   }
 
-  private async resolveManualPostTarget(job: Job): Promise<(ProductionPackageManifest['package_targets'][number] & { source_manifest_path?: string }) | null> {
+  private async resolvePostingContext(job: Job): Promise<PostingAdapterContext | null> {
     const config = job.task_config;
     const requestedPlatform = this.optionalString(config.platform);
     const requestedPackageTarget = this.optionalString(config.package_target);
@@ -654,17 +737,195 @@ export class VideoOrchestratorWorker {
     if (!packageRow) return null;
     const target = packageRow.manifest_content.package_targets.find((item) => item.platform === requestedPlatform && item.package_target === requestedPackageTarget);
     if (!target) return null;
-    return { ...target, source_manifest_path: packageRow.manifest_path };
+    return {
+      job,
+      target: { ...target, source_manifest_path: packageRow.manifest_path },
+      manifest: packageRow.manifest_content,
+      config,
+    };
   }
 
-  private shouldUseManualAdapter(
+  private resolvePostingAdapterMode(
     target: ProductionPackageManifest['package_targets'][number],
     config: Record<string, unknown>,
-  ): boolean {
-    const requestedMode = this.optionalString(config.adapter_mode);
-    if (requestedMode === 'manual') return true;
-    if (requestedMode && requestedMode !== 'manual') return false;
-    return target.adapter_mode === 'manual' || target.adapter_mode === 'disabled' || target.adapter_status === 'manual_only';
+  ): PostingAdapterMode {
+    const requestedMode = this.optionalString(config.adapter_mode) as PostingAdapterMode | null;
+    if (requestedMode === 'manual' || requestedMode === 'api' || requestedMode === 'n8n' || requestedMode === 'browser_assisted' || requestedMode === 'disabled') {
+      return requestedMode;
+    }
+    if (target.adapter_mode === 'manual' || target.adapter_mode === 'api' || target.adapter_mode === 'n8n' || target.adapter_mode === 'browser_assisted' || target.adapter_mode === 'disabled') {
+      return target.adapter_mode as PostingAdapterMode;
+    }
+    return target.adapter_status === 'manual_only' || target.adapter_status === 'disabled' ? 'manual' : (target.manual_steps.length > 0 ? 'manual' : 'disabled');
+  }
+
+  private getPostingAdapter(mode: PostingAdapterMode, target: ProductionPackageManifest['package_targets'][number]): PostingAdapter {
+    const adapterMode = mode === 'manual'
+      ? 'manual'
+      : (target.adapter_mode === 'manual' || target.adapter_status === 'manual_only' || target.adapter_status === 'disabled')
+        ? 'manual'
+        : mode;
+
+    if (adapterMode === 'manual') {
+      return this.buildManualPostingAdapter();
+    }
+    if (adapterMode === 'disabled') {
+      return this.buildDisabledPostingAdapter();
+    }
+    return this.buildDryRunPostingAdapter(adapterMode);
+  }
+
+  private buildManualPostingAdapter(): PostingAdapter {
+    return {
+      mode: 'manual',
+      name: 'Manual Upload Adapter',
+      validateConfig: async (context) => ({
+        status: context.target.source_manifest_path ? 'succeeded' : 'blocked',
+        adapter_mode: 'manual',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: context.target.source_manifest_path ? 'Manual export configuration is valid.' : 'Manual export requires a production package manifest path.',
+        warnings: context.target.source_manifest_path ? [] : ['Missing source manifest path.'],
+        metadata: { manual_export_root: this.resolveManualExportRoot(context.config.manual_export_root) },
+      }),
+      validateCredentials: async (context) => ({
+        status: 'succeeded',
+        adapter_mode: 'manual',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'Manual adapter does not use credentials.',
+        warnings: [],
+      }),
+      preflight: async (context) => ({
+        status: context.target.upload_ready ? 'ready' : 'manual_fallback_available',
+        adapter_mode: 'manual',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: context.target.upload_ready ? 'Upload-ready package can be exported manually.' : 'Manual export will proceed only if incomplete export override is enabled.',
+        warnings: context.target.upload_ready ? [] : ['Target package is not upload-ready.'],
+      }),
+      execute: async (context) => {
+        const outputPath = await this.exportManualUploadPackage(context.job, context.target);
+        return {
+          status: 'succeeded',
+          adapter_mode: 'manual',
+          platform: context.target.platform,
+          package_target: context.target.package_target,
+          output_path: outputPath,
+          message: 'Manual upload package exported.',
+          warnings: [],
+          metadata: { output_path: outputPath },
+        };
+      },
+      pollStatus: async (context) => ({
+        status: 'skipped',
+        adapter_mode: 'manual',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'Manual adapter has no pollable external status.',
+        warnings: [],
+      }),
+    };
+  }
+
+  private buildDryRunPostingAdapter(mode: Exclude<PostingAdapterMode, 'manual' | 'disabled'>): PostingAdapter {
+    const description = `Real ${mode} posting is not implemented in Phase 3B. Use manual adapter or implement a platform-specific adapter in a later phase.`;
+    return {
+      mode,
+      name: `${mode} Posting Adapter`,
+      validateConfig: async (context) => ({
+        status: 'succeeded',
+        adapter_mode: mode,
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'Posting configuration recognized for dry-run routing.',
+        warnings: [],
+      }),
+      validateCredentials: async (context) => ({
+        status: 'blocked',
+        adapter_mode: mode,
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'blocked_pending_credentials',
+        warnings: ['Credentials are intentionally not read in Phase 3B.'],
+        metadata: { adapter_status: 'blocked_pending_credentials' },
+      }),
+      preflight: async (context) => ({
+        status: 'dry_run_only',
+        adapter_mode: mode,
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: description,
+        warnings: ['Phase 3B supports dry-run routing only for non-manual adapters.'],
+        metadata: { adapter_status: 'not_implemented' },
+      }),
+      execute: async (context) => ({
+        status: 'dry_run',
+        adapter_mode: mode,
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: description,
+        warnings: [],
+        metadata: { phase: '3B', dry_run: true },
+      }),
+      pollStatus: async (context) => ({
+        status: 'skipped',
+        adapter_mode: mode,
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'pollStatus is not implemented for Phase 3B dry-run adapters.',
+        warnings: [],
+      }),
+    };
+  }
+
+  private buildDisabledPostingAdapter(): PostingAdapter {
+    return {
+      mode: 'disabled',
+      name: 'Disabled Posting Adapter',
+      validateConfig: async (context) => ({
+        status: 'blocked',
+        adapter_mode: 'disabled',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'Posting is disabled for this target.',
+        warnings: ['Target adapter mode is disabled.'],
+        metadata: { adapter_status: 'disabled' },
+      }),
+      validateCredentials: async (context) => ({
+        status: 'blocked',
+        adapter_mode: 'disabled',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'disabled',
+        warnings: ['Posting is disabled for this target.'],
+        metadata: { adapter_status: 'disabled' },
+      }),
+      preflight: async (context) => ({
+        status: 'blocked',
+        adapter_mode: 'disabled',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'Posting is disabled for this target.',
+        warnings: ['No execution will occur.'],
+      }),
+      execute: async (context) => ({
+        status: 'skipped',
+        adapter_mode: 'disabled',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'Posting is disabled for this target.',
+        warnings: [],
+      }),
+      pollStatus: async (context) => ({
+        status: 'skipped',
+        adapter_mode: 'disabled',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'pollStatus is not applicable for disabled adapters.',
+        warnings: [],
+      }),
+    };
   }
 
   private async exportManualUploadPackage(

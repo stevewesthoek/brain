@@ -319,6 +319,29 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - No API posting occurs
 - Manual export behavior is stable enough to support later authorized adapters
 
+### Phase 3B: Posting Adapter Interface + Registry (June 20 – July 15)
+**Goal:** Introduce a formal adapter contract and safe routing layer without enabling network posting
+
+**Deliverables:**
+- Adapter interface with `validateConfig`, `validateCredentials`, `preflight`, `execute`, and `pollStatus`
+- Registry for `manual`, `api`, `n8n`, `browser_assisted`, and `disabled`
+- Dry-run/blocked results for non-manual adapters
+- Audit events for adapter selection, preflight, blocking, and skip outcomes
+
+**Behavior:**
+- Manual remains the only executable adapter
+- API/n8n/browser-assisted adapters stay stubbed and safe
+- Unknown modes fall back to manual only when the target already supports manual fallback
+
+**Testing:**
+- [ ] Manual adapter still exports packages
+- [ ] API/n8n/browser-assisted adapters return dry-run or blocked results
+- [ ] No network or credential access occurs
+
+**Success Criteria:**
+- Posting jobs route through the adapter registry safely
+- Real posting remains intentionally out of scope
+
 ---
 
 ### Phase 4: Multi-Account Scheduler (July 15 – August 15)

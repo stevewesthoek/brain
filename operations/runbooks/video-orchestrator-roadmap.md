@@ -61,7 +61,8 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **2B** | Jun 10–Jun 20 | Local Queue MVP | Batch of 5 videos can fail mid-run and resume without lost work |
 | **2C** | Jun 20–Jun 27 | Local Production Adapters | FFmpeg render/thumbnail outputs and optional Whisper.cpp captions produce real local artifacts |
 | **3A** | Jun 20–Jul 15 | Manual Upload Adapter | Export complete local upload packages with auditability and idempotent folder paths |
-| **3B** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after manual export is stable |
+| **3B** | Jun 20–Jul 15 | Posting Adapter Interface + Registry | Add a safe adapter contract with dry-run/blocked routing for non-manual modes |
+| **3C** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after the registry is stable |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
 | **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |
 
@@ -378,6 +379,43 @@ CREATE TABLE events (
 - ✅ Manual upload package generated for an upload-ready target
 - ✅ Incomplete target exports are blocked unless override is enabled
 - ✅ Export audit log shows all attempts
+
+---
+
+## Phase 3B: Posting Adapter Interface + Registry
+
+**Timeline:** June 20–July 15, 2026 (4 weeks)  
+**Goal:** Route posting jobs through a formal adapter contract while keeping real posting disabled
+
+### 3.1: Adapter Contract
+
+**Deliverables:**
+- `validateConfig()`
+- `validateCredentials()`
+- `preflight()`
+- `execute()`
+- `pollStatus()`
+
+### 3.2: Registry Modes
+
+**Deliverables:**
+- `manual`
+- `api`
+- `n8n`
+- `browser_assisted`
+- `disabled`
+
+### 3.3: Safety Rules
+
+**Behavior:**
+- Manual remains the only executable adapter
+- Non-manual modes return dry-run or blocked results
+- No network calls or credential access
+
+### 3.4: Success Criteria
+- ✅ Posting jobs route through the registry
+- ✅ Non-manual jobs emit clear blocked/dry-run audit events
+- ✅ No real platform posting occurs
 
 ---
 
