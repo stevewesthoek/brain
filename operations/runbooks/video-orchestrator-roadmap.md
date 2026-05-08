@@ -60,7 +60,8 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **2A** | May 30–Jun 10 | Production Package MVP | One video → platform-ready packages for all defined platform targets |
 | **2B** | Jun 10–Jun 20 | Local Queue MVP | Batch of 5 videos can fail mid-run and resume without lost work |
 | **2C** | Jun 20–Jun 27 | Local Production Adapters | FFmpeg render/thumbnail outputs and optional Whisper.cpp captions produce real local artifacts |
-| **3** | Jun 20–Jul 15 | Posting Adapters (Partial) | Reliable publishing to 1–2 authorized platforms; manual packages for the rest |
+| **3A** | Jun 20–Jul 15 | Manual Upload Adapter | Export complete local upload packages with auditability and idempotent folder paths |
+| **3B** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after manual export is stable |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
 | **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |
 
@@ -339,68 +340,44 @@ CREATE TABLE events (
 
 ---
 
-## Phase 3: Posting Adapters (Partial)
+## Phase 3A: Manual Upload Adapter
 
 **Timeline:** June 20–July 15, 2026 (4 weeks)  
-**Goal:** Publish only where authorization is real; manual fallback for the rest
+**Goal:** Export complete local upload packages for human posting
 
-### 3.1: Adapter Architecture
-
-**Deliverables:**
-- Adapter interface: abstract base class for all posting adapters
-- Adapter registry with status: supported, partially_supported, manual_only, blocked_pending_credentials, blocked_pending_app_review, disabled
-
-**Adapter modes:**
-- **api:** Direct authorized platform API (YouTube with valid OAuth token)
-- **n8n:** n8n workflow wrapper (optional centralization)
-- **browser_assisted:** Playwright semi-automation (browser workflow, human review)
-- **manual:** Generate upload package, human posts
-- **disabled:** Platform currently unavailable
-
-### 3.2: YouTube Adapter (Phase 3 Target)
+### 3.1: Manual Export Contract
 
 **Deliverables:**
-- OAuth 2.0 flow (via Google API)
-- Upload helper: POST request with metadata
-- Scheduling support
-- Status tracking: uploading → processing → published → failed
-- Idempotency: prevent duplicate uploads on retry
+- Export local package folders for upload-ready targets
+- Copy video, thumbnail, captions, metadata, manifest excerpt, and checksums
+- Emit audit events for export completion or refusal
+- Keep package paths idempotent and target-specific
 
-**Posting workflow:**
-```
-production_package (YouTube)
-  → adapter.validate_credentials()
-  → adapter.upload(video, metadata)
-  → adapter.schedule(publish_time)
-  → adapter.poll_status()
-  → update posting_job.posting_state (published / failed)
-```
+### 3.2: Manual Adapter Rules
 
-### 3.3: Bluesky Adapter (Phase 3 Target)
+**Behavior:**
+- `adapter_mode = manual` exports the package
+- Missing `adapter_mode` may fall back to manual when the platform declares manual fallback
+- Incomplete packages require an explicit override
+- No platform API calls, OAuth, tokens, cookies, or browser automation
 
-**Deliverables:**
-- ATProto API integration
-- Post creation with video embed
-- Simple (no scheduling, real-time only)
+### 3.3: Future Posting Adapters
 
-### 3.4: Manual Adapter (Always Available)
+**Deferred until Phase 3B+:**
+- YouTube API adapter
+- Bluesky API adapter
+- Any browser-assisted or n8n wrapper posting flow
 
-**Deliverables:**
-- Package generation: copy video + metadata to `upload-packages/` folder
-- Human upload: user takes package, uploads via platform web/app
-- Tracking: record posted URL manually for analytics
-
-### 3.5: Posting Audit Logs
+### 3.4: Posting Audit Logs
 
 **Deliverables:**
 - Table: posting_jobs (video_id, platform, account, adapter_mode, status, error, retry_count, timestamps)
-- Event log: all posting attempts, failures, retries
+- Event log: all export attempts, refusals, retries
 
 ### 3 Success Criteria
-- ✅ Authorized YouTube account: production_package uploads successfully
-- ✅ Bluesky account: post created with video
-- ✅ Unauthorized platform: manual package generated
-- ✅ Posting audit log shows all attempts
+- ✅ Manual upload package generated for an upload-ready target
+- ✅ Incomplete target exports are blocked unless override is enabled
+- ✅ Export audit log shows all attempts
 
 ---
 

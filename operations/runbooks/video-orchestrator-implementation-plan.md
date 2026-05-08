@@ -278,89 +278,46 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 
 ---
 
-### Phase 3: Posting Adapters (Partial) (June 20 – July 15)
-**Goal:** Publish only where authorization is real; manual fallback for the rest
+### Phase 3A: Manual Upload Adapter (June 20 – July 15)
+**Goal:** Export a complete local upload package for human review and manual posting
 
 **Deliverables:**
 
-1. **Adapter Architecture**
-   - Abstract base class: `PostingAdapter`
-   - Interface: `validate_credentials()`, `upload(video, metadata)`, `schedule(publish_time)`, `poll_status()`
-   - Adapter registry with status per platform (supported, partial, manual_only, blocked, disabled)
+1. **Manual Export Contract**
+   - Export a local package directory for each upload-ready package target
+   - Copy video, thumbnail, captions, manifest excerpt, metadata, checksums, and human instructions
+   - Persist export/audit events in the worker
+   - Keep exports idempotent by target folder path
 
-   Pseudo-code:
-   ```python
-   class PostingAdapter:
-     def validate_credentials(self):
-       """Check if credentials are valid"""
-       raise NotImplementedError
-     
-     def upload(self, video_path, metadata):
-       """Upload video + metadata"""
-       raise NotImplementedError
-     
-     def schedule(self, publish_time):
-       """Schedule post for future time"""
-       raise NotImplementedError
-     
-     def poll_status(self):
-       """Check publish status: uploading, processing, published, failed"""
-       raise NotImplementedError
-   
-   class YouTubeAdapter(PostingAdapter):
-     def validate_credentials(self):
-       # Check OAuth token is valid + not expired
-     
-     def upload(self, video_path, metadata):
-       # Call YouTube Data API v3: videos.insert()
-   
-   class ManualAdapter(PostingAdapter):
-     def validate_credentials(self):
-       return True  # Always available
-     
-     def upload(self, video_path, metadata):
-       # Copy to upload-packages/ folder
-       # Return "ready for manual upload"
-   ```
+2. **Manual Adapter Behavior**
+   - `adapter_mode = manual` triggers export
+   - `adapter_mode = api` stays a no-op in Phase 3A
+   - Missing `adapter_mode` falls back to manual when the target declares manual fallback
+   - Incomplete packages fail safely unless explicit override is enabled
 
-2. **YouTube Adapter** (Phase 3 target)
-   - OAuth 2.0 flow: authenticate with Google account
-   - Upload: `youtube.videos().insert()`
-   - Metadata: title, description, tags, thumbnail, privacy (private/unlisted/public)
-   - Scheduling: publish time
-   - Polling: check upload status every 30s until published or failed
-   - Idempotency: track upload_id; prevent duplicate posts on retry
+3. **Export Folder Convention**
+   - Default root: `/Users/Office/projects/video-orchestrator/upload-packages`
+   - Suggested path: `<root>/<video_id>/<platform>__<package_target>/`
+   - Files: `video.mp4`, optional `thumbnail.jpg`, `captions/*`, `metadata.json`, `instructions.md`, `package-manifest.json`, `checksums.sha256`
 
-3. **Bluesky Adapter** (Phase 3 target)
-   - ATProto API: create post with video embed
-   - Simple: no scheduling (real-time only)
-   - Idempotency: track post_id
+4. **Posting Job State Machine**
+   - Phase 3A only marks the export job succeeded after writing the package folder
+   - Real publishing states remain Phase 3B+
 
-4. **Manual Adapter** (Always Available)
-   - Generate upload package: copy video + metadata JSON to `~/.local/video-orchestrator/upload-packages/`
-   - User manually uploads via platform web/app
-   - Tracking: user provides posted URL for analytics
-
-5. **Posting Job State Machine**
-   - States: draft → scheduled → uploading → processing → published | failed
-   - Retry logic: exponential backoff, max 3 retries
-   - Idempotency key: prevent duplicate posts on retry
-
-6. **Posting Audit Log**
-   - Table: posting_jobs (video_id, platform, account_id, adapter_mode, status, error, retry_count, timestamps)
-   - Event log: all posting attempts
+5. **Phase 3B+ Adapter Architecture**
+   - Future work: `PostingAdapter`, credential validation, authorized API upload, polling, scheduling
+   - Future work: YouTube and Bluesky API adapters only after manual export is stable
 
 **Testing:**
-- [ ] YouTube adapter: valid credentials upload successfully
-- [ ] YouTube adapter: invalid credentials fail gracefully
-- [ ] Bluesky adapter: create post with video
-- [ ] Manual adapter: generate upload package
-- [ ] Audit logs show all attempts
+- [ ] Manual adapter exports a package folder for a real upload-ready target
+- [ ] Incomplete export is blocked unless explicit override is enabled
+- [ ] Export artifacts include metadata, instructions, manifest excerpt, and checksums
+- [ ] Export audit event is written
 
 **Success Criteria:**
-- Reliable publishing to 1–2 authorized platforms
-- Manual upload packages for unauthorized platforms
-- All posting attempts logged
+- Human-upload packages are reproducible and safe
+- No API posting occurs
+- Manual export behavior is stable enough to support later authorized adapters
 
 ---
 

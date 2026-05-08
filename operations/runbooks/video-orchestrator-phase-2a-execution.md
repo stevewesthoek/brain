@@ -19,7 +19,7 @@ Phase 2A produces **upload-ready packages**, not published posts. The goal is to
 - Complete manifest showing what's ready for each platform
 - Manual upload instructions as fallback for all targets
 
-**Adapters (Phase 3+)** will use these packages to post automatically where authorized. If adapters fail or are unavailable, manual upload packages are always available.
+**Adapters (Phase 3A+)** will use these packages to export manual upload folders first, then add authorized posting later. If adapters fail or are unavailable, manual upload packages are always available.
 
 ---
 

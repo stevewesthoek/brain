@@ -1,0 +1,11 @@
+{
+  "job_type": "post",
+  "video_id": "00000000-0000-4000-8000-000000000001",
+  "task_config": {
+    "video_id": "00000000-0000-4000-8000-000000000001",
+    "platform": "youtube",
+    "package_target": "long-form",
+    "adapter_mode": "manual",
+    "manual_export_root": "/Users/Office/projects/video-orchestrator/upload-packages"
+  }
+}

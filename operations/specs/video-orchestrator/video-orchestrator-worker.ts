@@ -103,6 +103,11 @@ interface ProductionPackageManifest {
   warnings: Array<Record<string, unknown>>;
 }
 
+interface ProductionPackageRow {
+  manifest_path: string;
+  manifest_content: ProductionPackageManifest;
+}
+
 type FormatSpec = {
   format_key: string;
   target_platforms: string[];
@@ -426,7 +431,20 @@ export class VideoOrchestratorWorker {
   }
 
   private async executePostingJob(job: Job): Promise<void> {
-    await this.emitEvent(job, 'posting_skipped_phase_3', { reason: 'Posting adapters are Phase 3; package remains upload-ready/manual.' });
+    const target = await this.resolveManualPostTarget(job);
+    if (target && this.shouldUseManualAdapter(target, job.task_config)) {
+      const outputPath = await this.exportManualUploadPackage(job, target);
+      await this.markJobSucceeded(job, outputPath);
+      return;
+    }
+
+    if (!target) {
+      await this.emitEvent(job, 'posting_skipped_phase_3', { reason: 'No matching package target found; posting adapters remain Phase 3.' }, 'warning');
+      await this.markJobSucceeded(job, null);
+      return;
+    }
+
+    await this.emitEvent(job, 'posting_skipped_phase_3', { reason: 'Posting adapters are Phase 3; package remains upload-ready/manual.', adapter_mode: target.adapter_mode ?? 'unknown' });
     await this.markJobSucceeded(job, null);
   }
 
@@ -622,6 +640,177 @@ export class VideoOrchestratorWorker {
         package_status = EXCLUDED.package_status,
         updated_at = NOW()
     `, [videoId, manifestPath, manifest, manifest.verification.completeness_percent, manifest.verification.status]);
+  }
+
+  private async resolveManualPostTarget(job: Job): Promise<(ProductionPackageManifest['package_targets'][number] & { source_manifest_path?: string }) | null> {
+    const config = job.task_config;
+    const requestedPlatform = this.optionalString(config.platform);
+    const requestedPackageTarget = this.optionalString(config.package_target);
+    if (!requestedPlatform || !requestedPackageTarget) {
+      return null;
+    }
+
+    const packageRow = await this.loadLatestProductionPackage(job.video_id ?? String(config.video_id ?? ''));
+    if (!packageRow) return null;
+    const target = packageRow.manifest_content.package_targets.find((item) => item.platform === requestedPlatform && item.package_target === requestedPackageTarget);
+    if (!target) return null;
+    return { ...target, source_manifest_path: packageRow.manifest_path };
+  }
+
+  private shouldUseManualAdapter(
+    target: ProductionPackageManifest['package_targets'][number],
+    config: Record<string, unknown>,
+  ): boolean {
+    const requestedMode = this.optionalString(config.adapter_mode);
+    if (requestedMode === 'manual') return true;
+    if (requestedMode && requestedMode !== 'manual') return false;
+    return target.adapter_mode === 'manual' || target.adapter_mode === 'disabled' || target.adapter_status === 'manual_only';
+  }
+
+  private async exportManualUploadPackage(
+    job: Job,
+    target: ProductionPackageManifest['package_targets'][number] & { source_manifest_path?: string },
+  ): Promise<string> {
+    const config = job.task_config;
+    const allowIncomplete = config.allow_incomplete_manual_package === true;
+    if (!target.source_manifest_path) throw new Error('Missing source manifest path for manual export');
+    if (target.upload_ready !== true && !allowIncomplete) throw new Error('Manual export refused: target package is not upload-ready');
+
+    const packageRoot = this.resolveManualExportRoot(config.manual_export_root);
+    const packageDir = path.join(packageRoot, String(job.video_id ?? config.video_id), `${target.platform}__${target.package_target}`);
+    await fs.promises.mkdir(packageDir, { recursive: true });
+    const copiedFiles: Array<{ source: string; destination: string; label: string }> = [];
+
+    const manifest = await this.readProductionPackageFile(target.source_manifest_path);
+    const packageManifest = {
+      video_id: manifest.video_id,
+      platform: target.platform,
+      package_target: target.package_target,
+      adapter_mode: 'manual',
+      adapter_status: target.adapter_status,
+      source_manifest_path: target.source_manifest_path,
+      exported_at: new Date().toISOString(),
+      upload_ready: target.upload_ready,
+      known_limitations: target.known_limitations ?? [],
+      warnings: [] as string[],
+    };
+    for (const warning of manifest.warnings ?? []) {
+      const warningMessage = typeof warning === 'object' && warning !== null && typeof (warning as Record<string, unknown>).message === 'string'
+        ? String((warning as Record<string, unknown>).message)
+        : JSON.stringify(warning);
+      packageManifest.warnings.push(`Source manifest warning: ${warningMessage}`);
+    }
+    if (target.upload_ready !== true) {
+      packageManifest.warnings.push('Target package was not upload-ready at export time.');
+    }
+    if (allowIncomplete) {
+      packageManifest.warnings.push('Incomplete manual export was explicitly allowed.');
+    }
+
+    const videoFile = await this.copyIfReadableMedia(target.video_path, path.join(packageDir, 'video.mp4'), 'video');
+    if (!videoFile) throw new Error(`Manual export refused: video file missing or invalid for ${target.platform}/${target.package_target}`);
+    copiedFiles.push(videoFile);
+
+    if (target.thumbnail_path && await this.isRealMediaFile(target.thumbnail_path, { requireVideo: true })) {
+      copiedFiles.push(await this.copyFile(target.thumbnail_path, path.join(packageDir, 'thumbnail.jpg'), 'thumbnail'));
+    } else {
+      packageManifest.warnings.push('Thumbnail was unavailable or invalid at export time.');
+    }
+
+    const captionDir = path.join(packageDir, 'captions');
+    await fs.promises.mkdir(captionDir, { recursive: true });
+    for (const caption of target.captions.caption_files ?? []) {
+      if (!caption.path) continue;
+      if (!await this.fileExists(caption.path)) continue;
+      const destination = path.join(captionDir, `${caption.language || 'en'}.${caption.format || 'txt'}`);
+      copiedFiles.push(await this.copyFile(caption.path, destination, `caption:${caption.format || 'txt'}`));
+    }
+    if ((target.captions.caption_files ?? []).length === 0) {
+      packageManifest.warnings.push('No caption files were available at export time.');
+    }
+
+    const checksumLines: string[] = [];
+    for (const file of copiedFiles) {
+      const hash = await this.sha256File(file.destination);
+      checksumLines.push(`${hash}  ${path.relative(packageDir, file.destination)}`);
+    }
+
+    const metadata = {
+      video_id: manifest.video_id,
+      platform: target.platform,
+      package_target: target.package_target,
+      title: target.title,
+      description: target.description,
+      hashtags: target.hashtags,
+      tags: target.tags,
+      adapter_mode: 'manual',
+      adapter_status: target.adapter_status,
+      source_manifest_path: target.source_manifest_path,
+      exported_at: new Date().toISOString(),
+      upload_ready: target.upload_ready,
+      known_limitations: target.known_limitations ?? [],
+      warnings: packageManifest.warnings,
+    };
+
+    const instructions = [
+      `Platform: ${target.platform}`,
+      `Package target: ${target.package_target}`,
+      '',
+      `Title: ${target.title}`,
+      '',
+      `Description:`,
+      target.description,
+      '',
+      `Hashtags: ${(target.hashtags ?? []).join(' ')}`,
+      `Tags: ${(target.tags ?? []).join(', ')}`,
+      '',
+      'Manual steps:',
+      ...(target.manual_steps ?? []),
+      '',
+      'Files included:',
+      ...copiedFiles.map((file) => `- ${path.relative(packageDir, file.destination)} (${file.label})`),
+      '',
+      'Known limitations:',
+      ...(target.known_limitations?.length ? target.known_limitations.map((item) => `- ${item}`) : ['- None recorded']),
+      '',
+      'Warnings:',
+      ...(packageManifest.warnings.length ? packageManifest.warnings.map((item) => `- ${item}`) : ['- None']),
+      '',
+      'This package was not automatically posted.',
+    ].join('\n');
+
+    await fs.promises.writeFile(path.join(packageDir, 'metadata.json'), `${JSON.stringify(metadata, null, 2)}\n`);
+    await fs.promises.writeFile(path.join(packageDir, 'instructions.md'), `${instructions}\n`);
+    await fs.promises.writeFile(path.join(packageDir, 'package-manifest.json'), `${JSON.stringify({ ...packageManifest, files: copiedFiles.map((file) => ({ label: file.label, source: file.source, destination: file.destination })) }, null, 2)}\n`);
+    await fs.promises.writeFile(path.join(packageDir, 'checksums.sha256'), `${checksumLines.join('\n')}\n`);
+
+    if (!target.upload_ready && allowIncomplete) {
+      await fs.promises.writeFile(path.join(packageDir, 'INCOMPLETE_EXPORT_WARNING.txt'), 'This export was created from an incomplete package because allow_incomplete_manual_package was enabled.\n');
+    }
+
+    await this.emitEvent(job, 'manual_package_exported', {
+      video_id: manifest.video_id,
+      platform: target.platform,
+      package_target: target.package_target,
+      output_path: packageDir,
+      upload_ready: target.upload_ready,
+      allow_incomplete_manual_package: allowIncomplete,
+    });
+
+    return packageDir;
+  }
+
+  private async loadLatestProductionPackage(videoId: string): Promise<ProductionPackageRow | null> {
+    const rows = await this.queryJson<ProductionPackageRow>(`
+      SELECT COALESCE(json_agg(row_to_json(q)), '[]'::json) FROM (
+        SELECT manifest_path, manifest_content
+        FROM production_packages
+        WHERE video_id = ${this.sqlParam(1, 'uuid')}
+        ORDER BY created_at DESC
+        LIMIT 1
+      ) q;
+    `, [videoId]);
+    return rows[0] ?? null;
   }
 
   private async markJobSucceeded(job: Job, outputPath: string | null): Promise<void> {
@@ -874,6 +1063,34 @@ export class VideoOrchestratorWorker {
     await this.runCommandChecked(bin, args);
   }
 
+  private async copyIfReadableMedia(source: string, destination: string, label: string): Promise<{ source: string; destination: string; label: string } | null> {
+    if (!await this.isRealMediaFile(source, { requireVideo: true })) return null;
+    return this.copyFile(source, destination, label);
+  }
+
+  private async copyFile(source: string, destination: string, label: string): Promise<{ source: string; destination: string; label: string }> {
+    await fs.promises.mkdir(path.dirname(destination), { recursive: true });
+    await fs.promises.copyFile(source, destination);
+    return { source, destination, label };
+  }
+
+  private async sha256File(filePath: string): Promise<string> {
+    const { createHash } = await import('node:crypto');
+    const hash = createHash('sha256');
+    const handle = await fs.promises.open(filePath, 'r');
+    try {
+      const buffer = Buffer.alloc(64 * 1024);
+      while (true) {
+        const { bytesRead } = await handle.read(buffer, 0, buffer.length, null);
+        if (bytesRead <= 0) break;
+        hash.update(buffer.subarray(0, bytesRead));
+      }
+    } finally {
+      await handle.close();
+    }
+    return hash.digest('hex');
+  }
+
   private async ensureCaptionOutputs(outputDir: string, language: string, placeholder: boolean): Promise<Array<{ format: 'srt' | 'vtt' | 'json'; path: string }>> {
     await fs.promises.mkdir(outputDir, { recursive: true });
     const outputs = [
@@ -954,6 +1171,11 @@ export class VideoOrchestratorWorker {
     }
   }
 
+  private async readProductionPackageFile(manifestPath: string): Promise<ProductionPackageManifest> {
+    const content = await fs.promises.readFile(manifestPath, 'utf-8');
+    return JSON.parse(content) as ProductionPackageManifest;
+  }
+
   private async mediaHasStream(filePath: string, type: 'audio' | 'video'): Promise<boolean> {
     const metadata = await this.probeMedia(filePath);
     return metadata?.streams?.some((stream) => stream.codec_type === type) ?? false;
@@ -978,6 +1200,11 @@ export class VideoOrchestratorWorker {
 
   private optionalString(value: unknown): string | null {
     return typeof value === 'string' && value.trim().length > 0 ? value : null;
+  }
+
+  private resolveManualExportRoot(manualExportRoot: unknown): string {
+    const configured = this.optionalString(manualExportRoot);
+    return configured ?? process.env.VIDEO_ORCHESTRATOR_MANUAL_EXPORT_ROOT ?? '/Users/Office/projects/video-orchestrator/upload-packages';
   }
 
   private parseResolution(resolution: string): [number, number] {
