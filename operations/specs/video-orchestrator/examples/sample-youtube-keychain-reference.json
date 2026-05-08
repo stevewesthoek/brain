@@ -1,0 +1,12 @@
+{
+  "platform": "youtube",
+  "credential_reference": "keychain://video-orchestrator/youtube/example-account-placeholder",
+  "storage": "macos_keychain_reference",
+  "service": "video-orchestrator/youtube",
+  "account": "example-account-placeholder",
+  "contains_real_secret": false,
+  "phase": "3E-A",
+  "real_oauth_enabled": false,
+  "real_upload_enabled": false
+}
+

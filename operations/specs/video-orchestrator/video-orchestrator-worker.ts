@@ -170,6 +170,7 @@ interface PostingAdapter {
 
 type YouTubeDryRunConfig = {
   credential_preflight_only?: boolean;
+  credential_reference?: string;
   privacy_status?: 'private' | 'unlisted' | 'public';
   made_for_kids?: boolean;
   category_id?: string | number;
@@ -1121,7 +1122,7 @@ export class VideoOrchestratorWorker {
       warnings,
       metadata: {
         credential_preflight_only: this.optionalBoolean(context.config.credential_preflight_only) ?? false,
-        credential_reference_present: this.optionalString(context.config.credential_reference) !== null,
+        ...this.describeCredentialReference(context.config.credential_reference),
         real_oauth_enabled: false,
         real_upload_enabled: false,
         privacy_status: privacyStatus,
@@ -1169,7 +1170,7 @@ export class VideoOrchestratorWorker {
       warnings,
       metadata: {
         credential_preflight_only: this.optionalBoolean(context.config.credential_preflight_only) ?? false,
-        credential_reference_present: this.optionalString(context.config.credential_reference) !== null,
+        ...this.describeCredentialReference(context.config.credential_reference),
         real_oauth_enabled: false,
         real_upload_enabled: false,
         idempotency_key: idempotencyKey,
@@ -1199,7 +1200,7 @@ export class VideoOrchestratorWorker {
       warnings: [],
       metadata: {
         credential_preflight_only: this.optionalBoolean(context.config.credential_preflight_only) ?? false,
-        credential_reference_present: this.optionalString(context.config.credential_reference) !== null,
+        ...this.describeCredentialReference(context.config.credential_reference),
         real_oauth_enabled: false,
         real_upload_enabled: false,
         would_upload: true,
@@ -1223,6 +1224,25 @@ export class VideoOrchestratorWorker {
 
   private readYouTubeDryRunConfig(value: unknown): YouTubeDryRunConfig {
     return typeof value === 'object' && value !== null ? value as YouTubeDryRunConfig : {};
+  }
+
+  private describeCredentialReference(value: unknown): { credential_reference_present: boolean; credential_reference_format: 'valid' | 'invalid' | 'missing'; credential_reference_platform?: string; credential_reference_account_label_present: boolean } {
+    const reference = this.optionalString(value);
+    if (!reference) {
+      return { credential_reference_present: false, credential_reference_format: 'missing', credential_reference_account_label_present: false };
+    }
+    const match = reference.match(/^keychain:\/\/video-orchestrator\/([a-z0-9_-]+)\/([A-Za-z0-9._-]+)$/i);
+    if (!match) {
+      return { credential_reference_present: true, credential_reference_format: 'invalid', credential_reference_account_label_present: false };
+    }
+    const platform = match[1].toLowerCase();
+    const accountLabel = match[2];
+    return {
+      credential_reference_present: true,
+      credential_reference_format: platform === 'youtube' ? 'valid' : 'invalid',
+      credential_reference_platform: platform,
+      credential_reference_account_label_present: accountLabel.length > 0,
+    };
   }
 
   private findPlatformSpec(platform: string, packageTarget: string): PlatformSpec | undefined {

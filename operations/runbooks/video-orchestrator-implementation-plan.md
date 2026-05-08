@@ -393,6 +393,30 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - Future upload work has a clear credential boundary
 - Phase 3E can be implemented only after approval and storage decisions are intentionally made
 
+### Phase 3E-A: Keychain Credential Helper Scaffold (June 20 – July 15)
+**Goal:** Provide a local-only credential helper scaffold that validates references and redacts logs without reading or writing secrets
+
+**Deliverables:**
+- CLI helper for credential reference validation and redaction
+- Dry-run Keychain read/write command shapes
+- Placeholder-only sample credential reference config
+- OAuth setup shape runbook for future phases
+
+**Behavior:**
+- No real Keychain reads or writes by default
+- No OAuth execution
+- No token storage or network calls
+- Manual fallback remains the safe path
+
+**Testing:**
+- [ ] Credential reference validation passes for the supported shape
+- [ ] Redaction removes sensitive-looking values from sample text
+- [ ] Dry-run command shapes print without touching Keychain
+
+**Success Criteria:**
+- Future credential handling has a standard local-only reference format
+- Logs and examples can be redacted safely before any real OAuth work
+
 ### Phase 3X: Optional oMLX Local LLM Provider MVP (June 20 – July 15)
 **Goal:** Add a narrow local-only text provider for metadata variants without making oMLX required
 

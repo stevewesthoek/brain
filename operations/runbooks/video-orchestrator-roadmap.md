@@ -477,6 +477,34 @@ CREATE TABLE events (
 
 ---
 
+## Phase 3E-A: Keychain Credential Helper Scaffold
+
+**Timeline:** June 20–July 15, 2026 (4 weeks)  
+**Goal:** Provide a local-only credential helper scaffold that validates references and redacts logs without reading or writing secrets
+
+### 3.1: Helper Commands
+
+**Deliverables:**
+- Credential reference validation
+- Redaction helper
+- Dry-run Keychain read/write command shapes
+- Self-test for safe outputs
+
+### 3.2: Safety Rules
+
+**Behavior:**
+- No real Keychain reads or writes by default
+- No OAuth execution
+- No token storage or network calls
+- Manual fallback remains the safe path
+
+### 3.3: Success Criteria
+- ✅ Credential reference validation passes for the supported shape
+- ✅ Redaction removes sensitive-looking values from sample text
+- ✅ Dry-run command shapes print without touching Keychain
+
+---
+
 ## Phase 3X: Optional oMLX Local LLM Provider MVP
 
 **Timeline:** June 20–July 15, 2026 (4 weeks)  
