@@ -287,5 +287,29 @@
     "databaseName": null,
     "databaseUser": null,
     "notes": "Uses production-grade orchestrator with fact-checking, atomic operations, and graceful shutdown. Requires OrbStack with Docker daemon running and ~/.config/buildflow/.env.relay. Health check validates all three services (agent, relay, web) are healthy."
+  },
+  {
+    "name": "Video Orchestrator",
+    "repoPath": "/Users/Office/Repos/stevewesthoek/brain",
+    "port": null,
+    "appPort": null,
+    "url": null,
+    "appUrl": null,
+    "check": null,
+    "healthCheck": null,
+    "start": "cd ~/Repos/stevewesthoek/brain/operations/database/standalone/video-orchestrator && docker compose up -d",
+    "startCommand": "cd ~/Repos/stevewesthoek/brain/operations/database/standalone/video-orchestrator && docker compose up -d",
+    "stop": "cd ~/Repos/stevewesthoek/brain/operations/database/standalone/video-orchestrator && docker compose down",
+    "stopCommand": "cd ~/Repos/stevewesthoek/brain/operations/database/standalone/video-orchestrator && docker compose down",
+    "restart": "cd ~/Repos/stevewesthoek/brain/operations/database/standalone/video-orchestrator && docker compose restart",
+    "restartCommand": "cd ~/Repos/stevewesthoek/brain/operations/database/standalone/video-orchestrator && docker compose restart",
+    "description": "Local video production pipeline: database, job queue, rendering, and multi-platform manifest generation",
+    "databaseEngine": "PostgreSQL",
+    "databaseServiceName": "video-orchestrator",
+    "databasePort": 5450,
+    "databaseName": "video_orchestrator",
+    "databaseUser": "postgres",
+    "startupTimeoutMs": 30000,
+    "notes": "Phase 2A/2B implementation: production package generation for 9 platform targets. Local database manages durable entities (videos, renders, packages, accounts, jobs). No automatic posting—all publishing is adapter-dependent with manual fallback. Queries the database from ProBot Studio tab."
   }
 ]
