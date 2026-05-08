@@ -63,6 +63,7 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **3A** | Jun 20–Jul 15 | Manual Upload Adapter | Export complete local upload packages with auditability and idempotent folder paths |
 | **3B** | Jun 20–Jul 15 | Posting Adapter Interface + Registry | Add a safe adapter contract with dry-run/blocked routing for non-manual modes |
 | **3C** | Jun 20–Jul 15 | YouTube Dry-Run Preflight | Validate YouTube package/config readiness without OAuth or upload |
+| **3X** | Jun 20–Jul 15 | Optional oMLX Local LLM Provider MVP | Add a localhost-only metadata variants provider for low-risk text tasks |
 | **3D** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after the registry is stable |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
 | **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |
@@ -444,6 +445,34 @@ CREATE TABLE events (
 - ✅ Valid YouTube package/config pair passes dry-run preflight
 - ✅ Invalid config is blocked safely
 - ✅ Dry-run audit output includes upload intent and idempotency metadata
+
+---
+
+## Phase 3X: Optional oMLX Local LLM Provider MVP
+
+**Timeline:** June 20–July 15, 2026 (4 weeks)  
+**Goal:** Add a localhost-only local LLM provider path for metadata variants
+
+### 3.1: Metadata Variants Task
+
+**Deliverables:**
+- `llm_text` job path for metadata variants
+- Prompt-to-JSON generation for title variants, hook variants, description draft, and hashtag suggestions
+- Local fallback/skip when oMLX is unavailable
+
+### 3.2: Safety Rules
+
+**Behavior:**
+- No media generation
+- No transcription
+- No posting
+- No secrets, OAuth, or external network access
+- oMLX stays optional and non-blocking
+
+### 3.3: Success Criteria
+- ✅ Metadata variants job returns valid structured JSON when oMLX is available
+- ✅ Unavailable oMLX returns a safe skip/warning result
+- ✅ Production remains healthy when oMLX is offline
 
 ---
 

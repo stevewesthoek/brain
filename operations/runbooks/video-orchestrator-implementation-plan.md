@@ -367,6 +367,30 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - YouTube readiness can be checked without secrets or network access
 - Phase 3D can add real upload later without changing the dry-run contract
 
+### Phase 3X: Optional oMLX Local LLM Provider MVP (June 20 – July 15)
+**Goal:** Add a narrow local-only text provider for metadata variants without making oMLX required
+
+**Deliverables:**
+- `llm_text` job path for metadata variants
+- localhost-only oMLX availability check
+- OpenAI-compatible chat completion call for prompt-to-JSON metadata variants
+- Safe fallback/skip behavior when oMLX is unavailable
+- Optional runbook-only integration guidance for future expansion
+
+**Behavior:**
+- No media rendering, transcription, or posting
+- No secrets, OAuth, or external network calls
+- Production continues when oMLX is offline
+
+**Testing:**
+- [ ] Local metadata variants job succeeds or skips safely
+- [ ] Non-localhost oMLX URLs are rejected
+- [ ] Invalid JSON response is handled safely
+
+**Success Criteria:**
+- One low-risk text task is available locally
+- oMLX remains optional and non-blocking
+
 ---
 
 ### Phase 4: Multi-Account Scheduler (July 15 – August 15)

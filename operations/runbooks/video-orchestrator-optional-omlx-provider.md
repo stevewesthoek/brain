@@ -14,6 +14,19 @@ The Video Orchestrator remains the control plane. oMLX is not a replacement for 
 
 Use oMLX only as a provider behind a future LLM-provider interface.
 
+## Phase 3X MVP Status
+
+Phase 3X is the smallest safe implementation of that future provider contract. It is intentionally narrow:
+
+- one task: `metadata_variants`
+- one provider mode: `omlx`
+- localhost-only base URLs
+- no credential reads
+- no platform posting
+- no media rendering or generation
+
+The worker may use oMLX for low-risk text tasks only when explicitly requested by a local job config.
+
 ---
 
 ## What oMLX Is Useful For
@@ -29,6 +42,7 @@ Potential local tasks:
 - local review passes
 - low-risk batch text generation
 - fallback/offline drafts when cloud LLMs are unavailable or too expensive
+- metadata variants for existing video packages
 
 ---
 
@@ -41,6 +55,7 @@ Do not use oMLX as the primary mechanism for:
 - thumbnail extraction
 - Whisper.cpp transcription
 - SDXL/FLUX/Wave/Roop media generation
+- Stable Diffusion image generation
 - CapCut or Remotion rendering
 - platform posting
 - OAuth or credential flows
@@ -75,9 +90,9 @@ Video Orchestrator
 
 ---
 
-## Proposed Future Job Type
+## Supported MVP Job Type
 
-Do not implement this until a dedicated LLM-provider phase.
+Phase 3X supports a single safe text task:
 
 Example shape:
 
@@ -103,15 +118,14 @@ Example shape:
 
 ---
 
-## Provider Contract Draft
+## Provider Contract
 
-A future LLM adapter should support:
+The MVP provider path supports:
 
 - `validateConfig()`
-- `validateProviderAvailability()`
-- `estimateCostAndLatency()`
-- `executeTextTask()`
+- `checkAvailability()`
 - `validateOutputSchema()`
+- `generateMetadataVariants()`
 - `fallback()`
 
 The adapter should return structured results:
@@ -180,6 +194,22 @@ Avoid at first:
 - anything requiring current web knowledge unless the prompt includes verified sources
 
 ---
+
+## Expected Output
+
+The MVP should produce JSON shaped like:
+
+```json
+{
+  "title_variants": ["...", "...", "..."],
+  "hook_variants": ["...", "...", "..."],
+  "description_draft": "...",
+  "hashtag_suggestions": ["...", "..."],
+  "warnings": []
+}
+```
+
+The worker wraps that output in a job result that also records provider, status, warnings, and idempotency metadata.
 
 ## Phase Recommendation
 

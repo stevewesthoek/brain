@@ -15,7 +15,7 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
-type JobType = 'render' | 'caption' | 'thumbnail' | 'manifest' | 'post' | 'analytics';
+type JobType = 'render' | 'caption' | 'thumbnail' | 'manifest' | 'post' | 'analytics' | 'llm_text';
 type JobStatus = 'pending' | 'leased' | 'running' | 'succeeded' | 'failed' | 'dead';
 
 interface Job {
@@ -106,6 +106,19 @@ interface ProductionPackageManifest {
 interface ProductionPackageRow {
   manifest_path: string;
   manifest_content: ProductionPackageManifest;
+}
+
+type LlmProviderMode = 'omlx' | 'disabled';
+type LlmTextTask = 'metadata_variants';
+
+interface LlmProviderResult {
+  status: 'succeeded' | 'skipped' | 'blocked' | 'failed';
+  provider: LlmProviderMode;
+  task: LlmTextTask;
+  message: string;
+  warnings: string[];
+  output_path?: string | null;
+  metadata?: Record<string, unknown>;
 }
 
 type PostingAdapterMode = 'manual' | 'api' | 'n8n' | 'browser_assisted' | 'disabled';
@@ -355,6 +368,9 @@ export class VideoOrchestratorWorker {
       case 'analytics':
         await this.executeAnalyticsJob(job);
         break;
+      case 'llm_text':
+        await this.executeLlmTextJob(job);
+        break;
       default:
         throw new Error(`Unknown job type: ${job.job_type}`);
     }
@@ -544,6 +560,69 @@ export class VideoOrchestratorWorker {
   private async executeAnalyticsJob(job: Job): Promise<void> {
     await this.emitEvent(job, 'analytics_skipped_phase_5', { reason: 'Analytics collection is Phase 5; no external platform metrics fetched in Phase 2B.' });
     await this.markJobSucceeded(job, null);
+  }
+
+  private async executeLlmTextJob(job: Job): Promise<void> {
+    const config = job.task_config;
+    const provider = this.optionalString(config.provider) === 'omlx' ? 'omlx' : 'disabled';
+    const task = this.optionalString(config.task) === 'metadata_variants' ? 'metadata_variants' : 'metadata_variants';
+    const outputPath = this.optionalString(config.output_path) ?? path.join(this.artifactRoot, 'llm', String(job.video_id ?? config.video_id ?? 'unknown'), 'metadata-variants.json');
+    const fallbackBehavior = this.optionalString(config.fallback_behavior) ?? 'skip_with_warning';
+    const baseUrl = this.optionalString(config.base_url) ?? this.optionalString(config.provider_base_url) ?? 'http://localhost:8000/v1';
+    const availability = await this.checkOmlxAvailability(baseUrl);
+
+    await this.emitEvent(job, 'llm_provider_checked', {
+      provider,
+      task,
+      base_url: baseUrl,
+      available: availability.available,
+      message: availability.message,
+      warnings: availability.warnings,
+    }, availability.available ? 'info' : 'warning');
+
+    if (provider !== 'omlx') {
+      const result: LlmProviderResult = {
+        status: 'skipped',
+        provider: 'disabled',
+        task,
+        message: 'No LLM provider selected. The llm_text job was skipped safely.',
+        warnings: ['Provider disabled or not selected.'],
+        output_path: outputPath,
+        metadata: { fallback_behavior: fallbackBehavior },
+      };
+      await this.writeLlmTextResult(outputPath, result);
+      await this.emitEvent(job, 'llm_text_skipped', { ...result }, 'warning');
+      await this.markJobSucceeded(job, outputPath);
+      return;
+    }
+
+    if (!availability.available) {
+      const result: LlmProviderResult = {
+        status: 'skipped',
+        provider: 'omlx',
+        task,
+        message: availability.message,
+        warnings: [...availability.warnings],
+        output_path: outputPath,
+        metadata: { base_url: baseUrl, fallback_behavior: fallbackBehavior, availability: 'unavailable' },
+      };
+      await this.writeLlmTextResult(outputPath, result);
+      await this.emitEvent(job, 'llm_text_skipped', { ...result }, 'warning');
+      await this.markJobSucceeded(job, outputPath);
+      return;
+    }
+
+    const generation = await this.runOmlxMetadataVariants(job, baseUrl, outputPath);
+    if (generation.status === 'blocked') {
+      await this.writeLlmTextResult(outputPath, generation);
+      await this.emitEvent(job, 'llm_text_skipped', { ...generation }, 'warning');
+      await this.markJobSucceeded(job, outputPath);
+      return;
+    }
+
+    await this.writeLlmTextResult(outputPath, generation);
+    await this.emitEvent(job, 'llm_text_generated', { ...generation }, generation.status === 'succeeded' ? 'info' : 'warning');
+    await this.markJobSucceeded(job, outputPath);
   }
 
   private async loadVideoWithAssets(videoId: string): Promise<VideoWithAssets | null> {
@@ -1135,6 +1214,178 @@ export class VideoOrchestratorWorker {
 
   private findPlatformSpec(platform: string, packageTarget: string): PlatformSpec | undefined {
     return this.platformSpecs.platforms.find((spec) => spec.platform === platform && spec.package_target === packageTarget);
+  }
+
+  private async checkOmlxAvailability(baseUrl: string): Promise<{ available: boolean; message: string; warnings: string[] }> {
+    const warnings: string[] = [];
+    let parsed: URL;
+    try {
+      parsed = new URL(baseUrl);
+    } catch {
+      return { available: false, message: 'Invalid oMLX base URL.', warnings: ['Base URL is malformed.'] };
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol) || !['localhost', '127.0.0.1', '::1'].includes(parsed.hostname)) {
+      return { available: false, message: 'oMLX is localhost-only in Phase 3X.', warnings: ['Non-localhost base URL rejected.'] };
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    try {
+      const response = await fetch(new URL('/models', parsed).toString(), { signal: controller.signal });
+      if (!response.ok) {
+        return { available: false, message: `oMLX unavailable (${response.status}).`, warnings: ['Local provider did not return a healthy response.'] };
+      }
+      return { available: true, message: 'oMLX availability check passed.', warnings };
+    } catch {
+      warnings.push('Local oMLX service is unavailable or timed out.');
+      return { available: false, message: 'oMLX is not running locally.', warnings };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private readLlmTextConfig(value: unknown): { provider?: LlmProviderMode; task?: LlmTextTask; base_url?: string; provider_base_url?: string; model?: string; output_path?: string; fallback_behavior?: string; input?: Record<string, unknown> } {
+    return typeof value === 'object' && value !== null ? value as { provider?: LlmProviderMode; task?: LlmTextTask; base_url?: string; provider_base_url?: string; model?: string; output_path?: string; fallback_behavior?: string; input?: Record<string, unknown> } : {};
+  }
+
+  private async runOmlxMetadataVariants(job: Job, baseUrl: string, outputPath: string): Promise<LlmProviderResult> {
+    const config = this.readLlmTextConfig(job.task_config);
+    const model = this.optionalString(config.model);
+    const input = config.input ?? {};
+    if (!model) {
+      return {
+        status: 'blocked',
+        provider: 'omlx',
+        task: 'metadata_variants',
+        message: 'oMLX model is required for metadata variant generation.',
+        warnings: ['Missing model name.'],
+        output_path: outputPath,
+        metadata: { base_url: baseUrl, credential_status: 'not_read_phase_3x' },
+      };
+    }
+
+    const prompt = this.buildOmlxMetadataPrompt(input, job);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(new URL('/chat/completions', baseUrl).toString(), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          temperature: 0.3,
+          max_tokens: 320,
+          messages: [
+            { role: 'system', content: 'Return only valid JSON with metadata_variants fields. Do not include secrets, credentials, or any non-local instructions.' },
+            { role: 'user', content: prompt },
+          ],
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        return {
+          status: 'skipped',
+          provider: 'omlx',
+          task: 'metadata_variants',
+          message: `oMLX returned HTTP ${response.status}.`,
+          warnings: ['Local provider call did not succeed.'],
+          output_path: outputPath,
+          metadata: { base_url: baseUrl, model, network_calls: 1, credential_status: 'not_read_phase_3x' },
+        };
+      }
+      const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+      const content = payload.choices?.[0]?.message?.content ?? '';
+      const parsed = this.parseOmlxMetadataVariants(content);
+      if (!parsed) {
+        return {
+          status: 'skipped',
+          provider: 'omlx',
+          task: 'metadata_variants',
+          message: 'oMLX response was not valid metadata variant JSON.',
+          warnings: ['Invalid JSON response from local provider.'],
+          output_path: outputPath,
+          metadata: { base_url: baseUrl, model, network_calls: 1, credential_status: 'not_read_phase_3x' },
+        };
+      }
+      return {
+        status: 'succeeded',
+        provider: 'omlx',
+        task: 'metadata_variants',
+        message: 'oMLX metadata variants generated.',
+        warnings: parsed.warnings,
+        output_path: outputPath,
+        metadata: {
+          base_url: baseUrl,
+          model,
+          network_calls: 1,
+          credential_status: 'not_read_phase_3x',
+          input_fields: ['title', 'description', 'script_excerpt', 'hashtags'],
+          output_shape: 'metadata_variants',
+          ...parsed.output,
+        },
+      };
+    } catch (error) {
+      return {
+        status: 'skipped',
+        provider: 'omlx',
+        task: 'metadata_variants',
+        message: 'oMLX is unavailable or timed out.',
+        warnings: ['Local provider request could not be completed.'],
+        output_path: outputPath,
+        metadata: { base_url: baseUrl, credential_status: 'not_read_phase_3x', network_calls: 0, error: error instanceof Error ? error.message : 'unknown' },
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private buildOmlxMetadataPrompt(input: Record<string, unknown>, job: Job): string {
+    const title = this.optionalString(input.title) ?? '';
+    const description = this.optionalString(input.description) ?? '';
+    const scriptExcerpt = this.optionalString(input.script_excerpt) ?? '';
+    const hashtags = Array.isArray(input.hashtags) ? input.hashtags.map(String).slice(0, 10) : [];
+    const packageTarget = this.optionalString(job.task_config.package_target) ?? '';
+    const platform = this.optionalString(job.task_config.platform) ?? '';
+    return [
+      'Generate metadata variants as strict JSON only.',
+      `platform: ${platform}`,
+      `package_target: ${packageTarget}`,
+      `title: ${title}`,
+      `description: ${description}`,
+      `script_excerpt: ${scriptExcerpt}`,
+      `hashtags: ${hashtags.join(', ')}`,
+      'Output JSON object with title_variants, hook_variants, description_draft, hashtag_suggestions, warnings.',
+      'Do not include markdown, prose, secrets, or credentials.',
+    ].join('\n');
+  }
+
+  private parseOmlxMetadataVariants(content: string): { output: Record<string, unknown>; warnings: string[] } | null {
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      return null;
+    }
+    const titleVariants = Array.isArray(parsed.title_variants) ? parsed.title_variants.map(String).filter(Boolean).slice(0, 3) : [];
+    const hookVariants = Array.isArray(parsed.hook_variants) ? parsed.hook_variants.map(String).filter(Boolean).slice(0, 3) : [];
+    const hashtagSuggestions = Array.isArray(parsed.hashtag_suggestions) ? parsed.hashtag_suggestions.map(String).filter(Boolean).slice(0, 10) : [];
+    const descriptionDraft = this.optionalString(parsed.description_draft) ?? '';
+    const warnings = Array.isArray(parsed.warnings) ? parsed.warnings.map(String).filter(Boolean) : [];
+    if (!titleVariants.length || !hookVariants.length || !descriptionDraft) return null;
+    return {
+      output: {
+        title_variants: titleVariants,
+        hook_variants: hookVariants,
+        description_draft: descriptionDraft,
+        hashtag_suggestions: hashtagSuggestions,
+        warnings,
+      },
+      warnings,
+    };
+  }
+
+  private async writeLlmTextResult(outputPath: string, result: LlmProviderResult): Promise<void> {
+    await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
+    await fs.promises.writeFile(outputPath, `${JSON.stringify(result, null, 2)}\n`);
   }
 
   private async hashText(value: string): Promise<string> {
