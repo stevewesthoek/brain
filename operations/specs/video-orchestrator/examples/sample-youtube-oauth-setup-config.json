@@ -1,0 +1,15 @@
+{
+  "platform": "youtube",
+  "phase": "3E-B",
+  "client_id": "YOUR_CLIENT_ID_PLACEHOLDER.apps.googleusercontent.com",
+  "redirect_uri": "http://127.0.0.1:8765/oauth/youtube/callback",
+  "scope": "https://www.googleapis.com/auth/youtube.upload",
+  "access_type": "offline",
+  "prompt": "consent",
+  "credential_reference": "keychain://video-orchestrator/youtube/example-account-placeholder",
+  "dry_run": true,
+  "real_oauth_enabled": false,
+  "real_token_exchange_enabled": false,
+  "real_upload_enabled": false
+}
+

@@ -64,6 +64,8 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **3B** | Jun 20–Jul 15 | Posting Adapter Interface + Registry | Add a safe adapter contract with dry-run/blocked routing for non-manual modes |
 | **3C** | Jun 20–Jul 15 | YouTube Dry-Run Preflight | Validate YouTube package/config readiness without OAuth or upload |
 | **3D** | Jun 20–Jul 15 | YouTube Credential and OAuth Design | Define credential boundaries and approval gates without enabling upload |
+| **3E-A** | Jun 20–Jul 15 | Keychain Credential Helper Scaffold | Validate credential references and redact logs without reading or writing secrets |
+| **3E-B** | Jun 20–Jul 15 | YouTube OAuth Setup Scaffold | Generate auth metadata and validate callback/state without token exchange |
 | **3X** | Jun 20–Jul 15 | Optional oMLX Local LLM Provider MVP | Add a localhost-only metadata variants provider for low-risk text tasks |
 | **3E** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
@@ -502,6 +504,35 @@ CREATE TABLE events (
 - ✅ Credential reference validation passes for the supported shape
 - ✅ Redaction removes sensitive-looking values from sample text
 - ✅ Dry-run command shapes print without touching Keychain
+
+---
+
+## Phase 3E-B: YouTube OAuth Setup Scaffold
+
+**Timeline:** June 20–July 15, 2026 (4 weeks)  
+**Goal:** Provide a local-only OAuth setup scaffold that generates authorization metadata and validates callback/state shape without exchanging tokens or storing credentials
+
+### 3.1: OAuth Setup Helper
+
+**Deliverables:**
+- PKCE and state generation
+- Placeholder-only authorization URL builder
+- Callback validation for localhost redirect and state
+- Self-test coverage for safe scaffolding
+
+### 3.2: Safety Rules
+
+**Behavior:**
+- No token exchange
+- No Keychain read or write
+- No YouTube API calls
+- No upload implementation
+- No browser automation
+
+### 3.3: Success Criteria
+- ✅ OAuth scaffold self-test passes
+- ✅ Placeholder config builds an authorization URL
+- ✅ Callback validation rejects mismatched state
 
 ---
 

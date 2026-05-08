@@ -417,6 +417,31 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - Future credential handling has a standard local-only reference format
 - Logs and examples can be redacted safely before any real OAuth work
 
+### Phase 3E-B: YouTube OAuth Setup Scaffold (June 20 – July 15)
+**Goal:** Provide a local-only OAuth setup scaffold that generates authorization metadata and validates callback/state shape without exchanging tokens or storing credentials
+
+**Deliverables:**
+- PKCE and state generation
+- Placeholder-only YouTube authorization URL builder
+- Callback validation for localhost redirect shape and state matching
+- OAuth scaffold runbook and sample config
+
+**Behavior:**
+- No token exchange
+- No Keychain read or write
+- No YouTube API calls
+- No upload implementation
+- No browser automation
+
+**Testing:**
+- [ ] OAuth scaffold self-test passes
+- [ ] Placeholder config builds an authorization URL
+- [ ] Callback validation rejects mismatched state
+
+**Success Criteria:**
+- Future OAuth work has a defined local setup shape
+- Real upload remains gated behind later approval
+
 ### Phase 3X: Optional oMLX Local LLM Provider MVP (June 20 – July 15)
 **Goal:** Add a narrow local-only text provider for metadata variants without making oMLX required
 
