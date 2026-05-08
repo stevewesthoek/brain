@@ -180,7 +180,9 @@ interface PostingAdapter {
 
 type YouTubeDryRunConfig = {
   credential_preflight_only?: boolean;
+  status_check_only?: boolean;
   credential_reference?: string;
+  youtube_video_id?: string;
   real_upload_approved?: boolean;
   allow_token_refresh?: boolean;
   token_exchange_config_path?: string;
@@ -217,6 +219,32 @@ type YouTubeCredentialSummary = {
   scope_youtube_upload_present?: boolean;
   token_value_printed?: boolean;
   error?: string;
+};
+
+type YouTubeUploadLifecycleState =
+  | 'not_started'
+  | 'uploading'
+  | 'uploaded'
+  | 'processing'
+  | 'available_private'
+  | 'failed'
+  | 'unknown';
+
+type YouTubeUploadStatusResponse = {
+  items?: Array<{
+    id?: string;
+    status?: {
+      uploadStatus?: string;
+      privacyStatus?: string;
+      embeddable?: boolean;
+      publicStatsViewable?: boolean;
+      madeForKids?: boolean;
+    };
+    processingDetails?: {
+      processingStatus?: string;
+      fileDetailsAvailability?: string;
+    };
+  }>;
 };
 
 type FormatSpec = {
@@ -1112,6 +1140,25 @@ export class VideoOrchestratorWorker {
       },
       execute: async (context) => {
         const youtubeConfig = this.readYouTubeDryRunConfig(context.config.youtube);
+        if (this.optionalBoolean(youtubeConfig.status_check_only) === true) {
+          const statusResult = await this.executeYouTubeUploadStatusCheck(context);
+          await this.emitEvent(context.job, 'youtube_upload_status_checked', {
+            ...statusResult.metadata,
+            youtube_video_id: statusResult.metadata.youtube_video_id ?? youtubeConfig.youtube_video_id ?? null,
+            status_check_only: true,
+          }, statusResult.status === 'blocked' ? 'warning' : 'info');
+          return {
+            status: statusResult.status,
+            adapter_mode: 'api',
+            platform: context.target.platform,
+            package_target: context.target.package_target,
+            output_path: statusResult.output_path,
+            external_id: statusResult.external_id,
+            message: statusResult.message,
+            warnings: statusResult.warnings,
+            metadata: statusResult.metadata,
+          };
+        }
         const isRealUploadRequested = context.config.dry_run === false && this.optionalBoolean(youtubeConfig.real_upload_approved) === true;
         if (isRealUploadRequested) {
           const uploadResult = await this.executeYouTubePrivateUpload(context);
@@ -1132,20 +1179,20 @@ export class VideoOrchestratorWorker {
           ? await this.inspectYouTubeCredentialSummary(context)
           : null;
         return {
-        status: 'dry_run',
-        adapter_mode: 'api',
-        platform: context.target.platform,
-        package_target: context.target.package_target,
-        output_path: result.output_path,
-        message: 'YouTube upload dry-run completed without contacting YouTube.',
-        warnings: credentialInspection ? [...result.warnings, ...credentialInspection.warnings] : result.warnings,
-        metadata: {
-          ...result.metadata,
-          ...(credentialInspection?.metadata ?? {}),
-          upload_performed: false,
-          network_calls: 0,
-        },
-      };
+          status: 'dry_run',
+          adapter_mode: 'api',
+          platform: context.target.platform,
+          package_target: context.target.package_target,
+          output_path: result.output_path,
+          message: 'YouTube upload dry-run completed without contacting YouTube.',
+          warnings: credentialInspection ? [...result.warnings, ...credentialInspection.warnings] : result.warnings,
+          metadata: {
+            ...result.metadata,
+            ...(credentialInspection?.metadata ?? {}),
+            upload_performed: false,
+            network_calls: 0,
+          },
+        };
       },
       pollStatus: async (context) => ({
         status: 'skipped',
@@ -1820,11 +1867,13 @@ export class VideoOrchestratorWorker {
       await this.emitEvent(context.job, 'youtube_private_upload_succeeded', {
         youtube_video_id: parsed.id,
         privacy_status: 'private',
+        lifecycle_state: 'uploaded',
         idempotency_key: idempotencyKey,
         quota_cost_assumption: 1600,
         upload_endpoint: 'videos.insert',
         token_value_printed: false,
         manual_fallback_available: true,
+        status_check_pending: true,
       });
       return {
         status: 'succeeded',
@@ -1835,6 +1884,7 @@ export class VideoOrchestratorWorker {
           ...uploadGates.metadata,
           youtube_video_id: parsed.id,
           privacy_status: 'private',
+          lifecycle_state: 'uploaded',
           idempotency_key: idempotencyKey,
           quota_cost_assumption: 1600,
           upload_endpoint: 'videos.insert',
@@ -1843,6 +1893,7 @@ export class VideoOrchestratorWorker {
           token_value_printed: false,
           token_values_printed: false,
           manual_fallback_available: true,
+          status_check_pending: true,
         },
       };
       } catch (error) {
@@ -1998,6 +2049,236 @@ export class VideoOrchestratorWorker {
       token_type: payload.token_type ?? 'Bearer',
       scope: payload.scope ?? 'https://www.googleapis.com/auth/youtube.upload',
     };
+  }
+
+  private deriveYouTubeLifecycleState(statusResponse: YouTubeUploadStatusResponse | null | undefined): YouTubeUploadLifecycleState {
+    const item = statusResponse?.items?.[0];
+    if (!item) return 'unknown';
+    const uploadStatus = String(item.status?.uploadStatus ?? '').toLowerCase();
+    const privacyStatus = String(item.status?.privacyStatus ?? '').toLowerCase();
+    const processingStatus = String(item.processingDetails?.processingStatus ?? '').toLowerCase();
+    if (['failed', 'rejected', 'deleted'].includes(uploadStatus) || ['failed', 'rejected', 'deleted'].includes(processingStatus)) return 'failed';
+    if (processingStatus === 'processing' || uploadStatus === 'uploading') return 'processing';
+    if (uploadStatus === 'uploaded' && privacyStatus === 'private') return 'available_private';
+    if (processingStatus === 'succeeded' && privacyStatus === 'private') return 'available_private';
+    if (uploadStatus === 'uploaded') return 'uploaded';
+    return 'unknown';
+  }
+
+  private async executeYouTubeUploadStatusCheck(context: PostingAdapterContext): Promise<{
+    status: 'succeeded' | 'blocked' | 'failed' | 'skipped';
+    message: string;
+    warnings: string[];
+    metadata: Record<string, unknown>;
+    output_path?: string | null;
+    external_id?: string;
+  }> {
+    const config = this.readYouTubeDryRunConfig(context.config.youtube);
+    const youtubeVideoId = this.optionalString(config.youtube_video_id);
+    const reference = this.optionalString(context.config.credential_reference);
+    const credentialShape = this.describeCredentialReference(reference);
+    const idempotencyKey = await this.computeYouTubeIdempotencyKey(context);
+    const baseMetadata: Record<string, unknown> = {
+      youtube_video_id: youtubeVideoId ?? null,
+      privacy_status: this.optionalString(config.privacy_status) ?? 'private',
+      upload_status: 'unknown',
+      processing_status: 'unknown',
+      embeddable: null,
+      public_stats_viewable: null,
+      lifecycle_state: 'unknown',
+      checked_at: new Date().toISOString(),
+      token_value_printed: false,
+      token_values_printed: false,
+      network_calls: 0,
+      manual_fallback_available: true,
+      upload_performed: false,
+      idempotency_key: idempotencyKey,
+      status_check_only: true,
+    };
+
+    if (this.optionalBoolean(config.status_check_only) !== true) {
+      return {
+        status: 'blocked',
+        message: 'status_check_only must be true for upload lifecycle checks.',
+        warnings: ['status_check_only flag is required.'],
+        metadata: baseMetadata,
+      };
+    }
+    const privacyStatus = this.optionalString(config.privacy_status);
+    if (privacyStatus && privacyStatus !== 'private') {
+      return {
+        status: 'blocked',
+        message: 'Upload lifecycle checks are private-only in Phase 3E-F.',
+        warnings: ['privacy_status must remain private for lifecycle checks.'],
+        metadata: { ...baseMetadata, privacy_status: privacyStatus },
+      };
+    }
+    if (!youtubeVideoId) {
+      return {
+        status: 'blocked',
+        message: 'YouTube video ID is required for lifecycle checks.',
+        warnings: ['Missing youtube_video_id.'],
+        metadata: baseMetadata,
+      };
+    }
+    if (!reference) {
+      return {
+        status: 'blocked',
+        message: 'Credential reference is required for lifecycle checks.',
+        warnings: ['Missing credential_reference.'],
+        metadata: baseMetadata,
+      };
+    }
+    if (!credentialShape.credential_reference_present || credentialShape.credential_reference_format !== 'valid') {
+      return {
+        status: 'blocked',
+        message: 'Valid credential reference is required for lifecycle checks.',
+        warnings: ['Invalid credential reference.'],
+        metadata: { ...baseMetadata, ...credentialShape },
+      };
+    }
+    try {
+      const tokenSummary = await this.readYoutubeCredentialPayloadFromKeychain(reference);
+      let accessToken = tokenSummary.access_token ?? null;
+      const now = Date.now();
+      const expiresAt = tokenSummary.expires_at ?? tokenSummary.expiry_date ?? (tokenSummary.issued_at && tokenSummary.expires_in ? tokenSummary.issued_at + (tokenSummary.expires_in * 1000) : null);
+      const accessTokenExpired = Boolean(expiresAt && expiresAt <= now);
+      if ((!accessToken || accessTokenExpired) && tokenSummary.refresh_token) {
+        if (this.optionalBoolean(config.allow_token_refresh) !== true) {
+          return {
+            status: 'blocked',
+            message: 'Access token is missing or expired and refresh is not explicitly enabled.',
+            warnings: ['Token refresh disabled for this status check.'],
+            metadata: {
+              ...baseMetadata,
+              ...credentialShape,
+              credential_summary_checked: true,
+              credential_found: true,
+              access_token_present: Boolean(tokenSummary.access_token),
+              refresh_token_present: Boolean(tokenSummary.refresh_token),
+              scope: tokenSummary.scope ?? null,
+              scope_youtube_upload_present: String(tokenSummary.scope ?? '').split(/\s+/).includes('https://www.googleapis.com/auth/youtube.upload'),
+              token_values_printed: false,
+            },
+          };
+        }
+        const refreshed = await this.refreshYoutubeAccessToken(context, tokenSummary.refresh_token);
+        accessToken = refreshed.access_token ?? null;
+        await this.writeYoutubeCredentialPayloadToKeychain(reference, refreshed);
+      }
+      if (!accessToken) {
+        return {
+          status: 'blocked',
+          message: 'No access token available for lifecycle check.',
+          warnings: ['Access token missing.'],
+          metadata: {
+            ...baseMetadata,
+            ...credentialShape,
+            credential_summary_checked: true,
+            credential_found: true,
+            access_token_present: Boolean(tokenSummary.access_token),
+            refresh_token_present: Boolean(tokenSummary.refresh_token),
+            scope: tokenSummary.scope ?? null,
+            scope_youtube_upload_present: String(tokenSummary.scope ?? '').split(/\s+/).includes('https://www.googleapis.com/auth/youtube.upload'),
+            token_values_printed: false,
+          },
+        };
+      }
+
+      const readUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
+      readUrl.searchParams.set('part', 'status,processingDetails');
+      readUrl.searchParams.set('id', youtubeVideoId);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+      try {
+        const response = await fetch(readUrl.toString(), {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal: controller.signal,
+        });
+        const responseText = await response.text();
+        if (!response.ok) {
+          const lifecycleState: YouTubeUploadLifecycleState = response.status === 404 ? 'not_started' : 'unknown';
+          return {
+            status: 'succeeded',
+            message: `YouTube upload status check returned HTTP ${response.status}.`,
+            warnings: response.status === 404 ? ['Video ID not found.'] : ['Status check returned a non-2xx response.'],
+            metadata: {
+              ...baseMetadata,
+              ...credentialShape,
+              credential_summary_checked: true,
+              credential_found: true,
+              access_token_present: true,
+              refresh_token_present: Boolean(tokenSummary.refresh_token),
+              scope: tokenSummary.scope ?? null,
+              scope_youtube_upload_present: String(tokenSummary.scope ?? '').split(/\s+/).includes('https://www.googleapis.com/auth/youtube.upload'),
+              youtube_video_id: youtubeVideoId,
+              upload_status: lifecycleState === 'not_started' ? 'not_started' : 'unknown',
+              processing_status: 'unknown',
+              lifecycle_state: lifecycleState,
+              network_calls: 1,
+              helper_error: this.redactText(responseText.slice(0, 1000)),
+              token_values_printed: false,
+            },
+            external_id: youtubeVideoId,
+          };
+        }
+        const payload = JSON.parse(responseText || '{}') as YouTubeUploadStatusResponse;
+        const item = payload.items?.[0] ?? null;
+        const lifecycleState = this.deriveYouTubeLifecycleState(payload);
+        const uploadStatus = String(item?.status?.uploadStatus ?? '').toLowerCase() || (lifecycleState === 'available_private' || lifecycleState === 'uploaded' ? 'uploaded' : 'unknown');
+        const processingStatus = String(item?.processingDetails?.processingStatus ?? '').toLowerCase() || (lifecycleState === 'processing' ? 'processing' : 'unknown');
+        return {
+          status: 'succeeded',
+          message: 'YouTube upload status check completed.',
+          warnings: [],
+          metadata: {
+            ...baseMetadata,
+            ...credentialShape,
+            credential_summary_checked: true,
+            credential_found: true,
+            access_token_present: true,
+            refresh_token_present: Boolean(tokenSummary.refresh_token),
+            scope: tokenSummary.scope ?? null,
+            scope_youtube_upload_present: String(tokenSummary.scope ?? '').split(/\s+/).includes('https://www.googleapis.com/auth/youtube.upload'),
+            youtube_video_id: item?.id ?? youtubeVideoId,
+            privacy_status: String(item?.status?.privacyStatus ?? 'private'),
+            upload_status: uploadStatus || 'unknown',
+            processing_status: processingStatus || 'unknown',
+            embeddable: item?.status?.embeddable ?? null,
+            public_stats_viewable: item?.status?.publicStatsViewable ?? null,
+            lifecycle_state: lifecycleState,
+            checked_at: new Date().toISOString(),
+            token_values_printed: false,
+            network_calls: 1,
+            manual_fallback_available: true,
+          },
+          external_id: item?.id ?? youtubeVideoId,
+        };
+      } finally {
+        clearTimeout(timeout);
+      }
+    } catch (error) {
+      return {
+        status: 'succeeded',
+        message: 'YouTube upload status check could not be completed.',
+        warnings: ['Status check failed safely.'],
+        metadata: {
+          ...baseMetadata,
+          ...credentialShape,
+          credential_summary_checked: true,
+          credential_found: false,
+          access_token_present: null,
+          refresh_token_present: null,
+          scope: null,
+          scope_youtube_upload_present: null,
+          helper_error: this.redactText(error instanceof Error ? error.message : String(error)),
+          lifecycle_state: 'unknown',
+          network_calls: 0,
+          token_values_printed: false,
+        },
+      };
+    }
   }
 
   private async findPriorYouTubeUpload(idempotencyKey: string): Promise<{ youtube_video_id?: string } | null> {
@@ -2225,10 +2506,14 @@ export class VideoOrchestratorWorker {
     } else {
       return { available: false, message: 'oMLX remote endpoints are restricted to localhost or trusted Thunderbolt/LAN nodes.', warnings: ['Missing or invalid network scope.'] };
     }
+    const healthCheckUrl = new URL(parsed.toString());
+    healthCheckUrl.pathname = healthCheckUrl.pathname.replace(/\/?$/, '/');
+    const healthPath = (node.healthCheckPath || '/models').replace(/^\/+/, '');
+    const targetUrl = new URL(healthPath, healthCheckUrl).toString();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 2500);
     try {
-      const response = await fetch(new URL(node.healthCheckPath || '/models', parsed).toString(), { signal: controller.signal });
+      const response = await fetch(targetUrl, { signal: controller.signal });
       if (!response.ok) {
         return { available: false, message: `oMLX unavailable (${response.status}).`, warnings: ['Local provider did not return a healthy response.'] };
       }

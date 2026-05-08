@@ -515,6 +515,33 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - One private YouTube upload can be executed safely
 - The adapter stays narrow and manually gated
 
+### Phase 3E-F: YouTube Upload Lifecycle / Status Handling (August 15 – September 15)
+**Goal:** Add read-only lifecycle/status checks for known private YouTube uploads without adding new publishing capability
+
+**Deliverables:**
+- YouTube lifecycle state model
+- videos.list status check for known uploaded video IDs
+- redacted lifecycle metadata emission
+- conservative success/failure/unknown states
+- manual fallback remains available
+
+**Behavior:**
+- No new upload modes
+- No public or unlisted publishing
+- No thumbnail or caption upload
+- No arbitrary polling of unknown videos
+- No token logging
+
+**Testing:**
+- [ ] Status check returns uploaded/processing/available_private/failed/unknown conservatively
+- [ ] Missing credential reference blocks safely
+- [ ] Missing YouTube video ID blocks safely
+- [ ] videos.insert is not used by lifecycle checks
+
+**Success Criteria:**
+- The worker can observe lifecycle state for a known private upload safely
+- Upload remains private-only and manually gated
+
 ### Phase 3X: Optional oMLX Local LLM Provider MVP (June 20 – July 15)
 **Goal:** Add a narrow local-only text provider for metadata variants without making oMLX required
 

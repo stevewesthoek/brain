@@ -69,6 +69,7 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **3E-C** | Jun 20–Jul 15 | YouTube OAuth Token Exchange + Keychain Prototype | Explicitly gated token exchange and Keychain storage without upload |
 | **3E-D** | Jun 20–Jul 15 | Credential-Backed YouTube Upload Preflight | Verify redacted Keychain summaries and scope readiness without upload |
 | **3E-E** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete |
+| **3E-F** | Aug 15–Sep 15 | YouTube Upload Lifecycle / Status Handling | Add read-only lifecycle checks for known private uploads without new publishing capability |
 | **3X** | Jun 20–Jul 15 | Optional oMLX Local LLM Provider MVP | Add a localhost-only metadata variants provider for low-risk text tasks |
 | **3Y** | Jun 20–Jul 15 | MacBook oMLX Sidecar Worker | Add an opt-in trusted Thunderbolt/LAN worker-node path for low-risk text tasks |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
@@ -619,6 +620,42 @@ CREATE TABLE events (
 ### 3.3: Success Criteria
 - ✅ Credential boundaries are approved before upload work begins
 - ✅ Authorized adapters remain separate from dry-run preflight
+
+---
+
+## Phase 3E-F: YouTube Upload Lifecycle / Status Handling
+
+**Timeline:** August 15–September 15, 2026 (4 weeks)  
+**Goal:** Add read-only lifecycle checks for known private uploads without adding any new publishing capability
+
+### 3.1: Lifecycle Model
+
+**Deliverables:**
+- conservative lifecycle states: not_started, uploading, uploaded, processing, available_private, failed, unknown
+- redacted metadata for status checks
+- status events tied to known orchestrator-owned uploads
+
+### 3.2: Status Check Boundary
+
+**Deliverables:**
+- `videos.list` read path for known uploaded IDs
+- explicit `status_check_only` job mode
+- no arbitrary polling of unknown videos
+- no new upload capabilities
+
+### 3.3: Safety Rules
+
+**Behavior:**
+- Private-only uploads remain the base boundary
+- No public or unlisted publishing
+- No thumbnails, captions, or playlists
+- No token logging
+- Manual fallback remains available
+
+### 3.4: Success Criteria
+- ✅ The worker can report conservative lifecycle status for a known private upload
+- ✅ Unknown or failed checks return safe redacted metadata
+- ✅ No new publishing mode is introduced
 
 ---
 
