@@ -358,23 +358,27 @@ Extracted from DeerFlow, Arcads, MoneyPrinter, Wan2GP, and Claude Code Video Too
 
 ### Phase 2 (3 weeks)
 - Claude Code: 10 hours (specs JSON, workflow updates, testing)
-- Sonnet review: 2 hours (architecture review)
 - Manual testing: 8 hours (platform coverage, format validation)
+- Cost: $0 (local only)
 
 ### Phase 3 (4 weeks)
-- Claude Code: 15 hours (job queue, worker processes, state machine)
-- Sonnet review: 3 hours (architecture review)
-- Manual testing: 10 hours (queue, recovery, format conversion)
+- Claude Code: 15 hours (PostgreSQL setup, job queue, worker processes, state machine)
+- Manual testing: 10 hours (queue testing, recovery, format conversion)
+- Cost: $0 (local only, Docker)
 
 ### Phase 4 (4 weeks)
-- Claude Code: 12 hours (account routing, affinity scoring)
-- Manual testing: 8 hours (multi-account posting)
+- Claude Code: 12 hours (account routing, affinity scoring, credential management)
+- Manual testing: 8 hours (multi-account posting, limits enforcement)
+- Cost: $0 (local only)
 
 ### Phase 5 (4 weeks)
-- Claude Code: 10 hours (LoRA training, analytics pipeline)
+- Claude Code: 10 hours (LoRA training, analytics pipeline, learning loop)
 - Manual testing: 6 hours (model inference, performance tracking)
+- Cost: $0 (local only)
 
-**Total:** ~40 hours Claude Code, ~5 hours Sonnet review, ~30 hours manual testing over 6 months.
+**Total:** ~40 hours Claude Code, ~30 hours manual testing over 6 months.
+**Total Cost:** $0 (everything local on Mac mini M4 Pro)
+**Amazon Grant Usage:** For Claude Code development credits (completely separate from video orchestration infrastructure)
 
 ---
 
