@@ -541,6 +541,34 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 
 ---
 
+### Phase 3Y: MacBook oMLX Sidecar Worker
+**Goal:** Route opt-in low-risk text jobs to a trusted MacBook oMLX node over Thunderbolt Bridge without making remote execution required
+
+**Deliverables:**
+- local worker-node schema for oMLX sidecars
+- trusted Thunderbolt/LAN node validation and health checks
+- opt-in routing for low-risk `llm_text` jobs
+- secret-field guards for remote payloads
+- local fallback/skip when the MacBook sidecar is unavailable
+
+**Behavior:**
+- Only text tasks remain eligible
+- No secrets, credentials, posting, uploads, or media generation
+- The Mac mini remains the control plane
+- Remote sidecar calls are opt-in and non-blocking
+
+**Testing:**
+- [ ] Localhost oMLX still works or skips safely
+- [ ] Trusted Thunderbolt/LAN endpoint is rejected unless explicitly enabled
+- [ ] Secret-shaped payload keys are blocked before a network call
+- [ ] Unavailable sidecar falls back locally or skips safely
+
+**Success Criteria:**
+- One optional MacBook oMLX sidecar node can serve safe text jobs
+- Production continues when the MacBook is offline
+
+---
+
 ### Phase 4: Multi-Account Scheduler (July 15 – August 15)
 **Goal:** Safely distribute across many accounts without spam risk
 

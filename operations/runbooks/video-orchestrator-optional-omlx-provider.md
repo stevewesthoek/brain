@@ -20,12 +20,31 @@ Phase 3X is the smallest safe implementation of that future provider contract. I
 
 - one task: `metadata_variants`
 - one provider mode: `omlx`
-- localhost-only base URLs
+- localhost-only base URLs for the Mac mini provider
+- trusted Thunderbolt/LAN endpoints for an explicitly enabled MacBook sidecar
 - no credential reads
 - no platform posting
 - no media rendering or generation
 
 The worker may use oMLX for low-risk text tasks only when explicitly requested by a local job config.
+
+## Phase 3Y Sidecar Mode
+
+Phase 3Y extends the same provider contract to an optional MacBook sidecar node on a trusted Thunderbolt Bridge LAN.
+
+Rules:
+- the MacBook is only a secondary local worker
+- remote routing is opt-in
+- the node must advertise `network_scope: trusted_thunderbolt_lan`
+- only low-risk text tasks are allowed
+- secrets, credentials, posting, and media generation stay forbidden
+- the Mac mini remains the control plane and fallback provider
+
+This mode is intended for:
+- `metadata_variants`
+- future text tasks like `hook_variants`, `description_draft`, `caption_cleanup`, and `package_qa_summary`
+
+Do not treat the sidecar as a generic remote executor. It is a narrow local text worker only.
 
 ---
 
@@ -43,6 +62,7 @@ Potential local tasks:
 - low-risk batch text generation
 - fallback/offline drafts when cloud LLMs are unavailable or too expensive
 - metadata variants for existing video packages
+- optional MacBook sidecar inference over a trusted Thunderbolt Bridge network
 
 ---
 
@@ -135,7 +155,7 @@ The adapter should return structured results:
   "status": "succeeded",
   "provider": "omlx",
   "model": "local-model-name",
-  "network_scope": "local_only",
+  "network_scope": "localhost",
   "tokens_in": 0,
   "tokens_out": 0,
   "output_path": "/path/to/result.json",

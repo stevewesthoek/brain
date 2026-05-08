@@ -1,0 +1,22 @@
+{
+  "job_type": "llm_text",
+  "video_id": "00000000-0000-4000-8000-000000000001",
+  "task_config": {
+    "provider": "omlx",
+    "node_id": "macbook-m1-pro",
+    "network_scope": "trusted_thunderbolt_lan",
+    "allow_trusted_local_node": true,
+    "base_url": "http://10.10.10.2:8000/v1",
+    "health_check_path": "/models",
+    "model": "local-model-name",
+    "task": "metadata_variants",
+    "fallback_behavior": "local_or_skip",
+    "input": {
+      "title": "Existing title",
+      "description": "Existing description",
+      "script_excerpt": "Optional short script excerpt",
+      "hashtags": ["#example"]
+    },
+    "output_path": "/Users/Office/projects/video-orchestrator/llm/macbook-metadata-variants.json"
+  }
+}

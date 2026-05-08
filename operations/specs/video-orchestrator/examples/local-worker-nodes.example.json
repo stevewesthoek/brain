@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "nodes": [
+    {
+      "node_id": "macbook-m1-pro",
+      "display_name": "MacBook M1 Pro oMLX Sidecar",
+      "role": "llm_text_sidecar",
+      "enabled": false,
+      "provider": "omlx",
+      "base_url": "http://10.10.10.2:8000/v1",
+      "network_scope": "trusted_thunderbolt_lan",
+      "allowed_tasks": [
+        "metadata_variants",
+        "hook_variants",
+        "description_draft",
+        "caption_cleanup",
+        "package_qa_summary"
+      ],
+      "max_parallel_jobs": 1,
+      "health_check_path": "/models",
+      "timeout_ms": 8000,
+      "fallback_behavior": "local_or_skip",
+      "secrets_allowed": false,
+      "posting_allowed": false,
+      "media_generation_allowed": false,
+      "upload_allowed": false
+    }
+  ]
+}

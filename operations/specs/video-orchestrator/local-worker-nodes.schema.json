@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Video Orchestrator Local Worker Nodes",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "nodes"],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "node_id",
+          "display_name",
+          "role",
+          "enabled",
+          "provider",
+          "base_url",
+          "network_scope",
+          "allowed_tasks",
+          "max_parallel_jobs",
+          "health_check_path",
+          "timeout_ms",
+          "fallback_behavior",
+          "secrets_allowed",
+          "posting_allowed",
+          "media_generation_allowed",
+          "upload_allowed"
+        ],
+        "properties": {
+          "node_id": { "type": "string", "minLength": 1 },
+          "display_name": { "type": "string", "minLength": 1 },
+          "role": { "type": "string", "minLength": 1 },
+          "enabled": { "type": "boolean" },
+          "provider": { "type": "string", "enum": ["omlx"] },
+          "base_url": { "type": "string", "pattern": "^https?://[^\\s]+$" },
+          "network_scope": { "type": "string", "enum": ["localhost", "trusted_thunderbolt_lan"] },
+          "allowed_tasks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["metadata_variants", "hook_variants", "description_draft", "caption_cleanup", "package_qa_summary"]
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "max_parallel_jobs": { "type": "integer", "minimum": 1, "maximum": 8 },
+          "health_check_path": { "type": "string", "minLength": 1 },
+          "timeout_ms": { "type": "integer", "minimum": 1000, "maximum": 60000 },
+          "fallback_behavior": { "type": "string", "enum": ["local_or_skip", "skip_with_warning"] },
+          "secrets_allowed": { "const": false },
+          "posting_allowed": { "const": false },
+          "media_generation_allowed": { "const": false },
+          "upload_allowed": { "const": false }
+        }
+      }
+    }
+  }
+}

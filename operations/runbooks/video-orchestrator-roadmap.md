@@ -70,6 +70,7 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **3E-D** | Jun 20–Jul 15 | Credential-Backed YouTube Upload Preflight | Verify redacted Keychain summaries and scope readiness without upload |
 | **3E-E** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete |
 | **3X** | Jun 20–Jul 15 | Optional oMLX Local LLM Provider MVP | Add a localhost-only metadata variants provider for low-risk text tasks |
+| **3Y** | Jun 20–Jul 15 | MacBook oMLX Sidecar Worker | Add an opt-in trusted Thunderbolt/LAN worker-node path for low-risk text tasks |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
 | **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |
 
@@ -646,6 +647,41 @@ CREATE TABLE events (
 - ✅ Metadata variants job returns valid structured JSON when oMLX is available
 - ✅ Unavailable oMLX returns a safe skip/warning result
 - ✅ Production remains healthy when oMLX is offline
+
+---
+
+## Phase 3Y: MacBook oMLX Sidecar Worker
+
+**Timeline:** June 20–July 15, 2026 (4 weeks)  
+**Goal:** Add an opt-in trusted Thunderbolt/LAN worker-node path for low-risk local text tasks
+
+### 3.1: Sidecar Node Registry
+
+**Deliverables:**
+- local worker-node schema for oMLX sidecars
+- example MacBook node config
+- allowed task list for future text-only work
+
+### 3.2: Routing and Health Checks
+
+**Deliverables:**
+- trusted Thunderbolt/LAN endpoint validation
+- short-timeout health check against the models endpoint
+- explicit opt-in for remote sidecar calls
+- secret-field guards before any remote payload is sent
+
+### 3.3: Safety Rules
+
+**Behavior:**
+- No secrets, OAuth, posting, uploads, or media generation
+- Only low-risk text tasks are eligible
+- The Mac mini remains the control plane
+- Remote sidecar use is optional and non-blocking
+
+### 3.4: Success Criteria
+- ✅ The worker can route allowed text jobs to an enabled MacBook sidecar
+- ✅ Public IPs and untrusted endpoints are rejected
+- ✅ Sidecar unavailability falls back locally or skips safely
 
 ---
 

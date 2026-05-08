@@ -110,7 +110,8 @@ interface ProductionPackageRow {
 }
 
 type LlmProviderMode = 'omlx' | 'disabled';
-type LlmTextTask = 'metadata_variants';
+type LlmNetworkScope = 'localhost' | 'trusted_thunderbolt_lan';
+type LlmTextTask = 'metadata_variants' | 'hook_variants' | 'description_draft' | 'caption_cleanup' | 'package_qa_summary';
 
 interface LlmProviderResult {
   status: 'succeeded' | 'skipped' | 'blocked' | 'failed';
@@ -120,6 +121,14 @@ interface LlmProviderResult {
   warnings: string[];
   output_path?: string | null;
   metadata?: Record<string, unknown>;
+}
+
+interface OmlxNodeResolution {
+  baseUrl: string;
+  networkScope: LlmNetworkScope;
+  nodeId?: string | null;
+  healthCheckPath: string;
+  allowTrustedLocalNode: boolean;
 }
 
 type PostingAdapterMode = 'manual' | 'api' | 'n8n' | 'browser_assisted' | 'disabled';
@@ -597,16 +606,46 @@ export class VideoOrchestratorWorker {
   private async executeLlmTextJob(job: Job): Promise<void> {
     const config = job.task_config;
     const provider = this.optionalString(config.provider) === 'omlx' ? 'omlx' : 'disabled';
-    const task = this.optionalString(config.task) === 'metadata_variants' ? 'metadata_variants' : 'metadata_variants';
+    const task = this.resolveLlmTextTask(this.optionalString(config.task));
     const outputPath = this.optionalString(config.output_path) ?? path.join(this.artifactRoot, 'llm', String(job.video_id ?? config.video_id ?? 'unknown'), 'metadata-variants.json');
     const fallbackBehavior = this.optionalString(config.fallback_behavior) ?? 'skip_with_warning';
-    const baseUrl = this.optionalString(config.base_url) ?? this.optionalString(config.provider_base_url) ?? 'http://localhost:8000/v1';
-    const availability = await this.checkOmlxAvailability(baseUrl);
+    const nodeId = this.optionalString(config.node_id);
+    const nodeResolution = this.resolveOmlxNodeResolution(config);
+    const secretGuard = this.scanForSecretLikeKeys(config);
+    if (secretGuard.blocked) {
+      const result: LlmProviderResult = {
+        status: 'blocked',
+        provider: 'omlx',
+        task,
+        message: 'Secret-like fields were detected in the llm_text payload. Remote oMLX calls are blocked.',
+        warnings: secretGuard.warnings,
+        output_path: outputPath,
+        metadata: {
+          base_url: nodeResolution.baseUrl,
+          node_id: nodeId ?? null,
+          network_scope: nodeResolution.networkScope,
+          remote_node_used: false,
+          fallback_used: false,
+          fallback_behavior: fallbackBehavior,
+          secrets_sent: false,
+        },
+      };
+      await this.writeLlmTextResult(outputPath, result);
+      await this.emitEvent(job, 'llm_text_skipped', { ...result }, 'warning');
+      await this.markJobSucceeded(job, outputPath);
+      return;
+    }
+
+    const availability = await this.checkOmlxNodeAvailability(nodeResolution);
 
     await this.emitEvent(job, 'llm_provider_checked', {
       provider,
       task,
-      base_url: baseUrl,
+      node_id: nodeId ?? null,
+      network_scope: nodeResolution.networkScope,
+      base_url: nodeResolution.baseUrl,
+      health_check_path: nodeResolution.healthCheckPath,
+      allow_trusted_local_node: nodeResolution.allowTrustedLocalNode,
       available: availability.available,
       message: availability.message,
       warnings: availability.warnings,
@@ -620,7 +659,39 @@ export class VideoOrchestratorWorker {
         message: 'No LLM provider selected. The llm_text job was skipped safely.',
         warnings: ['Provider disabled or not selected.'],
         output_path: outputPath,
-        metadata: { fallback_behavior: fallbackBehavior },
+        metadata: {
+          base_url: nodeResolution.baseUrl,
+          node_id: nodeId ?? null,
+          network_scope: nodeResolution.networkScope,
+          remote_node_used: false,
+          fallback_used: fallbackBehavior === 'local_or_skip',
+          fallback_behavior: fallbackBehavior,
+          secrets_sent: false,
+        },
+      };
+      await this.writeLlmTextResult(outputPath, result);
+      await this.emitEvent(job, 'llm_text_skipped', { ...result }, 'warning');
+      await this.markJobSucceeded(job, outputPath);
+      return;
+    }
+
+    if (task !== 'metadata_variants') {
+      const result: LlmProviderResult = {
+        status: 'blocked',
+        provider: 'omlx',
+        task,
+        message: `oMLX runtime currently supports metadata_variants only. Requested task ${task} is documented for future sidecar use.`,
+        warnings: ['Requested task is not enabled at runtime yet.'],
+        output_path: outputPath,
+        metadata: {
+          base_url: nodeResolution.baseUrl,
+          node_id: nodeId ?? null,
+          network_scope: nodeResolution.networkScope,
+          remote_node_used: false,
+          fallback_used: false,
+          fallback_behavior: fallbackBehavior,
+          secrets_sent: false,
+        },
       };
       await this.writeLlmTextResult(outputPath, result);
       await this.emitEvent(job, 'llm_text_skipped', { ...result }, 'warning');
@@ -629,6 +700,28 @@ export class VideoOrchestratorWorker {
     }
 
     if (!availability.available) {
+      const localFallbackBaseUrl = this.resolveLocalOmlxFallbackBaseUrl(config);
+      const localFallbackNode = localFallbackBaseUrl ? this.resolveOmlxNodeResolution({
+        ...config,
+        base_url: localFallbackBaseUrl,
+        provider_base_url: localFallbackBaseUrl,
+        network_scope: 'localhost',
+        allow_trusted_local_node: false,
+      }) : null;
+      const fallbackAvailability = localFallbackNode ? await this.checkOmlxNodeAvailability(localFallbackNode) : { available: false, message: 'No local oMLX fallback configured.', warnings: ['Remote oMLX unavailable.'] };
+      if (fallbackBehavior === 'local_or_skip' && localFallbackNode && fallbackAvailability.available) {
+        const generation = await this.runOmlxMetadataVariants(job, localFallbackNode, outputPath, { remoteNodeUsed: false, fallbackUsed: true });
+        if (generation.status === 'blocked') {
+          await this.writeLlmTextResult(outputPath, generation);
+          await this.emitEvent(job, 'llm_text_skipped', { ...generation }, 'warning');
+          await this.markJobSucceeded(job, outputPath);
+          return;
+        }
+        await this.writeLlmTextResult(outputPath, generation);
+        await this.emitEvent(job, 'llm_text_generated', { ...generation }, generation.status === 'succeeded' ? 'info' : 'warning');
+        await this.markJobSucceeded(job, outputPath);
+        return;
+      }
       const result: LlmProviderResult = {
         status: 'skipped',
         provider: 'omlx',
@@ -636,7 +729,16 @@ export class VideoOrchestratorWorker {
         message: availability.message,
         warnings: [...availability.warnings],
         output_path: outputPath,
-        metadata: { base_url: baseUrl, fallback_behavior: fallbackBehavior, availability: 'unavailable' },
+        metadata: {
+          base_url: nodeResolution.baseUrl,
+          node_id: nodeId ?? null,
+          network_scope: nodeResolution.networkScope,
+          fallback_behavior: fallbackBehavior,
+          availability: 'unavailable',
+          fallback_used: false,
+          remote_node_used: false,
+          secrets_sent: false,
+        },
       };
       await this.writeLlmTextResult(outputPath, result);
       await this.emitEvent(job, 'llm_text_skipped', { ...result }, 'warning');
@@ -644,7 +746,10 @@ export class VideoOrchestratorWorker {
       return;
     }
 
-    const generation = await this.runOmlxMetadataVariants(job, baseUrl, outputPath);
+    const generation = await this.runOmlxMetadataVariants(job, nodeResolution, outputPath, {
+      remoteNodeUsed: nodeResolution.networkScope === 'trusted_thunderbolt_lan',
+      fallbackUsed: false,
+    });
     if (generation.status === 'blocked') {
       await this.writeLlmTextResult(outputPath, generation);
       await this.emitEvent(job, 'llm_text_skipped', { ...generation }, 'warning');
@@ -1027,20 +1132,20 @@ export class VideoOrchestratorWorker {
           ? await this.inspectYouTubeCredentialSummary(context)
           : null;
         return {
-          status: 'dry_run',
-          adapter_mode: 'api',
-          platform: context.target.platform,
-          package_target: context.target.package_target,
-          output_path: result.output_path,
-          message: 'YouTube upload dry-run completed without contacting YouTube.',
-          warnings: credentialInspection ? [...result.warnings, ...credentialInspection.warnings] : result.warnings,
-          metadata: {
-            ...result.metadata,
-            ...(credentialInspection?.metadata ?? {}),
-            upload_performed: false,
-            network_calls: 0,
-          },
-        };
+        status: 'dry_run',
+        adapter_mode: 'api',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        output_path: result.output_path,
+        message: 'YouTube upload dry-run completed without contacting YouTube.',
+        warnings: credentialInspection ? [...result.warnings, ...credentialInspection.warnings] : result.warnings,
+        metadata: {
+          ...result.metadata,
+          ...(credentialInspection?.metadata ?? {}),
+          upload_performed: false,
+          network_calls: 0,
+        },
+      };
       },
       pollStatus: async (context) => ({
         status: 'skipped',
@@ -2013,38 +2118,134 @@ export class VideoOrchestratorWorker {
     return this.platformSpecs.platforms.find((spec) => spec.platform === platform && spec.package_target === packageTarget);
   }
 
-  private async checkOmlxAvailability(baseUrl: string): Promise<{ available: boolean; message: string; warnings: string[] }> {
+  private resolveLlmTextTask(value: string | null | undefined): LlmTextTask {
+    if (value === 'hook_variants' || value === 'description_draft' || value === 'caption_cleanup' || value === 'package_qa_summary') {
+      return value;
+    }
+    return 'metadata_variants';
+  }
+
+  private resolveOmlxNodeResolution(config: Record<string, unknown>): OmlxNodeResolution {
+    const baseUrl = this.optionalString(config.base_url) ?? this.optionalString(config.provider_base_url) ?? 'http://localhost:8000/v1';
+    const healthCheckPath = this.optionalString(config.health_check_path) ?? '/models';
+    const allowTrustedLocalNode = this.optionalBoolean(config.allow_trusted_local_node) === true;
+    const nodeId = this.optionalString(config.node_id) ?? null;
+    const networkScope = this.resolveOmlxNetworkScope(baseUrl, this.optionalString(config.network_scope), allowTrustedLocalNode);
+    return { baseUrl, healthCheckPath, allowTrustedLocalNode, nodeId, networkScope };
+  }
+
+  private resolveOmlxNetworkScope(baseUrl: string, declaredScope: string | null | undefined, allowTrustedLocalNode: boolean): LlmNetworkScope {
+    try {
+      const parsed = new URL(baseUrl);
+      if (['localhost', '127.0.0.1', '::1'].includes(parsed.hostname)) {
+        return 'localhost';
+      }
+      if (declaredScope === 'trusted_thunderbolt_lan' && allowTrustedLocalNode && this.isPrivateLanHost(parsed.hostname)) {
+        return 'trusted_thunderbolt_lan';
+      }
+    } catch {
+      return 'localhost';
+    }
+    return declaredScope === 'trusted_thunderbolt_lan' ? 'trusted_thunderbolt_lan' : 'localhost';
+  }
+
+  private isPrivateLanHost(hostname: string): boolean {
+    if (!/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) return false;
+    const [a, b] = hostname.split('.').map((part) => Number(part));
+    if (a === 10) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    return false;
+  }
+
+  private scanForSecretLikeKeys(value: unknown): { blocked: boolean; warnings: string[] } {
+    const needles = ['token', 'secret', 'password', 'cookie', 'credential', 'keychain', 'authorization', 'client_secret', 'refresh_token', 'access_token', 'api_key', 'bearer'];
+    const warnings: string[] = [];
+    const seen = new Set<unknown>();
+    const queue: Array<{ value: unknown; path: string }> = [{ value, path: '' }];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (current.value === null || typeof current.value !== 'object') continue;
+      if (seen.has(current.value)) continue;
+      seen.add(current.value);
+      if (Array.isArray(current.value)) {
+        current.value.forEach((entry, index) => queue.push({ value: entry, path: `${current.path}[${index}]` }));
+        continue;
+      }
+      for (const [key, entry] of Object.entries(current.value as Record<string, unknown>)) {
+        const lower = key.toLowerCase();
+        if (needles.some((needle) => lower.includes(needle))) {
+          warnings.push(`Secret-like field rejected: ${current.path ? `${current.path}.` : ''}${key}`);
+        }
+        if (entry && typeof entry === 'object') {
+          queue.push({ value: entry, path: current.path ? `${current.path}.${key}` : key });
+        }
+      }
+    }
+    return { blocked: warnings.length > 0, warnings };
+  }
+
+  private resolveLocalOmlxFallbackBaseUrl(config: Record<string, unknown>): string | null {
+    const candidate = this.optionalString(config.local_base_url)
+      ?? this.optionalString(config.local_provider_base_url)
+      ?? this.optionalString(config.fallback_base_url)
+      ?? this.optionalString(config.provider_base_url)
+      ?? 'http://localhost:8000/v1';
+    try {
+      const parsed = new URL(candidate);
+      if (['localhost', '127.0.0.1', '::1'].includes(parsed.hostname)) return candidate;
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
+  private async checkOmlxNodeAvailability(node: OmlxNodeResolution): Promise<{ available: boolean; message: string; warnings: string[] }> {
     const warnings: string[] = [];
     let parsed: URL;
     try {
-      parsed = new URL(baseUrl);
+      parsed = new URL(node.baseUrl);
     } catch {
       return { available: false, message: 'Invalid oMLX base URL.', warnings: ['Base URL is malformed.'] };
     }
-    if (!['http:', 'https:'].includes(parsed.protocol) || !['localhost', '127.0.0.1', '::1'].includes(parsed.hostname)) {
-      return { available: false, message: 'oMLX is localhost-only in Phase 3X.', warnings: ['Non-localhost base URL rejected.'] };
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return { available: false, message: 'oMLX base URL must use http or https.', warnings: ['Unsupported protocol rejected.'] };
+    }
+    if (['localhost', '127.0.0.1', '::1'].includes(parsed.hostname)) {
+      if (node.networkScope !== 'localhost') {
+        return { available: false, message: 'Loopback oMLX endpoints must use localhost network scope.', warnings: ['trusted_thunderbolt_lan is not valid for loopback endpoints.'] };
+      }
+    } else if (node.networkScope === 'trusted_thunderbolt_lan') {
+      if (!node.allowTrustedLocalNode) {
+        return { available: false, message: 'Trusted Thunderbolt/LAN oMLX requires explicit opt-in.', warnings: ['allow_trusted_local_node must be true.'] };
+      }
+      if (!this.isPrivateLanHost(parsed.hostname)) {
+        return { available: false, message: 'Trusted Thunderbolt/LAN oMLX requires a private RFC1918 address.', warnings: ['Public IP or hostname rejected.'] };
+      }
+    } else {
+      return { available: false, message: 'oMLX remote endpoints are restricted to localhost or trusted Thunderbolt/LAN nodes.', warnings: ['Missing or invalid network scope.'] };
     }
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 2500);
     try {
-      const response = await fetch(new URL('/models', parsed).toString(), { signal: controller.signal });
+      const response = await fetch(new URL(node.healthCheckPath || '/models', parsed).toString(), { signal: controller.signal });
       if (!response.ok) {
         return { available: false, message: `oMLX unavailable (${response.status}).`, warnings: ['Local provider did not return a healthy response.'] };
       }
       return { available: true, message: 'oMLX availability check passed.', warnings };
     } catch {
-      warnings.push('Local oMLX service is unavailable or timed out.');
-      return { available: false, message: 'oMLX is not running locally.', warnings };
+      warnings.push(node.networkScope === 'trusted_thunderbolt_lan' ? 'Trusted sidecar service is unavailable or timed out.' : 'Local oMLX service is unavailable or timed out.');
+      return { available: false, message: node.networkScope === 'trusted_thunderbolt_lan' ? 'Trusted oMLX sidecar is not reachable.' : 'oMLX is not running locally.', warnings };
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  private readLlmTextConfig(value: unknown): { provider?: LlmProviderMode; task?: LlmTextTask; base_url?: string; provider_base_url?: string; model?: string; output_path?: string; fallback_behavior?: string; input?: Record<string, unknown> } {
-    return typeof value === 'object' && value !== null ? value as { provider?: LlmProviderMode; task?: LlmTextTask; base_url?: string; provider_base_url?: string; model?: string; output_path?: string; fallback_behavior?: string; input?: Record<string, unknown> } : {};
+  private readLlmTextConfig(value: unknown): { provider?: LlmProviderMode; task?: string; base_url?: string; provider_base_url?: string; local_base_url?: string; local_provider_base_url?: string; fallback_base_url?: string; health_check_path?: string; network_scope?: string; allow_trusted_local_node?: boolean; node_id?: string; model?: string; output_path?: string; fallback_behavior?: string; input?: Record<string, unknown> } {
+    return typeof value === 'object' && value !== null ? value as { provider?: LlmProviderMode; task?: string; base_url?: string; provider_base_url?: string; local_base_url?: string; local_provider_base_url?: string; fallback_base_url?: string; health_check_path?: string; network_scope?: string; allow_trusted_local_node?: boolean; node_id?: string; model?: string; output_path?: string; fallback_behavior?: string; input?: Record<string, unknown> } : {};
   }
 
-  private async runOmlxMetadataVariants(job: Job, baseUrl: string, outputPath: string): Promise<LlmProviderResult> {
+  private async runOmlxMetadataVariants(job: Job, node: OmlxNodeResolution, outputPath: string, routing: { remoteNodeUsed: boolean; fallbackUsed: boolean }): Promise<LlmProviderResult> {
     const config = this.readLlmTextConfig(job.task_config);
     const model = this.optionalString(config.model);
     const input = config.input ?? {};
@@ -2056,15 +2257,44 @@ export class VideoOrchestratorWorker {
         message: 'oMLX model is required for metadata variant generation.',
         warnings: ['Missing model name.'],
         output_path: outputPath,
-        metadata: { base_url: baseUrl, credential_status: 'not_read_phase_3x' },
+        metadata: {
+          base_url: node.baseUrl,
+          node_id: node.nodeId ?? null,
+          network_scope: node.networkScope,
+          remote_node_used: routing.remoteNodeUsed,
+          fallback_used: routing.fallbackUsed,
+          secrets_sent: false,
+          credential_status: 'not_read_phase_3x',
+        },
       };
     }
 
-    const prompt = this.buildOmlxMetadataPrompt(input, job);
+    const secretGuard = this.scanForSecretLikeKeys(input);
+    if (secretGuard.blocked) {
+      return {
+        status: 'blocked',
+        provider: 'omlx',
+        task: 'metadata_variants',
+        message: 'Secret-like fields were detected in the llm_text input payload.',
+        warnings: secretGuard.warnings,
+        output_path: outputPath,
+        metadata: {
+          base_url: node.baseUrl,
+          node_id: node.nodeId ?? null,
+          network_scope: node.networkScope,
+          remote_node_used: routing.remoteNodeUsed,
+          fallback_used: routing.fallbackUsed,
+          secrets_sent: false,
+          credential_status: 'not_read_phase_3x',
+        },
+      };
+    }
+
+    const prompt = this.buildOmlxMetadataPrompt(input, job, node);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
     try {
-      const response = await fetch(new URL('/chat/completions', baseUrl).toString(), {
+      const response = await fetch(new URL('/chat/completions', node.baseUrl).toString(), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -2086,7 +2316,17 @@ export class VideoOrchestratorWorker {
           message: `oMLX returned HTTP ${response.status}.`,
           warnings: ['Local provider call did not succeed.'],
           output_path: outputPath,
-          metadata: { base_url: baseUrl, model, network_calls: 1, credential_status: 'not_read_phase_3x' },
+          metadata: {
+            base_url: node.baseUrl,
+            node_id: node.nodeId ?? null,
+            network_scope: node.networkScope,
+            remote_node_used: routing.remoteNodeUsed,
+            fallback_used: routing.fallbackUsed,
+            secrets_sent: false,
+            model,
+            network_calls: 1,
+            credential_status: 'not_read_phase_3x',
+          },
         };
       }
       const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
@@ -2100,7 +2340,17 @@ export class VideoOrchestratorWorker {
           message: 'oMLX response was not valid metadata variant JSON.',
           warnings: ['Invalid JSON response from local provider.'],
           output_path: outputPath,
-          metadata: { base_url: baseUrl, model, network_calls: 1, credential_status: 'not_read_phase_3x' },
+          metadata: {
+            base_url: node.baseUrl,
+            node_id: node.nodeId ?? null,
+            network_scope: node.networkScope,
+            remote_node_used: routing.remoteNodeUsed,
+            fallback_used: routing.fallbackUsed,
+            secrets_sent: false,
+            model,
+            network_calls: 1,
+            credential_status: 'not_read_phase_3x',
+          },
         };
       }
       return {
@@ -2111,7 +2361,12 @@ export class VideoOrchestratorWorker {
         warnings: parsed.warnings,
         output_path: outputPath,
         metadata: {
-          base_url: baseUrl,
+          base_url: node.baseUrl,
+          node_id: node.nodeId ?? null,
+          network_scope: node.networkScope,
+          remote_node_used: routing.remoteNodeUsed,
+          fallback_used: routing.fallbackUsed,
+          secrets_sent: false,
           model,
           network_calls: 1,
           credential_status: 'not_read_phase_3x',
@@ -2122,20 +2377,30 @@ export class VideoOrchestratorWorker {
       };
     } catch (error) {
       return {
-        status: 'skipped',
-        provider: 'omlx',
-        task: 'metadata_variants',
-        message: 'oMLX is unavailable or timed out.',
-        warnings: ['Local provider request could not be completed.'],
-        output_path: outputPath,
-        metadata: { base_url: baseUrl, credential_status: 'not_read_phase_3x', network_calls: 0, error: error instanceof Error ? error.message : 'unknown' },
+          status: 'skipped',
+          provider: 'omlx',
+          task: 'metadata_variants',
+          message: 'oMLX is unavailable or timed out.',
+          warnings: ['Local provider request could not be completed.'],
+          output_path: outputPath,
+          metadata: {
+            base_url: node.baseUrl,
+            node_id: node.nodeId ?? null,
+            network_scope: node.networkScope,
+            remote_node_used: routing.remoteNodeUsed,
+            fallback_used: routing.fallbackUsed,
+            secrets_sent: false,
+            credential_status: 'not_read_phase_3x',
+            network_calls: 0,
+            error: error instanceof Error ? error.message : 'unknown',
+          },
       };
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  private buildOmlxMetadataPrompt(input: Record<string, unknown>, job: Job): string {
+  private buildOmlxMetadataPrompt(input: Record<string, unknown>, job: Job, node: OmlxNodeResolution): string {
     const title = this.optionalString(input.title) ?? '';
     const description = this.optionalString(input.description) ?? '';
     const scriptExcerpt = this.optionalString(input.script_excerpt) ?? '';
@@ -2144,6 +2409,8 @@ export class VideoOrchestratorWorker {
     const platform = this.optionalString(job.task_config.platform) ?? '';
     return [
       'Generate metadata variants as strict JSON only.',
+      `node_id: ${node.nodeId ?? ''}`,
+      `network_scope: ${node.networkScope}`,
       `platform: ${platform}`,
       `package_target: ${packageTarget}`,
       `title: ${title}`,
