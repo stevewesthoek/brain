@@ -310,6 +310,31 @@ ffmpeg -i narration-v1.wav -af "loudnorm" narration-v1-normalized.wav
 
 **Trigger:** "render the video", "make a YouTube video from this", "compose the reel", "create the MP4"
 
+### C0. Smart Model Selection (NEW — Phase 2+)
+
+Before rendering, **classify asset generation needs and route to optimal model.**
+
+Invoke `/video-generation-smart-router` to:
+- Identify what visuals are needed (thumbnails, talking head, product photo, etc.)
+- Route to best model: SDXL (fast), Wave (talking heads), FLUX (premium), Roop (avatars)
+- Schedule heavy models at night (90% CPU)
+- Optimize for quality + resource efficiency
+
+**Available models:**
+- `/stable-diffusion-local` — Fast images, thumbnails, batch content (30–60s)
+- `/wave-local` — Talking head synthesis (60–90s, best quality)
+- `/flux-local` — Premium images (2–4 min, schedule at night)
+- `/roop-local` — Avatar/face synthesis (30–120s)
+
+**Example routing:**
+```
+Task: "Create YouTube video with talking head intro + thumbnail"
+  → Thumbnail: use SDXL (30s)
+  → Talking head: use Wave (75s)
+  → Background: use SDXL (45s)
+  → Total: 2.5 minutes
+```
+
 ### C1. Determine composition type
 
 Route by format (narrated / reel / talking-head / audio-first):
@@ -323,7 +348,16 @@ input: image.jpg + narration.wav
 output: video-1080p-16-9.mp4 (1920×1080, YouTube upload-ready)
 ```
 
-Use `/stb-pipeline` or `/ffmpeg` directly:
+**Generate image first (C0):**
+```bash
+# Option 1: Fast (SDXL)
+python /stable-diffusion-local generate --prompt "abstract gradient background" --output image.jpg
+
+# Option 2: Premium (FLUX, schedule at night)
+python /flux-local generate --prompt "professional background, studio lighting" --output image.jpg
+```
+
+Then compose:
 ```bash
 ffmpeg -loop 1 -i image.jpg -i narration.wav -c:v libx264 -c:a aac \
   -vf scale=1920:1080 -shortest video-landscape.mp4
@@ -333,13 +367,16 @@ ffmpeg -loop 1 -i image.jpg -i narration.wav -c:v libx264 -c:a aac \
 
 Image or video + audio → TikTok/Reels/Shorts portrait MP4.
 
-```
-input: image.jpg + narration.wav (or video-clip.mp4 + narration.wav)
-output: video-1080p-9-16.mp4 (1080×1920, vertical)
-constraint: <60 seconds
+**Generate image first (C0):**
+```bash
+# Fast (SDXL)
+python /stable-diffusion-local generate --prompt "vibrant background" --output image.jpg
+
+# Or use talking head (Wave)
+python /wave-local generate --image portrait.png --audio narration.wav --output talking_head.mp4
 ```
 
-Use `/ffmpeg`:
+Then compose with FFmpeg:
 ```bash
 ffmpeg -i image.jpg -i narration.wav -c:v libx264 -c:a aac \
   -vf scale=1080:1920 -shortest video-vertical.mp4
@@ -350,21 +387,33 @@ Add captions (optional but recommended for social):
 ffmpeg -i video-vertical.mp4 -vf subtitles=captions.srt output-with-subs.mp4
 ```
 
-#### C1c. Talking-head (HeyGen stub)
+#### C1c. Talking-head (Wave + Roop)
 
-User provides script + selects avatar. Route to HeyGen API (service-agnostic stub — wire when API key available).
-
-**Documented pattern** (for future):
-```
-POST https://api.heygen.com/v1/videos
-{
-  "template_id": "<avatar-template>",
-  "caption": false,
-  "script": {"type": "text", "input": "narration text"}
-}
+**Wave:** Script + portrait image → talking head video (best quality)
+```bash
+python /wave-local generate \
+  --image avatar_portrait.png \
+  --audio narration.wav \
+  --output talking_head.mp4
 ```
 
-For now, handoff to manual creation or document URL.
+**Roop:** Apply consistent face to video for avatar consistency
+```bash
+python /roop-local generate \
+  --source avatar_face.png \
+  --target actor_base_video.mp4 \
+  --output avatar_video.mp4
+```
+
+**Full workflow:**
+```bash
+# Step 1: Generate talking head (Wave)
+python /wave-local generate --image portrait.png --audio narration.wav --output hero.mp4
+
+# Step 2: Compose with background (FFmpeg)
+ffmpeg -i hero.mp4 -i background.png -filter_complex "[1]scale=1920:1080[bg];[0][bg]overlay" \
+  -c:v libx264 -c:a aac final.mp4
+```
 
 #### C1d. Audio-first (waveform + still)
 
@@ -383,6 +432,8 @@ Route to `/design` or `/ffmpeg` for:
 - Intro title card (3-5 seconds)
 - Outro with CTA (3-5 seconds)
 - Transitions between clips (if multi-clip)
+
+**Phase 5 (Future):** C1e workflow for animated sequences (Remotion framework) — see `operations/runbooks/video-orchestrator-roadmap.md` Phase 5 Experimental Features section. Deferred until procedural animation becomes core need.
 
 ### C3. Quality check
 
@@ -737,20 +788,45 @@ Pipeline complete. All episodes scripted, voiced, rendered, designed, and posted
 
 ## Tool Reference Map
 
+### Content Strategy & Production
+
 | Tool | Location | Use when |
 |------|----------|----------|
-| **`/viral-flow`** | **`custom/viral-flow/SKILL.md`** | **STRATEGY layer: discover topics, generate angles, score hooks, build scripts, analyze performance, post to platforms. Routes everything: topic → script → posting.** |
+| **`/viral-flow`** | **`custom/viral-flow/SKILL.md`** | **STRATEGY layer: discover topics, generate angles, score hooks, build scripts, analyze performance, post to platforms.** |
 | `/stb-pipeline` | `custom/stb-pipeline/SKILL.md` | Narrated slideshow episodes — SSML TTS + audio mixing + YouTube rendering (battle-tested) |
-| `/ffmpeg` | `custom/ffmpeg/ffmpeg/SKILL.md` | Audio mixing, video composition, format conversion, cropping, scaling, encoding |
 | `/design` | `custom/design/SKILL.md` | Thumbnail design, cover graphics, motion graphics, visual polish |
-| `/taste-skill` | `custom/taste-skill/taste-skill/SKILL.md` | Visual quality review — thumbnails, motion, overall aesthetic |
-| `/design-motion-principles` | `vendors/kylezantos/design-motion-principles/SKILL.md` | Motion auditing, animation critique, transition design |
-| `/notebooklm` | (CLI: `notebooklm`) | Pre-production research — synthesize sources into script ideas |
-| `/n8n` | `custom/n8n/SKILL.md` | Platform automation — webhook-triggered Instagram/LinkedIn/Facebook posting |
-| HeyGen (future) | (API stub) | Talking-head avatar videos — wired when API key available |
-| ElevenLabs (future) | (API stub) | High-quality TTS voices — wired when API key available |
-| OpenAI TTS | (API: `openai.com/v1/audio/speech`) | Simple, affordable TTS narration — already accessible |
+
+### Local AI Image & Video Generation (Phase 2+)
+
+| Tool | Location | Use when | Speed | Quality |
+|------|----------|----------|-------|---------|
+| **`/stable-diffusion-local`** | **`custom/learned/stable-diffusion-local/SKILL.md`** | **Fast thumbnails, batch content, quick graphics** | **30–60s** | **Good** |
+| **`/wave-local`** | **`custom/learned/wave-local/SKILL.md`** | **Talking head synthesis, character animation** | **60–90s** | **Best** |
+| **`/flux-local`** | **`custom/learned/flux-local/SKILL.md`** | **Premium product photography, hero images (schedule at night)** | **2–4 min** | **Premium** |
+| **`/roop-local`** | **`custom/learned/roop-local/SKILL.md`** | **Avatar consistency, face-swap, character variations** | **30–120s** | **Good** |
+| **`/video-generation-smart-router`** | **`custom/learned/video-generation-smart-router/SKILL.md`** | **Classify task + route to best model automatically** | **Planning only** | **Optimal** |
+
+### Video Composition & Audio
+
+| Tool | Location | Use when |
+|------|----------|----------|
+| `/ffmpeg` | `custom/ffmpeg/ffmpeg/SKILL.md` | Audio mixing, video composition, format conversion, encoding |
 | Microsoft MSTTS | (via STB pipeline) | Production-ready SSML TTS — reuse existing Says the Bible pipeline |
+| OpenAI TTS | (API: `openai.com/v1/audio/speech`) | Simple, affordable TTS narration |
+
+### Design & QA
+
+| Tool | Location | Use when |
+|------|----------|----------|
+| `/taste-skill` | `custom/taste-skill/taste-skill/SKILL.md` | Visual quality review — thumbnails, motion, aesthetic |
+| `/design-motion-principles` | `vendors/kylezantos/design-motion-principles/SKILL.md` | Motion auditing, animation critique |
+| `/notebooklm` | (CLI: `notebooklm`) | Pre-production research — synthesize sources into script ideas |
+
+### Platform Posting
+
+| Tool | Location | Use when |
+|------|----------|----------|
+| `/n8n` | `custom/n8n/SKILL.md` | Platform automation — multi-platform posting workflows |
 
 ---
 

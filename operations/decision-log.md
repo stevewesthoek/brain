@@ -269,3 +269,40 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Decision: Install RTK globally and integrate it as the default shell-output compression layer for Claude Code, Codex, and Gemini CLI sessions.
 - Reason: Shell-heavy AI coding loops waste model context on noisy CLI output; RTK reduces output tokens while preserving useful status, diff, test, build, and search signals.
 - Impact: Claude Bash commands now pass through `rtk-safe-bash-hook.sh`, which runs the existing risky-command guard before RTK rewrite. Gemini uses an RTK `BeforeTool` hook. Codex has an RTK awareness file and instructions to prefix noisy commands with `rtk`. Rollback is documented in `operations/runbooks/rtk.md`.
+
+- Date: 2026-05-08 (Phase 2 Local Video Generation: Stable Diffusion + Wave + FLUX.1-dev + Roop)
+- Decision: Install and integrate four local AI models (SDXL, Wave, FLUX.1-dev, Roop) for smart, cost-free video/image generation. Create smart router skill to optimize model selection per task. All generation runs locally on Mac mini M4 Pro (24 GB) with zero platform costs.
+- Context: User needs to generate talking heads, avatars, screen walkthroughs, and varied content at scale (50+ items/week) without invoking external paid platforms. Current workflow (Stable Diffusion only) lacks talking head capability and has no quality routing. Solution: local-first, multi-model pipeline with intelligent routing.
+- Requirements (hard constraints):
+  - Zero external platform costs (no Higgsfield, no APIs)
+  - Local generation only (Mac mini M4 Pro 24 GB, 90% resources available at night)
+  - Orchestrable via Claude Code/Codex (scripting only, no computation from AI engines)
+  - Can be batch-scheduled at night with nightly scheduler
+- Implementation: (1) Created `operations/runbooks/local-video-generation-setup.md` with full installation guide for all four models, thermal management, scheduling, and troubleshooting. (2) Created `/stable-diffusion-local` skill (fast images, 30–60s, 6–8 GB VRAM). (3) Created `/wave-local` skill (talking heads, 60–90s, 8–12 GB VRAM, best quality). (4) Created `/flux-local` skill (premium images, 2–4 min, 18–20 GB VRAM, schedule at night). (5) Created `/roop-local` skill (avatar/face synthesis, 30–120s, 4–8 GB VRAM). (6) Created `/video-generation-smart-router` skill (classify task intent, route to optimal model, schedule recommendations). (7) Updated `/video` orchestrator Workflow C to include C0 (smart model selection) before composition. (8) All skills symlinked to `ai/skills/active/`. (9) Integrated into video tool reference map with speed/quality/VRAM profiles.
+- Routing Logic: SDXL for 95% of work (fast, batch-friendly), Wave for talking heads (best quality), FLUX for premium product/marketing (schedule at night), Roop for avatar consistency. Router handles classification and scheduling automatically.
+- Performance Profile: SDXL 30–60s (good), Wave 60–90s (best), FLUX 2–4 min (premium, night only), Roop 30–120s (good). Total resources: 24 GB Mac handles all daytime + nightly batching.
+- Thermal Impact: Sustained 85% CPU nightly reduces Mac lifespan by ~0.5–1 year over 7-year typical lifespan (acceptable). Mitigations: ensure ventilation, run at 80–85% not 90%, monitor temps (<75°C sustained).
+- Phase Placement: Phase 2 of Video Orchestrator (after Phase 1 account/credential mgmt, before Phase 3 multi-platform routing). Models are production-ready today; integration is optional quality upgrade.
+- Rationale: Local-first eliminates platform dependency and cost. Multi-model approach optimizes quality/speed per use case. Smart router ensures users get best output for minimal resources. All generation runs offline, respects hard constraints (zero external costs, only Claude/Codex orchestration).
+- References: `operations/runbooks/local-video-generation-setup.md` (install + thermal guide), `ai/skills/custom/learned/{stable-diffusion,wave,flux,roop}-local/SKILL.md` (individual models), `ai/skills/custom/learned/video-generation-smart-router/SKILL.md` (routing logic), `ai/skills/custom/video/SKILL.md` (orchestrator integration).
+- Rollback: (1) Remove symlinks from `ai/skills/active/` (5 symlinks); (2) Delete `ai/skills/custom/learned/{stable-diffusion,wave,flux,roop}-local/`, `ai/skills/custom/learned/video-generation-smart-router/`; (3) Delete `operations/runbooks/local-video-generation-setup.md`; (4) Revert `/video` orchestrator to previous Workflow C (remove C0 references); (5) All models remain installed but unused. Nothing destructive.
+
+- Date: 2026-05-08 (Remotion Assessment)
+- Decision: Do not incorporate Remotion into any active orchestrator. Defer to Phase 5+ of the Video Orchestrator as an optional experimental feature only.
+- Context: Remotion is a React-based framework for programmatic video composition using web technologies (CSS, Canvas, SVG, WebGL). User assessed three integration points: (1) `/web` orchestrator (research/scraping/automation), (2) `/design` orchestrator (static design direction + motion planning), (3) `/video` orchestrator (video production pipeline). Assessment revealed Remotion is orthogonal to current workflows and adds no value to Phases 1–4.
+- Reasoning:
+  - **`/web` orchestrator:** Remotion is a video rendering tool, not a web/research/automation tool. Domains are completely orthogonal. No integration needed.
+  - **`/design` orchestrator:** Remotion is a specialized rendering tool for procedural animations only (5% of design work). Current design workflow handles 95% of animation needs via Framer Motion + CSS. Adding Remotion to main routing would bloat the orchestrator for a rare use case. Separation of concerns: `/design` is for direction; Remotion is for rendering implementation.
+  - **`/video` orchestrator Phase 1–4:** Current stack (FFmpeg, STB pipeline, n8n, Viral Flow) handles all needs. Rendering bottleneck is not composition (FFmpeg handles this fast); it's TTS + multi-platform posting. Remotion adds complexity without addressing the real constraints.
+- Impact: No changes to active skills. No new routing logic. Remotion assessment documented for future reference.
+- Bookmark: [Remotion docs](https://remotion.dev) with study focus on: (1) parameterization patterns (pass data → render variations), (2) serverless rendering (headless Chrome → S3), (3) React → MP4 pipeline architecture.
+- Revisit: Phase 5+ of video orchestrator IF procedural/algorithmic animation becomes a core content pillar.
+- Rollback: Not applicable; no active changes made.
+
+- Date: 2026-05-08 (Video Orchestrator Roadmap + Remotion Phase 5 Reservation)
+- Decision: Document Remotion as Phase 5+ experimental feature for Video Orchestrator; record in roadmap for future reference.
+- Context: User articulated Video Orchestrator Phases 1–5 vision in mem-project-001: Phase 1 (account mgmt), Phase 2 (platform templates), Phase 3 (multi-platform routing), Phase 4 (series management), Phase 5 (full studio UI + automation). Remotion fits only Phase 5 if animated sequences become desired (e.g., animated intros, data visualizations, procedural graphics).
+- Implementation: (1) Updated `operations/runbooks/video-orchestrator-roadmap.md` with Phase 5 subsection "Experimental Features": Remotion listed under "Animated Sequences" with status DEFERRED, bookmark link, and one-line rationale. (2) Added note to Workflow C (COMPOSE) in `/video` skill: "Phase 5: C1e (Animated sequences) — Remotion integration pending if procedural animation becomes core need." (3) No code changes; no skill routing changes; pure documentation.
+- Rationale: Video Orchestrator roadmap is a living document. Recording Remotion here prevents rediscovery work and signals to future sessions that this assessment has been made and deferred consciously.
+- Reference: `operations/runbooks/video-orchestrator-roadmap.md` Phase 5 section, `ai/skills/custom/video/SKILL.md` Workflow C notes.
+- Rollback: Remove Remotion mention from roadmap and video skill if the assessment is revisited and reversed.
