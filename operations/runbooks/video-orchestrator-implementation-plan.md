@@ -342,6 +342,31 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - Posting jobs route through the adapter registry safely
 - Real posting remains intentionally out of scope
 
+### Phase 3C: YouTube Dry-Run Preflight (June 20 – July 15)
+**Goal:** Add a YouTube-specific dry-run adapter that validates package readiness and emits idempotent audit output without upload
+
+**Deliverables:**
+- YouTube-specific `api` dry-run adapter
+- Package readiness checks for title, description, real video media, thumbnail, and captions
+- Privacy/status config validation with private default
+- Idempotency key calculation for later upload phases
+- Dry-run audit metadata that reports what would be uploaded
+
+**Behavior:**
+- No OAuth or credential reads
+- No YouTube API calls
+- Manual adapter remains the fallback path
+- Non-YouTube API mode still uses the generic safe stub
+
+**Testing:**
+- [ ] YouTube dry-run validates a real package/config pair
+- [ ] Invalid YouTube config is blocked safely
+- [ ] Dry-run metadata includes idempotency and upload intent fields
+
+**Success Criteria:**
+- YouTube readiness can be checked without secrets or network access
+- Phase 3D can add real upload later without changing the dry-run contract
+
 ---
 
 ### Phase 4: Multi-Account Scheduler (July 15 – August 15)

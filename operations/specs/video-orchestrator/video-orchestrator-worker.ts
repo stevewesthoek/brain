@@ -155,6 +155,16 @@ interface PostingAdapter {
   pollStatus(context: PostingAdapterContext): Promise<PostingAdapterStepResult>;
 }
 
+type YouTubeDryRunConfig = {
+  privacy_status?: 'private' | 'unlisted' | 'public';
+  made_for_kids?: boolean;
+  category_id?: string | number;
+  notify_subscribers?: boolean;
+  license?: string;
+  embeddable?: boolean;
+  public_stats_viewable?: boolean;
+};
+
 type FormatSpec = {
   format_key: string;
   target_platforms: string[];
@@ -760,6 +770,9 @@ export class VideoOrchestratorWorker {
   }
 
   private getPostingAdapter(mode: PostingAdapterMode, target: ProductionPackageManifest['package_targets'][number]): PostingAdapter {
+    if (mode === 'api' && target.platform === 'youtube') {
+      return this.buildYouTubeDryRunPostingAdapter();
+    }
     const adapterMode = mode === 'manual'
       ? 'manual'
       : (target.adapter_mode === 'manual' || target.adapter_status === 'manual_only' || target.adapter_status === 'disabled')
@@ -823,6 +836,67 @@ export class VideoOrchestratorWorker {
         platform: context.target.platform,
         package_target: context.target.package_target,
         message: 'Manual adapter has no pollable external status.',
+        warnings: [],
+      }),
+    };
+  }
+
+  private buildYouTubeDryRunPostingAdapter(): PostingAdapter {
+    return {
+      mode: 'api',
+      name: 'YouTube Dry-Run Adapter',
+      validateConfig: async (context) => {
+        const validation = this.validateYouTubeDryRunConfig(context);
+        return {
+          status: validation.blocked ? 'blocked' : 'succeeded',
+          adapter_mode: 'api',
+          platform: context.target.platform,
+          package_target: context.target.package_target,
+          message: validation.message,
+          warnings: validation.warnings,
+          metadata: validation.metadata,
+        };
+      },
+      validateCredentials: async (context) => ({
+        status: 'dry_run',
+        adapter_mode: 'api',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'YouTube credentials are intentionally not read in Phase 3C dry-run.',
+        warnings: [],
+        metadata: { credential_status: 'not_read_phase_3c' },
+      }),
+      preflight: async (context) => {
+        const validation = await this.validateYouTubeDryRunPreflight(context);
+        return {
+          status: validation.blocked ? 'blocked' : 'dry_run_only',
+          adapter_mode: 'api',
+          platform: context.target.platform,
+          package_target: context.target.package_target,
+          message: validation.message,
+          warnings: validation.warnings,
+          metadata: validation.metadata,
+        };
+      },
+      execute: async (context) => {
+        const result = await this.buildYouTubeDryRunResult(context);
+        return {
+          status: 'dry_run',
+          adapter_mode: 'api',
+          platform: context.target.platform,
+          package_target: context.target.package_target,
+          output_path: result.output_path,
+          message: 'YouTube upload dry-run completed without contacting YouTube.',
+          warnings: result.warnings,
+          metadata: result.metadata,
+        };
+      },
+      pollStatus: async (context) => ({
+        status: 'skipped',
+        adapter_mode: 'api',
+        platform: context.target.platform,
+        package_target: context.target.package_target,
+        message: 'YouTube dry-run adapters do not poll external status in Phase 3C.',
         warnings: [],
       }),
     };
@@ -926,6 +1000,146 @@ export class VideoOrchestratorWorker {
         warnings: [],
       }),
     };
+  }
+
+  private validateYouTubeDryRunConfig(context: PostingAdapterContext): { blocked: boolean; message: string; warnings: string[]; metadata: Record<string, unknown> } {
+    const warnings: string[] = [];
+    const youtubeConfig = this.readYouTubeDryRunConfig(context.config.youtube);
+    if (context.target.platform !== 'youtube') {
+      return { blocked: true, message: 'YouTube dry-run adapter only applies to youtube targets.', warnings, metadata: { adapter_status: 'not_implemented' } };
+    }
+    if (!context.target.source_manifest_path) {
+      return { blocked: true, message: 'Missing source manifest path for YouTube dry-run.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (!context.target.video_path) {
+      return { blocked: true, message: 'YouTube dry-run requires a video path.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (!context.target.title?.trim()) {
+      return { blocked: true, message: 'YouTube dry-run requires a title.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (!context.target.description?.trim()) {
+      return { blocked: true, message: 'YouTube dry-run requires a description.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    const privacyStatus = youtubeConfig.privacy_status ?? 'private';
+    if (!['private', 'unlisted', 'public'].includes(privacyStatus)) {
+      return { blocked: true, message: 'Invalid YouTube privacy_status. Expected private, unlisted, or public.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (youtubeConfig.made_for_kids !== undefined && typeof youtubeConfig.made_for_kids !== 'boolean') {
+      return { blocked: true, message: 'made_for_kids must be a boolean if supplied.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (youtubeConfig.category_id !== undefined && !(typeof youtubeConfig.category_id === 'string' || typeof youtubeConfig.category_id === 'number')) {
+      return { blocked: true, message: 'category_id must be a string or number if supplied.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    const platformSpec = this.findPlatformSpec('youtube', context.target.package_target);
+    const titleLimit = platformSpec?.title_rules?.max_length ?? 100;
+    const descriptionLimit = platformSpec?.description_rules?.max_length ?? 5000;
+    if (context.target.title.length > titleLimit) warnings.push('Title exceeds configured YouTube limit.');
+    if (context.target.description.length > descriptionLimit) warnings.push('Description exceeds configured YouTube limit.');
+    return {
+      blocked: false,
+      message: 'YouTube dry-run configuration validated.',
+      warnings,
+      metadata: {
+        privacy_status: privacyStatus,
+        made_for_kids: youtubeConfig.made_for_kids ?? false,
+        category_id: youtubeConfig.category_id ?? null,
+        notify_subscribers: youtubeConfig.notify_subscribers ?? false,
+        license: youtubeConfig.license ?? 'youtube',
+        embeddable: youtubeConfig.embeddable ?? true,
+        public_stats_viewable: youtubeConfig.public_stats_viewable ?? true,
+      },
+    };
+  }
+
+  private async validateYouTubeDryRunPreflight(context: PostingAdapterContext): Promise<{ blocked: boolean; message: string; warnings: string[]; metadata: Record<string, unknown> }> {
+    const warnings: string[] = [];
+    const youtubeConfig = this.readYouTubeDryRunConfig(context.config.youtube);
+    const privacyStatus = youtubeConfig.privacy_status ?? 'private';
+    if (!await this.isRealMediaFile(context.target.video_path, { requireVideo: true })) {
+      return { blocked: true, message: 'YouTube dry-run requires a real video file.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (context.target.thumbnail_path && !await this.isReadableImage(context.target.thumbnail_path)) {
+      warnings.push('Thumbnail is missing or unreadable.');
+    }
+    const captionFiles = (context.target.captions.caption_files ?? []).filter((item) => Boolean(item.path));
+    for (const caption of captionFiles) {
+      if (!await this.fileExists(caption.path)) warnings.push(`Caption file missing: ${caption.language}.${caption.format}`);
+    }
+    const platformSpec = this.findPlatformSpec('youtube', context.target.package_target);
+    const titleLimit = platformSpec?.title_rules?.max_length ?? 100;
+    const descriptionLimit = platformSpec?.description_rules?.max_length ?? 5000;
+    if (context.target.title.length > titleLimit) warnings.push('Title exceeds configured YouTube limit.');
+    if (context.target.description.length > descriptionLimit) warnings.push('Description exceeds configured YouTube limit.');
+    const idempotencyKey = await this.hashText([
+      String(context.job.video_id ?? context.config.video_id ?? ''),
+      context.target.platform,
+      context.target.package_target,
+      context.target.video_path,
+      context.target.title,
+      context.target.description,
+      context.config.adapter_mode,
+    ].join('|'));
+    return {
+      blocked: false,
+      message: 'YouTube dry-run preflight completed.',
+      warnings,
+      metadata: {
+        idempotency_key: idempotencyKey,
+        privacy_status: privacyStatus,
+        title_length: context.target.title.length,
+        description_length: context.target.description.length,
+        captions_count: captionFiles.length,
+        thumbnail_path: context.target.thumbnail_path || null,
+        video_path: context.target.video_path,
+      },
+    };
+  }
+
+  private async buildYouTubeDryRunResult(context: PostingAdapterContext): Promise<{ output_path: string | null; warnings: string[]; metadata: Record<string, unknown> }> {
+    const youtubeConfig = this.readYouTubeDryRunConfig(context.config.youtube);
+    const idempotencyKey = await this.hashText([
+      String(context.job.video_id ?? context.config.video_id ?? ''),
+      context.target.platform,
+      context.target.package_target,
+      context.target.video_path,
+      context.target.title,
+      context.target.description,
+      context.config.adapter_mode,
+    ].join('|'));
+    return {
+      output_path: null,
+      warnings: [],
+      metadata: {
+        would_upload: true,
+        platform: 'youtube',
+        package_target: context.target.package_target,
+        title: context.target.title,
+        description_length: context.target.description.length,
+        video_path: context.target.video_path,
+        thumbnail_path: context.target.thumbnail_path || null,
+        captions_count: context.target.captions.caption_files?.filter((item) => Boolean(item.path)).length ?? 0,
+        privacy_status: youtubeConfig.privacy_status ?? 'private',
+        made_for_kids: youtubeConfig.made_for_kids ?? false,
+        category_id: youtubeConfig.category_id ?? null,
+        notify_subscribers: youtubeConfig.notify_subscribers ?? false,
+        idempotency_key: idempotencyKey,
+        credential_status: 'not_read_phase_3c',
+        network_calls: 0,
+      },
+    };
+  }
+
+  private readYouTubeDryRunConfig(value: unknown): YouTubeDryRunConfig {
+    return typeof value === 'object' && value !== null ? value as YouTubeDryRunConfig : {};
+  }
+
+  private findPlatformSpec(platform: string, packageTarget: string): PlatformSpec | undefined {
+    return this.platformSpecs.platforms.find((spec) => spec.platform === platform && spec.package_target === packageTarget);
+  }
+
+  private async hashText(value: string): Promise<string> {
+    const { createHash } = await import('node:crypto');
+    return createHash('sha256').update(value).digest('hex');
   }
 
   private async exportManualUploadPackage(

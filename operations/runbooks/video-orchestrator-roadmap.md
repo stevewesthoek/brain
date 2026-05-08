@@ -62,7 +62,8 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **2C** | Jun 20–Jun 27 | Local Production Adapters | FFmpeg render/thumbnail outputs and optional Whisper.cpp captions produce real local artifacts |
 | **3A** | Jun 20–Jul 15 | Manual Upload Adapter | Export complete local upload packages with auditability and idempotent folder paths |
 | **3B** | Jun 20–Jul 15 | Posting Adapter Interface + Registry | Add a safe adapter contract with dry-run/blocked routing for non-manual modes |
-| **3C** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after the registry is stable |
+| **3C** | Jun 20–Jul 15 | YouTube Dry-Run Preflight | Validate YouTube package/config readiness without OAuth or upload |
+| **3D** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after the registry is stable |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
 | **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |
 
@@ -416,6 +417,33 @@ CREATE TABLE events (
 - ✅ Posting jobs route through the registry
 - ✅ Non-manual jobs emit clear blocked/dry-run audit events
 - ✅ No real platform posting occurs
+
+---
+
+## Phase 3C: YouTube Dry-Run Preflight
+
+**Timeline:** June 20–July 15, 2026 (4 weeks)  
+**Goal:** Validate YouTube readiness and produce a dry-run plan without upload
+
+### 3.1: YouTube Dry-Run Adapter
+
+**Deliverables:**
+- `adapter_mode = api` routes to a YouTube-specific dry-run adapter
+- Validate title, description, video media, thumbnail, captions, and privacy config
+- Compute idempotency key for future upload phases
+
+### 3.2: Safety Rules
+
+**Behavior:**
+- No OAuth or credential reads
+- No YouTube API calls
+- No uploads
+- Manual export remains the fallback path
+
+### 3.3: Success Criteria
+- ✅ Valid YouTube package/config pair passes dry-run preflight
+- ✅ Invalid config is blocked safely
+- ✅ Dry-run audit output includes upload intent and idempotency metadata
 
 ---
 
