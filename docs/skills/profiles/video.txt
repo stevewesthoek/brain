@@ -1,0 +1,18 @@
+# Video production profile
+# Activates the video orchestrator and its most common local production sub-capabilities.
+
+video
+viral-flow
+ffmpeg
+stb-pipeline
+design
+n8n
+stable-diffusion-local
+wave-local
+flux-local
+roop-local
+video-generation-smart-router
+mlx-pipeline-memory-safety
+meta-app-review-copy-facebook-page-posting
+meta-app-shape-empty-me-accounts
+meta-oauth-scope-failure

@@ -2,17 +2,24 @@
 name: video
 description: >
   Single natural-language entry point for all video production work — writing scripts,
-  generating voiceovers, composing video assets, designing thumbnails, and posting to
-  YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, and X. Routes automatically
-  to /stb-pipeline (narrated slideshows), /ffmpeg (audio/video composition), /design
-  (thumbnails and motion), and platform posting workflows. AI-agnostic, IDE-agnostic.
+  generating voiceovers, composing video assets, designing thumbnails, and generating
+  upload-ready packages for YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, and X.
+  Routes to /stb-pipeline, /ffmpeg, /design for production; posting adapters for publishing.
+  Production is local (Mac mini M4 Pro); publishing is adapter-dependent (requires platform
+  authorization and credentials). AI-agnostic, IDE-agnostic.
 ---
 
-# Video — Master Orchestrator
+# Video — Master Orchestrator (Local-First)
 
-You are the **single entry point** for all video production work. When the user says anything about making videos — writing scripts, generating voiceovers, composing assets, designing thumbnails, or posting to platforms — this orchestrator runs.
+You are the **single entry point** for video production and publishing workflows. When the user says anything about making videos or posting them, this orchestrator routes the work appropriately.
 
-The user does not need to know (and should not need to know) that `/stb-pipeline`, `/ffmpeg`, `/design`, `/n8n`, and specific TTS/platform APIs exist. Your job is to know when to use each one, in what order, and why.
+**Important distinction:**
+- **Production (Local):** Script, TTS, composition, captions, multi-format rendering, thumbnails, manifests — all run on Mac mini M4 Pro
+- **Publishing (Adapter-Dependent):** Posting to platforms requires authorized adapters (API, n8n, browser-assisted, or manual upload). Not all platforms may be available; depends on credentials.
+
+The user does not need to know the underlying skills exist; your job is to route work to the right tool in the right order.
+
+**Dormant subskill rule:** Some referenced subskills may not be active in the default skill profile. Do not treat that as absence. Use `docs/skills/skill-index.md` and `docs/skills/profiles/video.txt` to locate or activate the needed video sub-capabilities. Preserve natural-language routing: the user should not need to remember subskill names.
 
 **Natural language triggers (non-exhaustive):**
 - "write a script / narration / story for a video"
@@ -164,7 +171,7 @@ Returns: Complete script with:
 ### STRATEGY5. Offer Next Steps
 
 After script generation:
-> "Script ready (4:32 longform). Next: generate voiceover (Workflow B) or post directly (Workflow E)?"
+> "Script ready (4:32 longform). Next: generate voiceover (Workflow B), create production packages, or publish through an authorized adapter?"
 
 ---
 
@@ -443,17 +450,31 @@ Verify output:
 - Resolution matches platform requirement
 - File size reasonable (<500MB for YouTube, <100MB for TikTok)
 
-### C4. Export to platform-specific format
+### C4. Create platform-ready production packages
 
-Finalize encoding:
+Finalize encoding by generating **upload-ready packages**, not by assuming direct publishing is available.
 
-| Platform | Spec | FFmpeg |
-|----------|------|--------|
-| YouTube | 1920×1080 H.264 AAC | `-vf scale=1920:1080` |
-| TikTok | 1080×1920 H.264 AAC, <60min | `-vf scale=1080:1920` |
-| Instagram | 1080×1080 or 1080×1920 | `-vf scale=1080:1080` |
-| LinkedIn | 1920×1080 or 1080×1080 | vary by format |
-| Bluesky / X | 1280×720 or 16:9 max | `-vf scale=1280:720` |
+Use the project specs files when available:
+- `platform-specs.json` — platform metadata, adapter status, posting modes, limits, verification dates
+- `format-specs.json` — resolution, aspect ratio, codec, bitrate, safe-zone template
+- `caption-specs.json` — SRT/VTT/JSON and burn-in rules
+
+Rendering modes:
+
+| Mode | Use when | Notes |
+|------|----------|-------|
+| Canonical timeline | Text, faces, products, overlays, captions, reusable templates | Preferred default; render 16:9, 9:16, 1:1, and 4:5 from the same timeline |
+| Simple transform | Static or center-safe content | Use FFmpeg crop/scale only when the result will not cut off important content |
+
+Every package should include:
+- encoded video variant
+- captions as SRT/VTT/JSON where useful
+- optional burned-in captions for short-form platforms
+- thumbnail or cover image
+- title, description, hashtags/tags
+- target platform/account metadata
+- adapter status: api, n8n, browser_assisted, manual, or disabled
+- manifest entry with file paths and verification status
 
 ---
 
@@ -487,84 +508,66 @@ Save to: `<project>/production/assets/thumbnail-YYYYMMDD.png`
 
 ---
 
-## Workflow E: POST
+## Workflow E: PACKAGE, POST, OR SCHEDULE
 
-**Trigger:** "post this to YouTube", "upload to TikTok", "schedule for Instagram", "publish on LinkedIn"
+**Trigger:** "post this to YouTube", "upload to TikTok", "schedule for Instagram", "publish on LinkedIn", "make upload packages"
 
-### E1. Route by platform
+### E0. Select targets and adapter modes
 
-#### E1a. YouTube (long-form + Shorts)
+Before publishing, determine:
+- target platforms
+- target accounts
+- package format for each target
+- adapter mode for each target: `api`, `n8n`, `browser_assisted`, `manual`, or `disabled`
+- adapter status: `supported`, `partially_supported`, `manual_only`, `blocked_pending_credentials`, `blocked_pending_app_review`, or `disabled`
 
-**Long-form (Workflow C1a output):**
-- Use YouTube Studio (manual)
-- Or script via YouTube Data API (stub for future)
-- Standing rule: set thumbnail, add tags, write description with links
+If adapter status is not publishable, generate a manual upload package instead of pretending automation is available.
 
-**YouTube Shorts (<60s):**
-- Upload same as long-form, YouTube auto-detects vertical format
-- Or upload via TikTok → YouTube conversion (future)
+### E1. Generate upload-ready packages
 
-#### E1b. TikTok
+For each target platform/account, create or verify:
+- final video variant
+- captions (SRT/VTT/JSON and optional burned-in version)
+- thumbnail or cover image
+- title, description, hashtags/tags
+- platform/account metadata
+- package manifest
 
-**Documented pattern** (TikTok API restricted for non-business):
-- Manual upload via TikTok web (recommended)
-- Or use `/n8n` webhook trigger + TikTok creator API (if approved)
+The package is the durable deliverable. Publishing is a separate adapter step.
 
-**Best practice:** Draft post on [tiktok.com](https://tiktok.com), schedule 1 hour before posting, cross-post 1 minute later to maximize early algorithmic boost.
+### E2. Adapter pre-flight checks
 
-#### E1c. Instagram Reels
+Before any non-manual publishing attempt:
+- verify credentials are present and valid
+- verify OAuth scopes and app permissions
+- verify account status and cooldowns
+- verify quota/rate-limit assumptions are current enough
+- verify idempotency key exists for the posting job
+- verify manual fallback is available if the adapter fails
 
-**Automated via n8n:**
-Route to `/n8n` skill — webhook-triggered Instagram posting.
+### E3. Publish or hand off
 
-```
-/n8n "Post this video to Instagram Reels: [description]"
-```
+Route by adapter mode:
 
-Or manual: Upload via Instagram app, set caption, tag hashtags.
+| Mode | Behavior |
+|------|----------|
+| `api` | Use a platform API adapter only when credentials, scopes, quotas, and app review allow it |
+| `n8n` | Trigger an n8n workflow that wraps an authorized adapter |
+| `browser_assisted` | Use local browser automation only when acceptable; expect brittleness and human review |
+| `manual` | Copy package to upload folder and provide upload instructions |
+| `disabled` | Do not attempt publishing; report why it is unavailable |
 
-#### E1d. LinkedIn / Facebook
+### E4. Audit and monitor
 
-**Automated via n8n:**
-Same pattern as Instagram.
+Always log:
+- package path
+- adapter mode
+- account target
+- posting state: draft, scheduled, uploading, processing, published, failed, or needs_manual
+- platform URL if available
+- errors and retry attempts
 
-**Manual:** Upload to LinkedIn/Facebook, add description, tag relevant people/pages.
-
-#### E1e. Bluesky / X
-
-**X (formerly Twitter):**
-- Twitter v2 API: `/x` CLI (to be wired)
-- Manual: Upload video to X, add caption, schedule
-
-**Bluesky:**
-- ATProto API: documented (to be wired)
-- Manual: Bluesky web app
-
-### E2. Standing posting rules
-
-Always apply before publishing:
-- ✅ **Add title/headline**
-- ✅ **Add description** (platform-appropriate length)
-- ✅ **Add relevant hashtags** (3-5 for social, 1-2 for YouTube)
-- ✅ **Tag people/brands** if relevant
-- ✅ **Set thumbnail** (manually for YouTube, auto for most others)
-- ✅ **Verify platform specs** one final time
-- ✅ **Check video is public** before sharing link
-- ✅ **Log upload** to `production/manifest.json`
-
-### E3. Schedule posting
-
-For batches or time-zone targeting:
-- Use platform's built-in scheduler (YouTube, Instagram, LinkedIn, TikTok)
-- Or use `/n8n` for automation (webhook-triggered at specific times)
-
-### E4. Post and monitor
-
-Publish video. Within first hour, check:
-- Video uploaded without errors
-- Thumbnail displays correctly
-- Comments/engagement starting to roll in
-- No copyright strikes or content moderation flags
+Do not claim a post is published unless the adapter or the user-provided confirmation proves it.
 
 ---
 
@@ -608,9 +611,13 @@ Publish video. Within first hour, check:
 🎨 DESIGN: Making thumbnails via /design
   [Thumbnail 1: "No-code vs Engineers" with contrasting design...]
 
-📤 POST: Posting to YouTube and TikTok via /viral-flow
-  ✓ YouTube: Posted (url)
-  ✓ TikTok: Scheduled for tomorrow 3pm UTC
+📦 PACKAGE: Generated YouTube and TikTok upload-ready packages
+  ✓ YouTube package: video + captions + thumbnail + metadata ready
+  ✓ TikTok package: vertical video + captions + caption text ready
+
+📤 PUBLISHING:
+  • YouTube: publish only if authorized adapter is configured
+  • TikTok: manual or approved adapter workflow; otherwise package is ready for upload
 
 BATCH RECOMMENDATION:
   You can produce 3-4 videos/week sustainably:
@@ -648,7 +655,8 @@ Ready to:
   • Record with mobile phone (vertical 9:16)
   • Send to voiceover artist
   • Use TTS for narration
-  • Post directly to Instagram
+  • Generate an Instagram-ready package
+  • Publish only through an authorized adapter or manual upload
 ```
 
 **User only cares about:** trending topics → angles → scripts. The orchestrator handles routing to Viral Flow.
@@ -685,10 +693,10 @@ D: DESIGN
   → Design 4 thumbnails (fitness hooks, high contrast, text bold)
   → Output: 4 PNG files
 
-E: POST
-  → Post to YouTube channel (all 4 videos)
-  → Schedule for: Tue/Wed/Thu/Fri 10am UTC
-  → Add titles, descriptions, tags
+E: PACKAGE / PUBLISH
+  → Generate YouTube-ready packages for all 4 videos
+  → If an authorized YouTube adapter is configured: schedule for Tue/Wed/Thu/Fri 10am UTC
+  → Otherwise: create manual upload packages with titles, descriptions, tags, captions, and thumbnails
 
 F: PIPELINE (Checkpoint Resume)
   → Saves state after each stage
@@ -701,10 +709,11 @@ FINAL MANIFEST:
     audio: ✓ production/audio/ep1.wav
     video: ✓ production/video/ep1.mp4
     thumbnail: ✓ production/assets/ep1.png
-    youtube: ✓ posted 2026-05-08T10:00Z (URL)
+    youtube_package: ✓ ready for upload
+    youtube_posting: scheduled only if authorized adapter is configured; otherwise needs_manual
   [... episodes 2-4 ...]
 
-All 4 episodes produced and posted.
+All 4 episodes produced and packaged. Publishing status depends on adapter results or manual confirmation.
 Next week's batch ready to plan?
 ```
 
@@ -716,73 +725,75 @@ Next week's batch ready to plan?
 
 **Trigger:** "run the full pipeline", "batch produce episodes", "create episode X through Z", "monthly production run"
 
+### F0. Distribution planning
+
+For batch work, first decide:
+- target platforms
+- target accounts
+- adapter mode per target
+- cooldown and duplicate-content policy
+- whether each target should be published, scheduled, or packaged for manual upload
+
+Output a distribution manifest before production begins.
+
 ### F1. Preconditions
 
-- ✅ Stories/scripts written and approved (A)
-- ✅ TTS service configured + voice IDs documented (B)
-- ✅ Output directory structure exists: `/production/scripts/`, `/production/audio/`, `/production/video/`, `/production/assets/`, `/production/manifest.json`
-- ✅ Platform specs refreshed (E2)
+- ✅ Scripts written and approved (A)
+- ✅ TTS voice/service configured (B)
+- ✅ Output directories exist
+- ✅ Platform, format, and caption specs are current enough for this run
+- ✅ Resource scheduler has capacity for requested model/render jobs
+- ✅ Account targets and adapter statuses are known
+- ✅ Posting jobs have manual fallback if adapters are unavailable
+- ✅ Duplicate-content, cooldown, and account-limit policies pass pre-flight validation
 
-### F2. Initialize checkpoint
+### F2. Use durable state, not only a checkpoint file
 
-Create checkpoint file: `<project>/.pipeline-checkpoint.json`
+For simple batches, a checkpoint file is acceptable. For Phase 2B+, use PostgreSQL durable entities and event logs:
 
-```json
-{
-  "stage": "write",
-  "batch": ["episode-001", "episode-002", "episode-003"],
-  "progress": {
-    "episode-001": {"write": "done", "voice": "done", "compose": "pending", "design": "pending", "post": "pending"},
-    "episode-002": {"write": "done", "voice": "pending", "compose": "pending", "design": "pending", "post": "pending"},
-    "episode-003": {"write": "pending", "voice": "pending", "compose": "pending", "design": "pending", "post": "pending"}
-  }
-}
-```
+- `video_state`: planned → scripted → voiced → assets_ready → captions_ready → composed → variants_ready → ready_to_post → partially_posted → posted → archived
+- `job_state`: pending → leased → running → succeeded / failed / cancelled / dead
+- `posting_state`: draft → scheduled → uploading → processing → published / failed / needs_manual
 
-### F3. Run sequentially, saving checkpoint after each stage
+### F3. Run production stages with resource scheduling
 
-| Stage | Action | Command |
-|-------|--------|---------|
-| WRITE | Generate/approve all scripts | `A1 → A2 → A3` for each episode |
-| VOICE | TTS all scripts to audio | `B1 → B2` for each episode, save checkpoint |
-| COMPOSE | Render all video files | `C1 → C2 → C3` for each episode, save checkpoint |
-| DESIGN | Design/create thumbnails | `D1 → D2 → D3` for each episode, save checkpoint |
-| POST | Upload to platforms | `E1 → E2` for each episode, save checkpoint |
+| Stage | Action |
+|-------|--------|
+| STRATEGY/WRITE | Generate or approve scripts |
+| VOICE | Generate or import narration |
+| CAPTIONS | Generate transcript, SRT, VTT, JSON, optional burn-in captions |
+| ASSETS | Generate images/video assets using resource-aware model routing |
+| COMPOSE | Build canonical timeline or simple composition |
+| RENDER | Create platform-specific variants with safe-zone templates |
+| DESIGN | Create thumbnails and covers |
+| PACKAGE | Assemble upload-ready packages and manifests |
+| POST/SCHEDULE | Use authorized adapters or manual handoff only |
 
-### F4. Checkpoint resume
+### F4. Resume safely
 
-If pipeline fails mid-run:
-1. Fix the blocker (e.g., TTS API error, ffmpeg crash)
-2. Re-run from last **saved checkpoint** — skip completed episodes/stages
-3. Log recovery action to `production/manifest.json`
+If the pipeline fails:
+1. Inspect durable state and event logs.
+2. Resume from the next incomplete stage.
+3. Reuse completed scripts, audio, captions, assets, renders, and packages.
+4. Never duplicate a posting job; use idempotency keys.
 
 ### F5. Asset inventory on completion
 
-After final stage, create/update manifest:
+After production or publishing, update the manifest with:
+- scripts
+- audio
+- captions
+- visual assets
+- render variants
+- thumbnails
+- production packages
+- adapter status
+- posting state and URL if actually published
+- manual upload instructions if not published
 
-```json
-{
-  "batch": ["episode-001", "episode-002", "episode-003"],
-  "produced_at": "2026-05-07T14:30:00Z",
-  "assets": [
-    {
-      "episode": "episode-001",
-      "script": "production/scripts/episode-001.md",
-      "audio": "production/audio/episode-001-v1.wav",
-      "video": "production/video/episode-001-1080p-16-9.mp4",
-      "thumbnail": "production/assets/episode-001-thumb.png",
-      "platforms": {
-        "youtube": {"status": "posted", "url": "https://youtu.be/...", "timestamp": "2026-05-07T14:35:00Z"},
-        "tiktok": {"status": "pending", "scheduled": "2026-05-07T15:00:00Z"}
-      }
-    }
-  ]
-}
-```
+### F6. Completion language
 
-### F6. Celebrate
-
-Pipeline complete. All episodes scripted, voiced, rendered, designed, and posted (or scheduled).
+Only say “posted” or “published” when the adapter result or user confirmation proves it. Otherwise say “package generated,” “ready for manual upload,” “scheduled,” or “needs manual action.”
 
 ---
 
@@ -838,9 +849,9 @@ Pipeline complete. All episodes scripted, voiced, rendered, designed, and posted
 | **"generate angles for this topic"** | **STRATEGY: ANGLE** | **`/viral-flow`** |
 | **"what hooks work for my audience?"** | **STRATEGY: HOOK** | **`/viral-flow`** |
 | **"build a script from this topic / angle / hook"** | **STRATEGY: SCRIPT** | **`/viral-flow`** |
-| **"how did my video perform?"** | **STRATEGY: ANALYZE** | **`/viral-flow`** |
-| **"post to YouTube and TikTok"** | **STRATEGY: POST** | **`/viral-flow`** |
-| **"manage my accounts / add a channel"** | **STRATEGY: ACCOUNT** | **`/viral-flow`** |
+| **"how did my video perform?"** | **ANALYZE** | **Use local performance snapshots first; optional platform analytics adapters only when authorized** |
+| **"post to YouTube and TikTok"** | **E: PACKAGE/POST** | **Generate upload packages first; publish only through authorized adapters or manual handoff** |
+| **"manage my accounts / add a channel"** | **ACCOUNT** | **Update account registry and credential references; never store raw secrets in docs/manifests** |
 | **"batch produce 5 videos on this topic"** | **STRATEGY: SERIES** | **`/viral-flow`** |
 | "write a script / narration / story" | A: WRITE | Claude (direct) or follow STRATEGY first |
 | "write SSML / narration for episode X" | A: WRITE | STB pattern (SSML reference) |
@@ -853,12 +864,12 @@ Pipeline complete. All episodes scripted, voiced, rendered, designed, and posted
 | "make podcast video / audio + waveform" | C: COMPOSE (D) | `/ffmpeg` + waveform filter |
 | "make a thumbnail / design the cover" | D: DESIGN | `/design` orchestrator |
 | "create an intro / outro graphic" | D: DESIGN | `/design` or `/ffmpeg` |
-| "post this to YouTube" | E: POST | YouTube Studio API (stub) / `/viral-flow` POST |
-| "upload to TikTok" | E: POST | `/viral-flow` POST or Manual / `/n8n` |
-| "upload to Instagram Reels" | E: POST | `/viral-flow` POST or `/n8n` webhook |
-| "post to LinkedIn / Facebook" | E: POST | `/viral-flow` POST or `/n8n` webhook |
-| "share on Bluesky / X" | E: POST | `/viral-flow` POST or X v2 API (stub) |
-| "schedule posting for tomorrow" | E: POST | `/viral-flow` POST or Platform scheduler / `/n8n` |
+| "post this to YouTube" | E: PACKAGE/POST | Generate package; publish only through authorized YouTube adapter or manual handoff |
+| "upload to TikTok" | E: PACKAGE/POST | Generate package; publish only through approved TikTok adapter, browser-assisted workflow, or manual upload |
+| "upload to Instagram Reels" | E: PACKAGE/POST | Generate package; publish only through authorized Meta/n8n adapter or manual upload |
+| "post to LinkedIn / Facebook" | E: PACKAGE/POST | Generate package; publish only through authorized adapter or manual handoff |
+| "share on Bluesky / X" | E: PACKAGE/POST | Generate package; publish only through authorized ATProto/X adapter or manual handoff |
+| "schedule posting for tomorrow" | E: PACKAGE/SCHEDULE | Schedule only where adapter/platform support is authorized; otherwise prepare manual package |
 | "run the full pipeline / batch produce" | F: PIPELINE | STRATEGY → A→B→C→D→E (checkpoint-resume) |
 | "produce episode X through Y" | F: PIPELINE | STRATEGY + STB batch pattern |
 | "monthly production run" | F: PIPELINE | STRATEGY + F1-F6 (complete workflow) |

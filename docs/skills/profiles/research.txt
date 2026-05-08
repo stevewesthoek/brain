@@ -1,0 +1,14 @@
+# Research profile
+# Activates research, scraping, browser, and synthesis skills.
+# Every entry below was observed in ai/skills/active on 2026-05-08.
+
+autoresearch
+firecrawl
+apify
+notebooklm.md
+playwright
+web
+gemini
+graphify
+memory
+review

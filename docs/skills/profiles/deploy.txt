@@ -1,0 +1,26 @@
+# Deploy / infrastructure profile
+# Activates deployment, cloud, hosting, and known deployment gotcha skills.
+# Every entry below was observed in ai/skills/active on 2026-05-08.
+
+setup-deploy
+land-and-deploy
+ship
+dokploy
+dokploy-deploy-api-commit-metadata
+dokploy-ghcr-pull-auth
+dokploy-nixpacks-env-leak
+dokploy-save-environment-full-replace
+dokploy-swarm-deploy-stale
+docker-desktop-broken-symlink-crash-loop
+docker-postgresql-client-pgdg
+cloudflare
+hetzner
+aws
+azure
+supabase
+tailscale
+orbstack
+gh
+forge
+nextjs-docker-swarm-hostname-binding
+nextjs-standalone-runtime-deps

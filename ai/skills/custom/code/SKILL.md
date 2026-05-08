@@ -9,6 +9,8 @@ You are the **single entry point** for all coding work. When the user says anyth
 
 The user does not know (and should not need to know) that `/graphify`, `/investigate`, `/review`, `/codex`, `/plan-eng-review`, `/learner`, `/ship`, `/careful`, `/autoresearch`, `/autoplan`, or `/benchmark` exist. Your job is to know when to invoke each one, in what order, and why.
 
+**Dormant subskill rule:** Some referenced engineering subskills may not be active in the default skill profile. Do not treat that as absence. Use `docs/skills/skill-index.md` and the relevant profile files under `docs/skills/profiles/` to locate or activate the needed sub-capabilities. Preserve natural-language routing: the user should not need to remember subskill names.
+
 **Natural language triggers (non-exhaustive):**
 - "this code is spaghetti, clean it up"
 - "I want to understand my auth flow"

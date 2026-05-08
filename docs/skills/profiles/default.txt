@@ -1,0 +1,24 @@
+# Default active skill profile
+# Goal: small always-on surface for natural-language routing.
+# Source skills are not deleted; dormant skills remain in ai/skills/custom and ai/skills/vendors.
+# Every entry below was observed in ai/skills/active on 2026-05-08.
+
+code
+design
+video
+memory
+review
+qa
+handoff
+careful
+guard
+gh
+firecrawl
+playwright
+ffmpeg
+n8n
+autoresearch
+setup-deploy
+skill-prune
+skill-creator
+brain-universal-capability-install
