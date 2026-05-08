@@ -41,13 +41,13 @@ enabled = true
 [plugins."presentations@openai-primary-runtime"]
 enabled = true
 
-[plugins."browser-use@openai-bundled"]
-enabled = true
-
 [plugins."build-macos-apps@openai-curated"]
 enabled = true
 
 [plugins."remotion@openai-curated"]
+enabled = true
+
+[plugins."browser-use@openai-bundled"]
 enabled = true
 
 [projects."/Users/Office/Repos/stevewesthoek/brain"]
@@ -96,7 +96,7 @@ trust_level = "trusted"
 "gpt-5.5" = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-02T22:11:46Z"
+last_updated = "2026-05-08T18:18:53Z"
 source_type = "local"
 source = "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/codex/.tmp/bundled-marketplaces/openai-bundled"
 
