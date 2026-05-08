@@ -18,6 +18,7 @@ const USAGE = `Usage:
   node tools/scripts/video-orchestrator-credential-helper.mjs exchange-youtube-code <config_path> --callback-url <callback_url> --expected-state <state> --code-verifier <code_verifier> --write-to-keychain <credential_reference> --confirm-real-token-exchange --confirm-real-keychain-write
   node tools/scripts/video-orchestrator-credential-helper.mjs keychain-write-youtube-token <credential_reference> --token-json-stdin --confirm-real-keychain-write
   node tools/scripts/video-orchestrator-credential-helper.mjs keychain-read-youtube-token <credential_reference> --confirm-real-keychain-read
+  node tools/scripts/video-orchestrator-credential-helper.mjs keychain-summary-youtube-token <credential_reference> --confirm-real-keychain-read
   node tools/scripts/video-orchestrator-credential-helper.mjs keychain-delete-youtube-token <credential_reference> --confirm-real-keychain-delete
   node tools/scripts/video-orchestrator-credential-helper.mjs token-self-test
   node tools/scripts/video-orchestrator-credential-helper.mjs self-test`;
@@ -134,6 +135,10 @@ async function main(argv) {
   }
   if (command === 'keychain-read-youtube-token') {
     printJson(readYoutubeTokenFromKeychain(args));
+    return;
+  }
+  if (command === 'keychain-summary-youtube-token') {
+    printJson(readYoutubeTokenSummary(args));
     return;
   }
   if (command === 'keychain-delete-youtube-token') {
@@ -458,6 +463,24 @@ function writeYoutubeTokenToKeychain(args, tokenJsonInput) {
 }
 
 function readYoutubeTokenFromKeychain(args) {
+  const summary = readYoutubeTokenSummary(args);
+  if (!summary.ok) return summary;
+  return {
+    ok: true,
+    found: summary.found,
+    service: summary.service,
+    account: summary.account,
+    access_token_present: summary.access_token_present,
+    refresh_token_present: summary.refresh_token_present,
+    expires_in_present: summary.expires_in_present,
+    scope: summary.scope,
+    scope_youtube_upload_present: summary.scope_youtube_upload_present,
+    token_value_printed: false,
+    token_values_printed: false,
+  };
+}
+
+function readYoutubeTokenSummary(args) {
   const credentialReference = args[0];
   const confirmRead = args.includes('--confirm-real-keychain-read');
   if (!credentialReference) {
@@ -470,12 +493,25 @@ function readYoutubeTokenFromKeychain(args) {
   if (!validation.ok) {
     return { ok: false, error: validation.error };
   }
-  const found = readKeychainItem(validation.service, validation.account, false);
+  const found = readKeychainItem(validation.service, validation.account, true);
   if (!found.ok) {
     return found;
   }
   if (!found.found) {
-    return { ok: true, found: false, service: validation.service, account: validation.account };
+    return {
+      ok: true,
+      found: false,
+      platform: 'youtube',
+      service: validation.service,
+      account: validation.account,
+      access_token_present: false,
+      refresh_token_present: false,
+      expires_in_present: false,
+      scope: null,
+      scope_youtube_upload_present: false,
+      token_value_printed: false,
+      token_values_printed: false,
+    };
   }
   let parsed;
   try {
@@ -486,13 +522,16 @@ function readYoutubeTokenFromKeychain(args) {
   return {
     ok: true,
     found: true,
+    platform: 'youtube',
     service: validation.service,
     account: validation.account,
     access_token_present: Boolean(parsed.access_token),
     refresh_token_present: Boolean(parsed.refresh_token),
     expires_in_present: Object.prototype.hasOwnProperty.call(parsed, 'expires_in'),
     scope: parsed.scope ?? null,
+    scope_youtube_upload_present: String(parsed.scope ?? '').split(/\s+/).includes('https://www.googleapis.com/auth/youtube.upload'),
     token_value_printed: false,
+    token_values_printed: false,
   };
 }
 
@@ -570,9 +609,13 @@ function tokenSelfTest() {
   if (addArgs.some((item) => typeof item !== 'string') || findArgs.some((item) => typeof item !== 'string')) {
     throw new Error('Keychain command builders returned non-string argv items.');
   }
+  const summaryPlan = JSON.parse(runAsText(['keychain-summary-youtube-token', 'keychain://video-orchestrator/youtube/example-account-placeholder', '--confirm-real-keychain-read']));
+  if (!summaryPlan.ok || summaryPlan.found !== false || summaryPlan.token_value_printed !== false || summaryPlan.token_values_printed !== false || summaryPlan.scope_youtube_upload_present !== false) {
+    throw new Error('keychain summary missing-case failed.');
+  }
   console.log(JSON.stringify({
     ok: true,
-    checked: ['exchange-youtube-code', 'keychain-write-youtube-token', 'keychain-read-youtube-token', 'keychain-delete-youtube-token'],
+    checked: ['exchange-youtube-code', 'keychain-write-youtube-token', 'keychain-read-youtube-token', 'keychain-summary-youtube-token', 'keychain-delete-youtube-token'],
     confirm_gate_refusal: missingConfirm.ok === false,
     callback_redaction_ok: !redacted.includes('four'),
     sample_config_placeholder: true,
@@ -700,17 +743,21 @@ function selfTest() {
   if (!/REDACTED/.test(redacted)) {
     throw new Error('redaction did not redact expected values.');
   }
-  const readPlan = JSON.parse(runAsText(['dry-run-keychain-read', 'keychain://video-orchestrator/youtube/example-account-placeholder']));
-  if (readPlan.secret_value !== '[NOT_READ]' || readPlan.ok !== true) {
-    throw new Error('dry-run-keychain-read failed.');
+  const readPlan = JSON.parse(runAsText(['keychain-summary-youtube-token', 'keychain://video-orchestrator/youtube/example-account-placeholder', '--confirm-real-keychain-read']));
+  if (readPlan.ok !== true || readPlan.found !== false || readPlan.token_values_printed !== false || readPlan.scope_youtube_upload_present !== false) {
+    throw new Error('keychain-summary-youtube-token failed.');
   }
   const writePlan = JSON.parse(runAsText(['dry-run-keychain-write-placeholder', 'keychain://video-orchestrator/youtube/example-account-placeholder']));
   if (writePlan.secret_value !== '[PLACEHOLDER_NOT_WRITTEN]' || writePlan.ok !== true) {
     throw new Error('dry-run-keychain-write-placeholder failed.');
   }
+  const summaryMissing = readYoutubeTokenSummary(['keychain://video-orchestrator/youtube/example-account-placeholder', '--confirm-real-keychain-read']);
+  if (!summaryMissing.ok || summaryMissing.found !== false || summaryMissing.token_value_printed !== false) {
+    throw new Error('keychain summary missing-case failed.');
+  }
   console.log(JSON.stringify({
     ok: true,
-    checked: ['validate-ref', 'redact', 'dry-run-keychain-read', 'dry-run-keychain-write-placeholder'],
+    checked: ['validate-ref', 'redact', 'keychain-summary-youtube-token', 'dry-run-keychain-write-placeholder'],
     redacted_preview: redacted.slice(0, 120),
   }, null, 2));
 }

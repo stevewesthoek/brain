@@ -467,6 +467,29 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - Future upload work can validate the OAuth/token boundary safely
 - Manual fallback remains intact until explicit upload approval
 
+### Phase 3E-D: Credential-Backed YouTube Upload Preflight (June 20 – July 15)
+**Goal:** Verify Keychain-backed credential presence and youtube.upload scope readiness during dry-run preflight without enabling upload
+
+**Deliverables:**
+- Redacted Keychain summary command for YouTube credentials
+- Worker support for credential-backed dry-run preflight metadata
+- Scope-readiness reporting for `youtube.upload`
+- Sample credential-backed dry-run job config and runbook
+
+**Behavior:**
+- `credential_preflight_only: true` may trigger a redacted Keychain summary
+- Missing or malformed credentials block safely but do not dead-letter
+- No upload implementation
+
+**Testing:**
+- [ ] Redacted Keychain summary reports token presence without values
+- [ ] Worker merges credential-backed preflight metadata safely
+- [ ] No upload or YouTube API calls occur
+
+**Success Criteria:**
+- YouTube dry-run jobs can verify credential readiness without exposing secrets
+- Credential-backed preflight remains separate from the eventual upload phase
+
 ### Phase 3X: Optional oMLX Local LLM Provider MVP (June 20 – July 15)
 **Goal:** Add a narrow local-only text provider for metadata variants without making oMLX required
 

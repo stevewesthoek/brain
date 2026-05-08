@@ -180,6 +180,21 @@ type YouTubeDryRunConfig = {
   public_stats_viewable?: boolean;
 };
 
+type YouTubeCredentialSummary = {
+  ok: boolean;
+  found?: boolean;
+  platform?: string;
+  service?: string;
+  account?: string;
+  access_token_present?: boolean;
+  refresh_token_present?: boolean;
+  expires_in_present?: boolean;
+  scope?: string | null;
+  scope_youtube_upload_present?: boolean;
+  token_value_printed?: boolean;
+  error?: string;
+};
+
 type FormatSpec = {
   format_key: string;
   target_platforms: string[];
@@ -938,29 +953,42 @@ export class VideoOrchestratorWorker {
           metadata: validation.metadata,
         };
       },
-      validateCredentials: async (context) => ({
-        status: 'dry_run',
-        adapter_mode: 'api',
-        platform: context.target.platform,
-        package_target: context.target.package_target,
-        message: 'YouTube credentials are intentionally not read in Phase 3C dry-run.',
-        warnings: [],
-        metadata: { credential_status: 'not_read_phase_3c' },
-      }),
-      preflight: async (context) => {
-        const validation = await this.validateYouTubeDryRunPreflight(context);
+      validateCredentials: async (context) => {
+        const credentialInspection = await this.inspectYouTubeCredentialSummary(context);
         return {
-          status: validation.blocked ? 'blocked' : 'dry_run_only',
+          status: credentialInspection.status,
           adapter_mode: 'api',
           platform: context.target.platform,
           package_target: context.target.package_target,
-          message: validation.message,
-          warnings: validation.warnings,
-          metadata: validation.metadata,
+          message: credentialInspection.message || 'YouTube credentials are intentionally not read in Phase 3C dry-run.',
+          warnings: credentialInspection.warnings,
+          metadata: {
+            credential_status: credentialInspection.metadata.credential_status ?? 'not_read_phase_3c',
+            ...credentialInspection.metadata,
+          },
+        };
+      },
+      preflight: async (context) => {
+        const validation = await this.validateYouTubeDryRunPreflight(context);
+        const credentialInspection = await this.inspectYouTubeCredentialSummary(context);
+        return {
+          status: validation.blocked || credentialInspection.blocked ? 'blocked' : 'dry_run_only',
+          adapter_mode: 'api',
+          platform: context.target.platform,
+          package_target: context.target.package_target,
+          message: credentialInspection.message || validation.message,
+          warnings: [...validation.warnings, ...credentialInspection.warnings],
+          metadata: {
+            ...validation.metadata,
+            ...credentialInspection.metadata,
+          },
         };
       },
       execute: async (context) => {
         const result = await this.buildYouTubeDryRunResult(context);
+        const credentialInspection = context.config.credential_preflight_only === true
+          ? await this.inspectYouTubeCredentialSummary(context)
+          : null;
         return {
           status: 'dry_run',
           adapter_mode: 'api',
@@ -968,8 +996,13 @@ export class VideoOrchestratorWorker {
           package_target: context.target.package_target,
           output_path: result.output_path,
           message: 'YouTube upload dry-run completed without contacting YouTube.',
-          warnings: result.warnings,
-          metadata: result.metadata,
+          warnings: credentialInspection ? [...result.warnings, ...credentialInspection.warnings] : result.warnings,
+          metadata: {
+            ...result.metadata,
+            ...(credentialInspection?.metadata ?? {}),
+            upload_performed: false,
+            network_calls: 0,
+          },
         };
       },
       pollStatus: async (context) => ({
@@ -1125,6 +1158,8 @@ export class VideoOrchestratorWorker {
         ...this.describeCredentialReference(context.config.credential_reference),
         real_oauth_enabled: false,
         real_upload_enabled: false,
+        upload_performed: false,
+        network_calls: 0,
         privacy_status: privacyStatus,
         made_for_kids: youtubeConfig.made_for_kids ?? false,
         category_id: youtubeConfig.category_id ?? null,
@@ -1173,6 +1208,8 @@ export class VideoOrchestratorWorker {
         ...this.describeCredentialReference(context.config.credential_reference),
         real_oauth_enabled: false,
         real_upload_enabled: false,
+        upload_performed: false,
+        network_calls: 0,
         idempotency_key: idempotencyKey,
         privacy_status: privacyStatus,
         title_length: context.target.title.length,
@@ -1203,6 +1240,7 @@ export class VideoOrchestratorWorker {
         ...this.describeCredentialReference(context.config.credential_reference),
         real_oauth_enabled: false,
         real_upload_enabled: false,
+        upload_performed: false,
         would_upload: true,
         platform: 'youtube',
         package_target: context.target.package_target,
@@ -1217,9 +1255,168 @@ export class VideoOrchestratorWorker {
         notify_subscribers: youtubeConfig.notify_subscribers ?? false,
         idempotency_key: idempotencyKey,
         credential_status: 'not_read_phase_3c',
+        token_values_printed: false,
         network_calls: 0,
       },
     };
+  }
+
+  private async inspectYouTubeCredentialSummary(context: PostingAdapterContext): Promise<{
+    blocked: boolean;
+    status: 'dry_run' | 'blocked';
+    message: string;
+    warnings: string[];
+    metadata: Record<string, unknown>;
+  }> {
+    const warnings: string[] = [];
+    const reference = this.optionalString(context.config.credential_reference);
+    const referenceShape = this.describeCredentialReference(reference);
+    const baseMetadata: Record<string, unknown> = {
+      credential_preflight_only: this.optionalBoolean(context.config.credential_preflight_only) ?? false,
+      ...referenceShape,
+      credential_summary_checked: false,
+      credential_found: null,
+      access_token_present: null,
+      refresh_token_present: null,
+      scope: null,
+      scope_youtube_upload_present: null,
+      expires_in_present: null,
+      token_value_printed: false,
+      token_values_printed: false,
+      upload_performed: false,
+      network_calls: 0,
+      credential_status: 'not_read_phase_3d',
+    };
+
+    if (!this.optionalBoolean(context.config.credential_preflight_only)) {
+      return {
+        blocked: false,
+        status: 'dry_run',
+        message: 'Credential-backed preflight not requested.',
+        warnings,
+        metadata: baseMetadata,
+      };
+    }
+
+    if (!reference) {
+      warnings.push('credential_reference is missing.');
+      return {
+        blocked: true,
+        status: 'blocked',
+        message: 'Missing credential reference for credential-backed preflight.',
+        warnings,
+        metadata: {
+          ...baseMetadata,
+          credential_reference_present: false,
+          credential_reference_format: 'missing',
+        },
+      };
+    }
+
+    if (!referenceShape.credential_reference_present || referenceShape.credential_reference_format !== 'valid') {
+      warnings.push('credential_reference is malformed or unsupported.');
+      return {
+        blocked: true,
+        status: 'blocked',
+        message: 'Malformed credential reference for credential-backed preflight.',
+        warnings,
+        metadata: {
+          ...baseMetadata,
+          ...referenceShape,
+          credential_summary_checked: false,
+        },
+      };
+    }
+
+    const helperPath = this.resolveCredentialHelperScript();
+    try {
+      const { stdout } = await this.runCommandChecked(process.execPath, [
+        helperPath,
+        'keychain-summary-youtube-token',
+        reference,
+        '--confirm-real-keychain-read',
+      ], { timeoutMs: 5000 });
+      const parsed = JSON.parse(stdout) as YouTubeCredentialSummary;
+      if (!parsed || parsed.ok !== true) {
+        warnings.push('Credential summary helper did not return an OK result.');
+        return {
+          blocked: true,
+          status: 'blocked',
+          message: 'Credential summary helper failed.',
+          warnings,
+          metadata: {
+            ...baseMetadata,
+            ...referenceShape,
+            credential_summary_checked: true,
+            credential_found: false,
+            access_token_present: null,
+            refresh_token_present: null,
+            scope: null,
+            scope_youtube_upload_present: null,
+            expires_in_present: null,
+          },
+        };
+      }
+      if (!parsed.found) {
+        warnings.push('No YouTube credential found for the provided reference.');
+      } else if (parsed.scope_youtube_upload_present !== true) {
+        warnings.push('Stored credential does not advertise youtube.upload scope.');
+      }
+      return {
+        blocked: parsed.found !== true,
+        status: parsed.found === true ? 'dry_run' : 'blocked',
+        message: parsed.found === true ? 'Credential-backed preflight summary read successfully.' : 'No credential found for credential-backed preflight.',
+        warnings,
+        metadata: {
+          ...baseMetadata,
+          ...referenceShape,
+          credential_summary_checked: true,
+          credential_found: parsed.found === true,
+          access_token_present: parsed.found === true ? Boolean(parsed.access_token_present) : null,
+          refresh_token_present: parsed.found === true ? Boolean(parsed.refresh_token_present) : null,
+          scope: parsed.found === true ? parsed.scope ?? null : null,
+          scope_youtube_upload_present: parsed.found === true ? Boolean(parsed.scope_youtube_upload_present) : null,
+          expires_in_present: parsed.found === true ? Boolean(parsed.expires_in_present) : null,
+          token_value_printed: false,
+          token_values_printed: false,
+          upload_performed: false,
+          network_calls: 0,
+        },
+      };
+    } catch (error) {
+      warnings.push('Credential summary helper failed; continuing without token values.');
+      return {
+        blocked: true,
+        status: 'blocked',
+        message: 'Credential summary helper could not be completed.',
+        warnings,
+        metadata: {
+          ...baseMetadata,
+          ...referenceShape,
+          credential_summary_checked: true,
+          credential_found: false,
+          access_token_present: null,
+          refresh_token_present: null,
+          scope: null,
+          scope_youtube_upload_present: null,
+          expires_in_present: null,
+          helper_error: error instanceof Error ? error.message : String(error),
+          token_values_printed: false,
+        },
+      };
+    }
+  }
+
+  private resolveCredentialHelperScript(): string {
+    const candidatePaths = [
+      path.resolve(process.cwd(), 'tools/scripts/video-orchestrator-credential-helper.mjs'),
+      path.resolve(process.cwd(), '../../tools/scripts/video-orchestrator-credential-helper.mjs'),
+      path.resolve(process.cwd(), '../tools/scripts/video-orchestrator-credential-helper.mjs'),
+    ];
+    for (const candidate of candidatePaths) {
+      if (fs.existsSync(candidate)) return candidate;
+    }
+    return candidatePaths[0];
   }
 
   private readYouTubeDryRunConfig(value: unknown): YouTubeDryRunConfig {
@@ -1646,10 +1843,11 @@ export class VideoOrchestratorWorker {
     }
   }
 
-  private async runCommandChecked(command: string, args: string[], options: { cwd?: string } = {}): Promise<CommandResult> {
+  private async runCommandChecked(command: string, args: string[], options: { cwd?: string; timeoutMs?: number } = {}): Promise<CommandResult> {
     const { stdout, stderr } = await execFileAsync(command, args, {
       cwd: options.cwd,
       maxBuffer: 100 * 1024 * 1024,
+      timeout: options.timeoutMs,
     });
     return { stdout, stderr };
   }

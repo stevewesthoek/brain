@@ -67,8 +67,9 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **3E-A** | Jun 20–Jul 15 | Keychain Credential Helper Scaffold | Validate credential references and redact logs without reading or writing secrets |
 | **3E-B** | Jun 20–Jul 15 | YouTube OAuth Setup Scaffold | Generate auth metadata and validate callback/state without token exchange |
 | **3E-C** | Jun 20–Jul 15 | YouTube OAuth Token Exchange + Keychain Prototype | Explicitly gated token exchange and Keychain storage without upload |
+| **3E-D** | Jun 20–Jul 15 | Credential-Backed YouTube Upload Preflight | Verify redacted Keychain summaries and scope readiness without upload |
 | **3X** | Jun 20–Jul 15 | Optional oMLX Local LLM Provider MVP | Add a localhost-only metadata variants provider for low-risk text tasks |
-| **3E** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete |
+| **3E-E** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
 | **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |
 
@@ -563,6 +564,58 @@ CREATE TABLE events (
 - ✅ Token self-test passes without real tokens
 - ✅ Confirmation flags are required for sensitive commands
 - ✅ Redacted summaries never print raw token values
+
+---
+
+## Phase 3E-D: Credential-Backed YouTube Upload Preflight
+
+**Timeline:** June 20–July 15, 2026 (4 weeks)  
+**Goal:** Verify redacted Keychain-backed credential readiness during YouTube dry-run preflight without upload
+
+### 3.1: Credential Summary Read
+
+**Deliverables:**
+- Redacted Keychain summary command for YouTube credentials
+- Worker support for credential-backed dry-run preflight metadata
+- Scope-readiness reporting for `youtube.upload`
+
+### 3.2: Safety Rules
+
+**Behavior:**
+- No upload implementation
+- No YouTube API calls
+- No raw token values
+- Missing or malformed credentials block safely but do not dead-letter
+
+### 3.3: Success Criteria
+- ✅ Redacted summaries report presence/absence without values
+- ✅ Worker merges credential-backed preflight metadata safely
+- ✅ Production remains upload-free in this phase
+
+---
+
+## Phase 3E-E: Authorized Posting Adapters
+
+**Timeline:** July 15–August 15, 2026 (4 weeks)  
+**Goal:** Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete
+
+### 3.1: Authorized Adapter Gate
+
+**Deliverables:**
+- Real platform adapter approval checklist
+- Explicit upload authorization gate
+- Safety review for credential handling and logging
+
+### 3.2: Safety Rules
+
+**Behavior:**
+- No upload implementation until the gate is approved
+- No Google client libraries unless explicitly required later
+- Manual upload remains the fallback path
+
+### 3.3: Success Criteria
+- ✅ Credential boundaries are approved before upload work begins
+- ✅ Authorized adapters remain separate from dry-run preflight
 
 ---
 
