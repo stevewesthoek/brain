@@ -8,6 +8,7 @@
  */
 
 import { execFile } from 'node:child_process';
+import { createHash, randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -171,6 +172,9 @@ interface PostingAdapter {
 type YouTubeDryRunConfig = {
   credential_preflight_only?: boolean;
   credential_reference?: string;
+  real_upload_approved?: boolean;
+  allow_token_refresh?: boolean;
+  token_exchange_config_path?: string;
   privacy_status?: 'private' | 'unlisted' | 'public';
   made_for_kids?: boolean;
   category_id?: string | number;
@@ -178,6 +182,17 @@ type YouTubeDryRunConfig = {
   license?: string;
   embeddable?: boolean;
   public_stats_viewable?: boolean;
+};
+
+type YouTubeCredentialPayload = {
+  access_token?: string;
+  refresh_token?: string;
+  token_type?: string;
+  expires_in?: number;
+  expires_at?: number;
+  expiry_date?: number;
+  scope?: string;
+  issued_at?: number;
 };
 
 type YouTubeCredentialSummary = {
@@ -954,7 +969,10 @@ export class VideoOrchestratorWorker {
         };
       },
       validateCredentials: async (context) => {
-        const credentialInspection = await this.inspectYouTubeCredentialSummary(context);
+        const youtubeConfig = this.readYouTubeDryRunConfig(context.config.youtube);
+        const credentialInspection = context.config.dry_run === false && this.optionalBoolean(youtubeConfig.real_upload_approved) === true
+          ? await this.inspectYouTubeUploadCredentials(context)
+          : await this.inspectYouTubeCredentialSummary(context);
         return {
           status: credentialInspection.status,
           adapter_mode: 'api',
@@ -970,7 +988,10 @@ export class VideoOrchestratorWorker {
       },
       preflight: async (context) => {
         const validation = await this.validateYouTubeDryRunPreflight(context);
-        const credentialInspection = await this.inspectYouTubeCredentialSummary(context);
+        const youtubeConfig = this.readYouTubeDryRunConfig(context.config.youtube);
+        const credentialInspection = context.config.dry_run === false && this.optionalBoolean(youtubeConfig.real_upload_approved) === true
+          ? await this.inspectYouTubeUploadCredentials(context)
+          : await this.inspectYouTubeCredentialSummary(context);
         return {
           status: validation.blocked || credentialInspection.blocked ? 'blocked' : 'dry_run_only',
           adapter_mode: 'api',
@@ -985,6 +1006,22 @@ export class VideoOrchestratorWorker {
         };
       },
       execute: async (context) => {
+        const youtubeConfig = this.readYouTubeDryRunConfig(context.config.youtube);
+        const isRealUploadRequested = context.config.dry_run === false && this.optionalBoolean(youtubeConfig.real_upload_approved) === true;
+        if (isRealUploadRequested) {
+          const uploadResult = await this.executeYouTubePrivateUpload(context);
+          return {
+            status: uploadResult.status,
+            adapter_mode: 'api',
+            platform: context.target.platform,
+            package_target: context.target.package_target,
+            output_path: uploadResult.output_path,
+            external_id: uploadResult.external_id,
+            message: uploadResult.message,
+            warnings: uploadResult.warnings,
+            metadata: uploadResult.metadata,
+          };
+        }
         const result = await this.buildYouTubeDryRunResult(context);
         const credentialInspection = context.config.credential_preflight_only === true
           ? await this.inspectYouTubeCredentialSummary(context)
@@ -1149,6 +1186,16 @@ export class VideoOrchestratorWorker {
     const descriptionLimit = platformSpec?.description_rules?.max_length ?? 5000;
     if (context.target.title.length > titleLimit) warnings.push('Title exceeds configured YouTube limit.');
     if (context.target.description.length > descriptionLimit) warnings.push('Description exceeds configured YouTube limit.');
+    const isPrivateUploadRequested = context.config.dry_run === false;
+    if (isPrivateUploadRequested && this.optionalBoolean(youtubeConfig.real_upload_approved) !== true) {
+      return { blocked: true, message: 'Private upload requires real_upload_approved=true.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (isPrivateUploadRequested && privacyStatus !== 'private') {
+      return { blocked: true, message: 'Private upload requires privacy_status=private.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (isPrivateUploadRequested && !context.target.upload_ready) {
+      return { blocked: true, message: 'Private upload requires upload_ready=true.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
     return {
       blocked: false,
       message: 'YouTube dry-run configuration validated.',
@@ -1158,6 +1205,8 @@ export class VideoOrchestratorWorker {
         ...this.describeCredentialReference(context.config.credential_reference),
         real_oauth_enabled: false,
         real_upload_enabled: false,
+        real_upload_approved: this.optionalBoolean(youtubeConfig.real_upload_approved) ?? false,
+        allow_token_refresh: this.optionalBoolean(youtubeConfig.allow_token_refresh) ?? false,
         upload_performed: false,
         network_calls: 0,
         privacy_status: privacyStatus,
@@ -1407,6 +1456,328 @@ export class VideoOrchestratorWorker {
     }
   }
 
+  private async inspectYouTubeUploadCredentials(context: PostingAdapterContext): Promise<{
+    blocked: boolean;
+    status: 'dry_run' | 'blocked';
+    message: string;
+    warnings: string[];
+    metadata: Record<string, unknown>;
+  }> {
+    const base = await this.inspectYouTubeCredentialSummary(context);
+    if (base.blocked || base.metadata.credential_found !== true) {
+      return {
+        ...base,
+        status: 'blocked',
+        message: base.message || 'Credential-backed upload preflight requires a stored credential.',
+        metadata: {
+          ...base.metadata,
+          real_upload_approved: this.optionalBoolean(this.readYouTubeDryRunConfig(context.config.youtube).real_upload_approved) ?? false,
+        },
+      };
+    }
+    const reference = this.optionalString(context.config.credential_reference);
+    if (!reference) {
+      return {
+        blocked: true,
+        status: 'blocked',
+        message: 'Missing credential reference.',
+        warnings: ['credential_reference is required for private upload.'],
+        metadata: {
+          ...base.metadata,
+          real_upload_approved: this.optionalBoolean(this.readYouTubeDryRunConfig(context.config.youtube).real_upload_approved) ?? false,
+        },
+      };
+    }
+    try {
+      const token = await this.readYoutubeCredentialPayloadFromKeychain(reference);
+      const accessTokenPresent = Boolean(token.access_token);
+      const refreshTokenPresent = Boolean(token.refresh_token);
+      const scope = String(token.scope ?? '');
+      const scopeOk = scope.split(/\s+/).includes('https://www.googleapis.com/auth/youtube.upload');
+      if (!accessTokenPresent && !refreshTokenPresent) {
+        return {
+          blocked: true,
+          status: 'blocked',
+          message: 'Stored credential is missing access and refresh tokens.',
+          warnings: ['Token payload did not contain usable token material.'],
+          metadata: {
+            ...base.metadata,
+            real_upload_approved: this.optionalBoolean(this.readYouTubeDryRunConfig(context.config.youtube).real_upload_approved) ?? false,
+            token_value_printed: false,
+            token_values_printed: false,
+            access_token_present: accessTokenPresent,
+            refresh_token_present: refreshTokenPresent,
+            scope,
+            scope_youtube_upload_present: scopeOk,
+          },
+        };
+      }
+      if (!scopeOk) {
+        return {
+          blocked: true,
+          status: 'blocked',
+          message: 'Stored credential does not include youtube.upload scope.',
+          warnings: ['youtube.upload scope is required for private upload.'],
+          metadata: {
+            ...base.metadata,
+            real_upload_approved: this.optionalBoolean(this.readYouTubeDryRunConfig(context.config.youtube).real_upload_approved) ?? false,
+            token_value_printed: false,
+            token_values_printed: false,
+            access_token_present: accessTokenPresent,
+            refresh_token_present: refreshTokenPresent,
+            scope,
+            scope_youtube_upload_present: scopeOk,
+          },
+        };
+      }
+      return {
+        blocked: false,
+        status: 'dry_run',
+        message: 'Credential summary indicates upload-capable token material is present.',
+        warnings: [],
+        metadata: {
+          ...base.metadata,
+          real_upload_approved: this.optionalBoolean(this.readYouTubeDryRunConfig(context.config.youtube).real_upload_approved) ?? false,
+          token_value_printed: false,
+          token_values_printed: false,
+          access_token_present: accessTokenPresent,
+          refresh_token_present: refreshTokenPresent,
+          scope,
+          scope_youtube_upload_present: true,
+        },
+      };
+    } catch (error) {
+      return {
+        blocked: true,
+        status: 'blocked',
+        message: 'Credential payload could not be read safely from Keychain.',
+        warnings: ['Keychain credential could not be read.'],
+        metadata: {
+          ...base.metadata,
+          real_upload_approved: this.optionalBoolean(this.readYouTubeDryRunConfig(context.config.youtube).real_upload_approved) ?? false,
+          token_value_printed: false,
+          token_values_printed: false,
+          helper_error: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
+  }
+
+  private async executeYouTubePrivateUpload(context: PostingAdapterContext): Promise<{
+    status: 'succeeded' | 'skipped' | 'blocked' | 'failed';
+    message: string;
+    warnings: string[];
+    metadata: Record<string, unknown>;
+    output_path?: string | null;
+    external_id?: string;
+  }> {
+    const config = this.readYouTubeDryRunConfig(context.config.youtube);
+    const uploadGates = await this.validateYouTubePrivateUploadGates(context);
+    if (uploadGates.blocked) {
+      return {
+        status: 'blocked',
+        message: uploadGates.message,
+        warnings: uploadGates.warnings,
+        metadata: uploadGates.metadata,
+      };
+    }
+    const idempotencyKey = await this.computeYouTubeIdempotencyKey(context);
+    const priorUpload = await this.findPriorYouTubeUpload(idempotencyKey);
+    if (priorUpload) {
+      return {
+        status: 'skipped',
+        message: 'YouTube private upload already succeeded for this idempotency key.',
+        warnings: ['Duplicate upload skipped.'],
+        external_id: priorUpload.youtube_video_id ?? undefined,
+        metadata: {
+          ...uploadGates.metadata,
+          idempotency_key: idempotencyKey,
+          already_uploaded: true,
+          youtube_video_id: priorUpload.youtube_video_id ?? null,
+          upload_performed: false,
+          network_calls: 0,
+          token_value_printed: false,
+          token_values_printed: false,
+          manual_fallback_available: true,
+        },
+      };
+    }
+    const reference = this.optionalString(context.config.credential_reference);
+    if (!reference) {
+      return {
+        status: 'blocked',
+        message: 'Credential reference is required for private upload.',
+        warnings: ['Missing credential reference.'],
+        metadata: { ...uploadGates.metadata, idempotency_key: idempotencyKey, token_value_printed: false, token_values_printed: false },
+      };
+    }
+    try {
+      const tokenSummary = await this.readYoutubeCredentialPayloadFromKeychain(reference);
+      if (!tokenSummary.access_token && !tokenSummary.refresh_token) {
+        return {
+          status: 'blocked',
+          message: 'Keychain token payload is missing both access and refresh tokens.',
+          warnings: ['Token payload unusable.'],
+          metadata: { ...uploadGates.metadata, idempotency_key: idempotencyKey, token_value_printed: false, token_values_printed: false },
+        };
+      }
+      const now = Date.now();
+      let accessToken = tokenSummary.access_token ?? null;
+      const expiresAt = tokenSummary.expires_at ?? tokenSummary.expiry_date ?? (tokenSummary.issued_at && tokenSummary.expires_in ? tokenSummary.issued_at + (tokenSummary.expires_in * 1000) : null);
+      const accessTokenExpired = Boolean(expiresAt && expiresAt <= now);
+      if ((!accessToken || accessTokenExpired) && tokenSummary.refresh_token) {
+        if (this.optionalBoolean(config.allow_token_refresh) !== true) {
+          return {
+            status: 'blocked',
+            message: 'Access token is missing or expired and refresh is not explicitly enabled.',
+            warnings: ['Token refresh disabled for this job.'],
+            metadata: { ...uploadGates.metadata, idempotency_key: idempotencyKey, token_value_printed: false, token_values_printed: false },
+          };
+        }
+        const refreshed = await this.refreshYoutubeAccessToken(context, tokenSummary.refresh_token);
+        accessToken = refreshed.access_token;
+        await this.writeYoutubeCredentialPayloadToKeychain(reference, refreshed);
+      }
+      if (!accessToken) {
+        return {
+          status: 'blocked',
+          message: 'No access token available for upload.',
+          warnings: ['Access token missing.'],
+          metadata: { ...uploadGates.metadata, idempotency_key: idempotencyKey, token_value_printed: false, token_values_printed: false },
+        };
+      }
+
+      const videoPath = context.target.video_path;
+      const videoBytes = await fs.promises.readFile(videoPath);
+      const videoMimeType = this.detectVideoMimeType(videoPath);
+      const uploadUrl = new URL('https://www.googleapis.com/upload/youtube/v3/videos');
+      uploadUrl.searchParams.set('uploadType', 'multipart');
+      uploadUrl.searchParams.set('part', 'snippet,status');
+      const boundary = `video-orchestrator-${randomBytes(16).toString('hex')}`;
+      const body = this.buildMultipartRelatedBody({
+        title: context.target.title,
+        description: context.target.description,
+        tags: context.target.tags,
+        categoryId: String(config.category_id ?? '22'),
+        privacyStatus: 'private',
+        madeForKids: this.optionalBoolean(config.made_for_kids) ?? false,
+      }, videoBytes, videoMimeType, boundary);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000);
+      try {
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': `multipart/related; boundary=${boundary}`,
+        },
+        body: body as unknown as BodyInit,
+        signal: controller.signal,
+      });
+      const responseText = await response.text();
+      if (!response.ok) {
+        return {
+          status: 'failed',
+          message: `YouTube upload returned HTTP ${response.status}.`,
+          warnings: ['Upload request failed.'],
+          metadata: {
+            ...uploadGates.metadata,
+            idempotency_key: idempotencyKey,
+            token_value_printed: false,
+            token_values_printed: false,
+            upload_performed: true,
+            network_calls: 1,
+            quota_cost_assumption: 1600,
+            upload_endpoint: 'videos.insert',
+            helper_error: this.redactText(responseText.slice(0, 1000)),
+          },
+        };
+      }
+      const parsed = JSON.parse(responseText || '{}') as { id?: string };
+      if (!parsed.id) {
+        return {
+          status: 'failed',
+          message: 'YouTube upload response did not include a video ID.',
+          warnings: ['Upload response missing id.'],
+          metadata: {
+            ...uploadGates.metadata,
+            idempotency_key: idempotencyKey,
+            token_value_printed: false,
+            token_values_printed: false,
+            upload_performed: true,
+            network_calls: 1,
+            quota_cost_assumption: 1600,
+            upload_endpoint: 'videos.insert',
+          },
+        };
+      }
+      await this.emitEvent(context.job, 'youtube_private_upload_succeeded', {
+        youtube_video_id: parsed.id,
+        privacy_status: 'private',
+        idempotency_key: idempotencyKey,
+        quota_cost_assumption: 1600,
+        upload_endpoint: 'videos.insert',
+        token_value_printed: false,
+        manual_fallback_available: true,
+      });
+      return {
+        status: 'succeeded',
+        message: 'Private YouTube upload succeeded.',
+        warnings: [],
+        external_id: parsed.id,
+        metadata: {
+          ...uploadGates.metadata,
+          youtube_video_id: parsed.id,
+          privacy_status: 'private',
+          idempotency_key: idempotencyKey,
+          quota_cost_assumption: 1600,
+          upload_endpoint: 'videos.insert',
+          upload_performed: true,
+          network_calls: 1,
+          token_value_printed: false,
+          token_values_printed: false,
+          manual_fallback_available: true,
+        },
+      };
+      } catch (error) {
+      return {
+        status: 'failed',
+        message: 'Private YouTube upload failed.',
+        warnings: ['Upload failed before completion.'],
+        metadata: {
+          ...uploadGates.metadata,
+          idempotency_key: idempotencyKey,
+          token_value_printed: false,
+          token_values_printed: false,
+          upload_performed: true,
+          network_calls: 1,
+          quota_cost_assumption: 1600,
+          upload_endpoint: 'videos.insert',
+          helper_error: this.redactText(error instanceof Error ? error.message : String(error)),
+        },
+      };
+      } finally {
+        clearTimeout(timeout);
+      }
+    } catch (error) {
+      return {
+        status: 'blocked',
+        message: 'Private YouTube upload could not be completed safely.',
+        warnings: ['Credential or upload setup failed.'],
+        metadata: {
+          ...uploadGates.metadata,
+          idempotency_key: idempotencyKey,
+          token_value_printed: false,
+          token_values_printed: false,
+          helper_error: this.redactText(error instanceof Error ? error.message : String(error)),
+          upload_performed: false,
+          network_calls: 0,
+        },
+      };
+    }
+  }
+
   private resolveCredentialHelperScript(): string {
     const candidatePaths = [
       path.resolve(process.cwd(), 'tools/scripts/video-orchestrator-credential-helper.mjs'),
@@ -1417,6 +1788,202 @@ export class VideoOrchestratorWorker {
       if (fs.existsSync(candidate)) return candidate;
     }
     return candidatePaths[0];
+  }
+
+  private async validateYouTubePrivateUploadGates(context: PostingAdapterContext): Promise<{ blocked: boolean; message: string; warnings: string[]; metadata: Record<string, unknown> }> {
+    const warnings: string[] = [];
+    const youtubeConfig = this.readYouTubeDryRunConfig(context.config.youtube);
+    const privacyStatus = youtubeConfig.privacy_status ?? 'private';
+    if (context.config.dry_run === true) {
+      return { blocked: true, message: 'Private upload requires dry_run=false.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (this.optionalBoolean(youtubeConfig.real_upload_approved) !== true) {
+      return { blocked: true, message: 'real_upload_approved must be true for private upload.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (privacyStatus !== 'private') {
+      return { blocked: true, message: 'Private upload requires privacy_status=private.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (!context.target.upload_ready) {
+      return { blocked: true, message: 'Package target must be upload_ready before private upload.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (!context.target.video_path) {
+      return { blocked: true, message: 'Private upload requires a video file path.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (!context.target.title?.trim()) {
+      return { blocked: true, message: 'Private upload requires a title.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (!context.target.description?.trim()) {
+      return { blocked: true, message: 'Private upload requires a description.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    if (!await this.isRealMediaFile(context.target.video_path, { requireVideo: true })) {
+      return { blocked: true, message: 'Private upload requires a real video file.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    const credentialShape = this.describeCredentialReference(context.config.credential_reference);
+    if (!credentialShape.credential_reference_present || credentialShape.credential_reference_format !== 'valid') {
+      return { blocked: true, message: 'Valid credential reference is required for private upload.', warnings, metadata: { adapter_status: 'blocked' } };
+    }
+    return {
+      blocked: false,
+      message: 'Private upload gates validated.',
+      warnings,
+      metadata: {
+        privacy_status: 'private',
+        real_upload_approved: true,
+        upload_performed: false,
+        network_calls: 0,
+        manual_fallback_available: true,
+        ...credentialShape,
+      },
+    };
+  }
+
+  private async readYoutubeCredentialPayloadFromKeychain(reference: string): Promise<YouTubeCredentialPayload> {
+    const validation = this.parseCredentialReferenceParts(reference);
+    if (!validation) {
+      throw new Error('Invalid credential reference.');
+    }
+    const { stdout } = await execFileAsync('security', ['find-generic-password', '-s', validation.service, '-a', validation.account, '-w'], {
+      maxBuffer: 10 * 1024 * 1024,
+      timeout: 5000,
+    });
+    return JSON.parse(stdout.trim() || '{}') as YouTubeCredentialPayload;
+  }
+
+  private async writeYoutubeCredentialPayloadToKeychain(reference: string, tokenPayload: YouTubeCredentialPayload): Promise<void> {
+    const validation = this.parseCredentialReferenceParts(reference);
+    if (!validation) {
+      throw new Error('Invalid credential reference.');
+    }
+    await execFileAsync('security', ['add-generic-password', '-U', '-s', validation.service, '-a', validation.account, '-w', JSON.stringify(tokenPayload)], {
+      maxBuffer: 10 * 1024 * 1024,
+      timeout: 5000,
+    });
+  }
+
+  private async refreshYoutubeAccessToken(context: PostingAdapterContext, refreshToken: string): Promise<YouTubeCredentialPayload> {
+    const youtubeConfig = this.readYouTubeDryRunConfig(context.config.youtube);
+    const configPath = this.optionalString(youtubeConfig.token_exchange_config_path);
+    if (!configPath) {
+      throw new Error('Token refresh requires a token exchange config path.');
+    }
+    const config = this.readJsonFileIfExists(configPath);
+    if (!config?.client_id) {
+      throw new Error('Token refresh config missing client_id.');
+    }
+    const body = new URLSearchParams();
+    body.set('client_id', String(config.client_id));
+    body.set('grant_type', 'refresh_token');
+    body.set('refresh_token', refreshToken);
+    if (config.client_secret) body.set('client_secret', String(config.client_secret));
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    if (!response.ok) {
+      throw new Error(`Token refresh failed with HTTP ${response.status}.`);
+    }
+    const payload = await response.json() as YouTubeCredentialPayload;
+    if (!payload.access_token) {
+      throw new Error('Token refresh response missing access_token.');
+    }
+    return {
+      ...payload,
+      refresh_token: payload.refresh_token ?? refreshToken,
+      token_type: payload.token_type ?? 'Bearer',
+      scope: payload.scope ?? 'https://www.googleapis.com/auth/youtube.upload',
+    };
+  }
+
+  private async findPriorYouTubeUpload(idempotencyKey: string): Promise<{ youtube_video_id?: string } | null> {
+    const rows = await this.query<{ youtube_video_id?: string; event_data?: Record<string, unknown> }>(`
+      SELECT event_data->>'youtube_video_id' AS youtube_video_id
+      FROM events
+      WHERE event_type = 'youtube_private_upload_succeeded'
+        AND event_data->>'idempotency_key' = ${this.sqlParam(1)}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [idempotencyKey]);
+    return rows[0] ?? null;
+  }
+
+  private async computeYouTubeIdempotencyKey(context: PostingAdapterContext): Promise<string> {
+    return this.hashText([
+      String(context.job.video_id ?? context.config.video_id ?? ''),
+      context.target.platform,
+      context.target.package_target,
+      String(context.config.credential_reference ?? ''),
+      context.target.video_path,
+      context.target.title,
+    ].join('|'));
+  }
+
+  private buildMultipartRelatedBody(
+    snippet: { title: string; description: string; tags: string[]; categoryId: string; privacyStatus: string; madeForKids: boolean; },
+    videoBytes: Buffer,
+    videoMimeType: string,
+    boundary: string,
+  ): Buffer {
+    const metadataPart = Buffer.from(JSON.stringify({
+      snippet: {
+        title: snippet.title,
+        description: snippet.description,
+        tags: snippet.tags,
+        categoryId: snippet.categoryId,
+      },
+      status: {
+        privacyStatus: snippet.privacyStatus,
+        selfDeclaredMadeForKids: snippet.madeForKids,
+      },
+    }), 'utf8');
+    const prefix = Buffer.from([
+      `--${boundary}`,
+      'Content-Type: application/json; charset=UTF-8',
+      '',
+      metadataPart.toString('utf8'),
+      `--${boundary}`,
+      `Content-Type: ${videoMimeType}`,
+      'Content-Transfer-Encoding: binary',
+      '',
+    ].join('\r\n'), 'utf8');
+    const suffix = Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8');
+    return Buffer.concat([prefix, videoBytes, suffix]);
+  }
+
+  private detectVideoMimeType(filePath: string): string {
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.mov') return 'video/quicktime';
+    if (ext === '.mkv') return 'video/x-matroska';
+    if (ext === '.webm') return 'video/webm';
+    if (ext === '.avi') return 'video/x-msvideo';
+    return 'video/mp4';
+  }
+
+  private readJsonFileIfExists(filePath: string): Record<string, unknown> | null {
+    try {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8')) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+
+  private parseCredentialReferenceParts(reference: string): { platform: string; service: string; account: string } | null {
+    const match = String(reference ?? '').match(/^keychain:\/\/video-orchestrator\/([a-z0-9_-]+)\/([A-Za-z0-9._-]+)$/i);
+    if (!match) return null;
+    const platform = match[1].toLowerCase();
+    if (platform !== 'youtube') return null;
+    return {
+      platform,
+      service: `video-orchestrator/${platform}`,
+      account: match[2],
+    };
+  }
+
+  private redactText(value: unknown): string {
+    const text = String(value ?? '');
+    return text
+      .replace(/\b(access[_-]?token|refresh[_-]?token|client[_-]?secret|authorization[_-]?code)\b\s*[:=]\s*([^\s"'`]+|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/gi, '$1=[REDACTED]')
+      .replace(/\bBearer\s+[A-Za-z0-9\-._~+/]+=*/gi, 'Bearer [REDACTED]');
   }
 
   private readYouTubeDryRunConfig(value: unknown): YouTubeDryRunConfig {

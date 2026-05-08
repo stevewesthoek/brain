@@ -1,0 +1,20 @@
+{
+  "job_type": "post",
+  "video_id": "00000000-0000-4000-8000-000000000001",
+  "task_config": {
+    "video_id": "00000000-0000-4000-8000-000000000001",
+    "platform": "youtube",
+    "package_target": "long-form",
+    "adapter_mode": "api",
+    "dry_run": false,
+    "credential_reference": "keychain://video-orchestrator/youtube/example-account-placeholder",
+    "youtube": {
+      "real_upload_approved": true,
+      "privacy_status": "private",
+      "made_for_kids": false,
+      "category_id": "22",
+      "notify_subscribers": false,
+      "allow_token_refresh": false
+    }
+  }
+}

@@ -68,8 +68,8 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **3E-B** | Jun 20–Jul 15 | YouTube OAuth Setup Scaffold | Generate auth metadata and validate callback/state without token exchange |
 | **3E-C** | Jun 20–Jul 15 | YouTube OAuth Token Exchange + Keychain Prototype | Explicitly gated token exchange and Keychain storage without upload |
 | **3E-D** | Jun 20–Jul 15 | Credential-Backed YouTube Upload Preflight | Verify redacted Keychain summaries and scope readiness without upload |
-| **3X** | Jun 20–Jul 15 | Optional oMLX Local LLM Provider MVP | Add a localhost-only metadata variants provider for low-risk text tasks |
 | **3E-E** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete |
+| **3X** | Jun 20–Jul 15 | Optional oMLX Local LLM Provider MVP | Add a localhost-only metadata variants provider for low-risk text tasks |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
 | **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |
 
@@ -597,7 +597,7 @@ CREATE TABLE events (
 ## Phase 3E-E: Authorized Posting Adapters
 
 **Timeline:** July 15–August 15, 2026 (4 weeks)  
-**Goal:** Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete
+**Goal:** Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete, starting with a private-only YouTube path
 
 ### 3.1: Authorized Adapter Gate
 
@@ -605,6 +605,7 @@ CREATE TABLE events (
 - Real platform adapter approval checklist
 - Explicit upload authorization gate
 - Safety review for credential handling and logging
+- Private-only YouTube upload adapter shape
 
 ### 3.2: Safety Rules
 
@@ -612,6 +613,7 @@ CREATE TABLE events (
 - No upload implementation until the gate is approved
 - No Google client libraries unless explicitly required later
 - Manual upload remains the fallback path
+- First upload is private-only and one job at a time
 
 ### 3.3: Success Criteria
 - ✅ Credential boundaries are approved before upload work begins

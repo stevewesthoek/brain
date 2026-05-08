@@ -490,6 +490,31 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - YouTube dry-run jobs can verify credential readiness without exposing secrets
 - Credential-backed preflight remains separate from the eventual upload phase
 
+### Phase 3E-E: First Private YouTube Upload (July 15 – August 15)
+**Goal:** Upload exactly one private YouTube video with explicit approval, one account, and one package target
+
+**Deliverables:**
+- Private-only YouTube upload adapter path
+- One-job upload gating, idempotency, and private-fallback behavior
+- Keychain token read and optional refresh path
+- Private upload success/failure audit metadata
+
+**Behavior:**
+- `dry_run` must be false
+- `real_upload_approved` must be true
+- privacy remains private-only
+- no thumbnails, captions, bulk, or scheduling
+
+**Testing:**
+- [ ] Private-only upload succeeds for one approved job
+- [ ] Public and unlisted uploads are blocked
+- [ ] Duplicate idempotency skips
+- [ ] Manual fallback remains available
+
+**Success Criteria:**
+- One private YouTube upload can be executed safely
+- The adapter stays narrow and manually gated
+
 ### Phase 3X: Optional oMLX Local LLM Provider MVP (June 20 – July 15)
 **Goal:** Add a narrow local-only text provider for metadata variants without making oMLX required
 
