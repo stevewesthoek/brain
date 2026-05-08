@@ -1,0 +1,121 @@
+{
+  "formats": [
+    {
+      "format_key": "landscape_1920x1080_16x9",
+      "target_platforms": [
+        "youtube/long-form",
+        "linkedin/feed",
+        "facebook/feed"
+      ],
+      "aspect_ratio": "16:9",
+      "resolution": "1920x1080",
+      "safe_area": {
+        "mode": "canonical_timeline",
+        "description": "Full frame is safe. Edges (20px padding) may be cut on some devices. Essential content within 1850x1020.",
+        "safe_zone_x_percent": 5,
+        "safe_zone_y_percent": 5
+      },
+      "codec": "h264",
+      "audio_codec": "aac",
+      "container": "mp4",
+      "bitrate_target_kbps": 5000,
+      "fps": 24,
+      "rendering_mode_default": "canonical_timeline",
+      "captions_mode_default": "external_srt",
+      "notes": "Standard HD landscape. Optimize for desktop playback. YouTube long-form preferred format."
+    },
+    {
+      "format_key": "vertical_1080x1920_9x16",
+      "target_platforms": [
+        "youtube/shorts",
+        "tiktok/feed",
+        "instagram/reels"
+      ],
+      "aspect_ratio": "9:16",
+      "resolution": "1080x1920",
+      "safe_area": {
+        "mode": "canonical_timeline",
+        "description": "Mobile-first. Safe area is center 1040x1890 (content that fits all devices). Avoid UI in top/bottom 100px.",
+        "safe_zone_x_percent": 3,
+        "safe_zone_y_percent": 5
+      },
+      "codec": "h264",
+      "audio_codec": "aac",
+      "container": "mp4",
+      "bitrate_target_kbps": 3500,
+      "fps": 30,
+      "rendering_mode_default": "canonical_timeline",
+      "captions_mode_default": "hardcoded_burned",
+      "notes": "Vertical short-form. Designed for mobile phones. TikTok Shorts require 9:16 aspect ratio. Bitrate optimized for mobile networks."
+    },
+    {
+      "format_key": "square_1080x1080_1x1",
+      "target_platforms": [
+        "instagram/feed",
+        "bluesky/feed",
+        "x/feed"
+      ],
+      "aspect_ratio": "1:1",
+      "resolution": "1080x1080",
+      "safe_area": {
+        "mode": "simple_transform",
+        "description": "Square format. Edges 10px on all sides may be cut. Safe area is center 1060x1060.",
+        "safe_zone_x_percent": 2,
+        "safe_zone_y_percent": 2
+      },
+      "codec": "h264",
+      "audio_codec": "aac",
+      "container": "mp4",
+      "bitrate_target_kbps": 2500,
+      "fps": 24,
+      "rendering_mode_default": "simple_transform",
+      "captions_mode_default": "hardcoded_burned",
+      "notes": "Square format for social media feed. Useful for image-heavy content. Can be extracted from 16:9 via center-safe crop or resized from 9:16."
+    },
+    {
+      "format_key": "portrait_1080x1350_4x5",
+      "target_platforms": [
+        "instagram/feed"
+      ],
+      "aspect_ratio": "4:5",
+      "resolution": "1080x1350",
+      "safe_area": {
+        "mode": "canonical_timeline",
+        "description": "Instagram feed optimal. Safe area is center 1050x1320. Avoid critical content within 20px of edges.",
+        "safe_zone_x_percent": 2,
+        "safe_zone_y_percent": 2
+      },
+      "codec": "h264",
+      "audio_codec": "aac",
+      "container": "mp4",
+      "bitrate_target_kbps": 3000,
+      "fps": 24,
+      "rendering_mode_default": "canonical_timeline",
+      "captions_mode_default": "hardcoded_burned",
+      "notes": "Instagram feed preferred aspect ratio. Taller than square, shorter than vertical. Optimized for portrait phone screens."
+    },
+    {
+      "format_key": "lightweight_1280x720_16x9",
+      "target_platforms": [
+        "x/feed",
+        "bluesky/feed"
+      ],
+      "aspect_ratio": "16:9",
+      "resolution": "1280x720",
+      "safe_area": {
+        "mode": "simple_transform",
+        "description": "Lightweight HD. Safe area is center 1250x700. Edges 15px may be cut.",
+        "safe_zone_x_percent": 2,
+        "safe_zone_y_percent": 2
+      },
+      "codec": "h264",
+      "audio_codec": "aac",
+      "container": "mp4",
+      "bitrate_target_kbps": 2000,
+      "fps": 24,
+      "rendering_mode_default": "simple_transform",
+      "captions_mode_default": "hardcoded_burned",
+      "notes": "Lower bitrate HD variant for bandwidth-constrained platforms. Useful for X/Bluesky where file size matters. Can be downscaled from 1920x1080."
+    }
+  ]
+}

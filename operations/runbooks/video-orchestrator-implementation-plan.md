@@ -1,1932 +1,554 @@
-# Video Orchestrator — Detailed Implementation Plan
+# Video Orchestrator — Implementation Plan (Revised)
 
-**Date:** 2026-05-08  
-**Status:** Ready for review (documentation complete, no execution yet)  
-**Architecture:** 100% local on Mac mini M4 Pro  
+**Date:** 2026-05-08 (Post-Review)  
+**Status:** Detailed implementation guide — ready for phase-by-phase execution  
+**Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
-**Cost:** $0 (local infrastructure only)
+**Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
 
 ---
 
 ## Executive Summary
 
-Complete local-only implementation of multi-platform video orchestrator. Everything runs on Mac mini M4 Pro. Full control, zero cloud dependencies, zero ongoing costs after initial setup.
+Revised implementation plan for a local-first video production studio. The system will:
+- **Generate production-ready packages** (locally, on Mac mini)
+- **Publish through authorized adapters** (API, n8n, browser-assisted, manual)
+- **Manage multi-account distribution safely** (cooldowns, duplicate prevention)
+- **Track performance** (local snapshots, optional analytics collection)
 
-**Phases:**
-- Phase 0-1: ✅ DONE (4 local models, smart routing)
-- Phase 2: Platform/format agnosticity specs (JSON-based)
-- Phase 3: Local PostgreSQL job queue + state machine
-- Phase 4: Local account registry + multi-account routing
-- Phase 5: Local LoRA fine-tuning + analytics pipeline
+**Key change from previous plan:** Separate production (local) from publishing (adapter-dependent). Phases 2A–2B deliver complete production packages; Phases 3–5 add adapters and multi-account support.
 
-**No AWS. No cloud APIs. No resilience backups. Everything scales locally.**
+**Local infrastructure cost:** $0 (excluding electricity, storage, optional paid APIs)
 
 ---
 
-## Architecture Overview
+## Architecture Overview (Revised)
 
 ```
 Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
-├─ Generation Layer (4 local models)
-│  ├─ SDXL (30-60s, 6-8GB VRAM) — 95% of work
-│  ├─ Wave (60-90s, 8-12GB VRAM) — Talking heads
-│  ├─ FLUX (2-4min, 18-20GB VRAM) — Premium (night batch)
-│  └─ Roop (30-120s, 4-8GB VRAM) — Avatars
+├─ Production Layer (Local, Always Available)
+│  ├─ 4 Local Models (SDXL, Wave, FLUX, Roop)
+│  ├─ Whisper.cpp (local transcription)
+│  ├─ PostgreSQL + Worker (job queue, state machine)
+│  ├─ FFmpeg + Templates (composition, multi-format)
+│  ├─ Safe-Zone Rendering (16:9, 9:16, 1:1, 4:5)
+│  ├─ Thumbnail Generation (via `/design` orchestrator)
+│  ├─ Manifest Assembly (production packages)
+│  └─ Account Registry (OS Keychain)
 │
-├─ Orchestration Layer (Phase 3-4)
-│  ├─ PostgreSQL job queue (Docker) — State machine
-│  ├─ Python worker process — Job execution
-│  └─ Account registry (JSON) — Multi-account routing
+├─ Publishing Layer (Adapter-Dependent, Authorization Required)
+│  ├─ YouTube Adapter (API, if oauth credentials valid)
+│  ├─ Bluesky Adapter (ATProto, if credentials valid)
+│  ├─ Manual Adapter (always available, human uploads)
+│  ├─ n8n Wrapper (optional, centralize authorized adapters)
+│  └─ Browser-Assisted (Playwright, semi-automated)
 │
-├─ Composition Layer
-│  ├─ FFmpeg — Audio/video composition
-│  └─ Remotion (optional) — Templated compositions
-│
-├─ Posting Layer
-│  ├─ n8n workflows — Platform posting
-│  └─ Account credential store (encrypted local) — Auth
-│
-└─ Analytics Layer (Phase 5)
-   ├─ Performance metrics table (local DB)
-   ├─ Learning analysis scripts
-   └─ Dashboard (local or simple web UI)
-
-All running on: Mac mini M4 Pro
-All data: Local filesystem + Docker volume
-All credentials: Local encrypted storage
-All costs: $0/month (except electricity: ~$50/month)
+└─ Analytics Layer (Local Snapshots, Optional API Integration)
+   ├─ Performance Snapshots (views, engagement)
+   ├─ Learning Engine (best-performer recommendations)
+   └─ Optional LoRA Experiments (night batch, does not block production)
 ```
 
 ---
 
-## Phase 0-1: Smart Model Routing ✅ DONE
+## Phase Structure (Revised)
 
-**Status:** Completed 2026-05-08
+### Phase 0–1: ✅ DONE
+- 4 local models installed and tested
+- Smart routing implemented
+- Resource constraints documented (85% CPU safe, thermal stable)
 
-**What's Done:**
-- ✅ SDXL installed and tested
-- ✅ Wave installed and tested
-- ✅ FLUX installed and tested
-- ✅ Roop installed and tested
-- ✅ Smart routing skill (`/video-generation-smart-router`)
-- ✅ C0 workflow integrated into `/video` orchestrator
-
-**Verification Status:**
-- [x] Each model produces expected quality
-- [x] Smart router selects optimal model for tasks
-- [x] Performance under 90% CPU verified (safe, thermal stable)
-- [x] No issues with local inference
-
-**Files:**
-- `ai/skills/custom/learned/stable-diffusion-local/SKILL.md`
-- `ai/skills/custom/learned/wave-local/SKILL.md`
-- `ai/skills/custom/learned/flux-local/SKILL.md`
-- `ai/skills/custom/learned/roop-local/SKILL.md`
-- `ai/skills/custom/learned/video-generation-smart-router/SKILL.md`
-- `ai/skills/custom/video/SKILL.md` (C0 workflow)
-
----
-
-## Phase 2: Platform & Format Agnosticity
-
-**Timeline:** May 30 — June 15, 2026 (3 weeks)  
-**Status:** Ready for implementation  
-**Cost:** $0
-
-### Phase 2.1: Platform Specs Abstraction
-
-**Deliverable:** `E2-platform-specs.json`
-
-**Location:** `~/.config/video-orchestrator/platform-specs.json`
-
-**Schema:**
-```json
-{
-  "platforms": {
-    "youtube": {
-      "name": "YouTube",
-      "posting_methods": ["studio_api", "n8n_webhook"],
-      "hashtags": {
-        "count_min": 1,
-        "count_max": 2,
-        "placement": "description"
-      },
-      "description": {
-        "max_length": 5000,
-        "format": "markdown_with_links"
-      },
-      "thumbnail": {
-        "required": true,
-        "auto_generated": false,
-        "recommended_size": "1280x720"
-      },
-      "schedule": {
-        "optimal_hours_utc": "09:00-11:00",
-        "batch_max_per_day": 50,
-        "rate_limit": "no_explicit_limit",
-        "notes": "First video on new channel has 4+ hour delay"
-      },
-      "account_fields": ["channel_id", "channel_name", "upload_method"]
-    },
-    "tiktok": {
-      "name": "TikTok",
-      "posting_methods": ["creator_api", "manual", "n8n_webhook"],
-      "hashtags": {
-        "count_min": 3,
-        "count_max": 5,
-        "placement": "caption_start"
-      },
-      "description": {
-        "max_length": 150,
-        "format": "plain_text_no_markdown"
-      },
-      "thumbnail": {
-        "required": false,
-        "auto_generated": true
-      },
-      "schedule": {
-        "optimal_hours_utc": "19:00-21:00",
-        "batch_max_per_hour": 5,
-        "batch_max_per_day": 10,
-        "rate_limit": "respect_algorithmic_penalty",
-        "notes": "Stagger posts 30min+ apart to avoid throttling"
-      },
-      "account_fields": ["handle", "account_id", "oauth_token"]
-    },
-    "instagram": {
-      "name": "Instagram Reels",
-      "posting_methods": ["graph_api", "manual", "n8n_webhook"],
-      "hashtags": {
-        "count_min": 5,
-        "count_max": 30,
-        "placement": "caption"
-      },
-      "description": {
-        "max_length": 2200,
-        "format": "plain_text"
-      },
-      "thumbnail": {
-        "required": false,
-        "auto_generated": true
-      },
-      "schedule": {
-        "optimal_hours_utc": "18:00-20:00",
-        "batch_max_per_day": 10,
-        "rate_limit": "no_explicit_limit"
-      },
-      "account_fields": ["username", "account_id", "instagram_token"]
-    },
-    "linkedin": {
-      "name": "LinkedIn",
-      "posting_methods": ["rest_api", "manual"],
-      "hashtags": {
-        "count_min": 1,
-        "count_max": 5,
-        "placement": "caption"
-      },
-      "description": {
-        "max_length": 3000,
-        "format": "plain_text_or_markdown"
-      },
-      "thumbnail": {
-        "required": false,
-        "auto_generated": true
-      },
-      "schedule": {
-        "optimal_hours_utc": "08:00-10:00",
-        "batch_max_per_day": 5,
-        "rate_limit": "no_explicit_limit"
-      },
-      "account_fields": ["page_id", "access_token"]
-    },
-    "facebook": {
-      "name": "Facebook",
-      "posting_methods": ["graph_api", "manual"],
-      "hashtags": {
-        "count_min": 1,
-        "count_max": 10,
-        "placement": "caption"
-      },
-      "description": {
-        "max_length": 63206,
-        "format": "plain_text"
-      },
-      "thumbnail": {
-        "required": false,
-        "auto_generated": true
-      },
-      "schedule": {
-        "optimal_hours_utc": "13:00-15:00",
-        "batch_max_per_day": 10,
-        "rate_limit": "no_explicit_limit"
-      },
-      "account_fields": ["page_id", "access_token"]
-    },
-    "bluesky": {
-      "name": "Bluesky",
-      "posting_methods": ["atproto_api", "manual"],
-      "hashtags": {
-        "count_min": 0,
-        "count_max": 10,
-        "placement": "caption"
-      },
-      "description": {
-        "max_length": 300,
-        "format": "plain_text"
-      },
-      "thumbnail": {
-        "required": false,
-        "auto_generated": true
-      },
-      "schedule": {
-        "optimal_hours_utc": "12:00-14:00",
-        "batch_max_per_day": 10,
-        "rate_limit": "no_explicit_limit"
-      },
-      "account_fields": ["username", "handle", "atproto_token"]
-    },
-    "x": {
-      "name": "X (Twitter)",
-      "posting_methods": ["twitter_v2_api", "manual"],
-      "hashtags": {
-        "count_min": 0,
-        "count_max": 5,
-        "placement": "caption"
-      },
-      "description": {
-        "max_length": 280,
-        "format": "plain_text"
-      },
-      "thumbnail": {
-        "required": false,
-        "auto_generated": true
-      },
-      "schedule": {
-        "optimal_hours_utc": "09:00-11:00",
-        "batch_max_per_hour": 15,
-        "batch_max_per_day": 300,
-        "rate_limit": "300_posts_per_15_minutes"
-      },
-      "account_fields": ["handle", "user_id", "bearer_token"]
-    }
-  }
-}
-```
-
-**Implementation:**
-- [x] Create `~/.config/video-orchestrator/platform-specs.json`
-- [ ] Update Workflow E2 (POST) to read from JSON
-- [ ] Add unit tests: verify E2 applies correct specs per platform
-- [ ] Validate JSON schema on startup
-
-**Testing:**
-- [ ] Test posting 1 video to each platform
-- [ ] Verify hashtag count respected
-- [ ] Verify description length enforced
-- [ ] Verify optimal posting time used for scheduling
-
----
-
-### Phase 2.2: Format Specs Abstraction
-
-**Deliverable:** `C4-format-specs.json`
-
-**Location:** `~/.config/video-orchestrator/format-specs.json`
-
-**Schema:**
-```json
-{
-  "formats": {
-    "youtube_longform": {
-      "platform": "youtube",
-      "name": "Long-form (16:9)",
-      "resolution": "1920x1080",
-      "aspect_ratio": "16:9",
-      "fps": 30,
-      "codec_video": "h264",
-      "codec_audio": "aac",
-      "bitrate_video": "5000k",
-      "bitrate_audio": "128k",
-      "container": "mp4",
-      "max_duration_seconds": null,
-      "notes": "Standard YouTube upload format"
-    },
-    "youtube_shorts": {
-      "platform": "youtube",
-      "name": "Shorts (9:16)",
-      "resolution": "1080x1920",
-      "aspect_ratio": "9:16",
-      "fps": 30,
-      "codec_video": "h264",
-      "codec_audio": "aac",
-      "bitrate_video": "2500k",
-      "bitrate_audio": "128k",
-      "container": "mp4",
-      "max_duration_seconds": 60,
-      "notes": "YouTube Shorts format"
-    },
-    "tiktok": {
-      "platform": "tiktok",
-      "name": "TikTok (9:16)",
-      "resolution": "1080x1920",
-      "aspect_ratio": "9:16",
-      "fps": 30,
-      "codec_video": "h264",
-      "codec_audio": "aac",
-      "bitrate_video": "3000k",
-      "bitrate_audio": "128k",
-      "container": "mp4",
-      "max_duration_seconds": 3600,
-      "notes": "Optimal for TikTok algorithm"
-    },
-    "instagram_reels": {
-      "platform": "instagram",
-      "name": "Instagram Reels (9:16)",
-      "resolution": "1080x1920",
-      "aspect_ratio": "9:16",
-      "fps": 30,
-      "codec_video": "h264",
-      "codec_audio": "aac",
-      "bitrate_video": "2800k",
-      "bitrate_audio": "128k",
-      "container": "mp4",
-      "max_duration_seconds": 90,
-      "notes": "Vertical format for Instagram Reels"
-    },
-    "instagram_feed": {
-      "platform": "instagram",
-      "name": "Instagram Feed (1:1)",
-      "resolution": "1080x1080",
-      "aspect_ratio": "1:1",
-      "fps": 30,
-      "codec_video": "h264",
-      "codec_audio": "aac",
-      "bitrate_video": "2500k",
-      "bitrate_audio": "128k",
-      "container": "mp4",
-      "max_duration_seconds": 60,
-      "notes": "Square format for Instagram Feed"
-    },
-    "linkedin": {
-      "platform": "linkedin",
-      "name": "LinkedIn (16:9 or 1:1)",
-      "resolution": "1920x1080",
-      "aspect_ratio": "16:9",
-      "fps": 30,
-      "codec_video": "h264",
-      "codec_audio": "aac",
-      "bitrate_video": "4000k",
-      "bitrate_audio": "128k",
-      "container": "mp4",
-      "max_duration_seconds": 600,
-      "notes": "Can also use 1:1, 16:9 preferred for desktop"
-    },
-    "facebook": {
-      "platform": "facebook",
-      "name": "Facebook (16:9 or 1:1)",
-      "resolution": "1920x1080",
-      "aspect_ratio": "16:9",
-      "fps": 30,
-      "codec_video": "h264",
-      "codec_audio": "aac",
-      "bitrate_video": "3500k",
-      "bitrate_audio": "128k",
-      "container": "mp4",
-      "max_duration_seconds": null,
-      "notes": "Flexible, multiple aspect ratios supported"
-    },
-    "bluesky": {
-      "platform": "bluesky",
-      "name": "Bluesky (16:9)",
-      "resolution": "1280x720",
-      "aspect_ratio": "16:9",
-      "fps": 30,
-      "codec_video": "h264",
-      "codec_audio": "aac",
-      "bitrate_video": "2000k",
-      "bitrate_audio": "128k",
-      "container": "mp4",
-      "max_duration_seconds": null,
-      "notes": "Desktop-friendly format"
-    },
-    "x": {
-      "platform": "x",
-      "name": "X (16:9 or 1:1)",
-      "resolution": "1280x720",
-      "aspect_ratio": "16:9",
-      "fps": 30,
-      "codec_video": "h264",
-      "codec_audio": "aac",
-      "bitrate_video": "2000k",
-      "bitrate_audio": "128k",
-      "container": "mp4",
-      "max_duration_seconds": 140,
-      "notes": "Can also use 1:1 for more prominent display"
-    },
-    "master": {
-      "platform": "internal",
-      "name": "Master (16:9)",
-      "resolution": "1920x1080",
-      "aspect_ratio": "16:9",
-      "fps": 30,
-      "codec_video": "h264",
-      "codec_audio": "aac",
-      "bitrate_video": "8000k",
-      "bitrate_audio": "192k",
-      "container": "mp4",
-      "max_duration_seconds": null,
-      "notes": "Archive quality, used as source for conversions"
-    }
-  },
-  "conversion_matrix": {
-    "master_to_youtube_longform": {
-      "input": "master",
-      "output": "youtube_longform",
-      "ffmpeg_filter": "-vf scale=1920:1080"
-    },
-    "master_to_youtube_shorts": {
-      "input": "master",
-      "output": "youtube_shorts",
-      "ffmpeg_filter": "-vf crop=1080:1920:420:0,scale=1080:1920"
-    },
-    "master_to_tiktok": {
-      "input": "master",
-      "output": "tiktok",
-      "ffmpeg_filter": "-vf crop=1080:1920:420:0,scale=1080:1920"
-    },
-    "master_to_instagram_reels": {
-      "input": "master",
-      "output": "instagram_reels",
-      "ffmpeg_filter": "-vf crop=1080:1920:420:0,scale=1080:1920"
-    },
-    "master_to_instagram_feed": {
-      "input": "master",
-      "output": "instagram_feed",
-      "ffmpeg_filter": "-vf crop=1080:1080:420:0,scale=1080:1080"
-    },
-    "master_to_linkedin": {
-      "input": "master",
-      "output": "linkedin",
-      "ffmpeg_filter": "-vf scale=1920:1080"
-    },
-    "master_to_facebook": {
-      "input": "master",
-      "output": "facebook",
-      "ffmpeg_filter": "-vf scale=1920:1080"
-    },
-    "master_to_bluesky": {
-      "input": "master",
-      "output": "bluesky",
-      "ffmpeg_filter": "-vf scale=1280:720"
-    },
-    "master_to_x": {
-      "input": "master",
-      "output": "x",
-      "ffmpeg_filter": "-vf scale=1280:720"
-    }
-  }
-}
-```
-
-**Implementation:**
-- [ ] Create `~/.config/video-orchestrator/format-specs.json`
-- [ ] Update Workflow C4 (COMPOSE) to read from JSON
-- [ ] Consolidate C4 (COMPOSE) and E4 (POST) — both use same JSON
-- [ ] Add FFmpeg filter application logic
-- [ ] Test encoding per platform
-
-**Testing:**
-- [ ] Generate master 1920×1080
-- [ ] Convert to all 9 formats in sequence
-- [ ] Verify aspect ratios correct (16:9, 9:16, 1:1)
-- [ ] Verify bitrates applied correctly
-- [ ] Benchmark encoding time per format
-
----
-
-### Phase 2.3: Account Selection (Basic)
-
-**Deliverable:** E0 workflow step (UPDATE to `/video` orchestrator)
-
-**Location:** Workflow E (POST) → Add E0 step
-
-**Implementation:**
-- [ ] Add E0.1: Ask user which platform(s) to post
-- [ ] Add E0.2: For each platform, ask which account
-- [ ] Add E0.3: Validate account exists in registry (Phase 4 prerequisite)
-- [ ] Add E0.4: Store selection in manifest
-
-**Pseudo-code:**
-```python
-def e0_account_selection(platforms: List[str]) -> Dict[str, str]:
-    """Ask user which account for each platform"""
-    manifest = {}
-    
-    for platform in platforms:
-        accounts = get_accounts_for_platform(platform)  # Phase 4
-        print(f"Which {platform} account? {[a.name for a in accounts]}")
-        selected = user_input()
-        manifest[platform] = selected
-    
-    return manifest
-```
-
-**Testing:**
-- [ ] Select YouTube account, verify posting goes to correct channel
-- [ ] Select multiple TikTok accounts, verify prompt allows multiple selection
-- [ ] Verify manifest stores correct account IDs
-
----
-
-### Phase 2.4: UGC / Product Photography Template
-
-**Deliverable:** C1f workflow template (E-commerce Product Video)
-
-**Location:** `ai/skills/custom/video/SKILL.md` → Add C1f section
-
-**Template Pattern:**
-```
-Input: product_name, description, product_image (optional)
-
-Step 1: Generate Hero Image (FLUX)
-  model: flux-local (premium quality)
-  prompt: "professional e-commerce product photo, {product_name}, studio lighting, clean white background"
-  output: hero_image.png (1920×1080)
-  cost: 2-4 min, schedule at night
-
-Step 2: Create Talking Head (Wave)
-  input: hero_image.png (as background)
-  input: narration.wav (TTS generated from product description)
-  output: talking_head.mp4 (60-90s)
-  cost: 60-90s, can run anytime
-
-Step 3: Compose Final Video (FFmpeg)
-  input: talking_head.mp4 + hero_image.png + captions.srt
-  output: ugc_video.mp4 (vertical 1080×1920, TikTok/Instagram ready)
-  cost: 30s
-
-Step 4: Post to Platforms (n8n)
-  platforms: [TikTok, Instagram Reels, YouTube Shorts]
-  scheduling: stagger 30min+ apart
-
-Total time: 3-5 min + human review
-```
-
-**Implementation:**
-- [ ] Document C1f workflow in `/video` SKILL.md
-- [ ] Create test with 3 sample products
-- [ ] Add to natural language routing table
-
-**Testing:**
-- [ ] Generate 3 product videos end-to-end
-- [ ] Verify talking head looks professional
-- [ ] Verify video uploads to 3 platforms correctly
-
----
-
-### Phase 2.5: Format Normalization Architecture (Design Only)
-
-**Deliverable:** Design document for C1z workflow (NOT IMPLEMENTED YET, defer to Phase 3)
-
-**Location:** `operations/runbooks/video-orchestrator-implementation-plan.md` → Phase 3.5
-
-**Design:**
-```
-C1z Workflow: Normalize & Convert (Master → All Formats)
-
-Current (Phase 2):
-  Compose for YouTube (1920×1080)
-  Compose for TikTok (1080×1920)
-  Compose for Instagram (1080×1080)
-  → 3x redundant composition work
-
-Proposed (Phase 3):
-  Compose master (1920×1080, highest quality)
-    ↓
-  Convert in parallel:
-    ├─ YouTube: 1920×1080 (no change)
-    ├─ TikTok: crop+scale 1080×1920
-    ├─ Instagram Reels: crop+scale 1080×1920
-    ├─ Instagram Feed: crop+scale 1080×1080
-    ├─ LinkedIn: 1920×1080 (no change)
-    ├─ Facebook: 1920×1080 (no change)
-    ├─ Bluesky: scale 1280×720
-    └─ X: scale 1280×720
-  
-Expected speedup: 45% faster (parallel conversions)
-```
-
----
-
-### Phase 2.6: Screen Recording Integration (Design Only)
-
-**Deliverable:** Design document for C1d workflow update (NOT IMPLEMENTED YET, defer to Phase 3)
-
-**Location:** `operations/runbooks/video-orchestrator-implementation-plan.md` → Phase 3.5
-
-**Design:**
-```
-C1d Workflow: Screen Recording Walkthroughs
-
-Use case: Software tutorials, product demos, UI walkthroughs
-
-Implementation:
-  1. Record screen with Playwright
-  2. Add narration (TTS or audio)
-  3. Render to MP4 with FFmpeg
-  4. Add captions (optional)
-
-Example:
-  playwright script → navigate app → record video.webm
-  ffmpeg convert → video.mp4 + audio.wav
-  caption script → video.srt
-  compose → final.mp4 (TikTok/YouTube ready)
-
-Cost: ~10 min per walkthrough + human narration
-```
-
----
-
-### Phase 2 Summary
+### Phase 2A: Production Package MVP (May 30 – June 10)
+**Goal:** One video → upload-ready packages for all defined platform targets
 
 **Deliverables:**
-- ✅ `platform-specs.json` (7 platforms, complete specs)
-- ✅ `format-specs.json` (9 formats + conversion matrix)
-- ✅ E0 workflow (account selection)
-- ✅ C1f workflow (UGC template)
-- ✅ C1z design document (format normalization, Phase 3)
-- ✅ C1d design document (screen recording, Phase 3)
-- ✅ Updated `/video` SKILL.md with all changes
+1. **Platform Specs** (`platform-specs.json`)
+   - Platform targets: YouTube, Shorts, TikTok, Instagram Reels, Instagram Feed, LinkedIn, Facebook, Bluesky, X
+   - Per-platform fields: source_url, last_verified_at, verification_frequency_days, posting_modes, adapter_status, hashtag rules, description limits, known_constraints, manual_fallback
+
+2. **Format Specs** (`format-specs.json`)
+   - 9 output formats with safe zones: 16:9 (YouTube, LinkedIn), 9:16 (TikTok, Reels, Shorts), 1:1 (Instagram Feed, Facebook), 4:5 (Instagram preferred)
+   - Per-format: resolution, aspect ratio, safe area, codec, bitrate
+
+3. **Caption Specs** (`caption-specs.json`)
+   - SRT, VTT, JSON formats
+   - Burn-in options (FFmpeg overlay)
+   - Platform-specific requirements
+
+4. **Whisper.cpp Integration**
+   - Local transcription (no API calls)
+   - Output: transcript.json, SRT, VTT
+   - Keep both raw and burned caption variants
+
+5. **Safe-Zone-Aware Rendering**
+   - Simple mode: Master 1920×1080 → FFmpeg transform to all variants (for center-safe content)
+   - Canonical mode: One timeline rendered to multiple safe-zone variants (recommended for quality)
+   - Recommendation logic: use canonical by default; use simple for simple content
+
+6. **Manifest Schema**
+   - Production manifest JSON tracks: scripts, audio, captions, renders, thumbnails, metadata per platform
+   - Upload-ready flag: true when all files present and valid
 
 **Testing:**
-- ✅ Post to 7 platforms with correct specs
-- ✅ Generate all 9 formats with correct aspect ratios
-- ✅ Account selection works
-- ✅ UGC workflow produces professional videos
+- [ ] Generate production package for YouTube longform
+- [ ] Generate production package for TikTok (9:16)
+- [ ] Verify captions (SRT, VTT) correct
+- [ ] Verify all 8 platform packages created from one source
+- [ ] Manual upload package and confirm compatibility
 
-**Cost:** $0 (all local)
+**Success Criteria:**
+- One source video generates complete production packages for all 8 target platforms
+- Each package includes: video (correct format), captions, thumbnail, metadata
+- Manifest tracks all variants and states
 
 ---
 
-## Phase 3: Job Queue + Lifecycle Tracking
-
-**Timeline:** June 15 — July 15, 2026 (4 weeks)  
-**Status:** Ready for implementation  
-**Cost:** $0
-
-### Phase 3.1: PostgreSQL Job Queue Setup
-
-**Deliverable:** Local PostgreSQL + schema
-
-**Location:** Docker container on Mac mini (port 5432)
-
-**Docker Setup:**
-```bash
-docker run -d \
-  --name video-orchestrator-db \
-  -e POSTGRES_DB=video_orchestrator \
-  -e POSTGRES_USER=orchestrator \
-  -e POSTGRES_PASSWORD=$(openssl rand -base64 32) \
-  -v ~/.local/video-orchestrator/pg-data:/var/lib/postgresql/data \
-  -p 5432:5432 \
-  postgres:15-alpine
-```
-
-**Schema:**
-```sql
-CREATE TABLE generation_jobs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  job_type VARCHAR(50) NOT NULL,
-  model VARCHAR(50) NOT NULL,
-  task_config JSONB NOT NULL,
-  status VARCHAR(20) DEFAULT 'pending',
-  pipeline_state VARCHAR(50) DEFAULT 'planned',
-  output_path VARCHAR(500),
-  error_message TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  started_at TIMESTAMP,
-  completed_at TIMESTAMP,
-  retry_count INT DEFAULT 0,
-  max_retries INT DEFAULT 3
-);
-
-CREATE TABLE job_state_log (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  job_id UUID REFERENCES generation_jobs(id),
-  state_from VARCHAR(50),
-  state_to VARCHAR(50),
-  timestamp TIMESTAMP DEFAULT NOW(),
-  notes TEXT
-);
-
-CREATE TABLE account_registry (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  platform VARCHAR(50) NOT NULL,
-  account_name VARCHAR(100) NOT NULL,
-  handle VARCHAR(200),
-  account_id VARCHAR(200),
-  daily_post_limit INT,
-  batch_post_limit INT,
-  last_posted_at TIMESTAMP,
-  posted_count_today INT DEFAULT 0,
-  status VARCHAR(20) DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE performance_metrics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  video_id UUID,
-  platform VARCHAR(50),
-  account_id UUID REFERENCES account_registry(id),
-  posted_at TIMESTAMP,
-  views INT,
-  engagement_rate FLOAT,
-  estimated_roi FLOAT,
-  model_used VARCHAR(50),
-  avatar_used VARCHAR(100),
-  hook_used VARCHAR(200),
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_jobs_status ON generation_jobs(status);
-CREATE INDEX idx_jobs_pipeline_state ON generation_jobs(pipeline_state);
-CREATE INDEX idx_account_platform ON account_registry(platform);
-CREATE INDEX idx_metrics_platform ON performance_metrics(platform);
-```
-
-**Implementation:**
-- [ ] Create Docker Compose file with PostgreSQL
-- [ ] Initialize schema on startup
-- [ ] Create local backup script (daily backup to ~/.local/video-orchestrator/backups/)
-- [ ] Add connection pooling (psycopg2-pool or sqlalchemy)
-
-**Testing:**
-- [ ] Connect to database
-- [ ] Insert test job
-- [ ] Query status
-- [ ] Verify indexes working
-
----
-
-### Phase 3.2: Python Worker Process
-
-**Deliverable:** `video_worker.py` (daemon process)
-
-**Location:** `~/.local/video-orchestrator/video_worker.py`
-
-**Responsibilities:**
-- Pull jobs from queue (status = 'pending')
-- Update status to 'running'
-- Execute job (generate image/video)
-- Update pipeline_state
-- Update status to 'completed' or 'failed'
-- Auto-retry failed jobs (exponential backoff)
-
-**Pseudo-code:**
-```python
-#!/usr/bin/env python3
-import time
-import psycopg2
-import subprocess
-import json
-from datetime import datetime
-
-class VideoWorker:
-    def __init__(self, db_connection_string):
-        self.conn_string = db_connection_string
-        self.max_retries = 3
-    
-    def run(self):
-        while True:
-            try:
-                job = self.get_next_job()
-                if not job:
-                    time.sleep(5)  # No jobs, sleep
-                    continue
-                
-                self.execute_job(job)
-            except Exception as e:
-                print(f"Worker error: {e}")
-                time.sleep(10)
-    
-    def get_next_job(self):
-        conn = psycopg2.connect(self.conn_string)
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT * FROM generation_jobs WHERE status = 'pending' ORDER BY created_at LIMIT 1"
-        )
-        job = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        return job
-    
-    def execute_job(self, job):
-        job_id, job_type, model, task_config, *_ = job
-        
-        # Update status to 'running'
-        self.update_job_status(job_id, 'running')
-        
-        try:
-            if model == 'sdxl':
-                output = self.generate_sdxl(task_config)
-            elif model == 'flux':
-                output = self.generate_flux(task_config)
-            elif model == 'wave':
-                output = self.generate_wave(task_config)
-            elif model == 'roop':
-                output = self.generate_roop(task_config)
-            
-            # Update status to 'completed'
-            self.update_job_status(job_id, 'completed', output_path=output)
-        except Exception as e:
-            # Retry or fail
-            if self.should_retry(job_id):
-                self.update_job_status(job_id, 'pending')
-            else:
-                self.update_job_status(job_id, 'failed', error_message=str(e))
-    
-    def generate_sdxl(self, task_config):
-        # Call SDXL skill
-        cmd = [
-            'python', '/path/to/stable-diffusion-local/generate.py',
-            '--prompt', task_config['prompt'],
-            '--output', task_config['output_path']
-        ]
-        subprocess.run(cmd, check=True)
-        return task_config['output_path']
-    
-    # Similar for flux, wave, roop...
-    
-    def update_job_status(self, job_id, status, output_path=None, error_message=None):
-        conn = psycopg2.connect(self.conn_string)
-        cursor = conn.cursor()
-        
-        if status == 'running':
-            cursor.execute(
-                "UPDATE generation_jobs SET status = %s, started_at = NOW() WHERE id = %s",
-                (status, job_id)
-            )
-        elif status == 'completed':
-            cursor.execute(
-                "UPDATE generation_jobs SET status = %s, completed_at = NOW(), output_path = %s WHERE id = %s",
-                (status, output_path, job_id)
-            )
-        elif status == 'failed':
-            cursor.execute(
-                "UPDATE generation_jobs SET status = %s, error_message = %s WHERE id = %s",
-                (status, error_message, job_id)
-            )
-        else:
-            cursor.execute(
-                "UPDATE generation_jobs SET status = %s WHERE id = %s",
-                (status, job_id)
-            )
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-if __name__ == '__main__':
-    worker = VideoWorker('postgresql://orchestrator:password@localhost/video_orchestrator')
-    worker.run()
-```
-
-**Implementation:**
-- [ ] Create `video_worker.py` with above logic
-- [ ] Create `launchd` agent to run worker on Mac startup
-- [ ] Add logging (to ~/.local/video-orchestrator/logs/worker.log)
-- [ ] Add health monitoring (worker alive check)
-
-**Testing:**
-- [ ] Start worker
-- [ ] Queue test job
-- [ ] Verify worker picks up job
-- [ ] Verify job completes
-- [ ] Check output file exists
-
----
-
-### Phase 3.3: Lifecycle State Machine
-
-**Deliverable:** State machine implementation in worker
-
-**States:**
-```
-planned → assets_generated → audio_ready → composed → rendered → posted → archived
-
-Transitions (valid only):
-- planned → assets_generated (after image/video generation)
-- assets_generated → audio_ready (after TTS)
-- audio_ready → composed (after FFmpeg composition)
-- composed → rendered (after platform-specific encoding)
-- rendered → posted (after posting to platform)
-- posted → archived (when moving to archive storage)
-```
-
-**Implementation:**
-```python
-def update_pipeline_state(self, job_id, new_state):
-    """Update pipeline state with validation"""
-    valid_transitions = {
-        'planned': ['assets_generated'],
-        'assets_generated': ['audio_ready'],
-        'audio_ready': ['composed'],
-        'composed': ['rendered'],
-        'rendered': ['posted'],
-        'posted': ['archived']
-    }
-    
-    current_state = self.get_pipeline_state(job_id)
-    
-    if new_state not in valid_transitions.get(current_state, []):
-        raise ValueError(f"Invalid transition: {current_state} → {new_state}")
-    
-    # Update state and log transition
-    self.log_state_transition(job_id, current_state, new_state)
-```
-
-**Mid-Pipeline Resume:**
-```python
-def resume_from_checkpoint(self, job_id):
-    """Resume job from last completed state"""
-    current_state = self.get_pipeline_state(job_id)
-    next_stage = self.get_next_stage(current_state)
-    
-    # For example, if posted but not archived, resume at archival
-    # Or if composed but not rendered, resume at encoding
-    
-    self.update_job_status(job_id, 'pending')
-    # Worker picks up and continues from next stage
-```
-
-**Testing:**
-- [ ] Queue job, verify state starts at 'planned'
-- [ ] Simulate generation, verify state → 'assets_generated'
-- [ ] Simulate failure at 'composed' stage
-- [ ] Resume job, verify it resumes at 'rendered' (not start over)
-- [ ] Verify invalid transitions are rejected
-
----
-
-### Phase 3.4: Format Normalization (Implement)
-
-**Deliverable:** C1z workflow implementation (Master → All Formats in Parallel)
-
-**Implementation:**
-```python
-def normalize_and_convert(master_video_path, target_formats=['youtube', 'tiktok', 'instagram']):
-    """
-    Convert master format to all platform-specific formats in parallel
-    
-    master_video: 1920×1080, 30fps, h264
-    target_formats: list of format keys from format-specs.json
-    """
-    import concurrent.futures
-    
-    outputs = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        futures = {}
-        
-        for format_key in target_formats:
-            format_spec = load_format_spec(format_key)
-            output_path = f"production/video/{format_key}_variant.mp4"
-            
-            future = executor.submit(
-                convert_format,
-                master_video_path,
-                format_spec,
-                output_path
-            )
-            futures[format_key] = future
-        
-        for format_key, future in futures.items():
-            try:
-                output = future.result()
-                outputs[format_key] = output
-            except Exception as e:
-                print(f"Conversion failed for {format_key}: {e}")
-    
-    return outputs
-
-def convert_format(input_path, format_spec, output_path):
-    """Convert to specific format using FFmpeg"""
-    cmd = [
-        'ffmpeg',
-        '-i', input_path,
-        '-c:v', format_spec['codec_video'],
-        '-c:a', format_spec['codec_audio'],
-        '-b:v', format_spec['bitrate_video'],
-        '-b:a', format_spec['bitrate_audio'],
-        '-vf', format_spec['ffmpeg_filter'],
-        '-y',  # overwrite
-        output_path
-    ]
-    subprocess.run(cmd, check=True)
-    return output_path
-```
-
-**Workflow Integration:**
-```
-C1z: After composition, instead of rendering to each platform separately:
-
-Old way:
-  Compose → render YouTube (1920×1080)
-  Compose → render TikTok (1080×1920)
-  Compose → render Instagram (1080×1080)
-  Total: 3x composition + 3x rendering
-
-New way:
-  Compose → master.mp4 (1920×1080, high quality)
-  Convert in parallel:
-    ├─ master → youtube.mp4 (no change)
-    ├─ master → tiktok.mp4 (crop+scale)
-    ├─ master → instagram.mp4 (crop+scale)
-  Total: 1x composition + 1x conversion to 3 formats
-```
-
-**Expected Result:** 45% faster batch processing
-
-**Testing:**
-- [ ] Generate master video
-- [ ] Run parallel conversion to 9 formats
-- [ ] Verify all outputs correct aspect ratio
-- [ ] Benchmark: sequential vs parallel (measure time + CPU)
-- [ ] Verify video quality preserved
-
----
-
-### Phase 3.5: Screen Recording Integration (Implement)
-
-**Deliverable:** C1d workflow (Playwright-based screen recording)
-
-**Implementation:**
-```python
-def record_screen_walkthrough(url, script, output_path):
-    """
-    Record screen walkthrough for tutorial/demo
-    
-    Args:
-        url: Website or app URL
-        script: List of actions (click, wait, type, etc.)
-        output_path: Output video.webm path
-    """
-    from playwright.sync_api import sync_playwright
-    import subprocess
-    
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context = browser.new_context(
-            record_video_dir='temp_videos/'  # Auto-record
-        )
-        page = context.new_page()
-        
-        # Navigate and execute script
-        page.goto(url)
-        for action in script:
-            if action['type'] == 'click':
-                page.click(action['selector'])
-            elif action['type'] == 'type':
-                page.type(action['selector'], action['text'])
-            elif action['type'] == 'wait':
-                page.wait_for_timeout(action['ms'])
-        
-        context.close()
-        browser.close()
-        
-        # Output video is in temp_videos/
-        # Convert to MP4 with FFmpeg + narration
-        add_narration_and_convert(temp_video, output_path, narration_audio)
-
-def add_narration_and_convert(input_webm, output_mp4, narration_wav):
-    """Convert webm + narration to MP4"""
-    cmd = [
-        'ffmpeg',
-        '-i', input_webm,
-        '-i', narration_wav,
-        '-c:v', 'libx264',
-        '-c:a', 'aac',
-        '-shortest',
-        output_mp4
-    ]
-    subprocess.run(cmd, check=True)
-```
-
-**Use Cases:**
-- [ ] Software tutorial (navigate app, click buttons, narrate)
-- [ ] Product demo (show feature, explain benefits)
-- [ ] UI walkthrough (step-by-step guide)
-
-**Testing:**
-- [ ] Record walkthrough of example website
-- [ ] Add narration to recording
-- [ ] Verify output video quality
-- [ ] Test with TikTok/YouTube posting
-
----
-
-### Phase 3 Summary
+### Phase 2B: Local Queue MVP (June 10 – June 20)
+**Goal:** No lost work; resume from mid-pipeline failure
 
 **Deliverables:**
-- ✅ PostgreSQL Docker container + schema
-- ✅ Python worker process (daemon)
-- ✅ State machine (7 states, valid transitions)
-- ✅ Mid-pipeline resume capability
-- ✅ Format normalization (C1z, parallel conversion)
-- ✅ Screen recording integration (C1d)
+
+1. **PostgreSQL Schema** (Docker Compose setup)
+   
+   Durable entity tables (production objects):
+   ```sql
+   -- Videos and scripts
+   CREATE TABLE videos (
+     id UUID PRIMARY KEY,
+     series_id UUID,
+     title TEXT,
+     video_state VARCHAR(50),  -- planned, scripted, voiced, assets_ready, captions_ready, composed, variants_ready, ready_to_post, partially_posted, posted, archived
+     created_at TIMESTAMP,
+     updated_at TIMESTAMP
+   );
+   
+   CREATE TABLE scripts (
+     id UUID PRIMARY KEY,
+     video_id UUID REFERENCES videos(id),
+     content TEXT,
+     created_at TIMESTAMP
+   );
+   
+   -- Assets and captions
+   CREATE TABLE captions (
+     id UUID PRIMARY KEY,
+     video_id UUID REFERENCES videos(id),
+     format VARCHAR(20),  -- srt, vtt, json
+     content TEXT,
+     burn_in_variant BOOLEAN,
+     created_at TIMESTAMP
+   );
+   
+   -- Renders (production outputs)
+   CREATE TABLE renders (
+     id UUID PRIMARY KEY,
+     video_id UUID REFERENCES videos(id),
+     format_key VARCHAR(50),  -- youtube_longform, tiktok, etc.
+     file_path VARCHAR(500),
+     codec VARCHAR(20),
+     bitrate VARCHAR(20),
+     resolution VARCHAR(20),
+     created_at TIMESTAMP,
+     duration_seconds INT
+   );
+   
+   -- Production packages
+   CREATE TABLE production_packages (
+     id UUID PRIMARY KEY,
+     video_id UUID REFERENCES videos(id),
+     platform VARCHAR(50),
+     manifest_path VARCHAR(500),
+     ready_to_post BOOLEAN,
+     package_state VARCHAR(50),  -- draft, ready, posted, archived
+     created_at TIMESTAMP
+   );
+   
+   -- Accounts
+   CREATE TABLE accounts (
+     id UUID PRIMARY KEY,
+     platform VARCHAR(50),
+     handle VARCHAR(200),
+     account_id VARCHAR(200),
+     daily_post_limit INT,
+     burst_limit_per_hour INT,
+     min_cooldown_minutes INT,
+     last_posted_at TIMESTAMP,
+     posted_count_today INT DEFAULT 0,
+     status VARCHAR(20),  -- active, paused, error
+     created_at TIMESTAMP
+   );
+   
+   -- Execution-only (ephemeral)
+   CREATE TABLE jobs (
+     id UUID PRIMARY KEY,
+     video_id UUID REFERENCES videos(id),
+     job_type VARCHAR(50),  -- generation, rendering, caption, posting
+     model VARCHAR(50),
+     job_state VARCHAR(20),  -- pending, leased, running, succeeded, failed, dead
+     idempotency_key VARCHAR(100),  -- for posting jobs
+     retry_count INT DEFAULT 0,
+     error_message TEXT,
+     created_at TIMESTAMP,
+     started_at TIMESTAMP,
+     completed_at TIMESTAMP,
+     leased_until TIMESTAMP
+   );
+   
+   -- Audit trail
+   CREATE TABLE events (
+     id UUID PRIMARY KEY,
+     entity_type VARCHAR(50),  -- video, job, account, posting_job
+     entity_id UUID,
+     event_type VARCHAR(50),  -- created, state_changed, error, retry
+     details JSONB,
+     created_at TIMESTAMP
+   );
+   
+   CREATE INDEX idx_videos_state ON videos(video_state);
+   CREATE INDEX idx_jobs_state ON jobs(job_state);
+   CREATE INDEX idx_jobs_video ON jobs(video_id);
+   CREATE INDEX idx_accounts_platform ON accounts(platform);
+   ```
+
+2. **Docker Compose Setup**
+   ```yaml
+   version: '3.8'
+   services:
+     postgres:
+       image: postgres:15-alpine
+       environment:
+         POSTGRES_DB: video_orchestrator
+         POSTGRES_USER: orchestrator
+         POSTGRES_PASSWORD: ${DB_PASSWORD}
+       volumes:
+         - ~/.local/video-orchestrator/pg-data:/var/lib/postgresql/data
+       ports:
+         - "5432:5432"
+   ```
+
+3. **Worker Process** (Python)
+   - Pull jobs from `jobs` table (job_state = 'pending')
+   - Lease job (prevent concurrent execution)
+   - Execute job (call appropriate skill: SDXL, Wave, FFmpeg, etc.)
+   - Update job_state to succeeded/failed
+   - Log events
+   - Auto-retry on failure (exponential backoff, max 3 retries)
+
+   Pseudo-code:
+   ```python
+   class VideoWorker:
+     def pull_job(self):
+       # SELECT WHERE job_state='pending' LIMIT 1 FOR UPDATE
+       # Set leased_until to now + 5 min to prevent concurrent execution
+       
+     def execute_job(self, job):
+       if job.job_type == 'generation':
+         output = self.run_model(job.model, job.config)
+       elif job.job_type == 'rendering':
+         output = self.run_ffmpeg(job.config)
+       # ... etc
+       
+     def update_state(self, job_id, state, output=None, error=None):
+       # Update jobs table
+       # Log event to events table
+   ```
+
+4. **State Transitions**
+   - Video states: planned → scripted → voiced → assets_ready → captions_ready → composed → variants_ready → ready_to_post → partially_posted → posted → archived
+   - Job states: pending → leased → running → (succeeded | failed | dead)
+   - Posting states: draft → scheduled → uploading → published | failed
+
+5. **Resumability**
+   - Query last completed state: `SELECT * FROM videos WHERE id=X`
+   - Resume from next uncompleted stage
+   - Example: If composed but not rendered, resume at rendering stage
 
 **Testing:**
-- ✅ Queue 10 jobs, execute, verify all complete
-- ✅ Simulate job failure, verify retry logic
-- ✅ Mid-pipeline failure + recovery
-- ✅ Parallel format conversion (measure 45% speedup)
-- ✅ Screen recording walkthrough end-to-end
+- [ ] Queue 5 videos
+- [ ] Worker processes all 5 successfully
+- [ ] Simulate failure at render stage
+- [ ] Resume batch: completed stages skip, failed stage retries
+- [ ] Verify event log has all transitions
 
-**Cost:** $0 (all local)
+**Success Criteria:**
+- Batch of 5 videos can fail mid-run and resume without lost work
+- All state transitions logged
+- No manual intervention needed to resume
 
 ---
 
-## Phase 4: Multi-Account + Account Agnosticity
-
-**Timeline:** July 15 — August 15, 2026 (4 weeks)  
-**Status:** Ready for implementation  
-**Cost:** $0
-
-### Phase 4.1: Account Registry
-
-**Deliverable:** `accounts.json` + credential manager
-
-**Location:** `~/.config/video-orchestrator/accounts.json` (encrypted)
-
-**Schema:**
-```json
-{
-  "accounts": [
-    {
-      "id": "yt-ch1-uuid",
-      "platform": "youtube",
-      "account_type": "channel",
-      "name": "Main Channel",
-      "handle": "@mainbrand",
-      "channel_id": "UCxxxxx",
-      "daily_post_limit": 50,
-      "batch_post_limit": 10,
-      "burst_limit_per_hour": 3,
-      "min_interval_between_posts_minutes": 30,
-      "last_posted_at": "2026-05-08T14:30:00Z",
-      "posted_count_today": 2,
-      "status": "active",
-      "auth_method": "oauth2",
-      "credentials_ref": "yt-ch1-creds",
-      "series": ["series-1", "series-2"],
-      "created_at": "2026-05-01T00:00:00Z"
-    },
-    {
-      "id": "tt-acc1-uuid",
-      "platform": "tiktok",
-      "account_type": "creator",
-      "name": "Business Account",
-      "handle": "@businesshandle",
-      "account_id": "tt123456",
-      "daily_post_limit": 10,
-      "batch_post_limit": 5,
-      "burst_limit_per_hour": 1,
-      "min_interval_between_posts_minutes": 30,
-      "last_posted_at": "2026-05-08T19:00:00Z",
-      "posted_count_today": 1,
-      "status": "active",
-      "auth_method": "creator_api",
-      "credentials_ref": "tt-acc1-creds",
-      "series": ["series-3"],
-      "created_at": "2026-04-15T00:00:00Z"
-    }
-  ],
-  "credentials": {
-    "yt-ch1-creds": {
-      "type": "oauth2",
-      "encrypted": true,
-      "keyring_ref": "video-orchestrator/youtube/ch1"
-    },
-    "tt-acc1-creds": {
-      "type": "api_token",
-      "encrypted": true,
-      "keyring_ref": "video-orchestrator/tiktok/acc1"
-    }
-  }
-}
-```
-
-**Credential Storage:**
-```bash
-# Store credentials in OS keychain (macOS Keychain)
-security add-generic-password \
-  -a "orchestrator" \
-  -D "video-orchestrator/youtube/ch1" \
-  -s "video-orchestrator/youtube/ch1" \
-  -w "$(cat oauth_token.json | base64)"
-
-# Retrieve credentials
-security find-generic-password -s "video-orchestrator/youtube/ch1" -w
-```
-
-**Implementation:**
-- [ ] Create `~/.config/video-orchestrator/accounts.json`
-- [ ] Encrypt credentials in OS keychain
-- [ ] Create account CLI: `video-accounts add --platform youtube --name "Main"`
-- [ ] Create account CLI: `video-accounts list`
-- [ ] Add validation on startup
-
-**Testing:**
-- [ ] Add 3 accounts (YouTube, TikTok, Instagram)
-- [ ] List accounts
-- [ ] Verify credentials stored securely
-- [ ] Verify account limits loaded correctly
-
----
-
-### Phase 4.2: Account Selection + F0 Workflow
-
-**Deliverable:** F0 workflow (Account Distribution)
-
-**Location:** Workflow F (PIPELINE) → Add F0 step
-
-**Implementation:**
-```python
-def f0_account_distribution(batch_episodes, platforms):
-    """
-    Select which accounts to post to for batch
-    
-    Example:
-      3 episodes, platforms: [youtube, tiktok, instagram]
-      Question: "Which accounts?"
-      Answer: {
-        "youtube": ["main"],
-        "tiktok": ["business", "personal"],
-        "instagram": ["brand-1"]
-      }
-    """
-    manifest = {"distribution": {}}
-    
-    for platform in platforms:
-        accounts = get_accounts_for_platform(platform)
-        print(f"Accounts for {platform}: {[a.name for a in accounts]}")
-        print(f"Select which? (comma-separated)")
-        selected = user_input().split(',')
-        
-        manifest["distribution"][platform] = selected
-    
-    # For each episode × each platform × each account, create job
-    for episode in batch_episodes:
-        for platform in manifest["distribution"]:
-            for account in manifest["distribution"][platform]:
-                queue_posting_job(episode, platform, account)
-    
-    return manifest
-```
-
-**Integration with F1-F6:**
-```
-F0: Select accounts + distribution
-  ↓
-F1: Check preconditions
-  - Verify account limits not exceeded
-  - Verify credentials valid
-  - Verify batch won't exceed daily limits
-  ↓
-F2-F5: Run production (same as before)
-  ↓
-F6: Post to distributed accounts
-  For each episode:
-    For each platform:
-      For each account:
-        Queue posting job
-        (Worker processes jobs in order, respecting account limits)
-```
-
-**Testing:**
-- [ ] Select YouTube main + backup
-- [ ] Select 2 TikTok accounts
-- [ ] Verify manifest created correctly
-- [ ] Verify posting jobs queued to all accounts
-- [ ] Verify account limits enforced
-
----
-
-### Phase 4.3: Account Limit Enforcement
-
-**Deliverable:** Pre-flight validation + rate limiting
-
-**Implementation:**
-```python
-def f1_validate_account_limits(batch_episodes, distribution):
-    """
-    Validate that batch won't exceed account posting limits
-    """
-    errors = []
-    
-    for platform in distribution:
-        for account_name in distribution[platform]:
-            account = get_account(platform, account_name)
-            
-            # Check daily limit
-            if account['posted_count_today'] + len(batch_episodes) > account['daily_post_limit']:
-                errors.append(
-                    f"{platform}:{account_name} daily limit "
-                    f"({account['posted_count_today']} + {len(batch_episodes)} > {account['daily_post_limit']})"
-                )
-            
-            # Check batch limit
-            if len(batch_episodes) > account['batch_post_limit']:
-                errors.append(
-                    f"{platform}:{account_name} batch limit "
-                    f"({len(batch_episodes)} > {account['batch_post_limit']})"
-                )
-    
-    if errors:
-        print("Account limit errors:")
-        for error in errors:
-            print(f"  ❌ {error}")
-        return False
-    
-    return True
-
-def apply_rate_limiting(account, scheduled_times):
-    """
-    Stagger posts to respect rate limits
-    
-    Example:
-      Account: burst_limit=1 per hour, min_interval=30min
-      Jobs: [job1, job2, job3]
-      Scheduled: [14:00, 14:30, 15:00]
-    """
-    burst_limit = account['burst_limit_per_hour']
-    min_interval = account['min_interval_between_posts_minutes']
-    
-    staggered_times = []
-    last_time = account['last_posted_at']
-    
-    for job in scheduled_times:
-        next_time = max(
-            job,  # Original time
-            last_time + timedelta(minutes=min_interval)  # Respects min interval
-        )
-        staggered_times.append(next_time)
-        last_time = next_time
-    
-    return staggered_times
-```
-
-**Testing:**
-- [ ] Post 5 videos to account with daily_limit=3 → verify 2 fail
-- [ ] Post 10 videos to account with batch_limit=5 → verify 5 succeed, 5 fail
-- [ ] Post with burst_limit=1/hour → verify posts staggered ≥30min apart
-
----
-
-### Phase 4.4: Account Affinity Scoring
-
-**Deliverable:** Affinity model + recommendations
-
-**Implementation:**
-```python
-def affinity_score(video_metadata, account):
-    """
-    Score how well a video matches an account
-    
-    Example:
-      professional_video + brand_account = 0.95 (excellent match)
-      professional_video + personal_account = 0.60 (okay match)
-      casual_video + brand_account = 0.40 (poor match)
-    """
-    style = video_metadata['style']  # 'professional', 'casual', 'educational', 'entertaining'
-    account_type = account['account_type']  # 'brand', 'personal', 'niche'
-    
-    affinity_matrix = {
-        'professional': {'brand': 0.95, 'personal': 0.50, 'niche': 0.70},
-        'casual': {'brand': 0.40, 'personal': 0.95, 'niche': 0.60},
-        'educational': {'brand': 0.85, 'personal': 0.70, 'niche': 0.95},
-        'entertaining': {'brand': 0.60, 'personal': 0.90, 'niche': 0.75}
-    }
-    
-    return affinity_matrix.get(style, {}).get(account_type, 0.5)
-
-def recommend_account_distribution(batch_episodes, accounts):
-    """
-    Recommend optimal account distribution based on affinity scores
-    """
-    recommendations = {}
-    
-    for platform in accounts:
-        recommendations[platform] = []
-        
-        for episode in batch_episodes:
-            scores = []
-            for account in accounts[platform]:
-                score = affinity_score(episode['metadata'], account)
-                scores.append((account['name'], score))
-            
-            # Sort by score, highest first
-            scores.sort(key=lambda x: x[1], reverse=True)
-            recommendations[platform].append({
-                'episode': episode['id'],
-                'ranked_accounts': scores
-            })
-    
-    return recommendations
-```
-
-**Testing:**
-- [ ] Generate professional video → verify brand accounts ranked higher
-- [ ] Generate casual video → verify personal accounts ranked higher
-- [ ] Get recommendations for 5 videos
-- [ ] Verify scores make sense
-
----
-
-### Phase 4.5: Multi-Account Parallel Posting
-
-**Deliverable:** Job distribution logic
-
-**Implementation:**
-```python
-def post_to_multiple_accounts(episode, platform, accounts):
-    """
-    Post same episode to multiple accounts on same platform in parallel
-    
-    Example:
-      episode_001 → YouTube [main, backup]
-      Create 2 posting jobs (one per account)
-      Worker processes in parallel (if VRAM allows)
-    """
-    jobs = []
-    
-    for account in accounts:
-        job = {
-            'episode_id': episode['id'],
-            'platform': platform,
-            'account': account['name'],
-            'job_type': 'post',
-            'task_config': {
-                'video_path': episode['video_path'],
-                'title': episode['title'],
-                'description': episode['description'],
-                'account_id': account['id'],
-                'credentials_ref': account['credentials_ref']
-            }
-        }
-        
-        # Queue job (worker will pick up in order)
-        queue_job(job)
-        jobs.append(job['id'])
-    
-    return jobs
-```
-
-**Integration:**
-```
-F6: Post to distributed accounts
-  For episode_001:
-    For platform youtube:
-      For account [main, backup]:
-        Queue posting job
-        (Both jobs in queue, worker processes sequentially, respects account limits)
-```
-
-**Testing:**
-- [ ] Post to 3 YouTube channels (main, backup-1, backup-2)
-- [ ] Post to 2 TikTok accounts simultaneously
-- [ ] Verify all posts appear in correct accounts
-- [ ] Verify rate limiting respected
-
----
-
-### Phase 4 Summary
+### Phase 3: Posting Adapters (Partial) (June 20 – July 15)
+**Goal:** Publish only where authorization is real; manual fallback for the rest
 
 **Deliverables:**
-- ✅ Account registry (`accounts.json`)
-- ✅ Credential storage (OS keychain)
-- ✅ F0 workflow (account distribution selection)
-- ✅ F1 account limit validation
-- ✅ Rate limiting (burst limits, min intervals)
-- ✅ Affinity scoring (video style → account type)
-- ✅ Multi-account parallel posting
+
+1. **Adapter Architecture**
+   - Abstract base class: `PostingAdapter`
+   - Interface: `validate_credentials()`, `upload(video, metadata)`, `schedule(publish_time)`, `poll_status()`
+   - Adapter registry with status per platform (supported, partial, manual_only, blocked, disabled)
+
+   Pseudo-code:
+   ```python
+   class PostingAdapter:
+     def validate_credentials(self):
+       """Check if credentials are valid"""
+       raise NotImplementedError
+     
+     def upload(self, video_path, metadata):
+       """Upload video + metadata"""
+       raise NotImplementedError
+     
+     def schedule(self, publish_time):
+       """Schedule post for future time"""
+       raise NotImplementedError
+     
+     def poll_status(self):
+       """Check publish status: uploading, processing, published, failed"""
+       raise NotImplementedError
+   
+   class YouTubeAdapter(PostingAdapter):
+     def validate_credentials(self):
+       # Check OAuth token is valid + not expired
+     
+     def upload(self, video_path, metadata):
+       # Call YouTube Data API v3: videos.insert()
+   
+   class ManualAdapter(PostingAdapter):
+     def validate_credentials(self):
+       return True  # Always available
+     
+     def upload(self, video_path, metadata):
+       # Copy to upload-packages/ folder
+       # Return "ready for manual upload"
+   ```
+
+2. **YouTube Adapter** (Phase 3 target)
+   - OAuth 2.0 flow: authenticate with Google account
+   - Upload: `youtube.videos().insert()`
+   - Metadata: title, description, tags, thumbnail, privacy (private/unlisted/public)
+   - Scheduling: publish time
+   - Polling: check upload status every 30s until published or failed
+   - Idempotency: track upload_id; prevent duplicate posts on retry
+
+3. **Bluesky Adapter** (Phase 3 target)
+   - ATProto API: create post with video embed
+   - Simple: no scheduling (real-time only)
+   - Idempotency: track post_id
+
+4. **Manual Adapter** (Always Available)
+   - Generate upload package: copy video + metadata JSON to `~/.local/video-orchestrator/upload-packages/`
+   - User manually uploads via platform web/app
+   - Tracking: user provides posted URL for analytics
+
+5. **Posting Job State Machine**
+   - States: draft → scheduled → uploading → processing → published | failed
+   - Retry logic: exponential backoff, max 3 retries
+   - Idempotency key: prevent duplicate posts on retry
+
+6. **Posting Audit Log**
+   - Table: posting_jobs (video_id, platform, account_id, adapter_mode, status, error, retry_count, timestamps)
+   - Event log: all posting attempts
 
 **Testing:**
-- ✅ Register 3+ accounts per platform
-- ✅ Select accounts for batch, verify distribution
-- ✅ Exceed daily limits, verify blocked
-- ✅ Post to 3 YouTube channels simultaneously
-- ✅ Verify affinity scores recommend correct accounts
+- [ ] YouTube adapter: valid credentials upload successfully
+- [ ] YouTube adapter: invalid credentials fail gracefully
+- [ ] Bluesky adapter: create post with video
+- [ ] Manual adapter: generate upload package
+- [ ] Audit logs show all attempts
 
-**Cost:** $0 (all local)
+**Success Criteria:**
+- Reliable publishing to 1–2 authorized platforms
+- Manual upload packages for unauthorized platforms
+- All posting attempts logged
 
 ---
 
-## Phase 5: LoRA Customization + Learning Loop
-
-**Timeline:** August 15 — September 15, 2026 (4 weeks)  
-**Status:** Ready for implementation  
-**Cost:** $0
-
-### Phase 5.1: Brand / LoRA Fine-Tuning
-
-**Deliverable:** LoRA training script + model manager
-
-**Implementation:**
-```python
-def train_lora_model(brand_name, image_dir, model_output_dir):
-    """
-    Fine-tune FLUX model on brand images
-    
-    Args:
-        brand_name: e.g., "techstartup-blue"
-        image_dir: Directory with 20-50 brand images
-        model_output_dir: Where to save fine-tuned model
-    """
-    from diffusers import StableDiffusionPipeline
-    import torch
-    
-    # Load base FLUX model
-    model = StableDiffusionPipeline.from_pretrained(
-        "black-forest-labs/FLUX.1-dev",
-        torch_dtype=torch.float16,
-        device_map="auto"
-    )
-    
-    # Fine-tune on brand images (simplified, real LoRA is more complex)
-    # This is a placeholder - actual LoRA fine-tuning requires:
-    # - Loading training images
-    # - Creating LoRA adapter
-    # - Training loop with optimizer
-    # - Saving adapter weights
-    
-    print(f"Fine-tuning {brand_name}...")
-    # (Training happens here, 4-8 GPU hours)
-    
-    # Save model
-    model.save_pretrained(model_output_dir)
-    print(f"✓ Saved fine-tuned model to {model_output_dir}")
-
-def generate_with_brand_model(brand_name, prompt, output_path):
-    """
-    Generate image with fine-tuned brand model
-    """
-    model_dir = f"~/.local/video-orchestrator/models/lora/{brand_name}"
-    
-    from diffusers import StableDiffusionPipeline
-    import torch
-    
-    model = StableDiffusionPipeline.from_pretrained(
-        model_dir,
-        torch_dtype=torch.float16,
-        device_map="auto"
-    )
-    
-    image = model(prompt).images[0]
-    image.save(output_path)
-```
-
-**Workflow Integration:**
-```
-C0: Smart Model Selection (updated)
-  When task requires "branded visuals":
-    If brand LoRA exists:
-      Use brand-fine-tuned FLUX
-    Else:
-      Use base FLUX
-```
-
-**Testing:**
-- [ ] Collect 50 brand images
-- [ ] Start fine-tuning (estimate 4-8 hours on Mac mini)
-- [ ] Generate images with fine-tuned model
-- [ ] Verify consistency with brand images
-- [ ] Compare output to base FLUX (visual quality)
-
----
-
-### Phase 5.2: Performance Metrics Collection
-
-**Deliverable:** Analytics pipeline (API integration stubs)
-
-**Implementation:**
-```python
-def collect_performance_metrics(video_id, platform, account_id):
-    """
-    Collect view counts, engagement metrics from platform APIs
-    (Requires platform API integration - stubs for now)
-    """
-    metrics = {
-        'video_id': video_id,
-        'platform': platform,
-        'account_id': account_id,
-        'collected_at': datetime.now(),
-        'views': 0,
-        'likes': 0,
-        'comments': 0,
-        'shares': 0,
-        'engagement_rate': 0.0,
-        'estimated_roi': 0.0
-    }
-    
-    if platform == 'youtube':
-        metrics.update(collect_youtube_metrics(video_id))
-    elif platform == 'tiktok':
-        metrics.update(collect_tiktok_metrics(video_id, account_id))
-    elif platform == 'instagram':
-        metrics.update(collect_instagram_metrics(video_id, account_id))
-    
-    # Store in database
-    store_metrics(metrics)
-    return metrics
-
-def calculate_engagement_rate(likes, comments, shares, views):
-    """
-    engagement_rate = (likes + comments + shares) / views
-    """
-    if views == 0:
-        return 0.0
-    return (likes + comments + shares) / views
-
-def estimate_roi(video_id, model_used, generation_time_hours):
-    """
-    Rough ROI estimation
-    
-    ROI = (engagement_rate × estimated_reach) / (generation_cost)
-    generation_cost = time × electricity_rate + model_cost
-    """
-    metrics = get_metrics(video_id)
-    engagement = metrics['engagement_rate']
-    
-    # Cost to generate (rough estimate)
-    electricity_cost = generation_time_hours * 0.15  # $0.15/hour
-    model_cost = 0.50  # Rough estimate for FLUX
-    total_cost = electricity_cost + model_cost
-    
-    if total_cost == 0:
-        return 0.0
-    
-    roi = engagement / total_cost
-    return roi
-```
-
-**Implementation:**
-- [ ] Create `performance_metrics` table (Phase 3 schema already has it)
-- [ ] Create nightly metrics collection script
-- [ ] Create analytics query examples
-- [ ] Create simple dashboard (or CSV export)
-
-**Testing:**
-- [ ] Post video to YouTube
-- [ ] Collect metrics (manual for now, API integration later)
-- [ ] Verify metrics stored correctly
-- [ ] Calculate ROI
-
----
-
-### Phase 5.3: Learning Loop & Recommendations
-
-**Deliverable:** Analysis + recommendation engine
-
-**Implementation:**
-```python
-def analyze_performance_by_model(days=30):
-    """
-    Find which model performed best in last N days
-    
-    Query all videos posted in last N days
-    Group by model_used
-    Calculate avg engagement_rate per model
-    Return ranked list
-    """
-    query = """
-      SELECT 
-        model_used,
-        COUNT(*) as videos,
-        AVG(engagement_rate) as avg_engagement,
-        AVG(views) as avg_views,
-        AVG(estimated_roi) as avg_roi
-      FROM performance_metrics
-      WHERE posted_at > NOW() - INTERVAL '%d days'
-      GROUP BY model_used
-      ORDER BY avg_engagement DESC
-    """
-    
-    results = execute_query(query % days)
-    return results
-
-def analyze_performance_by_avatar(days=30):
-    """
-    Find which avatar/character performed best
-    """
-    query = """
-      SELECT 
-        avatar_used,
-        COUNT(*) as videos,
-        AVG(engagement_rate) as avg_engagement
-      FROM performance_metrics
-      WHERE avatar_used IS NOT NULL
-        AND posted_at > NOW() - INTERVAL '%d days'
-      GROUP BY avatar_used
-      ORDER BY avg_engagement DESC
-    """
-    
-    results = execute_query(query % days)
-    return results
-
-def analyze_performance_by_hook(days=30):
-    """
-    Find which hook/opening performed best
-    """
-    query = """
-      SELECT 
-        hook_used,
-        COUNT(*) as videos,
-        AVG(engagement_rate) as avg_engagement
-      FROM performance_metrics
-      WHERE hook_used IS NOT NULL
-        AND posted_at > NOW() - INTERVAL '%d days'
-      GROUP BY hook_used
-      ORDER BY avg_engagement DESC
-    """
-    
-    results = execute_query(query % days)
-    return results
-
-def generate_recommendations():
-    """
-    Generate recommendations for next batch
-    """
-    recommendations = {}
-    
-    # Best performing model
-    models = analyze_performance_by_model(days=30)
-    if models:
-        recommendations['best_model'] = models[0]['model_used']
-        print(f"✓ Last month: {models[0]['model_used']} performed best ({models[0]['avg_engagement']:.2%} engagement)")
-    
-    # Best avatar
-    avatars = analyze_performance_by_avatar(days=30)
-    if avatars:
-        recommendations['best_avatar'] = avatars[0]['avatar_used']
-        print(f"✓ Best avatar: {avatars[0]['avatar_used']} ({avatars[0]['avg_engagement']:.2%} engagement)")
-    
-    # Best hook
-    hooks = analyze_performance_by_hook(days=30)
-    if hooks:
-        recommendations['best_hook'] = hooks[0]['hook_used']
-        print(f"✓ Best hook: {hooks[0]['hook_used']} ({hooks[0]['avg_engagement']:.2%} engagement)")
-    
-    return recommendations
-```
-
-**Integration:**
-```
-Before F0 (Account Distribution):
-  Show recommendations:
-    "Last month: FLUX performed best (3.2% engagement)"
-    "Best avatar: character-x (4.1% engagement)"
-    "Best hook: contrarian (3.8% engagement)"
-  
-  Suggest: "Use these for this batch?"
-```
-
-**Testing:**
-- [ ] Post 10 videos with different models
-- [ ] Collect metrics for all
-- [ ] Query: which model performed best?
-- [ ] Query: which avatar performed best?
-- [ ] Verify recommendations accurate
-
----
-
-### Phase 5.4: Analytics Dashboard (Optional)
-
-**Deliverable:** Simple web UI or CSV export
-
-**Simple CSV Export Approach:**
-```python
-def export_analytics_csv():
-    """
-    Export all metrics to CSV for analysis in Excel/Sheets
-    """
-    query = """
-      SELECT 
-        video_id, platform, account_id, posted_at,
-        views, likes, comments, shares, engagement_rate, estimated_roi,
-        model_used, avatar_used, hook_used
-      FROM performance_metrics
-      ORDER BY posted_at DESC
-    """
-    
-    df = pd.read_sql(query, connection)
-    df.to_csv('~/video-orchestrator-analytics.csv', index=False)
-    print("✓ Exported to ~/video-orchestrator-analytics.csv")
-```
-
-**Or Simple Web Dashboard:**
-```python
-from flask import Flask, render_template
-
-app = Flask(__name__)
-
-@app.route('/dashboard')
-def dashboard():
-    models = analyze_performance_by_model()
-    avatars = analyze_performance_by_avatar()
-    hooks = analyze_performance_by_hook()
-    
-    return render_template('dashboard.html', 
-        models=models, avatars=avatars, hooks=hooks)
-```
-
-**Testing:**
-- [ ] Export CSV
-- [ ] Verify data correct
-- [ ] Or run web dashboard on localhost:5000
-
----
-
-### Phase 5 Summary
+### Phase 4: Multi-Account Scheduler (July 15 – August 15)
+**Goal:** Safely distribute across many accounts without spam risk
 
 **Deliverables:**
-- ✅ LoRA fine-tuning pipeline
-- ✅ Performance metrics collection (API stubs)
-- ✅ Learning analysis (model, avatar, hook ranking)
-- ✅ Recommendations engine
-- ✅ Analytics dashboard (CSV or web)
+
+1. **Account Registry** (Phase 2B schema already includes)
+   - Per-account fields: platform, handle, account_id, daily_post_limit, burst_limit_per_hour, min_cooldown_minutes
+   - Credentials: stored in OS Keychain, referenced in DB
+   - Health: last_posted_at, posted_count_today, failure_streak, status
+
+2. **Content Distribution Policies**
+   - Duplicate-content policy: min_delay_same_platform (e.g., 30 min between posts to same platform)
+   - Caption variation: optional require different captions per account posting (soft constraint)
+   - Thumbnail variation: optional require different thumbnails (soft constraint)
+   - Account topic fit: soft constraint (e.g., brand accounts reject casual content)
+
+3. **F0 Workflow** (Distribution Planning)
+   User action: "Distribute this batch to YouTube, TikTok, Instagram"
+   
+   Workflow:
+   ```
+   F0.1: List available accounts per platform
+   F0.2: Ask user which accounts per platform
+   F0.3: Pre-flight validation:
+     - Adapter status (supported / manual / blocked)
+     - Credential validity
+     - Account daily limits (won't exceed)
+     - Duplicate-content policy (30 min delay)
+     - Resource availability (thermal, CPU)
+   F0.4: Output distribution manifest
+     video_id → [(platform, account), (platform, account), ...]
+   ```
+
+4. **Pre-Flight Validation** (F1 Workflow)
+   - Account limits: will batch exceed daily_post_limit?
+   - Cooldowns: enforce min_delay_same_platform
+   - Adapter status: can we actually post to this platform?
+   - Credentials: are they still valid?
+   - Resource: is Mac mini available?
+
+5. **Posting Job Scheduling**
+   - Stagger posts per account: enforce min_cooldown_minutes
+   - Respect adapter limits: YouTube quota, TikTok rate limits, X rate limits
+   - Separate thread pool: posting jobs don't compete with generation
+   - Idempotency: same posting job never posts twice
 
 **Testing:**
-- ✅ Train LoRA model on 50 brand images
-- ✅ Generate images with fine-tuned model
-- ✅ Post 10 videos, collect metrics
-- ✅ Verify recommendations generated correctly
+- [ ] Register 2+ accounts per platform
+- [ ] F0 workflow distributes batch to multiple accounts
+- [ ] Pre-flight validation blocks if limits exceeded
+- [ ] Post 10 videos across 3 YouTube accounts with 30-min cooldown respected
 
-**Cost:** $0 (all local)
-
----
-
-## Summary of All Changes
-
-### Documents Created/Updated:
-
-1. **`operations/runbooks/video-orchestrator-roadmap.md`** (UPDATED)
-   - Removed all AWS references
-   - 100% local architecture only
-   - Phase 2-5 timelines with detailed tasks per phase
-   - Cost: $0
-
-2. **`operations/runbooks/video-orchestrator-implementation-plan.md`** (NEW)
-   - Complete detailed implementation plan
-   - Phase 2: Platform/format specs JSON + account selection
-   - Phase 3: PostgreSQL job queue + state machine + format normalization
-   - Phase 4: Account routing + multi-account support + affinity scoring
-   - Phase 5: LoRA fine-tuning + learning loop + analytics
-   - 40 hours Claude Code total, $0 infrastructure cost
-
-3. **`operations/standards/video-orchestrator-holistic-review.md`** (UNCHANGED)
-   - Reference document for agnosticity analysis
-   - Still valid (no AWS changes needed)
-
-4. **`operations/standards/video-orchestrator-lessons-learned.md`** (UNCHANGED)
-   - Reference document for 9 principles
-   - Still valid
-
-5. **`ai/skills/custom/video/SKILL.md`** (TO BE UPDATED)
-   - Add E0 workflow step (account selection)
-   - Add C1f workflow (UGC template)
-   - Add C0 workflow updates (brand model support Phase 5)
-   - Add F0 workflow (account distribution)
-   - Add F1 updates (account validation)
-
-6. **`operations/decision-log.md`** (TO BE UPDATED)
-   - New entry: "2026-05-08: Local-only video orchestrator architecture"
-   - Confirms: No AWS, 100% local on Mac mini, $0 infrastructure cost
-   - Timeline: 6 months (May-Oct 2026)
-   - Rollback: Not applicable (everything local, no cloud dependencies)
+**Success Criteria:**
+- Multi-account posting without spam risk
+- Cooldowns and rate limits enforced
+- Audit logs show all posts per account
 
 ---
 
-## Ready for Review
+### Phase 5: Optimization & Optional LoRA (August 15 – September 15)
+**Goal:** Data-driven improvements; optional brand customization
 
-All documentation complete. No code execution yet. Ready for user review and approval via ChatGPT or Codex.
+**Deliverables:**
 
-**To give to ChatGPT for review, provide:**
+1. **Performance Metrics** (Local Snapshots)
+   - Table: performance_snapshots (video_id, platform, account_id, posted_at, hook, model, avatar, template_id, views, likes, comments, shares, engagement_rate, estimated_roi)
+   - Collection: Manual snapshots (no automated API polling; user enters data or optionally integrates API)
+   - Storage: Durable (not lost if Mac reboots)
 
-1. `/Users/Office/Repos/stevewesthoek/brain/operations/runbooks/video-orchestrator-roadmap.md`
-2. `/Users/Office/Repos/stevewesthoek/brain/operations/runbooks/video-orchestrator-implementation-plan.md` (THIS DOCUMENT)
-3. `/Users/Office/Repos/stevewesthoek/brain/operations/standards/video-orchestrator-holistic-review.md`
-4. `/Users/Office/Repos/stevewesthoek/brain/operations/standards/video-orchestrator-lessons-learned.md`
-5. `/Users/Office/Repos/stevewesthoek/brain/ai/skills/custom/video/SKILL.md` (sections: C0, C1f, E0, F0, F1)
+2. **Analytics Dashboard**
+   - Option A: CSV export (simple, user imports to Excel/Sheets)
+   - Option B: Simple web UI (Flask, localhost:5000) showing:
+     - Best-performing model last 30 days
+     - Best-performing hook
+     - Best-performing avatar
+     - Per-account performance
 
-**Key Questions for Reviewer:**
+3. **Learning Recommendations**
+   - Query: which model/hook/avatar performed best in last 30 days?
+   - Recommendation engine: suggest best performers for next batch
+   - User can accept or override
 
-1. Is 100% local architecture on Mac mini sustainable for 50-200 videos/week?
-2. Are the Phase 2-5 timelines realistic (3-4 weeks per phase)?
-3. Is the state machine design correct for mid-pipeline resume?
-4. Is the account routing logic sound for multi-account posting?
-5. Are there any architectural gaps or edge cases missed?
-6. Should we adjust phase priorities or timelines?
+4. **Optional LoRA Experiments** (NOT blocking production)
+   - LoRA training scripts: train on 50 brand images (optional)
+   - LoRA model manager: load fine-tuned model if available
+   - **Important:** LoRA training on 24 GB Mac mini may succeed or may hit memory limits
+   - **Fallback:** If training fails, production continues; fall back to base FLUX
+   - **Schedule:** Night batch only (90% resources available)
+
+**Testing:**
+- [ ] Collect performance snapshots for 10 videos
+- [ ] Query: best model/hook/avatar last 30 days
+- [ ] Generate recommendations
+- [ ] (Optional) Train LoRA on 50 brand images; test inference
+- [ ] (Optional) Verify production continues if LoRA training fails
+
+**Success Criteria:**
+- Metrics collected reliably
+- Learning recommendations accurate
+- (Optional) LoRA experiments working or failing gracefully
 
 ---
 
-**STATUS: DOCUMENTATION COMPLETE. AWAITING REVIEW APPROVAL BEFORE EXECUTION.**
+## Resource Scheduling & Constraints
+
+### Resource Classes
+- **cpu_light:** Metadata, script gen (negligible CPU, anytime)
+- **media_encode:** FFmpeg (2–3 parallel, limit VRAM pressure)
+- **image_fast:** SDXL (30–60s, daytime OK)
+- **image_heavy:** FLUX, LoRA (2–4 min, night preferred)
+- **talking_head:** Wave, Roop (60–120s, anytime but lighter times preferred)
+- **posting:** n8n, API, manual (separate pool, parallel to media)
+- **analytics:** Metrics, LoRA training (night batch)
+
+### Scheduling Rules
+1. **Only one heavy model job at a time** (FLUX, LoRA)
+2. **FFmpeg:** 2–3 concurrent encodes if VRAM permits
+3. **Posting:** Separate thread pool (parallel to generation)
+4. **Night mode:** ~90% CPU/GPU; safe for FLUX, LoRA
+5. **Day mode:** SDXL + posting + analytics
+6. **Monitor:** Track RAM, thermal state, CPU load; throttle if > 85%
+
+---
+
+## Testing & Validation
+
+### Phase 2A Testing
+- [ ] Generate production packages for all 8 platforms
+- [ ] Verify captions (SRT, VTT, JSON)
+- [ ] Verify safe-zone rendering
+- [ ] Manual upload one package
+
+### Phase 2B Testing
+- [ ] Queue 5 videos; all complete successfully
+- [ ] Simulate failure at render stage; resume batch
+- [ ] Verify event log complete
+
+### Phase 3 Testing
+- [ ] YouTube adapter uploads successfully (valid credentials)
+- [ ] YouTube adapter fails gracefully (invalid credentials)
+- [ ] Bluesky adapter posts successfully
+- [ ] Manual adapter generates package
+- [ ] Audit log tracks all attempts
+
+### Phase 4 Testing
+- [ ] Distribute batch to 3 YouTube accounts with 30-min cooldown
+- [ ] Cooldown enforced: posts staggered correctly
+- [ ] Pre-flight validation blocks if daily_limit exceeded
+
+### Phase 5 Testing
+- [ ] Collect performance snapshots for 10 videos
+- [ ] Recommendations generated correctly
+- [ ] (Optional) LoRA training succeeds or fails gracefully
+
+---
+
+## Known Limitations & Workarounds
+
+**Platform Publishing:**
+- TikTok direct posting requires Content Posting API product access and the official creator-info → initialize → export flow; fallback to manual upload or browser-assisted workflows when not approved.
+- Instagram/Facebook publishing depends on Meta API permissions, account type, OAuth setup, and app review; fallback to manual packages when not authorized.
+- YouTube upload quota costs and daily quota limits can change; store current quota assumptions and `last_verified_at` in platform specs instead of hardcoding a videos/day claim.
+- Bluesky video posting requires account eligibility and must respect daily video/CDN limits; verify current limits before adapter implementation.
+- X and LinkedIn publishing are constrained by API plan, permissions, and rate limits; verify before implementation.
+
+**Local Execution:**
+- Only one heavy model job at a time; serialize FLUX jobs
+- 24 GB shared memory; don't assume all 4 models concurrent
+
+**LoRA Training:**
+- May hit memory limits on 24 GB Mac; benchmark first
+- Training time: 4–8 GPU hours (night only)
+- Fallback: if training fails, fall back to base FLUX
+
+**Captions:**
+- Whisper.cpp local; quality depends on audio input
+- Fallback: optional cloud TTS/transcription API
+
+---
+
+## Next Steps
+
+1. **Phase 2A (May 30):** Start platform/format/caption specs and Whisper.cpp integration
+2. **Phase 2B (June 10):** PostgreSQL + worker setup
+3. **Phase 3 (June 20):** YouTube + Bluesky adapters
+4. **Phase 4 (July 15):** Multi-account scheduler
+5. **Phase 5 (Aug 15):** Metrics + optional LoRA
+
+All timelines assume feedback and iteration; adjust as needed.

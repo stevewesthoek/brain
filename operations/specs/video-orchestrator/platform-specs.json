@@ -1,0 +1,535 @@
+{
+  "platforms": [
+    {
+      "platform": "youtube",
+      "package_target": "long-form",
+      "source_url": "https://developers.google.com/youtube/v3",
+      "last_verified_at": "2026-05-08",
+      "verification_frequency_days": 90,
+      "posting_modes": [
+        "api",
+        "manual"
+      ],
+      "adapter_status": "partially_supported",
+      "supports_direct_publish": false,
+      "supports_scheduling": true,
+      "supports_analytics": true,
+      "requires_app_review": false,
+      "requires_paid_plan": false,
+      "manual_fallback": true,
+      "known_failure_modes": [
+        "quota_exceeded",
+        "token_expired",
+        "private_video_upload_conflict"
+      ],
+      "title_rules": {
+        "max_length": 100,
+        "requires_prefix": false,
+        "restricted_chars": []
+      },
+      "description_rules": {
+        "max_length": 5000,
+        "requires_links": false,
+        "allows_hashtags": true,
+        "allows_timestamps": true
+      },
+      "hashtags_rules": {
+        "max_count": 15,
+        "max_length_per_tag": 30,
+        "position": "description"
+      },
+      "thumbnail_rules": {
+        "formats": [
+          "jpg",
+          "png"
+        ],
+        "max_size_mb": 2,
+        "recommended_resolution": "1280x720",
+        "aspect_ratio": "16:9"
+      },
+      "caption_rules": {
+        "formats": [
+          "sbv",
+          "vtt",
+          "srt"
+        ],
+        "auto_generation_available": true,
+        "max_caption_tracks": 255,
+        "supported_languages": "all"
+      },
+      "account_targeting_notes": "OAuth2 required. Verify channel is not restricted (no community strikes). Test with unlisted video first.",
+      "manual_upload_instructions": "Log into YouTube Studio → Create → Upload video → Fill title/description/tags → Set visibility to Private/Unlisted → Add captions → Upload thumbnail → Save"
+    },
+    {
+      "platform": "youtube",
+      "package_target": "shorts",
+      "source_url": "https://developers.google.com/youtube/v3",
+      "last_verified_at": "2026-05-08",
+      "verification_frequency_days": 90,
+      "posting_modes": [
+        "api",
+        "manual"
+      ],
+      "adapter_status": "partially_supported",
+      "supports_direct_publish": false,
+      "supports_scheduling": true,
+      "supports_analytics": true,
+      "requires_app_review": false,
+      "requires_paid_plan": false,
+      "manual_fallback": true,
+      "known_failure_modes": [
+        "quota_exceeded",
+        "token_expired",
+        "duration_exceeds_60s",
+        "aspect_ratio_invalid"
+      ],
+      "title_rules": {
+        "max_length": 100,
+        "requires_prefix": false,
+        "restricted_chars": []
+      },
+      "description_rules": {
+        "max_length": 5000,
+        "requires_links": false,
+        "allows_hashtags": true,
+        "allows_timestamps": false
+      },
+      "hashtags_rules": {
+        "max_count": 15,
+        "max_length_per_tag": 30,
+        "position": "description"
+      },
+      "thumbnail_rules": {
+        "formats": [
+          "jpg",
+          "png"
+        ],
+        "max_size_mb": 2,
+        "recommended_resolution": "1080x1920",
+        "aspect_ratio": "9:16"
+      },
+      "caption_rules": {
+        "formats": [
+          "srt",
+          "vtt"
+        ],
+        "auto_generation_available": true,
+        "max_caption_tracks": 255,
+        "supported_languages": "all"
+      },
+      "account_targeting_notes": "OAuth2 required. Video must be 60 seconds or shorter. Aspect ratio must be 9:16. Verify channel is not restricted.",
+      "manual_upload_instructions": "Log into YouTube Studio → Create → Upload Shorts video → Verify duration ≤60s and aspect ratio 9:16 → Fill title/description → Add captions → Upload thumbnail → Save"
+    },
+    {
+      "platform": "tiktok",
+      "package_target": "feed",
+      "source_url": "https://developers.tiktok.com/doc/tiktok-api",
+      "last_verified_at": "2026-05-08",
+      "verification_frequency_days": 90,
+      "posting_modes": [
+        "manual",
+        "browser_assisted"
+      ],
+      "adapter_status": "manual_only",
+      "supports_direct_publish": false,
+      "supports_scheduling": false,
+      "supports_analytics": false,
+      "requires_app_review": true,
+      "requires_paid_plan": false,
+      "manual_fallback": true,
+      "known_failure_modes": [
+        "api_access_restricted",
+        "app_review_not_approved",
+        "account_restricted",
+        "content_flagged_for_review"
+      ],
+      "title_rules": {
+        "max_length": 2200,
+        "requires_prefix": false,
+        "restricted_chars": []
+      },
+      "description_rules": {
+        "max_length": 2200,
+        "requires_links": false,
+        "allows_hashtags": true,
+        "allows_timestamps": false
+      },
+      "hashtags_rules": {
+        "max_count": 10,
+        "max_length_per_tag": 34,
+        "position": "description"
+      },
+      "thumbnail_rules": {
+        "formats": [
+          "jpg",
+          "png"
+        ],
+        "max_size_mb": 5,
+        "recommended_resolution": "1080x1920",
+        "aspect_ratio": "9:16"
+      },
+      "caption_rules": {
+        "formats": [
+          "hardcoded"
+        ],
+        "auto_generation_available": false,
+        "max_caption_tracks": 1,
+        "supported_languages": "all"
+      },
+      "account_targeting_notes": "TikTok API severely restricted. App review required. Manual upload via TikTok app or web is only reliable path. Verify account is not banned.",
+      "manual_upload_instructions": "Open TikTok app → Click + → Upload video → Add description/hashtags → Select cover frame → Post"
+    },
+    {
+      "platform": "instagram",
+      "package_target": "reels",
+      "source_url": "https://developers.facebook.com/docs/instagram-api",
+      "last_verified_at": "2026-05-08",
+      "verification_frequency_days": 90,
+      "posting_modes": [
+        "manual",
+        "browser_assisted"
+      ],
+      "adapter_status": "manual_only",
+      "supports_direct_publish": false,
+      "supports_scheduling": false,
+      "supports_analytics": false,
+      "requires_app_review": true,
+      "requires_paid_plan": false,
+      "manual_fallback": true,
+      "known_failure_modes": [
+        "app_review_not_approved",
+        "meta_account_restricted",
+        "content_flagged_for_review",
+        "api_access_revoked"
+      ],
+      "title_rules": {
+        "max_length": 0,
+        "requires_prefix": false,
+        "restricted_chars": []
+      },
+      "description_rules": {
+        "max_length": 2200,
+        "requires_links": false,
+        "allows_hashtags": true,
+        "allows_timestamps": false
+      },
+      "hashtags_rules": {
+        "max_count": 30,
+        "max_length_per_tag": 30,
+        "position": "caption"
+      },
+      "thumbnail_rules": {
+        "formats": [
+          "jpg",
+          "png"
+        ],
+        "max_size_mb": 8,
+        "recommended_resolution": "1080x1920",
+        "aspect_ratio": "9:16"
+      },
+      "caption_rules": {
+        "formats": [
+          "hardcoded"
+        ],
+        "auto_generation_available": false,
+        "max_caption_tracks": 1,
+        "supported_languages": "all"
+      },
+      "account_targeting_notes": "Instagram API requires Meta Business Suite access. App review mandatory. Manual upload via Instagram app is most reliable. Verify business account status.",
+      "manual_upload_instructions": "Open Instagram app → Click + → Reels → Upload video → Add caption/hashtags → Select cover → Share"
+    },
+    {
+      "platform": "instagram",
+      "package_target": "feed",
+      "source_url": "https://developers.facebook.com/docs/instagram-api",
+      "last_verified_at": "2026-05-08",
+      "verification_frequency_days": 90,
+      "posting_modes": [
+        "manual",
+        "browser_assisted"
+      ],
+      "adapter_status": "manual_only",
+      "supports_direct_publish": false,
+      "supports_scheduling": false,
+      "supports_analytics": false,
+      "requires_app_review": true,
+      "requires_paid_plan": false,
+      "manual_fallback": true,
+      "known_failure_modes": [
+        "app_review_not_approved",
+        "meta_account_restricted",
+        "content_flagged_for_review",
+        "api_access_revoked"
+      ],
+      "title_rules": {
+        "max_length": 0,
+        "requires_prefix": false,
+        "restricted_chars": []
+      },
+      "description_rules": {
+        "max_length": 2200,
+        "requires_links": false,
+        "allows_hashtags": true,
+        "allows_timestamps": false
+      },
+      "hashtags_rules": {
+        "max_count": 30,
+        "max_length_per_tag": 30,
+        "position": "caption"
+      },
+      "thumbnail_rules": {
+        "formats": [
+          "jpg",
+          "png"
+        ],
+        "max_size_mb": 8,
+        "recommended_resolution": "1080x1350",
+        "aspect_ratio": "4:5"
+      },
+      "caption_rules": {
+        "formats": [
+          "hardcoded"
+        ],
+        "auto_generation_available": false,
+        "max_caption_tracks": 1,
+        "supported_languages": "all"
+      },
+      "account_targeting_notes": "Instagram API requires Meta Business Suite access. App review mandatory. Manual upload via Instagram app is most reliable. Verify business account status.",
+      "manual_upload_instructions": "Open Instagram app → Click + → Post → Upload image/video → Add caption/hashtags → Share"
+    },
+    {
+      "platform": "linkedin",
+      "package_target": "feed",
+      "source_url": "https://docs.microsoft.com/en-us/linkedin/marketing/integrations/community-management-api",
+      "last_verified_at": "2026-05-08",
+      "verification_frequency_days": 90,
+      "posting_modes": [
+        "manual",
+        "api"
+      ],
+      "adapter_status": "manual_only",
+      "supports_direct_publish": false,
+      "supports_scheduling": false,
+      "supports_analytics": false,
+      "requires_app_review": false,
+      "requires_paid_plan": false,
+      "manual_fallback": true,
+      "known_failure_modes": [
+        "rate_limited",
+        "token_expired",
+        "account_restricted"
+      ],
+      "title_rules": {
+        "max_length": 0,
+        "requires_prefix": false,
+        "restricted_chars": []
+      },
+      "description_rules": {
+        "max_length": 3000,
+        "requires_links": false,
+        "allows_hashtags": true,
+        "allows_timestamps": false
+      },
+      "hashtags_rules": {
+        "max_count": 10,
+        "max_length_per_tag": 30,
+        "position": "caption"
+      },
+      "thumbnail_rules": {
+        "formats": [
+          "jpg",
+          "png"
+        ],
+        "max_size_mb": 10,
+        "recommended_resolution": "1920x1080",
+        "aspect_ratio": "16:9"
+      },
+      "caption_rules": {
+        "formats": [
+          "hardcoded"
+        ],
+        "auto_generation_available": false,
+        "max_caption_tracks": 1,
+        "supported_languages": "all"
+      },
+      "account_targeting_notes": "LinkedIn supports video uploads but API is corporate-focused. Manual upload via LinkedIn website recommended. Verify account is company page or personal professional account.",
+      "manual_upload_instructions": "Log into LinkedIn → Click Start a post → Upload video → Add description/hashtags → Post"
+    },
+    {
+      "platform": "facebook",
+      "package_target": "feed",
+      "source_url": "https://developers.facebook.com/docs/video-api",
+      "last_verified_at": "2026-05-08",
+      "verification_frequency_days": 90,
+      "posting_modes": [
+        "manual",
+        "browser_assisted"
+      ],
+      "adapter_status": "manual_only",
+      "supports_direct_publish": false,
+      "supports_scheduling": false,
+      "supports_analytics": false,
+      "requires_app_review": true,
+      "requires_paid_plan": false,
+      "manual_fallback": true,
+      "known_failure_modes": [
+        "app_review_not_approved",
+        "account_restricted",
+        "content_flagged_for_review",
+        "page_suspended"
+      ],
+      "title_rules": {
+        "max_length": 0,
+        "requires_prefix": false,
+        "restricted_chars": []
+      },
+      "description_rules": {
+        "max_length": 63206,
+        "requires_links": false,
+        "allows_hashtags": true,
+        "allows_timestamps": false
+      },
+      "hashtags_rules": {
+        "max_count": 30,
+        "max_length_per_tag": 30,
+        "position": "caption"
+      },
+      "thumbnail_rules": {
+        "formats": [
+          "jpg",
+          "png"
+        ],
+        "max_size_mb": 4,
+        "recommended_resolution": "1280x720",
+        "aspect_ratio": "16:9"
+      },
+      "caption_rules": {
+        "formats": [
+          "hardcoded"
+        ],
+        "auto_generation_available": false,
+        "max_caption_tracks": 1,
+        "supported_languages": "all"
+      },
+      "account_targeting_notes": "Facebook API requires app review. Manual upload via Facebook website or mobile app is most reliable. Verify page is not restricted.",
+      "manual_upload_instructions": "Log into Facebook → Click Photo/Video → Upload video → Add caption/tags → Review visibility → Post"
+    },
+    {
+      "platform": "bluesky",
+      "package_target": "feed",
+      "source_url": "https://docs.bsky.app/docs/api/at-protocol",
+      "last_verified_at": "2026-05-08",
+      "verification_frequency_days": 90,
+      "posting_modes": [
+        "api",
+        "manual"
+      ],
+      "adapter_status": "partially_supported",
+      "supports_direct_publish": false,
+      "supports_scheduling": false,
+      "supports_analytics": false,
+      "requires_app_review": false,
+      "requires_paid_plan": false,
+      "manual_fallback": true,
+      "known_failure_modes": [
+        "token_expired",
+        "rate_limited",
+        "account_suspended"
+      ],
+      "title_rules": {
+        "max_length": 0,
+        "requires_prefix": false,
+        "restricted_chars": []
+      },
+      "description_rules": {
+        "max_length": 300,
+        "requires_links": false,
+        "allows_hashtags": true,
+        "allows_timestamps": false
+      },
+      "hashtags_rules": {
+        "max_count": 10,
+        "max_length_per_tag": 50,
+        "position": "post"
+      },
+      "thumbnail_rules": {
+        "formats": [
+          "jpg",
+          "png"
+        ],
+        "max_size_mb": 1,
+        "recommended_resolution": "1080x1080",
+        "aspect_ratio": "1:1"
+      },
+      "caption_rules": {
+        "formats": [
+          "hardcoded"
+        ],
+        "auto_generation_available": false,
+        "max_caption_tracks": 1,
+        "supported_languages": "all"
+      },
+      "account_targeting_notes": "Bluesky ATProto API is open. App password (not main password) required. Verify account is not suspended. Video support is emerging, images are primary.",
+      "manual_upload_instructions": "Log into Bluesky → Click Compose → Upload image/video → Add text → Publish"
+    },
+    {
+      "platform": "x",
+      "package_target": "feed",
+      "source_url": "https://developer.twitter.com/en/docs/twitter-api",
+      "last_verified_at": "2026-05-08",
+      "verification_frequency_days": 90,
+      "posting_modes": [
+        "manual",
+        "browser_assisted"
+      ],
+      "adapter_status": "manual_only",
+      "supports_direct_publish": false,
+      "supports_scheduling": false,
+      "supports_analytics": false,
+      "requires_app_review": false,
+      "requires_paid_plan": true,
+      "manual_fallback": true,
+      "known_failure_modes": [
+        "api_access_revoked",
+        "account_suspended",
+        "rate_limited",
+        "token_expired"
+      ],
+      "title_rules": {
+        "max_length": 0,
+        "requires_prefix": false,
+        "restricted_chars": []
+      },
+      "description_rules": {
+        "max_length": 280,
+        "requires_links": false,
+        "allows_hashtags": true,
+        "allows_timestamps": false
+      },
+      "hashtags_rules": {
+        "max_count": 10,
+        "max_length_per_tag": 50,
+        "position": "post"
+      },
+      "thumbnail_rules": {
+        "formats": [
+          "jpg",
+          "png"
+        ],
+        "max_size_mb": 5,
+        "recommended_resolution": "1200x675",
+        "aspect_ratio": "16:9"
+      },
+      "caption_rules": {
+        "formats": [
+          "hardcoded"
+        ],
+        "auto_generation_available": false,
+        "max_caption_tracks": 1,
+        "supported_languages": "all"
+      },
+      "account_targeting_notes": "X (Twitter) API requires paid tier ($100+/month). Manual post via web/app is most reliable. Verify account is verified or has payment method on file.",
+      "manual_upload_instructions": "Log into X.com → Click Compose → Upload video → Add text → Post"
+    }
+  ]
+}

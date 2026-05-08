@@ -1,431 +1,362 @@
-# Video Orchestrator — Holistic Agnosticity Review
+# Video Orchestrator — Holistic Architecture Review (Hardened)
 
 **Date:** 2026-05-08  
-**Reviewer:** Claude Code  
-**Purpose:** Validate that `/video` orchestrator and all integrated skills are platform-agnostic, file-format-agnostic, and account-agnostic. Identify gaps before Phase 2-4 implementation.
+**Purpose:** Validate the revised `/video` orchestrator architecture after the local-first hardening pass.
 
 ---
 
 ## Executive Summary
 
-The `/video` orchestrator is **structurally ready** for platform/format/account agnosticity, but has **three concrete gaps** that must be addressed before implementation:
+The revised architecture is now directionally sound: `/video` should be treated as a **local production orchestrator** first and a **publishing coordinator** second.
 
-1. **Platform Agnosticity: MOSTLY GOOD** ✅ (E1 workflow covers 7 platforms; gap: hard-coded platform specs in E2)
-2. **File Format Agnosticity: MOSTLY GOOD** ✅ (C4 workflow supports 5 formats; gap: no abstraction layer for format conversion)
-3. **Account Agnosticity: INCOMPLETE** ❌ (E1 workflow assumes single account per platform; missing: account routing logic)
+The correct target is:
 
-**Recommendation:** Create three companion documents (one per agnosticity layer) that formalize platform/format/account abstraction, then update E1/E2 workflows with platform-routing and account-selection logic.
+> Generate complete upload-ready packages locally for each target platform, then publish only through authorized adapters or manual upload.
+
+This means the system can be reliable even when platform APIs are unavailable, credentials expire, app review is pending, or rate limits change.
 
 ---
 
-## 1. Platform Agnosticity Analysis
+## Core Architecture Verdict
 
-### Current State
+### What is approved
 
-**Covered platforms (E1 workflow):**
-- ✅ YouTube (long-form + Shorts)
-- ✅ TikTok
-- ✅ Instagram Reels
-- ✅ LinkedIn
-- ✅ Facebook
-- ✅ Bluesky
-- ✅ X (Twitter)
+- **Local production layer:** Approved. Script, audio, captions, image/video generation, composition, thumbnails, manifests, local queueing, and local analytics snapshots belong on the Mac mini.
+- **Production package model:** Approved. Each platform target should receive an upload-ready package containing video, captions, thumbnail, metadata, and a manifest.
+- **Adapter-dependent publishing:** Approved. Direct publishing must be treated as optional and authorization-dependent.
+- **PostgreSQL + worker queue:** Approved, provided durable production entities are separated from ephemeral job execution rows.
+- **Resource-aware scheduling:** Approved. On a 24 GB unified-memory Mac, heavy model jobs should be serialized by default.
+- **Multi-account scheduler:** Approved with safety policies: cooldowns, account health, duplicate-content prevention, caption/thumbnail variation, and adapter status checks.
 
-**How it works:** E1a → E1e explicitly routes to each platform with documented patterns.
+### What is not approved
 
-### Agnosticity Assessment
+- Claims that the system can automatically publish to every platform without credentials, app review, API limits, or manual fallbacks.
+- Claims that new platforms are JSON-only. New formats can be JSON-only; new platforms require specs plus an adapter.
+- Claims that 50–200 videos/week is guaranteed. Throughput must be benchmarked by content tier.
+- Treating LoRA training as a core MVP dependency. It belongs in optional Phase 5+ experimentation.
+- Treating 16:9 master crop as the default for all vertical/square outputs. Safe-zone templates or canonical timelines should be the default for complex layouts.
 
-**PASSING:**
-- ✅ No hard-coded platform logic in STRATEGY (Viral Flow abstracts it)
-- ✅ No hard-coded platform logic in A (WRITE workflow platform-agnostic)
-- ✅ No hard-coded platform logic in B (VOICE workflow platform-agnostic)
-- ✅ C1 routes by FORMAT (narrated/reel/talking-head), not platform
-- ✅ D (DESIGN) routes to `/design` orchestrator (platform-agnostic)
-- ✅ E1 explicitly lists all 7 platforms with independent patterns
+---
 
-**GAPS:**
-- ❌ **E2 (Standing posting rules)** hardcodes platform-agnostic assumptions but lacks platform-specific adjustments
-  - Example: "Add 3-5 hashtags for social, 1-2 for YouTube" — this is platform-aware hardcoding
-  - Example: "Set thumbnail manually for YouTube, auto for most others" — needs to be abstracted
-  - **Fix needed:** Create `E2-platform-specs.json` with per-platform rules (hashtags, descriptions, thumbnails, etc.)
+## 1. Platform Agnosticity
 
-- ❌ **E4 (Export to platform-specific format)** hardcodes aspect ratios and resolutions per platform
-  - Example: Table maps platform → format (YouTube 1920×1080, TikTok 1080×1920, etc.)
-  - **Fix needed:** Make format selection automatic based on platform selection, not manual
+### Revised standard
 
-- ❌ **C4 (Export to platform-specific format)** duplication — format mapping appears both in C and E
-  - **Fix needed:** Consolidate format mapping into shared abstraction
+Platform agnosticity means the production system can prepare packages for platforms without rewriting the core pipeline. It does **not** mean the system can publish to every platform without adapter work.
 
-### Platform Agnosticity Gap Resolution
+A platform requires:
 
-**Required changes:**
+- `platform-specs.json` entry
+- `format-specs.json` entry
+- `caption-specs.json` entry when applicable
+- posting adapter status
+- auth and credential requirements
+- known rate limits / quota limits
+- manual fallback path
+- last verification metadata
 
-```markdown
-## New: E2-platform-specs.json (Per-Platform Rules)
+### Required spec fields
 
-Maps each platform to standardized metadata:
-- Hashtags (count, frequency)
-- Description (max length, format)
-- Thumbnail (required, auto, size)
-- Schedule window (best times, blackout periods)
-- Account limits (videos/day, batch posting, etc.)
-- Filename patterns (platform conventions)
-
-Example:
+```json
 {
-  "youtube": {
-    "hashtags": {"count": 1-2, "placement": "description"},
-    "description": {"max_length": 5000, "format": "markdown with links"},
-    "thumbnail": {"required": true, "auto": false, "size": "1280×720"},
-    "schedule": {"optimal_hours": "09:00-11:00 UTC", "batch_max": 3},
-    "account_fields": ["channel_id", "upload_method"]
-  },
-  "tiktok": {
-    "hashtags": {"count": 3-5, "placement": "caption_start"},
-    "description": {"max_length": 150, "format": "plain text, no markdown"},
-    "thumbnail": {"required": false, "auto": true},
-    "schedule": {"optimal_hours": "19:00-21:00 UTC", "batch_max": 10},
-    "account_fields": ["handle", "oauth_token"]
-  },
-  ...
+  "platform": "youtube",
+  "source_url": "https://developers.google.com/youtube/v3",
+  "last_verified_at": "2026-05-08",
+  "verification_frequency_days": 30,
+  "posting_modes": ["api", "manual"],
+  "adapter_status": "partially_supported",
+  "supports_direct_publish": true,
+  "supports_scheduling": true,
+  "supports_analytics": true,
+  "requires_app_review": false,
+  "requires_paid_plan": false,
+  "known_failure_modes": ["quota_limits", "oauth_expiry", "processing_delay"],
+  "manual_fallback": true
 }
 ```
 
----
+### Adapter statuses
 
-## 2. File Format Agnosticity Analysis
+Use these exact statuses unless there is a strong reason to add more:
 
-### Current State
+- `supported`
+- `partially_supported`
+- `manual_only`
+- `blocked_pending_credentials`
+- `blocked_pending_app_review`
+- `disabled`
 
-**Output formats supported (C4 workflow):**
-- ✅ Video: MP4 (H.264 + AAC, all platforms)
-- ✅ Video: Vertical 1080×1920 (TikTok, Instagram, YouTube Shorts)
-- ✅ Video: Landscape 1920×1080 (YouTube, LinkedIn, Facebook)
-- ✅ Video: Square 1080×1080 (Instagram Feed, LinkedIn Feed, Facebook Feed)
-- ✅ Audio: WAV (TTS output from B2)
-- ✅ Audio: MP3 (optional conversion from WAV)
-- ✅ Image: PNG, JPG (thumbnails, design assets)
+### Current target platforms
 
-**How it works:** C4 table explicitly maps platform → ffmpeg command with resolution.
+The orchestrator may target packages for:
 
-### Agnosticity Assessment
+- YouTube long-form
+- YouTube Shorts
+- TikTok
+- Instagram Reels
+- Instagram Feed
+- LinkedIn
+- Facebook
+- Bluesky
+- X
 
-**PASSING:**
-- ✅ Format choice depends on platform, not hard-coded to specific file type
-- ✅ C1a/C1b/C1c provide concrete examples of format routing
-- ✅ No hard-coded file extension assumptions in VOICE (WAV) or DESIGN (PNG/JPG)
-- ✅ Composition logic platform-agnostic: audio + image/video → format-specific encoding
-
-**GAPS:**
-- ❌ **C4 (Export) format table is hardcoded** — If a new platform format is needed, table must be manually updated
-  - **Fix needed:** Externalize C4 format mapping to `C4-format-specs.json`
-  - Example: If YouTube adds 4K requirement, edit JSON instead of SKILL.md
-
-- ❌ **No format normalization layer** (Principle 3 from lessons-learned.md)
-  - Current: Generate per-format (compose for YouTube, then compose for TikTok)
-  - Better: Generate master format once, convert to all platform formats in parallel
-  - **Fix needed:** Add C1z workflow: "Normalize & Convert" (master 1920×1080 → all platform variants)
-
-- ❌ **No audio format conversion abstraction** (only WAV → MP3 mentioned, not formalized)
-  - **Fix needed:** Formalize audio format conversions (WAV → MP3, WAV → AAC, etc.) in `/ffmpeg` skill
-
-### File Format Agnosticity Gap Resolution
-
-**Required changes:**
-
-```markdown
-## New: C4-format-specs.json (Per-Platform Format Rules)
-
-Maps each platform to resolution, codec, bitrate:
-{
-  "youtube": {
-    "longform": {"resolution": "1920×1080", "fps": 30, "codec": "h264", "bitrate": "5000k"},
-    "shorts": {"resolution": "1080×1920", "fps": 30, "codec": "h264", "bitrate": "2500k"},
-    "audio_codec": "aac",
-    "container": "mp4"
-  },
-  "tiktok": {
-    "video": {"resolution": "1080×1920", "fps": 30, "codec": "h264", "bitrate": "3000k"},
-    "audio_codec": "aac",
-    "container": "mp4"
-  },
-  ...
-}
-
-## New: C1z Workflow — Normalize & Convert (Phase 2+)
-
-Instead of:
-  Compose for YouTube (1920×1080)
-  Compose for TikTok (1080×1920)
-  Compose for Instagram (1080×1080)
-  → 3x redundant composition work
-
-Do:
-  Compose master (1920×1080, highest quality)
-    ↓
-  Convert in parallel:
-    ├─ YouTube: 1920×1080 (no change)
-    ├─ TikTok: crop+scale 1080×1920 (vertical)
-    ├─ Instagram: scale 1080×1080 (square)
-    └─ LinkedIn: scale 1920×1080 (no change)
-
-Benefit: Single composition, multiple outputs. 45% faster batch processing.
-```
+But publishing is adapter-dependent. Phase 3 should target only 1–2 authorized adapters first, plus the manual adapter.
 
 ---
 
-## 3. Account Agnosticity Analysis
+## 2. Format Agnosticity
 
-### Current State
+### Revised standard
 
-**Account handling (E1 + E2 workflow):**
-- E1a (YouTube): Assumes single YouTube channel
-- E1b (TikTok): Assumes single TikTok account
-- E1c (Instagram): Assumes single Instagram account
-- E1d (LinkedIn): Assumes single LinkedIn account
-- E1e (Bluesky/X): Assumes single account per platform
+Format agnosticity means the pipeline can render multiple output variants from a shared production source without duplicating creative work unnecessarily.
 
-**How it works:** E1 lists patterns but doesn't specify which account to route to.
+The correct default is:
 
-### Agnosticity Assessment
+1. Build a canonical production timeline from script, audio, captions, visual assets, and layout metadata.
+2. Render aspect-specific variants from that timeline using safe-zone-aware templates.
+3. Use simple FFmpeg crop/scale only when the content is center-safe and visually simple.
 
-**PASSING:**
-- ✅ No account logic baked into STRATEGY/A/B/C/D (all platform-agnostic)
-- ✅ E1 workflow structure allows multiple account patterns
+### Rendering modes
 
-**FAILING (Critical Gap):**
-- ❌ **No account selection mechanism** — E1 doesn't ask or infer which account to use
-  - User has 3 TikTok accounts. Where does the video go? Currently: undefined.
-  - User has 2 YouTube channels. Which one? Currently: undefined.
-  - **Fix needed:** Add E1z: "Account Selection" step before posting
+| Mode | Use when | Risk |
+|---|---|---|
+| Canonical timeline | Talking heads, text overlays, product demos, templates, captions | More render work, better quality |
+| Simple transform | Static backgrounds, center-safe visuals, low-risk clips | Can crop faces/text/products |
 
-- ❌ **No account credential routing** — E2 assumes credentials are pre-configured
-  - E1b (TikTok) says "use `/n8n` webhook trigger" but doesn't specify which account's credentials
-  - E1d (LinkedIn) says "route to `/n8n`" but doesn't specify company page vs. personal profile
-  - **Fix needed:** Add account credential abstraction to `/n8n` or create account routing layer
+### Required outputs
 
-- ❌ **No account limit enforcement** — E2 doesn't check account posting limits
-  - Example: TikTok allows 10 videos/day per account, but pipeline doesn't verify
-  - Example: LinkedIn company page has different posting limits than personal profile
-  - **Fix needed:** Add pre-flight check in F1 (Preconditions) to validate account limits
+Every production package should know:
 
-- ❌ **No multi-account batching** — F (PIPELINE) assumes single output account
-  - Example: User wants to post same video to 3 TikTok accounts in parallel
-  - Example: User wants to post to YouTube + 2 backup channels simultaneously
-  - **Fix needed:** Add F1z: "Account Distribution" (which platforms, which accounts per platform)
+- resolution
+- aspect ratio
+- codec
+- bitrate target
+- audio codec
+- captions mode: external, burned-in, both, none
+- safe-zone template
+- thumbnail requirements
+- file size / duration constraints if known
 
-### Account Agnosticity Gap Resolution
+---
 
-**Required changes:**
+## 3. Caption Agnosticity
 
-```markdown
-## New: Account Selection & Routing (Phase 2+)
+Captions are first-class production assets, not optional post-processing.
 
-Add to E1 workflow:
+The pipeline should create:
 
-### E0. Account Selection (NEW — Run before E1)
+- raw transcript JSON
+- SRT
+- VTT
+- optional burned-in caption video
+- caption timing metadata
+- caption style metadata for templates
 
-For each platform, determine which account to post to:
-```
-User request: "Post to TikTok and YouTube"
-  ↓ Ask or infer:
-  • TikTok: Which account? (business, personal, brand-1, brand-2)
-  • YouTube: Which channel? (main, backup, shorts-only)
-  
-  Store in posting manifest:
-  {
-    "platforms": {
-      "tiktok": {"account": "business", "account_id": "tiktok-123"},
-      "youtube": {"account": "main", "channel_id": "UCxxxxx"}
-    }
-  }
-```
+Whisper.cpp is the default local transcription path. Cloud transcription can be added as an optional quality fallback, but it is not part of the local-first MVP.
 
-## New: Account Credentials & Limits (Phase 3+)
+---
 
-Maintain account registry:
-```
-~/.config/video-orchestrator/accounts.json
+## 4. Account Agnosticity
+
+### Revised standard
+
+Account agnosticity means the system can safely choose among many accounts and posting targets without hardcoding account assumptions.
+
+Required pieces:
+
+- account registry
+- credential references, not raw secrets
+- per-account status
+- daily limit
+- burst limit
+- minimum cooldown
+- failure streak
+- duplicate-content policy
+- account topic fit
+- adapter status per platform/account
+
+### Required policy fields
+
+```json
 {
-  "tiktok": [
-    {"name": "business", "username": "...", "handle": "@...", "daily_limit": 10, "batch_limit": 3},
-    {"name": "personal", "username": "...", "handle": "@...", "daily_limit": 10, "batch_limit": 3}
-  ],
-  "youtube": [
-    {"name": "main", "channel_id": "UCxxxxx", "channel_name": "...", "daily_limit": 50, "batch_limit": 10},
-    {"name": "backup", "channel_id": "UCyyyyy", "channel_name": "...", "daily_limit": 50, "batch_limit": 10}
-  ],
-  ...
+  "min_delay_same_platform_minutes": 30,
+  "caption_variation_required": true,
+  "thumbnail_variation_required": false,
+  "duplicate_content_policy": "stagger_and_vary_metadata",
+  "account_topic_fit_required": true,
+  "manual_approval_required": false
 }
 ```
 
-## New: F1z Workflow — Account Distribution (Phase 2+)
+### Safety rule
 
-In F (PIPELINE), add account selection step:
+Never assume that posting the same video to many accounts simultaneously is safe. The scheduler should stagger posts and, where configured, vary captions, thumbnails, or hooks.
 
+---
+
+## 5. Queue and State Design
+
+### Approved entity split
+
+Durable production entities:
+
+- projects
+- series
+- videos
+- scripts
+- audio assets
+- image/video assets
+- captions
+- renders
+- production packages
+- accounts
+- posting targets
+- posting jobs
+- performance snapshots
+- events
+
+Execution entities:
+
+- jobs
+- leases
+- retries
+- worker events
+
+Jobs should not be the source of truth for videos. Jobs execute work; videos and packages preserve production state.
+
+### State machines
+
+Use separate state machines:
+
+```text
+video_state:
+planned → scripted → voiced → assets_ready → captions_ready → composed → variants_ready → ready_to_post → partially_posted → posted → archived
+
+job_state:
+pending → leased → running → succeeded | failed | cancelled | dead
+
+posting_state:
+draft → scheduled → uploading → processing → published | failed | needs_manual
 ```
-F0. Select platforms and accounts for batch
-  Input: ["youtube", "tiktok", "instagram"]
-  For each platform:
-    • Ask which account(s)
-    • Validate account limits (daily, batch, burst)
-    • Check credentials are valid
-    
-  Output: routing manifest
-  {
-    "batch": ["ep1", "ep2", "ep3"],
-    "distribution": {
-      "youtube": ["main"],
-      "tiktok": ["business"],
-      "instagram": ["brand-1", "brand-2"]
-    }
-  }
 
-F1-F5: Run production (same as before)
-
-F6: Post to distributed accounts
-  For each episode:
-    For each platform in distribution:
-      For each account in platform:
-        POST(episode, platform, account)
-```
+Posting jobs must use idempotency keys to prevent duplicate uploads after retries.
 
 ---
 
-## Consolidated Gap List
+## 6. Resource Scheduling
 
-| Criterion | Status | Gap | Fix |
-|-----------|--------|-----|-----|
-| **Platform** | ✅ Mostly good | E2 hardcodes platform rules; C4/E4 duplication | Create `E2-platform-specs.json`; consolidate format rules |
-| **File Format** | ✅ Mostly good | C4 format table hardcoded; no normalization layer | Create `C4-format-specs.json`; add C1z Normalize workflow |
-| **Account** | ❌ Incomplete | No account selection, routing, or limit tracking | Add E0 (Account Selection); add F0 (Account Distribution); maintain accounts.json registry |
+The Mac mini should be treated as a production control center with constrained local acceleration, not a render farm.
 
----
+Resource classes:
 
-## Implementation Roadmap
+- `cpu_light`
+- `media_encode`
+- `image_fast`
+- `image_heavy`
+- `talking_head`
+- `posting`
+- `analytics`
 
-### Phase 2 (Immediate)
+Rules:
 
-**Platform Agnosticity:**
-1. Create `E2-platform-specs.json` with rules for all 7 platforms
-2. Update E2 workflow to read from JSON instead of hardcoded rules
-3. Add unit tests: verify E2 applies correct rules per platform
-
-**File Format Agnosticity:**
-1. Create `C4-format-specs.json` with resolution/codec per platform
-2. Update C4 workflow to read from JSON instead of hardcoded table
-3. Consolidate C4 (in Compose) and E4 (in Post) — both read same JSON
-
-**Account Agnosticity (Partial):**
-1. Document account credential structure in `/n8n` skill
-2. Add E0 step to POST workflow: ask which account before routing to platform
-
-### Phase 3 (Medium-term)
-
-**Account Agnosticity (Full):**
-1. Create `~/.config/video-orchestrator/accounts.json` registry
-2. Add F0 workflow: account distribution selection for batches
-3. Add F1 preconditions: validate account limits before running batch
-4. Wire n8n account credentials to Workflow E1
-
-### Phase 4+ (Future)
-
-**File Format Agnosticity (Advanced):**
-1. Implement C1z: Normalize → Convert (master format + parallel outputs)
-2. Benefit: 45% faster batch processing (generate once, convert all)
-3. Reference: `operations/standards/video-orchestrator-lessons-learned.md` Principle 3
-
-**Account Agnosticity (Advanced):**
-1. Implement account affinity scoring (which account gets which content)
-2. Example: Brand-1 account posts professional videos, Personal account posts behind-the-scenes
-3. Implement multi-account distribution for scaling (same video to 5 accounts in parallel)
+- Run only one heavy model job at a time by default.
+- Prefer FLUX and LoRA-like jobs at night.
+- Allow limited FFmpeg parallelism after benchmarking.
+- Keep posting and metadata jobs in a separate pool.
+- Track RAM pressure and thermal state where possible.
+- Treat throughput tiers as benchmark targets, not promises.
 
 ---
 
-## Validation Checklist
+## 7. Platform Fact-Check Notes
 
-### Platform Agnosticity ✅
+These notes should guide specs and adapter design. They should not be hardcoded as permanent truth; platform docs must be re-verified periodically.
 
-- ✅ Can post to YouTube without touching code? → Yes (E1a documented)
-- ✅ Can post to TikTok without touching code? → Yes (E1b documented)
-- ✅ Can add new platform without rewriting core? → Yes, E1 structure allows (but must update specs JSON)
-- ✅ Platform posting logic isolated to E1? → Yes (STRATEGY/A/B/C/D are platform-agnostic)
-- ✅ Platform specs externalized to JSON? → **No** (Gap: E2 hardcoded)
-
-### File Format Agnosticity ✅
-
-- ✅ Can output MP4 for YouTube? → Yes (C4 documented)
-- ✅ Can output vertical MP4 for TikTok? → Yes (C4 documented)
-- ✅ Can output square MP4 for Instagram? → Yes (C4 documented)
-- ✅ Can add new format without rewriting core? → Yes, but format table must be updated
-- ✅ Format specs externalized to JSON? → **No** (Gap: C4 hardcoded in SKILL.md)
-- ✅ Can generate master format → convert to multiple? → **No** (Gap: C1z not implemented, generates per-format)
-
-### Account Agnosticity ❌
-
-- ❌ Can post to specific TikTok account? → No (E1b doesn't ask which account)
-- ❌ Can post to 2 YouTube channels simultaneously? → No (F workflow assumes single output account)
-- ❌ Can enforce per-account posting limits? → No (F1 preconditions don't validate)
-- ❌ Can route based on account type (personal vs. brand)? → No (E0 account selection doesn't exist)
-- ❌ Account registry maintained? → No (no `accounts.json` created)
+- **YouTube:** Uploads use the YouTube Data API and OAuth. Quota costs and daily quotas can change. Specs must store `last_verified_at`, quota assumptions, and failure modes.
+- **TikTok:** Direct posting requires the Content Posting API flow and app/product access. Manual or browser-assisted fallback should remain available.
+- **Instagram/Facebook:** Publishing depends on Meta APIs, account type, permissions, app review, and OAuth setup. Manual fallback should remain available.
+- **Bluesky:** Video posting is possible through ATProto, but video limits and email verification requirements apply and may change.
+- **X/LinkedIn:** Rate limits, API plan restrictions, and permissions must be treated as adapter constraints, not production constraints.
 
 ---
 
-## Phase 2-4 Roadmap Alignment
+## Revised Implementation Roadmap
 
-This review informs updates to `operations/runbooks/video-orchestrator-roadmap.md`:
+### Phase 2A — Production Package MVP
 
-**Phase 2 (Generation + Composition):**
-- ✅ Implement smart model routing (C0) — DONE
-- ✅ Integrate 4 local models — DONE
-- ⚠️ **Add:** Platform specs JSON (E2-platform-specs.json)
-- ⚠️ **Add:** Format specs JSON (C4-format-specs.json)
-- ⚠️ **Add:** E0 account selection step (basic account choice)
+Goal: one source video becomes upload-ready packages for every target platform.
 
-**Phase 3 (Job Queue + Lifecycle Tracking):**
-- ✅ Add lifecycle state machine
-- ⚠️ **Add:** Account registry (accounts.json)
-- ⚠️ **Add:** F0 account distribution workflow
-- ⚠️ **Add:** F1 account limit validation
+Must include:
 
-**Phase 4+ (Format Normalization + Multi-Account):**
-- ⚠️ **Add:** C1z normalize workflow (master → multi-format)
-- ⚠️ **Add:** Multi-account parallel posting
-- ⚠️ **Add:** Account affinity scoring
+- platform specs
+- format specs
+- caption specs
+- Whisper.cpp transcription
+- safe-zone templates
+- production manifest schema
+- manual upload package generator
+
+### Phase 2B — Local Queue MVP
+
+Goal: no lost work.
+
+Must include:
+
+- PostgreSQL schema
+- durable production entities
+- jobs as execution-only rows
+- worker leases
+- retry/resume
+- event log
+
+### Phase 3 — Posting Adapters
+
+Goal: publish only where authorization is real.
+
+Must include:
+
+- adapter interface
+- manual adapter
+- 1–2 authorized API adapters
+- idempotency
+- posting audit logs
+
+### Phase 4 — Multi-Account Scheduler
+
+Goal: safe account distribution.
+
+Must include:
+
+- account registry
+- cooldowns
+- duplicate-content policy
+- credential references
+- account health
+- distribution manifest
+
+### Phase 5 — Optimization
+
+Goal: improve future batches.
+
+Must include:
+
+- performance snapshots
+- manual metrics import
+- analytics dashboard or CSV export
+- learning recommendations
+- optional LoRA experiments only after benchmarking
 
 ---
 
-## Recommendations for Implementation
+## Final Verdict
 
-### Approach 1: Incremental (Recommended)
+The revised plan is good enough to move into Phase 2A **only if** the documentation remains aligned with this hardened architecture:
 
-1. **Week 1:** Create E2-platform-specs.json + C4-format-specs.json (trivial, ~2h)
-2. **Week 2:** Update E2 + C4 workflows to read from JSON (trivial, ~1h)
-3. **Week 3-4:** Add E0 account selection (small, ~3h)
-4. **Later phases:** Add F0, C1z, advanced account features
-
-**Benefit:** Incremental validation, catches issues early, keeps Phase 2 focused.
-
-### Approach 2: Comprehensive (Higher Effort)
-
-1. **Week 1-2:** Design complete account registry + routing system
-2. **Week 3:** Implement all three layers simultaneously
-3. **Week 4:** Integration testing across all 7 platforms with multi-account scenarios
-
-**Benefit:** Unified design, fewer revisions, but higher upfront effort.
-
-**Recommendation:** Start with Approach 1 (incremental). Phase 2 can ship with platform/format specs JSON. Account routing (E0/F0) can follow in Phase 3 when job queue is live.
-
----
-
-## Summary
-
-The `/video` orchestrator is **architecturally sound** for the three agnosticity criteria:
-
-- **Platform Agnosticity:** Structure is there; needs specs JSON to avoid hardcoding
-- **File Format Agnosticity:** Structure is there; needs specs JSON + C1z normalization
-- **Account Agnosticity:** Structure missing; needs E0/F0 workflow additions + registry
-
-**No spaghetti, no re-engineering required.** Just add three JSON files and three workflow steps, then you can post to any platform, any format, any account without code changes.
-
-**Next step:** Create the three specs JSON files, update Workflows E/F, then move forward with Phase 2 implementation.
+- local production first
+- packages before publishing
+- adapters are optional and authorization-dependent
+- captions are first-class
+- safe-zone templates are the default for complex layouts
+- queue state is separated from production state
+- multi-account posting is safety-gated
+- throughput and LoRA remain benchmark-dependent

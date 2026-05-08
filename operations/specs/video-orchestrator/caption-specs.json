@@ -1,0 +1,174 @@
+{
+  "caption_output_formats": [
+    {
+      "format": "srt",
+      "extension": ".srt",
+      "description": "SubRip format. Timecode-indexed captions with sequence numbers. Human-readable, widely supported.",
+      "supported_by": [
+        "youtube",
+        "vimeo",
+        "ffmpeg"
+      ],
+      "use_case": "Universal fallback. Supported by nearly all platforms for manual upload."
+    },
+    {
+      "format": "vtt",
+      "extension": ".vtt",
+      "description": "WebVTT format. Web Video Text Tracks. Similar to SRT with styling support. Recommended for web.",
+      "supported_by": [
+        "youtube",
+        "html5_video",
+        "web_players"
+      ],
+      "use_case": "Web-based players, HTML5 video elements. Supports styling (CSS)."
+    },
+    {
+      "format": "json",
+      "extension": ".json",
+      "description": "JSON structure: array of caption entries with timecode and text. Machine-readable.",
+      "supported_by": [
+        "custom_tooling",
+        "programmatic_processing"
+      ],
+      "use_case": "Internal processing, programmatic caption manipulation, database storage."
+    }
+  ],
+  "transcription_configuration": {
+    "whisper_cpp_default": true,
+    "description": "Local transcription via Whisper.cpp (no cloud APIs). Fallback to commercial API if quality unacceptable.",
+    "model": "base",
+    "language": "auto_detect",
+    "output_formats": [
+      "srt",
+      "vtt",
+      "json"
+    ],
+    "quality_settings": {
+      "model_size": "base",
+      "alternatives": [
+        "tiny (fastest, lower quality)",
+        "small (balanced)",
+        "medium (high quality, slower)",
+        "large (highest quality, slowest)"
+      ],
+      "fallback_to_api": "if_user_opts_in_and_configured"
+    }
+  },
+  "burn_in_configuration": {
+    "burn_in_supported": true,
+    "description": "Captions can be hardcoded (rendered) into video frames during composition.",
+    "use_cases": [
+      "Mobile platforms without caption support (TikTok, Instagram)",
+      "Videos with audio issues requiring visual fallback",
+      "Accessibility improvement"
+    ],
+    "styling_options": {
+      "font_family": "sans-serif (Arial, Helvetica preferred)",
+      "font_size_pt": 24,
+      "color": "white",
+      "background": "black_with_transparency",
+      "position": "bottom_center",
+      "padding_px": 10
+    }
+  },
+  "external_caption_support": [
+    {
+      "platform": "youtube",
+      "package_target": "long-form",
+      "supports_external": true,
+      "formats": [
+        "srt",
+        "vtt"
+      ],
+      "supported_languages": "all",
+      "notes": "Upload as subtitle track. YouTube auto-generates if not provided."
+    },
+    {
+      "platform": "youtube",
+      "package_target": "shorts",
+      "supports_external": true,
+      "formats": [
+        "srt",
+        "vtt"
+      ],
+      "supported_languages": "all",
+      "notes": "Upload as subtitle track. YouTube auto-generates if not provided."
+    },
+    {
+      "platform": "tiktok",
+      "package_target": "feed",
+      "supports_external": false,
+      "formats": [],
+      "supported_languages": "n/a",
+      "notes": "Captions must be hardcoded (burned into video). No external upload option."
+    },
+    {
+      "platform": "instagram",
+      "package_target": "reels",
+      "supports_external": false,
+      "formats": [],
+      "supported_languages": "n/a",
+      "notes": "Captions must be hardcoded. No external upload option."
+    },
+    {
+      "platform": "instagram",
+      "package_target": "feed",
+      "supports_external": false,
+      "formats": [],
+      "supported_languages": "n/a",
+      "notes": "Captions must be hardcoded if video. No external upload option."
+    },
+    {
+      "platform": "linkedin",
+      "package_target": "feed",
+      "supports_external": false,
+      "formats": [],
+      "supported_languages": "n/a",
+      "notes": "No official caption support. Recommend hardcoding for accessibility."
+    },
+    {
+      "platform": "facebook",
+      "package_target": "feed",
+      "supports_external": false,
+      "formats": [],
+      "supported_languages": "n/a",
+      "notes": "No official caption upload. Recommend hardcoding for accessibility."
+    },
+    {
+      "platform": "bluesky",
+      "package_target": "feed",
+      "supports_external": false,
+      "formats": [],
+      "supported_languages": "n/a",
+      "notes": "Video support emerging. No caption support yet. Recommend hardcoding."
+    },
+    {
+      "platform": "x",
+      "package_target": "feed",
+      "supports_external": false,
+      "formats": [],
+      "supported_languages": "n/a",
+      "notes": "No official caption support. Recommend hardcoding for accessibility and engagement."
+    }
+  ],
+  "caption_style_metadata": {
+    "font_family": "string (e.g., 'Arial', 'Helvetica', 'sans-serif')",
+    "font_size_pt": "integer (default: 24)",
+    "font_weight": "string ('normal' or 'bold')",
+    "text_color": "hex or rgb (default: '#FFFFFF' white)",
+    "background_color": "hex or rgb (default: '#000000' black with 0.7 alpha)",
+    "text_outline": "boolean (default: true, improves readability)",
+    "outline_width_px": "integer (default: 2)",
+    "position": "string ('bottom_center', 'center', 'top_center')",
+    "padding_px": "integer (default: 10 from edges)"
+  },
+  "timing_source": {
+    "primary": "audio_duration (video length determined by audio track length)",
+    "fallback": "video_duration (if no audio present)"
+  },
+  "fallback_behavior": {
+    "if_transcription_fails": "output_caption_template_json with null entries; require manual review before export",
+    "if_burn_in_fails": "export_external_captions_only; user notified to add captions manually or retry",
+    "if_both_fail": "output_incomplete_warning; user must choose to proceed without captions or retry"
+  }
+}

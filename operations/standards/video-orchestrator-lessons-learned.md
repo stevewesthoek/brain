@@ -1,8 +1,8 @@
-# Video Orchestrator — Lessons Learned from Industry Repos
+# Video Orchestrator — Lessons Learned from Industry Repos (Revised Context)
 
-**Date:** 2026-05-08  
+**Date:** 2026-05-08 (Revised with clarifications)  
 **Source:** Analysis of DeerFlow, Arcads, MoneyPrinter, Wan2GP, Claude Code Video Toolkit  
-**Purpose:** Extract best practices and identify architectural gaps for Phase 2–4
+**Purpose:** Extract best practices for local-first video production; clarify which principles apply to local generation vs. platform publishing
 
 ---
 
@@ -10,31 +10,27 @@
 
 ### 1. Multi-Agent Parallelization (from DeerFlow)
 
-**Principle:** Don't run models sequentially; run them in parallel with isolated contexts.
+**Principle:** Parallelize independent work when resources allow, but do not overload the Mac mini's 24 GB unified memory.
 
-**Current State (Sequential):**
+**Unsafe interpretation:**
 ```
-Generate thumbnail (SDXL) → 30s
-  ↓
-Generate talking head (Wave) → 90s
-  ↓
-Generate background (SDXL) → 45s
-  ↓
-Total: 165 seconds
+Run SDXL + Wave + FLUX + Roop concurrently on every batch
+  → memory pressure, thermal pressure, slowdowns, failures
 ```
 
-**Better State (Parallel):**
+**Better state (resource-aware parallelism):**
 ```
-├─ Generate thumbnail (SDXL) → 30s ─┐
-├─ Generate talking head (Wave) → 90s ├─ Parallel → Total: ~90 seconds
-└─ Generate background (SDXL) → 45s ─┘
+├─ CPU-light metadata/script jobs can run anytime
+├─ Posting/analytics jobs run in a separate pool
+├─ FFmpeg encodes run with limited parallelism after benchmarking
+└─ Heavy model jobs (FLUX, LoRA-like, sometimes talking-head) are serialized by default
 ```
 
-**Implementation:** Use Python `asyncio` or subprocess pools to spawn isolated agents for each model.
+**Implementation:** Use resource classes and worker pools, not blind model parallelism.
 
-**Benefit:** 45% faster batch processing (165s → 90s on same resources)
+**Benefit:** Better throughput without destabilizing the local machine.
 
-**Where in Pipeline:** Workflow F (PIPELINE) batch operations.
+**Where in Pipeline:** Workflow F (PIPELINE), Phase 2B queue, and the resource scheduler.
 
 ---
 
@@ -60,9 +56,10 @@ User: "Create e-commerce video for product X"
   ├─ Input: talking_head.mp4 + product.png + captions.srt
   ├─ Output: ugc_video.mp4 (vertical, TikTok/Instagram ready)
   ↓
-[Post to platforms]
-  └─ n8n webhook routing
-  ├─ Platforms: TikTok, Instagram, Shorts
+[Package and publish]
+  ├─ Generate upload-ready packages for TikTok, Instagram, and Shorts
+  ├─ Publish only through authorized adapters when available
+  └─ Otherwise use manual upload packages
 ```
 
 **Implementation:** Add as Workflow C1f: "E-commerce Product Video" in `/video` skill.
@@ -73,7 +70,7 @@ User: "Create e-commerce video for product X"
 
 ### 3. Format Normalization (from MoneyPrinter)
 
-**Principle:** Generate once in "master format", then convert to all platform-specific formats in parallel.
+**Principle:** Build a shared production source, then render or transform platform-specific variants without duplicating creative work.
 
 **Current State (Format per Step):**
 ```
@@ -84,22 +81,24 @@ Compose for LinkedIn (1920×1080)
   └─ Redundant composition work
 ```
 
-**Better State (Normalize):**
+**Better State (Safe-Zone-Aware Normalization):**
 ```
-Compose master (highest res: 1920×1080)
+Canonical timeline: script + audio + captions + assets + layout metadata
   ↓
-Convert in parallel:
-├─ YouTube: 1920×1080 (no change)
-├─ TikTok: crop 1080×1920 (vertical)
-├─ Instagram: scale 1080×1080 (square)
-└─ LinkedIn: scale 1920×1080 (no change)
+Render variants with safe zones:
+├─ YouTube / LinkedIn: 16:9
+├─ TikTok / Shorts / Reels: 9:16
+├─ Instagram / Facebook feed: 1:1
+└─ Instagram preferred feed: 4:5
 ```
 
-**Implementation:** Create FFmpeg filter chains for each platform variant.
+**Simple transform option:** For center-safe static content, a master render can be converted with FFmpeg crop/scale. Do not use this as the default for faces, text, products, or caption-heavy videos.
 
-**Location:** Workflow E (POST) → E1 (Route by platform) → E1x (Platform-specific encoding).
+**Implementation:** Combine reusable templates, safe-zone metadata, FFmpeg transforms, and optionally Remotion for layout-heavy videos.
 
-**Benefit:** Single composition, multiple outputs. Faster, fewer errors.
+**Location:** Workflow C (COMPOSE) and Phase 2A package generation, before Workflow E publishing.
+
+**Benefit:** Fewer redundant creative steps while preserving quality across aspect ratios.
 
 ---
 
@@ -212,34 +211,19 @@ const HeroScene = ({ backgroundUrl, narrationUrl, title }) => (
 
 **Principle:** Track video state across the entire pipeline. Enable mid-pipeline resume and audit trail.
 
-**State Machine:**
-```
-PLANNED
-  ↓
-ASSETS_GENERATED (images, audio)
-  ↓
-REVIEWED (human approval)
-  ↓
-AUDIO_READY (TTS complete)
-  ↓
-COMPOSED (video rendered)
-  ↓
-RENDERED (all formats encoded)
-  ↓
-POSTED (distributed to platforms)
-  ↓
-ARCHIVED (final state)
+**State Machines:**
+```text
+video_state:
+planned → scripted → voiced → assets_ready → captions_ready → composed → variants_ready → ready_to_post → partially_posted → posted → archived
+
+job_state:
+pending → leased → running → succeeded | failed | cancelled | dead
+
+posting_state:
+draft → scheduled → uploading → processing → published | failed | needs_manual
 ```
 
-**Implementation:** Add to job queue:
-```sql
-ALTER TABLE generation_jobs ADD COLUMN pipeline_state VARCHAR;
--- Track: planned → assets → audio → composed → rendered → posted
-
--- Example:
-SELECT id, pipeline_state, status FROM generation_jobs WHERE id = 'ep-001';
--- Result: 'composed', 'complete' (if rendering done but not posted yet, can resume at POST stage)
-```
+**Implementation:** Keep durable production state separate from execution jobs. Videos, packages, captions, renders, and posting targets are durable entities. Jobs only represent work execution and retries. Use posting idempotency keys to prevent duplicate uploads after worker retries.
 
 **Location:** Workflow F (PIPELINE) → F1 (Preconditions).
 
@@ -379,20 +363,35 @@ Support LoRA fine-tuning for brand consistency (future).
 
 ---
 
-## Summary: What We're Adopting
+## Summary: What We're Adopting (Revised Scope)
 
-| From | Principle | Adoption |
-|------|-----------|----------|
-| DeerFlow | Parallel agents | Phase 2–3 (asyncio) |
-| Arcads | UGC workflow | Phase 2 (add template) |
-| MoneyPrinter | Format normalization | Phase 2–3 (FFmpeg chains) |
-| MoneyPrinter | Job queue | Phase 3 (PostgreSQL) |
-| Wan2GP | Queue architecture | Phase 3 (reference) |
-| Toolkit | Remotion composition | Phase 2–3 (optional) |
-| Toolkit | Lifecycle tracking | Phase 3 (state machine) |
-| Toolkit | Screen recording | Phase 2–3 (Playwright) |
-| Wan2GP | LoRA customization | Phase 4+ (research) |
-| DeerFlow | Learning loop | Phase 4+ (analytics) |
+**LOCAL PRODUCTION (Phases 2–4):**
+
+| From | Principle | Phase | Scope |
+|------|-----------|-------|-------|
+| DeerFlow | Parallel agents | Phase 3 | Smart scheduling (don't overload 24GB) |
+| Arcads | UGC workflow | Phase 2A | Template for product + talking-head |
+| MoneyPrinter | Format normalization | Phase 2A–2B | Master → multiple safe-zone variants |
+| MoneyPrinter | Job queue | Phase 2B | PostgreSQL + worker, local resumability |
+| Toolkit | Lifecycle tracking | Phase 2B | State machine for mid-pipeline resume |
+| Toolkit | Screen recording | Phase 2A | Playwright (optional, for tutorials) |
+
+**PUBLISHING (Phase 3+, Authorization-Dependent):**
+
+| From | Principle | Phase | Scope | Dependency |
+|------|-----------|-------|-------|------------|
+| n8n | Workflow automation | Phase 3 | Optional adapter wrapper | User configures n8n |
+| Toolkit | Distributed posting | Phase 4 | Multi-account scheduler | User provides credentials |
+| DeerFlow | Learning loop | Phase 5 | Local metrics + recommendations | User collects snapshots |
+
+**NOT ADOPTING (Out of Scope):**
+
+| From | Why Not |
+|------|---------|
+| DeerFlow full framework | Too complex; extract patterns only |
+| Wan2GP server | Not needed; Mac mini sufficient for target throughput |
+| Toolkit cloud APIs | FLUX.2, LTX-2, ElevenLabs (use local alternatives) |
+| Arcads platform | Paid; violates local-first constraint |
 
 ---
 

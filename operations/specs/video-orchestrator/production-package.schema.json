@@ -1,0 +1,482 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Video Orchestrator Production Package Manifest",
+  "description": "Complete manifest for a production-ready video package with all variants, captions, and platform targets. Single source video produces packages for all platform targets.",
+  "type": "object",
+  "required": [
+    "video_id",
+    "created_at",
+    "render_outputs",
+    "package_targets"
+  ],
+  "properties": {
+    "video_id": {
+      "type": "string",
+      "description": "Unique identifier for this video production. Format: alphanumeric, may include uuid or hash."
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Optional. Parent project identifier if video is part of a larger project."
+    },
+    "series_id": {
+      "type": "string",
+      "description": "Optional. Series identifier if video is part of a multi-episode series."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when production package was created."
+    },
+    "source_script_path": {
+      "type": "string",
+      "description": "Path to source script file (markdown or text). May be local or URL."
+    },
+    "source_audio_path": {
+      "type": "string",
+      "description": "Path to primary audio file (WAV or MP3). May be generated via TTS or user-provided."
+    },
+    "source_assets": {
+      "type": "array",
+      "description": "List of source assets used in composition (images, background videos, etc.).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "asset_id": {
+            "type": "string"
+          },
+          "asset_type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video",
+              "audio",
+              "animation"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "description": "Duration for video/audio assets."
+          }
+        }
+      }
+    },
+    "caption_outputs": {
+      "type": "array",
+      "description": "Caption files in various formats.",
+      "items": {
+        "type": "object",
+        "required": [
+          "format",
+          "language",
+          "path"
+        ],
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "srt",
+              "vtt",
+              "json"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "description": "ISO 639-1 language code (e.g., 'en', 'es', 'fr')."
+          },
+          "path": {
+            "type": "string",
+            "description": "File path to caption file."
+          },
+          "transcription_method": {
+            "type": "string",
+            "enum": [
+              "whisper_cpp",
+              "api",
+              "manual"
+            ]
+          },
+          "transcription_confidence": {
+            "type": "number",
+            "description": "Optional. Confidence score 0-1 for transcription accuracy."
+          }
+        }
+      }
+    },
+    "render_outputs": {
+      "type": "array",
+      "description": "Rendered video files in all target formats.",
+      "items": {
+        "type": "object",
+        "required": [
+          "format_key",
+          "path",
+          "resolution",
+          "duration_seconds"
+        ],
+        "properties": {
+          "format_key": {
+            "type": "string",
+            "description": "Reference to format-specs.json format_key (e.g., 'landscape_1920x1080_16x9')."
+          },
+          "path": {
+            "type": "string",
+            "description": "Path to rendered video file."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Resolution string (e.g., '1920x1080')."
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "description": "Aspect ratio (e.g., '16:9')."
+          },
+          "duration_seconds": {
+            "type": "number"
+          },
+          "file_size_bytes": {
+            "type": "integer"
+          },
+          "bitrate_kbps": {
+            "type": "integer"
+          },
+          "captions_burned": {
+            "type": "boolean",
+            "description": "Whether captions are hardcoded into this render."
+          }
+        }
+      }
+    },
+    "thumbnail_outputs": {
+      "type": "array",
+      "description": "Generated or selected thumbnail images.",
+      "items": {
+        "type": "object",
+        "required": [
+          "format_key",
+          "path"
+        ],
+        "properties": {
+          "format_key": {
+            "type": "string",
+            "description": "Which format this thumbnail is for (e.g., 'landscape_1920x1080_16x9')."
+          },
+          "path": {
+            "type": "string",
+            "description": "Path to thumbnail image file (jpg or png)."
+          },
+          "generation_method": {
+            "type": "string",
+            "enum": [
+              "generated_sdxl",
+              "generated_flux",
+              "extracted_frame",
+              "manual"
+            ]
+          },
+          "extraction_timecode": {
+            "type": "string",
+            "description": "If extracted_frame, timecode of frame (HH:MM:SS)."
+          }
+        }
+      }
+    },
+    "package_targets": {
+      "type": "array",
+      "description": "Per-platform upload packages. Each target contains everything needed for upload.",
+      "items": {
+        "$ref": "#/definitions/package_target"
+      }
+    },
+    "adapter_status": {
+      "type": "object",
+      "description": "Overall adapter readiness across all platforms.",
+      "properties": {
+        "last_verified_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "all_adapters_ready": {
+          "type": "boolean",
+          "description": "True if all target adapters are 'partially_supported' or better."
+        },
+        "manual_fallback_available": {
+          "type": "boolean",
+          "description": "Always true. Manual upload packages available for all targets."
+        }
+      }
+    },
+    "manual_upload_instructions": {
+      "type": "object",
+      "description": "Step-by-step manual upload instructions per platform.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string"
+          },
+          "package_target": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "optional_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "description": "Package completeness and validation status.",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "incomplete",
+            "errors",
+            "warnings"
+          ]
+        },
+        "completeness_percent": {
+          "type": "integer",
+          "description": "0-100, how complete the package is."
+        },
+        "all_formats_rendered": {
+          "type": "boolean"
+        },
+        "all_captions_generated": {
+          "type": "boolean"
+        },
+        "all_thumbnails_generated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Critical errors preventing upload.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "error"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "description": "Which phase had the error (render, caption, thumbnail)."
+          },
+          "message": {
+            "type": "string"
+          },
+          "affected_format_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Non-critical warnings. Package may be uploaded but quality may be affected.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "warning",
+              "info"
+            ]
+          },
+          "stage": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "affected_format_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recommendation": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "package_target": {
+      "type": "object",
+      "description": "Single platform-specific upload package.",
+      "required": [
+        "platform",
+        "package_target",
+        "adapter_status",
+        "video_path"
+      ],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "description": "Platform name (youtube, tiktok, instagram, etc.)"
+        },
+        "package_target": {
+          "type": "string",
+          "description": "Target variant on platform (long-form, shorts, reels, feed, etc.)"
+        },
+        "account_target": {
+          "type": "string",
+          "description": "Optional. Specific account handle if known. Used for distribution planning in Phase 4."
+        },
+        "adapter_mode": {
+          "type": "string",
+          "enum": [
+            "api",
+            "n8n",
+            "manual",
+            "browser_assisted",
+            "disabled"
+          ],
+          "description": "How this package should be uploaded in Phase 3+."
+        },
+        "adapter_status": {
+          "type": "string",
+          "enum": [
+            "partially_supported",
+            "manual_only",
+            "blocked_pending_app_review",
+            "blocked_pending_credentials",
+            "blocked_api_restricted",
+            "disabled"
+          ],
+          "description": "Current readiness level for this platform target."
+        },
+        "video_path": {
+          "type": "string",
+          "description": "Path to video file, format optimized for platform (from render_outputs)."
+        },
+        "video_duration_seconds": {
+          "type": "number"
+        },
+        "captions": {
+          "type": "object",
+          "description": "Caption configuration for this platform target.",
+          "properties": {
+            "primary_format": {
+              "type": "string",
+              "enum": [
+                "srt",
+                "vtt",
+                "json",
+                "hardcoded",
+                "none"
+              ]
+            },
+            "caption_files": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "language": {
+                    "type": "string"
+                  },
+                  "format": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "caption_note": {
+              "type": "string",
+              "description": "e.g., 'hardcoded into video', 'upload as subtitle track', 'not supported'"
+            }
+          }
+        },
+        "thumbnail_path": {
+          "type": "string",
+          "description": "Path to platform-optimized thumbnail image."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title for this platform target. May differ from default."
+        },
+        "title_rules": {
+          "type": "object",
+          "description": "Platform-specific constraints this title complies with."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description/caption text for platform."
+        },
+        "description_rules": {
+          "type": "object"
+        },
+        "hashtags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Platform-optimized hashtags. Order and count per platform-specs."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Additional tags if supported by platform."
+        },
+        "upload_ready": {
+          "type": "boolean",
+          "description": "All required fields present and formatted correctly for upload."
+        },
+        "manual_steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Step-by-step manual upload instructions for this platform target."
+        },
+        "known_limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Known platform-specific issues or workarounds needed for this upload."
+        },
+        "last_verified_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When platform specs for this target were last verified."
+        }
+      }
+    }
+  }
+}

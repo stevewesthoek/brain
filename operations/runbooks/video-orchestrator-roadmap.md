@@ -1,464 +1,586 @@
-# Video Orchestrator Roadmap — Phase 0 → Phase 5+
+# Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
-**Date Updated:** 2026-05-08  
-**Status:** Phase 0→1 complete (smart routing installed, 4 local models live). Phase 2 ready for implementation.  
+**Date Updated:** 2026-05-08 (Post-Review)  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2B ready for implementation.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
-**Constraint:** Zero external platform costs, local Mac mini M4 Pro only (90% available at night).
+**Architecture:** Local-first production + platform adapters (not fully local publishing)
 
 ---
 
-## Vision: Multi-Platform Production Studio
+## Vision: Local-First Video Production Studio
 
-The `/video` orchestrator will evolve from a **single-pipeline orchestrator** (rudimentary) to a **full multi-platform production studio** with:
+The `/video` orchestrator will evolve into a **local production control center** that:
 
-- ✅ **Platform Agnosticity:** Post to 7+ platforms without code changes
-- ✅ **File Format Agnosticity:** Generate master format, convert to all variants
-- ✅ **Account Agnosticity:** Route to any account on any platform
-- ✅ **Horizontal Scaling:** Many accounts per platform (YouTube 5 channels, TikTok 10 accounts, etc.)
-- ✅ **Vertical Scaling:** Batch produce 50+ videos per week sustainably
-- ✅ **Smart Routing:** Right model for right job (SDXL 95%, Wave/FLUX/Roop 5%)
-- ✅ **Job Queue:** Resumable, auditable batch processing with mid-pipeline recovery
-- ✅ **Learning Loop:** Performance tracking → optimization decisions
+- ✅ **Generates production-ready packages** for 7+ platforms (not direct posting)
+- ✅ **Local Media Pipeline:** Script generation, TTS, image/video generation, composition, captions, thumbnails — all on Mac mini
+- ✅ **Platform Adapters:** Publishing through authorized APIs, n8n, browser-assisted, or manual fallback
+- ✅ **Multi-Account Support:** Safe scheduling across many accounts with duplicate-content prevention and cooldowns
+- ✅ **Resource-Aware:** Smart scheduling for heavy models (FLUX, LoRA) at night; posting jobs parallel to generation
+- ✅ **Resumable:** Mid-pipeline recovery, state tracking, audit logs
+- ✅ **Learning Loop:** Track performance snapshots; optionally improve future batches
 
----
-
-## 9 Core Principles (From Industry Repos Analysis)
-
-Extracted from DeerFlow, Arcads, MoneyPrinter, Wan2GP, and Claude Code Video Toolkit:
-
-1. **Multi-Agent Parallelization** — Run independent generation tasks concurrently (45% speedup)
-2. **UGC / Product Photography Workflow** — Standard template for e-commerce videos
-3. **Format Normalization** — Generate master once, convert to all platform variants
-4. **Job Queue + Worker Architecture** — PostgreSQL queue + workers for resumable batch processing
-5. **Dynamic Composition** — Remotion for templated, programmatic video composition
-6. **Persistent Lifecycle Tracking** — State machine for mid-pipeline resume capability
-7. **Screen Recording Integration** — Playwright + FFmpeg for tutorial/demo automation
-8. **Brand/LoRA Customization** — Fine-tune models per brand for visual consistency
-9. **Persistent Learning** — Track performance metrics, optimize future batches
-
-**Reference:** `operations/standards/video-orchestrator-lessons-learned.md`
+**NOT included:** Real-time posting to all platforms, guaranteed cloud-free publishing, automatic analytics collection from all APIs, full LoRA training during peak hours.
 
 ---
 
-## Phase Summary
+## Architecture Summary
 
-| Phase | Duration | Status | Goal | Key Principles |
-|-------|----------|--------|------|-----------------|
-| **Phase 0** | Done (May 2026) | ✅ Complete | Smart model routing + 4 local models | #1 (smart routing) |
-| **Phase 1** | Done (May 2026) | ✅ Complete | Local image/video generation pipeline | SDXL, Wave, FLUX, Roop installed |
-| **Phase 2** | May 30 — Jun 15 | 🔄 Ready | Composition + format normalization | #2, #3, #5, #7 (UGC, format, screen recording, composition) |
-| **Phase 3** | Jun 15 — Jul 15 | 📋 Planned | Job queue + lifecycle tracking | #4, #6 (queue, lifecycle) |
-| **Phase 4** | Jul 15 — Aug 15 | 📋 Planned | Multi-account + account agnosticity | Account routing, account limits, #1 (parallelization) |
-| **Phase 5** | Aug 15 — Sep 15 | 📋 Future | LoRA customization + learning loop | #8, #9 (brand customization, analytics) |
-| **Phase 5+** | Sep 15+ | 📋 Research | Full automation, edge cases, refinement | Continuous improvement |
+### Local Infrastructure (Mac mini M4 Pro, 24GB RAM)
+- 4 local AI models (SDXL, Wave, FLUX, Roop)
+- PostgreSQL job queue + worker (Docker)
+- Local transcription (Whisper.cpp)
+- Script/metadata generation
+- Video composition + FFmpeg
+- Safe-zone-aware multi-format rendering
+- Thumbnail generation
+- Manifest and metadata assembly
+- Account registry (OS Keychain)
+- Performance metrics (local snapshots)
+
+### Publishing Infrastructure (Adapter-Dependent)
+- **Authorized APIs:** YouTube, Bluesky (when credentials/auth available)
+- **n8n Wrappers:** Optional centralization layer for authorized APIs
+- **Browser-Assisted:** Playwright automation for semi-authenticated workflows
+- **Manual Fallback:** Always available; user uploads generated package
+- Each adapter has status (supported, partial, manual_only, blocked)
+
+### Resource Management
+- **Resource Classes:** cpu_light, media_encode, image_fast, image_heavy, talking_head, posting, analytics
+- **Scheduling Constraint:** Only one heavy model job at a time (FLUX, LoRA → night mode preferred)
+- **Parallelism:** FFmpeg 2–3 concurrent encodes; posting jobs in separate pool
+- **Memory:** Track 24 GB shared memory; do not assume all 4 models run concurrently
 
 ---
 
-## Phase 0: Smart Model Routing ✅ (DONE — 2026-05-08)
+## Phase Summary (Revised Structure)
+
+| Phase | Timeline | Focus | Success Criteria |
+|-------|----------|-------|------------------|
+| **0–1** | ✅ Done | Smart routing + 4 models installed | Models tested, thermal stable, local setup confirmed |
+| **2A** | May 30–Jun 10 | Production Package MVP | One video → platform-ready packages for all defined platform targets |
+| **2B** | Jun 10–Jun 20 | Local Queue MVP | Batch of 5 videos can fail mid-run and resume without lost work |
+| **3** | Jun 20–Jul 15 | Posting Adapters (Partial) | Reliable publishing to 1–2 authorized platforms; manual packages for the rest |
+| **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
+| **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |
+
+**Total Timeline:** 6 months  
+**Total Resource Estimate:** 50 hours Claude Code (revised for adapter complexity)  
+**Local Infrastructure Cost:** $0 (excluding electricity ~$50/month, storage costs, paid platform APIs, optional cloud LLM/TTS)
+
+---
+
+## Phase 0: Smart Model Routing ✅ (DONE)
+
+**Status:** 2026-05-08
 
 **Deliverables:**
-- ✅ 4 local models installed: SDXL (30-60s), Wave (60-90s), FLUX (2-4min), Roop (30-120s)
-- ✅ Smart routing skill: `/video-generation-smart-router`
-- ✅ Routing decision matrix (task type → best model → speed/quality/VRAM/scheduling)
-- ✅ Performance profiles documented for all 4 models
-- ✅ Integration into `/video` orchestrator (C0 workflow)
-
-**Principles:** #1 (Multi-Agent Parallelization)
-
-**Key files:**
-- `ai/skills/custom/learned/video-generation-smart-router/SKILL.md`
-- `ai/skills/custom/learned/stable-diffusion-local/SKILL.md`
-- `ai/skills/custom/learned/wave-local/SKILL.md`
-- `ai/skills/custom/learned/flux-local/SKILL.md`
-- `ai/skills/custom/learned/roop-local/SKILL.md`
-- `operations/runbooks/local-video-generation-setup.md`
+- ✅ 4 local models: SDXL (30–60s), Wave (60–90s), FLUX (2–4 min), Roop (30–120s)
+- ✅ Smart routing skill with decision matrix
+- ✅ Performance profiles (VRAM, speed, quality per model)
+- ✅ Thermal stability verified (85% CPU safe)
 
 ---
 
-## Phase 1: Local Generation Pipeline ✅ (DONE — 2026-05-08)
+## Phase 1: Local Generation Pipeline ✅ (DONE)
+
+**Status:** 2026-05-08
 
 **Deliverables:**
-- ✅ 4 models installed with local setup (zero cloud APIs)
-- ✅ Performance benchmarks (VRAM, thermal, speed)
-- ✅ Thermal stability analysis (85% CPU safe, 0.5-1 year lifespan reduction acceptable)
-- ✅ Night-time batch scheduling guidelines (daytime: SDXL only; night: all models)
+- ✅ 4 models installed, tested, benchmarked
 - ✅ Installation runbook with troubleshooting
-- ✅ Decision log entry with rollback procedure
-
-**Principles:** #1 (local async inference with resource management)
+- ✅ Resource scheduling guidelines (day/night, model limits)
 
 ---
 
-## Phase 2: Composition + Format Normalization (🔄 Ready)
+## Phase 2A: Production Package MVP
 
-**Target:** May 30 — Jun 15, 2026  
-**Goal:** Enable platform-specific composition and format conversion without code changes. Implement 3 agnosticity layers.
+**Timeline:** May 30–June 10, 2026 (2 weeks)  
+**Goal:** Generate complete upload-ready packages for all defined platform targets (not post them; just create them)
 
-**Reference Document:** `operations/standards/video-orchestrator-holistic-review.md` (agnosticity analysis and gaps)
-
-### 2.1 Platform Agnosticity Layer
+### 2A.1: Platform & Format Specifications
 
 **Deliverables:**
-- [ ] Create `E2-platform-specs.json` (hashtags, descriptions, thumbnails, posting limits, account fields per platform)
-- [ ] Update Workflow E2 (POST) to read from JSON instead of hardcoded platform rules
-- [ ] Document all 7 platforms: YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, X
-- [ ] Add unit tests to verify E2 applies correct rules per platform
-- [ ] Test manual posting to 1 video per platform
+- Platform specs JSON: YouTube, YouTube Shorts, TikTok, Instagram Reels, Instagram Feed, LinkedIn, Facebook, Bluesky, X
+  - Fields: source_url, last_verified_at, verification_frequency_days, hashtag_count, description_max_length, thumbnail_required, posting_modes, adapter_status, known_constraints, manual_fallback
+- Format specs JSON: 9 output formats with safe zones, aspect ratios, bitrates, codecs
+- Caption specs JSON: SRT/VTT requirements, burn-in options, platform-specific caption fields
 
-**Principles:** #2 (UGC workflow foundation)
+**Schemas:**
+```json
+{
+  "platforms": {
+    "youtube": {
+      "name": "YouTube",
+      "source_url": "https://developers.google.com/youtube/v3",
+      "last_verified_at": "2026-05-08",
+      "formats": ["longform_16_9", "shorts_9_16"],
+      "posting_modes": ["api", "manual"],
+      "adapter_status": "supported",
+      "supports_direct_publish": true,
+      "supports_scheduling": true,
+      "supports_analytics": true,
+      "hashtag_count": {"min": 1, "max": 2},
+      "description_max": 5000,
+      "verification_frequency_days": 30,
+      "known_failure_modes": ["initial_upload_delay", "quota_limits"],
+      "requires_paid_plan": false
+    }
+  },
+  "formats": {
+    "youtube_longform": {
+      "resolution": "1920×1080",
+      "aspect_ratio": "16:9",
+      "safe_area": "1760×990",
+      "codec": "h264",
+      "bitrate_video": "5000k",
+      "notes": "YouTube supports up to 8K, but 1080p is standard"
+    }
+  }
+}
+```
 
-**Schema:** Platform → hashtag rules, description max length, thumbnail requirements, batch limits, account fields
-
-### 2.2 File Format Agnosticity Layer
-
-**Deliverables:**
-- [ ] Create `C4-format-specs.json` (resolution, fps, codec, bitrate per platform)
-- [ ] Update Workflow C4 (COMPOSE) to read from JSON instead of hardcoded table
-- [ ] Consolidate C4 (in COMPOSE) and E4 (in POST) — both read same JSON
-- [ ] Test encoding per platform (verify YouTube 1920×1080 looks good, TikTok 1080×1920 looks good)
-- [ ] Benchmark encoding time per format
-
-**Principles:** #3 (Format normalization foundation)
-
-**Schema:** Platform → resolution, fps, codec, bitrate, container format
-
-### 2.3 Account Selection (Basic) — Foundation for Phase 4
-
-**Deliverables:**
-- [ ] Add E0 workflow: Ask which account before posting to platform
-- [ ] Store account choice in manifest for audit trail
-- [ ] Pass account selection to `/n8n` for platform posting
-
-**Principles:** Foundation for #1 (parallelization across accounts)
-
-### 2.4 UGC / Product Photography Workflow
-
-**Deliverables:**
-- [ ] Document C1f template: "E-commerce Product Video"
-- [ ] Pattern: FLUX hero image → Wave talking head → FFmpeg composition
-- [ ] Test with 3 sample product videos
-- [ ] Add to `/video` orchestrator as optional C1f workflow
-
-**Principles:** #2 (UGC workflow template)
-
-### 2.5 Format Normalization Architecture (Design)
+### 2A.2: Local Transcription & Captions
 
 **Deliverables:**
-- [ ] Design C1z workflow: Master format (1920×1080) → parallel conversion to all variants
-- [ ] Document approach with FFmpeg filter chains per platform
-- [ ] Measure expected speedup (target: 45% faster than current per-format composition)
-- [ ] Plan Phase 3+ implementation
+- Whisper.cpp integration (local transcription, no API calls)
+- Caption generation: SRT, VTT, JSON formats
+- Burn-in capability (FFmpeg overlay for platforms that require it)
+- Caption versioning (keep raw + burned variants)
 
-**Principles:** #3 (Format normalization — design phase)
+**Workflow:**
+```
+Audio → Whisper.cpp → transcript.json
+transcript.json → format as SRT/VTT
+SRT + video → FFmpeg burn-in (optional)
+Keep both burned + raw captions for flexibility
+```
 
-### 2.6 Screen Recording Integration (Design)
+### 2A.3: Safe-Zone-Aware Multi-Format Rendering
 
 **Deliverables:**
-- [ ] Design C1d workflow: Playwright-based screen recording
-- [ ] Document use cases (software tutorials, product demos, UI walkthroughs)
-- [ ] Evaluate Playwright + FFmpeg integration pattern
-- [ ] Plan Phase 3 implementation
+- Safe-zone definitions per format (title-safe, action-safe areas)
+- Two rendering modes:
+  1. **Simple Transform:** Master 1920×1080 → FFmpeg crop/scale (for center-safe content)
+  2. **Canonical Timeline:** One timeline rendered to 16:9, 9:16, 1:1, 4:5 variants using templates
+- Recommendation: Default to canonical timeline for quality; use transform for simple content
 
-**Principles:** #7 (Screen recording integration — design phase)
+**Workflow:**
+```
+Source: script + audio + assets
+  ↓
+Canonical Timeline (animated objects positioned in safe zones)
+  ├─ 16:9 render (1920×1080, YouTube, LinkedIn)
+  ├─ 9:16 render (1080×1920, TikTok, Instagram Reels, Shorts)
+  ├─ 1:1 render (1080×1080, Instagram Feed, Facebook)
+  └─ 4:5 render (1080×1350, Instagram Feed preferred)
 
-**Files to create/update:**
-- `E2-platform-specs.json` (new)
-- `C4-format-specs.json` (new)
-- `ai/skills/custom/video/SKILL.md` (update E0 + E2 + C4 workflows)
-- `operations/standards/video-orchestrator-holistic-review.md` (reference)
+OR (for simple content):
+Master 1920×1080 → FFmpeg transform to all variants
+```
 
-**Success Criteria:**
-- [ ] Post same video to 7 platforms, verify correct specs applied per platform
-- [ ] Generate master 1920×1080, convert to 1080×1920 + 1080×1080 + 1280×720, verify aspect ratios correct
-- [ ] Account selection workflow works (choose account, post goes to correct account)
+### 2A.4: Thumbnail Packages
+
+**Deliverables:**
+- Design integration (via `/design` orchestrator)
+- Per-platform thumbnail specs (sizes, safe zones, format requirements)
+- Thumbnail versioning (multiple variants for A/B testing)
+
+### 2A.5: Manifest Schema
+
+**Deliverables:**
+- Production manifest JSON: tracks all generated assets, captions, variants, metadata
+- Example:
+```json
+{
+  "video_id": "episode-001",
+  "created_at": "2026-05-08T14:30:00Z",
+  "script": "scripts/episode-001.md",
+  "audio": "audio/episode-001-narration.wav",
+  "caption_sources": [
+    "captions/episode-001.srt",
+    "captions/episode-001.vtt",
+    "captions/episode-001.json"
+  ],
+  "thumbnails": [
+    {"variant": "v1", "path": "thumbnails/episode-001-v1.png", "size": "1280×720"}
+  ],
+  "production_packages": {
+    "youtube_longform": {
+      "video": "variants/episode-001-yt-longform-1920x1080.mp4",
+      "captions": "captions/episode-001.srt",
+      "thumbnail": "thumbnails/episode-001-v1.png",
+      "metadata": {
+        "title": "Episode 001: Title Here",
+        "description": "Full description...",
+        "hashtags": ["#tag1", "#tag2"],
+        "upload_ready": true
+      }
+    },
+    "tiktok": {
+      "video": "variants/episode-001-tiktok-1080x1920.mp4",
+      "captions": "captions/episode-001.vtt",
+      "thumbnail": "thumbnails/episode-001-v1.png",
+      "metadata": {...}
+    }
+  }
+}
+```
+
+### 2A Success Criteria
+- ✅ Generate complete production packages for all defined platform targets from one source
+- ✅ All packages include: video (correct format), captions (SRT/VTT), thumbnail, metadata
+- ✅ Manifest tracks every file and variant
+- ✅ Packages are upload-ready (human can upload without further editing)
 
 ---
 
-## Phase 3: Job Queue + Lifecycle Tracking
+## Phase 2B: Local Queue MVP
 
-**Target:** Jun 15 — Jul 15, 2026  
-**Goal:** Add resumable, auditable batch processing with mid-pipeline recovery and account limit enforcement.
+**Timeline:** June 10–June 20, 2026 (1.5 weeks)  
+**Goal:** No lost work; resume from mid-pipeline failure
 
-### 3.1 Job Queue + Worker Architecture
-
-**Deliverables:**
-- [ ] Design PostgreSQL schema: `generation_jobs` table (status, model, task_config, output_path, retry_count, error_message, timestamps)
-- [ ] Implement Python worker processes: pull jobs → execute → update status
-- [ ] Add job queueing CLI: `queue job --model sdxl --task thumbnail`
-- [ ] Implement retry logic: auto-retry failed jobs up to 3x with exponential backoff
-- [ ] Add audit logging: all job state changes tracked
-- [ ] Implement monitoring dashboard (jobs queued, running, complete, failed)
-
-**Principles:** #4 (Job queue + worker architecture)
-
-### 3.2 Lifecycle State Machine
+### 2B.1: PostgreSQL Schema & Docker Setup
 
 **Deliverables:**
-- [ ] Add `pipeline_state` column to jobs table: planned → assets → audio → composed → rendered → posted → archived
-- [ ] Implement state transitions in job worker (validate only valid transitions allowed)
-- [ ] Add mid-pipeline resume: "resume from POST stage"
-- [ ] Test mid-pipeline failure + recovery (e.g., composed but not posted → resume at POST)
+- Docker Compose file for PostgreSQL (local, port 5432)
+- Durable entity tables: videos, scripts, assets, renders, captions, production_packages, posting_targets, accounts
+- Job table for execution only (separate from video/asset entities)
+- Event log for audit trail
 
-**Principles:** #6 (Persistent lifecycle tracking)
+**Schema highlights:**
+```sql
+-- Durable production objects
+CREATE TABLE videos (
+  id UUID PRIMARY KEY,
+  series_id UUID,
+  title TEXT,
+  video_state VARCHAR(50),  -- planned, scripted, voiced, assets_ready, captions_ready, composed, variants_ready, ready_to_post, partially_posted, posted, archived
+  created_at TIMESTAMP
+);
 
-### 3.3 Account Registry + Limit Enforcement
+CREATE TABLE scripts (
+  id UUID PRIMARY KEY,
+  video_id UUID REFERENCES videos(id),
+  content TEXT,
+  created_at TIMESTAMP
+);
+
+CREATE TABLE captions (
+  id UUID PRIMARY KEY,
+  video_id UUID REFERENCES videos(id),
+  format VARCHAR(20),  -- srt, vtt, json
+  content TEXT,
+  burn_in_variant BOOLEAN
+);
+
+CREATE TABLE renders (
+  id UUID PRIMARY KEY,
+  video_id UUID REFERENCES videos(id),
+  format_key VARCHAR(50),  -- youtube_longform, tiktok, etc.
+  file_path VARCHAR(500),
+  codec VARCHAR(20),
+  bitrate VARCHAR(20),
+  created_at TIMESTAMP
+);
+
+CREATE TABLE production_packages (
+  id UUID PRIMARY KEY,
+  video_id UUID REFERENCES videos(id),
+  platform VARCHAR(50),
+  manifest_path VARCHAR(500),
+  ready_to_post BOOLEAN,
+  created_at TIMESTAMP
+);
+
+-- Execution-only, ephemeral
+CREATE TABLE jobs (
+  id UUID PRIMARY KEY,
+  video_id UUID REFERENCES videos(id),
+  job_type VARCHAR(50),  -- generation, rendering, caption, posting, etc.
+  model VARCHAR(50),
+  job_state VARCHAR(20),  -- pending, leased, running, succeeded, failed, dead
+  retry_count INT DEFAULT 0,
+  idempotency_key VARCHAR(100),  -- for posting jobs to prevent duplicates
+  created_at TIMESTAMP,
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP
+);
+
+CREATE TABLE events (
+  id UUID PRIMARY KEY,
+  entity_type VARCHAR(50),  -- video, job, account, etc.
+  entity_id UUID,
+  event_type VARCHAR(50),  -- created, state_changed, error, etc.
+  details JSONB,
+  created_at TIMESTAMP
+);
+```
+
+### 2B.2: Worker Process
 
 **Deliverables:**
-- [ ] Create `~/.config/video-orchestrator/accounts.json` (account name, platform, handle, daily_limit, batch_limit)
-- [ ] Implement F1 pre-flight check: validate account limits before running batch
-- [ ] Implement post-flight update: increment posted_count, update last_posted_at
-- [ ] Test limit enforcement (post 10 videos to account with daily_limit=5 → stops at 5)
+- Python worker daemon: pull jobs, execute, update states, log events
+- Retry logic: exponential backoff, max 3 retries
+- Lease-based job pulling (prevent concurrent execution)
 
-**Principles:** Foundation for account agnosticity
-
-### 3.4 Format Normalization (Implement)
+### 2B.3: Video/Asset/Render Registry
 
 **Deliverables:**
-- [ ] Implement C1z workflow: Generate master (1920×1080) → convert all variants in parallel
-- [ ] Create FFmpeg filter chains for each platform variant
-- [ ] Benchmark: sequential vs. parallel conversion (target: 45% faster)
-- [ ] Document when to use normalization vs. per-format composition
+- Durable tracking of: scripts, assets, renders, captions, packages
+- State machine per entity (video_state, render_state, etc.)
+- Mid-pipeline resume: query last completed state, resume from next stage
 
-**Principles:** #3 (Format normalization — implement)
-
-### 3.5 Screen Recording Integration (Implement)
-
-**Deliverables:**
-- [ ] Implement Playwright + FFmpeg pattern for screen recording
-- [ ] Add C1d workflow: Use case automation for walkthroughs
-- [ ] Test with 3 sample scenarios (software demo, UI guide, product feature)
-
-**Principles:** #7 (Screen recording integration — implement)
-
-**Success Criteria:**
-- [ ] Queue 5 jobs, pull and execute, verify status updates
-- [ ] Simulate failure, verify retry logic works
-- [ ] Test mid-pipeline recovery (fail at POST, resume at POST)
-- [ ] Post 10 videos to account with daily_limit=5, verify limit enforced
-- [ ] Generate master + 4 format variants, verify all correct
+### 2B Success Criteria
+- ✅ Queue 5 videos for processing
+- ✅ Simulate failure at render stage
+- ✅ Resume batch: completed stages skip, failed stage retries
+- ✅ All state transitions logged to event table
 
 ---
 
-## Phase 4: Multi-Account + Account Agnosticity
+## Phase 3: Posting Adapters (Partial)
 
-**Target:** Jul 15 — Aug 15, 2026  
-**Goal:** Enable multi-account posting, account selection, and account affinity scoring.
+**Timeline:** June 20–July 15, 2026 (4 weeks)  
+**Goal:** Publish only where authorization is real; manual fallback for the rest
 
-### 4.1 Account Selection + Distribution
-
-**Deliverables:**
-- [ ] Add F0 workflow: Account distribution selection (which platforms, which accounts per platform)
-- [ ] Update E0 (single video posting): Ask which account
-- [ ] Implement account routing in `/n8n`: route job to correct account credentials
-- [ ] Test multi-account posting: post same video to 3 TikTok accounts in parallel
-
-**Principles:** Account agnosticity + #1 (parallelization)
-
-### 4.2 Account Affinity Scoring
+### 3.1: Adapter Architecture
 
 **Deliverables:**
-- [ ] Design affinity model: which video style works best for which account
-- [ ] Implement scoring: professional → brand accounts, casual → personal accounts
-- [ ] Add to F0: recommend optimal account distribution based on video style
-- [ ] Test recommendations
+- Adapter interface: abstract base class for all posting adapters
+- Adapter registry with status: supported, partially_supported, manual_only, blocked_pending_credentials, blocked_pending_app_review, disabled
 
-**Principles:** Intelligent account routing
+**Adapter modes:**
+- **api:** Direct authorized platform API (YouTube with valid OAuth token)
+- **n8n:** n8n workflow wrapper (optional centralization)
+- **browser_assisted:** Playwright semi-automation (browser workflow, human review)
+- **manual:** Generate upload package, human posts
+- **disabled:** Platform currently unavailable
 
-### 4.3 Account Limits + Enforcement
-
-**Deliverables:**
-- [ ] Add per-account burst limit enforcement (max 5 videos/hour to avoid throttling)
-- [ ] Add cooling-off period: minimum 30 min between posts to same account
-- [ ] Test: verify posts staggered across accounts
-
-**Principles:** Account agnosticity + platform-aware scheduling
-
-### 4.4 Multi-Platform Account Switching
+### 3.2: YouTube Adapter (Phase 3 Target)
 
 **Deliverables:**
-- [ ] Implement account switching in `/n8n`: detect account change, use correct credentials
-- [ ] Add account credential encryption in accounts.json
-- [ ] Test: post to YouTube channel A, then B, verify correct accounts used
+- OAuth 2.0 flow (via Google API)
+- Upload helper: POST request with metadata
+- Scheduling support
+- Status tracking: uploading → processing → published → failed
+- Idempotency: prevent duplicate uploads on retry
 
-**Principles:** Account agnosticity
+**Posting workflow:**
+```
+production_package (YouTube)
+  → adapter.validate_credentials()
+  → adapter.upload(video, metadata)
+  → adapter.schedule(publish_time)
+  → adapter.poll_status()
+  → update posting_job.posting_state (published / failed)
+```
 
-**Success Criteria:**
-- [ ] Post same video to 3 TikTok accounts simultaneously
-- [ ] Affinity scoring recommends different account distribution for different video styles
-- [ ] Post 10 videos with burst_limit=5, verify only 5 posted in 1 hour, rest scheduled
+### 3.3: Bluesky Adapter (Phase 3 Target)
+
+**Deliverables:**
+- ATProto API integration
+- Post creation with video embed
+- Simple (no scheduling, real-time only)
+
+### 3.4: Manual Adapter (Always Available)
+
+**Deliverables:**
+- Package generation: copy video + metadata to `upload-packages/` folder
+- Human upload: user takes package, uploads via platform web/app
+- Tracking: record posted URL manually for analytics
+
+### 3.5: Posting Audit Logs
+
+**Deliverables:**
+- Table: posting_jobs (video_id, platform, account, adapter_mode, status, error, retry_count, timestamps)
+- Event log: all posting attempts, failures, retries
+
+### 3 Success Criteria
+- ✅ Authorized YouTube account: production_package uploads successfully
+- ✅ Bluesky account: post created with video
+- ✅ Unauthorized platform: manual package generated
+- ✅ Posting audit log shows all attempts
 
 ---
 
-## Phase 5: LoRA Customization + Learning Loop
+## Phase 4: Multi-Account Scheduler
 
-**Target:** Aug 15 — Sep 15, 2026  
-**Goal:** Add brand customization and performance-based optimization.
+**Timeline:** July 15–August 15, 2026 (4 weeks)  
+**Goal:** Safely distribute across many accounts without spam risk
 
-### 5.1 Brand / LoRA Customization
-
-**Deliverables:**
-- [ ] Evaluate LoRA fine-tuning for brand consistency
-- [ ] Document training workflow: 20-50 brand images → fine-tune FLUX
-- [ ] Test: generate 10 images with fine-tuned model, verify consistency
-- [ ] Add workflow option: "Use brand model" for FLUX generations
-
-**Principles:** #8 (Brand/LoRA customization)
-
-### 5.2 Persistent Learning Loop
+### 4.1: Account Registry
 
 **Deliverables:**
-- [ ] Add `video_performance` table: video_id, platform, posted_at, views, engagement_rate, roi
-- [ ] Implement metrics collection: nightly sync of YouTube, TikTok, Instagram analytics
-- [ ] Implement analysis: identify patterns (which model? which avatar? which hook?)
-- [ ] Add to F0: "Based on last month, avatar-X got 3x engagement, recommending for this batch"
-- [ ] Create analytics dashboard
+- Table: accounts (platform, handle, account_id, status, daily_limit, per_hour_burst_limit, min_cooldown_minutes)
+- Credentials: OS Keychain (encrypted local storage, reference in DB)
+- Account health: last_posted_at, posted_count_today, failure_streak
 
-**Principles:** #9 (Persistent learning)
-
-### 5.3 Animated Sequences (Optional)
+### 4.2: Content Distribution Policies
 
 **Deliverables:**
-- [ ] Evaluate Remotion framework for dynamic composition
-- [ ] Design use case: "Animated intro + talking head + outro"
-- [ ] Plan implementation if needed
+- Duplicate-content policy: min_delay_same_platform (e.g., 30 min between posts to same platform)
+- Caption variation: optional require different captions per account posting
+- Thumbnail variation: optional require different thumbnails
+- Account topic fit: soft constraint (e.g., brand accounts reject casual content)
 
-**Principles:** #5 (Dynamic composition — optional)
+### 4.3: F0 Workflow (Distribution Planning)
 
-**Success Criteria:**
-- [ ] LoRA training completes on 50 brand images
-- [ ] Generate 10 images with fine-tuned model, verify quality + consistency
-- [ ] Performance metrics collected 24h after posting
-- [ ] Learning recommendations identify best-performing avatar/hook/model
+**Deliverables:**
+- User selects: platforms + accounts for batch
+- Pre-flight validation:
+  - Adapter status check (supported / manual)
+  - Credential validity
+  - Account daily limits (won't exceed)
+  - Duplicate-content policy compliance
+  - Thermal/resource availability
+- Output: distribution manifest (video → platforms → accounts)
 
----
+### 4.4: Posting Job Scheduling
 
-## Agnosticity Validation
+**Deliverables:**
+- Stagger posts per account: enforce min_cooldown_minutes
+- Respect adapter limits: YouTube quota, TikTok rate limits
+- Separate thread pool: posting jobs don't compete with generation jobs
+- Idempotency: same posting job never posts twice (via idempotency_key)
 
-**See:** `operations/standards/video-orchestrator-holistic-review.md`
-
-### Platform Agnosticity ✅
-- [x] Can post to 7 platforms without code changes
-- [ ] Platform specs externalized to JSON (Phase 2)
-- [ ] All platform posting rules abstracted (Phase 2)
-
-### File Format Agnosticity ✅
-- [x] Can output to 5 formats (landscape, vertical, square, etc.)
-- [ ] Format specs externalized to JSON (Phase 2)
-- [ ] Master format → parallel conversion implemented (Phase 3)
-
-### Account Agnosticity ❌
-- [ ] Can select which account before posting (Phase 2)
-- [ ] Can post to multiple accounts simultaneously (Phase 4)
-- [ ] Account limits enforced (Phase 3-4)
-- [ ] Account affinity scoring (Phase 4)
+### 4 Success Criteria
+- ✅ Register 2+ accounts per platform
+- ✅ F0 workflow selects distribution
+- ✅ Pre-flight validation blocks if limits exceeded
+- ✅ Post 10 videos across 3 YouTube accounts with 30-min cooldown respected
 
 ---
 
-## Resource Allocation
+## Phase 5: Optimization & Optional LoRA
 
-### Phase 2 (3 weeks)
-- Claude Code: 10 hours (specs JSON, workflow updates, testing)
-- Manual testing: 8 hours (platform coverage, format validation)
-- Cost: $0 (local only)
+**Timeline:** August 15–September 15, 2026 (4 weeks)  
+**Goal:** Data-driven future improvements; optional brand customization
 
-### Phase 3 (4 weeks)
-- Claude Code: 15 hours (PostgreSQL setup, job queue, worker processes, state machine)
-- Manual testing: 10 hours (queue testing, recovery, format conversion)
-- Cost: $0 (local only, Docker)
+### 5.1: Performance Metrics (Local Snapshots)
 
-### Phase 4 (4 weeks)
-- Claude Code: 12 hours (account routing, affinity scoring, credential management)
-- Manual testing: 8 hours (multi-account posting, limits enforcement)
-- Cost: $0 (local only)
+**Deliverables:**
+- Table: performance_snapshots (video_id, platform, account, posted_at, hook, model, avatar, template_id, views, likes, comments, shares)
+- Collection: Manual snapshots (no automated analytics API polling; use manual data entry + optional API integration)
+- Dashboard: CSV export or simple web UI (localhost:5000)
 
-### Phase 5 (4 weeks)
-- Claude Code: 10 hours (LoRA training, analytics pipeline, learning loop)
-- Manual testing: 6 hours (model inference, performance tracking)
-- Cost: $0 (local only)
+### 5.2: Learning Recommendations
 
-**Total:** ~40 hours Claude Code, ~30 hours manual testing over 6 months.
-**Total Cost:** $0 (everything local on Mac mini M4 Pro)
-**Amazon Grant Usage:** For Claude Code development credits (completely separate from video orchestration infrastructure)
+**Deliverables:**
+- Query: which model/hook/avatar performed best in last 30 days?
+- Recommendation engine: suggest best performers for next batch
+- Example output: "Last month: hook X averaged 3.2% engagement; recommend for this batch"
 
----
+### 5.3: Optional LoRA Experiments (Not Blocking)
 
-## Implementation Strategy
+**Deliverables:**
+- LoRA fine-tuning scripts: train on 50 brand images (optional, 4–8 GPU hours)
+- LoRA model manager: load fine-tuned model if available
+- Caution: LoRA training on 24 GB Mac mini may succeed or may hit memory limits; benchmark first
+- **Does NOT block production:** If LoRA fails, fall back to base FLUX
 
-**Why Incremental?**
-- After Phase 2: Post to any platform, any format (MVP)
-- After Phase 3: Resumable batch processing with job queue
-- After Phase 4: Multi-account support with intelligent routing
-- After Phase 5: Full learning loop with brand customization
-
-Each phase adds concrete capability. No waiting 3 months for anything.
-
-**Parallel Workstreams:**
-- Platform specs JSON (Phase 2): Independent, can start now
-- Job queue design (Phase 3): Can be designed while Phase 2 ships
-- Account routing (Phase 4): Depends on Phase 2 account selection
-- LoRA / learning (Phase 5): Can start after Phase 3 infra ready
-
-**All underlying tools remain independently callable:**
-- Use `/ffmpeg` directly for custom video work
-- Use `/stb-pipeline` directly for episodic production
-- Use `/n8n` directly for workflows
-- The orchestrator is high-level routing. Individual skills are power-user layer. Both coexist.
+### 5 Success Criteria
+- ✅ Collect performance snapshots for 10 videos
+- ✅ Generate recommendations: best model, hook, avatar
+- ✅ (Optional) Train LoRA on 50 brand images; test inference
+- ✅ Production continues even if LoRA training fails
 
 ---
 
-## Known Constraints & Friction Points
+## Resource Scheduling & Constraints
 
-**Platform API Limitations:**
-- TikTok: Creator API restricted (need approval)
-- Instagram: App review in beta
-- YouTube: 100K videos/day API quota, 4+ hour initial waiting period
-- X: Rate limited (300 posts/15min)
+### Resource Classes
+- **cpu_light:** Metadata, script gen (can run anytime, negligible CPU)
+- **media_encode:** FFmpeg encoding (2–3 parallel, limit VRAM pressure)
+- **image_fast:** SDXL (30–60s, daytime OK)
+- **image_heavy:** FLUX, LoRA (2–4 min, schedule at night)
+- **talking_head:** Wave, Roop (60–120s, can run anytime but prefer lighter times)
+- **posting:** n8n, API, manual (separate thread pool, parallel to media jobs)
+- **analytics:** Metrics collection, LoRA training (night batch)
 
-**Solutions:**
-- TikTok: Use n8n + browser automation until API access
-- Instagram: Use browser automation or wait for app review
-- YouTube: Batch planning to avoid quota hits
-- X: Respect rate limits, queue posts
-
-**Local Resource Constraints:**
-- Mac mini M4 Pro: 24GB RAM, 90% available at night
-- Thermal limit: 85% CPU safe (0.5-1 year lifespan cost acceptable)
-- VRAM allocation: FLUX (18-20GB), Wave (8-12GB), SDXL (6-8GB), Roop (4-8GB)
+### Scheduling Rules
+1. **Only one heavy model job at a time** (FLUX, LoRA → night mode preferred)
+2. **FFmpeg:** 2–3 concurrent encodes if VRAM + CPU permit; monitor pressure
+3. **Posting jobs:** Separate thread pool; can run while generation jobs run
+4. **Night mode:** ~90% CPU/GPU available; safe for FLUX, LoRA, heavy batches
+5. **Day mode:** SDXL + posting + analytics only; reserve thermal headroom
+6. **Monitor:** Track RAM usage, thermal state, CPU load; throttle if exceeding 85% CPU
 
 ---
 
-## Timeline
+## Throughput Targets (Not Guarantees)
 
-| Phase | Duration | Start | End |
-|-------|----------|-------|-----|
-| Phase 0 | Done | 2026-05-07 | 2026-05-08 |
-| Phase 1 | Done | 2026-05-08 | 2026-05-08 |
-| Phase 2 | 3 weeks | 2026-05-30 | 2026-06-15 |
-| Phase 3 | 4 weeks | 2026-06-15 | 2026-07-15 |
-| Phase 4 | 4 weeks | 2026-07-15 | 2026-08-15 |
-| Phase 5 | 4 weeks | 2026-08-15 | 2026-09-15 |
+Validate each tier by benchmarking; actual throughput depends on content complexity, model selection, and resource availability.
 
-**Total:** 6 months (May — October 2026) from smart routing to full production studio.
+### Tier A (Simple): 30–100 videos/week
+- Script + TTS + static image + captions + all format variants
+- No talking-head, no FLUX, no LoRA
+- Minimal manual review
+
+### Tier B (Higher Quality): 15–50 videos/week
+- Custom thumbnails + multi-format rendering + manual review
+- SDXL or Wave (not FLUX)
+- 1–2 accounts per platform
+
+### Tier C (Avatar/Product): 5–25 videos/week
+- Talking-head (Wave) or avatar (Roop) or product photos
+- Higher generation time per video
+- 2–5 accounts per platform
+
+### Tier D (FLUX/LoRA/Complex): 2–10 videos/week
+- FLUX-heavy, LoRA, complex Remotion compositions
+- 4–8 hour batch jobs at night only
+- Benchmark required before committing
+
+---
+
+## Known Limitations & Workarounds
+
+### Posting
+- **TikTok API:** Direct posting requires TikTok Content Posting API product access and the official creator-info → initialize → export flow; fallback to manual upload or browser-assisted workflows when not approved.
+- **Instagram/Facebook:** Publishing depends on Meta API permissions, account type, OAuth setup, and app review; fallback to manual upload packages when not authorized.
+- **YouTube Quota:** YouTube upload quota costs and daily quota limits change over time. Store `last_verified_at`, quota assumptions, and failure modes in platform specs instead of hardcoding a videos/day claim.
+- **Bluesky:** Video posting is feasible through ATProto, but email verification, daily video limits, CDN limits, and moderation requirements apply and should be represented in adapter specs.
+- **X / LinkedIn:** Rate limits, API plan restrictions, and permissions are adapter constraints. Do not hardcode one global limit; verify before each implementation cycle.
+
+### LoRA Training
+- **FLUX LoRA on 24 GB Mac:** May succeed with careful memory management; not guaranteed
+- **Training time:** 4–8 GPU hours (run at night only)
+- **Fallback:** If training fails, fall back to base FLUX; do not block production
+
+### Captions
+- **Whisper.cpp:** Local, no API costs; quality depends on audio input
+- **Fallback:** Optional integration with cloud TTS/transcription APIs (user chooses)
+
+### Safe-Zone Rendering
+- **Simple content:** FFmpeg crop/scale sufficient
+- **Complex layouts:** Use canonical timeline (separate render per format)
+- **Benchmark:** Measure quality + time for both approaches; choose per project
+
+---
+
+## Cost Summary
+
+**Local Infrastructure:** $0
+- Docker + PostgreSQL: free
+- Worker process: free
+- Whisper.cpp: free
+- Python scripts: free
+
+**Not Included (User Responsibility):**
+- Electricity and wear from sustained local workloads
+- Storage: local SSD/NAS/cloud backup if desired
+- Optional paid APIs or platform plans where a platform requires them
+- Optional cloud LLM/TTS/transcription services if the user chooses quality or speed over fully local execution
+- Platform-specific business/app review costs, verification requirements, or developer-account constraints where applicable
 
 ---
 
 ## Next Steps
 
-**This Week:**
-1. ✅ Create `video-orchestrator-holistic-review.md` (agnosticity analysis)
-2. ✅ Create this roadmap (video-orchestrator-roadmap.md)
-3. ⏭️ Review with user for alignment
-4. ⏭️ Decide: Sonnet architecture review before Phase 2?
-5. ⏭️ Create Phase 2 implementation plan (detailed tasks)
+1. **Phase 2A (May 30):** Start platform/format/caption specs
+2. **Phase 2B (June 10):** Implement PostgreSQL queue
+3. **Phase 3 (June 20):** Begin posting adapter work; target YouTube + Bluesky
+4. **Phase 4 (July 15):** Multi-account scheduler
+5. **Phase 5 (Aug 15):** Metrics + optional LoRA
 
-**Go/No-Go for Phase 2:** Pending user feedback and optional Sonnet review.
-
----
-
-## References
-
-- `operations/standards/video-orchestrator-lessons-learned.md` — 9 principles, implementation candidates
-- `operations/standards/video-orchestrator-holistic-review.md` — Agnosticity analysis, gaps, consolidation
-- `operations/runbooks/local-video-generation-setup.md` — Model installation guide
-- `operations/decision-log.md` — Phase 2 Local Video Generation entry
-- `ai/skills/custom/video/SKILL.md` — Master orchestrator (6 workflows)
+All phases assume feedback and iteration; do not treat timelines as fixed.
