@@ -10,6 +10,7 @@ import {
   waitForLocalAppPortFree,
   forceStopLocalAppPort,
 } from "./local-app-lifecycle.js";
+import { normalizeYouTubeLifecycleSummary, redactVideoOrchestratorText, renderYouTubeLifecycleSummary } from "./dashboard.js";
 
 test("normalize legacy-only entry", () => {
   const app = normalizeLocalApp({
@@ -530,4 +531,126 @@ test("buildLocalAppsStatus shows running for successful health check", async () 
 
   assert.equal(result.apps.length, 1);
   assert.equal(result.apps[0]?.status, "running");
+});
+
+test("redactVideoOrchestratorText redacts token-like and credential-like content", () => {
+  const redacted = redactVideoOrchestratorText(
+    [
+      "access_token=abc123",
+      "refresh_token:def456",
+      "client_secret=ghi789",
+      "authorization_code=xyz",
+      "Bearer ya29.fake-token",
+      "credentialReference=keychain://video-orchestrator/youtube/example-account",
+      "credential_ref:keychain://video-orchestrator/youtube/example-account",
+      "keychain://video-orchestrator/youtube/example-account",
+      "ghp_abcdefghijklmnopqrstuvwxyz123456",
+      "sk-test1234567890",
+      "AKIA1234567890ABCD",
+      "AIzaFakeApiKey0123456789",
+    ].join(" | "),
+  );
+
+  assert.ok(redacted);
+  assert.match(redacted, /access_token=\[REDACTED\]/i);
+  assert.match(redacted, /refresh_token=\[REDACTED\]/i);
+  assert.match(redacted, /client_secret=\[REDACTED\]/i);
+  assert.match(redacted, /authorization_code=\[REDACTED\]/i);
+  assert.match(redacted, /Bearer \[REDACTED\]/i);
+  assert.match(redacted, /credential_reference=\[REDACTED\]/i);
+  assert.match(redacted, /sk-\[REDACTED\]/i);
+  assert.doesNotMatch(redacted, /keychain:\/\/video-orchestrator\/youtube\/example-account/i);
+  assert.doesNotMatch(redacted, /ghp_[A-Za-z0-9_-]+/i);
+  assert.doesNotMatch(redacted, /sk-test1234567890/i);
+  assert.doesNotMatch(redacted, /AKIA1234567890ABCD/i);
+  assert.doesNotMatch(redacted, /AIzaFakeApiKey0123456789/i);
+});
+
+test("normalizeYouTubeLifecycleSummary strips raw credential fields and preserves safe lifecycle data", () => {
+  const summary = normalizeYouTubeLifecycleSummary({
+    latest: {
+      video_id: "video-123",
+      platform: "youtube",
+      package_target: "long-form",
+      youtube_video_id: "YOUTUBE_VIDEO_ID_PLACEHOLDER",
+      lifecycle_state: "available_private",
+      privacy_status: "private",
+      upload_event_at: "2026-05-08T12:00:00Z",
+      last_checked_at: "2026-05-08T12:30:00Z",
+      status_check_pending: false,
+      manual_fallback_available: true,
+      last_warning: "credentialReference=keychain://video-orchestrator/youtube/example-account",
+      last_error: "access_token=abc123",
+      credential_reference: "keychain://video-orchestrator/youtube/example-account",
+      access_token: "abc123",
+      refresh_token: "def456",
+    },
+    counts: {
+      uploaded: 1,
+      processing: 0,
+      available_private: 2,
+      failed: 0,
+      unknown: 0,
+    },
+  });
+
+  assert.equal(summary.latest?.lifecycle_state, "available_private");
+  assert.equal(summary.latest?.youtube_video_id, "YOUTUBE_VIDEO_ID_PLACEHOLDER");
+  assert.equal(summary.latest?.privacy_status, "private");
+  assert.equal(summary.latest?.manual_fallback_available, true);
+  assert.equal(summary.counts.available_private, 2);
+  assert.equal(summary.counts.uploaded, 1);
+  assert.match(String(summary.latest?.last_warning ?? ""), /credential_reference=\[REDACTED\]/i);
+  assert.match(String(summary.latest?.last_error ?? ""), /access_token=\[REDACTED\]/i);
+  assert.equal((summary.latest as Record<string, unknown>).credential_reference, undefined);
+  assert.equal((summary.latest as Record<string, unknown>).access_token, undefined);
+  assert.equal((summary.latest as Record<string, unknown>).refresh_token, undefined);
+});
+
+test("renderYouTubeLifecycleSummary renders a safe placeholder and no controls for empty state", () => {
+  const html = renderYouTubeLifecycleSummary(null);
+  assert.match(html, /No YouTube lifecycle events yet\./);
+  assert.match(html, /Read-only status\./);
+  assert.doesNotMatch(html, /upload button/i);
+  assert.doesNotMatch(html, /oauth button/i);
+  assert.doesNotMatch(html, /keychain/i);
+  assert.doesNotMatch(html, /<button/i);
+});
+
+test("renderYouTubeLifecycleSummary shows counts and safe lifecycle metadata", () => {
+  const html = renderYouTubeLifecycleSummary({
+    latest: {
+      video_id: "video-123",
+      platform: "youtube",
+      package_target: "long-form",
+      youtube_video_id: "YOUTUBE_VIDEO_ID_PLACEHOLDER",
+      lifecycle_state: "available_private",
+      privacy_status: "private",
+      upload_event_at: "2026-05-08T12:00:00Z",
+      last_checked_at: "2026-05-08T12:30:00Z",
+      status_check_pending: true,
+      manual_fallback_available: true,
+      last_warning: "warning=[REDACTED]",
+      last_error: "error=[REDACTED]",
+    },
+    counts: {
+      uploaded: 1,
+      processing: 2,
+      available_private: 3,
+      failed: 4,
+      unknown: 5,
+    },
+  });
+
+  assert.match(html, /YouTube Upload Lifecycle/);
+  assert.match(html, /YOUTUBE_VIDEO_ID_PLACEHOLDER/);
+  assert.match(html, /available_private/);
+  assert.match(html, /uploaded<\/span> <strong>1<\/strong>/);
+  assert.match(html, /processing<\/span> <strong>2<\/strong>/);
+  assert.match(html, /available_private<\/span> <strong>3<\/strong>/);
+  assert.match(html, /failed<\/span> <strong>4<\/strong>/);
+  assert.match(html, /unknown<\/span> <strong>5<\/strong>/);
+  assert.doesNotMatch(html, /upload button/i);
+  assert.doesNotMatch(html, /oauth button/i);
+  assert.doesNotMatch(html, /refresh token/i);
 });

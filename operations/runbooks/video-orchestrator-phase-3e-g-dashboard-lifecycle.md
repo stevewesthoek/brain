@@ -52,6 +52,13 @@ Expected event sources include:
 - Confirm the panel shows `No YouTube lifecycle events yet.` when the local database has no lifecycle events
 - Confirm the response does not expose credential references or token material
 
+## Hardening Validation
+- Tested: token-like warning/error text is redacted before it reaches the UI
+- Tested: the lifecycle object only exposes sanitized fields and does not surface raw event data
+- Tested: the rendered lifecycle fragment stays read-only and does not add upload, OAuth, or Keychain controls
+- Deferred: richer drill-in history, alerting, and any workflow that would mutate upload state
+- Deferred: dashboard polling or any new YouTube API access path from the UI
+
 ## What the Dashboard Does Not Do
 - It does not upload video
 - It does not exchange OAuth codes
