@@ -22,6 +22,7 @@ Most subdirs here are the source behind home directory symlinks or other runtime
 | `docker/` | Docker daemon config |
 | `ssh/` | SSH config templates |
 | `antigravity/` | Antigravity centralized config, including MCP config templates and the user `mcp.json` path |
+| `ide-context.md` | IDE-facing context contract that tells Cursor, Kiro, Antigravity, and future AI IDEs how to use `brain` and `mind` as on-demand context sources |
 
 ## Content classes
 

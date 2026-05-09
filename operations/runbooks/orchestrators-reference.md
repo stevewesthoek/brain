@@ -1,6 +1,6 @@
 # Orchestrators Reference Guide
 
-**Your primary interface for all work.** Four master orchestrators route natural language to the right toolchain automatically. No need to remember individual skill commands — just describe what you need.
+**Your primary interface for all work.** Five master orchestrators route natural language to the right toolchain automatically. No need to remember individual skill commands — just describe what you need.
 
 ---
 
@@ -12,10 +12,11 @@
 | **`/web`** | Internet research, browser testing, authenticated interaction, automation scripts, scraping | "research X" / "test this form" / "scrape this site" / "find pricing on Y" |
 | **`/design`** | All design work — new projects, reference mimics, existing site upgrades, motion | "design a landing page" / "audit this site's motion" / "improve this UI" |
 | **`/video`** | Script writing, voiceovers, video composition, thumbnails, platform posting, batch pipelines | "write a script" / "generate voiceover" / "post this to YouTube" / "batch produce 10 episodes" |
+| **`/research`** | Source-grounded research, verification, synthesis, reports, and domain-specific routing including Bible research | "research this topic" / "verify this claim" / "compare these sources" / "what does the Bible say about X?" |
 
 ---
 
-## The Four Orchestrators
+## The Five Orchestrators
 
 ### `/code` — Master Code Orchestrator
 

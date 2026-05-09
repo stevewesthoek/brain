@@ -6,6 +6,7 @@
 code
 design
 video
+research
 memory
 review
 qa

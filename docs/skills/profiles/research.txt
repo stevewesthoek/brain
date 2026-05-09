@@ -1,7 +1,9 @@
 # Research profile
-# Activates research, scraping, browser, and synthesis skills.
-# Every entry below was observed in ai/skills/active on 2026-05-08.
+# Activates research, scraping, browser, synthesis, and domain-specific research skills.
+# Keep this larger than default, but still focused on research workflows.
 
+research
+bible-research
 autoresearch
 firecrawl
 apify

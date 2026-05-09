@@ -13,6 +13,7 @@ This index preserves existing skill names. It does not rename, delete, or merge 
 | `code` | General code work and repo implementation | Yes | Main engineering entry point |
 | `design` | High-level design orchestration | Yes | Routes to dormant design subskills when needed |
 | `video` | High-level video production orchestration | Yes | Routes to video production subskills and package workflows |
+| `research` | High-level research orchestration | Yes | Routes to web, Bible research, source synthesis, and durable research notes |
 | `memory` | Memory and long-term context | Yes | Core context capability |
 | `review` | Review and critique | Yes | General review entry point |
 | `qa` | Quality assurance | Yes | General validation entry point |
@@ -37,7 +38,7 @@ Target size: about 20 active skills.
 Includes:
 
 ```text
-code, design, video, memory, review, qa, handoff, careful,
+code, design, video, research, memory, review, qa, handoff, careful,
 gh, firecrawl, playwright, ffmpeg, n8n, autoresearch
 ```
 
@@ -147,13 +148,14 @@ Path:
 docs/skills/profiles/research.txt
 ```
 
-Use for web research, scraping, source synthesis, browser automation, and large-context preprocessing.
+Use for web research, scraping, source synthesis, browser automation, large-context preprocessing, and domain-specific research.
 
 Key skills:
 
 | Skill | Use |
 |---|---|
-| `research` | General research orchestrator if present |
+| `research` | General research orchestrator; source: `ai/skills/custom/research/SKILL.md`; runbook: `operations/runbooks/research-orchestrator.md` |
+| `bible-research` | Specialist Scripture/theology research; source: `ai/skills/custom/bible-research/SKILL.md`; runbook: `operations/runbooks/bible-research.md` |
 | `autoresearch` | Automated research workflows |
 | `firecrawl` | Web scraping/crawling |
 | `apify` | Apify actors and scraping |
@@ -164,6 +166,14 @@ Key skills:
 | `graphify` | Structured visualization |
 | `memory` | Persist findings |
 | `review` | Critique research outputs |
+
+Related architecture:
+
+```text
+operations/runbooks/research-repo-google-drive-architecture.md
+```
+
+Do not add `bible-research` to the default profile unless it becomes a frequent always-on skill. `research` is intentionally in the default profile; `bible-research` is intentionally limited to the research profile to avoid bloating the always-on surface.
 
 ---
 

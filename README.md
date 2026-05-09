@@ -26,14 +26,24 @@ It is meant to be:
 
 ## Reading Order
 
-Start here:
+For AI agents, start here:
+
+1. `AGENTS.md`
+2. `00-start-here.md`
+3. `00-current-context.md`
+4. `00-memory-map.md`
+5. `README.md`
+6. `CLAUDE.md` when detailed repo-specific Claude behavior is needed
+
+For humans or repo browsing, start here:
+
 1. `README.md`
 2. `projects/README.md`
 3. `ai/README.md`
 4. `operations/README.md`
 5. `runtime/README.md`
 
-For personal context and business organisation information, see the mind repo (`~/Repos/stevewesthoek/mind`).
+For personal context and business organisation information, see the mind repo (`~/Repos/stevewesthoek/mind`). For AI-system context, skills, configs, runbooks, and automations, use this brain repo.
 
 ## Expanding This Repo
 

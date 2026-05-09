@@ -4,6 +4,18 @@
 
 Claude Code instructions for the `machine-brain` repo — AI infrastructure, system config, and skills. This is part of a split repo structure (see "Repo split" section below).
 
+## Required Brain Startup Protocol
+
+When working with the brain repo or any AI-system question, start with:
+
+1. `AGENTS.md`
+2. `00-start-here.md`
+3. `00-current-context.md`
+4. `00-memory-map.md`
+5. `README.md` when repo structure details are needed
+
+Do not load the whole brain repo. Use `00-memory-map.md`, then search/read only relevant files.
+
 ## Session lifecycle
 
 1. **Start** — If `.ai/current.md` exists in the target repo, run `/handoff resume`.

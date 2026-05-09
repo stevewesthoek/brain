@@ -20,6 +20,41 @@ When installing a new skill:
 2. Create a symlink in `active/` pointing to the source (e.g. `ln -s ../vendors/gstack/foo active/foo`).
 3. Never put raw skill folders directly in `active/`.
 
+# Cross-repo operating context: brain + mind
+
+Steve's two always-important context repos are:
+
+```text
+/Users/Office/Repos/stevewesthoek/brain
+/Users/Office/Repos/stevewesthoek/mind
+```
+
+Use `brain` for AI-system context: shared skills, global Claude/Codex/Gemini configs, orchestrators, runbooks, automations, tools, guardrails, model routing, and operational procedures.
+
+Use `mind` for Steve-specific personal context: personal knowledge, strategy, convictions, ministry context, business context, active projects, tasks, resources, and research.
+
+When a user asks anything about AI behavior, skills, tools, orchestrators, automation, global config, model routing, or operational runbooks, consult `brain` instead of relying on chat memory.
+
+When a user asks anything personal/contextual such as "what do I believe", "what is our strategy", "remember this", "save this to mind", "research this for me", or asks about Yeshua Academy, ProChat, Arkware, marketing, business, Bible/theology, or prior decisions, consult `mind` instead of relying on chat memory.
+
+Startup protocol when `brain` context is relevant:
+
+1. Read `/Users/Office/Repos/stevewesthoek/brain/AGENTS.md`.
+2. Read `/Users/Office/Repos/stevewesthoek/brain/00-start-here.md`.
+3. Read `/Users/Office/Repos/stevewesthoek/brain/00-current-context.md`.
+4. Read `/Users/Office/Repos/stevewesthoek/brain/00-memory-map.md`.
+5. Search/read only the relevant folders. Do not load the whole repo.
+
+Startup protocol when `mind` context is relevant:
+
+1. Read `/Users/Office/Repos/stevewesthoek/mind/AGENTS.md`.
+2. Read `/Users/Office/Repos/stevewesthoek/mind/00-start-here.md`.
+3. Read `/Users/Office/Repos/stevewesthoek/mind/00-current-context.md`.
+4. Read `/Users/Office/Repos/stevewesthoek/mind/00-memory-map.md`.
+5. Search/read only the relevant folders. Do not load the whole vault.
+
+These repos may be used even when Claude Code starts inside another repo. The current working repo remains the implementation target; `brain` and `mind` are cross-repo context sources.
+
 # Memory system
 
 Use a 4-layer memory model:
