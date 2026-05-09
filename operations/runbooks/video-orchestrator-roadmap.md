@@ -71,6 +71,7 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **3E-E** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete |
 | **3E-F** | Aug 15–Sep 15 | YouTube Upload Lifecycle / Status Handling | Add read-only lifecycle checks for known private uploads without new publishing capability |
 | **3E-G** | Aug 15–Sep 15 | Dashboard Surfacing for YouTube Upload Lifecycle | Show read-only lifecycle state in the dashboard without adding controls |
+| **3Z** | Sep 15–Sep 20 | Security, Operations, and End-to-End Readiness Review | Review accumulated boundaries and readiness before any broader expansion |
 | **3X** | Jun 20–Jul 15 | Optional oMLX Local LLM Provider MVP | Add a localhost-only metadata variants provider for low-risk text tasks |
 | **3Y** | Jun 20–Jul 15 | MacBook oMLX Sidecar Worker | Add an opt-in trusted Thunderbolt/LAN worker-node path for low-risk text tasks |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
@@ -686,6 +687,34 @@ CREATE TABLE events (
 - ✅ The dashboard shows lifecycle state for known uploads
 - ✅ Empty state is safe and informative
 - ✅ No new publishing capability is introduced
+
+---
+
+## Phase 3Z: Security, Operations, and End-to-End Readiness Review
+
+**Timeline:** September 15–September 20, 2026 (1 week)  
+**Goal:** Review the accumulated Video Orchestrator security boundaries, operational constraints, and end-to-end readiness without adding runtime capability
+
+### 3.1: Readiness Package
+
+**Deliverables:**
+- readiness report covering upload, token, dashboard, and sidecar boundaries
+- first-real-private-upload operator checklist
+- security boundary checklist for future phases
+- doc corrections where current text is inconsistent with the implementation
+
+### 3.2: Review Boundary
+
+**Behavior:**
+- No new upload capabilities
+- No new OAuth scopes or credential storage locations
+- No Keychain, dashboard, or API behavior changes
+- No public or unlisted upload expansion
+
+### 3.3: Success Criteria
+- ✅ The current phase boundaries are clearly documented
+- ✅ The first private upload path is reviewed honestly, including remaining operator prerequisites
+- ✅ The docs no longer imply broader upload capability than the implementation supports
 
 ---
 

@@ -567,6 +567,31 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - Operators can read lifecycle state safely from the dashboard
 - The dashboard remains read-only and does not widen the upload surface
 
+### Phase 3Z: Security, Operations, and End-to-End Readiness Review (September 15 – September 20)
+**Goal:** Review the accumulated Video Orchestrator security boundaries, operational constraints, and end-to-end readiness without adding runtime capability
+
+**Deliverables:**
+- readiness report covering upload, token, dashboard, and sidecar boundaries
+- first-real-private-upload operator checklist
+- security boundary checklist for future phases
+- doc corrections where current text is inconsistent with the implementation
+
+**Behavior:**
+- No new upload capabilities
+- No new OAuth scopes or credential storage locations
+- No Keychain, dashboard, or API behavior changes
+- No public or unlisted upload expansion
+
+**Testing:**
+- [ ] Boundary review docs are explicit and consistent
+- [ ] First-real-private-upload checklist is complete and honest about manual prerequisites
+- [ ] Security checklist covers secrets, Keychain, OAuth, dashboard, sidecar, and fallback
+
+**Success Criteria:**
+- The current phase boundaries are clearly documented
+- The first private upload path is reviewed honestly, including remaining operator prerequisites
+- The docs no longer imply broader upload capability than the implementation supports
+
 ### Phase 3X: Optional oMLX Local LLM Provider MVP (June 20 – July 15)
 **Goal:** Add a narrow local-only text provider for metadata variants without making oMLX required
 
