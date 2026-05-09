@@ -7,6 +7,9 @@ import { execFileSync } from 'node:child_process';
 const REFERENCE_RE = /^keychain:\/\/video-orchestrator\/([a-z0-9_-]+)\/([A-Za-z0-9._-]+)$/i;
 const TOKEN_HELPER = path.resolve('tools/scripts/video-orchestrator-credential-helper.mjs');
 const DEFAULT_DB_URL = process.env.VIDEO_ORCHESTRATOR_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5450/video_orchestrator';
+const DEFAULT_LOCAL_REGISTRY_PATH = 'runtime/local/video-orchestrator/account-registry.local.json';
+const DEFAULT_SNAPSHOT_PATH = 'runtime/local/video-orchestrator/account-health-snapshot.json';
+const DEFAULT_LOG_PATH = 'runtime/local/video-orchestrator/account-health.log';
 const SUPPORTED_CREDENTIAL_PLATFORMS = new Set(['youtube', 'bluesky', 'instagram']);
 const SECRET_KEY_RE = /(access[_-]?token|refresh[_-]?token|client[_-]?secret|authorization[_-]?code|credential[_-]?reference|keychain|bearer|api[_-]?key|password|cookie)/i;
 const SECRET_VALUE_RE = /\b(AIza[0-9A-Za-z_-]{10,}|sk_live_[0-9A-Za-z_-]{10,}|ghp_[0-9A-Za-z_-]{10,}|github_pat_[0-9A-Za-z_-]{10,}|xoxb-[0-9A-Za-z-]{10,}|AKIA[0-9A-Z]{12,}|Bearer\s+[A-Za-z0-9\-._~+/]+=*)\b/;
@@ -20,14 +23,35 @@ async function main(argv) {
     printJson({
       ok: true,
       usage: [
+        'print-default-paths',
+        'init-local-registry [--from <example_path>] [--to <local_path>] [--force]',
         'validate-registry <registry_path>',
         'check-account <registry_path> <account_id> --dry-run [--write-snapshot <path>]',
         'check-all <registry_path> --dry-run [--write-snapshot <path>]',
+        'write-nightly-snapshot <registry_path> --dry-run [--snapshot <path>]',
         'readiness-youtube-private-upload <registry_path> <account_id> --video-id <video_id> --package-target <target> --dry-run [--write-snapshot <path>]',
         'self-test',
       ],
     });
     process.exit(command ? 0 : 1);
+  }
+
+  if (command === 'print-default-paths') {
+    printJson({
+      ok: true,
+      operator_registry: DEFAULT_LOCAL_REGISTRY_PATH,
+      account_health_snapshot: DEFAULT_SNAPSHOT_PATH,
+      account_health_log: DEFAULT_LOG_PATH,
+    });
+    return;
+  }
+
+  if (command === 'init-local-registry') {
+    const fromPath = readOption(args, '--from') ?? 'operations/specs/video-orchestrator/examples/account-registry.example.json';
+    const toPath = readOption(args, '--to') ?? DEFAULT_LOCAL_REGISTRY_PATH;
+    const force = args.includes('--force');
+    printJson(initLocalRegistry(fromPath, toPath, force));
+    return;
   }
 
   if (command === 'validate-registry') {
@@ -57,6 +81,25 @@ async function main(argv) {
     if (!dryRun) fail('check-all requires --dry-run.');
     const result = await evaluateRegistry(registryPath, { dryRun: true, writeSnapshotPath: snapshotPath ?? null });
     printJson(result);
+    return;
+  }
+
+  if (command === 'write-nightly-snapshot') {
+    const registryPath = args[0];
+    const dryRun = args.includes('--dry-run');
+    const snapshotPath = readOption(args, '--snapshot') ?? DEFAULT_SNAPSHOT_PATH;
+    if (!registryPath) fail('write-nightly-snapshot requires <registry_path> --dry-run.');
+    if (!dryRun) fail('write-nightly-snapshot requires --dry-run.');
+    const result = await evaluateRegistry(registryPath, { dryRun: true, writeSnapshotPath: snapshotPath });
+    printJson({
+      ok: result.ok,
+      status: result.status,
+      summary: result.summary,
+      snapshot_written: result.snapshot_written,
+      checked_at: result.summary ? new Date().toISOString() : null,
+      message: result.ok ? 'Nightly account-health snapshot written.' : 'Nightly account-health snapshot not written.',
+      errors: result.ok ? undefined : result.errors,
+    });
     return;
   }
 
@@ -105,7 +148,7 @@ function validateAccountShape(account) {
   if (!account || typeof account !== 'object') return { errors: ['Account entries must be objects.'] };
   const authMode = String(account.auth_mode ?? '');
   const platform = String(account.platform ?? '');
-  const credentialReference = account.credential_reference ? String(account.credential_reference) : (account.credentialReference ? String(account.credentialReference) : '');
+  const credentialReference = getCredentialReference(account);
   const allowedPrivacy = Array.isArray(account.allowed_privacy) ? account.allowed_privacy.map((value) => String(value)) : [];
   if (!String(account.account_id ?? '').trim()) errors.push('account_id is required.');
   if (!platform) errors.push('platform is required.');
@@ -160,6 +203,33 @@ async function evaluateRegistry(registryPath, options = {}) {
   return { ok: true, status: overallStatus(evaluated), accounts: evaluated, summary: buildSummary(evaluated), snapshot_written: Boolean(options.writeSnapshotPath) };
 }
 
+function initLocalRegistry(fromPath, toPath, force) {
+  const sourcePath = String(fromPath || '').trim();
+  const targetPath = String(toPath || '').trim();
+  if (!sourcePath) return { ok: false, error: 'Source registry path is required.' };
+  if (!targetPath) return { ok: false, error: 'Target registry path is required.' };
+  if (fs.existsSync(targetPath) && !force) {
+    return { ok: false, error: 'Local registry already exists. Use --force to overwrite.' };
+  }
+  try {
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.copyFileSync(sourcePath, targetPath);
+    const validation = validateRegistryFile(targetPath);
+    if (!validation.ok) {
+      fs.unlinkSync(targetPath);
+      return { ok: false, error: 'Copied registry failed validation.', errors: validation.errors };
+    }
+    return {
+      ok: true,
+      created: true,
+      path: targetPath,
+      next_step: 'Edit this local file with your real account labels and credential references. Do not commit it.',
+    };
+  } catch (err) {
+    return { ok: false, error: redactText(String(err)) };
+  }
+}
+
 async function evaluatePrivateUploadReadiness(registryPath, accountId, videoId, packageTarget, options = {}) {
   const registryResult = await evaluateRegistry(registryPath, { accountId, dryRun: true });
   const account = registryResult.accounts[0];
@@ -209,7 +279,7 @@ async function evaluatePrivateUploadReadiness(registryPath, accountId, videoId, 
     auth_mode: account.auth_mode,
     manual_fallback_available: Boolean(account.capabilities.manual_fallback),
     next_action: account.next_action,
-    warnings: [...registryResult.summary.warnings, ...db.warnings],
+    warnings: [...(Array.isArray(account.warnings) ? account.warnings : []), ...db.warnings],
   };
 }
 
@@ -222,7 +292,13 @@ async function evaluateAccount(account, options = {}) {
     display_name: String(account.display_name ?? ''),
     auth_mode: authMode,
     enabled: Boolean(account.enabled),
-    capabilities: account.capabilities ?? {},
+    capabilities: {
+      upload: Boolean(account.capabilities?.upload),
+      status_check: Boolean(account.capabilities?.status_check),
+      refresh_supported: Boolean(account.capabilities?.refresh_supported ?? account.capabilities?.refresh_token),
+      analytics: Boolean(account.capabilities?.analytics),
+      manual_fallback: Boolean(account.capabilities?.manual_fallback),
+    },
     default_privacy: String(account.default_privacy ?? 'private'),
     allowed_privacy: Array.isArray(account.allowed_privacy) ? account.allowed_privacy.map((value) => String(value)) : [],
     manual_fallback: Boolean(account.capabilities?.manual_fallback),
@@ -242,7 +318,7 @@ async function evaluateAccount(account, options = {}) {
     };
   }
 
-  const credentialReference = String(account.credential_reference ?? '');
+  const credentialReference = getCredentialReference(account);
   const referenceValidation = validateReference(credentialReference);
   if (!referenceValidation.ok) {
     return {
@@ -481,6 +557,10 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
+function getCredentialReference(account) {
+  return String(account?.credential_reference ?? account?.credentialReference ?? '');
+}
+
 function escapeSqlLiteral(value) {
   return String(value).replace(/'/g, "''");
 }
@@ -611,17 +691,60 @@ async function selfTest() {
   }, null, 2));
   const camelValidation = validateRegistryFile(path.join(tmpDir, 'camel.json'));
   if (!camelValidation.ok) throw new Error('camelCase credentialReference should validate.');
+  const camelAccountHealth = await evaluateAccount({
+    account_id: 'youtube-camel-placeholder',
+    platform: 'youtube',
+    account_label: 'camel-channel',
+    display_name: 'Camel Credential Placeholder',
+    enabled: true,
+    auth_mode: 'oauth',
+    credentialReference: 'keychain://video-orchestrator/youtube/camel-channel-placeholder',
+    capabilities: { upload: true, status_check: true, refresh_token: true, analytics: false, manual_fallback: true },
+    default_privacy: 'private',
+    allowed_privacy: ['private'],
+    health_check: { enabled: true, frequency: 'nightly', warn_before_expiry_days: 7, keep_warm: true },
+    notification_policy: { on_red: true, on_yellow: true, channel: 'dashboard' },
+  }, { dryRun: true });
+  if (camelAccountHealth.status === 'grey' && camelAccountHealth.next_action.includes('credential reference')) throw new Error('camelCase credentialReference should not be treated as missing.');
+  if (!Array.isArray(camelAccountHealth.warnings)) throw new Error('camelCase account warnings should be an array.');
   fs.writeFileSync(path.join(tmpDir, 'secret.json'), JSON.stringify({
     schema_version: '1.0',
     accounts: [{ account_id: 'x', platform: 'youtube', account_label: 'a', display_name: 'b', enabled: true, auth_mode: 'oauth', credential_reference: 'keychain://video-orchestrator/youtube/a', capabilities: { upload: true, status_check: true, refresh_token: true, analytics: false, manual_fallback: true }, default_privacy: 'private', allowed_privacy: ['private'], health_check: { enabled: true, frequency: 'nightly', warn_before_expiry_days: 7, keep_warm: true }, notification_policy: { on_red: true, on_yellow: true, channel: 'dashboard' }, notes: 'access_token=abc' }],
   }, null, 2));
   const secretValidation = validateRegistryFile(path.join(tmpDir, 'secret.json'));
   if (secretValidation.ok) throw new Error('secret-looking registry should fail.');
-  const readiness = { ok: true, requires_manual_confirmation: true, safe_to_run_private_upload: false };
+  const defaults = JSON.parse(JSON.stringify({
+    ok: true,
+    operator_registry: DEFAULT_LOCAL_REGISTRY_PATH,
+    account_health_snapshot: DEFAULT_SNAPSHOT_PATH,
+    account_health_log: DEFAULT_LOG_PATH,
+  }));
+  if (defaults.operator_registry !== 'runtime/local/video-orchestrator/account-registry.local.json') throw new Error('default registry path mismatch.');
+  if (defaults.account_health_snapshot !== 'runtime/local/video-orchestrator/account-health-snapshot.json') throw new Error('default snapshot path mismatch.');
+  if (defaults.account_health_log !== 'runtime/local/video-orchestrator/account-health.log') throw new Error('default log path mismatch.');
+  const initSource = path.join(tmpDir, 'example.json');
+  const initTarget = path.join(tmpDir, 'account-registry.local.json');
+  fs.copyFileSync('operations/specs/video-orchestrator/examples/account-registry.example.json', initSource);
+  const initResult = initLocalRegistry(initSource, initTarget, false);
+  if (!initResult.ok || !fs.existsSync(initTarget)) throw new Error('init-local-registry failed.');
+  const initOverwrite = initLocalRegistry(initSource, initTarget, false);
+  if (initOverwrite.ok) throw new Error('init-local-registry should refuse overwrite without --force.');
+  const snapshotPath = path.join(tmpDir, 'account-health-snapshot.json');
+  const nightly = await evaluateRegistry(initTarget, { dryRun: true, writeSnapshotPath: snapshotPath });
+  if (!nightly.ok || !fs.existsSync(snapshotPath)) throw new Error('write-nightly-snapshot failed.');
+  const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
+  if (JSON.stringify(snapshot).includes('credential_reference')) throw new Error('snapshot must not expose credential references.');
+  if (JSON.stringify(snapshot).includes('keychain://')) throw new Error('snapshot must not expose keychain URLs.');
+  if (JSON.stringify(snapshot).includes('access_token')) throw new Error('snapshot must not expose token values.');
+  const readinessRegistry = await evaluateRegistry(registryPath, { dryRun: true });
+  const readiness = await evaluatePrivateUploadReadiness(registryPath, 'youtube-manual-placeholder', '00000000-0000-4000-8000-000000000001', 'long-form');
   if (readiness.requires_manual_confirmation !== true) throw new Error('readiness gate failed.');
+  if (!Array.isArray(readiness.warnings)) throw new Error('readiness warnings should be an array.');
+  if (!readinessRegistry.ok) throw new Error('readiness registry evaluation failed.');
+  if (readiness.safe_to_run_private_upload !== false) throw new Error('manual-only readiness should not be safe to run.');
   printJson({
     ok: true,
-    checked: ['validate-registry', 'redaction', 'manual-only-account', 'readiness-gate'],
+    checked: ['validate-registry', 'redaction', 'manual-only-account', 'readiness-gate', 'init-local-registry', 'write-nightly-snapshot', 'print-default-paths', 'camelCase-credentialReference', 'readiness-warnings'],
     redacted_preview: redacted,
   });
 }

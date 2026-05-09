@@ -766,6 +766,46 @@ CREATE TABLE events (
 - ✅ The dashboard shows read-only account status without exposing credential references
 - ✅ The first private upload checklist is automated as far as local state allows
 
+## Phase 4B: Operator Account Snapshot + Nightly Health Job
+
+**Timeline:** October 1–October 8, 2026 (1 week)  
+**Goal:** Make account health a set-and-forget local flow with an untracked operator registry and a nightly dashboard snapshot
+
+### 4B.1: Local Registry Bootstrap
+
+**Deliverables:**
+- init command for the operator-owned local registry
+- default local registry paths under `runtime/local`
+- ignore-safe runtime artifact guidance
+
+### 4B.2: Nightly Snapshot Job
+
+**Deliverables:**
+- dry-run nightly snapshot command
+- safe dashboard snapshot file
+- local log path for snapshot runs
+
+### 4B.3: Dashboard Read Path
+
+**Deliverables:**
+- dashboard reads snapshot only
+- no credential-reference display
+- no Keychain access from dashboard
+
+### 4B.4: Behavior
+
+**Behavior:**
+- No upload capability is added
+- No new OAuth scopes are introduced
+- No secrets are stored in the repo
+- No public or unlisted upload support is added
+- No multi-account scheduler is introduced yet
+
+### 4B.5: Success Criteria
+- ✅ Operators can initialize a local registry in one command
+- ✅ Nightly health checks produce a safe dashboard snapshot
+- ✅ Runtime files remain untracked and outside the repo history
+
 ---
 
 ## Phase 3X: Optional oMLX Local LLM Provider MVP

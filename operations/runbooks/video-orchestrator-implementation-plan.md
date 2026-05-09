@@ -682,6 +682,34 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - The dashboard shows read-only account status without exposing credential references
 - The first private upload checklist is automated as far as local state allows
 
+### Phase 4B: Operator Account Snapshot + Nightly Health Job (October 1 – October 8)
+**Goal:** Turn the account-health workflow into a set-and-forget local flow using an untracked operator registry and a safe dashboard snapshot
+
+**Deliverables:**
+- operator-owned local registry under `runtime/local`
+- init command to copy the placeholder registry into the local path
+- nightly snapshot command for the safe dashboard file
+- local log path for nightly runs
+- docs for scheduler wiring without enabling destructive jobs
+
+**Behavior:**
+- No upload capability is added
+- No new OAuth scopes are introduced
+- No secrets are stored in the repo
+- No public or unlisted upload support is added
+- No multi-account scheduler is introduced yet
+
+**Testing:**
+- [ ] Local registry initialization refuses overwrite without `--force`
+- [ ] Nightly snapshot writes a redacted dashboard file
+- [ ] Dashboard reads the snapshot only
+- [ ] Snapshot never exposes credential references or token values
+
+**Success Criteria:**
+- Operators can initialize a local registry in one command
+- Nightly health checks produce a safe dashboard snapshot
+- Runtime files remain untracked and outside the repo history
+
 **Deliverables:**
 
 1. **Account Registry** (Phase 2B schema already includes)
