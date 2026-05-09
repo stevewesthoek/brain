@@ -158,6 +158,7 @@ Key skills:
 |---|---|
 | `research` | General research orchestrator; source: `ai/skills/custom/research/SKILL.md`; runbook: `operations/runbooks/research-orchestrator.md` |
 | `bible-research` | Specialist Scripture/theology research; source: `ai/skills/custom/bible-research/SKILL.md`; runbook: `operations/runbooks/bible-research.md` |
+| `scripture-sources` | Dormant Bible text/source retrieval layer for API.Bible, verse lookup, translation comparison, Greek/Hebrew, Strong's-style data, and Bible proof maps; source: `ai/skills/custom/scripture-sources/SKILL.md`; runbook: `operations/runbooks/scripture-source-stack.md` |
 | `autoresearch` | Automated research workflows |
 | `firecrawl` | Web scraping/crawling |
 | `media-acquisition` | Dormant yt-dlp capability for video/audio source metadata, subtitles, transcripts, thumbnails, and permitted media acquisition |
@@ -175,6 +176,7 @@ Related architecture:
 ```text
 operations/runbooks/research-repo-google-drive-architecture.md
 operations/runbooks/media-acquisition-yt-dlp.md
+operations/runbooks/scripture-source-stack.md
 operations/standards/human-writing-guardrails.md
 operations/runbooks/human-writing-guardrails-adoption.md
 ```

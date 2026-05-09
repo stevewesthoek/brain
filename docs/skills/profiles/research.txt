@@ -16,3 +16,4 @@ memory
 review
 
 media-acquisition
+scripture-sources

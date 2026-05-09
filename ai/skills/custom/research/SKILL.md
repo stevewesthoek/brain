@@ -26,7 +26,7 @@ Apply these silently.
 - **Quote sparingly.** Use short quotations only when wording matters; otherwise paraphrase.
 - **Track provenance.** For durable research, record title, author/source, date, URL/path, access date, and notes.
 - **Use `/web` for acquisition, not synthesis.** `/web` gets content, interacts with sites, or automates scraping. `/research` designs and synthesizes the research.
-- **Use domain skills when the domain has special methods.** Bible questions route to `/bible-research`; codebase research routes to `/code`; visual reference research may route to `/design`.
+- **Use domain skills when the domain has special methods.** Bible questions route to `/bible-research`; Scripture source retrieval routes to dormant `/scripture-sources`; codebase research routes to `/code`; visual reference research may route to `/design`.
 - **Human-facing polish comes last.** When producing final reports, letters, briefs, public notes, or recipient-facing research, apply `operations/standards/human-writing-guardrails.md` after source, evidence, and logic checks. Never use polish to hide uncertainty or make weak evidence sound strong.
 
 ---
@@ -168,7 +168,7 @@ Route by domain.
 
 | Domain signal | Route |
 |---|---|
-| Bible, Scripture, verse, passage, Greek, Hebrew, theology, sermon, Bible study | `/bible-research` |
+| Bible, Scripture, verse, passage, Greek, Hebrew, theology, sermon, Bible study | `/bible-research`; use dormant `/scripture-sources` for direct text, quotes, links, translation comparison, Greek/Hebrew, Strong's-style data, and Bible support maps |
 | Codebase, architecture, implementation, repo behavior | `/code` |
 | Visual references, design trends, UI patterns | `/design` plus `/web` if external sources needed |
 | Web scraping, browser interaction, site testing, automation | `/web` |

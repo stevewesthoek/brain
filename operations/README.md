@@ -10,6 +10,7 @@ Operational docs, helper scripts, deployment notes, and selected synced system c
 - `runbooks/` — repeatable procedures
   - **`human-writing-guardrails-adoption.md`** — why human-writing polish is a shared final-stage standard, not a separate always-on humanizer skill; lists which orchestrators use it and why.
   - **`media-acquisition-yt-dlp.md`** — install, safety boundaries, commands, folder layout, and natural-language routing for dormant yt-dlp media acquisition.
+  - **`scripture-source-stack.md`** — source architecture for Bible passage retrieval, API.Bible, original-language data, Strong's-style lookup, and Scripture proof maps.
   - **`gemini-preprocessing-hook.md`** — Gemini Flash auto-preprocessing for large inputs in Claude Code. Reduces context 70-80% on fetches/reads >20k tokens. See file for tuning and debugging.
   - **`rtk.md`** — RTK shell-output token optimization for Claude, Codex, and Gemini sessions, including verification and rollback.
 - `standards/` — durable standards used by multiple workflows
