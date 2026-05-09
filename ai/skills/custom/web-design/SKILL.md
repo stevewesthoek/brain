@@ -104,7 +104,18 @@ If the user does not specify sections, pick the closest template:
 - Use tweakcn for shadcn theming.
 - Use unicorn.studio for 3D background elements if requested.
 
+## Human-facing copy polish
+
+When the output includes landing-page copy, SaaS messaging, CTAs, section headlines, UX copy, or marketing text, apply `operations/standards/human-writing-guardrails.md` after positioning and layout are clear.
+
+Rules:
+- Do not use polish to change the offer, audience, or claim strength.
+- Replace generic SaaS language with concrete user pain and benefit.
+- Avoid AI copywriting clichés such as "seamless", "elevate", "unlock", "next-gen", and "transform" unless the user's brand voice explicitly calls for them.
+- Make copy sound like a founder speaking clearly to a specific buyer, not an agency template.
+
 ## Common pitfalls to avoid
 - Overloading with effects; keep hierarchy clear.
 - Purple-on-white defaults and generic theme choices.
 - Accessibility regressions (low contrast, motion overload).
+- Generic AI-sounding marketing copy that could fit any SaaS.

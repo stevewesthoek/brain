@@ -29,6 +29,7 @@ Apply these silently.
 - **Primary text has priority.** Commentaries, sermons, and articles are secondary.
 - **Do not fabricate scholarly citations.** If a commentary, lexicon, paper, church father, confession, or scholar is cited, it must come from an actual source available in the session or research repo.
 - **Pastoral caution.** For sensitive personal, trauma, abuse, marital, medical, or legal issues, provide biblical framing but recommend qualified pastoral/professional help where appropriate.
+- **Human-facing polish comes after exegesis.** For Bible stories, devotionals, apologetics letters, sermon drafts, and public teaching material, apply `operations/standards/human-writing-guardrails.md` only after biblical context, doctrine, and source checks are complete. Do not let style change meaning, doctrine, uncertainty, or citation quality.
 
 ---
 

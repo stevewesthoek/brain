@@ -55,6 +55,8 @@ Apply these silently — never explain them to the user.
 
 - **Asset inventory on completion.** After any pipeline run, log all produced assets (path, duration, platform, upload status) to the project's `production/manifest.json` for audit and re-use.
 
+- **Human-sounding scripts and captions.** For scripts, narration, hooks, titles, captions, descriptions, and community posts, apply `operations/standards/human-writing-guardrails.md` after the message, format, and platform are clear. Do not add claims or hype. Make the writing speakable, specific, and natural for the intended audience.
+
 ---
 
 ## Step 0: Classify Intent (No Intake Question)

@@ -54,6 +54,9 @@ A batch script generation succeeds or fails as a unit. If one script fails, surf
 ### Law 7: Respect Rate Limits
 When posting to multiple accounts, insert 500ms delays between posts. Never hammer platforms in parallel. Be a good citizen.
 
+### Law 8: Human Hooks Beat AI Hooks
+For topics, angles, hooks, scripts, captions, and post copy, apply `operations/standards/human-writing-guardrails.md` after strategy selection. Keep hooks specific and speakable. Avoid generic AI hype, fake urgency, inflated claims, and copy that sounds like it was generated from a template.
+
 ---
 
 ## Step 0: Classify Intent (No Intake Question)

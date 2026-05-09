@@ -89,6 +89,7 @@ Work from Genesis toward Revelation. Follow canon order loosely — Old Testamen
 2. No exact duplicates (same slug + same framing)
 3. Every episode is always 30 minutes
 4. Sleep-appropriate tone: gentleness, provision, rest, trust, quiet courage
+5. Apply `operations/standards/human-writing-guardrails.md` after Scripture/story grounding: the story must sound human, reverent, calm, and sleep-appropriate without invented doctrine, melodrama, modern slang, or generic AI devotional language
 
 ### Step 3 — Assign slug, title, thumbnail title
 

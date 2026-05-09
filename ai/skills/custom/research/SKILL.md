@@ -27,6 +27,7 @@ Apply these silently.
 - **Track provenance.** For durable research, record title, author/source, date, URL/path, access date, and notes.
 - **Use `/web` for acquisition, not synthesis.** `/web` gets content, interacts with sites, or automates scraping. `/research` designs and synthesizes the research.
 - **Use domain skills when the domain has special methods.** Bible questions route to `/bible-research`; codebase research routes to `/code`; visual reference research may route to `/design`.
+- **Human-facing polish comes last.** When producing final reports, letters, briefs, public notes, or recipient-facing research, apply `operations/standards/human-writing-guardrails.md` after source, evidence, and logic checks. Never use polish to hide uncertainty or make weak evidence sound strong.
 
 ---
 

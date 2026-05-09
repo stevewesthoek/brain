@@ -171,7 +171,11 @@ Related architecture:
 
 ```text
 operations/runbooks/research-repo-google-drive-architecture.md
+operations/standards/human-writing-guardrails.md
+operations/runbooks/human-writing-guardrails-adoption.md
 ```
+
+Human-writing guardrails are a shared final-stage standard, not a separate always-on humanizer skill. Use them for final human-facing research, apologetics, Bible stories, marketing copy, and video scripts only after the relevant domain checks are complete.
 
 Do not add `bible-research` to the default profile unless it becomes a frequent always-on skill. `research` is intentionally in the default profile; `bible-research` is intentionally limited to the research profile to avoid bloating the always-on surface.
 
