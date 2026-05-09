@@ -16,3 +16,5 @@ mlx-pipeline-memory-safety
 meta-app-review-copy-facebook-page-posting
 meta-app-shape-empty-me-accounts
 meta-oauth-scope-failure
+
+media-acquisition

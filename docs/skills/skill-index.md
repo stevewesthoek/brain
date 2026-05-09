@@ -62,6 +62,7 @@ Key skills:
 |---|---|
 | `video` | Main orchestrator |
 | `viral-flow` | Strategy, topics, angles, hooks, scripts |
+| `media-acquisition` | Dormant yt-dlp capability for online video/audio metadata, subtitles, transcripts, thumbnails, and permitted media acquisition |
 | `ffmpeg` | Encoding, captions, format transforms |
 | `stb-pipeline` | Narrated slideshow / TTS pipeline patterns |
 | `design` | Thumbnails and visual polish |
@@ -103,6 +104,7 @@ Key skills:
 | `impeccable` | Tactical frontend polish |
 | `ui-ux-pro-max` | UI/UX intelligence |
 | `dembrandt` | Visual/brand support |
+| `media-acquisition` | Dormant yt-dlp capability for permitted video/motion reference acquisition, thumbnails, subtitles, and metadata |
 | `graphify` | Visual graphing/diagram support |
 
 ---
@@ -158,6 +160,7 @@ Key skills:
 | `bible-research` | Specialist Scripture/theology research; source: `ai/skills/custom/bible-research/SKILL.md`; runbook: `operations/runbooks/bible-research.md` |
 | `autoresearch` | Automated research workflows |
 | `firecrawl` | Web scraping/crawling |
+| `media-acquisition` | Dormant yt-dlp capability for video/audio source metadata, subtitles, transcripts, thumbnails, and permitted media acquisition |
 | `apify` | Apify actors and scraping |
 | `notebooklm.md` | NotebookLM workflow notes |
 | `playwright` | Browser automation notes |
@@ -171,6 +174,7 @@ Related architecture:
 
 ```text
 operations/runbooks/research-repo-google-drive-architecture.md
+operations/runbooks/media-acquisition-yt-dlp.md
 operations/standards/human-writing-guardrails.md
 operations/runbooks/human-writing-guardrails-adoption.md
 ```

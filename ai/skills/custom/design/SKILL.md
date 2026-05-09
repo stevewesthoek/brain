@@ -23,6 +23,9 @@ The user does not know (and should not need to know) that `/taste-skill`, `/impe
 - "this design is too bland / too busy / too generic"
 - "add motion to this"
 - "the copy feels weak"
+- "find video/animation references for this design"
+- "use this landing-page/video as a motion reference"
+- "analyze motion style from these YouTube examples"
 - "harden this for production"
 - "what would make this feel more alive"
 - "my dashboard needs a better first-run experience"
@@ -164,6 +167,8 @@ Apply `/ui-ux-pro-max` for supplementary research only when:
 - Stack-specific component rules are required
 
 Do not invoke if DESIGN.md is complete and clear. This is background research, not a visible step.
+
+**Online video/motion references:** If the user asks for video examples, YouTube examples, animation references, product-demo references, ad references, or motion style research, route discovery through `/web` and acquisition through dormant `/media-acquisition`. Use metadata/subtitles/thumbnails first. Full media or frame extraction requires rights/permission clarity. Extract design principles; do not copy protected assets.
 
 ### A3. Design Spec → `/web-design`
 - Reads DESIGN.md and PRODUCT.md tokens

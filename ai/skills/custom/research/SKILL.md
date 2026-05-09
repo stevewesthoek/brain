@@ -44,6 +44,7 @@ Classify directly when intent is clear. Ask one clarifying question only when th
 - `FACT_CHECK` — verify a claim, quote, date, statistic, or source
 - `DOMAIN_RESEARCH` — specialized method required, such as Bible, legal, medical, finance, codebase, design
 - `REPORT` — durable memo, brief, annotated bibliography, or research package
+- `VIDEO_SOURCE_RESEARCH` — online video/audio sources, debates, sermons, lectures, interviews, playlists, transcripts, subtitles, timestamps, or video evidence
 
 **Evidence standard:**
 - `LIGHT` — enough for orientation
@@ -132,7 +133,36 @@ Use when verifying a claim, quote, statistic, event, or source.
 
 ---
 
-## Workflow G: Domain-Specific Research
+## Workflow G: Video Source Research
+
+Use when a research question depends on online videos, lectures, sermons, debates, interviews, playlists, subtitles, transcripts, or timestamped video evidence.
+
+Route implicitly:
+
+```text
+/research → /web for discovery if needed → dormant /media-acquisition for metadata/subtitles → evidence ledger → synthesis/review
+```
+
+Default acquisition level:
+
+```text
+metadata + subtitles/transcripts first
+full audio/video only when needed and rights/permissions allow it
+```
+
+Required outputs:
+- source URL, title, channel/uploader, upload date, access date, duration
+- subtitle/transcript path if acquired
+- relevant timestamps
+- claim/evidence relevance
+- rights or permission note
+- confidence and limitations
+
+Do not treat a semantic match, transcript line, or viral video as proof by itself. Video sources still need ordinary source criticism, context checks, and review.
+
+---
+
+## Workflow H: Domain-Specific Research
 
 Route by domain.
 
@@ -142,11 +172,12 @@ Route by domain.
 | Codebase, architecture, implementation, repo behavior | `/code` |
 | Visual references, design trends, UI patterns | `/design` plus `/web` if external sources needed |
 | Web scraping, browser interaction, site testing, automation | `/web` |
+| Online video/audio sources, YouTube debates, lectures, sermons, interviews, playlists, subtitles, transcripts | `/web` for discovery plus dormant `/media-acquisition` for metadata/subtitles/media |
 | Long source corpus or many documents | `/gemini` preprocessing plus `/research` synthesis |
 
 ---
 
-## Workflow H: Research Repo Output
+## Workflow I: Research Repo Output
 
 Use when the user wants research saved and iterated over time.
 
@@ -189,11 +220,12 @@ Rules:
 | "Find sources on X" | B | `/web` + source table |
 | "Compare X and Y" | E | comparison matrix |
 | "Is this claim true?" | F | fact-check workflow |
-| "Make a report/brief" | H | durable research note/report |
-| "What does the Bible say about X?" | G | `/bible-research` |
-| "Explain this passage" | G | `/bible-research` |
-| "Search my research repo" | H | local repo read/search, then synthesize |
-| "Save this research" | H | write Markdown note into research repo |
+| "Make a report/brief" | I | durable research note/report |
+| "What does the Bible say about X?" | H | `/bible-research` |
+| "Explain this passage" | H | `/bible-research` |
+| "Analyze this YouTube debate/video/sermon" | G | `/web` discovery if needed + dormant `/media-acquisition` metadata/subtitles |
+| "Search my research repo" | I | local repo read/search, then synthesize |
+| "Save this research" | I | write Markdown note into research repo |
 
 ---
 

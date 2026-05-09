@@ -40,6 +40,7 @@ Use this before answering AI-system, tooling, skill, config, runbook, automation
 | List available skills | `docs/skills/skill-index.md` |
 | Understand active/default profile | `docs/skills/profiles/default.txt` |
 | Research skills | `ai/skills/custom/research/`, `ai/skills/custom/bible-research/`, `docs/skills/profiles/research.txt` |
+| Media acquisition / yt-dlp | `ai/skills/custom/media-acquisition/SKILL.md`, `operations/runbooks/media-acquisition-yt-dlp.md` | `docs/skills/profiles/video.txt`, `docs/skills/profiles/research.txt`, `docs/skills/profiles/design.txt` |
 | Code orchestrator | `ai/skills/custom/code/SKILL.md` |
 | Web orchestrator | `ai/skills/custom/web/SKILL.md` |
 | Design orchestrator | `ai/skills/custom/design/SKILL.md` |

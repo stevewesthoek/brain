@@ -32,6 +32,10 @@ The user does not need to know the underlying skills exist; your job is to route
 - "schedule posting for this week"
 - "what format should I use for TikTok?"
 - "design a thumbnail that converts"
+- "analyze this YouTube video / playlist / debate / sermon"
+- "get subtitles / transcript / metadata from this video"
+- "find hooks from these videos"
+- "use this video as a reference / source / clip"
 
 ---
 
@@ -66,6 +70,7 @@ Classify directly from the user's message. Three dimensions: **Workflow** (what 
 | Workflow | Signals |
 |----------|---------|
 | **STRATEGY** | "find topics", "trending", "angles for", "hooks for", "discover", "what should I create" → routes to `/viral-flow` |
+| **MEDIA_ACQUISITION** | "analyze this YouTube video", "get transcript", "download subtitles", "use this video as reference", "find hooks from these videos", "extract audio", "collect thumbnails" → routes to dormant `/media-acquisition` |
 | **A: WRITE** | "script", "narration", "story", "write", "create dialogue", "outline" → with STRATEGY first (topic → angles → hooks → script) |
 | **B: VOICE** | "voiceover", "TTS", "generate audio", "narrate", "speech synthesis" |
 | **C: COMPOSE** | "render", "video", "reel", "compose", "combine audio + image", "make MP4" |
@@ -174,6 +179,32 @@ Returns: Complete script with:
 
 After script generation:
 > "Script ready (4:32 longform). Next: generate voiceover (Workflow B), create production packages, or publish through an authorized adapter?"
+
+---
+
+## Workflow MEDIA_ACQUISITION: Online Video/Audio Source Intake
+
+**Trigger:** User wants to analyze, research, cite, reference, clip, remix, or extract subtitles/audio/metadata from online media.
+
+Use dormant `/media-acquisition` automatically. The user should not need to name `yt-dlp`.
+
+Default acquisition level:
+
+```text
+research / hooks / source analysis → metadata + subtitles first
+reference / remix / clipping → metadata first, full media only if rights/permission allow
+```
+
+Route:
+
+```text
+/video → /web for discovery if needed → /media-acquisition → /ffmpeg if clipping/conversion is needed → /video production or synthesis
+```
+
+Required safeguards:
+- Preserve source URL, title, channel/uploader, access date, and rights notes.
+- Do not use for piracy, paywall bypass, private media, or redistribution without rights.
+- Prefer transcript/subtitle acquisition over full download unless media processing is truly needed.
 
 ---
 

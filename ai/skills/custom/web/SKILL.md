@@ -33,6 +33,7 @@ The user does not know (and should not need to know) that `/firecrawl`, `/browse
 Apply these silently — never explain them to the user.
 
 - **Firecrawl first for pure content.** If the task only needs page text/markdown and no auth, use firecrawl. Never use browse for read-only content extraction.
+- **Media URLs route to media acquisition.** If the target is video/audio media, YouTube, a playlist, subtitles, transcripts, thumbnails, or online audio/video download, route to dormant `/media-acquisition` instead of Firecrawl. Use metadata/subtitles first; full media only with rights/permission clarity.
 - **Browse for anything stateful.** If the task requires login, clicks, form fills, or visual verification — use browse. It has persistent session state.
 - **Playwright for anything recurring.** If the user will run this more than once, or wants it scheduled — write a script. Browse is for one-off iteration, Playwright is for durable automation.
 - **Apify for scale (50+ URLs or daily jobs).** For production-volume or scheduled multi-URL operations, use apify. Don't use browse or firecrawl for bulk work.
@@ -404,6 +405,7 @@ Standard n8n pattern:
 | Tool | Skill | Scope | Auth | State | Cost | Use when |
 |------|-------|-------|------|-------|------|---------|
 | `/firecrawl` | `firecrawl-wrapper.sh` | Read-only content | ❌ | Stateless | Free | Research, content extraction, full-site crawl |
+| `/media-acquisition` | `yt-dlp` | Online media metadata/subtitles/audio/video | Optional cookies only with permission | Filesystem outputs | Free | YouTube/video/audio URLs, subtitles, transcripts, thumbnails, permitted media downloads |
 | `/browse` | `browse <command>` | Interactive browser | ✅ (cookie-import) | Persistent | Free | Testing, one-off auth flows, form interaction, screenshots |
 | `/playwright` | `npx playwright` | Scripted automation | ✅ (in script) | Programmatic | Free | Reusable scripts, E2E tests, scheduled automation |
 | `/apify` | `apify-multi` + n8n | Cloud actors | ✅ (built-in) | Per-run | $50/mo | 50+ URLs, daily monitoring, production-scale scraping |
