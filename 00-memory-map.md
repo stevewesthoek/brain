@@ -25,6 +25,7 @@ Use this before answering AI-system, tooling, skill, config, runbook, automation
 | Codex global behavior | `operations/system-configs/codex/AGENTS.md` | `operations/system-configs/codex/README.md` |
 | Gemini global behavior | `operations/system-configs/gemini/GEMINI.md` | `operations/system-configs/gemini/` |
 | AI policy / guardrails | `ai/policy/` | global configs |
+| Human writing guardrails | `operations/standards/human-writing-guardrails.md` | `operations/runbooks/human-writing-guardrails-adoption.md`, `docs/skills/skill-index.md` |
 | Runbooks/procedures | `operations/runbooks/` | `operations/standards/` |
 | Operational decisions | `operations/decision-log.md` | relevant runbook/spec |
 | Scripts/tools | `tools/README.md`, `tools/scripts/` | tool-specific folder |
