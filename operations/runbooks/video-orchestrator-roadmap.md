@@ -806,6 +806,46 @@ CREATE TABLE events (
 - ✅ Nightly health checks produce a safe dashboard snapshot
 - ✅ Runtime files remain untracked and outside the repo history
 
+## Phase 4C: Dashboard Account Onboarding + OAuth Connect Flow
+
+**Timeline:** October 8–October 22, 2026 (2 weeks)  
+**Goal:** Make the dashboard the operator entry point for adding accounts, connecting YouTube OAuth, and regenerating local health state without manual JSON editing
+
+### 4C.1: Dashboard Onboarding
+
+**Deliverables:**
+- account onboarding form for YouTube
+- safe local registry write path
+- update-safe account metadata editing
+
+### 4C.2: OAuth Connect Flow
+
+**Deliverables:**
+- YouTube OAuth start button/link
+- localhost callback handling
+- Keychain token storage
+
+### 4C.3: Automatic Health Refresh
+
+**Deliverables:**
+- snapshot regeneration after save/connect
+- safe account status refresh
+- read-only health display in dashboard
+
+### 4C.4: Behavior
+
+**Behavior:**
+- No upload capability is added
+- No new OAuth scopes are introduced
+- No secrets are stored in the repo
+- No public or unlisted upload support is added
+- No multi-account scheduler is introduced yet
+
+### 4C.5: Success Criteria
+- ✅ Operators can add and connect YouTube accounts from the dashboard
+- ✅ Local registry and snapshot update automatically after save/connect
+- ✅ Dashboard remains read-only for upload actions
+
 ---
 
 ## Phase 3X: Optional oMLX Local LLM Provider MVP

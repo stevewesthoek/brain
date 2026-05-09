@@ -10,7 +10,7 @@ import {
   waitForLocalAppPortFree,
   forceStopLocalAppPort,
 } from "./local-app-lifecycle.js";
-import { normalizeAccountHealthSnapshot, normalizeYouTubeLifecycleSummary, redactVideoOrchestratorText, renderAccountHealthPanel, renderYouTubeLifecycleSummary } from "./dashboard.js";
+import { buildSafeAccountForDashboard, getDefaultVideoOrchestratorPaths, normalizeAccountHealthSnapshot, normalizeYoutubeOAuthClientConfig, normalizeYouTubeLifecycleSummary, redactVideoOrchestratorText, renderAccountHealthPanel, renderAccountsAndCredentialsPanel, renderYoutubeOAuthCallbackFailureHtml, renderYouTubeLifecycleSummary, sanitizeSafeAccountInput } from "./dashboard.js";
 
 test("normalize legacy-only entry", () => {
   const app = normalizeLocalApp({
@@ -744,4 +744,88 @@ test("renderAccountHealthPanel shows safe account metadata and avoids credential
   assert.doesNotMatch(html, /keychain/i);
   assert.doesNotMatch(html, /upload button/i);
   assert.doesNotMatch(html, /oauth button/i);
+});
+
+test("dashboard account onboarding helpers keep credential references out of UI and safe inputs", () => {
+  const paths = getDefaultVideoOrchestratorPaths();
+  assert.match(paths.registryPath, /runtime\/local\/video-orchestrator\/account-registry\.local\.json$/);
+  assert.match(paths.snapshotPath, /runtime\/local\/video-orchestrator\/account-health-snapshot\.json$/);
+
+  const saved = buildSafeAccountForDashboard({
+    account_id: "youtube-main",
+    platform: "youtube",
+    account_label: "main-channel",
+    display_name: "Main YouTube Channel",
+    enabled: true,
+    auth_mode: "oauth",
+    credential_reference: "keychain://video-orchestrator/youtube/main-channel",
+    capabilities: {
+      upload: true,
+      status_check: true,
+      refresh_supported: true,
+      analytics: false,
+      manual_fallback: true,
+    },
+    default_privacy: "private",
+    allowed_privacy: ["private"],
+    notes: "placeholder",
+  });
+  assert.equal((saved as Record<string, unknown>).credential_reference, undefined);
+  assert.equal(saved.platform, "youtube");
+  assert.equal(saved.capabilities.refresh_supported, true);
+
+  const accepted = sanitizeSafeAccountInput({
+    platform: "youtube",
+    account_id: "youtube-main",
+    account_label: "main-channel",
+    display_name: "Main YouTube Channel",
+    enabled: true,
+  });
+  assert.equal(accepted.ok, true);
+
+  const rejected = sanitizeSafeAccountInput({
+    platform: "youtube",
+    account_id: "youtube-main",
+    account_label: "main-channel",
+    display_name: "Main YouTube Channel",
+    enabled: true,
+    access_token: "abc123",
+  });
+  assert.equal(rejected.ok, false);
+
+  const html = renderAccountsAndCredentialsPanel([saved], { configured: false, client_id: null, oauth_client_mode: "pkce_public_client", client_secret_configured: false });
+  assert.match(html, /Accounts &amp; Credentials/);
+  assert.match(html, /Add YouTube Account/);
+  assert.match(html, /Connect YouTube/);
+  assert.match(html, /Configure OAuth Client/);
+  assert.match(html, /PKCE public client/);
+  assert.match(html, /Client secret: not stored in files/i);
+  assert.doesNotMatch(html, /credential_reference/i);
+  assert.doesNotMatch(html, /keychain:\/\//i);
+  assert.doesNotMatch(html, /client_secret/i);
+  assert.doesNotMatch(html, /access_token/i);
+  assert.doesNotMatch(html, /code_verifier/i);
+});
+
+test("normalizeYoutubeOAuthClientConfig keeps mode explicit and secret-free", () => {
+  const config = normalizeYoutubeOAuthClientConfig({
+    client_id: "example.apps.googleusercontent.com",
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.equal(config.client_id, "example.apps.googleusercontent.com");
+  assert.equal(config.oauth_client_mode, "pkce_public_client");
+  assert.equal(config.client_secret_configured, false);
+  assert.match(JSON.stringify(config), /"client_secret_configured":false/);
+  assert.doesNotMatch(JSON.stringify(config), /client_secret":/i);
+});
+
+test("renderYoutubeOAuthCallbackFailureHtml redacts token exchange details and keychain refs", () => {
+  const html = renderYoutubeOAuthCallbackFailureHtml("token endpoint rejected authorization_code=fake code_verifier=fake credential_reference=keychain://video-orchestrator/youtube/example-account access_token=abc123");
+  assert.match(html, /YouTube connection failed\. Token exchange was rejected\./);
+  assert.doesNotMatch(html, /authorization_code/i);
+  assert.doesNotMatch(html, /code_verifier/i);
+  assert.doesNotMatch(html, /credential_reference/i);
+  assert.doesNotMatch(html, /keychain:\/\//i);
+  assert.doesNotMatch(html, /abc123/i);
 });

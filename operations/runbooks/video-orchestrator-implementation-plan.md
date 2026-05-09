@@ -710,6 +710,35 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - Nightly health checks produce a safe dashboard snapshot
 - Runtime files remain untracked and outside the repo history
 
+### Phase 4C: Dashboard Account Onboarding + OAuth Connect Flow (October 8 – October 22)
+**Goal:** Make the dashboard the operator entry point for adding accounts, connecting YouTube OAuth, and regenerating local health state without manual JSON editing
+
+**Deliverables:**
+- dashboard account onboarding forms
+- safe local account registry write path
+- YouTube OAuth connect flow with localhost callback
+- macOS Keychain token storage boundary
+- automatic health snapshot regeneration after save/connect
+- OAuth client configuration state in runtime/local
+
+**Behavior:**
+- No upload capability is added
+- No new OAuth scopes are introduced
+- No secrets are stored in the repo
+- No public or unlisted upload support is added
+- No multi-account scheduler is introduced yet
+
+**Testing:**
+- [ ] Account onboarding form rejects secret-like fields
+- [ ] OAuth start omits code_verifier from responses
+- [ ] Callback stores tokens only in Keychain
+- [ ] Dashboard does not expose credential references or token values
+
+**Success Criteria:**
+- Operators can add and connect YouTube accounts from the dashboard
+- Local registry and snapshot update automatically after save/connect
+- Dashboard remains read-only for upload actions
+
 **Deliverables:**
 
 1. **Account Registry** (Phase 2B schema already includes)

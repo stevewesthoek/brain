@@ -264,8 +264,8 @@ function validateCallback(callbackUrl, expectedState) {
   if (!LOCALHOST_RE.test(parsed.hostname)) {
     return { ok: false, error: 'Callback host must be localhost only.' };
   }
-  if (parsed.pathname !== '/oauth/youtube/callback') {
-    return { ok: false, error: 'Callback path must be /oauth/youtube/callback.' };
+  if (parsed.pathname !== '/oauth/youtube/callback' && parsed.pathname !== '/api/video-orchestrator/oauth/youtube/callback') {
+    return { ok: false, error: 'Callback path must be /oauth/youtube/callback or /api/video-orchestrator/oauth/youtube/callback.' };
   }
   const state = parsed.searchParams.get('state') ?? '';
   if (state !== expectedState) {
@@ -639,7 +639,10 @@ function isPlaceholderClientId(clientId) {
 function isLocalhostRedirectUri(redirectUri) {
   try {
     const parsed = new URL(String(redirectUri ?? ''));
-    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && LOCALHOST_RE.test(parsed.hostname) && parsed.pathname === '/oauth/youtube/callback';
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && LOCALHOST_RE.test(parsed.hostname) && (
+      parsed.pathname === '/oauth/youtube/callback' ||
+      parsed.pathname === '/api/video-orchestrator/oauth/youtube/callback'
+    );
   } catch {
     return false;
   }

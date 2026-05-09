@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import http from "node:http";
 import os from "node:os";
 import fs from "node:fs";
@@ -32,7 +33,17 @@ import { stopAllLocalApps, restoreSystemAfterUpdate, gracefulShutdown, spawnUpda
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
+function base64Url(buffer: Buffer): string {
+  return buffer.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+const VIDEO_ORCHESTRATOR_RUNTIME_DIR = path.resolve(process.cwd(), "runtime/local/video-orchestrator");
+const VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "account-registry.local.json");
 const ACCOUNT_HEALTH_SNAPSHOT_PATH = path.resolve(process.cwd(), 'runtime/local/video-orchestrator/account-health-snapshot.json');
+const VIDEO_ORCHESTRATOR_OAUTH_CLIENT_CONFIG_PATH = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "youtube-oauth-client.local.json");
+const VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "oauth-state");
+const VIDEO_ORCHESTRATOR_ACCOUNT_HEALTH_LOG_PATH = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "account-health.log");
+const VIDEO_ORCHESTRATOR_ACCOUNT_HEALTH_SCRIPT = path.resolve(process.cwd(), "tools/scripts/video-orchestrator-account-health.mjs");
+const VIDEO_ORCHESTRATOR_CREDENTIAL_HELPER = path.resolve(process.cwd(), "tools/scripts/video-orchestrator-credential-helper.mjs");
 const FAVICON_SVG = `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="lobster-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -234,6 +245,88 @@ type RawAccountHealthSnapshot = {
   message?: unknown;
 };
 
+type LocalAccountCapabilitySnapshot = {
+  upload?: boolean;
+  status_check?: boolean;
+  refresh_supported?: boolean;
+  analytics?: boolean;
+  manual_fallback?: boolean;
+};
+
+type LocalAccountRegistryEntry = {
+  account_id: string;
+  platform: string;
+  account_label: string;
+  display_name: string;
+  enabled: boolean;
+  auth_mode: string;
+  credential_reference?: string;
+  capabilities: LocalAccountCapabilitySnapshot;
+  default_privacy: string;
+  allowed_privacy: string[];
+  health_check?: {
+    enabled?: boolean;
+    frequency?: string;
+    warn_before_expiry_days?: number;
+    keep_warm?: boolean;
+  };
+  notification_policy?: {
+    on_red?: boolean;
+    on_yellow?: boolean;
+    channel?: string;
+  };
+  notes?: string;
+};
+
+type LocalAccountRegistry = {
+  schema_version: "1.0";
+  accounts: LocalAccountRegistryEntry[];
+};
+
+type SafeDashboardAccount = {
+  account_id: string;
+  platform: string;
+  account_label: string;
+  display_name: string;
+  enabled: boolean;
+  auth_mode: string;
+  status: string;
+  capabilities: {
+    upload: boolean;
+    status_check: boolean;
+    refresh_supported: boolean;
+    analytics: boolean;
+    manual_fallback: boolean;
+  };
+  default_privacy: string;
+  allowed_privacy: string[];
+  manual_fallback: boolean;
+  notification_state: string;
+  last_checked_at: string | null;
+  next_action: string | null;
+  warnings: string[];
+};
+
+type OAuthClientConfig = {
+  client_id: string | null;
+  configured: boolean;
+  oauth_client_mode: "pkce_public_client" | "client_secret_keychain";
+  client_secret_configured: boolean;
+};
+
+type OAuthStateRecord = {
+  state: string;
+  code_verifier: string;
+  account_id: string;
+  account_label: string;
+  display_name: string;
+  credential_reference: string;
+  client_id: string;
+  redirect_uri: string;
+  created_at: string;
+  expires_at: string;
+};
+
 export function normalizeYouTubeLifecycleSummary(raw: RawYouTubeLifecycleSummary | null | undefined): YouTubeLifecycleSummary {
   const latestRaw = raw?.latest ?? null;
   const latest = latestRaw && typeof latestRaw === "object"
@@ -404,6 +497,75 @@ export function renderAccountHealthPanel(accountHealth: AccountHealthStatus | nu
   return html;
 }
 
+export function renderAccountsAndCredentialsPanel(accounts: SafeDashboardAccount[] | null | undefined, oauthClientConfig: OAuthClientConfig | null | undefined): string {
+  const configured = Boolean(oauthClientConfig?.configured);
+  const clientMode = oauthClientConfig?.oauth_client_mode ?? 'pkce_public_client';
+  const clientSecretConfigured = Boolean(oauthClientConfig?.client_secret_configured);
+  let html='<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">Accounts &amp; Credentials</h3>';
+  html+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+  html+='<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)">OAuth client: <strong>'+ (configured ? 'configured' : 'missing') +'</strong></div>';
+  html+='<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)">Mode: <strong>'+(clientMode === 'pkce_public_client' ? 'PKCE public client' : 'client secret via Keychain')+'</strong></div>';
+  html+='<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--muted)">Client secret: '+(clientSecretConfigured ? 'configured in Keychain' : 'not stored in files')+'</div>';
+  html+='<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--muted)">Dashboard is read-only for uploads and OAuth tokens.</div>';
+  html+='</div>';
+  html+='<div id="vo-accounts-list" style="display:grid;gap:10px">';
+  if(accounts&&accounts.length){
+    for(const account of accounts){
+      html+='<div class="vo-account-card" data-account-id="'+escapeHtml(account.account_id)+'" style="padding:12px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)">';
+      html+='<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">';
+      html+='<div><strong>'+escapeHtml(account.display_name)+'</strong><div style="color:var(--muted);margin-top:2px">Platform: '+escapeHtml(account.platform)+' • Auth: '+escapeHtml(account.auth_mode)+'</div></div>';
+      html+='<div style="text-align:right"><div style="font-weight:600">'+escapeHtml(account.status)+'</div><div style="color:var(--muted)">Last checked: '+escapeHtml(account.last_checked_at || '—')+'</div></div>';
+      html+='</div>';
+      html+='<div style="margin-top:8px;color:var(--muted)">Account label: '+escapeHtml(account.account_label || '—')+' • Manual fallback: '+String(account.manual_fallback ? 'available' : 'disabled')+'</div>';
+      html+='<div style="margin-top:4px;color:var(--muted)">Capabilities: upload '+String(account.capabilities.upload ? 'yes' : 'no')+' • status '+String(account.capabilities.status_check ? 'yes' : 'no')+' • refresh '+String(account.capabilities.refresh_supported ? 'yes' : 'no')+' • manual fallback '+String(account.capabilities.manual_fallback ? 'yes' : 'no')+'</div>';
+      html+='<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
+      html+='<button type="button" data-action="refresh-health" data-account-id="'+escapeHtml(account.account_id)+'" style="padding:6px 10px;border-radius:4px;border:1px solid var(--border);background:var(--subtle);color:var(--text);cursor:pointer">Refresh Health</button>';
+      if(account.platform === 'youtube'){
+        html+='<button type="button" data-action="connect-youtube" data-account-id="'+escapeHtml(account.account_id)+'" style="padding:6px 10px;border-radius:4px;border:1px solid var(--border);background:var(--subtle);color:var(--text);cursor:pointer">Connect YouTube</button>';
+      }
+      html+='</div>';
+      html+='<div style="margin-top:8px;color:var(--muted)">Next action: '+escapeHtml(account.next_action || '—')+'</div>';
+      if(account.warnings&&account.warnings.length){
+        html+='<ul style="margin:8px 0 0 16px;color:var(--muted)">';
+        for(const warning of account.warnings){ html+='<li>'+escapeHtml(warning)+'</li>'; }
+        html+='</ul>';
+      }
+      html+='</div>';
+    }
+  }else{
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--muted)">No account registry configured yet.</div>';
+  }
+  html+='</div>';
+  html+='<div style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.05);border-radius:4px">';
+  html+='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px">';
+  html+='<h4 style="margin:0;color:var(--text);font-size:0.9em">OAuth Client</h4>';
+  html+='<div style="color:var(--muted);font-size:0.8em">'+(configured ? 'configured' : 'missing')+'</div>';
+  html+='</div>';
+  html+='<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end">';
+  html+='<label style="display:grid;gap:4px;color:var(--muted)">Client ID<input name="vo-client-id" autocomplete="off" style="padding:8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text)" placeholder="your-client-id.apps.googleusercontent.com"></label>';
+  html+='<button type="button" data-action="save-oauth-client" style="padding:8px 12px;border-radius:4px;border:1px solid var(--border);background:var(--subtle);color:var(--text);cursor:pointer">Configure OAuth Client</button>';
+  html+='</div>';
+  html+='<p style="margin:8px 0 0 0;color:var(--muted)">Phase 4C uses PKCE public-client mode. Only the client ID is stored locally. Client secrets are not stored in files. Tokens stay in macOS Keychain.</p>';
+  html+='</div>';
+  html+='<div style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.05);border-radius:4px">';
+  html+='<h4 style="margin:0 0 8px 0;color:var(--text);font-size:0.9em">Add YouTube Account</h4>';
+  html+='<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:end">';
+  html+='<label style="display:grid;gap:4px;color:var(--muted)">Account ID<input name="vo-account-id" autocomplete="off" style="padding:8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text)" placeholder="youtube-main"></label>';
+  html+='<label style="display:grid;gap:4px;color:var(--muted)">Account Label<input name="vo-account-label" autocomplete="off" style="padding:8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text)" placeholder="main-channel"></label>';
+  html+='<label style="display:grid;gap:4px;color:var(--muted)">Display Name<input name="vo-display-name" autocomplete="off" style="padding:8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text)" placeholder="Main YouTube Channel"></label>';
+  html+='<label style="display:flex;align-items:center;gap:8px;color:var(--muted)"><input type="checkbox" name="vo-enabled"> Enabled</label>';
+  html+='</div>';
+  html+='<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
+  html+='<button type="button" data-action="save-account" style="padding:8px 12px;border-radius:4px;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer">Save Account</button>';
+  html+='<button type="button" data-action="connect-youtube" data-form="true" style="padding:8px 12px;border-radius:4px;border:1px solid var(--border);background:var(--subtle);color:var(--text);cursor:pointer">Connect YouTube</button>';
+  html+='</div>';
+  html+='</div>';
+  html+='<p style="margin:12px 0 0 0;color:var(--muted)">No credential references, token values, or Keychain labels are displayed here.</p>';
+  html+='</div>';
+  return html;
+}
+
 function readAccountHealthSnapshot(): AccountHealthStatus | null {
   try {
     if (!fs.existsSync(ACCOUNT_HEALTH_SNAPSHOT_PATH)) return null;
@@ -485,6 +647,328 @@ async function getVideoOrchestratorYouTubeLifecycleStatus(): Promise<{ ok: true;
 
 async function getVideoOrchestratorAccountHealthStatus(): Promise<{ ok: true; account_health: AccountHealthStatus | null }> {
   return { ok: true, account_health: readAccountHealthSnapshot() };
+}
+
+async function getVideoOrchestratorAccountCenterStatus(): Promise<{
+  ok: true;
+  accounts: SafeDashboardAccount[];
+  oauth_client_config: OAuthClientConfig;
+  paths: ReturnType<typeof getDefaultVideoOrchestratorPaths>;
+}> {
+  return {
+    ok: true,
+    accounts: listSafeAccountsFromRegistry(),
+    oauth_client_config: loadYoutubeOAuthClientConfig(),
+    paths: getDefaultVideoOrchestratorPaths(),
+  };
+}
+
+export function getDefaultVideoOrchestratorPaths() {
+  return {
+    runtimeDir: VIDEO_ORCHESTRATOR_RUNTIME_DIR,
+    registryPath: VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH,
+    snapshotPath: ACCOUNT_HEALTH_SNAPSHOT_PATH,
+    oauthClientConfigPath: VIDEO_ORCHESTRATOR_OAUTH_CLIENT_CONFIG_PATH,
+    oauthStateDir: VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR,
+    accountHealthLogPath: VIDEO_ORCHESTRATOR_ACCOUNT_HEALTH_LOG_PATH,
+  };
+}
+
+export function ensureVideoOrchestratorRuntimeDir(): void {
+  fs.mkdirSync(VIDEO_ORCHESTRATOR_RUNTIME_DIR, { recursive: true });
+  fs.mkdirSync(VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR, { recursive: true });
+}
+
+function readJsonFileIfExists<T>(filePath: string): T | null {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
+  } catch {
+    return null;
+  }
+}
+
+function writePrettyJson(filePath: string, value: unknown): void {
+  ensureVideoOrchestratorRuntimeDir();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function isSafeDashboardSlug(value: unknown): boolean {
+  const text = String(value ?? '').trim();
+  return Boolean(text) && /^[a-z0-9._-]+$/i.test(text) && !text.includes('..') && !/[\\/;\s`"'<>|&$]/.test(text);
+}
+
+function containsForbiddenAccountPayload(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') {
+    return /(?:access[_-]?token|refresh[_-]?token|client[_-]?secret|authorization[_-]?code|credential[_-]?reference|keychain|api[_-]?key|password|cookie|bearer)/i.test(value) || /keychain:\/\/video-orchestrator\//i.test(value);
+  }
+  if (Array.isArray(value)) return value.some((item) => containsForbiddenAccountPayload(item));
+  if (typeof value === 'object') return Object.entries(value).some(([key, item]) => /(?:access[_-]?token|refresh[_-]?token|client[_-]?secret|authorization[_-]?code|credential[_-]?reference|keychain|api[_-]?key|password|cookie|bearer)/i.test(key) || containsForbiddenAccountPayload(item));
+  return false;
+}
+
+function initializeLocalAccountRegistryIfMissing(): LocalAccountRegistry {
+  const existing = readJsonFileIfExists<LocalAccountRegistry>(VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH);
+  if (existing?.schema_version === '1.0' && Array.isArray(existing.accounts)) return existing;
+  const example = readJsonFileIfExists<LocalAccountRegistry>(path.resolve(process.cwd(), 'operations/specs/video-orchestrator/examples/account-registry.example.json'));
+  const registry: LocalAccountRegistry = {
+    schema_version: '1.0',
+    accounts: example?.accounts ?? [],
+  };
+  saveLocalAccountRegistry(registry);
+  return registry;
+}
+
+function loadLocalAccountRegistry(): LocalAccountRegistry {
+  return initializeLocalAccountRegistryIfMissing();
+}
+
+function saveLocalAccountRegistry(registry: LocalAccountRegistry): void {
+  ensureVideoOrchestratorRuntimeDir();
+  writePrettyJson(VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH, registry);
+}
+
+export function buildSafeAccountForDashboard(account: LocalAccountRegistryEntry, health: SafeDashboardAccount | null = null): SafeDashboardAccount {
+  const capabilitySource = account.capabilities ?? {};
+  return {
+    account_id: account.account_id,
+    platform: account.platform,
+    account_label: account.account_label,
+    display_name: account.display_name,
+    enabled: Boolean(account.enabled),
+    auth_mode: account.auth_mode,
+    status: health?.status ?? (account.enabled ? 'yellow' : 'grey'),
+    capabilities: {
+      upload: Boolean(capabilitySource.upload),
+      status_check: Boolean(capabilitySource.status_check),
+      refresh_supported: Boolean(capabilitySource.refresh_supported ?? (capabilitySource as any).refresh_token),
+      analytics: Boolean(capabilitySource.analytics),
+      manual_fallback: Boolean(capabilitySource.manual_fallback),
+    },
+    default_privacy: account.default_privacy,
+    allowed_privacy: Array.isArray(account.allowed_privacy) ? [...account.allowed_privacy] : [],
+    manual_fallback: Boolean(capabilitySource.manual_fallback),
+    notification_state: account.notification_policy?.channel ?? 'dashboard',
+    last_checked_at: health?.last_checked_at ?? null,
+    next_action: health?.next_action ?? null,
+    warnings: health?.warnings ?? [],
+  };
+}
+
+function buildSafeAccountFromSnapshot(rawAccount: Record<string, unknown>): SafeDashboardAccount | null {
+  const account_id = typeof rawAccount.account_id === 'string' ? rawAccount.account_id : '';
+  if (!account_id) return null;
+  const capabilities = rawAccount.capabilities && typeof rawAccount.capabilities === 'object' ? rawAccount.capabilities as Record<string, unknown> : {};
+  return {
+    account_id,
+    platform: String(rawAccount.platform ?? 'unknown'),
+    account_label: String(rawAccount.account_label ?? ''),
+    display_name: String(rawAccount.display_name ?? ''),
+    enabled: Boolean(rawAccount.enabled),
+    auth_mode: String(rawAccount.auth_mode ?? 'unknown'),
+    status: String(rawAccount.status ?? 'grey'),
+    capabilities: {
+      upload: Boolean(capabilities.upload),
+      status_check: Boolean(capabilities.status_check),
+      refresh_supported: Boolean(capabilities.refresh_supported ?? capabilities.refresh_token),
+      analytics: Boolean(capabilities.analytics),
+      manual_fallback: Boolean(capabilities.manual_fallback),
+    },
+    default_privacy: String(rawAccount.default_privacy ?? 'private'),
+    allowed_privacy: Array.isArray(rawAccount.allowed_privacy) ? rawAccount.allowed_privacy.map((value) => String(value)) : ['private'],
+    manual_fallback: Boolean(rawAccount.manual_fallback ?? capabilities.manual_fallback),
+    notification_state: String(rawAccount.notification_state ?? 'dashboard'),
+    last_checked_at: typeof rawAccount.last_checked_at === 'string' ? rawAccount.last_checked_at : null,
+    next_action: typeof rawAccount.next_action === 'string' ? rawAccount.next_action : null,
+    warnings: Array.isArray(rawAccount.warnings) ? rawAccount.warnings.filter((value): value is string => typeof value === 'string') : [],
+  };
+}
+
+export function sanitizeSafeAccountInput(payload: Record<string, unknown>): { ok: true; value: { platform: 'youtube'; account_id: string; account_label: string; display_name: string; enabled: boolean } } | { ok: false; error: string } {
+  if (containsForbiddenAccountPayload(payload)) return { ok: false, error: 'Request contains forbidden credential-like fields.' };
+  const platform = String(payload.platform ?? '');
+  const accountId = String(payload.account_id ?? '');
+  const accountLabel = String(payload.account_label ?? '');
+  const displayName = String(payload.display_name ?? '');
+  const enabled = Boolean(payload.enabled);
+  if (platform !== 'youtube') return { ok: false, error: 'Platform must be youtube for this flow.' };
+  if (!isSafeDashboardSlug(accountId)) return { ok: false, error: 'account_id must be a safe slug.' };
+  if (!isSafeDashboardSlug(accountLabel)) return { ok: false, error: 'account_label must be a safe slug.' };
+  if (!displayName.trim() || containsForbiddenAccountPayload(displayName)) return { ok: false, error: 'display_name must be non-empty and non-secret-like.' };
+  return { ok: true, value: { platform: 'youtube', account_id: accountId, account_label: accountLabel, display_name: displayName.trim(), enabled } };
+}
+
+function upsertLocalAccount(accountInput: { platform: 'youtube'; account_id: string; account_label: string; display_name: string; enabled: boolean }): LocalAccountRegistryEntry {
+  const registry = loadLocalAccountRegistry();
+  const credentialReference = `keychain://video-orchestrator/youtube/${accountInput.account_label}`;
+  const nextAccount: LocalAccountRegistryEntry = {
+    account_id: accountInput.account_id,
+    platform: 'youtube',
+    account_label: accountInput.account_label,
+    display_name: accountInput.display_name,
+    enabled: accountInput.enabled,
+    auth_mode: 'oauth',
+    credential_reference: credentialReference,
+    capabilities: {
+      upload: true,
+      status_check: true,
+      refresh_supported: true,
+      analytics: false,
+      manual_fallback: true,
+    },
+    default_privacy: 'private',
+    allowed_privacy: ['private'],
+    health_check: {
+      enabled: true,
+      frequency: 'nightly',
+      warn_before_expiry_days: 7,
+      keep_warm: true,
+    },
+    notification_policy: {
+      on_red: true,
+      on_yellow: true,
+      channel: 'dashboard',
+    },
+    notes: 'Managed through dashboard onboarding. No token values are stored in the registry.',
+  };
+  const idx = registry.accounts.findIndex((item) => item.account_id === accountInput.account_id);
+  if (idx >= 0) registry.accounts[idx] = nextAccount;
+  else registry.accounts.push(nextAccount);
+  saveLocalAccountRegistry(registry);
+  return nextAccount;
+}
+
+function listSafeAccountsFromRegistry(): SafeDashboardAccount[] {
+  const registry = loadLocalAccountRegistry();
+  const snapshot = readAccountHealthSnapshot();
+  const byId = new Map<string, SafeDashboardAccount>();
+  if (snapshot?.accounts) {
+    for (const item of snapshot.accounts) {
+      if (item.account_id) {
+        const safeSnapshotAccount = buildSafeAccountFromSnapshot(item);
+        if (safeSnapshotAccount) byId.set(safeSnapshotAccount.account_id, safeSnapshotAccount);
+      }
+    }
+  }
+  return registry.accounts.map((account) => buildSafeAccountForDashboard(account, byId.get(account.account_id) ?? null));
+}
+
+export function loadYoutubeOAuthClientConfig(): OAuthClientConfig {
+  const raw = readJsonFileIfExists<{ client_id?: unknown; oauth_client_mode?: unknown; client_secret_configured?: unknown }>(VIDEO_ORCHESTRATOR_OAUTH_CLIENT_CONFIG_PATH);
+  return normalizeYoutubeOAuthClientConfig(raw);
+}
+
+export function normalizeYoutubeOAuthClientConfig(raw: { client_id?: unknown; oauth_client_mode?: unknown; client_secret_configured?: unknown } | null | undefined): OAuthClientConfig {
+  const client_id = raw && typeof raw.client_id === 'string' && raw.client_id.trim() ? raw.client_id.trim() : null;
+  const oauth_client_mode = raw?.oauth_client_mode === 'client_secret_keychain' ? 'client_secret_keychain' : 'pkce_public_client';
+  return {
+    client_id,
+    configured: Boolean(client_id),
+    oauth_client_mode,
+    client_secret_configured: Boolean(raw?.client_secret_configured),
+  };
+}
+
+export function renderYoutubeOAuthCallbackFailureHtml(error: string): string {
+  const redactedError = redactVideoOrchestratorText(String(error)) ?? 'Unknown error';
+  const lower = redactedError.toLowerCase();
+  const tokenExchangeRejected = lower.includes('client secret') || lower.includes('client_secret') || lower.includes('token endpoint') || lower.includes('invalid_client') || lower.includes('unauthorized_client');
+  const message = tokenExchangeRejected
+    ? 'YouTube connection failed. Token exchange was rejected. Check OAuth client type, redirect URI, and whether this client requires a client secret.'
+    : `OAuth connection failed: ${redactedError}`;
+  return `<html><body><p>${escapeHtml(message)}</p></body></html>`;
+}
+
+function saveYoutubeOAuthClientConfig(clientId: string): OAuthClientConfig {
+  const config: OAuthClientConfig = {
+    client_id: clientId.trim(),
+    configured: true,
+    oauth_client_mode: 'pkce_public_client',
+    client_secret_configured: false,
+  };
+  writePrettyJson(VIDEO_ORCHESTRATOR_OAUTH_CLIENT_CONFIG_PATH, config);
+  return config;
+}
+
+function generatePkceMaterial(): { code_verifier: string; code_challenge: string } {
+  const codeVerifier = base64Url(crypto.randomBytes(64));
+  const codeChallenge = base64Url(crypto.createHash('sha256').update(codeVerifier).digest());
+  return { code_verifier: codeVerifier, code_challenge: codeChallenge };
+}
+
+function generateOAuthState(): string {
+  return base64Url(crypto.randomBytes(32));
+}
+
+function saveOAuthState(record: OAuthStateRecord): void {
+  writePrettyJson(path.join(VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR, `${record.state}.json`), record);
+}
+
+function loadOAuthState(state: string): OAuthStateRecord | null {
+  return readJsonFileIfExists<OAuthStateRecord>(path.join(VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR, `${state}.json`));
+}
+
+function deleteOAuthState(state: string): void {
+  const filePath = path.join(VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR, `${state}.json`);
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+}
+
+async function regenerateAccountHealthSnapshot(): Promise<AccountHealthStatus | null> {
+  ensureVideoOrchestratorRuntimeDir();
+  try {
+    await execFileAsync('node', [
+      VIDEO_ORCHESTRATOR_ACCOUNT_HEALTH_SCRIPT,
+      'write-nightly-snapshot',
+      VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH,
+      '--snapshot',
+      ACCOUNT_HEALTH_SNAPSHOT_PATH,
+      '--dry-run',
+    ]);
+    return readAccountHealthSnapshot();
+  } catch {
+    return readAccountHealthSnapshot();
+  }
+}
+
+async function exchangeYoutubeAuthorizationCode(args: { callbackUrl: string; expectedState: string; codeVerifier: string; credentialReference: string; clientId: string }): Promise<Record<string, unknown>> {
+  const tempConfigPath = path.join(VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR, `oauth-config-${args.expectedState}.json`);
+  const config = {
+    platform: 'youtube',
+    phase: '4C',
+    oauth_client_mode: 'pkce_public_client',
+    dry_run: false,
+    client_id: args.clientId,
+    redirect_uri: `${new URL(args.callbackUrl).origin}/api/video-orchestrator/oauth/youtube/callback`,
+    scope: 'https://www.googleapis.com/auth/youtube.upload',
+    credential_reference: args.credentialReference,
+  };
+  writePrettyJson(tempConfigPath, config);
+  try {
+    const { stdout } = await execFileAsync('node', [
+      VIDEO_ORCHESTRATOR_CREDENTIAL_HELPER,
+      'exchange-youtube-code',
+      tempConfigPath,
+      '--callback-url',
+      args.callbackUrl,
+      '--expected-state',
+      args.expectedState,
+      '--code-verifier',
+      args.codeVerifier,
+      '--write-to-keychain',
+      args.credentialReference,
+      '--confirm-real-token-exchange',
+      '--confirm-real-keychain-write',
+    ], { maxBuffer: 1024 * 1024 });
+    return JSON.parse(stdout.toString());
+  } finally {
+    try {
+      if (fs.existsSync(tempConfigPath)) fs.unlinkSync(tempConfigPath);
+    } catch (cleanupErr) {
+      console.warn('[Video Orchestrator] OAuth temp config cleanup failed:', redactVideoOrchestratorText(String(cleanupErr)));
+    }
+  }
 }
 
 async function openGhosttySession(directCommand: string, cwd: string, executeCommand: boolean = true): Promise<void> {
@@ -2331,6 +2815,8 @@ function renderVideoOrchestratorStudio(status){
   const completed_packages=Number(status.completed_packages||0);
   const youtubeLifecycle=status.youtube_lifecycle||null;
   const accountHealth=status.account_health||null;
+  const accounts=status.accounts||[];
+  const oauthClientConfig=status.oauth_client_config||null;
   const updateTime=status.timestamp?new Date(status.timestamp):new Date();
   const minAgo=Math.max(0,Math.floor((Date.now()-updateTime.getTime())/60000));
   const freshText=minAgo===0?'just now':minAgo===1?'1m ago':minAgo+'m ago';
@@ -2367,6 +2853,7 @@ function renderVideoOrchestratorStudio(status){
   html+='<p style="color:var(--muted);text-align:center;margin:12px 0 0 0;font-size:0.8em">YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, X</p>';
   html+='</div></div>';
 
+  html+=renderAccountsAndCredentialsPanel(accounts, oauthClientConfig);
   html+=renderAccountHealthPanel(accountHealth);
 
   html+=renderYouTubeLifecycleSummary(youtubeLifecycle);
@@ -2386,11 +2873,88 @@ async function refreshProductionPipelinePanel(){
     const r=await fetch('/api/video-orchestrator/status');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
+    window.__videoOrchestratorStatus=data;
     panel.innerHTML=renderVideoOrchestratorStudio(data);
   }catch(e){
     panel.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';
   }
 }
+
+async function postJson(url, body){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data=await r.json().catch(()=>({ok:false,error:'Invalid JSON response'}));
+  if(!r.ok||data.ok===false) throw new Error(data.error||('HTTP '+r.status));
+  return data;
+}
+
+async function refreshVideoOrchestratorPanels(){
+  await refreshProductionPipelinePanel();
+}
+
+document.addEventListener('click',async(event)=>{
+  const button=event.target&&event.target.closest?event.target.closest('button[data-action]'):null;
+  if(!button) return;
+  const action=button.getAttribute('data-action');
+  if(!action) return;
+  try{
+    if(action==='save-oauth-client'){
+      const clientIdInput=document.querySelector('input[name="vo-client-id"]');
+      const clientId=clientIdInput?String(clientIdInput.value||'').trim():'';
+      if(!clientId) throw new Error('Client ID is required.');
+      await postJson('/api/video-orchestrator/oauth/youtube/client-config',{client_id:clientId});
+      await refreshVideoOrchestratorPanels();
+      return;
+    }
+    if(action==='save-account'){
+      const payload={
+        platform:'youtube',
+        account_id:String((document.querySelector('input[name="vo-account-id"]')||{}).value||'').trim(),
+        account_label:String((document.querySelector('input[name="vo-account-label"]')||{}).value||'').trim(),
+        display_name:String((document.querySelector('input[name="vo-display-name"]')||{}).value||'').trim(),
+        enabled:Boolean(document.querySelector('input[name="vo-enabled"]')?.checked),
+      };
+      await postJson('/api/video-orchestrator/accounts',payload);
+      await refreshVideoOrchestratorPanels();
+      return;
+    }
+    if(action==='refresh-health'){
+      const accountId=button.getAttribute('data-account-id');
+      if(!accountId) throw new Error('Missing account id.');
+      await postJson('/api/video-orchestrator/accounts/'+encodeURIComponent(accountId)+'/health-check',{});
+      await refreshVideoOrchestratorPanels();
+      return;
+    }
+    if(action==='connect-youtube'){
+      let payload;
+      if(button.getAttribute('data-form')==='true'){
+        payload={
+          platform:'youtube',
+          account_id:String((document.querySelector('input[name="vo-account-id"]')||{}).value||'').trim(),
+          account_label:String((document.querySelector('input[name="vo-account-label"]')||{}).value||'').trim(),
+          display_name:String((document.querySelector('input[name="vo-display-name"]')||{}).value||'').trim(),
+          enabled:Boolean(document.querySelector('input[name="vo-enabled"]')?.checked),
+        };
+      }else{
+        const accountId=button.getAttribute('data-account-id');
+        const safeAccount=[...((window.__videoOrchestratorStatus&&window.__videoOrchestratorStatus.accounts)||[])].find(a=>String(a.account_id)===String(accountId));
+        payload=safeAccount?{
+          platform:'youtube',
+          account_id:safeAccount.account_id,
+          account_label:safeAccount.account_label,
+          display_name:safeAccount.display_name,
+          enabled:true,
+        }:null;
+      }
+      if(!payload) throw new Error('Missing account data.');
+      const data=await postJson('/api/video-orchestrator/oauth/youtube/start',payload);
+      if(data.authorization_url) window.open(data.authorization_url,'_blank','noopener,noreferrer');
+      await refreshVideoOrchestratorPanels();
+      return;
+    }
+  }catch(err){
+    alert(String(err&&err.message?err.message:err));
+  }
+});
 
 /* Viral Flow account management (async fetch helper) */
 async function getViralFlowAccounts(){
@@ -2629,7 +3193,7 @@ function renderScheduler(jobs){
     if(j.status==='running')return'<span class="sched-status sched-running">● running</span>';
     if(j.status==='success')return'<span class="sched-status sched-ok">✓ success</span>';
     if(j.status==='timeout')return'<span class="sched-status sched-timeout">⏱ timeout</span>';
-    if(j.status==='failed')return'<span class="sched-status sched-fail">✗ failed'+(j.exitCode!==null?' ('+j.exitCode+')':\'\')+'</span>';
+    if(j.status==='failed')return'<span class="sched-status sched-fail">✗ failed'+(j.exitCode!==null?' ('+j.exitCode+')':'')+'</span>';
     return'<span class="sched-status sched-never">— never run</span>';
   }
   function dur(s){
@@ -3949,17 +4513,282 @@ export function createDashboardServer(app: AppContext): http.Server {
     }
 
     if (url === "/api/video-orchestrator/status") {
-      const [status, youtubeLifecycle, accountHealth] = await Promise.all([
+      const [status, youtubeLifecycle, accountHealth, accountCenter] = await Promise.all([
         getVideoOrchestratorStatus(),
         getVideoOrchestratorYouTubeLifecycleStatus(),
         getVideoOrchestratorAccountHealthStatus(),
+        getVideoOrchestratorAccountCenterStatus(),
       ]);
       res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
       res.end(JSON.stringify({
         ...status,
         youtube_lifecycle: youtubeLifecycle.youtube,
         account_health: accountHealth.account_health,
+        accounts: accountCenter.accounts,
+        oauth_client_config: accountCenter.oauth_client_config,
+        runtime_paths: accountCenter.paths,
       }));
+      return;
+    }
+
+    if (url === "/api/video-orchestrator/accounts" && req.method === "GET") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Accounts are only available on localhost." }));
+        return;
+      }
+      const [accountCenter, accountHealth] = await Promise.all([
+        getVideoOrchestratorAccountCenterStatus(),
+        getVideoOrchestratorAccountHealthStatus(),
+      ]);
+      res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+      res.end(JSON.stringify({
+        ok: true,
+        accounts: accountCenter.accounts,
+        oauth_client_config: accountCenter.oauth_client_config,
+        account_health: accountHealth.account_health,
+        runtime_paths: accountCenter.paths,
+      }));
+      return;
+    }
+
+    if (req.method === "POST" && url === "/api/video-orchestrator/accounts") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Account mutations are only available on localhost." }));
+        return;
+      }
+      try {
+        let body = "";
+        for await (const chunk of req) body += chunk;
+        const payload = JSON.parse(body) as Record<string, unknown>;
+        const input = sanitizeSafeAccountInput(payload);
+        if (!input.ok) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: input.error }));
+          return;
+        }
+        const account = upsertLocalAccount(input.value);
+        const snapshot = await regenerateAccountHealthSnapshot();
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+        res.end(JSON.stringify({
+          ok: true,
+          account: buildSafeAccountForDashboard(account, buildSafeAccountFromSnapshot((snapshot?.accounts?.find((item) => item.account_id === account.account_id) ?? {}) as Record<string, unknown>)),
+          account_health: snapshot,
+        }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: redactVideoOrchestratorText(String(err)) }));
+      }
+      return;
+    }
+
+    if (req.method === "POST" && /^\/api\/video-orchestrator\/accounts\/[^/]+\/health-check$/.test(url)) {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Account health checks are only available on localhost." }));
+        return;
+      }
+      const accountId = decodeURIComponent(url.split('/')[4] ?? '');
+      const registry = loadLocalAccountRegistry();
+      const account = registry.accounts.find((item) => item.account_id === accountId);
+      if (!account) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Account not found." }));
+        return;
+      }
+      try {
+        const snapshot = await regenerateAccountHealthSnapshot();
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+        res.end(JSON.stringify({
+          ok: true,
+          account: buildSafeAccountForDashboard(account, buildSafeAccountFromSnapshot((snapshot?.accounts?.find((item) => item.account_id === account.account_id) ?? {}) as Record<string, unknown>)),
+          account_health: snapshot,
+        }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: redactVideoOrchestratorText(String(err)) }));
+      }
+      return;
+    }
+
+    if (url === "/api/video-orchestrator/oauth/youtube/client-config" && req.method === "GET") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "OAuth config is only available on localhost." }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+      res.end(JSON.stringify({ ok: true, oauth_client_config: loadYoutubeOAuthClientConfig() }));
+      return;
+    }
+
+    if (req.method === "POST" && url === "/api/video-orchestrator/oauth/youtube/client-config") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "OAuth config is only available on localhost." }));
+        return;
+      }
+      try {
+        let body = "";
+        for await (const chunk of req) body += chunk;
+        const payload = JSON.parse(body) as Record<string, unknown>;
+        if (containsForbiddenAccountPayload(payload)) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "OAuth config contains forbidden credential-like fields." }));
+          return;
+        }
+        const clientId = String(payload.client_id ?? '').trim();
+        if (!clientId || !/^[A-Za-z0-9._-]+\.apps\.googleusercontent\.com$/.test(clientId)) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "client_id must be a Google OAuth client ID." }));
+          return;
+        }
+        const oauthClientConfig = saveYoutubeOAuthClientConfig(clientId);
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+        res.end(JSON.stringify({ ok: true, oauth_client_config: oauthClientConfig }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: redactVideoOrchestratorText(String(err)) }));
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url === "/api/video-orchestrator/oauth/youtube/start") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "YouTube OAuth start is only available on localhost." }));
+        return;
+      }
+      try {
+        let body = "";
+        for await (const chunk of req) body += chunk;
+        const payload = JSON.parse(body) as Record<string, unknown>;
+        const input = sanitizeSafeAccountInput({ ...payload, platform: 'youtube', enabled: true });
+        if (!input.ok) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: input.error }));
+          return;
+        }
+        const oauthConfig = loadYoutubeOAuthClientConfig();
+        if (!oauthConfig.configured || !oauthConfig.client_id) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "OAuth client not configured." }));
+          return;
+        }
+        const account = upsertLocalAccount(input.value);
+        const pkce = generatePkceMaterial();
+        const state = generateOAuthState();
+        const callbackPath = "/api/video-orchestrator/oauth/youtube/callback";
+        const callbackUrl = `http://127.0.0.1:${String((req.headers.host || '').split(':')[1] || '7070')}${callbackPath}`;
+        saveOAuthState({
+          state,
+          code_verifier: pkce.code_verifier,
+          account_id: account.account_id,
+          account_label: account.account_label,
+          display_name: account.display_name,
+          credential_reference: account.credential_reference ?? `keychain://video-orchestrator/youtube/${account.account_label}`,
+          client_id: oauthConfig.client_id,
+          redirect_uri: callbackUrl,
+          created_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+        });
+        const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+        authUrl.searchParams.set("client_id", oauthConfig.client_id);
+        authUrl.searchParams.set("redirect_uri", callbackUrl);
+        authUrl.searchParams.set("response_type", "code");
+        authUrl.searchParams.set("scope", "https://www.googleapis.com/auth/youtube.upload");
+        authUrl.searchParams.set("access_type", "offline");
+        authUrl.searchParams.set("prompt", "consent");
+        authUrl.searchParams.set("state", state);
+        authUrl.searchParams.set("code_challenge", pkce.code_challenge);
+        authUrl.searchParams.set("code_challenge_method", "S256");
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+        res.end(JSON.stringify({
+          ok: true,
+          authorization_url: authUrl.toString(),
+          expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+          message: "Open this URL to connect YouTube.",
+        }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: redactVideoOrchestratorText(String(err)) }));
+      }
+      return;
+    }
+
+    if (req.method === "GET" && url.startsWith("/api/video-orchestrator/oauth/youtube/callback")) {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "text/html; charset=utf-8" });
+        res.end("<html><body><p>OAuth callback is only enabled on localhost.</p></body></html>");
+        return;
+      }
+      try {
+        const callbackUrl = new URL(req.url ?? "", `http://${req.headers.host ?? "127.0.0.1"}`);
+        const state = callbackUrl.searchParams.get('state') ?? '';
+        const code = callbackUrl.searchParams.get('code') ?? '';
+        if (!state || !code) {
+          throw new Error('Missing OAuth callback code or state.');
+        }
+        const record = loadOAuthState(state);
+        if (!record) {
+          throw new Error('OAuth state not found or expired.');
+        }
+        const callbackValidation = await execFileAsync('node', [
+          VIDEO_ORCHESTRATOR_CREDENTIAL_HELPER,
+          'validate-callback',
+          callbackUrl.toString(),
+          '--expected-state',
+          state,
+        ], { maxBuffer: 1024 * 1024 });
+        const parsedCallback = JSON.parse(callbackValidation.stdout.toString() || '{}');
+        if (!parsedCallback.ok) {
+          throw new Error(String(parsedCallback.error ?? 'Callback validation failed.'));
+        }
+        const exchangeResult = await exchangeYoutubeAuthorizationCode({
+          callbackUrl: callbackUrl.toString(),
+          expectedState: state,
+          codeVerifier: record.code_verifier,
+          credentialReference: record.credential_reference,
+          clientId: record.client_id,
+        });
+        if (!exchangeResult.ok) {
+          throw new Error(String(exchangeResult.error ?? 'Token exchange failed.'));
+        }
+        const registry = loadLocalAccountRegistry();
+        const idx = registry.accounts.findIndex((item) => item.account_id === record.account_id);
+        if (idx >= 0) {
+          registry.accounts[idx] = {
+            ...registry.accounts[idx],
+            account_id: record.account_id,
+            platform: 'youtube',
+            enabled: true,
+            account_label: record.account_label,
+            display_name: record.display_name,
+            credential_reference: record.credential_reference,
+            auth_mode: 'oauth',
+            capabilities: {
+              upload: true,
+              status_check: true,
+              refresh_supported: true,
+              analytics: false,
+              manual_fallback: true,
+            },
+            default_privacy: 'private',
+            allowed_privacy: ['private'],
+          };
+          saveLocalAccountRegistry(registry);
+        }
+        deleteOAuthState(state);
+        await regenerateAccountHealthSnapshot();
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
+        res.end("<html><body><p>YouTube account connected. You can close this tab.</p></body></html>");
+      } catch (err) {
+        const redactedError = redactVideoOrchestratorText(String(err)) ?? 'Unknown error';
+        console.error('[Video Orchestrator] YouTube OAuth callback failed:', redactedError);
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
+        res.end(renderYoutubeOAuthCallbackFailureHtml(redactedError));
+      }
       return;
     }
 
