@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0",
+  "accounts": [
+    {
+      "account_id": "youtube-main-placeholder",
+      "platform": "youtube",
+      "account_label": "main-channel",
+      "display_name": "Main YouTube Channel Placeholder",
+      "enabled": false,
+      "auth_mode": "oauth",
+      "credential_reference": "keychain://video-orchestrator/youtube/main-channel-placeholder",
+      "capabilities": {
+        "upload": true,
+        "status_check": true,
+        "refresh_token": true,
+        "analytics": false,
+        "manual_fallback": true
+      },
+      "default_privacy": "private",
+      "allowed_privacy": ["private"],
+      "health_check": {
+        "enabled": true,
+        "frequency": "nightly",
+        "warn_before_expiry_days": 7,
+        "keep_warm": true
+      },
+      "notification_policy": {
+        "on_red": true,
+        "on_yellow": true,
+        "channel": "dashboard"
+      },
+      "notes": "Placeholder only. No real credential values are stored in the repo."
+    },
+    {
+      "account_id": "youtube-manual-placeholder",
+      "platform": "youtube",
+      "account_label": "manual-fallback",
+      "display_name": "YouTube Manual Fallback Placeholder",
+      "enabled": true,
+      "auth_mode": "manual_only",
+      "capabilities": {
+        "upload": false,
+        "status_check": false,
+        "refresh_token": false,
+        "analytics": false,
+        "manual_fallback": true
+      },
+      "default_privacy": "private",
+      "allowed_privacy": ["private"],
+      "health_check": {
+        "enabled": true,
+        "frequency": "nightly",
+        "warn_before_expiry_days": 0,
+        "keep_warm": false
+      },
+      "notification_policy": {
+        "on_red": false,
+        "on_yellow": true,
+        "channel": "dashboard"
+      },
+      "notes": "Manual fallback only. No credential reference required."
+    },
+    {
+      "account_id": "bluesky-app-password-placeholder",
+      "platform": "bluesky",
+      "account_label": "future-app-password",
+      "display_name": "Future Bluesky App Password Placeholder",
+      "enabled": false,
+      "auth_mode": "app_password",
+      "credential_reference": "keychain://video-orchestrator/bluesky/future-app-password-placeholder",
+      "capabilities": {
+        "upload": false,
+        "status_check": false,
+        "refresh_token": false,
+        "analytics": false,
+        "manual_fallback": true
+      },
+      "default_privacy": "private",
+      "allowed_privacy": ["private"],
+      "health_check": {
+        "enabled": false,
+        "frequency": "nightly",
+        "warn_before_expiry_days": 7,
+        "keep_warm": false
+      },
+      "notification_policy": {
+        "on_red": false,
+        "on_yellow": false,
+        "channel": "dashboard"
+      },
+      "notes": "Disabled placeholder only."
+    },
+    {
+      "account_id": "instagram-browser-placeholder",
+      "platform": "instagram",
+      "account_label": "future-browser-assisted",
+      "display_name": "Future Instagram Browser-Assisted Placeholder",
+      "enabled": false,
+      "auth_mode": "browser_assisted",
+      "credential_reference": "keychain://video-orchestrator/instagram/future-browser-assisted-placeholder",
+      "capabilities": {
+        "upload": false,
+        "status_check": false,
+        "refresh_token": false,
+        "analytics": false,
+        "manual_fallback": true
+      },
+      "default_privacy": "private",
+      "allowed_privacy": ["private"],
+      "health_check": {
+        "enabled": false,
+        "frequency": "nightly",
+        "warn_before_expiry_days": 7,
+        "keep_warm": false
+      },
+      "notification_policy": {
+        "on_red": false,
+        "on_yellow": false,
+        "channel": "dashboard"
+      },
+      "notes": "Disabled placeholder only."
+    }
+  ]
+}

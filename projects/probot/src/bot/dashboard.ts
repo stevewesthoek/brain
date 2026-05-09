@@ -32,6 +32,7 @@ import { stopAllLocalApps, restoreSystemAfterUpdate, gracefulShutdown, spawnUpda
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
+const ACCOUNT_HEALTH_SNAPSHOT_PATH = path.resolve(process.cwd(), 'runtime/local/video-orchestrator/account-health-snapshot.json');
 const FAVICON_SVG = `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="lobster-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -191,6 +192,48 @@ type RawYouTubeLifecycleSummary = {
   message?: unknown;
 };
 
+type AccountHealthStatus = {
+  checked_at?: string | null;
+  summary?: {
+    green?: number;
+    yellow?: number;
+    red?: number;
+    grey?: number;
+  };
+  accounts?: Array<{
+    account_id: string | null;
+    platform: string | null;
+    account_label: string | null;
+    display_name: string | null;
+    enabled: boolean;
+    auth_mode: string | null;
+    status: string;
+    capabilities?: {
+      upload?: boolean;
+      status_check?: boolean;
+      refresh_token?: boolean;
+      analytics?: boolean;
+      manual_fallback?: boolean;
+    };
+    default_privacy?: string | null;
+    allowed_privacy?: string[];
+    manual_fallback?: boolean;
+    notification_state?: string | null;
+    last_checked_at?: string | null;
+    next_action?: string | null;
+    warnings?: string[];
+  }>;
+  message?: string;
+};
+
+type RawAccountHealthSnapshot = {
+  version?: string;
+  checked_at?: unknown;
+  summary?: AccountHealthStatus["summary"];
+  accounts?: Array<Record<string, unknown>>;
+  message?: unknown;
+};
+
 export function normalizeYouTubeLifecycleSummary(raw: RawYouTubeLifecycleSummary | null | undefined): YouTubeLifecycleSummary {
   const latestRaw = raw?.latest ?? null;
   const latest = latestRaw && typeof latestRaw === "object"
@@ -264,6 +307,113 @@ export function renderYouTubeLifecycleSummary(youtubeLifecycle: YouTubeLifecycle
   return html;
 }
 
+export function normalizeAccountHealthSnapshot(raw: RawAccountHealthSnapshot | null | undefined): AccountHealthStatus {
+  const accounts = Array.isArray(raw?.accounts) ? raw.accounts.map((account): NonNullable<AccountHealthStatus["accounts"]>[number] => {
+    const normalized: NonNullable<AccountHealthStatus["accounts"]>[number] = {
+      account_id: redactVideoOrchestratorText(account.account_id),
+      platform: redactVideoOrchestratorText(account.platform),
+      account_label: redactVideoOrchestratorText(account.account_label),
+      display_name: redactVideoOrchestratorText(account.display_name),
+      enabled: Boolean(account.enabled),
+      auth_mode: redactVideoOrchestratorText(account.auth_mode),
+      status: String(account.status ?? 'grey'),
+      manual_fallback: Boolean(account.manual_fallback),
+      notification_state: redactAccountHealthText(account.notification_state),
+      last_checked_at: redactAccountHealthText(account.last_checked_at),
+      next_action: redactAccountHealthText(account.next_action),
+      warnings: Array.isArray(account.warnings) ? account.warnings.map((value) => redactAccountHealthText(value)).filter((value): value is string => Boolean(value)) : [],
+    };
+    if (account.capabilities && typeof account.capabilities === 'object') {
+      normalized.capabilities = {
+        upload: Boolean((account.capabilities as Record<string, unknown>).upload),
+        status_check: Boolean((account.capabilities as Record<string, unknown>).status_check),
+        refresh_token: Boolean((account.capabilities as Record<string, unknown>).refresh_token),
+        analytics: Boolean((account.capabilities as Record<string, unknown>).analytics),
+        manual_fallback: Boolean((account.capabilities as Record<string, unknown>).manual_fallback),
+      };
+    }
+    const defaultPrivacy = redactAccountHealthText(account.default_privacy);
+    if (defaultPrivacy) normalized.default_privacy = defaultPrivacy;
+    if (Array.isArray(account.allowed_privacy)) {
+      normalized.allowed_privacy = account.allowed_privacy.map((value) => redactAccountHealthText(value) ?? 'private');
+    }
+    return normalized;
+  }) : [];
+
+  const normalized: AccountHealthStatus = {
+    checked_at: redactVideoOrchestratorText(raw?.checked_at),
+    summary: {
+      green: Number(raw?.summary?.green ?? 0),
+      yellow: Number(raw?.summary?.yellow ?? 0),
+      red: Number(raw?.summary?.red ?? 0),
+      grey: Number(raw?.summary?.grey ?? 0),
+    },
+    accounts,
+  };
+  if (typeof raw?.message === 'string') {
+    const message = redactVideoOrchestratorText(raw.message);
+    if (message) normalized.message = message;
+  }
+  return normalized;
+}
+
+function redactAccountHealthText(value: unknown): string | null {
+  const redacted = redactVideoOrchestratorText(value);
+  if (!redacted) return null;
+  return redacted
+    .replace(/\bcredential[_-]?reference\b\s*[:=]\s*\[REDACTED\]/gi, '[REDACTED_REFERENCE]')
+    .replace(/\bcredential[_-]?reference\b\s*[:=]\s*[^\s"'`]+/gi, '[REDACTED_REFERENCE]')
+    .replace(/keychain:\/\/video-orchestrator\/\[REDACTED\]\/\[REDACTED\]/gi, '[REDACTED_REFERENCE]');
+}
+
+export function renderAccountHealthPanel(accountHealth: AccountHealthStatus | null | undefined): string {
+  let html='<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">Account Health Center</h3>';
+  html+='<div style="font-size:0.85em;line-height:1.7">';
+  if(accountHealth&&Array.isArray(accountHealth.accounts)&&accountHealth.accounts.length){
+    const summary=accountHealth.summary||{green:0,yellow:0,red:0,grey:0};
+    html+='<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:8px">';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">green</span> <strong>'+String(summary.green||0)+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">yellow</span> <strong>'+String(summary.yellow||0)+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">red</span> <strong>'+String(summary.red||0)+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">grey</span> <strong>'+String(summary.grey||0)+'</strong></div>';
+    html+='</div>';
+    html+='<div style="display:grid;gap:8px">';
+    for(const account of accountHealth.accounts){
+      const capabilities = [
+        account.capabilities?.upload ? 'upload' : null,
+        account.capabilities?.status_check ? 'status_check' : null,
+        account.capabilities?.refresh_token ? 'refresh_token' : null,
+        account.capabilities?.analytics ? 'analytics' : null,
+        account.capabilities?.manual_fallback ? 'manual_fallback' : null,
+      ].filter(Boolean).join(', ') || 'none';
+      html+='<div style="padding:10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)">';
+      html+='<div style="display:flex;justify-content:space-between;gap:8px"><strong>'+escapeHtml(account.display_name || 'Unknown account')+'</strong><span style="color:var(--muted)">'+escapeHtml(account.status)+'</span></div>';
+      html+='<div style="color:var(--muted);margin-top:4px">Platform: '+escapeHtml(account.platform || 'unknown')+' • Auth: '+escapeHtml(account.auth_mode || 'unknown')+'</div>';
+      html+='<div style="color:var(--muted)">Label: '+escapeHtml(account.account_label || '—')+' • Manual fallback: '+String(account.manual_fallback ? 'available' : 'disabled')+'</div>';
+      html+='<div style="color:var(--muted)">Capabilities: '+escapeHtml(capabilities)+'</div>';
+      html+='<div style="color:var(--muted)">Last checked: '+escapeHtml(account.last_checked_at || '—')+' • Next action: '+escapeHtml(account.next_action || '—')+'</div>';
+      html+='<div style="color:var(--muted)">Notifications: '+escapeHtml(account.notification_state || 'dashboard')+'</div>';
+      html+='</div>';
+    }
+  }else{
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--muted)">No account registry configured yet.</div>';
+  }
+  html+='<p style="margin:12px 0 0 0;color:var(--muted)">Read-only account health. Secrets are not displayed here.</p>';
+  html+='</div></div>';
+  return html;
+}
+
+function readAccountHealthSnapshot(): AccountHealthStatus | null {
+  try {
+    if (!fs.existsSync(ACCOUNT_HEALTH_SNAPSHOT_PATH)) return null;
+    const raw = JSON.parse(fs.readFileSync(ACCOUNT_HEALTH_SNAPSHOT_PATH, 'utf8')) as RawAccountHealthSnapshot;
+    return normalizeAccountHealthSnapshot(raw);
+  } catch {
+    return null;
+  }
+}
+
 async function getVideoOrchestratorYouTubeLifecycleStatus(): Promise<{ ok: true; youtube: YouTubeLifecycleSummary } | { ok: false; youtube: YouTubeLifecycleSummary; error: string }> {
   const dbUrl = process.env.VIDEO_ORCHESTRATOR_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5450/video_orchestrator";
   const sql = `
@@ -331,6 +481,10 @@ async function getVideoOrchestratorYouTubeLifecycleStatus(): Promise<{ ok: true;
       error: "Video Orchestrator YouTube lifecycle status is unavailable.",
     };
   }
+}
+
+async function getVideoOrchestratorAccountHealthStatus(): Promise<{ ok: true; account_health: AccountHealthStatus | null }> {
+  return { ok: true, account_health: readAccountHealthSnapshot() };
 }
 
 async function openGhosttySession(directCommand: string, cwd: string, executeCommand: boolean = true): Promise<void> {
@@ -2176,6 +2330,7 @@ function renderVideoOrchestratorStudio(status){
   const failed_jobs_7d=Number(status.failed_jobs_7d||0);
   const completed_packages=Number(status.completed_packages||0);
   const youtubeLifecycle=status.youtube_lifecycle||null;
+  const accountHealth=status.account_health||null;
   const updateTime=status.timestamp?new Date(status.timestamp):new Date();
   const minAgo=Math.max(0,Math.floor((Date.now()-updateTime.getTime())/60000));
   const freshText=minAgo===0?'just now':minAgo===1?'1m ago':minAgo+'m ago';
@@ -2211,6 +2366,8 @@ function renderVideoOrchestratorStudio(status){
   html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Connected Accounts:</span> <strong>'+total_accounts+'</strong></div>';
   html+='<p style="color:var(--muted);text-align:center;margin:12px 0 0 0;font-size:0.8em">YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, X</p>';
   html+='</div></div>';
+
+  html+=renderAccountHealthPanel(accountHealth);
 
   html+=renderYouTubeLifecycleSummary(youtubeLifecycle);
 
@@ -3792,14 +3949,16 @@ export function createDashboardServer(app: AppContext): http.Server {
     }
 
     if (url === "/api/video-orchestrator/status") {
-      const [status, youtubeLifecycle] = await Promise.all([
+      const [status, youtubeLifecycle, accountHealth] = await Promise.all([
         getVideoOrchestratorStatus(),
         getVideoOrchestratorYouTubeLifecycleStatus(),
+        getVideoOrchestratorAccountHealthStatus(),
       ]);
       res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
       res.end(JSON.stringify({
         ...status,
         youtube_lifecycle: youtubeLifecycle.youtube,
+        account_health: accountHealth.account_health,
       }));
       return;
     }

@@ -718,6 +718,56 @@ CREATE TABLE events (
 
 ---
 
+## Phase 4A: Account Registry + Credential Health Center
+
+**Timeline:** September 20–October 1, 2026 (2 weeks)  
+**Goal:** Add a read-only account registry and credential health center so operators can automate readiness checks before the first private upload and future account expansion
+
+### 4.1: Account Registry
+
+**Deliverables:**
+- account registry schema and placeholder examples
+- account capability, privacy, and notification metadata
+- placeholder-only registry validation
+
+### 4.2: Credential Health Center
+
+**Deliverables:**
+- local account-health dry-run script
+- redacted credential summary checks for approved accounts
+- safe snapshot generation for the dashboard
+
+### 4.3: Read-Only Dashboard Surface
+
+**Deliverables:**
+- account health panel in the dashboard
+- read-only status summaries
+- no credential display and no control actions
+
+### 4.4: Readiness Automation
+
+**Deliverables:**
+- readiness dry-run command for the first private upload checklist
+- nightly health-check support
+- manual-only fallback visibility
+
+### 4.5: Behavior
+
+**Behavior:**
+- No upload capability is added
+- No new OAuth scopes are introduced
+- No secrets are stored in the repo
+- No public or unlisted upload support is added
+- No multi-account scheduler is introduced yet
+
+### 4.6: Success Criteria
+- ✅ Operators can register accounts using placeholder-only schemas
+- ✅ Credential health can be checked safely without exposing token values
+- ✅ The dashboard shows read-only account status without exposing credential references
+- ✅ The first private upload checklist is automated as far as local state allows
+
+---
+
 ## Phase 3X: Optional oMLX Local LLM Provider MVP
 
 **Timeline:** June 20–July 15, 2026 (4 weeks)  

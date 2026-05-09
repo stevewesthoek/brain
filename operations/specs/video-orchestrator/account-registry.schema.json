@@ -1,0 +1,145 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Video Orchestrator Account Registry",
+  "type": "object",
+  "required": ["schema_version", "accounts"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"]
+    },
+    "accounts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/account"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "account": {
+      "type": "object",
+      "required": [
+        "account_id",
+        "platform",
+        "account_label",
+        "display_name",
+        "enabled",
+        "auth_mode",
+        "capabilities",
+        "default_privacy",
+        "allowed_privacy",
+        "health_check",
+        "notification_policy"
+      ],
+      "properties": {
+        "account_id": { "type": "string", "minLength": 1 },
+        "platform": { "type": "string", "enum": ["youtube", "bluesky", "instagram"] },
+        "account_label": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "enabled": { "type": "boolean" },
+        "auth_mode": {
+          "type": "string",
+          "enum": ["oauth", "api_key", "app_password", "browser_assisted", "manual_only"]
+        },
+        "credential_reference": {
+          "type": "string",
+          "pattern": "^keychain://video-orchestrator/(youtube|bluesky|instagram)/[A-Za-z0-9._-]+$"
+        },
+        "capabilities": {
+          "type": "object",
+          "required": ["upload", "status_check", "refresh_token", "analytics", "manual_fallback"],
+          "properties": {
+            "upload": { "type": "boolean" },
+            "status_check": { "type": "boolean" },
+            "refresh_token": { "type": "boolean" },
+            "analytics": { "type": "boolean" },
+            "manual_fallback": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "default_privacy": {
+          "type": "string",
+          "enum": ["private", "unlisted", "public"]
+        },
+        "allowed_privacy": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["private", "unlisted", "public"]
+          },
+          "minItems": 1
+        },
+        "rate_limits": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "cooldowns": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "health_check": {
+          "type": "object",
+          "required": ["enabled", "frequency", "warn_before_expiry_days", "keep_warm"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "frequency": { "type": "string", "minLength": 1 },
+            "warn_before_expiry_days": { "type": "integer", "minimum": 0 },
+            "keep_warm": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "notification_policy": {
+          "type": "object",
+          "required": ["on_red", "on_yellow", "channel"],
+          "properties": {
+            "on_red": { "type": "boolean" },
+            "on_yellow": { "type": "boolean" },
+            "channel": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "notes": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "auth_mode": { "enum": ["oauth", "api_key", "app_password", "browser_assisted"] } },
+            "required": ["auth_mode"]
+          },
+          "then": {
+            "required": ["credential_reference"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "auth_mode": { "const": "manual_only" } },
+            "required": ["auth_mode"]
+          },
+          "then": {
+            "not": {
+              "required": ["credential_reference"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "platform": { "const": "youtube" } },
+            "required": ["platform"]
+          },
+          "then": {
+            "properties": {
+              "default_privacy": { "const": "private" },
+              "allowed_privacy": {
+                "type": "array",
+                "items": { "const": "private" },
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

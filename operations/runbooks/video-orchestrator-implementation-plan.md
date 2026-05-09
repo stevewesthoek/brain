@@ -649,6 +649,39 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 ### Phase 4: Multi-Account Scheduler (July 15 – August 15)
 **Goal:** Safely distribute across many accounts without spam risk
 
+### Phase 4A: Account Registry + Credential Health Center (September 20 – October 1)
+**Goal:** Add a read-only account registry and credential health center so operators can automate readiness checks before the first private upload and future account expansion
+
+**Deliverables:**
+- account registry schema and placeholder examples
+- account capability, privacy, and notification metadata
+- local account-health dry-run script
+- redacted credential summary checks for approved accounts
+- safe snapshot generation for the dashboard
+- read-only dashboard account health panel
+- readiness dry-run command for the first private upload checklist
+- nightly health-check support
+
+**Behavior:**
+- No upload capability is added
+- No new OAuth scopes are introduced
+- No secrets are stored in the repo
+- No public or unlisted upload support is added
+- No multi-account scheduler is introduced yet
+
+**Testing:**
+- [ ] Registry validation accepts placeholder refs
+- [ ] Registry validation rejects secret-looking values
+- [ ] Health summaries redact credential references and token material
+- [ ] Dashboard shows account health without display of credential references
+- [ ] Readiness dry-run requires manual confirmation before any real private upload
+
+**Success Criteria:**
+- Operators can register accounts using placeholder-only schemas
+- Credential health can be checked safely without exposing token values
+- The dashboard shows read-only account status without exposing credential references
+- The first private upload checklist is automated as far as local state allows
+
 **Deliverables:**
 
 1. **Account Registry** (Phase 2B schema already includes)

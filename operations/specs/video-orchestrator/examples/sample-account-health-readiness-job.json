@@ -1,0 +1,8 @@
+{
+  "job_type": "account_health",
+  "task_config": {
+    "registry_path": "operations/specs/video-orchestrator/examples/account-registry.example.json",
+    "account_id": "youtube-main-placeholder",
+    "dry_run": true
+  }
+}

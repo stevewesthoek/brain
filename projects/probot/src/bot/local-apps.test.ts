@@ -10,7 +10,7 @@ import {
   waitForLocalAppPortFree,
   forceStopLocalAppPort,
 } from "./local-app-lifecycle.js";
-import { normalizeYouTubeLifecycleSummary, redactVideoOrchestratorText, renderYouTubeLifecycleSummary } from "./dashboard.js";
+import { normalizeAccountHealthSnapshot, normalizeYouTubeLifecycleSummary, redactVideoOrchestratorText, renderAccountHealthPanel, renderYouTubeLifecycleSummary } from "./dashboard.js";
 
 test("normalize legacy-only entry", () => {
   const app = normalizeLocalApp({
@@ -653,4 +653,95 @@ test("renderYouTubeLifecycleSummary shows counts and safe lifecycle metadata", (
   assert.doesNotMatch(html, /upload button/i);
   assert.doesNotMatch(html, /oauth button/i);
   assert.doesNotMatch(html, /refresh token/i);
+});
+
+test("normalizeAccountHealthSnapshot strips credential references and preserves safe fields", () => {
+  const snapshot = normalizeAccountHealthSnapshot({
+    checked_at: "2026-05-08T12:00:00Z",
+    summary: { green: 1, yellow: 2, red: 0, grey: 1 },
+    accounts: [
+      {
+        account_id: "youtube-main-placeholder",
+        platform: "youtube",
+        account_label: "main-channel",
+        display_name: "Main YouTube Channel Placeholder",
+        enabled: true,
+        auth_mode: "oauth",
+        credential_reference: "keychain://video-orchestrator/youtube/main-channel-placeholder",
+        capabilities: {
+          upload: true,
+          status_check: true,
+          refresh_token: true,
+          analytics: false,
+          manual_fallback: true,
+        },
+        default_privacy: "private",
+        allowed_privacy: ["private"],
+        manual_fallback: true,
+        notification_state: "dashboard",
+        last_checked_at: "2026-05-08T12:30:00Z",
+        next_action: "Keep warm.",
+        warnings: ["credential_reference=keychain://video-orchestrator/youtube/main-channel-placeholder"],
+      },
+    ],
+  });
+
+  assert.equal(snapshot.accounts?.length, 1);
+  assert.equal(snapshot.accounts?.[0]?.status, "grey");
+  assert.equal(snapshot.accounts?.[0]?.account_label, "main-channel");
+  assert.equal(snapshot.accounts?.[0]?.display_name, "Main YouTube Channel Placeholder");
+  assert.equal(snapshot.accounts?.[0]?.warnings?.[0], "[REDACTED_REFERENCE]");
+  assert.doesNotMatch(JSON.stringify(snapshot), /credential_reference/i);
+});
+
+test("renderAccountHealthPanel renders a safe placeholder and no controls for empty state", () => {
+  const html = renderAccountHealthPanel(null);
+  assert.match(html, /No account registry configured yet\./);
+  assert.match(html, /Read-only account health\./);
+  assert.doesNotMatch(html, /upload button/i);
+  assert.doesNotMatch(html, /oauth button/i);
+  assert.doesNotMatch(html, /credential reference/i);
+  assert.doesNotMatch(html, /<button/i);
+});
+
+test("renderAccountHealthPanel shows safe account metadata and avoids credential exposure", () => {
+  const html = renderAccountHealthPanel({
+    checked_at: "2026-05-08T12:00:00Z",
+    summary: { green: 1, yellow: 1, red: 0, grey: 1 },
+    accounts: [
+      {
+        account_id: "youtube-main-placeholder",
+        platform: "youtube",
+        account_label: "main-channel",
+        display_name: "Main YouTube Channel Placeholder",
+        enabled: true,
+        auth_mode: "oauth",
+        status: "green",
+        capabilities: {
+          upload: true,
+          status_check: true,
+          refresh_token: true,
+          analytics: false,
+          manual_fallback: true,
+        },
+        default_privacy: "private",
+        allowed_privacy: ["private"],
+        manual_fallback: true,
+        notification_state: "dashboard",
+        last_checked_at: "2026-05-08T12:30:00Z",
+        next_action: "Ready for manual-confirmed private upload.",
+        warnings: [],
+      },
+    ],
+  });
+
+  assert.match(html, /Account Health Center/);
+  assert.match(html, /Main YouTube Channel Placeholder/);
+  assert.match(html, /green/);
+  assert.match(html, /upload/);
+  assert.match(html, /manual_fallback/i);
+  assert.doesNotMatch(html, /credential_reference/i);
+  assert.doesNotMatch(html, /keychain/i);
+  assert.doesNotMatch(html, /upload button/i);
+  assert.doesNotMatch(html, /oauth button/i);
 });
