@@ -327,7 +327,7 @@ export function normalizeAccountHealthSnapshot(raw: RawAccountHealthSnapshot | n
       normalized.capabilities = {
         upload: Boolean((account.capabilities as Record<string, unknown>).upload),
         status_check: Boolean((account.capabilities as Record<string, unknown>).status_check),
-        refresh_token: Boolean((account.capabilities as Record<string, unknown>).refresh_token),
+        refresh_token: Boolean((account.capabilities as Record<string, unknown>).refresh_supported ?? (account.capabilities as Record<string, unknown>).refresh_token),
         analytics: Boolean((account.capabilities as Record<string, unknown>).analytics),
         manual_fallback: Boolean((account.capabilities as Record<string, unknown>).manual_fallback),
       };
