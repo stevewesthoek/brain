@@ -542,6 +542,31 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 - The worker can observe lifecycle state for a known private upload safely
 - Upload remains private-only and manually gated
 
+### Phase 3E-G: Dashboard Surfacing for YouTube Upload Lifecycle (August 15 – September 15)
+**Goal:** Surface read-only YouTube lifecycle status in the local dashboard without adding any controls
+
+**Deliverables:**
+- Dashboard lifecycle panel for YouTube uploads
+- Read-only `/api/video-orchestrator/status` surfacing
+- Redacted warning/error summary display
+- Lifecycle counts and latest-state summary
+
+**Behavior:**
+- No upload/OAuth buttons
+- No token or credential reference display
+- No Keychain or YouTube API calls from the dashboard
+- No polling from the dashboard
+
+**Testing:**
+- [ ] Status endpoint includes a `youtube_lifecycle` object
+- [ ] Dashboard renders lifecycle state without controls
+- [ ] No credential references or token values appear in output
+- [ ] Empty lifecycle state renders a safe placeholder
+
+**Success Criteria:**
+- Operators can read lifecycle state safely from the dashboard
+- The dashboard remains read-only and does not widen the upload surface
+
 ### Phase 3X: Optional oMLX Local LLM Provider MVP (June 20 – July 15)
 **Goal:** Add a narrow local-only text provider for metadata variants without making oMLX required
 

@@ -139,6 +139,122 @@ async function getVideoOrchestratorStatus(): Promise<Record<string, unknown>> {
   }
 }
 
+function redactVideoOrchestratorText(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  return String(value)
+    .replace(/\b(access_token|refresh_token|client_secret|authorization_code|token)\s*[:=]\s*[^\s,;]+/gi, '$1=[REDACTED]')
+    .replace(/\bBearer\s+[A-Za-z0-9\-._~+/]+=*/gi, 'Bearer [REDACTED]')
+    .replace(/\b(AIza[0-9A-Za-z_-]{10,}|sk_live_[0-9A-Za-z_-]{10,}|ghp_[0-9A-Za-z_-]{10,}|github_pat_[0-9A-Za-z_-]{10,}|xoxb-[0-9A-Za-z-]{10,}|AKIA[0-9A-Z]{12,})\b/g, '[REDACTED]');
+}
+
+type YouTubeLifecycleSummary = {
+  latest: {
+    video_id: string | null;
+    platform: string;
+    package_target: string | null;
+    youtube_video_id: string | null;
+    lifecycle_state: string;
+    privacy_status: string;
+    upload_event_at: string | null;
+    last_checked_at: string | null;
+    status_check_pending: boolean;
+    manual_fallback_available: boolean;
+    last_warning: string | null;
+    last_error: string | null;
+  } | null;
+  counts: {
+    uploaded: number;
+    processing: number;
+    available_private: number;
+    failed: number;
+    unknown: number;
+  };
+  message?: string;
+};
+
+async function getVideoOrchestratorYouTubeLifecycleStatus(): Promise<{ ok: true; youtube: YouTubeLifecycleSummary } | { ok: false; youtube: YouTubeLifecycleSummary; error: string }> {
+  const dbUrl = process.env.VIDEO_ORCHESTRATOR_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5450/video_orchestrator";
+  const sql = `
+    WITH relevant_events AS (
+      SELECT
+        created_at AS upload_event_at,
+        event_type,
+        COALESCE(NULLIF(event_data->>'lifecycle_state', ''), 'unknown') AS lifecycle_state,
+        COALESCE(NULLIF(event_data->>'youtube_video_id', ''), NULLIF(event_data->>'video_id', '')) AS youtube_video_id,
+        COALESCE(NULLIF(event_data->>'platform', ''), 'youtube') AS platform,
+        COALESCE(NULLIF(event_data->>'package_target', ''), 'unknown') AS package_target,
+        COALESCE(NULLIF(event_data->>'privacy_status', ''), 'private') AS privacy_status,
+        COALESCE((event_data->>'status_check_pending')::boolean, false) AS status_check_pending,
+        COALESCE((event_data->>'manual_fallback_available')::boolean, true) AS manual_fallback_available,
+        COALESCE(NULLIF(event_data->>'warning', ''), NULLIF(event_data->>'last_warning', '')) AS last_warning,
+        COALESCE(NULLIF(event_data->>'helper_error', ''), NULLIF(event_data->>'last_error', ''), NULLIF(event_data->>'message', '')) AS last_error,
+        COALESCE(NULLIF(event_data->>'checked_at', ''), NULLIF(event_data->>'upload_event_at', '')) AS last_checked_at
+      FROM events
+      WHERE event_type IN ('youtube_private_upload_succeeded', 'youtube_private_upload_failed', 'youtube_upload_status_checked')
+    ),
+    latest_event AS (
+      SELECT *
+      FROM relevant_events
+      ORDER BY upload_event_at DESC
+      LIMIT 1
+    )
+    SELECT json_build_object(
+      'latest', (
+        SELECT row_to_json(latest_event)
+        FROM latest_event
+      ),
+      'counts', json_build_object(
+        'uploaded', (SELECT COUNT(*) FROM relevant_events WHERE lifecycle_state = 'uploaded'),
+        'processing', (SELECT COUNT(*) FROM relevant_events WHERE lifecycle_state = 'processing'),
+        'available_private', (SELECT COUNT(*) FROM relevant_events WHERE lifecycle_state = 'available_private'),
+        'failed', (SELECT COUNT(*) FROM relevant_events WHERE lifecycle_state = 'failed'),
+        'unknown', (SELECT COUNT(*) FROM relevant_events WHERE lifecycle_state = 'unknown')
+      ),
+      'message', CASE WHEN EXISTS (SELECT 1 FROM relevant_events) THEN NULL ELSE 'No YouTube upload lifecycle events recorded yet.' END
+    ) AS status
+  `;
+
+  try {
+    const { stdout } = await execFileAsync("psql", [
+      dbUrl,
+      "--no-align",
+      "--tuples-only",
+      "--quiet",
+      "-v",
+      "ON_ERROR_STOP=1",
+      "-c",
+      sql,
+    ]);
+    const raw = JSON.parse(stdout.trim() || "{}") as { latest: YouTubeLifecycleSummary["latest"]; counts: YouTubeLifecycleSummary["counts"]; message?: string };
+    if (raw.latest) {
+      raw.latest = {
+        ...raw.latest,
+        video_id: redactVideoOrchestratorText(raw.latest.video_id),
+        platform: redactVideoOrchestratorText(raw.latest.platform) ?? "youtube",
+        package_target: redactVideoOrchestratorText(raw.latest.package_target),
+        youtube_video_id: redactVideoOrchestratorText(raw.latest.youtube_video_id),
+        privacy_status: redactVideoOrchestratorText(raw.latest.privacy_status) ?? "private",
+        upload_event_at: redactVideoOrchestratorText(raw.latest.upload_event_at),
+        last_checked_at: redactVideoOrchestratorText(raw.latest.last_checked_at),
+        last_warning: redactVideoOrchestratorText(raw.latest.last_warning),
+        last_error: redactVideoOrchestratorText(raw.latest.last_error),
+      };
+    }
+    return { ok: true, youtube: raw };
+  } catch (err) {
+    console.error("[Video Orchestrator] YouTube lifecycle status check failed:", String(err));
+    return {
+      ok: false,
+      youtube: {
+        latest: null,
+        counts: { uploaded: 0, processing: 0, available_private: 0, failed: 0, unknown: 0 },
+        message: "YouTube lifecycle status is unavailable.",
+      },
+      error: "Video Orchestrator YouTube lifecycle status is unavailable.",
+    };
+  }
+}
+
 async function openGhosttySession(directCommand: string, cwd: string, executeCommand: boolean = true): Promise<void> {
   if (!directCommand.trim()) throw new Error("directCommand is empty.");
   if (!cwd.trim()) throw new Error("cwd is empty.");
@@ -1981,6 +2097,7 @@ function renderVideoOrchestratorStudio(status){
   const running_jobs=Number(status.running_jobs||0);
   const failed_jobs_7d=Number(status.failed_jobs_7d||0);
   const completed_packages=Number(status.completed_packages||0);
+  const youtubeLifecycle=status.youtube_lifecycle||null;
   const updateTime=status.timestamp?new Date(status.timestamp):new Date();
   const minAgo=Math.max(0,Math.floor((Date.now()-updateTime.getTime())/60000));
   const freshText=minAgo===0?'just now':minAgo===1?'1m ago':minAgo+'m ago';
@@ -2015,6 +2132,40 @@ function renderVideoOrchestratorStudio(status){
   html+='<div style="font-size:0.85em;line-height:1.8">';
   html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Connected Accounts:</span> <strong>'+total_accounts+'</strong></div>';
   html+='<p style="color:var(--muted);text-align:center;margin:12px 0 0 0;font-size:0.8em">YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, X</p>';
+  html+='</div></div>';
+
+  html+='<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
+  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">YouTube Upload Lifecycle</h3>';
+  html+='<div style="font-size:0.85em;line-height:1.7">';
+  if(youtubeLifecycle&&youtubeLifecycle.latest){
+    const latest=youtubeLifecycle.latest;
+    const counts=youtubeLifecycle.counts||{uploaded:0,processing:0,available_private:0,failed:0,unknown:0};
+    html+='<div style="padding:8px;margin-bottom:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Latest state:</span> <strong>'+esc(String(latest.lifecycle_state||'unknown'))+'</strong></div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">YouTube Video ID:</span> <strong>'+esc(String(latest.youtube_video_id||'—'))+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Privacy:</span> <strong>'+esc(String(latest.privacy_status||'private'))+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Upload event:</span> <strong>'+esc(String(latest.upload_event_at||'—'))+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Last checked:</span> <strong>'+esc(String(latest.last_checked_at||'—'))+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Manual fallback:</span> <strong>'+String(latest.manual_fallback_available ? 'available' : 'disabled')+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">Status check pending:</span> <strong>'+String(latest.status_check_pending ? 'yes' : 'no')+'</strong></div>';
+    html+='</div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:8px">';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">uploaded</span> <strong>'+String(counts.uploaded||0)+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">processing</span> <strong>'+String(counts.processing||0)+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">available_private</span> <strong>'+String(counts.available_private||0)+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">failed</span> <strong>'+String(counts.failed||0)+'</strong></div>';
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)"><span style="color:var(--muted)">unknown</span> <strong>'+String(counts.unknown||0)+'</strong></div>';
+    html+='</div>';
+    if(latest.last_warning||latest.last_error){
+      html+='<div style="margin-top:8px;padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)">';
+      if(latest.last_warning) html+='<div><span style="color:var(--muted)">Last warning:</span> '+esc(String(latest.last_warning))+'</div>';
+      if(latest.last_error) html+='<div><span style="color:var(--muted)">Last error:</span> '+esc(String(latest.last_error))+'</div>';
+      html+='</div>';
+    }
+  }else{
+    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--muted)">No YouTube lifecycle events yet.</div>';
+  }
+  html+='<p style="margin:12px 0 0 0;color:var(--muted)">Read-only status. Uploads, OAuth, credentials, and privacy changes are not controlled from this dashboard.</p>';
   html+='</div></div>';
 
   html+='<div style="grid-column:1/-1;padding:12px 16px;background:var(--subtle);border-radius:6px;border:1px solid var(--border);font-size:0.85em;color:var(--muted)">';
@@ -3595,9 +3746,15 @@ export function createDashboardServer(app: AppContext): http.Server {
     }
 
     if (url === "/api/video-orchestrator/status") {
-      const status = await getVideoOrchestratorStatus();
+      const [status, youtubeLifecycle] = await Promise.all([
+        getVideoOrchestratorStatus(),
+        getVideoOrchestratorYouTubeLifecycleStatus(),
+      ]);
       res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
-      res.end(JSON.stringify(status));
+      res.end(JSON.stringify({
+        ...status,
+        youtube_lifecycle: youtubeLifecycle.youtube,
+      }));
       return;
     }
 

@@ -70,6 +70,7 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **3E-D** | Jun 20–Jul 15 | Credential-Backed YouTube Upload Preflight | Verify redacted Keychain summaries and scope readiness without upload |
 | **3E-E** | Jul 15–Aug 15 | Authorized Posting Adapters | Add the first real platform API adapters only after credential boundaries and explicit upload approval are complete |
 | **3E-F** | Aug 15–Sep 15 | YouTube Upload Lifecycle / Status Handling | Add read-only lifecycle checks for known private uploads without new publishing capability |
+| **3E-G** | Aug 15–Sep 15 | Dashboard Surfacing for YouTube Upload Lifecycle | Show read-only lifecycle state in the dashboard without adding controls |
 | **3X** | Jun 20–Jul 15 | Optional oMLX Local LLM Provider MVP | Add a localhost-only metadata variants provider for low-risk text tasks |
 | **3Y** | Jun 20–Jul 15 | MacBook oMLX Sidecar Worker | Add an opt-in trusted Thunderbolt/LAN worker-node path for low-risk text tasks |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
@@ -656,6 +657,35 @@ CREATE TABLE events (
 - ✅ The worker can report conservative lifecycle status for a known private upload
 - ✅ Unknown or failed checks return safe redacted metadata
 - ✅ No new publishing mode is introduced
+
+---
+
+## Phase 3E-G: Dashboard Surfacing for YouTube Upload Lifecycle
+
+**Timeline:** August 15–September 15, 2026 (4 weeks)  
+**Goal:** Surface read-only lifecycle state in the dashboard without adding any new control surface
+
+### 3.1: Dashboard Summary
+
+**Deliverables:**
+- latest YouTube lifecycle state
+- YouTube video ID when already known locally
+- privacy status, last checked, upload event timestamp
+- lifecycle counts and redacted warnings/errors
+
+### 3.2: Read-Only Boundary
+
+**Behavior:**
+- No upload buttons
+- No OAuth buttons
+- No credential reference display
+- No token display
+- No Keychain or YouTube API calls from the dashboard
+
+### 3.3: Success Criteria
+- ✅ The dashboard shows lifecycle state for known uploads
+- ✅ Empty state is safe and informative
+- ✅ No new publishing capability is introduced
 
 ---
 
