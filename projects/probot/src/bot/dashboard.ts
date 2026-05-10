@@ -2804,7 +2804,7 @@ function bindProductionStudioSubtabs(){
   }));
 }
 
-function renderVideoOrchestratorStudio(status){
+async function renderVideoOrchestratorStudio(status){
   if(!status) return '<div class="nr-err">Failed to load video orchestrator status</div>';
   const database_status=status.database_status||'unknown';
   const total_videos=Number(status.total_videos||0);
@@ -2814,9 +2814,6 @@ function renderVideoOrchestratorStudio(status){
   const failed_jobs_7d=Number(status.failed_jobs_7d||0);
   const completed_packages=Number(status.completed_packages||0);
   const youtubeLifecycle=status.youtube_lifecycle||null;
-  const accountHealth=status.account_health||null;
-  const accounts=status.accounts||[];
-  const oauthClientConfig=status.oauth_client_config||null;
   const updateTime=status.timestamp?new Date(status.timestamp):new Date();
   const minAgo=Math.max(0,Math.floor((Date.now()-updateTime.getTime())/60000));
   const freshText=minAgo===0?'just now':minAgo===1?'1m ago':minAgo+'m ago';
@@ -2853,8 +2850,17 @@ function renderVideoOrchestratorStudio(status){
   html+='<p style="color:var(--muted);text-align:center;margin:12px 0 0 0;font-size:0.8em">YouTube, TikTok, Instagram, LinkedIn, Facebook, Bluesky, X</p>';
   html+='</div></div>';
 
-  html+=renderAccountsAndCredentialsPanel(accounts, oauthClientConfig);
-  html+=renderAccountHealthPanel(accountHealth);
+  let panelHtml='';
+  try{
+    const panelResp=await fetch('/api/video-orchestrator/accounts-panel');
+    if(panelResp.ok){
+      const panelData=await panelResp.json();
+      if(panelData.ok&&panelData.html) panelHtml=panelData.html;
+    }
+  }catch(e){
+    console.warn('Failed to fetch accounts panel:',e);
+  }
+  html+=panelHtml;
 
   html+=renderYouTubeLifecycleSummary(youtubeLifecycle);
 
@@ -2874,7 +2880,8 @@ async function refreshProductionPipelinePanel(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     window.__videoOrchestratorStatus=data;
-    panel.innerHTML=renderVideoOrchestratorStudio(data);
+    const html=await renderVideoOrchestratorStudio(data);
+    panel.innerHTML=html;
   }catch(e){
     panel.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';
   }
@@ -4528,6 +4535,34 @@ export function createDashboardServer(app: AppContext): http.Server {
         oauth_client_config: accountCenter.oauth_client_config,
         runtime_paths: accountCenter.paths,
       }));
+      return;
+    }
+
+    if (url === "/api/video-orchestrator/accounts-panel" && req.method === "GET") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Accounts panel is only available on localhost." }));
+        return;
+      }
+      try {
+        const [accountCenter, accountHealthResult] = await Promise.all([
+          getVideoOrchestratorAccountCenterStatus(),
+          getVideoOrchestratorAccountHealthStatus(),
+        ]);
+        const accounts = accountCenter.accounts || [];
+        const oauthClientConfig = accountCenter.oauth_client_config || null;
+        const accountHealth = accountHealthResult.account_health || null;
+        const panelHtml = renderAccountsAndCredentialsPanel(accounts, oauthClientConfig);
+        const healthHtml = renderAccountHealthPanel(accountHealth);
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+        res.end(JSON.stringify({
+          ok: true,
+          html: panelHtml + healthHtml,
+        }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: redactVideoOrchestratorText(String(err)) }));
+      }
       return;
     }
 

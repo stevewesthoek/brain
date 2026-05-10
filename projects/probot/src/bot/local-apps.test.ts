@@ -829,3 +829,50 @@ test("renderYoutubeOAuthCallbackFailureHtml redacts token exchange details and k
   assert.doesNotMatch(html, /keychain:\/\//i);
   assert.doesNotMatch(html, /abc123/i);
 });
+
+test("dashboard accounts-panel rendering is safe and complete", () => {
+  const accounts = [
+    buildSafeAccountForDashboard({
+      account_id: "youtube-main",
+      platform: "youtube",
+      account_label: "main-channel",
+      display_name: "Main YouTube Channel",
+      enabled: true,
+      auth_mode: "oauth",
+      credential_reference: "keychain://video-orchestrator/youtube/main-channel",
+      capabilities: {
+        upload: true,
+        status_check: true,
+        refresh_supported: true,
+        analytics: false,
+        manual_fallback: true,
+      },
+      default_privacy: "private",
+      allowed_privacy: ["private"],
+      health_check: { enabled: true, frequency: "nightly", warn_before_expiry_days: 7, keep_warm: true },
+      notification_policy: { on_red: true, on_yellow: true, channel: "dashboard" },
+    }),
+  ];
+  const oauthClientConfig = { client_id: "test.apps.googleusercontent.com", configured: true, oauth_client_mode: "pkce_public_client" as const, client_secret_configured: false };
+
+  const panelHtml = renderAccountsAndCredentialsPanel(accounts, oauthClientConfig);
+
+  // Verify safe content is present
+  assert.match(panelHtml, /Accounts &amp; Credentials/);
+  assert.match(panelHtml, /Configure OAuth Client/);
+  assert.match(panelHtml, /Add YouTube Account/);
+  assert.match(panelHtml, /Connect YouTube/);
+  assert.match(panelHtml, /save-oauth-client/);
+  assert.match(panelHtml, /save-account/);
+  assert.match(panelHtml, /connect-youtube/);
+  assert.match(panelHtml, /refresh-health/);
+
+  // Verify no secrets are exposed
+  assert.doesNotMatch(panelHtml, /credential_reference/i);
+  assert.doesNotMatch(panelHtml, /keychain:\/\//i);
+  assert.doesNotMatch(panelHtml, /access_token/i);
+  assert.doesNotMatch(panelHtml, /refresh_token/i);
+  assert.doesNotMatch(panelHtml, /client_secret[^_]/i);
+  assert.doesNotMatch(panelHtml, /authorization_code/i);
+  assert.doesNotMatch(panelHtml, /code_verifier/i);
+});
