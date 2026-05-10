@@ -10,7 +10,19 @@ import {
   waitForLocalAppPortFree,
   forceStopLocalAppPort,
 } from "./local-app-lifecycle.js";
-import { buildSafeAccountForDashboard, getDefaultVideoOrchestratorPaths, normalizeAccountHealthSnapshot, normalizeYoutubeOAuthClientConfig, normalizeYouTubeLifecycleSummary, redactVideoOrchestratorText, renderAccountHealthPanel, renderAccountsAndCredentialsPanel, renderYoutubeOAuthCallbackFailureHtml, renderYouTubeLifecycleSummary, sanitizeSafeAccountInput } from "./dashboard.js";
+import {
+  buildSafeAccountForDashboard,
+  getDefaultVideoOrchestratorPaths,
+  normalizeAccountHealthSnapshot,
+  normalizeYoutubeOAuthClientConfig,
+  normalizeYouTubeLifecycleSummary,
+  redactVideoOrchestratorText,
+  renderAccountHealthPanel,
+  renderAccountsAndCredentialsPanel,
+  renderYoutubeOAuthCallbackFailureHtml,
+  renderYouTubeLifecycleSummary,
+  sanitizeSafeAccountInput,
+} from "./video-orchestrator-dashboard.js";
 
 test("normalize legacy-only entry", () => {
   const app = normalizeLocalApp({
