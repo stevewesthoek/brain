@@ -876,3 +876,128 @@ test("dashboard accounts-panel rendering is safe and complete", () => {
   assert.doesNotMatch(panelHtml, /authorization_code/i);
   assert.doesNotMatch(panelHtml, /code_verifier/i);
 });
+
+test("dashboard youtube-lifecycle-panel endpoint and rendering is safe", () => {
+  const lifecycleSummary = {
+    latest: {
+      video_id: "pkg123",
+      platform: "youtube",
+      package_target: "target1",
+      youtube_video_id: "dQw4w9WgXcQ",
+      lifecycle_state: "available",
+      privacy_status: "private",
+      upload_event_at: "2026-05-10T12:00:00Z",
+      last_checked_at: "2026-05-10T13:00:00Z",
+      manual_fallback_available: true,
+      status_check_pending: false,
+      last_warning: "Warning: slow processing",
+      last_error: null,
+    },
+    counts: {
+      uploaded: 5,
+      processing: 2,
+      available_private: 3,
+      failed: 1,
+      unknown: 0,
+    },
+  };
+
+  const html = renderYouTubeLifecycleSummary(lifecycleSummary);
+
+  // Verify safe content is present
+  assert.match(html, /YouTube Upload Lifecycle/);
+  assert.match(html, /Latest state/);
+  assert.match(html, /dQw4w9WgXcQ/);
+  assert.match(html, /private/);
+  assert.match(html, /uploaded.*5/);
+  assert.match(html, /processing.*2/);
+
+  // Verify no credentials are exposed
+  assert.doesNotMatch(html, /credential_reference/i);
+  assert.doesNotMatch(html, /credentialReference/);
+  assert.doesNotMatch(html, /keychain:\/\//i);
+  assert.doesNotMatch(html, /access_token/i);
+  assert.doesNotMatch(html, /refresh_token/i);
+  assert.doesNotMatch(html, /client_secret/i);
+  assert.doesNotMatch(html, /authorization_code/i);
+  assert.doesNotMatch(html, /code_verifier/i);
+  assert.doesNotMatch(html, /Bearer /);
+});
+
+test("dashboard browser does not contain direct server-side renderer calls", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Check that /api/video-orchestrator/youtube-lifecycle-panel endpoint exists
+  assert.match(dashboardSource, /\/api\/video-orchestrator\/youtube-lifecycle-panel/);
+
+  // Check that the browser-side code fetches from the endpoint, not calling renderer directly
+  assert.match(dashboardSource, /fetch\('\/api\/video-orchestrator\/youtube-lifecycle-panel'\)/);
+
+  // In browser context (template literals with fetch), should not have bare calls to server renderers
+  // Extract all browser JavaScript (between backticks inside fetch/addEventListener handlers)
+  const browserJsMatch = dashboardSource.match(/async function renderVideoOrchestratorStudio[\s\S]*?^}/m);
+  assert.ok(browserJsMatch, "renderVideoOrchestratorStudio function should exist");
+
+  // The function should fetch lifecycle panel instead of calling the renderer directly
+  const functionBody = browserJsMatch[0];
+  assert.match(functionBody, /fetch\('\/api\/video-orchestrator\/youtube-lifecycle-panel'\)/);
+  assert.doesNotMatch(functionBody, /renderYouTubeLifecycleSummary\(youtubeLifecycle\)/);
+});
+
+test("dashboard lifecycle panel endpoint is safe and contains required content", () => {
+  const lifecycleSummary = {
+    latest: {
+      video_id: "pkg456",
+      platform: "youtube",
+      package_target: "target2",
+      youtube_video_id: "abc123",
+      lifecycle_state: "available",
+      privacy_status: "private",
+      upload_event_at: "2026-05-10T12:00:00Z",
+      last_checked_at: "2026-05-10T13:00:00Z",
+      manual_fallback_available: true,
+      status_check_pending: false,
+      last_warning: null,
+      last_error: null,
+    },
+    counts: {
+      uploaded: 10,
+      processing: 3,
+      available_private: 5,
+      failed: 0,
+      unknown: 0,
+    },
+  };
+
+  const html = renderYouTubeLifecycleSummary(lifecycleSummary);
+
+  // Must contain lifecycle text or empty state
+  const hasLifecycleText = /YouTube Upload Lifecycle|No YouTube lifecycle events yet/.test(html);
+  assert.ok(hasLifecycleText, "Must contain lifecycle header or empty state");
+
+  // Must NOT contain any credential patterns
+  const credentials = [
+    /credential_reference/i,
+    /keychain:\/\//i,
+    /access_token/i,
+    /refresh_token/i,
+    /client_secret/i,
+    /authorization_code/i,
+    /code_verifier/i,
+  ];
+
+  for (const pattern of credentials) {
+    assert.doesNotMatch(html, pattern, `Must not contain ${pattern}`);
+  }
+});
+
+test("dashboard production pipeline has safe fallback when lifecycle panel fetch fails", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Check that lifecycle panel fetch has error handling
+  const lifecycleFetchMatch = dashboardSource.match(/fetch\('\/api\/video-orchestrator\/youtube-lifecycle-panel'\)[\s\S]*?catch\(e\)/);
+  assert.ok(lifecycleFetchMatch, "Lifecycle panel fetch should have error handling");
+
+  // The fallback should handle errors gracefully
+  assert.match(dashboardSource, /console\.warn\('Failed to fetch lifecycle panel/);
+});

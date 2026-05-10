@@ -2862,7 +2862,17 @@ async function renderVideoOrchestratorStudio(status){
   }
   html+=panelHtml;
 
-  html+=renderYouTubeLifecycleSummary(youtubeLifecycle);
+  let lifecycleHtml='';
+  try{
+    const lifecycleResp=await fetch('/api/video-orchestrator/youtube-lifecycle-panel');
+    if(lifecycleResp.ok){
+      const lifecycleData=await lifecycleResp.json();
+      if(lifecycleData.ok&&lifecycleData.html) lifecycleHtml=lifecycleData.html;
+    }
+  }catch(e){
+    console.warn('Failed to fetch lifecycle panel:',e);
+  }
+  html+=lifecycleHtml;
 
   html+='<div style="grid-column:1/-1;padding:12px 16px;background:var(--subtle);border-radius:6px;border:1px solid var(--border);font-size:0.85em;color:var(--muted)">';
   html+='<strong style="color:var(--text)">Phase 2B:</strong> PostgreSQL production queue with durable manifests. Manual fallback remains available for all platform targets.';
@@ -3003,7 +3013,7 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>
         .catch(e=>{if(content)content.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
       fetch('/api/video-orchestrator/status')
         .then(r=>r.json())
-        .then(data=>{if(pipeline)pipeline.innerHTML=renderVideoOrchestratorStudio(data);})
+        .then(async data=>{if(pipeline)pipeline.innerHTML=await renderVideoOrchestratorStudio(data);})
         .catch(e=>{if(pipeline)pipeline.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
     }
   }else{
@@ -4558,6 +4568,28 @@ export function createDashboardServer(app: AppContext): http.Server {
         res.end(JSON.stringify({
           ok: true,
           html: panelHtml + healthHtml,
+        }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: redactVideoOrchestratorText(String(err)) }));
+      }
+      return;
+    }
+
+    if (url === "/api/video-orchestrator/youtube-lifecycle-panel" && req.method === "GET") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Lifecycle panel is only available on localhost." }));
+        return;
+      }
+      try {
+        const youtubeLifecycleResult = await getVideoOrchestratorYouTubeLifecycleStatus();
+        const youtubeLifecycle = youtubeLifecycleResult.youtube || null;
+        const lifecycleHtml = renderYouTubeLifecycleSummary(youtubeLifecycle);
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+        res.end(JSON.stringify({
+          ok: true,
+          html: lifecycleHtml,
         }));
       } catch (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
