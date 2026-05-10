@@ -1001,3 +1001,56 @@ test("dashboard production pipeline has safe fallback when lifecycle panel fetch
   // The fallback should handle errors gracefully
   assert.match(dashboardSource, /console\.warn\('Failed to fetch lifecycle panel/);
 });
+
+// ─── ProBot Dashboard Stabilization Guardrails ───────────────────────────
+
+test("stabilization: video orchestrator runtime paths use canonical repo-root", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // All Video Orchestrator paths should resolve to repo-root runtime/local/
+  assert.match(dashboardSource, /process\.cwd\(\).*runtime\/local\/video-orchestrator/);
+  assert.match(dashboardSource, /const VIDEO_ORCHESTRATOR_RUNTIME_DIR = path\.resolve\(process\.cwd\(\), "runtime\/local\/video-orchestrator"\);/);
+  assert.match(dashboardSource, /const ACCOUNT_HEALTH_SNAPSHOT_PATH = path\.resolve\(process\.cwd\(\), 'runtime\/local\/video-orchestrator\/account-health-snapshot\.json'\);/);
+
+  // Should NOT hardcode projects/probot/runtime in path definitions
+  assert.doesNotMatch(dashboardSource, /const VIDEO_ORCHESTRATOR_RUNTIME_DIR = ".*projects\/probot\/runtime/);
+});
+
+test("stabilization: local app lifecycle handlers return consistent state", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Should track app starting state
+  assert.match(dashboardSource, /LOCAL_APP_STARTING_STATES/);
+  assert.match(dashboardSource, /buildLocalAppsStatus/);
+
+  // Should use exclusive operations to prevent race conditions
+  assert.match(dashboardSource, /runExclusiveLocalAppOperation/);
+});
+
+test("stabilization: oauth account ui does not expose credentials in responses", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // All account-related responses should use redaction/sanitization helpers
+  assert.match(dashboardSource, /buildSafeAccountForDashboard/);
+  assert.match(dashboardSource, /sanitizeSafeAccountInput/);
+  assert.match(dashboardSource, /redactVideoOrchestratorText/);
+
+  // Should use safe rendering functions, not expose raw secrets
+  assert.match(dashboardSource, /renderAccountsAndCredentialsPanel/);
+  assert.match(dashboardSource, /renderAccountHealthPanel/);
+  assert.match(dashboardSource, /renderYouTubeLifecycleSummary/);
+});
+
+test("stabilization: getDefaultVideoOrchestratorPaths returns consistent paths", () => {
+  const paths = getDefaultVideoOrchestratorPaths();
+
+  // All paths should end with runtime/local/video-orchestrator variants
+  assert.match(paths.registryPath, /runtime\/local\/video-orchestrator\/account-registry\.local\.json$/);
+  assert.match(paths.snapshotPath, /runtime\/local\/video-orchestrator\/account-health-snapshot\.json$/);
+  assert.match(paths.oauthStateDir, /runtime\/local\/video-orchestrator\/oauth-state$/);
+
+  // Paths should be absolute and accessible
+  assert.ok(path.isAbsolute(paths.registryPath), "Registry path should be absolute");
+  assert.ok(path.isAbsolute(paths.snapshotPath), "Snapshot path should be absolute");
+  assert.ok(path.isAbsolute(paths.oauthStateDir), "OAuth state directory should be absolute");
+});
