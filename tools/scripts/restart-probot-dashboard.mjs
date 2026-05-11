@@ -78,11 +78,12 @@ async function killProcessSafely(pids) {
       const { stdout } = await execFileAsync("ps", ["-p", pid, "-o", "comm="]);
       const command = stdout.trim();
 
-      // Only kill if it looks like ProBot (node, npm, tsx)
+      // Only kill if it looks like ProBot (node, npm, tsx, or ProBot itself)
       const isNodeProcess =
         command.includes("node") ||
         command.includes("npm") ||
-        command.includes("tsx");
+        command.includes("tsx") ||
+        command.includes("ProBot");
 
       if (isNodeProcess) {
         log(`  Killing PID ${pid}: ${command}`, "yellow");
@@ -90,11 +91,11 @@ async function killProcessSafely(pids) {
         killed.push(pid);
       } else {
         log(
-          `  ⚠ Refusing to kill PID ${pid}: not a node process (${command})`,
+          `  ⚠ Refusing to kill PID ${pid}: not a node/ProBot process (${command})`,
           "red"
         );
         throw new Error(
-          `Port ${DASHBOARD_PORT} in use by non-node process (${command}). Manual intervention needed.`
+          `Port ${DASHBOARD_PORT} in use by non-node/non-ProBot process (${command}). Manual intervention needed.`
         );
       }
     } catch (err) {

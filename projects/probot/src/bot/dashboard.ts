@@ -88,6 +88,7 @@ const FAVICON_SVG = `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3
 
 const START_TIME = Date.now();
 const LOCAL_APP_STARTING_STATES = new Map<string, { startedAt: number; startupTimeoutMs: number | null }>();
+const LOCAL_APP_IN_FLIGHT_ACTIONS = new Map<string, { action: string; timestamp: number }>();
 const BUILDFLOW_VERIFY_STATE = new Map<string, {
   running: boolean;
   mode: "verify" | "restart-and-verify" | null;
@@ -3823,18 +3824,25 @@ export function createDashboardServer(app: AppContext): http.Server {
         const payload = JSON.parse(body);
 
         if (url === "/api/local-apps/start" && payload.name) {
+          const inFlight = LOCAL_APP_IN_FLIGHT_ACTIONS.get(payload.name);
+          if (inFlight && inFlight.action === "start" && Date.now() - inFlight.timestamp < 5000) {
+            res.writeHead(409, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, appName: payload.name, action: "start", status: "blocked", error: "Start already in progress for this app", nextPollMs: 1000 }));
+            return;
+          }
           const app = findLocalApp(payload.name);
           if (!app) {
             res.writeHead(404, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: false, app: payload.name, error: "App not found" }));
+            res.end(JSON.stringify({ ok: false, appName: payload.name, action: "start", status: "blocked", error: "App not found", nextPollMs: 0 }));
             return;
           }
           const startCommand = resolveLocalAppLifecycleCommand(app, "start");
           if (!startCommand) {
             res.writeHead(400, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: false, app: payload.name, error: "App cannot be started (no start command)" }));
+            res.end(JSON.stringify({ ok: false, appName: payload.name, action: "start", status: "blocked", error: "App cannot be started (no start command)", nextPollMs: 0 }));
             return;
           }
+          LOCAL_APP_IN_FLIGHT_ACTIONS.set(payload.name, { action: "start", timestamp: Date.now() });
           try {
             const result = await runExclusiveLocalAppOperation(payload.name, async () => {
               const startupTimeoutMs = app.startupTimeoutMs ?? 30000;
@@ -3868,61 +3876,68 @@ export function createDashboardServer(app: AppContext): http.Server {
 
                 return {
                   ok: true,
-                  app: payload.name,
+                  appName: payload.name,
                   action: "start" as const,
                   status: healthy ? ("running" as const) : ("starting" as const),
-                  portFree,
-                  healthy,
-                  statusCode,
-                  message: healthy ? undefined : "Start launched; health not confirmed yet",
+                  message: healthy ? "Start successful" : "Start launched; health not confirmed yet",
+                  nextPollMs: healthy ? 0 : 1000,
+                  __statusCode: statusCode,
                 };
               } catch (err) {
                 console.error(`[LocalApp] ${payload.name} start failed:`, String(err));
                 return {
                   ok: false,
-                  app: payload.name,
+                  appName: payload.name,
                   action: "start" as const,
                   status: ("failed" as const),
-                  portFree,
-                  healthy,
-                  statusCode: 500,
                   error: String(err),
+                  nextPollMs: 0,
+                  __statusCode: 500,
                 };
               } finally {
                 clearLocalAppStartingState(payload.name);
+                LOCAL_APP_IN_FLIGHT_ACTIONS.delete(payload.name);
               }
             });
 
-            const statusCode = result.statusCode;
-            delete (result as any).statusCode;
+            const statusCode = (result as any).__statusCode || 500;
+            delete (result as any).__statusCode;
             res.writeHead(statusCode, { "Content-Type": "application/json" });
             res.end(JSON.stringify(result));
           } catch (e) {
+            LOCAL_APP_IN_FLIGHT_ACTIONS.delete(payload.name);
             if (String(e).includes("already running")) {
               res.writeHead(409, { "Content-Type": "application/json" });
-              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+              res.end(JSON.stringify({ ok: false, appName: payload.name, action: "start", status: "blocked", error: String(e), nextPollMs: 1000 }));
             } else {
               clearLocalAppStartingState(payload.name);
               res.writeHead(500, { "Content-Type": "application/json" });
-              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+              res.end(JSON.stringify({ ok: false, appName: payload.name, action: "start", status: "failed", error: String(e), nextPollMs: 0 }));
             }
           }
           return;
         }
 
         if (url === "/api/local-apps/restart" && payload.name) {
+          const inFlight = LOCAL_APP_IN_FLIGHT_ACTIONS.get(payload.name);
+          if (inFlight && inFlight.action === "restart" && Date.now() - inFlight.timestamp < 5000) {
+            res.writeHead(409, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, appName: payload.name, action: "restart", status: "blocked", error: "Restart already in progress for this app", nextPollMs: 1000 }));
+            return;
+          }
           const app = findLocalApp(payload.name);
           if (!app) {
             res.writeHead(404, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: false, app: payload.name, error: "App not found" }));
+            res.end(JSON.stringify({ ok: false, appName: payload.name, action: "restart", status: "blocked", error: "App not found", nextPollMs: 0 }));
             return;
           }
           const startCommand = resolveLocalAppLifecycleCommand(app, "start");
           if (!startCommand) {
             res.writeHead(400, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: false, app: payload.name, error: "App cannot be restarted (no start command)" }));
+            res.end(JSON.stringify({ ok: false, appName: payload.name, action: "restart", status: "blocked", error: "App cannot be restarted (no start command)", nextPollMs: 0 }));
             return;
           }
+          LOCAL_APP_IN_FLIGHT_ACTIONS.set(payload.name, { action: "restart", timestamp: Date.now() });
           try {
             const result = await runExclusiveLocalAppOperation(payload.name, async () => {
               const startupTimeoutMs = app.startupTimeoutMs ?? 30000;
@@ -3961,54 +3976,62 @@ export function createDashboardServer(app: AppContext): http.Server {
 
                 return {
                   ok: true,
-                  app: payload.name,
+                  appName: payload.name,
                   action: "restart" as const,
                   status: healthy ? ("running" as const) : ("starting" as const),
-                  portFree,
-                  healthy,
-                  statusCode,
-                  message: healthy ? undefined : "Restart launched; health not confirmed yet",
+                  message: healthy ? "Restart successful" : "Restart launched; health not confirmed yet",
+                  nextPollMs: healthy ? 0 : 1000,
+                  __statusCode: statusCode,
                 };
               } catch (err) {
                 console.error(`[LocalApp] ${payload.name} restart failed:`, String(err));
+                const isAlreadyRunning = String(err).includes("already running");
                 return {
                   ok: false,
-                  app: payload.name,
+                  appName: payload.name,
                   action: "restart" as const,
-                  status: ("failed" as const),
-                  portFree,
-                  healthy,
-                  statusCode: 500,
+                  status: isAlreadyRunning ? ("blocked" as const) : ("failed" as const),
                   error: String(err),
+                  nextPollMs: isAlreadyRunning ? 1000 : 0,
+                  __statusCode: isAlreadyRunning ? 409 : 500,
                 };
               } finally {
                 clearLocalAppStartingState(payload.name);
+                LOCAL_APP_IN_FLIGHT_ACTIONS.delete(payload.name);
               }
             });
 
-            const statusCode = result.statusCode;
-            delete (result as any).statusCode;
+            const statusCode = (result as any).__statusCode || 500;
+            delete (result as any).__statusCode;
             res.writeHead(statusCode, { "Content-Type": "application/json" });
             res.end(JSON.stringify(result));
           } catch (e) {
+            LOCAL_APP_IN_FLIGHT_ACTIONS.delete(payload.name);
             if (String(e).includes("already running")) {
               res.writeHead(409, { "Content-Type": "application/json" });
-              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+              res.end(JSON.stringify({ ok: false, appName: payload.name, action: "restart", status: "blocked", error: String(e), nextPollMs: 1000 }));
             } else {
               res.writeHead(500, { "Content-Type": "application/json" });
-              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+              res.end(JSON.stringify({ ok: false, appName: payload.name, action: "restart", status: "failed", error: String(e), nextPollMs: 0 }));
             }
           }
           return;
         }
 
         if (url === "/api/local-apps/stop" && payload.name) {
+          const inFlight = LOCAL_APP_IN_FLIGHT_ACTIONS.get(payload.name);
+          if (inFlight && inFlight.action === "stop" && Date.now() - inFlight.timestamp < 5000) {
+            res.writeHead(409, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, appName: payload.name, action: "stop", status: "blocked", error: "Stop already in progress for this app", nextPollMs: 1000 }));
+            return;
+          }
           const app = findLocalApp(payload.name);
           if (!app) {
             res.writeHead(404, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: false, app: payload.name, error: "App not found" }));
+            res.end(JSON.stringify({ ok: false, appName: payload.name, action: "stop", status: "blocked", error: "App not found", nextPollMs: 0 }));
             return;
           }
+          LOCAL_APP_IN_FLIGHT_ACTIONS.set(payload.name, { action: "stop", timestamp: Date.now() });
           try {
             const result = await runExclusiveLocalAppOperation(payload.name, async () => {
               try {
@@ -4023,35 +4046,39 @@ export function createDashboardServer(app: AppContext): http.Server {
 
                 return {
                   ok: stopResult.ok,
-                  app: payload.name,
+                  appName: payload.name,
                   action: "stop" as const,
                   status: stopResult.portFree ? ("stopped" as const) : ("failed" as const),
-                  portFree: stopResult.portFree,
-                  error: stopResult.error,
+                  message: stopResult.ok ? "Stop successful" : undefined,
+                  error: stopResult.ok ? undefined : (stopResult.error || "Stop failed"),
+                  nextPollMs: 0,
                 };
               } catch (err) {
                 console.error(`[LocalApp] ${payload.name} stop failed:`, String(err));
+                const isLockConflict = String(err).includes("already running") || String(err).includes("operation already running");
                 return {
                   ok: false,
-                  app: payload.name,
+                  appName: payload.name,
                   action: "stop" as const,
-                  status: ("failed" as const),
-                  portFree: false,
+                  status: isLockConflict ? ("blocked" as const) : ("failed" as const),
                   error: String(err),
+                  nextPollMs: isLockConflict ? 1000 : 0,
                 };
               }
             });
 
-            const statusCode = result.ok ? 200 : 500;
+            LOCAL_APP_IN_FLIGHT_ACTIONS.delete(payload.name);
+            const statusCode = result.ok ? 200 : (String(result.error).includes("blocked") ? 409 : 500);
             res.writeHead(statusCode, { "Content-Type": "application/json" });
             res.end(JSON.stringify(result));
           } catch (e) {
+            LOCAL_APP_IN_FLIGHT_ACTIONS.delete(payload.name);
             if (String(e).includes("already running")) {
               res.writeHead(409, { "Content-Type": "application/json" });
-              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+              res.end(JSON.stringify({ ok: false, appName: payload.name, action: "stop", status: "blocked", error: String(e), nextPollMs: 1000 }));
             } else {
               res.writeHead(500, { "Content-Type": "application/json" });
-              res.end(JSON.stringify({ ok: false, app: payload.name, error: String(e) }));
+              res.end(JSON.stringify({ ok: false, appName: payload.name, action: "stop", status: "failed", error: String(e), nextPollMs: 0 }));
             }
           }
           return;

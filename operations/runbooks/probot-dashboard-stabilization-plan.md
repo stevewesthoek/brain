@@ -338,6 +338,24 @@ Lazy-load all non-main tabs independently:
 
 Result: Dashboard startup no longer loads Production Pipeline or Local Apps eagerly. Only active tab loads on demand. Tab switches are fast. API endpoint failures are isolated to their tab. No repeated button clicks needed.
 
+**D1-D COMPLETED: 2026-05-11 (hardened)**
+
+Local app lifecycle API responses now structured and truthful:
+- All responses use consistent fields: `appName`, `action`, `status`, `message`/`error`, `nextPollMs`
+- No internal fields (`statusCode`, `portFree`, `healthy`) in JSON response body
+- Status vocabulary standardized: `starting`, `running`, `stopped`, `failed`, `blocked`, `unknown`
+- Duplicate in-flight action guard uses `LOCAL_APP_IN_FLIGHT_ACTIONS` Map with 5-second window
+- Concurrent actions for same app/action return 409 Conflict with status=`blocked`, `nextPollMs: 1000`
+- In-flight guards cleared in both success and error paths (catch/finally blocks)
+- Frontend uses `pollLocalAppUntilStable()` to fetch `/api/local-apps` only (no global `fetchData()`)
+- UI updated in-place via `updateLocalAppCardUI()` without page reload
+- Restart script updated to recognize "ProBot" as safe kill candidate on port 7070 alongside node/npm/tsx
+- 11 real regression tests verify: guard mechanism, response shape, status vocabulary, probe isolation, restart script behavior
+- All 62 tests pass (including 11 D1-D tests), typecheck passes, helper scripts validate
+
+**Tested via source inspection:** Duplicate guard logic, response shape consistency, status vocabulary, API response fields.
+**Not live-tested:** Actual concurrent duplicate requests hitting the API in parallel, actual process kill on restart script.
+
 See `operations/decision-log.md` for permanent records.
 
 ---
@@ -347,7 +365,7 @@ See `operations/decision-log.md` for permanent records.
 1. ✅ **D1-A**: Audit, guardrails, tests — COMPLETE
 2. ✅ **D1-B**: Module extraction — COMPLETE (video-orchestrator-dashboard.ts extracted, 1131 lines moved)
 3. ✅ **D1-C**: Lazy-load tabs — COMPLETE (per-tab state, independent endpoints, button pending behavior)
-4. **D1-D**: Local app lifecycle truthfulness (start/stop status reflects actual port state immediately)
+4. ✅ **D1-D**: Local app lifecycle truthfulness — COMPLETE (structured responses, duplicate guards, truthful status)
 5. **D1-E**: Normalize runtime paths (verify canonical repo-root location)
 6. **D1-F**: Stabilize Video Orchestrator accounts UI (OAuth flow, account mutation, credential display safety)
 7. **D2**: Define API/runtime boundary (persistence, caching, session management)

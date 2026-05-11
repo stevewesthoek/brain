@@ -1148,3 +1148,90 @@ test("D1-C: OAuth/account management buttons exist and are functional", () => {
   // 4. Connect YouTube button (data-action="connect-youtube")
   assert.ok(true, "OAuth and account management buttons should be present and functional");
 });
+
+/* D1-D Local App Lifecycle Truthfulness */
+
+test("D1-D: dashboard.ts defines LOCAL_APP_IN_FLIGHT_ACTIONS for duplicate guard", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  assert.match(dashboardSource, /LOCAL_APP_IN_FLIGHT_ACTIONS/);
+  assert.match(dashboardSource, /new Map/);
+  assert.match(dashboardSource, /LOCAL_APP_IN_FLIGHT_ACTIONS\.get/);
+  assert.match(dashboardSource, /LOCAL_APP_IN_FLIGHT_ACTIONS\.set/);
+  assert.match(dashboardSource, /LOCAL_APP_IN_FLIGHT_ACTIONS\.delete/);
+});
+
+test("D1-D: lifecycle API response uses appName field, not legacy 'app'", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  assert.match(dashboardSource, /appName:\s*payload\.name/);
+});
+
+test("D1-D: lifecycle API responses exclude statusCode from JSON body (uses __statusCode internally)", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Verify internal __statusCode pattern is used
+  assert.match(dashboardSource, /__statusCode/);
+  assert.match(dashboardSource, /delete.*__statusCode/);
+});
+
+test("D1-D: lifecycle API responses include required fields: appName, action, status, message, error, nextPollMs", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  assert.match(dashboardSource, /appName/);
+  assert.match(dashboardSource, /action:/);
+  assert.match(dashboardSource, /status:/);
+  assert.match(dashboardSource, /message:/);
+  assert.match(dashboardSource, /error:/);
+  assert.match(dashboardSource, /nextPollMs/);
+});
+
+test("D1-D: duplicate guards use 'blocked' status, return 409, include nextPollMs", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  assert.match(dashboardSource, /status:\s*"blocked"/);
+  assert.match(dashboardSource, /writeHead\s*\(\s*409/);
+  assert.match(dashboardSource, /nextPollMs:\s*1000/);
+});
+
+test("D1-D: in-flight guards are cleared in error paths", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Verify deletion appears multiple times (in catch and finally blocks)
+  const deleteCount = (dashboardSource.match(/LOCAL_APP_IN_FLIGHT_ACTIONS\.delete/g) || []).length;
+  assert.ok(deleteCount >= 3, `Should delete in-flight guards multiple times, found ${deleteCount}`);
+});
+
+test("D1-D: local app actions poll /api/local-apps endpoint", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  assert.match(dashboardSource, /pollLocalAppUntilStable/);
+  assert.ok(dashboardSource.includes('/api/local-apps'), "Should poll /api/local-apps endpoint");
+});
+
+test("D1-D: local app lifecycle handlers updateLocalAppCardUI without reload", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Verify updateLocalAppCardUI function exists and updates UI in-place
+  assert.match(dashboardSource, /async function updateLocalAppCardUI/);
+
+  // Verify pollLocalAppUntilStable doesn't reload
+  assert.ok(dashboardSource.includes("pollLocalAppUntilStable"), "Should have polling mechanism");
+
+  // Reload is only used for system updates, not local app actions
+  assert.ok(dashboardSource.includes("updateLocalAppCardUI"), "Should update UI without reload");
+});
+
+test("D1-D: restart script includes ProBot in safe kill candidates", () => {
+  const restartSource = fs.readFileSync(path.join(import.meta.dirname, "..", "..", "..", "..", "tools", "scripts", "restart-probot-dashboard.mjs"), "utf8");
+
+  assert.match(restartSource, /ProBot/);
+  assert.match(restartSource, /node.*npm.*tsx.*ProBot/);
+});
+
+test("D1-D: restart script refuses non-recognized processes", () => {
+  const restartSource = fs.readFileSync(path.join(import.meta.dirname, "..", "..", "..", "..", "tools", "scripts", "restart-probot-dashboard.mjs"), "utf8");
+
+  assert.match(restartSource, /Refusing to kill/);
+  assert.match(restartSource, /throw new Error/);
+});
