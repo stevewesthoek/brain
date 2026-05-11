@@ -84,7 +84,7 @@ For new local applications, add the app to `local-apps.json` first and provide l
 | xGrow | 7080 | 5445 | X (Twitter) growth automation | `cd ~/Repos/prochattools/saas/xgrow && docker compose -f docker-compose.postgres.yml up -d postgres && npm run dev > /tmp/xgrow.log 2>&1 &` |
 | Google Ads API | 8001 | - | Google Ads webhook and API server | `supervisorctl start google-ads-http-server` |
 | ComfyUI | 8188 | - | Stable Diffusion image generation UI | `~/.local/bin/comfyui-start` |
-| Family Finance | 3060 | 5452 | Local-only household finance tracker | `cd ~/Repos/stevewesthoek/brain/operations/database/standalone/familyfinance && docker compose up -d && cd ~/Repos/stevewesthoek/family-finance && PORT=3060 NEXT_PUBLIC_APP_URL=http://localhost:3060 npm run dev > /tmp/family-finance.log 2>&1 &` |
+| Family Finance | 3060 | 5452 | Local-only household finance tracker (OrbStack Postgres) | `cd ~/Repos/stevewesthoek/brain/operations/database/standalone/familyfinance && docker compose up -d && cd ~/Repos/stevewesthoek/family-finance && PORT=3060 NEXT_PUBLIC_APP_URL=http://localhost:3060 npm run dev > /tmp/family-finance.log 2>&1 &` |
 | Fala | 3050 | - | Portuguese language learning app | `echo 'Manual start required'` |
 | BuildFlow | 3054 | - | Unified lifecycle for agent (3052), web (3054), and relay (3053) | `bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh start` |
 | TradeBot | 3061 | 5454 | TradeBot read-only Crypto.com cockpit and staged trading lab | `cd ~/Repos/stevewesthoek/tradebot && PORT=3061 NEXT_PUBLIC_APP_URL=http://localhost:3061 npm run dev > /tmp/tradebot.log 2>&1 &` |
@@ -96,17 +96,18 @@ The standalone Postgres stacks under `operations/database/standalone/` use these
 | App | Host Port | Database |
 |-----|-----------|----------|
 | Says the Bible | 5441 | `saysthebible` |
-| ProChat | 5442 | `prochat` |
-| Cedula | 5443 | `cedula` |
+| ProChat | 5434 | `postgres` |
+| Firecrawl | 5443 | `postgres` |
 | JPV Bootcamp | 5444 | `jpvbootcamp` |
-| Oliveto Organizing | 5453 | `olivetoorganizing` |
+| xGrow | 5445 | `xgrow_dev` |
 | StatusLink | 5446 | `statuslink` |
 | Via di Eden | 5447 | `viadieden` |
 | Resend | 5448 | `resend` |
 | ProKit Studio | 5449 | `prokitstudio` |
-| SaaSKit Studio | 5450 | `saaskitstudio` |
+| Video Orchestrator | 5450 | `video_orchestrator` |
 | OpenFund | 5451 | `openfund` |
 | Family Finance | 5452 | `family_finance` |
+| Oliveto Organizing | 5453 | `olivetoorganizing` |
 | TradeBot | 5454 | `tradebot` |
 | ProKit | 5455 | `prokit` |
 | SaaSKit | 5457 | `saaskit` |
