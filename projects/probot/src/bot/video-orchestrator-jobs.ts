@@ -3541,6 +3541,558 @@ export function getManualExportBundleReport(options?: {
   };
 }
 
+// ─── VO-3F: Operator Approval Records and Render-Readiness Freeze ──────────
+
+export type OperatorApprovalState =
+  | "draft"
+  | "approved_for_manual_render"
+  | "rejected"
+  | "revoked";
+
+export interface OperatorReviewSummary {
+  reviewed_by_label: string;
+  reviewed_at: string | undefined;
+  decision_note: string | null;
+  checklist_acknowledged: boolean;
+  risk_acknowledgement: boolean;
+}
+
+export interface RenderReadinessFreezeSnapshot {
+  frozen_at: string;
+  source_gate_id: string;
+  source_bundle_id: string;
+  source_render_plan_id: string;
+  manifest_checksum: string;
+  freeze_reason: string;
+  immutable_summary?: Record<string, unknown>;
+}
+
+export interface OperatorApprovalRecord {
+  schema_version: "1.0";
+  approval_id: string;
+  gate_id: string;
+  bundle_id: string;
+  render_plan_id: string;
+  package_id: string;
+  project_id: string;
+  platform: string;
+  approval_state: OperatorApprovalState;
+  dry_run: true;
+  created_at: string;
+  operator_review: OperatorReviewSummary;
+  freeze_snapshot: RenderReadinessFreezeSnapshot;
+  validation: {
+    ready_for_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: string;
+    source_gate_id: string;
+    source_bundle_id: string;
+  };
+}
+
+export interface OperatorApprovalValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+interface OperatorApprovalRecordsStore {
+  records: OperatorApprovalRecord[];
+}
+
+function getOperatorApprovalRecordsPath(): string {
+  return path.join(getRuntimeDir(), "operator-approval-records.json");
+}
+
+function loadOperatorApprovalRecordsStore(): OperatorApprovalRecordsStore {
+  const storePath = getOperatorApprovalRecordsPath();
+  if (!fs.existsSync(storePath)) {
+    return { records: [] };
+  }
+  try {
+    const content = fs.readFileSync(storePath, "utf8");
+    return JSON.parse(content);
+  } catch (err) {
+    return { records: [] };
+  }
+}
+
+function saveOperatorApprovalRecordsStore(store: OperatorApprovalRecordsStore): void {
+  const storePath = getOperatorApprovalRecordsPath();
+  fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+}
+
+export function buildRenderReadinessFreezeSnapshot(input: {
+  gate: RenderExecutionGate;
+  bundle: ManualExportBundle;
+}): RenderReadinessFreezeSnapshot {
+  const { gate, bundle } = input;
+
+  // Build deterministic checksum from safe summary fields only
+  const summaryData = {
+    gate_id: gate.gate_id,
+    bundle_id: bundle.bundle_id,
+    render_plan_id: gate.render_plan_id,
+    package_id: gate.package_id,
+    project_id: gate.project_id,
+    platform: gate.platform,
+    manifest_total_outputs: bundle.manifest_summary.total_outputs,
+    manifest_by_kind: bundle.manifest_summary.by_kind,
+    created_at: new Date().toISOString(),
+  };
+
+  const summaryStr = JSON.stringify(summaryData);
+  const checksum = `sha256:${crypto
+    .createHash("sha256")
+    .update(summaryStr)
+    .digest("hex")}`;
+
+  return {
+    frozen_at: new Date().toISOString(),
+    source_gate_id: gate.gate_id,
+    source_bundle_id: bundle.bundle_id,
+    source_render_plan_id: gate.render_plan_id,
+    manifest_checksum: checksum,
+    freeze_reason: "operator_approval",
+    immutable_summary: {
+      total_outputs: bundle.manifest_summary.total_outputs,
+      by_kind: bundle.manifest_summary.by_kind,
+      platform: gate.platform,
+      project_id: gate.project_id,
+    },
+  };
+}
+
+function sanitizeApprovalLabel(label: string): string | null {
+  // Allow only safe labels: alphanumeric, underscore, hyphen
+  if (!/^[a-zA-Z0-9_-]+$/.test(label)) {
+    return null;
+  }
+  return label;
+}
+
+function sanitizeDecisionNote(note: string): string | null {
+  // Reject notes that contain forbidden patterns or raw paths
+  const forbiddenPatterns = [
+    "credential_reference",
+    "keychain://",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "/Volumes/",
+    "~/.ssh/",
+    ".env",
+  ];
+
+  if (forbiddenPatterns.some(pattern => note.includes(pattern))) {
+    return null;
+  }
+
+  // Reject if looks like a full path
+  if (note.includes("/") && note.length > 50) {
+    return null;
+  }
+
+  return note;
+}
+
+export function createOperatorApprovalRecord(input: {
+  gate: RenderExecutionGate;
+  bundle: ManualExportBundle;
+  decision: "draft" | "approved_for_manual_render" | "rejected";
+  reviewed_by_label?: string;
+  decision_note?: string;
+  checklist_acknowledged?: boolean;
+  risk_acknowledgement?: boolean;
+  dryRun: true;
+}): OperatorApprovalRecord {
+  if (!input.dryRun) {
+    throw new Error("VO-3F approval records only support dryRun=true");
+  }
+
+  if (!input.gate.dry_run) {
+    throw new Error("Gate must have dry_run=true");
+  }
+
+  if (!input.bundle.dry_run) {
+    throw new Error("Bundle must have dry_run=true");
+  }
+
+  if (input.gate.gate_id !== input.bundle.gate_id) {
+    throw new Error("Gate ID mismatch between gate and bundle");
+  }
+
+  if (input.gate.render_plan_id !== input.bundle.render_plan_id) {
+    throw new Error("Render plan ID mismatch between gate and bundle");
+  }
+
+  if (input.gate.package_id !== input.bundle.package_id) {
+    throw new Error("Package ID mismatch between gate and bundle");
+  }
+
+  // Validate decision state transitions
+  if (input.decision === "approved_for_manual_render") {
+    if (input.gate.gate_state !== "needs_operator_approval") {
+      throw new Error("Gate must be in needs_operator_approval state for approval");
+    }
+    if (input.bundle.bundle_state !== "ready_for_operator_review") {
+      throw new Error("Bundle must be in ready_for_operator_review state for approval");
+    }
+    if (!input.checklist_acknowledged) {
+      throw new Error("Approval requires checklist_acknowledged=true");
+    }
+    if (!input.risk_acknowledgement) {
+      throw new Error("Approval requires risk_acknowledgement=true");
+    }
+  }
+
+  // Sanitize decision note
+  let decision_note = input.decision_note || null;
+  if (decision_note) {
+    const sanitized = sanitizeDecisionNote(decision_note);
+    if (!sanitized) {
+      throw new Error("Decision note contains forbidden patterns or unsafe content");
+    }
+    decision_note = sanitized;
+  }
+
+  // Sanitize label
+  let reviewed_by_label = input.reviewed_by_label || "operator";
+  const sanitized_label = sanitizeApprovalLabel(reviewed_by_label);
+  if (!sanitized_label) {
+    throw new Error("Reviewed by label contains unsafe characters");
+  }
+  reviewed_by_label = sanitized_label;
+
+  const approval_id = `approval-${crypto.randomBytes(6).toString("hex")}`;
+  const now = new Date().toISOString();
+
+  const freeze_snapshot = buildRenderReadinessFreezeSnapshot({
+    gate: input.gate,
+    bundle: input.bundle,
+  });
+
+  return {
+    schema_version: "1.0",
+    approval_id,
+    gate_id: input.gate.gate_id,
+    bundle_id: input.bundle.bundle_id,
+    render_plan_id: input.gate.render_plan_id,
+    package_id: input.gate.package_id,
+    project_id: input.gate.project_id,
+    platform: input.gate.platform,
+    approval_state: input.decision,
+    dry_run: true,
+    created_at: now,
+    operator_review: {
+      reviewed_by_label,
+      reviewed_at: input.decision !== "draft" ? now : undefined,
+      decision_note,
+      checklist_acknowledged: input.checklist_acknowledged || false,
+      risk_acknowledgement: input.risk_acknowledgement || false,
+    },
+    freeze_snapshot,
+    validation: {
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createOperatorApprovalRecord",
+      source_gate_id: input.gate.gate_id,
+      source_bundle_id: input.bundle.bundle_id,
+    },
+  };
+}
+
+export function validateOperatorApprovalRecord(
+  record: unknown
+): OperatorApprovalValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+
+  if (typeof record !== "object" || record === null) {
+    blocking_reasons.push("Record must be an object");
+    return { ok: false, blocking_reasons, warnings };
+  }
+
+  const r = record as Record<string, unknown>;
+
+  // Check required fields
+  const requiredFields = [
+    "schema_version",
+    "approval_id",
+    "gate_id",
+    "bundle_id",
+    "render_plan_id",
+    "package_id",
+    "project_id",
+    "platform",
+    "approval_state",
+    "dry_run",
+    "created_at",
+    "operator_review",
+    "freeze_snapshot",
+    "validation",
+    "provenance",
+  ];
+
+  for (const field of requiredFields) {
+    if (!(field in r)) {
+      blocking_reasons.push(`Missing required field: ${field}`);
+    }
+  }
+
+  // Check dry_run
+  if (r.dry_run !== true) {
+    blocking_reasons.push("dry_run must be true");
+  }
+
+  // Check approval_state
+  const validStates = [
+    "draft",
+    "approved_for_manual_render",
+    "rejected",
+    "revoked",
+  ];
+  if (!validStates.includes(r.approval_state as string)) {
+    blocking_reasons.push(
+      `approval_state must be one of: ${validStates.join(", ")}`
+    );
+  }
+
+  // Check validation flags
+  const validation = r.validation as Record<string, unknown>;
+  if (validation) {
+    if (validation.ready_for_render !== false) {
+      blocking_reasons.push("validation.ready_for_render must be false");
+    }
+    if (validation.ready_for_upload !== false) {
+      blocking_reasons.push("validation.ready_for_upload must be false");
+    }
+  }
+
+  // Scan for forbidden patterns recursively
+  const forbiddenPatterns = [
+    "credential_reference",
+    "keychain://",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+  ];
+
+  function checkForForbidden(obj: unknown, path: string = ""): void {
+    if (typeof obj === "string") {
+      for (const pattern of forbiddenPatterns) {
+        if (obj.includes(pattern)) {
+          blocking_reasons.push(`Forbidden pattern found in ${path || "value"}`);
+          return;
+        }
+      }
+    } else if (typeof obj === "object" && obj !== null) {
+      for (const [key, value] of Object.entries(obj)) {
+        // Check key
+        for (const pattern of forbiddenPatterns) {
+          if (key.includes(pattern)) {
+            blocking_reasons.push(`Forbidden pattern in key: ${path}.${key}`);
+            return;
+          }
+        }
+        checkForForbidden(value, `${path}.${key}`);
+      }
+    }
+  }
+
+  checkForForbidden(record);
+
+  // Check for execution command patterns
+  const recordStr = JSON.stringify(record);
+  if (
+    recordStr.includes("videos.insert") ||
+    recordStr.includes("youtube.videos") ||
+    recordStr.includes("ffmpeg") ||
+    recordStr.includes("child_process")
+  ) {
+    blocking_reasons.push("Record contains execution command patterns");
+  }
+
+  return {
+    ok: blocking_reasons.length === 0,
+    blocking_reasons,
+    warnings,
+  };
+}
+
+export function saveOperatorApprovalRecord(record: OperatorApprovalRecord): void {
+  if (!record.dry_run) {
+    throw new Error("VO-3F records only support dry_run=true");
+  }
+
+  if (record.validation.ready_for_render !== false) {
+    throw new Error("Cannot save approval record with ready_for_render=true");
+  }
+
+  if (record.validation.ready_for_upload !== false) {
+    throw new Error("Cannot save approval record with ready_for_upload=true");
+  }
+
+  const validation = validateOperatorApprovalRecord(record);
+  if (!validation.ok) {
+    throw new Error(
+      `Cannot save invalid approval record: ${validation.blocking_reasons[0]}`
+    );
+  }
+
+  const store = loadOperatorApprovalRecordsStore();
+
+  // Upsert by approval_id
+  const existingIndex = store.records.findIndex(
+    r => r.approval_id === record.approval_id
+  );
+  if (existingIndex >= 0) {
+    store.records[existingIndex] = record;
+  } else {
+    store.records.push(record);
+  }
+
+  // Sort by created_at then approval_id
+  store.records.sort((a, b) => {
+    const dateCompare = a.created_at.localeCompare(b.created_at);
+    if (dateCompare !== 0) return dateCompare;
+    return a.approval_id.localeCompare(b.approval_id);
+  });
+
+  saveOperatorApprovalRecordsStore(store);
+}
+
+export function listOperatorApprovalRecords(options?: {
+  project_id?: string;
+  platform?: string;
+  approval_state?: string;
+  gate_id?: string;
+  bundle_id?: string;
+}): OperatorApprovalRecord[] {
+  const store = loadOperatorApprovalRecordsStore();
+
+  return store.records.filter(record => {
+    if (options?.project_id && record.project_id !== options.project_id) {
+      return false;
+    }
+    if (options?.platform && record.platform !== options.platform) {
+      return false;
+    }
+    if (
+      options?.approval_state &&
+      record.approval_state !== options.approval_state
+    ) {
+      return false;
+    }
+    if (options?.gate_id && record.gate_id !== options.gate_id) {
+      return false;
+    }
+    if (options?.bundle_id && record.bundle_id !== options.bundle_id) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export function getOperatorApprovalRecord(
+  approval_id: string
+): OperatorApprovalRecord | null {
+  const store = loadOperatorApprovalRecordsStore();
+  return store.records.find(r => r.approval_id === approval_id) || null;
+}
+
+export function revokeOperatorApprovalRecord(
+  approval_id: string,
+  reason: string
+): OperatorApprovalRecord {
+  const record = getOperatorApprovalRecord(approval_id);
+  if (!record) {
+    throw new Error(`Approval record not found: ${approval_id}`);
+  }
+
+  // Sanitize reason
+  const sanitized_reason = sanitizeDecisionNote(reason);
+  if (!sanitized_reason) {
+    throw new Error("Revocation reason contains forbidden patterns or unsafe content");
+  }
+
+  record.approval_state = "revoked";
+  record.operator_review.decision_note =
+    `Revoked: ${sanitized_reason}`;
+
+  saveOperatorApprovalRecord(record);
+  return record;
+}
+
+export function getOperatorApprovalReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  draft: number;
+  approved_for_manual_render: number;
+  rejected: number;
+  revoked: number;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  approvals: Array<{
+    approval_id: string;
+    gate_id: string;
+    bundle_id: string;
+    render_plan_id: string;
+    project_id: string;
+    platform: string;
+    approval_state: string;
+    created_at: string;
+    manifest_checksum_summary: string;
+  }>;
+} {
+  const approvals = listOperatorApprovalRecords(options);
+  const by_state: Record<string, number> = {};
+
+  for (const approval of approvals) {
+    by_state[approval.approval_state] =
+      (by_state[approval.approval_state] || 0) + 1;
+  }
+
+  return {
+    total: approvals.length,
+    by_state,
+    draft: by_state.draft || 0,
+    approved_for_manual_render: by_state.approved_for_manual_render || 0,
+    rejected: by_state.rejected || 0,
+    revoked: by_state.revoked || 0,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    approvals: approvals.map(a => ({
+      approval_id: sanitizeRenderPlanString(a.approval_id, "[unsafe-id]"),
+      gate_id: sanitizeRenderPlanString(a.gate_id, "[unsafe-gate]"),
+      bundle_id: sanitizeRenderPlanString(a.bundle_id, "[unsafe-bundle]"),
+      render_plan_id: sanitizeRenderPlanString(
+        a.render_plan_id,
+        "[unsafe-plan]"
+      ),
+      project_id: sanitizeRenderPlanString(a.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(a.platform, "[unsafe-platform]"),
+      approval_state: a.approval_state,
+      created_at: a.created_at,
+      manifest_checksum_summary: a.freeze_snapshot.manifest_checksum.substring(
+        0,
+        15
+      ),
+    })),
+  };
+}
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;

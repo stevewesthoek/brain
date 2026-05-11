@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Operator Approval Record Schema",
+  "description": "Audit record for operator approval of render execution gates and manual export bundles (dry-run only, approval does not execute)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "approval_id",
+    "gate_id",
+    "bundle_id",
+    "render_plan_id",
+    "package_id",
+    "project_id",
+    "platform",
+    "approval_state",
+    "dry_run",
+    "created_at",
+    "operator_review",
+    "freeze_snapshot",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version for backward compatibility"
+    },
+    "approval_id": {
+      "type": "string",
+      "description": "Unique identifier for this approval record"
+    },
+    "gate_id": {
+      "type": "string",
+      "description": "Reference to render execution gate"
+    },
+    "bundle_id": {
+      "type": "string",
+      "description": "Reference to manual export bundle"
+    },
+    "render_plan_id": {
+      "type": "string",
+      "description": "Reference to render plan"
+    },
+    "package_id": {
+      "type": "string",
+      "description": "Package identifier"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Project identifier"
+    },
+    "platform": {
+      "type": "string",
+      "description": "Target platform"
+    },
+    "approval_state": {
+      "type": "string",
+      "enum": ["draft", "approved_for_manual_render", "rejected", "revoked"],
+      "description": "Current approval state"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "const": true,
+      "description": "Must be true; no real execution"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when record was created"
+    },
+    "operator_review": {
+      "type": "object",
+      "required": ["reviewed_by_label", "checklist_acknowledged", "risk_acknowledgement"],
+      "properties": {
+        "reviewed_by_label": {
+          "type": "string",
+          "description": "Safe label identifying reviewer (no personal data)"
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when review occurred"
+        },
+        "decision_note": {
+          "type": "string",
+          "description": "Safe summary of decision (no raw paths, no credentials, no raw payloads)"
+        },
+        "checklist_acknowledged": {
+          "type": "boolean",
+          "description": "Operator acknowledged operator_checklist from bundle"
+        },
+        "risk_acknowledgement": {
+          "type": "boolean",
+          "description": "Operator acknowledged risk of proceeding to render"
+        }
+      }
+    },
+    "freeze_snapshot": {
+      "type": "object",
+      "required": ["frozen_at", "source_gate_id", "source_bundle_id", "source_render_plan_id", "manifest_checksum", "freeze_reason"],
+      "properties": {
+        "frozen_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when render readiness was frozen"
+        },
+        "source_gate_id": {
+          "type": "string",
+          "description": "Gate ID at freeze time"
+        },
+        "source_bundle_id": {
+          "type": "string",
+          "description": "Bundle ID at freeze time"
+        },
+        "source_render_plan_id": {
+          "type": "string",
+          "description": "Render plan ID at freeze time"
+        },
+        "manifest_checksum": {
+          "type": "string",
+          "description": "Deterministic checksum of safe summary (immutable record)"
+        },
+        "freeze_reason": {
+          "type": "string",
+          "description": "Reason for freeze (e.g., 'operator_approval', 'safety_hold')"
+        },
+        "immutable_summary": {
+          "type": "object",
+          "description": "Safe immutable summary for audit (no paths, no credentials, no raw payloads)"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["ready_for_render", "ready_for_upload", "blocking_reasons", "warnings"],
+      "properties": {
+        "ready_for_render": {
+          "type": "boolean",
+          "const": false,
+          "description": "Must be false; approval does not enable rendering"
+        },
+        "ready_for_upload": {
+          "type": "boolean",
+          "const": false,
+          "description": "Must be false; approval does not enable upload"
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Blocking reasons from approval validation"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Warning messages from approval validation"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["generated_by", "source_gate_id", "source_bundle_id"],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "description": "Function that generated this approval record"
+        },
+        "source_gate_id": {
+          "type": "string",
+          "description": "Gate ID used to create this record"
+        },
+        "source_bundle_id": {
+          "type": "string",
+          "description": "Bundle ID used to create this record"
+        }
+      }
+    }
+  }
+}

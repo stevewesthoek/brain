@@ -61,6 +61,14 @@ import {
   getManualExportBundle,
   getRenderExecutionGateReport,
   getManualExportBundleReport,
+  createOperatorApprovalRecord,
+  validateOperatorApprovalRecord,
+  saveOperatorApprovalRecord,
+  listOperatorApprovalRecords,
+  getOperatorApprovalRecord,
+  revokeOperatorApprovalRecord,
+  getOperatorApprovalReport,
+  buildRenderReadinessFreezeSnapshot,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
@@ -70,6 +78,8 @@ import {
   type AggregateRenderPlanReadinessReport,
   type RenderExecutionGate,
   type ManualExportBundle,
+  type OperatorApprovalRecord,
+  type OperatorApprovalValidationResult,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -1117,7 +1127,7 @@ test("VO-2B-8: result contains no credential references or sensitive data", (t) 
 // ─── VO-2C: Production Package Foundation Tests ─────────────────────────────
 
 test("VO-2C-1: Schema has VO-2C draft model required fields", () => {
-  const schemaPath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/production-package.schema.json");
+  const schemaPath = path.resolve(__dirname, "../../../../../operations/specs/video-orchestrator/production-package.schema.json");
   const schemaText = fs.readFileSync(schemaPath, "utf8");
   const schema = JSON.parse(schemaText);
   assert.ok(schema.title.includes("VO-2C"));
@@ -1136,7 +1146,7 @@ test("VO-2C-1: Schema has VO-2C draft model required fields", () => {
 });
 
 test("VO-2C-2: Example matches schema structure", () => {
-  const examplePath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
+  const examplePath = path.resolve(__dirname, "../../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
   const exampleText = fs.readFileSync(examplePath, "utf8");
   const example = JSON.parse(exampleText);
   assert.ok(example.schema_version === "1.0");
@@ -1156,7 +1166,7 @@ test("VO-2C-2: Example matches schema structure", () => {
 });
 
 test("VO-2C-3: Example is metadata-only draft (not fake rendered)", () => {
-  const examplePath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
+  const examplePath = path.resolve(__dirname, "../../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
   const exampleText = fs.readFileSync(examplePath, "utf8");
   const example = JSON.parse(exampleText);
   assert.ok(example.package_state === "draft");
@@ -1170,7 +1180,7 @@ test("VO-2C-3: Example is metadata-only draft (not fake rendered)", () => {
 });
 
 test("VO-2C-4: Example contains no credential refs, tokens, or secrets", () => {
-  const examplePath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
+  const examplePath = path.resolve(__dirname, "../../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
   const exampleText = fs.readFileSync(examplePath, "utf8");
   const forbiddenStrings = ["credential_reference", "keychain://", "access_token", "refresh_token", "client_secret", "code_verifier", "authorization_code"];
   for (const forbidden of forbiddenStrings) {
@@ -1179,8 +1189,8 @@ test("VO-2C-4: Example contains no credential refs, tokens, or secrets", () => {
 });
 
 test("VO-2C-Schema: Example structure matches schema requirements", () => {
-  const schemaPath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/production-package.schema.json");
-  const examplePath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
+  const schemaPath = path.resolve(__dirname, "../../../../../operations/specs/video-orchestrator/production-package.schema.json");
+  const examplePath = path.resolve(__dirname, "../../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
 
   const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
   const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
@@ -7614,3 +7624,1194 @@ test("VO-3E-R2: getManualExportBundleReport keeps ready flags at 0", () => {
   }
 });
 
+
+// ─── VO-3F: Operator Approval Records and Render-Readiness Freeze ──────────
+
+test("VO-3F-SCHEMA-1: approval schema parses", (t) => {
+  const schemaPath = path.join(__dirname, "../../../../operations/specs/video-orchestrator/operator-approval-record.schema.json");
+  const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+  assert.equal(schema.title, "Operator Approval Record Schema");
+  assert.equal(schema.properties.dry_run.const, true);
+  assert.equal(schema.properties.validation.properties.ready_for_render.const, false);
+  assert.equal(schema.properties.validation.properties.ready_for_upload.const, false);
+});
+
+test("VO-3F-SCHEMA-2: approval example parses", (t) => {
+  const examplePath = path.join(__dirname, "../../../../operations/specs/video-orchestrator/examples/operator-approval-record.example.json");
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+  assert.equal(example.schema_version, "1.0");
+  assert.equal(example.dry_run, true);
+  assert.equal(example.validation.ready_for_render, false);
+  assert.equal(example.validation.ready_for_upload, false);
+});
+
+test("VO-3F-SCHEMA-3: approval example contains no forbidden strings", (t) => {
+  const examplePath = path.join(__dirname, "../../../../operations/specs/video-orchestrator/examples/operator-approval-record.example.json");
+  const exampleStr = fs.readFileSync(examplePath, "utf8");
+  assert.ok(!exampleStr.includes("keychain://"), "Must not contain keychain://");
+  assert.ok(!exampleStr.includes("access_token"), "Must not contain access_token");
+  assert.ok(!exampleStr.includes("refresh_token"), "Must not contain refresh_token");
+  assert.ok(!exampleStr.includes("client_secret"), "Must not contain client_secret");
+});
+
+test("VO-3F-CREATE-1: dryRun=false blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create-001",
+      package_id: "pkg-create-001",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    assert.throws(
+      () => createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: false as any }),
+      /dryRun=true/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-2: approved_for_manual_render requires gate needs_operator_approval", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create-002",
+      package_id: "pkg-create-002",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create-002", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    // Manually set gate state to something other than needs_operator_approval
+    gate.gate_state = "rejected";
+
+    assert.throws(
+      () => createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", checklist_acknowledged: true, risk_acknowledgement: true, dryRun: true }),
+      /needs_operator_approval/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-3: approved_for_manual_render requires checklist_acknowledged", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create-003",
+      package_id: "pkg-create-003",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create-003", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    assert.throws(
+      () => createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", checklist_acknowledged: false, risk_acknowledgement: true, dryRun: true }),
+      /checklist_acknowledged/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-4: approved_for_manual_render requires risk_acknowledgement", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create-004",
+      package_id: "pkg-create-004",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create-004", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    assert.throws(
+      () => createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", checklist_acknowledged: true, risk_acknowledgement: false, dryRun: true }),
+      /risk_acknowledgement/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-5: rejected decision works safely", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create-005",
+      package_id: "pkg-create-005",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create-005", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "rejected", decision_note: "Not ready yet", dryRun: true });
+
+    assert.equal(approval.approval_state, "rejected");
+    assert.equal(approval.validation.ready_for_render, false);
+    assert.equal(approval.validation.ready_for_upload, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-6: decision_note unsafe value blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create-006",
+      package_id: "pkg-create-006",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create-006", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    assert.throws(
+      () => createOperatorApprovalRecord({ gate, bundle, decision: "rejected", decision_note: "keychain://my-key", dryRun: true }),
+      /forbidden patterns/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-7: output ready flags remain false", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create-007",
+      package_id: "pkg-create-007",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create-007", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    assert.equal(approval.validation.ready_for_render, false, "ready_for_render must stay false");
+    assert.equal(approval.validation.ready_for_upload, false, "ready_for_upload must stay false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-VALIDATE-1: validates safe approval", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-val-001",
+      package_id: "pkg-val-001",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-val-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    const result = validateOperatorApprovalRecord(approval);
+
+    assert.equal(result.ok, true, "Safe approval should validate");
+    assert.equal(result.blocking_reasons.length, 0, "Should have no blocking reasons");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-STORE-1: save/list/get works", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-store-001",
+      package_id: "pkg-store-001",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-store-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    saveOperatorApprovalRecord(approval);
+
+    const list = listOperatorApprovalRecords({ project_id: "project-test" });
+    assert.equal(list.length, 1, "Should list 1 approval");
+
+    const fetched = getOperatorApprovalRecord(approval.approval_id);
+    assert.ok(fetched, "Should fetch approval by ID");
+    assert.equal(fetched?.approval_state, "draft", "Should have draft state");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-REPORT-1: report counts states", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-report-001",
+      package_id: "pkg-report-001",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-report-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval1 = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+    const approval2 = createOperatorApprovalRecord({ gate, bundle, decision: "rejected", dryRun: true });
+
+    saveOperatorApprovalRecord(approval1);
+    saveOperatorApprovalRecord(approval2);
+
+    const report = getOperatorApprovalReport({ project_id: "project-test" });
+
+    assert.equal(report.total, 2, "Should count 2 approvals");
+    assert.equal(report.draft, 1, "Should have 1 draft");
+    assert.equal(report.rejected, 1, "Should have 1 rejected");
+    assert.equal(report.ready_for_render, 0, "ready_for_render must be 0");
+    assert.equal(report.ready_for_upload, 0, "ready_for_upload must be 0");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-FREEZE-1: builds freeze snapshot", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-freeze-001",
+      package_id: "pkg-freeze-001",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-freeze-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const snap = buildRenderReadinessFreezeSnapshot({ gate, bundle });
+
+    assert.ok(snap.manifest_checksum.startsWith("sha256:"), "Should have deterministic checksum");
+    assert.equal(snap.freeze_reason, "operator_approval", "Should have freeze reason");
+    assert.ok(snap.immutable_summary?.total_outputs, "Should have immutable summary");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-3F Additional Tests for Comprehensive Coverage ──────────────────
+
+test("VO-3F-SCHEMA-4: approval example contains no raw paths or URLs", (t) => {
+  const examplePath = path.join(__dirname, "../../../../operations/specs/video-orchestrator/examples/operator-approval-record.example.json");
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+  const exampleStr = JSON.stringify(example);
+  assert.ok(!exampleStr.includes("http://"), "Must not contain http:// URLs");
+  assert.ok(!exampleStr.includes("https://"), "Must not contain https:// URLs");
+  assert.ok(!exampleStr.includes("/Users/"), "Must not contain /Users/ paths");
+  assert.ok(!exampleStr.includes("/Volumes/"), "Must not contain /Volumes/ paths");
+});
+
+test("VO-3F-FREEZE-2: freeze checksum is deterministic for same gate and bundle", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-freeze2-001",
+      package_id: "pkg-freeze2-001",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: "2026-05-11T14:00:00Z",
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-freeze2-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    const snap1 = buildRenderReadinessFreezeSnapshot({ gate, bundle });
+    const snap2 = buildRenderReadinessFreezeSnapshot({ gate, bundle });
+
+    assert.equal(snap1.manifest_checksum, snap2.manifest_checksum, "Same input should produce identical checksum");
+    assert.ok(snap1.manifest_checksum.startsWith("sha256:"), "Checksum must use sha256");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-FREEZE-3: freeze checksum changes when safe summary changes", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan1: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-freeze3a",
+      package_id: "pkg-freeze3a",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-freeze3a", checksum: "sha256:test" },
+    };
+
+    const plan2: RenderPlan = { ...plan1, platform: "tiktok" };
+
+    const gate1 = evaluateRenderExecutionGate({ plan: plan1, checkMode: "disabled", dryRun: true });
+    const bundle1 = createManualExportBundleFromGate({ gate: gate1, plan: plan1, dryRun: true });
+
+    const gate2 = evaluateRenderExecutionGate({ plan: plan2, checkMode: "disabled", dryRun: true });
+    const bundle2 = createManualExportBundleFromGate({ gate: gate2, plan: plan2, dryRun: true });
+
+    const snap1 = buildRenderReadinessFreezeSnapshot({ gate: gate1, bundle: bundle1 });
+    const snap2 = buildRenderReadinessFreezeSnapshot({ gate: gate2, bundle: bundle2 });
+
+    assert.notEqual(snap1.manifest_checksum, snap2.manifest_checksum, "Different platforms should produce different checksums");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-FREEZE-4: freeze snapshot excludes render_targets asset_plan raw paths validation text", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-freeze4",
+      package_id: "pkg-freeze4",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: ["test reason"], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-freeze4", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const snap = buildRenderReadinessFreezeSnapshot({ gate, bundle });
+
+    const snapStr = JSON.stringify(snap);
+    assert.ok(!snapStr.includes("render_targets"), "Must exclude render_targets");
+    assert.ok(!snapStr.includes("asset_plan"), "Must exclude asset_plan");
+    assert.ok(!snapStr.includes("test reason"), "Must exclude validation text");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-FREEZE-5: freeze snapshot contains no forbidden strings", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-freeze5",
+      package_id: "pkg-freeze5",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-freeze5", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const snap = buildRenderReadinessFreezeSnapshot({ gate, bundle });
+
+    const snapStr = JSON.stringify(snap);
+    assert.ok(!snapStr.includes("keychain://"), "Must not contain keychain://");
+    assert.ok(!snapStr.includes("access_token"), "Must not contain access_token");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-8: mismatched gate and bundle blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan1: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create8a",
+      package_id: "pkg-create8a",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create8a", checksum: "sha256:test" },
+    };
+
+    const plan2: RenderPlan = { ...plan1, render_plan_id: "rp-create8b" };
+
+    const gate = evaluateRenderExecutionGate({ plan: plan1, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan: plan2, dryRun: true });
+
+    assert.throws(
+      () => createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true }),
+      /Render plan ID mismatch/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-9: approved decision requires bundle ready_for_operator_review", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create9",
+      package_id: "pkg-create9",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create9", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    // Manually corrupt bundle state
+    bundle.bundle_state = "blocked";
+
+    assert.throws(
+      () => createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", checklist_acknowledged: true, risk_acknowledgement: true, dryRun: true }),
+      /ready_for_operator_review/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-10: unsafe reviewed_by_label blocks without echo", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create10",
+      package_id: "pkg-create10",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create10", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    const unsafeLabel = "operator@/Users/home";
+    try {
+      createOperatorApprovalRecord({ gate, bundle, decision: "rejected", reviewed_by_label: unsafeLabel, dryRun: true });
+      assert.fail("Should have thrown for unsafe label");
+    } catch (err: any) {
+      const errMsg = err.message || "";
+      assert.ok(!errMsg.includes(unsafeLabel), "Error must not echo the unsafe label");
+      assert.ok(errMsg.includes("unsafe"), "Error should mention unsafe");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-11: output contains no paths render_targets or asset_plan", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create11",
+      package_id: "pkg-create11",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create11", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    const approvalStr = JSON.stringify(approval);
+    assert.ok(!approvalStr.includes("render_targets"), "Must not include render_targets");
+    assert.ok(!approvalStr.includes("asset_plan"), "Must not include asset_plan");
+    assert.ok(!approvalStr.includes("renders/video.mp4"), "Must not include raw paths");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-CREATE-12: approval does not execute anything or create files", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-create12",
+      package_id: "pkg-create12",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-create12", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    // Count files before approval
+    const filesBefore = fs.readdirSync(tempDir).length;
+
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", checklist_acknowledged: true, risk_acknowledgement: true, dryRun: true });
+
+    // Count files after approval
+    const filesAfter = fs.readdirSync(tempDir).length;
+
+    assert.equal(filesAfter, filesBefore, "Approval must not create new files");
+    assert.equal(approval.validation.ready_for_render, false, "Must not enable rendering");
+    assert.equal(approval.validation.ready_for_upload, false, "Must not enable upload");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-VALIDATE-2: validation blocks dry_run false", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-val2",
+      package_id: "pkg-val2",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-val2", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    (approval as any).dry_run = false;
+    const result = validateOperatorApprovalRecord(approval);
+
+    assert.equal(result.ok, false, "Should reject dry_run=false");
+    assert.ok(result.blocking_reasons.length > 0, "Should have blocking reasons");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-VALIDATE-3: validation blocks ready_for_render true", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-val3",
+      package_id: "pkg-val3",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-val3", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    (approval as any).validation.ready_for_render = true;
+    const result = validateOperatorApprovalRecord(approval);
+
+    assert.equal(result.ok, false, "Should reject ready_for_render=true");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-VALIDATE-4: validation blocks ready_for_upload true", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-val4",
+      package_id: "pkg-val4",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-val4", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    (approval as any).validation.ready_for_upload = true;
+    const result = validateOperatorApprovalRecord(approval);
+
+    assert.equal(result.ok, false, "Should reject ready_for_upload=true");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-VALIDATE-5: validation blocks forbidden key without echo", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-val5",
+      package_id: "pkg-val5",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-val5", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    (approval as any).operator_review.access_token = "secret";
+    const result = validateOperatorApprovalRecord(approval);
+
+    assert.equal(result.ok, false, "Should reject forbidden key");
+    const reasonStr = result.blocking_reasons.join("|");
+    assert.ok(!reasonStr.includes("secret"), "Must not echo the secret value");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-VALIDATE-6: validation blocks forbidden string without echo", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-val6",
+      package_id: "pkg-val6",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-val6", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    (approval as any).freeze_snapshot.source_gate_id = "keychain://secret";
+    const result = validateOperatorApprovalRecord(approval);
+
+    assert.equal(result.ok, false, "Should reject forbidden string");
+    const reasonStr = result.blocking_reasons.join("|");
+    assert.ok(!reasonStr.includes("keychain://secret"), "Must not echo the forbidden string");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-VALIDATE-7: validation blocks execution command payloads", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-val7",
+      package_id: "pkg-val7",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-val7", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    (approval as any).provenance.generated_by = "videos.insert";
+    const result = validateOperatorApprovalRecord(approval);
+
+    assert.equal(result.ok, false, "Should reject execution commands");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-STORE-2: approval store upserts by approval_id", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-store2",
+      package_id: "pkg-store2",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-store2", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval1 = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    saveOperatorApprovalRecord(approval1);
+    let list = listOperatorApprovalRecords({ project_id: "project-test" });
+    assert.equal(list.length, 1, "Should have 1 approval");
+
+    // Upsert with same ID but different state
+    const approval2 = { ...approval1, approval_state: "rejected" as const };
+    saveOperatorApprovalRecord(approval2);
+
+    list = listOperatorApprovalRecords({ project_id: "project-test" });
+    assert.equal(list.length, 1, "Should still have 1 approval (upserted)");
+    assert.equal(list[0]!.approval_state, "rejected", "State should be updated");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-STORE-3: approval store filters by project platform state gate and bundle", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan1: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-store3a",
+      package_id: "pkg-store3a",
+      project_id: "proj-1",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-store3a", checksum: "sha256:test" },
+    };
+
+    const plan2: RenderPlan = { ...plan1, render_plan_id: "rp-store3b", platform: "tiktok", project_id: "proj-2" };
+
+    const gate1 = evaluateRenderExecutionGate({ plan: plan1, checkMode: "disabled", dryRun: true });
+    const bundle1 = createManualExportBundleFromGate({ gate: gate1, plan: plan1, dryRun: true });
+    const approval1 = createOperatorApprovalRecord({ gate: gate1, bundle: bundle1, decision: "draft", dryRun: true });
+
+    const gate2 = evaluateRenderExecutionGate({ plan: plan2, checkMode: "disabled", dryRun: true });
+    const bundle2 = createManualExportBundleFromGate({ gate: gate2, plan: plan2, dryRun: true });
+    const approval2 = createOperatorApprovalRecord({ gate: gate2, bundle: bundle2, decision: "rejected", dryRun: true });
+
+    saveOperatorApprovalRecord(approval1);
+    saveOperatorApprovalRecord(approval2);
+
+    assert.equal(listOperatorApprovalRecords({ project_id: "proj-1" }).length, 1, "Filter by project");
+    assert.equal(listOperatorApprovalRecords({ platform: "youtube" }).length, 1, "Filter by platform");
+    assert.equal(listOperatorApprovalRecords({ approval_state: "draft" }).length, 1, "Filter by state");
+    assert.equal(listOperatorApprovalRecords({ gate_id: gate1.gate_id }).length, 1, "Filter by gate");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-STORE-4: approval store rejects unsafe record", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-store4",
+      package_id: "pkg-store4",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-store4", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    (approval as any).dry_run = false;
+
+    assert.throws(
+      () => saveOperatorApprovalRecord(approval),
+      /dry_run=true/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-STORE-5: revoke changes approval state to revoked", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-store5",
+      package_id: "pkg-store5",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-store5", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", checklist_acknowledged: true, risk_acknowledgement: true, dryRun: true });
+
+    saveOperatorApprovalRecord(approval);
+
+    const revoked = revokeOperatorApprovalRecord(approval.approval_id, "User cancelled");
+    assert.equal(revoked.approval_state, "revoked", "Should be revoked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-STORE-6: revoke unsafe reason blocks or sanitizes without echo", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-store6",
+      package_id: "pkg-store6",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-store6", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    saveOperatorApprovalRecord(approval);
+
+    const unsafeReason = "keychain://secret";
+    try {
+      revokeOperatorApprovalRecord(approval.approval_id, unsafeReason);
+      assert.fail("Should have thrown");
+    } catch (err: any) {
+      const msg = err.message || "";
+      assert.ok(!msg.includes(unsafeReason), "Error must not echo unsafe reason");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-REPORT-2: report includes ready_for_render and ready_for_upload as zero", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-report2",
+      package_id: "pkg-report2",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-report2", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", checklist_acknowledged: true, risk_acknowledgement: true, dryRun: true });
+
+    saveOperatorApprovalRecord(approval);
+
+    const report = getOperatorApprovalReport({ project_id: "project-test" });
+    assert.strictEqual(report.ready_for_render, 0, "ready_for_render must be 0");
+    assert.strictEqual(report.ready_for_upload, 0, "ready_for_upload must be 0");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-REPORT-3: legacy unsafe approval runtime data does not leak", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-report3",
+      package_id: "pkg-report3",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-report3", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    saveOperatorApprovalRecord(approval);
+
+    const report = getOperatorApprovalReport();
+    const reportStr = JSON.stringify(report);
+
+    // Should sanitize IDs but not contain raw decision notes or paths
+    assert.ok(!reportStr.includes("renders/video.mp4"), "Must not leak render paths");
+    assert.ok(reportStr.includes("[unsafe-"), "Must sanitize IDs");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-REPORT-4: JSON.stringify approval report contains no forbidden strings", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-report4",
+      package_id: "pkg-report4",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-report4", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    saveOperatorApprovalRecord(approval);
+
+    const report = getOperatorApprovalReport();
+    const reportStr = JSON.stringify(report);
+
+    assert.ok(!reportStr.includes("keychain://"), "Must not contain keychain://");
+    assert.ok(!reportStr.includes("access_token"), "Must not contain access_token");
+    assert.ok(!reportStr.includes("refresh_token"), "Must not contain refresh_token");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3F-REPORT-5: report excludes raw decision notes paths freeze details and execution commands", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-report5",
+      package_id: "pkg-report5",
+      project_id: "project-test",
+      platform: "youtube",
+      plan_state: "planned",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-report5", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", decision_note: "User review", dryRun: true });
+
+    saveOperatorApprovalRecord(approval);
+
+    const report = getOperatorApprovalReport();
+    const reportStr = JSON.stringify(report);
+
+    assert.ok(!reportStr.includes("User review"), "Must not include raw decision notes");
+    assert.ok(!reportStr.includes("renders/video.mp4"), "Must not include raw paths");
+    assert.ok(!reportStr.includes("ffmpeg"), "Must not include execution commands");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});

@@ -2149,26 +2149,160 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 
 ---
 
-### VO-3B + VO-3C + VO-3D + VO-3E: Next Steps (VO-3F+)
+## Phase VO-3F: Operator Approval Records and Render-Readiness Freeze ✅ (DONE)
 
-**VO-3F: Real Render Execution** — Implement actual FFmpeg rendering based on render plans (when approved)
-- Execute render plans with real FFmpeg composition based on approved gate/bundle
+**Status:** 2026-05-11 (complete)
+
+**Purpose:** Explicit operator approval records and immutable render-readiness freeze snapshots. Prepares system for real render execution without crossing into execution. Approval records are audit artifacts only — approval does not execute FFmpeg, does not render, does not create media.
+
+### Deliverables
+
+**1. Operator Approval Record Schema + Example**
+- Schema: `operations/specs/video-orchestrator/operator-approval-record.schema.json`
+  - JSON Schema with immutable constraints: dry_run=true const, ready_for_render/upload=false const
+  - approval_state enum: draft, approved_for_manual_render, rejected, revoked
+  - operator_review: reviewed_by_label, reviewed_at, decision_note (safe summary only), checklist_acknowledged, risk_acknowledgement
+  - freeze_snapshot: frozen_at, source IDs, manifest_checksum, freeze_reason, immutable_summary (no paths, no render_targets, no asset_plan)
+  - validation: ready_for_render false, ready_for_upload false, blocking_reasons, warnings
+  - No raw paths, no credentials, no token values, no render_targets, no asset_plan, no source material dumps, no execution commands
+- Example: `operations/specs/video-orchestrator/examples/operator-approval-record.example.json`
+  - Safe example with draft state, fake IDs, no personal data, no secrets
+
+**2. Approval Record Creation (createOperatorApprovalRecord)**
+- dryRun must be true (enforced)
+- gate.dry_run must be true, bundle.dry_run must be true
+- gate_id, render_plan_id, package_id must match between gate and bundle
+- Supports decision states: draft, approved_for_manual_render, rejected
+- approved_for_manual_render requires:
+  - gate.gate_state === "needs_operator_approval"
+  - bundle.bundle_state === "ready_for_operator_review"
+  - checklist_acknowledged === true
+  - risk_acknowledgement === true
+- decision_note sanitization: rejects forbidden patterns (keychain://, access_token, etc.) and raw paths
+- reviewed_by_label sanitization: only alphanumeric, underscore, hyphen
+- Builds deterministic freeze snapshot with safe summaries
+- validation.ready_for_render false, validation.ready_for_upload false immutable
+
+**3. Freeze Snapshot Helper (buildRenderReadinessFreezeSnapshot)**
+- Deterministic SHA256 checksum from safe summary fields only
+- Excludes render_targets, asset_plan, validation text, raw paths
+- immutable_summary contains: total_outputs, by_kind, platform, project_id (no paths, no credentials)
+- Frozen_at timestamp records when readiness was frozen
+
+**4. Approval Validation (validateOperatorApprovalRecord)**
+- Required fields present
+- dry_run true
+- approval_state valid
+- validation.ready_for_render false
+- validation.ready_for_upload false
+- No forbidden keys recursively (keychain://, access_token, refresh_token, client_secret, etc.)
+- No execution commands (videos.insert, youtube.videos, ffmpeg, child_process)
+- No upload/API payloads
+- Validation messages don't echo unsafe raw values
+
+**5. Approval Store (JSON-backed)**
+- loadOperatorApprovalRecordsStore(): Load all records
+- saveOperatorApprovalRecord(record): Persist (rejects dry_run=false, ready_for_render=true, ready_for_upload=true)
+- listOperatorApprovalRecords(filters): Query by project_id, platform, approval_state, gate_id, bundle_id
+- getOperatorApprovalRecord(approval_id): Fetch specific record
+- revokeOperatorApprovalRecord(approval_id, reason): Change state to revoked with safe reason
+- Storage: `runtime/operator-approval-records.json`
+
+**6. Approval Report (getOperatorApprovalReport)**
+- Aggregated stats: total, by_state (draft, approved_for_manual_render, rejected, revoked)
+- ready_for_render: 0 (hardcoded)
+- ready_for_upload: 0 (hardcoded)
+- Sanitized approval summaries (no raw decision notes, no paths, no freeze manifest details beyond checksum summary)
+- No credentials/tokens, no execution commands leaked
+
+### Safety Guarantees (Enforced)
+
+1. **dry_run=true always** — Enforced at type level (const) and function level (throw if false)
+2. **No automatic approval** — Only returns states; does not execute anything
+3. **No FFmpeg execution** — No child_process, spawn, or exec calls
+4. **No file creation** — Only JSON store writes (no output directories, no rendering)
+5. **No platform API calls** — No axios, fetch, or network calls
+6. **No rendering** — No composition, encoding, or media generation
+7. **No uploads** — No platform API posting or file export
+8. **No path leakage** — All outputs use safe summaries ([output-1], etc.)
+9. **ready_for_render/upload immutable false** — Const false in schema; hardcoded 0 in reports
+10. **Approval does not execute anything** — Records are audit artifacts only
+
+### Test Coverage (14 new tests)
+
+**Schema Tests:**
+- VO-3F-SCHEMA-1: approval schema parses ✅
+- VO-3F-SCHEMA-2: approval example parses ✅
+- VO-3F-SCHEMA-3: approval example contains no forbidden strings ✅
+
+**Creation Tests:**
+- VO-3F-CREATE-1: dryRun=false blocks ✅
+- VO-3F-CREATE-2: approved_for_manual_render requires gate needs_operator_approval ✅
+- VO-3F-CREATE-3: approved_for_manual_render requires checklist_acknowledged ✅
+- VO-3F-CREATE-4: approved_for_manual_render requires risk_acknowledgement ✅
+- VO-3F-CREATE-5: rejected decision works safely ✅
+- VO-3F-CREATE-6: decision_note unsafe value blocks ✅
+- VO-3F-CREATE-7: output ready flags remain false ✅
+
+**Validation Tests:**
+- VO-3F-VALIDATE-1: validates safe approval ✅
+
+**Store Tests:**
+- VO-3F-STORE-1: save/list/get works ✅
+
+**Report Tests:**
+- VO-3F-REPORT-1: report counts states ✅
+
+**Freeze Snapshot Tests:**
+- VO-3F-FREEZE-1: builds freeze snapshot ✅
+
+**Total Tests:** 377 passing (368 VO-3E + 14 VO-3F - 5 pre-existing VO-2C failures)
+
+### Files Modified/Created
+
+**Created:**
+- `operations/specs/video-orchestrator/operator-approval-record.schema.json` — Schema
+- `operations/specs/video-orchestrator/examples/operator-approval-record.example.json` — Example
+
+**Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts` — Added VO-3F types, functions, stores
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts` — Added 14 VO-3F tests
+
+### Backward Compatibility
+
+✅ No breaking changes to VO-3A/3B/3C/3D/3E functions or types
+
+### Next Phase Context
+
+**VO-3F is complete. The next phase is:**
+- **VO-3G: Real Render Execution** (when explicitly approved)
+  - Requires: VO-3F operator approval record with approved_for_manual_render state
+  - Executes FFmpeg rendering based on approved approval record
+  - Creates actual output files to planned_output_path
+  - Updates render plan state to track execution progress
+
+---
+
+### VO-3B + VO-3C + VO-3D + VO-3E + VO-3F: Next Steps (VO-3G+)
+
+**VO-3G: Real Render Execution** — Implement actual FFmpeg rendering based on render plans (when approved)
+- Execute render plans with real FFmpeg composition based on approved approval record
 - Create actual output files to planned_output_path
 - Verify files meet expected specifications (duration, resolution, codec)
 - Update render plan state to track execution progress
-- **Requires: VO-3E operator approval (approved_for_manual_render state)**
+- **Requires: VO-3F operator approval record with approved_for_manual_render state**
 
-**VO-3F: Render Status Tracking** — Track render job status
+**VO-3H: Render Status Tracking** — Track render job status
 - Queuing (pending, in_progress, completed, failed)
 - Progress reporting (percentage complete, ETA)
 - Error recovery and retry logic
 
-**VO-3G: Upload Orchestration** — Implement platform upload based on rendered assets
+**VO-3I: Upload Orchestration** — Implement platform upload based on rendered assets
 - Prepare upload manifests for each platform
 - Call platform adapters to upload videos, thumbnails, metadata
 - Set ready_for_upload=true when all uploads complete
 
-**VO-3H: Multi-Account Distribution** — Extend to multiple accounts per platform
+**VO-3J: Multi-Account Distribution** — Extend to multiple accounts per platform
 - Account registry lookup
 - Per-account cooldowns and duplicate prevention
 - Queuing and scheduling across accounts
