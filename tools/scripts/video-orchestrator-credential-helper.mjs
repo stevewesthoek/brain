@@ -4,6 +4,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, '../..');
 
 const USAGE = `Usage:
   node tools/scripts/video-orchestrator-credential-helper.mjs validate-ref <credential_reference>
@@ -293,7 +297,7 @@ function oauthSelfTest() {
   if (!state.ok || typeof state.state !== 'string' || state.state.length < 16) {
     throw new Error('State generation failed.');
   }
-  const fixturePath = path.join(process.cwd(), 'operations/specs/video-orchestrator/examples/sample-youtube-oauth-setup-config.json');
+  const fixturePath = path.join(REPO_ROOT, 'operations/specs/video-orchestrator/examples/sample-youtube-oauth-setup-config.json');
   const authUrlResult = buildYoutubeAuthUrl(fixturePath);
   if (!authUrlResult.ok || !authUrlResult.authorization_url || !authUrlResult.state) {
     throw new Error('Authorization URL build failed.');

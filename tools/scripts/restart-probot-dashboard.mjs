@@ -154,16 +154,23 @@ async function startProBot() {
     // Ignore if file doesn't exist
   }
 
-  const logStream = fs.createWriteStream(PROBOT_LOG_PATH, { flags: "a" });
-
   return new Promise((resolve, reject) => {
     log(`Starting ProBot from ${PROBOT_DIR}...`, "blue");
 
+    // Use 'pipe' for stdio instead of stream objects; spawn will handle logging
     const proc = spawn("npm", ["run", "dev"], {
       cwd: PROBOT_DIR,
-      stdio: ["ignore", logStream, logStream],
+      stdio: ["ignore", "pipe", "pipe"],
       detached: true,
     });
+
+    // Redirect stdout/stderr to log file
+    if (proc.stdout) {
+      proc.stdout.pipe(fs.createWriteStream(PROBOT_LOG_PATH, { flags: "a" }));
+    }
+    if (proc.stderr) {
+      proc.stderr.pipe(fs.createWriteStream(PROBOT_LOG_PATH, { flags: "a" }));
+    }
 
     // Detach so it runs independently
     proc.unref();

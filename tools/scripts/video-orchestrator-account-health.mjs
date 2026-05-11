@@ -2,14 +2,17 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, '../..');
 const REFERENCE_RE = /^keychain:\/\/video-orchestrator\/([a-z0-9_-]+)\/([A-Za-z0-9._-]+)$/i;
-const TOKEN_HELPER = path.resolve('tools/scripts/video-orchestrator-credential-helper.mjs');
+const TOKEN_HELPER = path.resolve(REPO_ROOT, 'tools/scripts/video-orchestrator-credential-helper.mjs');
 const DEFAULT_DB_URL = process.env.VIDEO_ORCHESTRATOR_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5450/video_orchestrator';
-const DEFAULT_LOCAL_REGISTRY_PATH = 'runtime/local/video-orchestrator/account-registry.local.json';
-const DEFAULT_SNAPSHOT_PATH = 'runtime/local/video-orchestrator/account-health-snapshot.json';
-const DEFAULT_LOG_PATH = 'runtime/local/video-orchestrator/account-health.log';
+const DEFAULT_LOCAL_REGISTRY_PATH = path.resolve(REPO_ROOT, 'runtime/local/video-orchestrator/account-registry.local.json');
+const DEFAULT_SNAPSHOT_PATH = path.resolve(REPO_ROOT, 'runtime/local/video-orchestrator/account-health-snapshot.json');
+const DEFAULT_LOG_PATH = path.resolve(REPO_ROOT, 'runtime/local/video-orchestrator/account-health.log');
 const SUPPORTED_CREDENTIAL_PLATFORMS = new Set(['youtube', 'bluesky', 'instagram']);
 const SECRET_KEY_RE = /(access[_-]?token|refresh[_-]?token|client[_-]?secret|authorization[_-]?code|credential[_-]?reference|keychain|bearer|api[_-]?key|password|cookie)/i;
 const SECRET_VALUE_RE = /\b(AIza[0-9A-Za-z_-]{10,}|sk_live_[0-9A-Za-z_-]{10,}|ghp_[0-9A-Za-z_-]{10,}|github_pat_[0-9A-Za-z_-]{10,}|xoxb-[0-9A-Za-z-]{10,}|AKIA[0-9A-Z]{12,}|Bearer\s+[A-Za-z0-9\-._~+/]+=*)\b/;
@@ -719,12 +722,12 @@ async function selfTest() {
     account_health_snapshot: DEFAULT_SNAPSHOT_PATH,
     account_health_log: DEFAULT_LOG_PATH,
   }));
-  if (defaults.operator_registry !== 'runtime/local/video-orchestrator/account-registry.local.json') throw new Error('default registry path mismatch.');
-  if (defaults.account_health_snapshot !== 'runtime/local/video-orchestrator/account-health-snapshot.json') throw new Error('default snapshot path mismatch.');
-  if (defaults.account_health_log !== 'runtime/local/video-orchestrator/account-health.log') throw new Error('default log path mismatch.');
+  if (!defaults.operator_registry.includes('runtime/local/video-orchestrator/account-registry.local.json')) throw new Error(`default registry path mismatch: ${defaults.operator_registry}`);
+  if (!defaults.account_health_snapshot.includes('runtime/local/video-orchestrator/account-health-snapshot.json')) throw new Error(`default snapshot path mismatch: ${defaults.account_health_snapshot}`);
+  if (!defaults.account_health_log.includes('runtime/local/video-orchestrator/account-health.log')) throw new Error(`default log path mismatch: ${defaults.account_health_log}`);
   const initSource = path.join(tmpDir, 'example.json');
   const initTarget = path.join(tmpDir, 'account-registry.local.json');
-  fs.copyFileSync('operations/specs/video-orchestrator/examples/account-registry.example.json', initSource);
+  fs.copyFileSync(path.resolve(REPO_ROOT, 'operations/specs/video-orchestrator/examples/account-registry.example.json'), initSource);
   const initResult = initLocalRegistry(initSource, initTarget, false);
   if (!initResult.ok || !fs.existsSync(initTarget)) throw new Error('init-local-registry failed.');
   const initOverwrite = initLocalRegistry(initSource, initTarget, false);

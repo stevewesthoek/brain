@@ -1387,3 +1387,101 @@ test("D1-F: account/OAuth actions do not call global fetchData or reload page", 
   );
   assert.ok(saveAccountAction.includes("refreshVideoOrchestratorPanels"), "Should refresh VO panels after account save");
 });
+
+test("D1-H: helper scripts resolve repo-root from import.meta.url, not process.cwd()", () => {
+  const repoRoot = path.resolve(process.cwd(), "../..");
+  const accountHealthSource = fs.readFileSync(
+    path.resolve(repoRoot, "tools/scripts/video-orchestrator-account-health.mjs"),
+    "utf8"
+  );
+
+  // Verify uses import.meta.url-based resolution
+  assert.ok(accountHealthSource.includes("fileURLToPath"), "Should use fileURLToPath for repo-root resolution");
+  assert.ok(accountHealthSource.includes("import.meta.url"), "Should use import.meta.url");
+  assert.ok(accountHealthSource.includes("const REPO_ROOT = path.resolve(__dirname, '../..')"), "Should define REPO_ROOT from __dirname");
+
+  // Verify does NOT use process.cwd() for runtime paths
+  const processCwdMatches = accountHealthSource.match(/process\.cwd\(\).*?runtime/g);
+  assert.ok(!processCwdMatches || processCwdMatches.length === 0, "Should not use process.cwd() for runtime paths");
+
+  // Verify defaults are absolute paths (contain REPO_ROOT)
+  assert.ok(accountHealthSource.includes("path.resolve(REPO_ROOT, 'runtime/local/video-orchestrator"), "Should resolve runtime paths to REPO_ROOT");
+});
+
+test("D1-H: credential helper resolves repo-root and does not use process.cwd() for config paths", () => {
+  const repoRoot = path.resolve(process.cwd(), "../..");
+  const credHelperSource = fs.readFileSync(
+    path.resolve(repoRoot, "tools/scripts/video-orchestrator-credential-helper.mjs"),
+    "utf8"
+  );
+
+  // Verify uses import.meta.url-based resolution
+  assert.ok(credHelperSource.includes("fileURLToPath"), "Should use fileURLToPath");
+  assert.ok(credHelperSource.includes("const REPO_ROOT = path.resolve(__dirname, '../..')"), "Should define REPO_ROOT");
+
+  // Verify does NOT use process.cwd() for spec paths
+  assert.ok(!credHelperSource.includes("process.cwd()"), "Should not use process.cwd()");
+  assert.ok(credHelperSource.includes("path.join(REPO_ROOT, 'operations/specs"), "Should use REPO_ROOT for spec paths");
+});
+
+test("D1-H: restart script uses canonical repo-root runtime paths, not projects/probot/runtime", () => {
+  const repoRoot = path.resolve(process.cwd(), "../..");
+  const restartSource = fs.readFileSync(
+    path.resolve(repoRoot, "tools/scripts/restart-probot-dashboard.mjs"),
+    "utf8"
+  );
+
+  // Verify uses canonical runtime path
+  assert.ok(restartSource.includes("REPO_ROOT"), "Should define and use REPO_ROOT");
+  assert.ok(restartSource.includes("probot-dev.log"), "Should use probot-dev.log");
+  assert.ok(restartSource.includes("runtime/local"), "Should use runtime/local directory");
+
+  // Verify does NOT write to projects/probot/runtime
+  assert.ok(!restartSource.includes("projects/probot/runtime"), "Should not reference projects/probot/runtime");
+  assert.ok(!restartSource.includes("PROBOT_DIR.*runtime"), "Should not write runtime under PROBOT_DIR");
+});
+
+test("D1-H: dashboard path helpers use repoRoot/runtime/local only, never projects/probot/runtime", () => {
+  const voSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/bot/video-orchestrator-dashboard.ts"),
+    "utf8"
+  );
+
+  // Also check that dashboard.ts does NOT directly construct process.cwd() paths
+  const dashboardSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/bot/dashboard.ts"),
+    "utf8"
+  );
+
+  // Verify video-orchestrator-dashboard.ts uses getDefaultVideoOrchestratorPaths()
+  assert.ok(voSource.includes("getDefaultVideoOrchestratorPaths()"), "VO dashboard should use getDefaultVideoOrchestratorPaths");
+  assert.ok(voSource.includes("repoRoot"), "VO dashboard should reference repoRoot from import.meta.url");
+
+  // Verify does NOT hardcode projects/probot paths
+  assert.ok(!voSource.includes("projects/probot/runtime"), "VO dashboard should not hardcode projects/probot/runtime");
+
+  // Verify dashboard.ts uses getVideoPaths() everywhere
+  assert.ok(dashboardSource.includes("getVideoPaths()"), "Dashboard should use getVideoPaths");
+  assert.ok(dashboardSource.includes("paths.registryPath"), "Dashboard should use paths.registryPath from getVideoPaths");
+  assert.ok(!dashboardSource.includes("projects/probot/runtime"), "Dashboard should not reference projects/probot/runtime");
+});
+
+test("D1-H: getDefaultVideoOrchestratorPaths uses import.meta.url resolution", () => {
+  const paths = getDefaultVideoOrchestratorPaths();
+
+  // Verify paths are absolute and use canonical repo-root
+  assert.ok(path.isAbsolute(paths.repoRoot), "repoRoot should be absolute");
+  assert.ok(path.isAbsolute(paths.registryPath), "registryPath should be absolute");
+  assert.ok(path.isAbsolute(paths.oauthClientConfigPath), "oauthClientConfigPath should be absolute");
+  assert.ok(path.isAbsolute(paths.oauthStateDir), "oauthStateDir should be absolute");
+
+  // Verify paths end with canonical locations
+  assert.ok(paths.registryPath.includes("runtime/local/video-orchestrator/account-registry.local.json"), "registryPath should end with canonical location");
+  assert.ok(paths.oauthClientConfigPath.includes("runtime/local/video-orchestrator/youtube-oauth-client.local.json"), "oauthClientConfigPath should end with canonical location");
+  assert.ok(paths.oauthStateDir.includes("runtime/local/video-orchestrator/oauth-state"), "oauthStateDir should end with canonical location");
+
+  // Verify paths do NOT contain projects/probot/runtime
+  assert.ok(!paths.registryPath.includes("projects/probot/runtime"), "Should not contain projects/probot/runtime");
+  assert.ok(!paths.oauthClientConfigPath.includes("projects/probot/runtime"), "Should not contain projects/probot/runtime");
+  assert.ok(!paths.oauthStateDir.includes("projects/probot/runtime"), "Should not contain projects/probot/runtime");
+});
