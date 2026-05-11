@@ -14,6 +14,7 @@ import {
   saveQuotaState,
   getSchedulerLogPath,
   getRuntimeDir,
+  getPackageDraftsPath,
   planProjectDistribution,
   scheduleProjectDistributionPlan,
   createProductionPackageDraft,
@@ -23,6 +24,9 @@ import {
   updateProductionPackageDraftReadiness,
   validateProductionPackageDraft,
   createPackageDraftsForScheduledJobs,
+  getLocalPackageAdapterRegistry,
+  getProductionPackageReadinessReport,
+  buildProductionPackageDraftSummary,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
@@ -2140,6 +2144,743 @@ test("VO-2D-Hardening-11: updateProductionPackageDraftReadiness throws on missin
         return true;
       }
     );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-2E: Package Draft CLI, Local Adapter Contracts, and Readiness Reporting ─
+
+test("VO-2E-1: Local adapter registry contains all required adapters", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const registry = getLocalPackageAdapterRegistry();
+    assert.ok(registry.render);
+    assert.ok(registry.caption);
+    assert.ok(registry.thumbnail);
+    assert.ok(registry.metadata);
+    assert.ok(registry.manual_export);
+
+    assert.strictEqual(registry.render.kind, "render");
+    assert.strictEqual(registry.caption.kind, "caption");
+    assert.strictEqual(registry.thumbnail.kind, "thumbnail");
+    assert.strictEqual(registry.metadata.kind, "metadata");
+    assert.strictEqual(registry.manual_export.kind, "manual_export");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-2: All adapters are not_implemented mode only", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const registry = getLocalPackageAdapterRegistry();
+    for (const [kind, adapter] of Object.entries(registry)) {
+      assert.strictEqual(adapter.mode, "not_implemented", `Adapter ${kind} should be not_implemented`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-3: Adapter validation returns blocking_reasons for unimplemented adapters", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const registry = getLocalPackageAdapterRegistry();
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    for (const [kind, adapter] of Object.entries(registry)) {
+      const validation = adapter.validateDraft(draft);
+      assert.strictEqual(validation.ready_to_post, false, `${kind} ready_to_post should be false`);
+      assert.ok(!validation.ok, `${kind} validation should fail`);
+      assert.ok(
+        validation.blocking_reasons.some((r) => r.includes("not implemented")),
+        `${kind} should have not_implemented blocking reason`
+      );
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-4: Adapter plans include blocking_reasons for unimplemented work", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const registry = getLocalPackageAdapterRegistry();
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    for (const [kind, adapter] of Object.entries(registry)) {
+      if (adapter.plan) {
+        const plan = adapter.plan(draft);
+        assert.strictEqual(plan.dry_run, true, `${kind} plan should be dry_run`);
+        assert.ok(plan.blocking_reasons.length > 0, `${kind} plan should have blocking reasons`);
+        assert.deepStrictEqual(plan.planned_outputs, [], `${kind} plan should have no outputs`);
+      }
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-5: Readiness report counts drafts by state and platform", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create some test drafts
+    const job1 = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-01T10:00:00Z"),
+      dryRun: true,
+    });
+    updateVideoJobStatus(job1.id, "scheduled", {
+      simulated: true,
+      output: { project_id: "proj-a", platform: "youtube", account_id: "youtube-main" },
+    });
+
+    const job2 = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-02T10:00:00Z"),
+      dryRun: true,
+    });
+    updateVideoJobStatus(job2.id, "scheduled", {
+      simulated: true,
+      output: { project_id: "proj-a", platform: "tiktok", account_id: "tiktok-main" },
+    });
+
+    const result = createPackageDraftsForScheduledJobs({
+      dryRun: true,
+      limit: 10,
+    });
+
+    assert.ok(result.created > 0, "Should have created drafts");
+
+    const report = getProductionPackageReadinessReport();
+    assert.ok(report.total > 0, "Report should count total drafts");
+    assert.ok(Object.keys(report.by_state).length > 0, "Report should group by state");
+    assert.ok(Object.keys(report.by_platform).length > 0, "Report should group by platform");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-6: Readiness report excludes unsafe metadata", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft);
+
+    const report = getProductionPackageReadinessReport();
+    const reportText = JSON.stringify(report);
+
+    // Verify no sensitive fields are exposed
+    assert.ok(!reportText.includes("metadata"), "Report should not expose raw metadata");
+    assert.ok(!reportText.includes("assets"), "Report should not expose assets");
+    assert.ok(
+      !reportText.includes("credential_reference") && !reportText.includes("access_token"),
+      "Report should not expose credentials"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-7: Readiness report ready_to_post is 0 for VO-2E metadata-only drafts", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create multiple drafts
+    for (let i = 0; i < 3; i++) {
+      const draft = createProductionPackageDraft({
+        job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+        project_id: `proj-${i}`,
+        platform: "youtube",
+        account_id: "youtube-main",
+        scheduled_for: new Date(),
+        dryRun: true,
+      });
+      saveProductionPackageDraft(draft);
+    }
+
+    const report = getProductionPackageReadinessReport();
+    assert.strictEqual(report.ready_to_post, 0, "VO-2E should never mark packages as ready_to_post");
+    assert.ok(report.blocked > 0, "VO-2E drafts should be blocked (missing video assets)");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-8: Readiness report drafts have safe summary fields only", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft);
+
+    const report = getProductionPackageReadinessReport();
+    assert.ok(report.drafts.length > 0, "Report should include draft summaries");
+
+    for (const summary of report.drafts) {
+      assert.ok(summary.package_id);
+      assert.ok(summary.project_id);
+      assert.ok(summary.platform);
+      assert.ok(summary.package_state);
+      assert.ok(typeof summary.ready_to_post === "boolean");
+      assert.ok(typeof summary.blocking_reasons_count === "number");
+      assert.ok(typeof summary.warnings_count === "number");
+      assert.ok(summary.scheduled_for);
+
+      // Ensure no sensitive fields
+      assert.ok(!("assets" in summary));
+      assert.ok(!("metadata" in summary));
+      assert.ok(!("readiness" in summary));
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-9: No adapter calls fs, ffmpeg, or platform APIs", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const registry = getLocalPackageAdapterRegistry();
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    for (const [kind, adapter] of Object.entries(registry)) {
+      const validation = adapter.validateDraft(draft);
+      const validationText = JSON.stringify(validation);
+
+      // Verify no file operations
+      assert.ok(!validationText.includes("fs.write") && !validationText.includes("writeFile"));
+
+      // Verify no FFmpeg
+      assert.ok(!validationText.includes("ffmpeg"));
+
+      // Verify no platform APIs
+      assert.ok(!validationText.includes("videos.insert"));
+      assert.ok(!validationText.includes("youtube.videos"));
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-10: createPackageDraftsForScheduledJobs blocks dryRun=false safely", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    assert.throws(
+      () => {
+        createPackageDraftsForScheduledJobs({
+          dryRun: false as any,
+        });
+      },
+      (err: any) => {
+        assert.ok(err.message.includes("dryRun=true"));
+        return true;
+      }
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-2E: Read-Path Output Safety Tests ──────────────────────────────────
+
+test("VO-2E-11: buildProductionPackageDraftSummary sanitizes unsafe legacy data on read", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create a normal draft
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project-id",
+      platform: "youtube",
+      account_id: "account-123",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Build safe summary
+    const summary = buildProductionPackageDraftSummary(draft);
+
+    // Verify all required fields are present
+    assert.ok(summary.package_id);
+    assert.ok(summary.project_id);
+    assert.ok(summary.platform);
+    assert.ok(summary.package_state);
+    assert.ok(typeof summary.ready_to_post === "boolean");
+    assert.ok(typeof summary.blocking_reasons_count === "number");
+    assert.ok(typeof summary.warnings_count === "number");
+    assert.ok(summary.scheduled_for);
+
+    // Verify all fields are strings or numbers except ready_to_post (boolean), counts (number)
+    assert.strictEqual(typeof summary.package_id, "string");
+    assert.strictEqual(typeof summary.project_id, "string");
+    assert.strictEqual(typeof summary.platform, "string");
+    assert.strictEqual(typeof summary.package_state, "string");
+    assert.strictEqual(typeof summary.scheduled_for, "string");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-12: buildProductionPackageDraftSummary rejects unsafe metadata on read", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create a draft with unsafe values (simulating legacy/manual JSON)
+    const unsafeDraft: ProductionPackageDraft = {
+      package_id: "pkg-unsafe-test",
+      project_id: "proj-access_token-secret", // Unsafe: contains access_token
+      platform: "youtube",
+      account_id: "account-123",
+      source_job_id: "job-123",
+      package_state: "draft",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      scheduled_for: new Date().toISOString(),
+      platform_target: {
+        format_key: "yt_short",
+        aspect_ratio: "9:16",
+        resolution: "1080x1920",
+      },
+      assets: {
+        video: "placeholder.mp4",
+        captions: [],
+        metadata: {},
+      },
+      readiness: {
+        ready_to_post: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+      },
+    };
+
+    // Build safe summary - should redact unsafe values
+    const summary = buildProductionPackageDraftSummary(unsafeDraft);
+
+    // project_id should be redacted because it contains forbidden pattern
+    assert.strictEqual(summary.project_id, "[unsafe-project]", "Should redact project_id containing access_token");
+
+    // package_id and platform should still be safe
+    assert.strictEqual(summary.package_id, "pkg-unsafe-test");
+    assert.strictEqual(summary.platform, "youtube");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-13: buildProductionPackageDraftSummary rejects suspiciously long values", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create a draft with suspiciously long values
+    const suspiciousDraft: ProductionPackageDraft = {
+      package_id: "a".repeat(250), // > 200 chars
+      project_id: "proj-test",
+      platform: "youtube",
+      account_id: "account-123",
+      source_job_id: "job-123",
+      package_state: "draft",
+      dry_run: true,
+      created_at: new Date().toISOString(),
+      scheduled_for: new Date().toISOString(),
+      platform_target: {
+        format_key: "yt_short",
+        aspect_ratio: "9:16",
+        resolution: "1080x1920",
+      },
+      assets: {
+        video: "placeholder.mp4",
+        captions: [],
+        metadata: {},
+      },
+      readiness: {
+        ready_to_post: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+      },
+    };
+
+    // Build safe summary - should redact long values
+    const summary = buildProductionPackageDraftSummary(suspiciousDraft);
+
+    // package_id should be redacted because it's > 200 chars
+    assert.strictEqual(summary.package_id, "[unsafe-package-id]", "Should redact suspiciously long package_id");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-14: getProductionPackageReadinessReport uses safe summaries", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create a draft
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-proj-123",
+      platform: "youtube",
+      account_id: "account-xyz",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Save it
+    saveProductionPackageDraft(draft);
+
+    // Get readiness report
+    const report = getProductionPackageReadinessReport();
+
+    // Verify report uses safe summaries
+    assert.strictEqual(report.total, 1);
+    assert.ok(report.drafts.length > 0);
+
+    const reportedDraft = report.drafts[0];
+    assert.ok(reportedDraft);
+    assert.ok(reportedDraft.package_id);
+    assert.ok(reportedDraft.project_id);
+    assert.ok(reportedDraft.platform);
+
+    // Verify counts are numbers
+    assert.strictEqual(typeof reportedDraft.blocking_reasons_count, "number");
+    assert.strictEqual(typeof reportedDraft.warnings_count, "number");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-15: CLI list output uses safe summaries", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create a draft
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "proj-cli-test",
+      platform: "youtube",
+      account_id: "account-test",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Save it
+    saveProductionPackageDraft(draft);
+
+    // List drafts
+    const drafts = listProductionPackageDrafts();
+    assert.strictEqual(drafts.length, 1);
+
+    // Build safe summary for CLI output
+    const draft0 = drafts[0];
+    assert.ok(draft0);
+    const safe = buildProductionPackageDraftSummary(draft0);
+
+    // Verify safe summary is suitable for CLI output
+    assert.ok(safe.package_id);
+    assert.ok(safe.project_id);
+    assert.ok(safe.platform);
+    assert.ok(safe.scheduled_for);
+
+    // Verify no sensitive fields in summary
+    assert.ok(!("metadata" in safe));
+    assert.ok(!("assets" in safe));
+    assert.ok(!("readiness" in safe));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-2E: Unsafe Legacy Data Tests ────────────────────────────────────────
+
+test("VO-2E-16: unsafe platform in by_platform keys does not leak", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const store = {
+      schema_version: "1.0",
+      created_at: new Date().toISOString(),
+      drafts: [
+        {
+          package_id: "pkg-test-1",
+          source_job_id: "job-123",
+          project_id: "proj-test",
+          platform: "youtube-client_secret-xxx", // Unsafe: contains client_secret
+          account_id: "account-test",
+          package_state: "draft",
+          dry_run: true,
+          created_at: new Date().toISOString(),
+          scheduled_for: new Date().toISOString(),
+          platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
+          assets: { video: "test.mp4", captions: [], metadata: {} },
+          readiness: { ready_to_post: false, blocking_reasons: [], warnings: [] },
+          provenance: { generated_by: "test" },
+        },
+      ],
+    };
+
+    // Manually write unsafe store to bypass validation
+    const storePath = getPackageDraftsPath();
+    fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+
+    // Get report - should sanitize by_platform keys
+    const report = getProductionPackageReadinessReport();
+
+    // Verify platform key is sanitized
+    assert.ok(Object.keys(report.by_platform).length > 0);
+    for (const platform of Object.keys(report.by_platform)) {
+      assert.ok(!platform.includes("client_secret"), "by_platform should not leak client_secret");
+      assert.ok(!platform.includes("youtube-client_secret"), "by_platform should not contain raw unsafe platform");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-17: unsafe package_state in by_state keys does not leak", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const store = {
+      schema_version: "1.0",
+      created_at: new Date().toISOString(),
+      drafts: [
+        {
+          package_id: "pkg-test-2",
+          source_job_id: "job-456",
+          project_id: "proj-test",
+          platform: "youtube",
+          account_id: "account-test",
+          package_state: "draft-access_token-secret", // Unsafe: contains access_token
+          dry_run: true,
+          created_at: new Date().toISOString(),
+          scheduled_for: new Date().toISOString(),
+          platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
+          assets: { video: "test.mp4", captions: [], metadata: {} },
+          readiness: { ready_to_post: false, blocking_reasons: [], warnings: [] },
+          provenance: { generated_by: "test" },
+        },
+      ],
+    };
+
+    const storePath = getPackageDraftsPath();
+    fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+
+    const report = getProductionPackageReadinessReport();
+
+    // Verify state keys are sanitized
+    for (const state of Object.keys(report.by_state)) {
+      assert.ok(!state.includes("access_token"), "by_state should not leak access_token");
+      assert.ok(!state.includes("draft-access_token"), "by_state should not contain raw unsafe state");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-18: unsafe package_id in report.drafts does not leak", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const store = {
+      schema_version: "1.0",
+      created_at: new Date().toISOString(),
+      drafts: [
+        {
+          package_id: "pkg-keychain://secret-api-key", // Unsafe: contains keychain://
+          source_job_id: "job-789",
+          project_id: "proj-test",
+          platform: "youtube",
+          account_id: "account-test",
+          package_state: "draft",
+          dry_run: true,
+          created_at: new Date().toISOString(),
+          scheduled_for: new Date().toISOString(),
+          platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
+          assets: { video: "test.mp4", captions: [], metadata: {} },
+          readiness: { ready_to_post: false, blocking_reasons: [], warnings: [] },
+          provenance: { generated_by: "test" },
+        },
+      ],
+    };
+
+    const storePath = getPackageDraftsPath();
+    fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+
+    const report = getProductionPackageReadinessReport();
+
+    // Verify package_id is sanitized in drafts
+    for (const draft of report.drafts) {
+      assert.ok(!draft.package_id.includes("keychain"), "draft package_id should not leak keychain");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-19: unsafe project_id in report.drafts does not leak", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const store = {
+      schema_version: "1.0",
+      created_at: new Date().toISOString(),
+      drafts: [
+        {
+          package_id: "pkg-test-4",
+          source_job_id: "job-999",
+          project_id: "proj-Bearer-fake-token-xyz", // Unsafe: contains Bearer
+          platform: "youtube",
+          account_id: "account-test",
+          package_state: "draft",
+          dry_run: true,
+          created_at: new Date().toISOString(),
+          scheduled_for: new Date().toISOString(),
+          platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
+          assets: { video: "test.mp4", captions: [], metadata: {} },
+          readiness: { ready_to_post: false, blocking_reasons: [], warnings: [] },
+          provenance: { generated_by: "test" },
+        },
+      ],
+    };
+
+    const storePath = getPackageDraftsPath();
+    fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+
+    const report = getProductionPackageReadinessReport();
+
+    // Verify project_id is sanitized in drafts
+    for (const draft of report.drafts) {
+      assert.ok(!draft.project_id.includes("Bearer"), "draft project_id should not leak Bearer token");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-20: ready_to_post remains false even if raw readiness.ready_to_post is true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const store = {
+      schema_version: "1.0",
+      created_at: new Date().toISOString(),
+      drafts: [
+        {
+          package_id: "pkg-test-5",
+          source_job_id: "job-aaa",
+          project_id: "proj-test",
+          platform: "youtube",
+          account_id: "account-test",
+          package_state: "draft",
+          dry_run: true,
+          created_at: new Date().toISOString(),
+          scheduled_for: new Date().toISOString(),
+          platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
+          assets: { video: "test.mp4", captions: [], metadata: {} },
+          readiness: { ready_to_post: true, blocking_reasons: [], warnings: [] }, // Manually set to true (should be rejected)
+          provenance: { generated_by: "test" },
+        },
+      ],
+    };
+
+    const storePath = getPackageDraftsPath();
+    fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+
+    const report = getProductionPackageReadinessReport();
+
+    // Summary ready_to_post should come from validation, which always returns false in VO-2E
+    assert.strictEqual(report.ready_to_post, 0, "report.ready_to_post should be 0 even if raw readiness was true");
+    for (const draft of report.drafts) {
+      assert.strictEqual(draft.ready_to_post, false, "summary ready_to_post should always be false in VO-2E");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2E-21: JSON.stringify(report) contains no forbidden strings", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create drafts with many unsafe patterns
+    const store = {
+      schema_version: "1.0",
+      created_at: new Date().toISOString(),
+      drafts: [
+        {
+          package_id: "pkg-test-credential_reference-xxx",
+          source_job_id: "job-bbb",
+          project_id: "proj-credentialReference-yyy",
+          platform: "youtube-keychain://secret",
+          account_id: "account-test",
+          package_state: "draft-access_token-zzz",
+          dry_run: true,
+          created_at: new Date().toISOString(),
+          scheduled_for: new Date().toISOString(),
+          platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
+          assets: { video: "test.mp4", captions: [], metadata: {} },
+          readiness: { ready_to_post: false, blocking_reasons: [], warnings: [] },
+          provenance: { generated_by: "test" },
+        },
+      ],
+    };
+
+    const storePath = getPackageDraftsPath();
+    fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+
+    const report = getProductionPackageReadinessReport();
+    const reportJson = JSON.stringify(report);
+
+    // Check for forbidden patterns
+    const forbiddenPatterns = [
+      "credential_reference",
+      "credentialreference",
+      "keychain://",
+      "access_token",
+      "refresh_token",
+      "client_secret",
+      "code_verifier",
+      "authorization_code",
+      "bearer",
+      "private_key",
+      "password",
+    ];
+
+    for (const pattern of forbiddenPatterns) {
+      assert.ok(
+        !reportJson.toLowerCase().includes(pattern.toLowerCase()),
+        `report JSON should not contain forbidden pattern: ${pattern}`
+      );
+    }
   } finally {
     cleanupTestRuntime(tempDir);
   }

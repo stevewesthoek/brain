@@ -971,6 +971,77 @@ function assertProductionPackageDraftSafeForStorage(draft: ProductionPackageDraf
   checkValue(draft);
 }
 
+// ─── VO-2E: Read-Path Output Safety ────────────────────────────────────────
+// Sanitize legacy/manual package-drafts.json data on read to prevent unsafe value exposure
+
+function sanitizePackageDraftSummaryString(value: unknown, fallback: string): string {
+  const forbiddenPatterns = [
+    "credential_reference",
+    "credentialreference",
+    "keychain://",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "code_verifier",
+    "authorization_code",
+    "bearer ",
+    "private_key",
+    "password",
+    "token",
+  ];
+
+  // Only convert safe scalar types to string
+  if (typeof value === "string") {
+    const valLower = value.toLowerCase();
+    const isSuspiciouslyLong = value.length > 200;
+    for (const pattern of forbiddenPatterns) {
+      if (valLower.includes(pattern.toLowerCase())) {
+        return fallback;
+      }
+    }
+    if (isSuspiciouslyLong) {
+      return fallback;
+    }
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return String(value);
+  }
+
+  if (typeof value === "boolean") {
+    return String(value);
+  }
+
+  // Reject objects, arrays, null, undefined
+  return fallback;
+}
+
+function buildProductionPackageDraftSummary(draft: ProductionPackageDraft): {
+  package_id: string;
+  project_id: string;
+  platform: string;
+  package_state: string;
+  ready_to_post: boolean;
+  blocking_reasons_count: number;
+  warnings_count: number;
+  scheduled_for: string;
+} {
+  // Validate to get safe ready_to_post and counts
+  const validation = validateProductionPackageDraft(draft);
+
+  return {
+    package_id: sanitizePackageDraftSummaryString(draft.package_id, "[unsafe-package-id]"),
+    project_id: sanitizePackageDraftSummaryString(draft.project_id, "[unsafe-project]"),
+    platform: sanitizePackageDraftSummaryString(draft.platform, "[unsafe-platform]"),
+    package_state: sanitizePackageDraftSummaryString(draft.package_state, "blocked"),
+    ready_to_post: validation.ready_to_post,
+    blocking_reasons_count: validation.blocking_reasons.length,
+    warnings_count: validation.warnings.length,
+    scheduled_for: sanitizePackageDraftSummaryString(draft.scheduled_for, "[unsafe-scheduled-for]"),
+  };
+}
+
 export function saveProductionPackageDraft(draft: ProductionPackageDraft): void {
   // VO-2D CRITICAL: Reject any draft marked as ready_to_post=true
   // VO-2D performs metadata-only validation without real media inspection
@@ -1175,5 +1246,145 @@ export function createPackageDraftsForScheduledJobs(
   return result;
 }
 
-// Export internal functions for testing
-export { logSchedulerEvent, loadQuotaState, saveQuotaState, getQuotaStatePath, getSchedulerLogPath, getRuntimeDir, getPackageDraftsPath };
+// ─── VO-2E: Local Adapter Contracts ────────────────────────────────────────
+
+export type LocalAdapterKind = "render" | "caption" | "thumbnail" | "metadata" | "manual_export";
+
+export type LocalAdapterMode = "not_implemented" | "dry_run" | "disabled";
+
+export interface LocalAdapterPlan {
+  adapter_id: string;
+  kind: LocalAdapterKind;
+  dry_run: true;
+  planned_outputs: string[];
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface LocalPackageAdapter {
+  kind: LocalAdapterKind;
+  adapter_id: string;
+  mode: LocalAdapterMode;
+  validateDraft(draft: ProductionPackageDraft): PackageValidationResult;
+  plan?(draft: ProductionPackageDraft): LocalAdapterPlan;
+}
+
+class NotImplementedAdapter implements LocalPackageAdapter {
+  kind: LocalAdapterKind;
+  adapter_id: string;
+  mode: LocalAdapterMode = "not_implemented";
+
+  constructor(kind: LocalAdapterKind, adapter_id: string) {
+    this.kind = kind;
+    this.adapter_id = adapter_id;
+  }
+
+  validateDraft(draft: ProductionPackageDraft): PackageValidationResult {
+    const blocking = [`${this.kind} adapter is not implemented in VO-2E. Deferred to VO-2F.`];
+    return {
+      ok: false,
+      ready_to_post: false,
+      blocking_reasons: blocking,
+      warnings: [`${this.kind} adapter: ${this.adapter_id}`],
+    };
+  }
+
+  plan(draft: ProductionPackageDraft): LocalAdapterPlan {
+    return {
+      adapter_id: this.adapter_id,
+      kind: this.kind,
+      dry_run: true,
+      planned_outputs: [],
+      blocking_reasons: [`${this.kind} adapter not implemented`],
+      warnings: [`${this.kind} is planned for VO-2F implementation`],
+    };
+  }
+}
+
+export function getLocalPackageAdapterRegistry(): Record<LocalAdapterKind, LocalPackageAdapter> {
+  return {
+    render: new NotImplementedAdapter("render", "local-render-v1"),
+    caption: new NotImplementedAdapter("caption", "local-caption-v1"),
+    thumbnail: new NotImplementedAdapter("thumbnail", "local-thumbnail-v1"),
+    metadata: new NotImplementedAdapter("metadata", "local-metadata-v1"),
+    manual_export: new NotImplementedAdapter("manual_export", "local-manual-export-v1"),
+  };
+}
+
+// ─── VO-2E: Readiness Reporting ────────────────────────────────────────────
+
+export interface ProductionPackageReadinessReport {
+  total: number;
+  by_state: Record<string, number>;
+  by_platform: Record<string, number>;
+  ready_to_post: number;
+  blocked: number;
+  warnings: number;
+  drafts: Array<{
+    package_id: string;
+    project_id: string;
+    platform: string;
+    package_state: string;
+    ready_to_post: boolean;
+    blocking_reasons_count: number;
+    warnings_count: number;
+    scheduled_for: string;
+  }>;
+}
+
+export function getProductionPackageReadinessReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): ProductionPackageReadinessReport {
+  const allDrafts = listProductionPackageDrafts(options);
+
+  const by_state: Record<string, number> = {};
+  const by_platform: Record<string, number> = {};
+  let ready_to_post = 0;
+  let blocked = 0;
+  let warnings = 0;
+
+  const drafts = allDrafts.map((draft) => {
+    // Build safe summary first (sanitizes all fields)
+    const summary = buildProductionPackageDraftSummary(draft);
+
+    // Count by safe summary fields (not raw draft values)
+    by_state[summary.package_state] = (by_state[summary.package_state] || 0) + 1;
+    by_platform[summary.platform] = (by_platform[summary.platform] || 0) + 1;
+
+    // Use safe values from summary for counting
+    if (summary.ready_to_post) {
+      ready_to_post++;
+    }
+    if (summary.blocking_reasons_count > 0) {
+      blocked++;
+    }
+    if (summary.warnings_count > 0) {
+      warnings++;
+    }
+
+    return summary;
+  });
+
+  return {
+    total: allDrafts.length,
+    by_state,
+    by_platform,
+    ready_to_post,
+    blocked,
+    warnings,
+    drafts,
+  };
+}
+
+// Export internal functions for testing and CLI
+export {
+  logSchedulerEvent,
+  loadQuotaState,
+  saveQuotaState,
+  getQuotaStatePath,
+  getSchedulerLogPath,
+  getRuntimeDir,
+  getPackageDraftsPath,
+  buildProductionPackageDraftSummary,
+};

@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
-**Date:** 2026-05-08 (Post-Review)  
-**Status:** Detailed implementation guide — ready for phase-by-phase execution  
+**Date:** 2026-05-11 (VO-2E Complete)  
+**Status:** VO-2E complete (CLI, adapter contracts, readiness reporting); detailed guide for phases 2A/2B/2C/2D/2E  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -1319,3 +1319,147 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 5. **Phase 5 (Aug 15):** Metrics + optional LoRA
 
 All timelines assume feedback and iteration; adjust as needed.
+
+---
+
+## VO-2E: Package Draft CLI, Local Adapter Contracts, and Readiness Reporting (2026-05-11) ✅
+
+**Status:** Complete
+
+**What VO-2E Adds:**
+
+1. **Package Draft CLI (`npm run probot:video:package-drafts`)**
+   - `create-from-jobs --dry-run=true --limit=N`: Create package drafts from scheduled jobs
+   - `list [--project-id=<id>] [--platform=<platform>]`: List package drafts safely
+   - `validate [--all | --package-id=<id>]`: Validate package readiness
+   - `status`: Summary report of all drafts by state and platform
+   - All commands: safe output only (no metadata/credentials exposed)
+   - dryRun=false blocks safely with helpful error
+
+2. **Local Adapter Contract Types**
+   - `LocalAdapterKind`: render, caption, thumbnail, metadata, manual_export
+   - `LocalAdapterMode`: not_implemented, dry_run, disabled
+   - `LocalPackageAdapter`: Interface for future adapters
+   - `LocalAdapterPlan`: Dry-run plan structure (no file creation)
+   - `getLocalPackageAdapterRegistry()`: Placeholder adapters (dry-run/not_implemented only)
+
+3. **Readiness Reporting**
+   - `getProductionPackageReadinessReport()`: Safe summary-only report
+   - Groups drafts by state and platform
+   - Excludes: metadata, assets, credentials, Keychain URLs, tokens
+   - Counts: ready_to_post (always 0 in VO-2E), blocked, warnings
+   - Individual draft summaries include only safe fields
+
+**Key Architecture Decisions:**
+
+- All local adapters are placeholder/not_implemented in VO-2E
+- ready_to_post remains false for all VO-2E metadata-only drafts
+- No FFmpeg execution, no file creation, no platform APIs, no uploads
+- CLI parser supports both `--key=value` and `--key value` formats
+- Safe outputs prevent credential/token/path leakage
+
+**Tests Added:**
+
+- VO-2E-1: Registry contains all required adapter kinds
+- VO-2E-2: All adapters are not_implemented mode
+- VO-2E-3: Adapter validation returns blocking reasons
+- VO-2E-4: Adapter plans include blocking reasons (no output files)
+- VO-2E-5: Readiness report counts by state/platform
+- VO-2E-6: Report excludes unsafe metadata
+- VO-2E-7: ready_to_post is 0 for all VO-2E drafts
+- VO-2E-8: Report drafts have safe summary fields only
+- VO-2E-9: No adapter calls fs/ffmpeg/platform APIs
+- VO-2E-10: dryRun=false blocks safely
+- CLI parser tests (5): --key=value, --key value, mixed, flags, string values
+
+**Files Created:**
+- `projects/probot/src/scripts/video-orchestrator-package-drafts.mjs`
+- `projects/probot/src/scripts/video-orchestrator-package-drafts-args.ts`
+- `projects/probot/src/scripts/video-orchestrator-package-drafts.test.ts`
+
+**Files Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts`: Added adapter contracts, registry, readiness report
+- `projects/probot/package.json`: Added package-drafts script
+- `package.json`: Added root proxy for package-drafts
+- `operations/runbooks/video-orchestrator-roadmap.md`: Updated status
+- `operations/runbooks/video-orchestrator-implementation-plan.md`: Updated status
+
+**What VO-2E Does NOT Do:**
+- No real FFmpeg execution (no rendering, compositing, encoding)
+- No platform API calls (YouTube, TikTok, Instagram, etc.)
+- No upload capability
+- No file creation beyond JSON package store
+- No credential handling beyond allowlist validation
+- No actual media inspection/validation
+
+### VO-2E Phase 2: Read-Path Output Safety (2026-05-11 Revised) ✅
+
+**Problems Identified (ChatGPT Review):**
+1. `getProductionPackageReadinessReport()` grouped by raw `draft.package_state` and `draft.platform` — unsafe values leaked through `by_state` and `by_platform` keys
+2. `buildProductionPackageDraftSummary()` used raw `draft.readiness.ready_to_post` instead of validation result
+3. CLI `validate` and `create-from-jobs` printed raw package IDs without sanitization
+4. `formatPackageId()` was not hardened against non-string/null/edge-case inputs
+
+**Solutions Implemented:**
+
+1. **Hardened `buildProductionPackageDraftSummary(draft)`**
+   - Now calls `validateProductionPackageDraft(draft)` internally
+   - `ready_to_post` from validation (always false in VO-2E), not raw readiness
+   - `blocking_reasons_count` and `warnings_count` from validation, not raw arrays
+   - Fallback values updated:
+     - `package_id`: `[unsafe-package-id]`
+     - `project_id`: `[unsafe-project]`
+     - `platform`: `[unsafe-platform]`
+     - `package_state`: `blocked` (semantic fallback)
+     - `scheduled_for`: `[unsafe-scheduled-for]`
+
+2. **Fixed `getProductionPackageReadinessReport()` grouping**
+   - Builds safe summary first: `const summary = buildProductionPackageDraftSummary(draft)`
+   - Groups by sanitized values: `by_state[summary.package_state]` and `by_platform[summary.platform]`
+   - Unsafe legacy values never appear in report keys or draft summaries
+
+3. **Hardened `formatPackageId(id)` in CLI**
+   - Rejects non-string input: returns `[unsafe-package-id]`
+   - Handles empty strings, null, undefined safely
+   - Preserves fallback markers without slicing them
+
+4. **Updated CLI commands to use safe summaries**
+   - `create-from-jobs`: builds summary before printing package IDs
+   - `validate`: builds summary before printing validation results
+   - `list`: already uses summary (verified)
+   - `status`: uses `getProductionPackageReadinessReport()` (now sanitized)
+
+5. **Created pure formatting helpers module**
+   - `projects/probot/src/scripts/video-orchestrator-package-drafts-format.ts`
+   - `formatPackageId(id)`: Safe package ID formatting with fallback handling
+   - `formatPackageDraftDate(value)`: Safe date formatting with `[unsafe-scheduled-for]` fallback (never returns Invalid Date)
+   - Imported by CLI script and tested directly
+
+**Tests Added:**
+- VO-2E-16: `by_platform` keys with unsafe values (e.g., containing `client_secret`) do not leak
+- VO-2E-17: `by_state` keys with unsafe values (e.g., containing `access_token`) do not leak
+- VO-2E-18: draft `package_id` in report does not leak keychain URLs
+- VO-2E-19: draft `project_id` in report does not leak Bearer tokens
+- VO-2E-20: `ready_to_post` remains false even if raw `readiness.ready_to_post` was true
+- VO-2E-21: `JSON.stringify(report)` contains no forbidden patterns
+- CLI formatting helper tests (9): `formatPackageId` and `formatPackageDraftDate` with edge cases
+
+**CLI Safe-Output Validation:**
+- `npm run probot:video:package-drafts -- status`: ✅ Safe output, no forbidden strings, sanitized grouping keys
+- `npm run probot:video:package-drafts -- list`: ✅ Uses summaries, safe dates (no Invalid Date)
+- `npm run probot:video:package-drafts -- validate --all`: ✅ Uses summaries, no leaks
+- `npm run probot:video:package-drafts -- create-from-jobs --dry-run=true`: ✅ Uses summaries
+- `npm run probot:video:package-drafts -- create-from-jobs --dry-run=false`: ✅ Blocks safely
+
+**Result:**
+- All 226 tests pass (6 new unsafe legacy data tests + 9 formatting helper tests)
+- TypeScript typecheck passes with no errors
+- Report grouping keys are fully sanitized (by_state, by_platform)
+- All CLI outputs use safe summaries exclusively
+- Date formatting never throws Invalid Date errors
+- Legacy/manual JSON data is sanitized on read at all output points
+- No forbidden patterns leak through report structure, keys, or CLI output
+- No placeholder tests (all real assertions)
+
+**Next Phase (VO-2F):**
+Implement the first safe local media validation/render adapter contract (likely render + FFmpeg integration) only after VO-2E is stable and CLI/adapter patterns are validated in production use.

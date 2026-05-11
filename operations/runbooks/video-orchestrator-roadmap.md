@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
-**Date Updated:** 2026-05-08 (Post-Review)  
-**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2B complete; Phase 2C adds local production adapters before posting work.  
+**Date Updated:** 2026-05-11 (VO-2E Complete)  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2D complete; Phase 2E adds CLI, local adapter contracts, and readiness reporting.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Architecture:** Local-first production + platform adapters (not fully local publishing)
 
@@ -61,7 +61,8 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **VO-2A** | ✅ Done | Project-Based Distribution Model Foundation | JSON schema for projects; planning model with weekly cadence; dry-run planning only (no job creation, no APIs, no upload) |
 | **VO-2B** | ✅ Done | Project Distribution Dry-Run Scheduling | Convert project plans to dry-run scheduler jobs; distribute by posts_per_week and preferred_days; detect duplicates; no APIs, no upload |
 | **VO-2C** | ✅ Done | Production Package Foundation (Metadata-Only Drafts) | Metadata-only package draft schema + example + safe draft function; no fake media, no rendering, ready_to_post always false |
-| **VO-2D** | 🚧 In Progress | Package Draft Persistence and Local Validation | Local JSON-backed package draft storage; metadata-only validation; no media rendering, no platform APIs, no upload |
+| **VO-2D** | ✅ Done | Package Draft Persistence and Local Validation | Local JSON-backed package draft storage; metadata-only validation; no media rendering, no platform APIs, no upload |
+| **VO-2E** | ✅ Done | Package Draft CLI, Local Adapter Contracts, and Readiness Reporting | CLI for create/list/validate/status; formal local adapter contract types; readiness summary reporting; no rendering, no APIs, no upload |
 | **2A** | May 30–Jun 10 | Production Package MVP | One video → platform-ready packages for all defined platform targets |
 | **2B** | Jun 10–Jun 20 | Local Queue MVP | Batch of 5 videos can fail mid-run and resume without lost work |
 | **2C** | Jun 20–Jun 27 | Local Production Adapters | FFmpeg render/thumbnail outputs and optional Whisper.cpp captions produce real local artifacts |

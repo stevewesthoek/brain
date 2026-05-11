@@ -10,14 +10,15 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test src/bot/local-apps.test.ts src/bot/video-orchestrator-jobs.test.ts src/scripts/video-orchestrator-scheduler.test.ts",
+    "test": "tsx --test src/bot/local-apps.test.ts src/bot/video-orchestrator-jobs.test.ts src/scripts/video-orchestrator-scheduler.test.ts src/scripts/video-orchestrator-package-drafts.test.ts",
     "ci": "npm run typecheck && npm test",
     "probot:video:jobs": "tsx src/scripts/video-orchestrator-scheduler.mjs list",
     "probot:video:status": "tsx src/scripts/video-orchestrator-scheduler.mjs status",
     "probot:video:reset-quota": "tsx src/scripts/video-orchestrator-scheduler.mjs reset-quota",
     "probot:video:schedule-month": "tsx src/scripts/video-orchestrator-scheduler.mjs schedule-month",
     "probot:video:run-due": "tsx src/scripts/video-orchestrator-scheduler.mjs run-due",
-    "probot:video:plan-projects": "tsx src/scripts/video-orchestrator-project-scheduler.mjs"
+    "probot:video:plan-projects": "tsx src/scripts/video-orchestrator-project-scheduler.mjs",
+    "probot:video:package-drafts": "tsx src/scripts/video-orchestrator-package-drafts.mjs"
   },
   "dependencies": {
     "@slack/bolt": "^4.6.0",
