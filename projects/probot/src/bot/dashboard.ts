@@ -2452,8 +2452,12 @@ document.addEventListener('click',async(event)=>{
   if(!button) return;
   const action=button.getAttribute('data-action');
   if(!action) return;
+  if(button.disabled) return;
+  const origText=button.textContent;
+  button.disabled=true;
   try{
     if(action==='save-oauth-client'){
+      button.textContent='Saving...';
       const clientIdInput=document.querySelector('input[name="vo-client-id"]');
       const clientId=clientIdInput?String(clientIdInput.value||'').trim():'';
       if(!clientId) throw new Error('Client ID is required.');
@@ -2462,6 +2466,7 @@ document.addEventListener('click',async(event)=>{
       return;
     }
     if(action==='save-account'){
+      button.textContent='Saving...';
       const payload={
         platform:'youtube',
         account_id:String((document.querySelector('input[name="vo-account-id"]')||{}).value||'').trim(),
@@ -2474,6 +2479,7 @@ document.addEventListener('click',async(event)=>{
       return;
     }
     if(action==='refresh-health'){
+      button.textContent='Checking...';
       const accountId=button.getAttribute('data-account-id');
       if(!accountId) throw new Error('Missing account id.');
       await postJson('/api/video-orchestrator/accounts/'+encodeURIComponent(accountId)+'/health-check',{});
@@ -2481,6 +2487,7 @@ document.addEventListener('click',async(event)=>{
       return;
     }
     if(action==='connect-youtube'){
+      button.textContent='Connecting...';
       let payload;
       if(button.getAttribute('data-form')==='true'){
         payload={
@@ -2509,6 +2516,9 @@ document.addEventListener('click',async(event)=>{
     }
   }catch(err){
     alert(String(err&&err.message?err.message:err));
+  }finally{
+    button.disabled=false;
+    button.textContent=origText;
   }
 });
 
@@ -2524,37 +2534,13 @@ async function getViralFlowAccounts(){
 }
 
 /* tab switching */
-document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',async ()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+b.dataset.tab));
   if(b.dataset.tab==='local-apps'){
-    const panel=document.getElementById('tab-local-apps');
-    if(panel){
-      panel.innerHTML='<div class="loading"><div class="spin"></div>Loading...</div>';
-      fetch('/api/local-apps')
-        .then(r=>r.json())
-        .then(data=>{panel.innerHTML=renderLocalApps(data);})
-        .catch(e=>{panel.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
-    }
-  }
-  if(b.dataset.tab==='viral-flow'){
-    const panel=document.getElementById('tab-viral-flow');
-    if(panel){
-      panel.innerHTML=renderProductionStudioShell();
-      bindProductionStudioSubtabs();
-      const content=document.getElementById('studio-content-strategy');
-      const pipeline=document.getElementById('studio-production-pipeline');
-      if(content) content.innerHTML='<div class="loading"><div class="spin"></div>Loading Studio...</div>';
-      if(pipeline) pipeline.innerHTML='<div class="loading"><div class="spin"></div>Loading Production Pipeline...</div>';
-      fetch('/api/viral-flow/status')
-        .then(r=>r.json())
-        .then(data=>{if(content)content.innerHTML=renderViralFlowStudio(data);startViralFlowPolling();})
-        .catch(e=>{if(content)content.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
-      fetch('/api/video-orchestrator/status')
-        .then(r=>r.json())
-        .then(async data=>{if(pipeline)pipeline.innerHTML=await renderVideoOrchestratorStudio(data);})
-        .catch(e=>{if(pipeline)pipeline.innerHTML='<div class="nr-err">Error: '+esc(String(e))+'</div>';});
-    }
+    loadLocalAppsTab();
+  }else if(b.dataset.tab==='viral-flow'){
+    loadProductionPipelineTab();
   }else{
     stopViralFlowPolling();
   }
@@ -3182,6 +3168,112 @@ async function fetchData(){
     document.getElementById('upd').textContent='fetch failed';
   }
 }
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 5000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+const TAB_LOAD_STATE = {
+  sessions: { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+  dokploy: { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+  nr: { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+  scheduler: { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+  umami: { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+  'google-ads': { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+  stripe: { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+  domains: { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+  tunnels: { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+  'local-apps': { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+  'viral-flow': { pending: null, loaded: false, error: null, lastLoadedAt: 0 },
+};
+async function loadMainTabsData() {
+  try {
+    const r = await fetch('/api/data');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    return data;
+  } catch (e) {
+    throw e;
+  }
+}
+async function loadLocalAppsTab({ force = false } = {}) {
+  const state = TAB_LOAD_STATE['local-apps'];
+  if (state.pending) return state.pending;
+  const now = Date.now();
+  if (!force && state.loaded && now - state.lastLoadedAt < 10000) return;
+  const panel = document.getElementById('tab-local-apps');
+  if (!panel) return;
+  panel.innerHTML = '<div class="loading"><div class="spin"></div>Loading...</div>';
+  const promise = (async () => {
+    try {
+      const data = await fetchJsonWithTimeout('/api/local-apps', {}, 5000);
+      panel.innerHTML = renderLocalApps(data);
+      state.loaded = true;
+      state.error = null;
+      state.lastLoadedAt = Date.now();
+    } catch (e) {
+      state.error = String(e);
+      panel.innerHTML = '<div class="nr-err">Error: ' + esc(String(e)) + '</div>';
+    } finally {
+      state.pending = null;
+    }
+  })();
+  state.pending = promise;
+  return promise;
+}
+async function loadProductionPipelineTab({ force = false } = {}) {
+  const state = TAB_LOAD_STATE['viral-flow'];
+  if (state.pending) return state.pending;
+  const now = Date.now();
+  if (!force && state.loaded && now - state.lastLoadedAt < 10000) return;
+  const panel = document.getElementById('tab-viral-flow');
+  if (!panel) return;
+  panel.innerHTML = renderProductionStudioShell();
+  bindProductionStudioSubtabs();
+  const content = document.getElementById('studio-content-strategy');
+  const pipeline = document.getElementById('studio-production-pipeline');
+  const promise = (async () => {
+    try {
+      if (content) {
+        content.innerHTML = '<div class="loading"><div class="spin"></div>Loading Studio...</div>';
+        try {
+          const data = await fetchJsonWithTimeout('/api/viral-flow/status', {}, 5000);
+          if (content) {
+            content.innerHTML = renderViralFlowStudio(data);
+            startViralFlowPolling();
+          }
+        } catch (e) {
+          if (content) content.innerHTML = '<div class="nr-err">Error: ' + esc(String(e)) + '</div>';
+        }
+      }
+      if (pipeline) {
+        pipeline.innerHTML = '<div class="loading"><div class="spin"></div>Loading Production Pipeline...</div>';
+        try {
+          const data = await fetchJsonWithTimeout('/api/video-orchestrator/status', {}, 5000);
+          if (pipeline) pipeline.innerHTML = await renderVideoOrchestratorStudio(data);
+        } catch (e) {
+          if (pipeline) pipeline.innerHTML = '<div class="nr-err">Error: ' + esc(String(e)) + '</div>';
+        }
+      }
+      state.loaded = true;
+      state.error = null;
+      state.lastLoadedAt = Date.now();
+    } catch (e) {
+      state.error = String(e);
+    } finally {
+      state.pending = null;
+    }
+  })();
+  state.pending = promise;
+  return promise;
+}
 async function refreshLocalAppCardsGranular(fullData){
   if(!fullData || !fullData.localApps || !Array.isArray(fullData.localApps.apps)) return;
   const incoming=fullData.localApps.apps;
@@ -3202,11 +3294,35 @@ async function refreshLocalAppCardsGranular(fullData){
     cardEl.replaceWith(tmp.firstElementChild);
   }
 }
-function refresh(){
-  const b=document.getElementById('refresh-btn');b.textContent='↻ Loading…';
-  fetchData().finally(()=>{b.textContent='↻ Refresh';});
+async function refresh(){
+  const b=document.getElementById('refresh-btn');
+  if(b.disabled) return;
+  b.disabled=true;
+  b.textContent='↻ Loading…';
+  try {
+    const activeTab = document.querySelector('.tab-btn.active');
+    const tabName = activeTab ? activeTab.dataset.tab : 'sessions';
+    if (tabName === 'local-apps') {
+      await loadLocalAppsTab({ force: true });
+    } else if (tabName === 'viral-flow') {
+      await loadProductionPipelineTab({ force: true });
+    } else {
+      await fetchData();
+    }
+  } catch (e) {
+    console.error('Refresh failed:', e);
+  } finally {
+    b.disabled = false;
+    b.textContent = '↻ Refresh';
+  }
 }
-setInterval(fetchData,3000);
+setInterval(() => {
+  const activeTab = document.querySelector('.tab-btn.active');
+  const tabName = activeTab ? activeTab.dataset.tab : 'sessions';
+  if (tabName !== 'viral-flow' && tabName !== 'local-apps') {
+    fetchData();
+  }
+}, 3000);
 setInterval(()=>{if(_d)document.getElementById('upd').textContent='updated '+age(_d.meta.updatedAt);},60000);
 setInterval(checkForUpdates,15*60*1000);
 fetchData();
