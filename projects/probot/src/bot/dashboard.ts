@@ -54,6 +54,7 @@ import {
   type SafeDashboardAccount,
   type YouTubeLifecycleSummary,
 } from "./video-orchestrator-dashboard.js";
+import { getVideoJobsStatus, type VideoJobsStatus } from "./video-orchestrator-jobs.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -138,15 +139,27 @@ function isLocalDashboardRequest(req: http.IncomingMessage): boolean {
 }
 
 async function getVideoOrchestratorStatus(): Promise<Record<string, unknown>> {
+  // VO-1: Prefer real job store over database for truthful job counts
+  const jobsStatus = getVideoJobsStatus();
+
+  let total_accounts = 0;
+  try {
+    const paths = getDefaultVideoOrchestratorPaths();
+    if (fs.existsSync(paths.registryPath)) {
+      const registryContent = fs.readFileSync(paths.registryPath, "utf8");
+      const registry = JSON.parse(registryContent) as Record<string, unknown>;
+      const accounts = registry.accounts as Array<unknown> | undefined;
+      total_accounts = accounts?.length ?? 0;
+    }
+  } catch {
+    total_accounts = 0;
+  }
+
   const dbUrl = process.env.VIDEO_ORCHESTRATOR_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5450/video_orchestrator";
   const sql = `
     SELECT json_build_object(
       'database_status', 'healthy',
       'total_videos', (SELECT COUNT(*) FROM videos),
-      'total_accounts', (SELECT COUNT(*) FROM accounts),
-      'pending_jobs', (SELECT COUNT(*) FROM jobs WHERE job_status = 'pending'),
-      'running_jobs', (SELECT COUNT(*) FROM jobs WHERE job_status IN ('leased', 'running')),
-      'failed_jobs_7d', (SELECT COUNT(*) FROM jobs WHERE job_status IN ('failed', 'dead') AND created_at > NOW() - INTERVAL '7 days'),
       'completed_packages', (SELECT COUNT(*) FROM production_packages WHERE package_status = 'complete'),
       'timestamp', NOW()
     ) AS status
@@ -163,31 +176,33 @@ async function getVideoOrchestratorStatus(): Promise<Record<string, unknown>> {
       "-c",
       sql,
     ]);
-    return JSON.parse(stdout.trim() || "{}") as Record<string, unknown>;
+    const dbResult = JSON.parse(stdout.trim() || "{}") as Record<string, unknown>;
+    return {
+      database_status: "healthy",
+      total_videos: dbResult.total_videos ?? 0,
+      total_accounts,
+      pending_jobs: jobsStatus.scheduled,
+      running_jobs: jobsStatus.running,
+      failed_jobs_7d: jobsStatus.failed,
+      paused_quota_jobs: jobsStatus.paused_quota,
+      completed_packages: dbResult.completed_packages ?? 0,
+      timestamp: new Date().toISOString(),
+      dry_run_mode: jobsStatus.dry_run_mode,
+    };
   } catch (err) {
-    console.error("[Video Orchestrator] Status check failed:", String(err));
-    let total_accounts = 0;
-    try {
-      const paths = getDefaultVideoOrchestratorPaths();
-      if (fs.existsSync(paths.registryPath)) {
-        const registryContent = fs.readFileSync(paths.registryPath, "utf8");
-        const registry = JSON.parse(registryContent) as Record<string, unknown>;
-        const accounts = registry.accounts as Array<unknown> | undefined;
-        total_accounts = accounts?.length ?? 0;
-      }
-    } catch {
-      total_accounts = 0;
-    }
+    console.error("[Video Orchestrator] Database check failed, using job store only:", String(err));
     return {
       database_status: "disconnected",
       total_videos: 0,
       total_accounts,
-      pending_jobs: 0,
-      running_jobs: 0,
-      failed_jobs_7d: 0,
+      pending_jobs: jobsStatus.scheduled,
+      running_jobs: jobsStatus.running,
+      failed_jobs_7d: jobsStatus.failed,
+      paused_quota_jobs: jobsStatus.paused_quota,
       completed_packages: 0,
       timestamp: new Date().toISOString(),
-      error: "Video Orchestrator database is unavailable.",
+      error: "Video Orchestrator database is unavailable; using local job store.",
+      dry_run_mode: jobsStatus.dry_run_mode,
     };
   }
 }

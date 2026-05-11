@@ -10,8 +10,11 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test src/bot/local-apps.test.ts",
-    "ci": "npm run typecheck && npm test"
+    "test": "tsx --test src/bot/local-apps.test.ts src/bot/video-orchestrator-jobs.test.ts",
+    "ci": "npm run typecheck && npm test",
+    "probot:video:jobs": "tsx src/scripts/video-orchestrator-scheduler.mjs list",
+    "probot:video:schedule-month": "tsx src/scripts/video-orchestrator-scheduler.mjs schedule-month",
+    "probot:video:run-due": "tsx src/scripts/video-orchestrator-scheduler.mjs run-due"
   },
   "dependencies": {
     "@slack/bolt": "^4.6.0",
