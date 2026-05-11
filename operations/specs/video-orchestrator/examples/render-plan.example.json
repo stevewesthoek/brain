@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "render_plan_id": "plan-pkg-example-001-youtube",
+  "package_id": "pkg-example-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "dry_run": true,
+  "plan_state": "planned",
+  "created_at": "2026-05-11T14:30:00Z",
+  "render_targets": [
+    {
+      "kind": "video",
+      "format_key": "landscape_1920x1080_16x9",
+      "aspect_ratio": "16:9",
+      "resolution": "1920x1080",
+      "planned_output_path": "renders/pkg-example-001/video_1920x1080_h264.mp4",
+      "expected_bitrate_kbps": 5000,
+      "expected_duration_seconds": 180.5,
+      "safe_zone_profile": "desktop_landscape"
+    },
+    {
+      "kind": "thumbnail",
+      "format_key": "youtube_thumbnail_1280x720",
+      "aspect_ratio": "16:9",
+      "resolution": "1280x720",
+      "planned_output_path": "renders/pkg-example-001/thumbnail_1280x720.jpg"
+    },
+    {
+      "kind": "caption",
+      "format_key": "caption_srt",
+      "aspect_ratio": "1:1",
+      "resolution": "N/A",
+      "planned_output_path": "renders/pkg-example-001/captions_en.srt"
+    },
+    {
+      "kind": "caption",
+      "format_key": "caption_vtt",
+      "aspect_ratio": "1:1",
+      "resolution": "N/A",
+      "planned_output_path": "renders/pkg-example-001/captions_en.vtt"
+    }
+  ],
+  "asset_plan": {
+    "video": {
+      "count": 1,
+      "variants": [
+        {
+          "format_key": "landscape_1920x1080_16x9",
+          "planned_output_path": "renders/pkg-example-001/video_1920x1080_h264.mp4"
+        }
+      ]
+    },
+    "thumbnails": {
+      "count": 1,
+      "variants": [
+        {
+          "planned_output_path": "renders/pkg-example-001/thumbnail_1280x720.jpg"
+        }
+      ]
+    },
+    "captions": {
+      "count": 2,
+      "formats": [
+        "srt",
+        "vtt"
+      ],
+      "variants": [
+        {
+          "format": "srt",
+          "planned_output_path": "renders/pkg-example-001/captions_en.srt"
+        },
+        {
+          "format": "vtt",
+          "planned_output_path": "renders/pkg-example-001/captions_en.vtt"
+        }
+      ]
+    }
+  },
+  "validation": {
+    "ready_for_render": false,
+    "ready_for_upload": false,
+    "blocking_reasons": [
+      "Real rendering not implemented in VO-3B"
+    ],
+    "warnings": [
+      "Plan state is 'planned' but not yet executed",
+      "Output files are placeholders only"
+    ]
+  },
+  "provenance": {
+    "generated_by": "VO-3B createLocalRenderPlanFromPackageDraft",
+    "source_package_id": "pkg-example-001",
+    "checksum": "sha256:abc123def456..."
+  }
+}

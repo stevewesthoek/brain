@@ -1569,3 +1569,265 @@ All timelines assume feedback and iteration; adjust as needed.
 
 **Next Phase (VO-3B):**
 Implement local render planning and manifest generation (still dry-run/no FFmpeg execution unless explicitly approved later). Prepare for actual media validation contracts when render pipeline is ready.
+
+---
+
+## VO-3B Foundation: Local Render Planning & Production Manifest (2026-05-11) ✅
+
+**Goal:** Define how package drafts become render plans with target outputs, without executing rendering.
+
+**Scope:** Planning layer only. No FFmpeg, no file creation, no actual rendering. `ready_for_render` and `ready_for_upload` remain `false`.
+
+### VO-3B: Render Plan Schema & TypeScript Types
+
+**Schema:** `operations/specs/video-orchestrator/render-plan.schema.json`
+- **Required fields:** schema_version (const "1.0"), render_plan_id, package_id, project_id, platform (8 platforms), dry_run (const true), plan_state (draft|blocked|planned), created_at
+- **render_targets:** Array of planned outputs (video, thumbnail, caption, metadata)
+  - kind (video|thumbnail|caption|metadata)
+  - format_key (reference to format-specs.json)
+  - aspect_ratio (16:9|9:16|1:1|4:5)
+  - resolution (e.g., "1920x1080")
+  - planned_output_path (relative placeholders only, e.g., "renders/pkg-123/video_1920x1080.mp4")
+  - expected_bitrate_kbps, expected_duration_seconds, safe_zone_profile (optional)
+- **asset_plan:** Summary of planned assets
+  - video: count + variants (format_key + planned_output_path)
+  - thumbnails: count + variants
+  - captions: count + formats + variants (each variant: format + planned_output_path)
+- **validation:** Always has ready_for_render=false, ready_for_upload=false, blocking_reasons, warnings
+- **provenance:** generated_by ("VO-3B createLocalRenderPlanFromPackageDraft"), source_package_id, checksum
+
+**Safety constraints:**
+- All paths must be relative (no `/`, no `..`, no URLs, no credentials)
+- Forbidden patterns blocked (access_token, refresh_token, Bearer, keychain://, etc.)
+- Paths validated for: absolute paths (rejected), URL detection (rejected), traversal (rejected)
+
+**Example:** `operations/specs/video-orchestrator/examples/render-plan.example.json`
+- YouTube render plan for "pkg-example-001"
+- 4 render targets: video (1920×1080, H.264, 5Mbps), thumbnail (1280×720), captions (SRT + VTT)
+- Asset plan matches targets
+- Validation: ready_for_render=false, ready_for_upload=false, blocking_reasons list planning-only implementation
+
+**TypeScript types added to video-orchestrator-jobs.ts:**
+```typescript
+type AspectRatio = "16:9" | "9:16" | "1:1" | "4:5";
+type SafeZoneProfile = "desktop_landscape" | "mobile_vertical" | "square" | "portrait";
+type RenderTargetKind = "video" | "thumbnail" | "caption" | "metadata";
+type PlanState = "draft" | "blocked" | "planned";
+
+interface RenderTarget { kind, format_key, aspect_ratio, resolution, planned_output_path, ... }
+interface AssetVariant { format_key?, planned_output_path }
+interface CaptionVariant { format: "srt"|"vtt"|"json", planned_output_path }
+interface VideoAssetPlan { count, variants? }
+interface ThumbnailAssetPlan { count, variants? }
+interface CaptionAssetPlan { count, formats?, variants? }
+interface AssetPlan { video, thumbnails, captions }
+interface RenderPlanValidation { ready_for_render: false, ready_for_upload: false, blocking_reasons, warnings }
+interface RenderPlanProvenance { generated_by, source_package_id, checksum? }
+interface RenderPlan { schema_version: "1.0", render_plan_id, package_id, project_id, platform, dry_run: true, plan_state, created_at, render_targets, asset_plan, validation, provenance }
+interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
+```
+
+### VO-3B: Render Plan Functions
+
+**Validation:**
+- `validateRenderPlan(plan: unknown): RenderPlanValidationResult`
+  - Validates all required fields
+  - Checks schema_version = "1.0"
+  - Validates render_plan_id format (lowercase alphanumeric)
+  - Checks platform is valid (8 allowed platforms)
+  - Ensures dry_run = true (planning only)
+  - Validates plan_state in (draft|blocked|planned)
+  - Validates created_at is ISO 8601
+  - Validates render_targets array (non-empty, each target valid)
+  - Validates asset_plan structure (video.count >= 1, thumbnails/captions >= 0)
+  - Checks validation object (ready_for_render=false, ready_for_upload=false)
+  - Checks provenance fields
+  - Recursively blocks forbidden patterns (credentials, tokens, keychain://, Bearer)
+  - Returns ok=false if any blocking_reasons
+  - Adds warnings for draft state or planning-only notices
+
+**Creation:**
+- `createLocalRenderPlanFromPackageDraft(input: CreateRenderPlanInput): RenderPlan`
+  - Input: draft (ProductionPackageDraft), platform (string), dryRun (true only)
+  - Validates inputs and platform
+  - Generates render_plan_id from package_id and platform
+  - Builds render_targets based on draft metadata (thumbnail_required, captions_required)
+  - Always includes video target (1920×1080, H.264, 5Mbps, 180s expected duration)
+  - Conditionally includes thumbnail (if draft.assets.metadata.thumbnail_required)
+  - Conditionally includes captions (if draft.assets.metadata.captions_required)
+  - Builds asset_plan with matching counts and variants
+  - Creates render plan with plan_state="planned"
+  - Sets validation.ready_for_render=false, ready_for_upload=false
+  - Validates created plan before returning
+  - Throws if validation fails
+
+**Persistence:**
+- `saveRenderPlan(renderPlan: RenderPlan): void`
+  - Validates plan before saving
+  - Loads render-plans.json store
+  - Updates existing or appends new plan
+  - Saves store
+  - Logs event
+- `loadRenderPlan(renderPlanId: string): RenderPlan | null`
+  - Loads render-plans.json store
+  - Returns matching plan or null
+- `listRenderPlans(options?: { package_id?, platform? }): RenderPlan[]`
+  - Loads store
+  - Filters by package_id and/or platform if provided
+  - Returns array
+- `deleteRenderPlan(renderPlanId: string): boolean`
+  - Removes plan from store
+  - Returns true if found and deleted, false otherwise
+  - Logs event
+
+**Readiness Reporting:**
+- `generateRenderPlanReadinessReport(renderPlanId: string): RenderPlanReadinessReport | null`
+  - Interface: render_plan_id, ready_for_render (false), ready_for_upload (false), plan_state, blocking_reasons, warnings, summary
+  - Loads plan by renderPlanId
+  - Returns null if not found
+  - Includes blocking_reasons from plan.validation
+  - Adds blocking reason if plan_state is "draft" or "blocked"
+  - Builds human-readable summary based on plan_state
+  - Returns comprehensive readiness assessment
+
+**Store Structure:**
+```json
+{
+  "schema_version": "1.0",
+  "created_at": "ISO 8601",
+  "plans": [ /* array of RenderPlan objects */ ]
+}
+```
+- File path: `~/.local/probot/video-orchestrator/render-plans.json`
+- Test override: PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR environment variable
+
+### VO-3B: Safety Guarantees
+
+**Paths Always Relative:**
+- No absolute paths (must not start with `/`)
+- No URLs (must not contain `://` or `http`)
+- No traversal (must not contain `..`)
+- Validation rejects all three patterns
+
+**Forbidden Patterns Blocked:**
+- credential_reference, credentialreference
+- keychain://
+- access_token, refresh_token, client_secret, code_verifier, authorization_code
+- bearer, private_key, password, token
+- Recursive scan catches nested patterns (e.g., in render_targets[i].planned_output_path)
+
+**No Raw Input Echoing:**
+- Error messages never include actual paths or values
+- Error messages use generic labels ("platform must be valid", "path must be relative", etc.)
+- Follows VO-2F pattern: safeValidationLabel() prevents leakage
+
+**Immutable Flags:**
+- ready_for_render always false in VO-3B (const false in schema)
+- ready_for_upload always false in VO-3B (const false in schema)
+- dry_run always true in VO-3B (const true in schema)
+- Validation enforces all three; storage rejects violations
+
+### VO-3B: Test Coverage (24 Tests)
+
+**VO-3B-1–7:** Creation & Validation
+- VO-3B-1: Create render plan from package draft
+- VO-3B-2: Render plan schema version must be 1.0
+- VO-3B-3: Invalid platform blocks render plan creation
+- VO-3B-4: Render plan requires dryRun=true
+- VO-3B-5: Render plan paths are relative, not absolute
+- VO-3B-6: Render plan ready_for_render is always false
+- VO-3B-7: Render plan includes blocking_reasons
+
+**VO-3B-8–10:** Persistence
+- VO-3B-8: Save and load render plan
+- VO-3B-9: List render plans by package_id
+- VO-3B-10: Delete render plan
+
+**VO-3B-11–14:** Validation Details
+- VO-3B-11: Render plan validation rejects invalid platform
+- VO-3B-12: Render plan validation requires dry_run=true
+- VO-3B-13: Render plan validation rejects absolute paths
+- VO-3B-14: Render plan validation rejects URL paths
+
+**VO-3B-15–17:** Readiness & Provenance
+- VO-3B-15: Generate render plan readiness report
+- VO-3B-16: Save render plan validates before storing
+- VO-3B-17: Render plan contains provenance
+
+**VO-3B-18–24:** Edge Cases & Multi-Platform
+- VO-3B-18: Render plan with thumbnails required
+- VO-3B-19: Render plan with captions required
+- VO-3B-20: Render plan asset counts match targets
+- VO-3B-21: Render plan validation rejects forbidden patterns
+- VO-3B-22: List render plans by platform
+- VO-3B-23: Render plan for multiple platforms
+- VO-3B-24: Load non-existent render plan returns null
+
+**All 24 tests passing.** (288 total tests: 226 existing VO-1–VO-2E + 34 VO-2F + 24 VO-3B + 4 hardening tests)
+
+### VO-3B: Updated Files
+
+**Created:**
+- `operations/specs/video-orchestrator/render-plan.schema.json` (4.8KB JSON schema)
+- `operations/specs/video-orchestrator/examples/render-plan.example.json` (Safe example with fake data)
+
+**Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts`
+  - Added VO-3B types (AspectRatio, RenderTarget, AssetPlan, RenderPlan, etc.)
+  - Added store functions (getRenderPlansPath, loadRenderPlansStore, saveRenderPlansStore)
+  - Added CRUD operations (saveRenderPlan, loadRenderPlan, listRenderPlans, deleteRenderPlan)
+  - Added createLocalRenderPlanFromPackageDraft (500 lines)
+  - Added validateRenderPlan (300 lines)
+  - Added generateRenderPlanReadinessReport
+  - Exported RenderPlan types and all functions
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts`
+  - Added VO-3B imports
+  - Added 24 comprehensive tests (1,500+ lines)
+
+### VO-3B: What It Does
+
+✅ Plan render operations (no execution)
+✅ Define output paths and formats
+✅ Calculate asset counts and variants
+✅ Persist plans locally in JSON
+✅ Validate paths (relative, no traversal, no credentials)
+✅ Generate readiness reports
+✅ Support multi-platform planning
+✅ Enforce immutable safety flags (dry_run=true, ready_for_render=false, ready_for_upload=false)
+✅ Block forbidden patterns recursively
+✅ Prevent credential leakage in error messages
+
+### VO-3B: What It Does NOT Do
+
+❌ Execute FFmpeg or any rendering
+❌ Create actual output files
+❌ Call platform APIs
+❌ Upload to any platform
+❌ Check if source files exist
+❌ Perform real media validation (shape, codec, format)
+❌ Generate video, thumbnails, or captions
+❌ Check disk space or system resources
+❌ Support non-dry-run mode (dryRun must be true)
+
+### VO-3B: Next Steps (VO-3C+)
+
+**VO-3C: Real Render Execution** — Implement actual FFmpeg rendering based on render plans
+- Execute render plans with real FFmpeg composition
+- Create actual output files to planned_output_path
+- Verify files meet expected specifications (duration, resolution, codec)
+- Update render plan state to track execution progress
+
+**VO-3D: Render Status Tracking** — Track render job status
+- Queuing (pending, in_progress, completed, failed)
+- Progress reporting (percentage complete, ETA)
+- Error recovery and retry logic
+
+**VO-3E: Upload Orchestration** — Implement platform upload based on rendered assets
+- Prepare upload manifests for each platform
+- Call platform adapters to upload videos, thumbnails, metadata
+- Set ready_for_upload=true when all uploads complete
+
+**VO-3F: Multi-Account Distribution** — Extend to multiple accounts per platform
+- Account registry lookup
+- Per-account cooldowns and duplicate prevention
+- Queuing and scheduling across accounts

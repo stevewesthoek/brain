@@ -1744,6 +1744,583 @@ export function attachContentBriefToPackageDraft(
   return updated;
 }
 
+// ─── VO-3B: Local Render Planning and Production Manifest ──────────────────
+
+export type AspectRatio = "16:9" | "9:16" | "1:1" | "4:5";
+export type SafeZoneProfile = "desktop_landscape" | "mobile_vertical" | "square" | "portrait";
+export type RenderTargetKind = "video" | "thumbnail" | "caption" | "metadata";
+export type PlanState = "draft" | "blocked" | "planned";
+
+export interface RenderTarget {
+  kind: RenderTargetKind;
+  format_key: string;
+  aspect_ratio: AspectRatio;
+  resolution: string;
+  planned_output_path: string;
+  expected_bitrate_kbps?: number;
+  expected_duration_seconds?: number;
+  safe_zone_profile?: SafeZoneProfile;
+}
+
+export interface AssetVariant {
+  format_key?: string;
+  planned_output_path: string;
+}
+
+export interface CaptionVariant {
+  format: "srt" | "vtt" | "json";
+  planned_output_path: string;
+}
+
+export interface VideoAssetPlan {
+  count: number;
+  variants?: AssetVariant[];
+}
+
+export interface ThumbnailAssetPlan {
+  count: number;
+  variants?: AssetVariant[];
+}
+
+export interface CaptionAssetPlan {
+  count: number;
+  formats?: ("srt" | "vtt" | "json")[];
+  variants?: CaptionVariant[];
+}
+
+export interface AssetPlan {
+  video: VideoAssetPlan;
+  thumbnails: ThumbnailAssetPlan;
+  captions: CaptionAssetPlan;
+}
+
+export interface RenderPlanValidation {
+  ready_for_render: false;
+  ready_for_upload: false;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RenderPlanProvenance {
+  generated_by: string;
+  source_package_id: string;
+  checksum?: string;
+}
+
+export interface RenderPlan {
+  schema_version: "1.0";
+  render_plan_id: string;
+  package_id: string;
+  project_id: string;
+  platform: string;
+  dry_run: true;
+  plan_state: PlanState;
+  created_at: string;
+  render_targets: RenderTarget[];
+  asset_plan: AssetPlan;
+  validation: RenderPlanValidation;
+  provenance: RenderPlanProvenance;
+}
+
+export interface RenderPlanValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface CreateRenderPlanInput {
+  draft: ProductionPackageDraft;
+  platform: string;
+  dryRun: true;
+}
+
+// ─── VO-3B: Render Plan Store ───────────────────────────────────────────────
+
+function getRenderPlansPath(): string {
+  return path.join(getRuntimeDir(), "render-plans.json");
+}
+
+interface RenderPlansStore {
+  schema_version: "1.0";
+  created_at: string;
+  plans: RenderPlan[];
+}
+
+function loadRenderPlansStore(): RenderPlansStore {
+  try {
+    const storePath = getRenderPlansPath();
+    if (fs.existsSync(storePath)) {
+      const data = JSON.parse(fs.readFileSync(storePath, "utf8")) as RenderPlansStore;
+      return data;
+    }
+  } catch (err) {
+    console.warn("Failed to load render plans store:", err);
+  }
+  return {
+    schema_version: "1.0",
+    created_at: new Date().toISOString(),
+    plans: [],
+  };
+}
+
+function saveRenderPlansStore(store: RenderPlansStore): void {
+  try {
+    const storePath = getRenderPlansPath();
+    fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+  } catch (err) {
+    console.warn("Failed to save render plans store:", err);
+  }
+}
+
+export function saveRenderPlan(renderPlan: RenderPlan): void {
+  // Validate before saving
+  const validation = validateRenderPlan(renderPlan);
+  if (!validation.ok) {
+    throw new Error(`Render plan validation failed: ${validation.blocking_reasons.join("; ")}`);
+  }
+
+  const store = loadRenderPlansStore();
+
+  // Check if plan already exists and update or add
+  const existingIndex = store.plans.findIndex((p) => p.render_plan_id === renderPlan.render_plan_id);
+  if (existingIndex >= 0) {
+    store.plans[existingIndex] = renderPlan;
+  } else {
+    store.plans.push(renderPlan);
+  }
+
+  saveRenderPlansStore(store);
+  logSchedulerEvent("Saved render plan", { render_plan_id: renderPlan.render_plan_id });
+}
+
+export function loadRenderPlan(renderPlanId: string): RenderPlan | null {
+  const store = loadRenderPlansStore();
+  return store.plans.find((p) => p.render_plan_id === renderPlanId) ?? null;
+}
+
+export function listRenderPlans(options?: { package_id?: string; platform?: string }): RenderPlan[] {
+  const store = loadRenderPlansStore();
+  let plans = [...store.plans];
+
+  if (options?.package_id) {
+    plans = plans.filter((p) => p.package_id === options.package_id);
+  }
+  if (options?.platform) {
+    plans = plans.filter((p) => p.platform === options.platform);
+  }
+
+  return plans;
+}
+
+export function deleteRenderPlan(renderPlanId: string): boolean {
+  const store = loadRenderPlansStore();
+  const index = store.plans.findIndex((p) => p.render_plan_id === renderPlanId);
+  if (index >= 0) {
+    store.plans.splice(index, 1);
+    saveRenderPlansStore(store);
+    logSchedulerEvent("Deleted render plan", { render_plan_id: renderPlanId });
+    return true;
+  }
+  return false;
+}
+
+export interface RenderPlanReadinessReport {
+  render_plan_id: string;
+  ready_for_render: boolean;
+  ready_for_upload: boolean;
+  plan_state: PlanState;
+  blocking_reasons: string[];
+  warnings: string[];
+  summary: string;
+}
+
+export function generateRenderPlanReadinessReport(
+  renderPlanId: string
+): RenderPlanReadinessReport | null {
+  const plan = loadRenderPlan(renderPlanId);
+  if (!plan) {
+    return null;
+  }
+
+  const validation = plan.validation;
+  const blockingReasons = [...validation.blocking_reasons];
+  const warnings = [...validation.warnings];
+
+  // Additional readiness checks based on plan state
+  if (plan.plan_state === "draft") {
+    blockingReasons.push("Plan is still in draft state");
+  } else if (plan.plan_state === "blocked") {
+    blockingReasons.push("Plan is blocked");
+  }
+
+  // Build summary
+  let summary = "";
+  if (plan.plan_state === "draft") {
+    summary = "Plan is in draft state. Finalize to proceed.";
+  } else if (plan.plan_state === "blocked") {
+    summary = `Plan is blocked. Fix: ${blockingReasons.slice(0, 2).join("; ")}`;
+  } else if (plan.plan_state === "planned") {
+    summary = `Planned for ${plan.platform}. Ready for VO-3C+ rendering.`;
+  }
+
+  return {
+    render_plan_id: plan.render_plan_id,
+    ready_for_render: false,
+    ready_for_upload: false,
+    plan_state: plan.plan_state,
+    blocking_reasons: blockingReasons,
+    warnings,
+    summary,
+  };
+}
+
+export function createLocalRenderPlanFromPackageDraft(
+  input: CreateRenderPlanInput
+): RenderPlan {
+  // VO-3B only supports dry-run
+  if (input.dryRun !== true) {
+    throw new Error("VO-3B createLocalRenderPlanFromPackageDraft requires dryRun=true");
+  }
+
+  // Validate draft exists
+  if (!input.draft || typeof input.draft !== "object") {
+    throw new Error("Package draft is required");
+  }
+
+  // Validate platform
+  const validPlatforms = [
+    "youtube",
+    "youtube_shorts",
+    "tiktok",
+    "instagram",
+    "facebook",
+    "linkedin",
+    "bluesky",
+    "x",
+  ];
+  if (!validPlatforms.includes(input.platform)) {
+    throw new Error(`Invalid platform: ${input.platform}`);
+  }
+
+  const draft = input.draft;
+  const renderPlanId = `plan-${draft.package_id}-${input.platform}`;
+
+  // Build render targets based on platform and draft metadata
+  const renderTargets: RenderTarget[] = [];
+
+  // Video target (always required)
+  renderTargets.push({
+    kind: "video",
+    format_key: `landscape_1920x1080_16x9`,
+    aspect_ratio: "16:9",
+    resolution: "1920x1080",
+    planned_output_path: `renders/${draft.package_id}/video_1920x1080_h264.mp4`,
+    expected_bitrate_kbps: 5000,
+    expected_duration_seconds: 180,
+    safe_zone_profile: "desktop_landscape",
+  });
+
+  // Thumbnail target if required
+  if (draft.assets?.metadata?.thumbnail_required ?? false) {
+    renderTargets.push({
+      kind: "thumbnail",
+      format_key: "youtube_thumbnail_1280x720",
+      aspect_ratio: "16:9",
+      resolution: "1280x720",
+      planned_output_path: `renders/${draft.package_id}/thumbnail_1280x720.jpg`,
+    });
+  }
+
+  // Caption targets if required
+  if (draft.assets?.metadata?.captions_required ?? false) {
+    renderTargets.push({
+      kind: "caption",
+      format_key: "caption_srt",
+      aspect_ratio: "1:1",
+      resolution: "N/A",
+      planned_output_path: `renders/${draft.package_id}/captions_en.srt`,
+    });
+    renderTargets.push({
+      kind: "caption",
+      format_key: "caption_vtt",
+      aspect_ratio: "1:1",
+      resolution: "N/A",
+      planned_output_path: `renders/${draft.package_id}/captions_en.vtt`,
+    });
+  }
+
+  // Build asset plan
+  const assetPlan: AssetPlan = {
+    video: {
+      count: 1,
+      variants: [
+        {
+          format_key: "landscape_1920x1080_16x9",
+          planned_output_path: `renders/${draft.package_id}/video_1920x1080_h264.mp4`,
+        },
+      ],
+    },
+    thumbnails: {
+      count: draft.assets?.metadata?.thumbnail_required ? 1 : 0,
+      variants: draft.assets?.metadata?.thumbnail_required
+        ? [
+            {
+              planned_output_path: `renders/${draft.package_id}/thumbnail_1280x720.jpg`,
+            },
+          ]
+        : [],
+    },
+    captions: {
+      count: draft.assets?.metadata?.captions_required ? 2 : 0,
+      formats: draft.assets?.metadata?.captions_required ? ["srt", "vtt"] : [],
+      variants: draft.assets?.metadata?.captions_required
+        ? [
+            {
+              format: "srt",
+              planned_output_path: `renders/${draft.package_id}/captions_en.srt`,
+            },
+            {
+              format: "vtt",
+              planned_output_path: `renders/${draft.package_id}/captions_en.vtt`,
+            },
+          ]
+        : [],
+    },
+  };
+
+  // Create render plan
+  const renderPlan: RenderPlan = {
+    schema_version: "1.0",
+    render_plan_id: renderPlanId,
+    package_id: draft.package_id,
+    project_id: draft.project_id,
+    platform: input.platform,
+    dry_run: true,
+    plan_state: "planned",
+    created_at: new Date().toISOString(),
+    render_targets: renderTargets,
+    asset_plan: assetPlan,
+    validation: {
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: ["Real rendering not implemented in VO-3B"],
+      warnings: ["Output files are placeholders only"],
+    },
+    provenance: {
+      generated_by: "VO-3B createLocalRenderPlanFromPackageDraft",
+      source_package_id: draft.package_id,
+      checksum: `sha256:${crypto.randomBytes(16).toString("hex")}`,
+    },
+  };
+
+  // Validate the created plan
+  const validation = validateRenderPlan(renderPlan);
+  if (!validation.ok) {
+    throw new Error(`Created render plan validation failed: ${validation.blocking_reasons.join("; ")}`);
+  }
+
+  return renderPlan;
+}
+
+export function validateRenderPlan(plan: unknown): RenderPlanValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+
+  // Type guard
+  if (typeof plan !== "object" || plan === null) {
+    blocking_reasons.push("Render plan must be an object");
+    return { ok: false, blocking_reasons, warnings };
+  }
+
+  const p = plan as Record<string, unknown>;
+
+  // Required fields
+  if (typeof p.schema_version !== "string" || p.schema_version !== "1.0") {
+    blocking_reasons.push("schema_version must be '1.0'");
+  }
+  if (typeof p.render_plan_id !== "string" || !/^[a-z0-9_-]+$/.test(p.render_plan_id)) {
+    blocking_reasons.push("render_plan_id must be lowercase alphanumeric");
+  }
+  if (typeof p.package_id !== "string") {
+    blocking_reasons.push("package_id is required");
+  }
+  if (typeof p.project_id !== "string") {
+    blocking_reasons.push("project_id is required");
+  }
+
+  // Platform validation
+  const validPlatforms = [
+    "youtube",
+    "youtube_shorts",
+    "tiktok",
+    "instagram",
+    "facebook",
+    "linkedin",
+    "bluesky",
+    "x",
+  ];
+  if (typeof p.platform !== "string" || !validPlatforms.includes(p.platform)) {
+    blocking_reasons.push("platform must be valid");
+  }
+
+  // Dry run must be true
+  if (p.dry_run !== true) {
+    blocking_reasons.push("dry_run must be true (VO-3B is planning only)");
+  }
+
+  // Plan state validation
+  const validPlanStates = ["draft", "blocked", "planned"];
+  if (typeof p.plan_state !== "string" || !validPlanStates.includes(p.plan_state)) {
+    blocking_reasons.push("plan_state must be 'draft', 'blocked', or 'planned'");
+  } else if (p.plan_state === "draft") {
+    warnings.push("Plan state is 'draft' but not yet finalized");
+  }
+
+  // created_at validation
+  if (typeof p.created_at !== "string") {
+    blocking_reasons.push("created_at must be ISO 8601 timestamp");
+  } else {
+    try {
+      new Date(p.created_at);
+    } catch {
+      blocking_reasons.push("created_at must be valid ISO 8601 timestamp");
+    }
+  }
+
+  // Render targets validation
+  if (!Array.isArray(p.render_targets)) {
+    blocking_reasons.push("render_targets must be an array");
+  } else if (p.render_targets.length === 0) {
+    blocking_reasons.push("render_targets must have at least one item");
+  } else {
+    for (let i = 0; i < p.render_targets.length; i++) {
+      const target = p.render_targets[i];
+      if (typeof target !== "object" || target === null) {
+        blocking_reasons.push(`render_targets[${i}] must be an object`);
+        continue;
+      }
+      const t = target as Record<string, unknown>;
+
+      // Required fields
+      const validKinds = ["video", "thumbnail", "caption", "metadata"];
+      if (typeof t.kind !== "string" || !validKinds.includes(t.kind)) {
+        blocking_reasons.push(`render_targets[${i}].kind must be valid`);
+      }
+      if (typeof t.format_key !== "string") {
+        blocking_reasons.push(`render_targets[${i}].format_key is required`);
+      }
+      const validAspectRatios = ["16:9", "9:16", "1:1", "4:5"];
+      if (typeof t.aspect_ratio !== "string" || !validAspectRatios.includes(t.aspect_ratio)) {
+        blocking_reasons.push(`render_targets[${i}].aspect_ratio must be valid`);
+      }
+      if (typeof t.resolution !== "string") {
+        blocking_reasons.push(`render_targets[${i}].resolution is required`);
+      }
+      if (typeof t.planned_output_path !== "string") {
+        blocking_reasons.push(`render_targets[${i}].planned_output_path is required`);
+      } else {
+        // Path must be relative (no /, no .., no absolute paths)
+        if (t.planned_output_path.startsWith("/")) {
+          blocking_reasons.push(`render_targets[${i}].planned_output_path must be relative, not absolute`);
+        }
+        if (t.planned_output_path.includes("..")) {
+          blocking_reasons.push(`render_targets[${i}].planned_output_path must not contain traversal (..) patterns`);
+        }
+        if (t.planned_output_path.includes("://") || t.planned_output_path.includes("http")) {
+          blocking_reasons.push(`render_targets[${i}].planned_output_path must be local, not a URL`);
+        }
+        // Check for credential patterns
+        if (isForbiddenStringPattern(t.planned_output_path)) {
+          blocking_reasons.push(`render_targets[${i}].planned_output_path contains forbidden pattern`);
+        }
+      }
+    }
+  }
+
+  // Asset plan validation
+  if (typeof p.asset_plan !== "object" || p.asset_plan === null) {
+    blocking_reasons.push("asset_plan is required");
+  } else {
+    const ap = p.asset_plan as Record<string, unknown>;
+
+    // Video
+    if (typeof ap.video !== "object" || ap.video === null) {
+      blocking_reasons.push("asset_plan.video is required");
+    } else {
+      const v = ap.video as Record<string, unknown>;
+      if (typeof v.count !== "number" || v.count < 1) {
+        blocking_reasons.push("asset_plan.video.count must be >= 1");
+      }
+    }
+
+    // Thumbnails
+    if (typeof ap.thumbnails !== "object" || ap.thumbnails === null) {
+      blocking_reasons.push("asset_plan.thumbnails is required");
+    } else {
+      const th = ap.thumbnails as Record<string, unknown>;
+      if (typeof th.count !== "number" || th.count < 0) {
+        blocking_reasons.push("asset_plan.thumbnails.count must be >= 0");
+      }
+    }
+
+    // Captions
+    if (typeof ap.captions !== "object" || ap.captions === null) {
+      blocking_reasons.push("asset_plan.captions is required");
+    } else {
+      const c = ap.captions as Record<string, unknown>;
+      if (typeof c.count !== "number" || c.count < 0) {
+        blocking_reasons.push("asset_plan.captions.count must be >= 0");
+      }
+    }
+  }
+
+  // Validation structure
+  if (typeof p.validation !== "object" || p.validation === null) {
+    blocking_reasons.push("validation is required");
+  } else {
+    const v = p.validation as Record<string, unknown>;
+    if (v.ready_for_render !== false) {
+      blocking_reasons.push("validation.ready_for_render must be false (VO-3B is planning only)");
+    }
+    if (v.ready_for_upload !== false) {
+      blocking_reasons.push("validation.ready_for_upload must be false (upload deferred to VO-3E+)");
+    }
+    if (!Array.isArray(v.blocking_reasons)) {
+      blocking_reasons.push("validation.blocking_reasons must be an array");
+    }
+    if (!Array.isArray(v.warnings)) {
+      blocking_reasons.push("validation.warnings must be an array");
+    }
+  }
+
+  // Provenance
+  if (typeof p.provenance !== "object" || p.provenance === null) {
+    blocking_reasons.push("provenance is required");
+  } else {
+    const prov = p.provenance as Record<string, unknown>;
+    if (typeof prov.generated_by !== "string") {
+      blocking_reasons.push("provenance.generated_by is required");
+    }
+    if (typeof prov.source_package_id !== "string") {
+      blocking_reasons.push("provenance.source_package_id is required");
+    }
+  }
+
+  // Check for forbidden patterns in the entire structure
+  const forbiddenPatternReasons = recursivelyCheckForForbiddenPatterns(p);
+  blocking_reasons.push(...forbiddenPatternReasons);
+
+  // If no blocking reasons, plan is ok
+  const ok = blocking_reasons.length === 0;
+
+  // Add blocking reason for planning only
+  if (ok && p.plan_state !== "planned") {
+    warnings.push("Real rendering not implemented in VO-3B");
+  }
+
+  return { ok, blocking_reasons, warnings };
+}
+
 // Export internal functions for testing and CLI
 export {
   logSchedulerEvent,

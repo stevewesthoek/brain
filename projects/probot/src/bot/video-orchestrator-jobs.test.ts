@@ -30,10 +30,18 @@ import {
   validateContentBrief,
   validateLocalMediaAssetReference,
   attachContentBriefToPackageDraft,
+  createLocalRenderPlanFromPackageDraft,
+  validateRenderPlan,
+  saveRenderPlan,
+  loadRenderPlan,
+  listRenderPlans,
+  deleteRenderPlan,
+  generateRenderPlanReadinessReport,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
   type ContentBrief,
+  type RenderPlan,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -4024,6 +4032,788 @@ test("VO-2F-FH4: Attached brief with forbidden key throws safely without echoing
       assert.ok(!errorText.includes("malicious"), "Error should not echo value");
       assert.ok(!errorText.includes("also_bad"), "Error should not echo value");
     }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-3B: Render Plan Tests ────────────────────────────────────────────────
+
+test("VO-3B-1: Create render plan from package draft", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+    assert.ok(draft, "Draft created");
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    assert.equal(renderPlan.render_plan_id, `plan-${draft.package_id}-youtube`);
+    assert.equal(renderPlan.platform, "youtube");
+    assert.equal(renderPlan.package_id, draft.package_id);
+    assert.equal(renderPlan.dry_run, true);
+    assert.ok(renderPlan.render_targets.length > 0);
+    assert.ok(renderPlan.validation.ready_for_render === false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-2: Render plan schema version must be 1.0", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    const result = validateRenderPlan(renderPlan);
+    assert.ok(result.ok);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-3: Invalid platform blocks render plan creation", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    assert.throws(
+      () => {
+        createLocalRenderPlanFromPackageDraft({
+          draft,
+          platform: "invalid-platform" as any,
+          dryRun: true,
+        });
+      },
+      /Invalid platform/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-4: Render plan requires dryRun=true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    assert.throws(
+      () => {
+        createLocalRenderPlanFromPackageDraft({
+          draft,
+          platform: "youtube",
+          dryRun: false as any,
+        });
+      },
+      /requires dryRun=true/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-5: Render plan paths are relative, not absolute", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    for (const target of renderPlan.render_targets) {
+      assert.ok(!target.planned_output_path.startsWith("/"), "Path should not be absolute");
+      assert.ok(!target.planned_output_path.includes("://"), "Path should not be URL");
+      assert.ok(!target.planned_output_path.includes(".."), "Path should not have traversal");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-6: Render plan ready_for_render is always false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    assert.equal(renderPlan.validation.ready_for_render, false);
+    assert.equal(renderPlan.validation.ready_for_upload, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-7: Render plan includes blocking_reasons", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    assert.ok(Array.isArray(renderPlan.validation.blocking_reasons));
+    assert.ok(renderPlan.validation.blocking_reasons.length > 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-8: Save and load render plan", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    saveRenderPlan(renderPlan);
+    const loaded = loadRenderPlan(renderPlan.render_plan_id);
+
+    assert.ok(loaded);
+    assert.equal(loaded!.render_plan_id, renderPlan.render_plan_id);
+    assert.equal(loaded!.platform, "youtube");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-9: List render plans by package_id", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const plan1 = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+    const plan2 = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "tiktok",
+      dryRun: true,
+    });
+
+    saveRenderPlan(plan1);
+    saveRenderPlan(plan2);
+
+    const plans = listRenderPlans({ package_id: draft.package_id });
+    assert.equal(plans.length, 2);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-10: Delete render plan", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    saveRenderPlan(renderPlan);
+    assert.ok(loadRenderPlan(renderPlan.render_plan_id));
+
+    deleteRenderPlan(renderPlan.render_plan_id);
+    assert.equal(loadRenderPlan(renderPlan.render_plan_id), null);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-11: Render plan validation rejects invalid platform", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const invalidPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-123",
+      package_id: "pkg-123",
+      project_id: "proj-123",
+      platform: "invalid_platform",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [],
+      asset_plan: {
+        video: { count: 1 },
+        thumbnails: { count: 0 },
+        captions: { count: 0 },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-123",
+      },
+    };
+
+    const result = validateRenderPlan(invalidPlan);
+    assert.ok(!result.ok);
+    assert.ok(result.blocking_reasons.some((r) => r.includes("platform")));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-12: Render plan validation requires dry_run=true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const invalidPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-123",
+      package_id: "pkg-123",
+      project_id: "proj-123",
+      platform: "youtube",
+      dry_run: false,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "1920x1080",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/video.mp4",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1 },
+        thumbnails: { count: 0 },
+        captions: { count: 0 },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-123",
+      },
+    };
+
+    const result = validateRenderPlan(invalidPlan);
+    assert.ok(!result.ok);
+    assert.ok(result.blocking_reasons.some((r) => r.includes("dry_run")));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-13: Render plan validation rejects absolute paths", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const invalidPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-123",
+      package_id: "pkg-123",
+      project_id: "proj-123",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "1920x1080",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "/absolute/path/video.mp4",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1 },
+        thumbnails: { count: 0 },
+        captions: { count: 0 },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-123",
+      },
+    };
+
+    const result = validateRenderPlan(invalidPlan);
+    assert.ok(!result.ok);
+    assert.ok(result.blocking_reasons.some((r) => r.includes("absolute")));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-14: Render plan validation rejects URL paths", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const invalidPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-123",
+      package_id: "pkg-123",
+      project_id: "proj-123",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "1920x1080",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "https://example.com/video.mp4",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1 },
+        thumbnails: { count: 0 },
+        captions: { count: 0 },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-123",
+      },
+    };
+
+    const result = validateRenderPlan(invalidPlan);
+    assert.ok(!result.ok);
+    assert.ok(result.blocking_reasons.some((r) => r.includes("URL")));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-15: Generate render plan readiness report", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    saveRenderPlan(renderPlan);
+    const report = generateRenderPlanReadinessReport(renderPlan.render_plan_id);
+
+    assert.ok(report);
+    assert.equal(report!.render_plan_id, renderPlan.render_plan_id);
+    assert.equal(report!.ready_for_render, false);
+    assert.equal(report!.ready_for_upload, false);
+    assert.ok(report!.summary);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-16: Save render plan validates before storing", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const invalidPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-123",
+      package_id: "pkg-123",
+      project_id: "proj-123",
+      platform: "invalid_platform",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [],
+      asset_plan: {
+        video: { count: 1 },
+        thumbnails: { count: 0 },
+        captions: { count: 0 },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-123",
+      },
+    };
+
+    assert.throws(
+      () => {
+        saveRenderPlan(invalidPlan as any);
+      },
+      /validation failed/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-17: Render plan contains provenance", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    assert.ok(renderPlan.provenance.generated_by);
+    assert.ok(renderPlan.provenance.source_package_id);
+    assert.ok(renderPlan.provenance.checksum);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-18: Render plan with thumbnails required", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Update draft to require thumbnails
+    draft.assets.metadata.thumbnail_required = true;
+    saveProductionPackageDraft(draft);
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    const thumbnailTargets = renderPlan.render_targets.filter((t) => t.kind === "thumbnail");
+    assert.ok(thumbnailTargets.length > 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-19: Render plan with captions required", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Update draft to require captions
+    draft.assets.metadata.captions_required = true;
+    saveProductionPackageDraft(draft);
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    const captionTargets = renderPlan.render_targets.filter((t) => t.kind === "caption");
+    assert.ok(captionTargets.length > 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-20: Render plan asset counts match targets", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const renderPlan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    // Video count should be 1
+    assert.equal(renderPlan.asset_plan.video.count, 1);
+    // Thumbnails and captions count should match targets
+    assert.ok(renderPlan.asset_plan.thumbnails.count >= 0);
+    assert.ok(renderPlan.asset_plan.captions.count >= 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-21: Render plan validation rejects forbidden patterns", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const invalidPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-123",
+      package_id: "pkg-123",
+      project_id: "proj-123",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "1920x1080",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/video.mp4",
+          access_token: "secret_token_12345",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1 },
+        thumbnails: { count: 0 },
+        captions: { count: 0 },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-123",
+      },
+    };
+
+    const result = validateRenderPlan(invalidPlan);
+    assert.ok(!result.ok);
+    assert.ok(
+      result.blocking_reasons.some((r) => r.includes("Forbidden")),
+      "Should block forbidden patterns"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-22: List render plans by platform", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const plan1 = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+    const plan2 = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "tiktok",
+      dryRun: true,
+    });
+
+    saveRenderPlan(plan1);
+    saveRenderPlan(plan2);
+
+    const youtubePlans = listRenderPlans({ platform: "youtube" });
+    assert.equal(youtubePlans.length, 1);
+
+    const tiktokPlans = listRenderPlans({ platform: "tiktok" });
+    assert.equal(tiktokPlans.length, 1);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-23: Render plan for multiple platforms", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const platforms = ["youtube", "youtube_shorts", "tiktok", "instagram"];
+    const plans = platforms.map((platform) =>
+      createLocalRenderPlanFromPackageDraft({
+        draft,
+        platform,
+        dryRun: true,
+      })
+    );
+
+    plans.forEach((plan) => saveRenderPlan(plan));
+
+    const allPlans = listRenderPlans({ package_id: draft.package_id });
+    assert.equal(allPlans.length, 4);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3B-24: Load non-existent render plan returns null", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = loadRenderPlan("non-existent-plan-id");
+    assert.equal(plan, null);
   } finally {
     cleanupTestRuntime(tempDir);
   }

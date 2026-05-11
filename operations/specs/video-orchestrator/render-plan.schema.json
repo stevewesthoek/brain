@@ -1,0 +1,279 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Video Orchestrator Local Render Plan (VO-3B)",
+  "description": "Render plan and production manifest foundation. Models how a package draft becomes a render plan with planned output paths. VO-3B defines planning only: no FFmpeg execution, no file creation, no rendering. ready_for_render and ready_for_upload remain false.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "render_plan_id",
+    "package_id",
+    "project_id",
+    "platform",
+    "dry_run",
+    "plan_state",
+    "created_at",
+    "render_targets",
+    "asset_plan",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version for this render plan format.",
+      "enum": ["1.0"]
+    },
+    "render_plan_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Unique identifier for this render plan. Derived from package_id."
+    },
+    "package_id": {
+      "type": "string",
+      "description": "Reference to source package draft."
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Project identifier from project distribution plan."
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "youtube",
+        "youtube_shorts",
+        "tiktok",
+        "instagram",
+        "facebook",
+        "linkedin",
+        "bluesky",
+        "x"
+      ],
+      "description": "Target platform for this render plan."
+    },
+    "dry_run": {
+      "type": "boolean",
+      "description": "Always true for VO-3B. Render plans are planning only.",
+      "const": true
+    },
+    "plan_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "planned"],
+      "description": "Draft: planning in progress. Blocked: validation failed. Planned: ready for VO-3C+ rendering."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when render plan was created."
+    },
+    "render_targets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/render_target"
+      },
+      "minItems": 1,
+      "description": "Array of planned render targets (video, thumbnail, captions, etc.)"
+    },
+    "asset_plan": {
+      "$ref": "#/definitions/asset_plan"
+    },
+    "validation": {
+      "$ref": "#/definitions/validation_result"
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["generated_by"],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "description": "Identifier of component that created this plan (e.g., 'VO-3B createLocalRenderPlanFromPackageDraft')."
+        },
+        "source_package_id": {
+          "type": "string",
+          "description": "Reference to source package draft."
+        },
+        "checksum": {
+          "type": "string",
+          "description": "Optional checksum for integrity validation."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "render_target": {
+      "type": "object",
+      "required": ["kind", "format_key", "aspect_ratio", "resolution", "planned_output_path"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["video", "thumbnail", "caption", "metadata"],
+          "description": "Type of asset to render."
+        },
+        "format_key": {
+          "type": "string",
+          "description": "Reference to format from format-specs.json (e.g., 'landscape_1920x1080_16x9')."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "enum": ["16:9", "9:16", "1:1", "4:5"],
+          "description": "Target aspect ratio."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Target resolution (e.g., '1920x1080')."
+        },
+        "planned_output_path": {
+          "type": "string",
+          "description": "Relative path where output would be saved (e.g., 'renders/pkg-123/video_1920x1080.mp4'). Placeholder only; no file created in VO-3B."
+        },
+        "expected_bitrate_kbps": {
+          "type": "integer",
+          "description": "Optional target bitrate in kbps."
+        },
+        "expected_duration_seconds": {
+          "type": "number",
+          "description": "Optional expected duration in seconds."
+        },
+        "safe_zone_profile": {
+          "type": "string",
+          "enum": ["desktop_landscape", "mobile_vertical", "square", "portrait"],
+          "description": "Optional safe zone profile for layout guidance."
+        }
+      },
+      "additionalProperties": false
+    },
+    "asset_plan": {
+      "type": "object",
+      "required": ["video", "thumbnails", "captions"],
+      "properties": {
+        "video": {
+          "type": "object",
+          "required": ["count"],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of video variants planned (e.g., 1 for single format)."
+            },
+            "variants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["format_key", "planned_output_path"],
+                "properties": {
+                  "format_key": {
+                    "type": "string",
+                    "description": "Format reference."
+                  },
+                  "planned_output_path": {
+                    "type": "string",
+                    "description": "Relative path placeholder."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "thumbnails": {
+          "type": "object",
+          "required": ["count"],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of thumbnails planned."
+            },
+            "variants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["planned_output_path"],
+                "properties": {
+                  "planned_output_path": {
+                    "type": "string",
+                    "description": "Relative path placeholder."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "captions": {
+          "type": "object",
+          "required": ["count"],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of caption files planned."
+            },
+            "formats": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["srt", "vtt", "json"]
+              },
+              "description": "Planned caption formats."
+            },
+            "variants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["format", "planned_output_path"],
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "enum": ["srt", "vtt", "json"]
+                  },
+                  "planned_output_path": {
+                    "type": "string",
+                    "description": "Relative path placeholder."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "validation_result": {
+      "type": "object",
+      "required": ["ready_for_render", "ready_for_upload", "blocking_reasons", "warnings"],
+      "properties": {
+        "ready_for_render": {
+          "type": "boolean",
+          "description": "Always false for VO-3B. Real rendering deferred to VO-3C+.",
+          "const": false
+        },
+        "ready_for_upload": {
+          "type": "boolean",
+          "description": "Always false for VO-3B. Upload deferred to VO-3E+.",
+          "const": false
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Reasons preventing render (e.g., 'Real rendering not implemented in VO-3B')."
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Non-blocking warnings (e.g., 'Plan state is draft')."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
