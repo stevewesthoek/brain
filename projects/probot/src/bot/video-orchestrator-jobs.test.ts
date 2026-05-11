@@ -17,6 +17,12 @@ import {
   planProjectDistribution,
   scheduleProjectDistributionPlan,
   createProductionPackageDraft,
+  saveProductionPackageDraft,
+  listProductionPackageDrafts,
+  getProductionPackageDraft,
+  updateProductionPackageDraftReadiness,
+  validateProductionPackageDraft,
+  createPackageDraftsForScheduledJobs,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
@@ -1455,6 +1461,685 @@ test("VO-2C-12: Sanitization blocks dangerous string values", () => {
     assert.ok(!metadata.safe_url);
     assert.ok(!metadata.config_value);
     assert.ok(!metadata.another_safe);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-2D: Package Draft Persistence and Validation Tests ──────────────────
+
+test("VO-2D-1: Save and retrieve package drafts with temp runtime dir", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft);
+    const retrieved = getProductionPackageDraft(draft.package_id);
+    assert.ok(retrieved);
+    assert.strictEqual(retrieved?.package_id, draft.package_id);
+    assert.strictEqual(retrieved?.project_id, "test-project");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-2: Save is upsert by package_id, not duplicate append", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft1 = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft1);
+    saveProductionPackageDraft(draft1);
+    const list = listProductionPackageDrafts();
+    assert.strictEqual(list.length, 1, "Save should not create duplicates");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-3: List filters by project_id, platform, package_state", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job1 = createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true });
+    const job2 = createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true });
+
+    const draft1 = createProductionPackageDraft({
+      job: job1,
+      project_id: "project-a",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const draft2 = createProductionPackageDraft({
+      job: job2,
+      project_id: "project-b",
+      platform: "tiktok",
+      account_id: "tiktok-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft1);
+    saveProductionPackageDraft(draft2);
+
+    const allDrafts = listProductionPackageDrafts();
+    assert.strictEqual(allDrafts.length, 2);
+
+    const projectA = listProductionPackageDrafts({ project_id: "project-a" });
+    assert.strictEqual(projectA.length, 1);
+    assert.ok(projectA[0]);
+    assert.strictEqual(projectA[0].project_id, "project-a");
+
+    const youtube = listProductionPackageDrafts({ platform: "youtube" });
+    assert.strictEqual(youtube.length, 1);
+    assert.ok(youtube[0]);
+    assert.strictEqual(youtube[0].platform, "youtube");
+
+    const tiktok = listProductionPackageDrafts({ platform: "tiktok" });
+    assert.strictEqual(tiktok.length, 1);
+    assert.ok(tiktok[0]);
+    assert.strictEqual(tiktok[0].platform, "tiktok");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-4: validateProductionPackageDraft returns ready_to_post=false for metadata-only draft", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const validation = validateProductionPackageDraft(draft);
+    assert.strictEqual(validation.ready_to_post, false, "Metadata-only drafts should never be ready_to_post");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-5: Validation blocks missing video asset", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const validation = validateProductionPackageDraft(draft);
+    assert.ok(!validation.ok, "Should fail validation");
+    assert.ok(validation.blocking_reasons.some((r) => r.includes("Video asset")), "Should mention missing video asset");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-6: Validation warns for missing thumbnail and captions", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Manually set video to satisfy blocking check
+    draft.assets.video = "/path/to/video.mp4";
+
+    const validation = validateProductionPackageDraft(draft);
+    // Still fail due to other checks, but verify warnings exist
+    const warningText = validation.warnings.join(" ");
+    assert.ok(warningText.includes("caption") || warningText.includes("thumbnail"), "Should warn about missing assets");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-7: createPackageDraftsForScheduledJobs creates drafts from dry-run publish_episode jobs", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Manually create a job with metadata to simulate scheduled job from VO-2B
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-15T10:00:00Z"),
+      dryRun: true,
+    });
+
+    // Update the job to add project/platform/account metadata (simulating what VO-2B does)
+    updateVideoJobStatus(job.id, "scheduled", {
+      simulated: true,
+      output: {
+        project_id: "project-test",
+        platform: "youtube",
+        account_id: "youtube-main",
+      },
+    });
+
+    // Now create package drafts from that job
+    const result = createPackageDraftsForScheduledJobs({
+      dryRun: true,
+      status: "scheduled",
+      limit: 10,
+    });
+
+    assert.ok(result.created > 0, "Should create drafts from scheduled jobs with metadata");
+    assert.ok(result.drafts && result.drafts.length > 0, "Should return created drafts");
+    assert.ok(result.drafts[0]);
+    assert.strictEqual(result.drafts[0].project_id, "project-test");
+    assert.strictEqual(result.drafts[0].platform, "youtube");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-8: createPackageDraftsForScheduledJobs skips jobs without project/platform/account metadata", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create a job without metadata (createVideoJob doesn't set metadata)
+    createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true });
+
+    const result = createPackageDraftsForScheduledJobs({
+      dryRun: true,
+      limit: 10,
+    });
+
+    // Jobs without metadata should be skipped
+    assert.strictEqual(result.created, 0, "Jobs without metadata should be skipped");
+    assert.ok(result.skipped > 0, "Should have skipped jobs");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-9: createPackageDraftsForScheduledJobs avoids duplicate drafts", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create jobs manually with metadata to avoid test complexity
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-16T10:00:00Z"),
+      dryRun: true,
+    });
+
+    updateVideoJobStatus(job.id, "scheduled", {
+      simulated: true,
+      output: {
+        project_id: "project-dup-test",
+        platform: "youtube",
+        account_id: "youtube-main",
+      },
+    });
+
+    const result1 = createPackageDraftsForScheduledJobs({ dryRun: true, limit: 10 });
+    const created1 = result1.created;
+    assert.ok(created1 > 0, "First run should create drafts");
+
+    // Run again
+    const result2 = createPackageDraftsForScheduledJobs({ dryRun: true, limit: 10 });
+
+    assert.strictEqual(result2.created, 0, "Second run should not create duplicates");
+    assert.strictEqual(result2.existing, created1, "Second run should recognize existing drafts");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-10: dryRun=false blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    assert.throws(
+      () => createPackageDraftsForScheduledJobs({ dryRun: false as any }),
+      (err: any) => {
+        assert.ok(err.message.includes("dryRun=true"));
+        return true;
+      }
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-11: Package store output contains no credential refs or tokens", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft);
+    const retrieved = getProductionPackageDraft(draft.package_id);
+    const draftText = JSON.stringify(retrieved);
+
+    const forbiddenStrings = [
+      "credential_reference",
+      "keychain://",
+      "access_token",
+      "refresh_token",
+      "client_secret",
+      "code_verifier",
+      "authorization_code",
+      "Bearer",
+    ];
+
+    for (const forbidden of forbiddenStrings) {
+      assert.ok(!draftText.includes(forbidden), `Package should not contain: ${forbidden}`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-12: No upload/API calls in package functions", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft);
+    const retrieved = getProductionPackageDraft(draft.package_id);
+    const draftText = JSON.stringify(retrieved);
+
+    const uploadPatterns = [
+      "videos.insert",
+      "youtube.videos",
+      "api.youtube",
+      "api.tiktok",
+      "api.instagram",
+    ];
+
+    for (const pattern of uploadPatterns) {
+      assert.ok(!draftText.includes(pattern), `Package should not contain: ${pattern}`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-1: Draft with ready state and video still returns ready_to_post=false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Manually set package_state to "ready" and add video asset
+    draft.package_state = "ready";
+    draft.assets.video = "/path/to/video.mp4";
+
+    const validation = validateProductionPackageDraft(draft);
+    assert.strictEqual(validation.ready_to_post, false, "VO-2D must never mark packages ready_to_post=true");
+    assert.ok(
+      validation.warnings.some((w) => w.includes("VO-2D") || w.includes("real media")),
+      "Should warn about VO-2D limitations"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-2: Store rejects draft with access_token in metadata", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Inject dangerous metadata
+    (draft.assets.metadata as any).access_token = "[REDACTED]";
+
+    assert.throws(
+      () => saveProductionPackageDraft(draft),
+      (err: any) => {
+        assert.ok(err.message.includes("unsafe metadata"));
+        return true;
+      }
+    );
+
+    // Verify not persisted
+    const allDrafts = listProductionPackageDrafts();
+    assert.ok(!allDrafts.some((d) => d.package_id === draft.package_id), "Unsafe draft should not be persisted");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-3: Store rejects draft with bearer token in safe-looking key", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Inject bearer token in safe-looking key
+    (draft.assets.metadata as any).auth_header = "Bearer fake-token-12345";
+
+    assert.throws(
+      () => saveProductionPackageDraft(draft),
+      (err: any) => {
+        assert.ok(err.message.includes("unsafe metadata"));
+        return true;
+      }
+    );
+
+    const allDrafts = listProductionPackageDrafts();
+    assert.ok(!allDrafts.some((d) => d.package_id === draft.package_id), "Unsafe draft should not be persisted");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-4: Store rejects draft with nested keychain reference", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Inject nested dangerous value
+    (draft.assets.metadata as any).nested = { ref: "keychain://video-orchestrator/example" };
+
+    assert.throws(
+      () => saveProductionPackageDraft(draft),
+      (err: any) => {
+        assert.ok(err.message.includes("unsafe metadata"));
+        return true;
+      }
+    );
+
+    const allDrafts = listProductionPackageDrafts();
+    assert.ok(!allDrafts.some((d) => d.package_id === draft.package_id), "Unsafe draft should not be persisted");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-5: Store accepts and persists safe draft", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Add safe metadata
+    (draft.assets.metadata as any).safe_field = "value";
+    (draft.assets.metadata as any).user_note = "This is a safe note";
+
+    // Should not throw
+    assert.doesNotThrow(() => saveProductionPackageDraft(draft));
+
+    // Verify persisted
+    const retrieved = getProductionPackageDraft(draft.package_id);
+    assert.ok(retrieved);
+    assert.strictEqual(retrieved?.assets.metadata.safe_field, "value");
+    assert.strictEqual(retrieved?.assets.metadata.user_note, "This is a safe note");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-6: updateProductionPackageDraftReadiness rejects unsafe blocking_reasons", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft);
+    const originalDraft = getProductionPackageDraft(draft.package_id);
+    assert.ok(originalDraft);
+
+    // Try to update with unsafe blocking reason
+    assert.throws(
+      () => {
+        updateProductionPackageDraftReadiness(draft.package_id, {
+          ready_to_post: false,
+          blocking_reasons: ["Bearer fake-token"],
+          warnings: [],
+        });
+      },
+      (err: any) => {
+        assert.ok(err.message.includes("unsafe metadata"));
+        return true;
+      }
+    );
+
+    // Verify draft unchanged in store
+    const retrievedAfter = getProductionPackageDraft(draft.package_id);
+    assert.ok(retrievedAfter);
+    assert.deepEqual(retrievedAfter.readiness.blocking_reasons, originalDraft.readiness.blocking_reasons);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-7: updateProductionPackageDraftReadiness rejects unsafe warnings", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft);
+    const originalDraft = getProductionPackageDraft(draft.package_id);
+    assert.ok(originalDraft);
+
+    // Try to update with unsafe warning
+    assert.throws(
+      () => {
+        updateProductionPackageDraftReadiness(draft.package_id, {
+          ready_to_post: false,
+          blocking_reasons: [],
+          warnings: ["keychain://video-orchestrator/example"],
+        });
+      },
+      (err: any) => {
+        assert.ok(err.message.includes("unsafe metadata"));
+        return true;
+      }
+    );
+
+    // Verify draft unchanged
+    const retrievedAfter = getProductionPackageDraft(draft.package_id);
+    assert.ok(retrievedAfter);
+    assert.deepEqual(retrievedAfter.readiness.warnings, originalDraft.readiness.warnings);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-8: safe readiness update persists correctly", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft);
+
+    // Update with safe readiness
+    updateProductionPackageDraftReadiness(draft.package_id, {
+      ready_to_post: false,
+      blocking_reasons: ["Video asset is missing."],
+      warnings: ["No caption assets attached."],
+    });
+
+    const retrieved = getProductionPackageDraft(draft.package_id);
+    assert.ok(retrieved);
+    assert.strictEqual(retrieved.readiness.ready_to_post, false);
+    assert.ok(retrieved.readiness.blocking_reasons.includes("Video asset is missing."));
+    assert.ok(retrieved.readiness.warnings.includes("No caption assets attached."));
+    assert.ok(
+      retrieved.readiness.warnings.some((w) => w.includes("VO-2D does not perform real media validation")),
+      "Should include VO-2D limitation warning"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-9: updateProductionPackageDraftReadiness enforces ready_to_post false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    saveProductionPackageDraft(draft);
+
+    // Try to update with ready_to_post=true (should be coerced to false)
+    updateProductionPackageDraftReadiness(draft.package_id, {
+      ready_to_post: true,
+      blocking_reasons: [],
+      warnings: [],
+    });
+
+    const retrieved = getProductionPackageDraft(draft.package_id);
+    assert.ok(retrieved);
+    assert.strictEqual(
+      retrieved.readiness.ready_to_post,
+      false,
+      "VO-2D must coerce ready_to_post to false"
+    );
+    assert.ok(
+      retrieved.readiness.warnings.some((w) => w.includes("VO-2D does not perform real media validation")),
+      "Should include VO-2D limitation warning"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-10: saveProductionPackageDraft rejects draft with ready_to_post true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const draft = createProductionPackageDraft({
+      job: createVideoJob({ type: "publish_episode", scheduledFor: new Date(), dryRun: true }),
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    // Manually set ready_to_post=true to simulate attempt to persist upload-ready state
+    draft.readiness.ready_to_post = true;
+
+    assert.throws(
+      () => saveProductionPackageDraft(draft),
+      (err: any) => {
+        assert.ok(err.message.includes("cannot be stored as ready_to_post"));
+        return true;
+      }
+    );
+
+    // Verify not persisted
+    const allDrafts = listProductionPackageDrafts();
+    assert.ok(!allDrafts.some((d) => d.package_id === draft.package_id), "Unsafe draft should not be persisted");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2D-Hardening-11: updateProductionPackageDraftReadiness throws on missing package", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    assert.throws(
+      () => {
+        updateProductionPackageDraftReadiness("nonexistent-package-id", {
+          ready_to_post: false,
+          blocking_reasons: [],
+          warnings: [],
+        });
+      },
+      (err: any) => {
+        assert.ok(err.message.includes("not found"));
+        return true;
+      }
+    );
   } finally {
     cleanupTestRuntime(tempDir);
   }

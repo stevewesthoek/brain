@@ -552,6 +552,90 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 
 ---
 
+### Phase VO-2D: Package Draft Persistence and Local Validation (May 11 – May 25)
+**Goal:** Persist production package drafts locally and validate package readiness metadata without rendering media or calling platform APIs.
+
+**What VO-2D Does:**
+- Persists package drafts to JSON-backed local store (package-drafts.json in ~/.local/probot/video-orchestrator)
+- Provides package draft CRUD operations: save, list, get, update readiness
+- Validates package metadata readiness (blocking reasons, warnings)
+- Creates package drafts from scheduled dry-run publish_episode jobs with project/platform/account metadata
+- Avoids duplicate drafts by package_id
+- Handles draft filtering by project_id, platform, package_state
+- Stable sort by scheduled_for then created_at
+
+**What VO-2D Does NOT Do:**
+- Does NOT render video files (FFmpeg deferred to VO-2E)
+- Does NOT generate thumbnails (deferred to VO-2E)
+- Does NOT transcribe audio or generate captions (deferred to VO-2E)
+- Does NOT call platform APIs
+- Does NOT publish or upload
+- Does NOT store or access credentials
+- Does NOT implement OAuth
+
+**Deliverables:**
+
+1. **Package Draft Store Functions** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `saveProductionPackageDraft(draft: ProductionPackageDraft): void` — upsert by package_id
+   - `listProductionPackageDrafts(options?: {project_id?, platform?, package_state?}): ProductionPackageDraft[]` — filter and sort by scheduled_for
+   - `getProductionPackageDraft(package_id: string): ProductionPackageDraft | null` — single lookup
+   - `updateProductionPackageDraftReadiness(package_id: string, readiness: {...}): void` — update validation state
+
+2. **Package Validation Function** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `validateProductionPackageDraft(draft: ProductionPackageDraft): PackageValidationResult`
+   - Returns: ok, ready_to_post, blocking_reasons, warnings
+   - Blocks on missing video asset
+   - Warns on missing thumbnail/captions
+   - Blocks on invalid platform_target
+   - Blocks on invalid package_state
+   - Always returns ready_to_post=false for VO-2D (metadata-only, no real validation until VO-2E)
+
+3. **Scheduled-Job-to-Draft Function** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `createPackageDraftsForScheduledJobs(input: {dryRun: true; status?: "scheduled"|"completed"; limit?: number}): CreatePackageDraftsForScheduledJobsResult`
+   - Processes publish_episode jobs with project/platform/account metadata (from VO-2B scheduling)
+   - Calls createProductionPackageDraft for each job
+   - Saves drafts using saveProductionPackageDraft
+   - Returns: {created, existing, skipped, drafts}
+   - Blocks if dryRun !== true
+   - Skips jobs without project_id/platform/account_id
+
+4. **Tests** (in `projects/probot/src/bot/video-orchestrator-jobs.test.ts`)
+   - **VO-2D-1:** Save and retrieve with temp runtime dir
+   - **VO-2D-2:** Save is upsert, no duplicates
+   - **VO-2D-3:** List filters by project_id, platform, package_state
+   - **VO-2D-4:** Validation returns ready_to_post=false
+   - **VO-2D-5:** Validation blocks missing video asset
+   - **VO-2D-6:** Validation warns for missing thumbnail/captions
+   - **VO-2D-7:** createPackageDraftsForScheduledJobs creates drafts from jobs
+   - **VO-2D-8:** Skips jobs without project/platform/account metadata
+   - **VO-2D-9:** Avoids duplicate drafts
+   - **VO-2D-10:** dryRun=false blocks
+   - **VO-2D-11:** Store output contains no credentials/tokens/secrets
+   - **VO-2D-12:** No upload/API calls
+
+**Architecture Decisions:**
+- **Local JSON store:** Package drafts stored as JSON array in ~/.local/probot/video-orchestrator/package-drafts.json (same runtime dir as jobs/quota)
+- **Upsert by package_id:** Saving twice with same package_id updates in place; no duplicates
+- **Stable sort:** Drafts sorted by scheduled_for (ascending) then created_at; consistent ordering for planning
+- **Metadata-only validation:** No real media inspection; ready_to_post always false until VO-2E adds local media validation
+- **No platform APIs:** All validation is metadata structure and schema only; no credentials or network calls
+- **Blocking vs. warnings:** Missing video = blocking (hard requirement); missing thumbnail/captions = warnings (can be added later)
+
+**Success Criteria:**
+- Package drafts persist to JSON store
+- Save is upsert by package_id (no duplicates)
+- List filters and sorts correctly
+- Validation returns ready_to_post=false for all metadata-only drafts
+- Validation correctly blocks missing video asset
+- Validation correctly warns for missing optional assets
+- createPackageDraftsForScheduledJobs creates drafts from jobs with metadata
+- Duplicate drafts avoided
+- All 12 VO-2D tests passing
+- No credentials, tokens, or secrets in stored output
+- No upload/API capability
+
+---
+
 ### Phase 2C: Local Production Adapters
 **Goal:** Replace placeholder-only execution with real local artifacts where local tools are available.
 

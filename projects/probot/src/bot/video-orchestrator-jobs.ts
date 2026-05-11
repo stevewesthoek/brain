@@ -887,5 +887,293 @@ export function createProductionPackageDraft(input: CreateProductionPackageDraft
   };
 }
 
+// ─── VO-2D: Package Draft Store and Validation ──────────────────────────────
+
+function getPackageDraftsPath(): string {
+  return path.join(getRuntimeDir(), "package-drafts.json");
+}
+
+interface ProductionPackageDraftStore {
+  schema_version: "1.0";
+  created_at: string;
+  drafts: ProductionPackageDraft[];
+}
+
+function loadPackageDrafts(): ProductionPackageDraftStore {
+  try {
+    const storePath = getPackageDraftsPath();
+    if (fs.existsSync(storePath)) {
+      const data = JSON.parse(fs.readFileSync(storePath, "utf8")) as ProductionPackageDraftStore;
+      return data;
+    }
+  } catch (err) {
+    console.warn("Failed to load package drafts:", err);
+  }
+  return {
+    schema_version: "1.0",
+    created_at: new Date().toISOString(),
+    drafts: [],
+  };
+}
+
+function savePackageDrafts(store: ProductionPackageDraftStore): void {
+  try {
+    const storePath = getPackageDraftsPath();
+    fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+  } catch (err) {
+    console.warn("Failed to save package drafts:", err);
+  }
+}
+
+function assertProductionPackageDraftSafeForStorage(draft: ProductionPackageDraft): void {
+  const forbiddenPatterns = [
+    "credential_reference",
+    "credentialreference",
+    "keychain",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "code_verifier",
+    "authorization_code",
+    "bearer",
+    "private_key",
+    "password",
+    "token",
+  ];
+
+  // Recursively inspect all keys and string values
+  function checkValue(val: unknown): void {
+    if (typeof val === "string") {
+      const valLower = val.toLowerCase();
+      for (const pattern of forbiddenPatterns) {
+        if (valLower.includes(pattern)) {
+          throw new Error("Package draft contains unsafe metadata and was not stored.");
+        }
+      }
+    } else if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+      const obj = val as Record<string, unknown>;
+      for (const [key, value] of Object.entries(obj)) {
+        const keyLower = key.toLowerCase();
+        for (const pattern of forbiddenPatterns) {
+          if (keyLower.includes(pattern)) {
+            throw new Error("Package draft contains unsafe metadata and was not stored.");
+          }
+        }
+        checkValue(value);
+      }
+    } else if (Array.isArray(val)) {
+      for (const item of val) {
+        checkValue(item);
+      }
+    }
+  }
+
+  checkValue(draft);
+}
+
+export function saveProductionPackageDraft(draft: ProductionPackageDraft): void {
+  // VO-2D CRITICAL: Reject any draft marked as ready_to_post=true
+  // VO-2D performs metadata-only validation without real media inspection
+  if (draft.readiness.ready_to_post === true) {
+    throw new Error("VO-2D package drafts cannot be stored as ready_to_post. Real media validation is deferred to VO-2E.");
+  }
+
+  // Validate draft is safe for storage before persisting
+  assertProductionPackageDraftSafeForStorage(draft);
+
+  const store = loadPackageDrafts();
+  const existing = store.drafts.findIndex((d) => d.package_id === draft.package_id);
+  if (existing >= 0) {
+    store.drafts[existing] = draft;
+  } else {
+    store.drafts.push(draft);
+  }
+  // Sort by scheduled_for then created_at
+  store.drafts.sort((a, b) => {
+    const aTime = new Date(a.scheduled_for).getTime();
+    const bTime = new Date(b.scheduled_for).getTime();
+    if (aTime !== bTime) return aTime - bTime;
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+  savePackageDrafts(store);
+}
+
+export function listProductionPackageDrafts(options?: {
+  project_id?: string;
+  platform?: string;
+  package_state?: string;
+}): ProductionPackageDraft[] {
+  const store = loadPackageDrafts();
+  return store.drafts.filter((d) => {
+    if (options?.project_id && d.project_id !== options.project_id) return false;
+    if (options?.platform && d.platform !== options.platform) return false;
+    if (options?.package_state && d.package_state !== options.package_state) return false;
+    return true;
+  });
+}
+
+export function getProductionPackageDraft(package_id: string): ProductionPackageDraft | null {
+  const store = loadPackageDrafts();
+  return store.drafts.find((d) => d.package_id === package_id) || null;
+}
+
+export function updateProductionPackageDraftReadiness(
+  package_id: string,
+  readiness: { ready_to_post: boolean; blocking_reasons: string[]; warnings: string[] }
+): void {
+  const store = loadPackageDrafts();
+  const draft = store.drafts.find((d) => d.package_id === package_id);
+  if (!draft) {
+    throw new Error(`Package draft not found: ${package_id}`);
+  }
+
+  // VO-2D: Enforce ready_to_post false (never allow upload-ready state)
+  const vo2dWarning = "VO-2D does not perform real media validation; ready_to_post remains false.";
+  const warningsSet = new Set(readiness.warnings);
+  warningsSet.add(vo2dWarning);
+
+  const sanitizedReadiness = {
+    ready_to_post: false,
+    blocking_reasons: readiness.blocking_reasons,
+    warnings: Array.from(warningsSet),
+  };
+
+  // Create updated draft with sanitized readiness
+  const updatedDraft = { ...draft, readiness: sanitizedReadiness };
+
+  // Validate entire updated draft is safe for storage (catches unsafe readiness text)
+  assertProductionPackageDraftSafeForStorage(updatedDraft);
+
+  // Apply update to store
+  const draftIndex = store.drafts.findIndex((d) => d.package_id === package_id);
+  if (draftIndex >= 0) {
+    store.drafts[draftIndex] = updatedDraft;
+  }
+  savePackageDrafts(store);
+}
+
+export interface PackageValidationResult {
+  ok: boolean;
+  ready_to_post: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export function validateProductionPackageDraft(draft: ProductionPackageDraft): PackageValidationResult {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  // Check package state is valid
+  if (!["draft", "ready", "blocked", "exported"].includes(draft.package_state)) {
+    blockingReasons.push(`Invalid package_state: ${draft.package_state}`);
+  }
+
+  // Check platform_target has required fields
+  if (!draft.platform_target?.format_key || !draft.platform_target?.aspect_ratio || !draft.platform_target?.resolution) {
+    blockingReasons.push("platform_target missing required fields (format_key, aspect_ratio, resolution)");
+  }
+
+  // Check for missing video asset
+  if (!draft.assets?.video) {
+    blockingReasons.push("Video asset is missing.");
+  }
+
+  // Warn for missing thumbnail (conservative: warn instead of block)
+  if (!draft.assets?.thumbnail) {
+    warnings.push("No thumbnail asset attached.");
+  }
+
+  // Warn for missing captions
+  if (!draft.assets?.captions || draft.assets.captions.length === 0) {
+    warnings.push("No caption assets attached.");
+  }
+
+  // VO-2D CRITICAL: Always return ready_to_post=false
+  // VO-2D performs metadata-only validation without real media inspection
+  // Real media validation (FFmpeg, file validation) is deferred to VO-2E
+  // Packages must never be marked upload-ready in VO-2D
+  warnings.push("VO-2D does not perform real media validation; ready_to_post remains false until VO-2E validation.");
+
+  return {
+    ok: blockingReasons.length === 0,
+    ready_to_post: false,
+    blocking_reasons: blockingReasons.length > 0 ? blockingReasons : draft.readiness.blocking_reasons,
+    warnings: warnings.length > 0 ? warnings : draft.readiness.warnings,
+  };
+}
+
+export interface CreatePackageDraftsForScheduledJobsInput {
+  dryRun: true;
+  status?: "scheduled" | "completed";
+  limit?: number;
+}
+
+export interface CreatePackageDraftsForScheduledJobsResult {
+  created: number;
+  existing: number;
+  skipped: number;
+  drafts: ProductionPackageDraft[];
+}
+
+export function createPackageDraftsForScheduledJobs(
+  input: CreatePackageDraftsForScheduledJobsInput
+): CreatePackageDraftsForScheduledJobsResult {
+  if (!input.dryRun) {
+    throw new Error("createPackageDraftsForScheduledJobs only supports dryRun=true");
+  }
+
+  // Get all jobs with specified status
+  const allJobs = listVideoJobs({
+    status: (input.status ?? "scheduled") as JobStatus,
+  });
+
+  // Filter to publish_episode jobs and apply limit
+  const jobs = allJobs.filter((j) => j.type === "publish_episode").slice(0, input.limit ?? 50);
+
+  const existingDrafts = new Set(listProductionPackageDrafts().map((d) => d.package_id));
+  const result: CreatePackageDraftsForScheduledJobsResult = {
+    created: 0,
+    existing: 0,
+    skipped: 0,
+    drafts: [],
+  };
+
+  for (const job of jobs) {
+    // Extract metadata safely from job.result.output (set by scheduleProjectDistributionPlan)
+    const jobOutput = (job.result?.output as Record<string, unknown>) || {};
+    const project_id = jobOutput.project_id as string;
+    const platform = jobOutput.platform as string;
+    const account_id = jobOutput.account_id as string;
+
+    if (!project_id || !platform || !account_id) {
+      result.skipped++;
+      continue;
+    }
+
+    const packageId = `pkg-${job.id}`;
+    if (existingDrafts.has(packageId)) {
+      result.existing++;
+      continue;
+    }
+
+    // Create draft using VO-2C function
+    const draft = createProductionPackageDraft({
+      job,
+      project_id,
+      platform,
+      account_id,
+      scheduled_for: new Date(job.scheduled_for),
+      dryRun: true,
+    });
+
+    // Save draft
+    saveProductionPackageDraft(draft);
+    result.created++;
+    result.drafts.push(draft);
+  }
+
+  return result;
+}
+
 // Export internal functions for testing
-export { logSchedulerEvent, loadQuotaState, saveQuotaState, getQuotaStatePath, getSchedulerLogPath, getRuntimeDir };
+export { logSchedulerEvent, loadQuotaState, saveQuotaState, getQuotaStatePath, getSchedulerLogPath, getRuntimeDir, getPackageDraftsPath };
