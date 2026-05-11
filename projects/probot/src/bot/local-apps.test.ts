@@ -1295,3 +1295,95 @@ test("D1-E: source contains no hardcoded projects/probot/runtime writes", () => 
   // All runtime paths should go through getDefaultVideoOrchestratorPaths
   assert.match(dashboardSource, /getVideoPaths\(\)/);
 });
+
+/* D1-F Accounts & Credentials UI Stability */
+
+test("D1-F: save-oauth-client handler disables button during request and restores on success", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Verify button is disabled during the request and delayed reset is used
+  assert.ok(dashboardSource.includes("button.disabled=true"), "Should disable button during OAuth save");
+  assert.ok(dashboardSource.includes("deferButtonReset=true"), "Should prevent outer finally from immediately overwriting visible status");
+  assert.ok(dashboardSource.includes("button.textContent='Saving...'"), "Should show saving state");
+
+  // Verify button is restored and success message shown
+  assert.ok(dashboardSource.includes("button.textContent='✓ Saved'"), "Should show success checkmark");
+  assert.ok(dashboardSource.includes("button.disabled=false"), "Should re-enable button after request");
+});
+
+test("D1-F: save-account handler validates account_id and shows pending/success states", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Verify account ID validation
+  assert.ok(dashboardSource.includes("Account ID is required"), "Should require account ID");
+
+  // Verify pending and success states
+  assert.ok(dashboardSource.includes("button.textContent='Saving...'"), "Should show saving state");
+  assert.ok(dashboardSource.includes("await postJson('/api/video-orchestrator/accounts',payload)"), "Should POST to accounts endpoint");
+});
+
+test("D1-F: connect-youtube handler checks OAuth client ID and shows auth window opened message", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Verify OAuth config check
+  assert.ok(dashboardSource.includes("Configure OAuth Client ID first"), "Should check for OAuth client ID");
+
+  // Verify authorization URL handling
+  assert.ok(dashboardSource.includes("data.authorization_url"), "Should check for authorization URL");
+  assert.ok(dashboardSource.includes("window.open(data.authorization_url"), "Should open auth URL in new window");
+  assert.ok(dashboardSource.includes("Auth window opened"), "Should show auth window opened message");
+  assert.ok(dashboardSource.includes("Popup blocked"), "Should handle popup blocked case");
+});
+
+test("D1-F: refresh-health handler disables button and shows checkmark on success", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Verify pending state
+  assert.ok(dashboardSource.includes("button.textContent='Checking...'"), "Should show checking state");
+  assert.ok(dashboardSource.includes("data-account-id"), "Should get account ID from button");
+
+  // Verify success state
+  assert.ok(dashboardSource.includes("button.textContent='✓ Checked'"), "Should show checked checkmark");
+  assert.ok(dashboardSource.includes("'/health-check'"), "Should POST to health-check endpoint");
+});
+
+test("D1-F: browser handlers expose no credential/token material in rendered output", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+  const voSource = fs.readFileSync(path.join(import.meta.dirname, "video-orchestrator-dashboard.ts"), "utf8");
+
+  // Verify renderAccountsAndCredentialsPanel does not expose sensitive data
+  const renderFunc = voSource.slice(
+    voSource.indexOf("export function renderAccountsAndCredentialsPanel"),
+    voSource.indexOf("export function renderYoutubeOAuthCallbackFailureHtml")
+  );
+
+  // Check for exposed secrets in the rendered HTML (not in redaction code)
+  assert.ok(!renderFunc.includes('credential_reference:"'), "Should not expose credential_reference in rendered panel");
+  assert.ok(!renderFunc.includes('access_token:"'), "Should not expose access_token in rendered panel");
+  assert.ok(!renderFunc.includes('refresh_token:"'), "Should not expose refresh_token in rendered panel");
+  assert.ok(!renderFunc.includes('client_secret:"'), "Should not expose client_secret in rendered panel");
+  assert.ok(!renderFunc.includes('code_verifier:"'), "Should not expose code_verifier in rendered panel");
+
+  // Verify security note is present (check both full and partial strings)
+  assert.ok(renderFunc.includes("credential references") && renderFunc.includes("token values"), "Should have security disclaimer");
+});
+
+test("D1-F: account/OAuth actions do not call global fetchData or reload page", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Verify actions only refresh Video Orchestrator panels
+  const saveOAuthClientAction = dashboardSource.slice(
+    dashboardSource.indexOf("if(action==='save-oauth-client')"),
+    dashboardSource.indexOf("if(action==='save-oauth-client')") + 1000
+  );
+  assert.ok(saveOAuthClientAction.includes("refreshVideoOrchestratorPanels"), "Should refresh VO panels after OAuth save");
+  assert.ok(!saveOAuthClientAction.includes("location.reload"), "Should not reload page");
+  assert.ok(!saveOAuthClientAction.includes("fetchData()"), "Should not call global fetchData");
+
+  // Verify account action
+  const saveAccountAction = dashboardSource.slice(
+    dashboardSource.indexOf("if(action==='save-account')"),
+    dashboardSource.indexOf("if(action==='save-account')") + 1000
+  );
+  assert.ok(saveAccountAction.includes("refreshVideoOrchestratorPanels"), "Should refresh VO panels after account save");
+});

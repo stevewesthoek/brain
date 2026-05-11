@@ -2469,19 +2469,34 @@ document.addEventListener('click',async(event)=>{
   if(!action) return;
   if(button.disabled) return;
   const origText=button.textContent;
+  let deferButtonReset=false;
   button.disabled=true;
   try{
     if(action==='save-oauth-client'){
-      button.textContent='Saving...';
       const clientIdInput=document.querySelector('input[name="vo-client-id"]');
       const clientId=clientIdInput?String(clientIdInput.value||'').trim():'';
       if(!clientId) throw new Error('Client ID is required.');
-      await postJson('/api/video-orchestrator/oauth/youtube/client-config',{client_id:clientId});
-      await refreshVideoOrchestratorPanels();
+      const originalText=button.textContent;
+      deferButtonReset=true;
+      button.disabled=true;
+      button.textContent='Saving...';
+      try{
+        await postJson('/api/video-orchestrator/oauth/youtube/client-config',{client_id:clientId});
+        button.textContent='✓ Saved';
+        setTimeout(()=>{
+          button.textContent=originalText;
+          button.disabled=false;
+        }, 2000);
+        await refreshVideoOrchestratorPanels();
+      }catch(err){
+        button.textContent='Error: '+String(err?.message||err).slice(0,30);
+        button.disabled=false;
+        setTimeout(()=>{ button.textContent=originalText; }, 3000);
+        throw err;
+      }
       return;
     }
     if(action==='save-account'){
-      button.textContent='Saving...';
       const payload={
         platform:'youtube',
         account_id:String((document.querySelector('input[name="vo-account-id"]')||{}).value||'').trim(),
@@ -2489,25 +2504,61 @@ document.addEventListener('click',async(event)=>{
         display_name:String((document.querySelector('input[name="vo-display-name"]')||{}).value||'').trim(),
         enabled:Boolean(document.querySelector('input[name="vo-enabled"]')?.checked),
       };
-      await postJson('/api/video-orchestrator/accounts',payload);
-      await refreshVideoOrchestratorPanels();
+      if(!payload.account_id) throw new Error('Account ID is required.');
+      const originalText=button.textContent;
+      deferButtonReset=true;
+      button.disabled=true;
+      button.textContent='Saving...';
+      try{
+        await postJson('/api/video-orchestrator/accounts',payload);
+        button.textContent='✓ Saved';
+        setTimeout(()=>{
+          button.textContent=originalText;
+          button.disabled=false;
+        }, 2000);
+        await refreshVideoOrchestratorPanels();
+      }catch(err){
+        button.textContent='Error: '+String(err?.message||err).slice(0,30);
+        button.disabled=false;
+        setTimeout(()=>{ button.textContent=originalText; }, 3000);
+        throw err;
+      }
       return;
     }
     if(action==='refresh-health'){
-      button.textContent='Checking...';
       const accountId=button.getAttribute('data-account-id');
       if(!accountId) throw new Error('Missing account id.');
-      await postJson('/api/video-orchestrator/accounts/'+encodeURIComponent(accountId)+'/health-check',{});
-      await refreshVideoOrchestratorPanels();
+      const originalText=button.textContent;
+      deferButtonReset=true;
+      button.disabled=true;
+      button.textContent='Checking...';
+      try{
+        await postJson('/api/video-orchestrator/accounts/'+encodeURIComponent(accountId)+'/health-check',{});
+        button.textContent='✓ Checked';
+        setTimeout(()=>{
+          button.textContent=originalText;
+          button.disabled=false;
+        }, 2000);
+        await refreshVideoOrchestratorPanels();
+      }catch(err){
+        button.textContent='Error';
+        button.disabled=false;
+        setTimeout(()=>{ button.textContent=originalText; }, 3000);
+        throw err;
+      }
       return;
     }
     if(action==='connect-youtube'){
-      button.textContent='Connecting...';
+      const clientIdInput=document.querySelector('input[name="vo-client-id"]');
+      const clientId=clientIdInput?String(clientIdInput.value||'').trim():'';
+      if(!clientId) throw new Error('Configure OAuth Client ID first.');
       let payload;
       if(button.getAttribute('data-form')==='true'){
+        const accountId=String((document.querySelector('input[name="vo-account-id"]')||{}).value||'').trim();
+        if(!accountId) throw new Error('Save account first (enter Account ID).');
         payload={
           platform:'youtube',
-          account_id:String((document.querySelector('input[name="vo-account-id"]')||{}).value||'').trim(),
+          account_id:accountId,
           account_label:String((document.querySelector('input[name="vo-account-label"]')||{}).value||'').trim(),
           display_name:String((document.querySelector('input[name="vo-display-name"]')||{}).value||'').trim(),
           enabled:Boolean(document.querySelector('input[name="vo-enabled"]')?.checked),
@@ -2524,16 +2575,39 @@ document.addEventListener('click',async(event)=>{
         }:null;
       }
       if(!payload) throw new Error('Missing account data.');
-      const data=await postJson('/api/video-orchestrator/oauth/youtube/start',payload);
-      if(data.authorization_url) window.open(data.authorization_url,'_blank','noopener,noreferrer');
-      await refreshVideoOrchestratorPanels();
+      const originalText=button.textContent;
+      deferButtonReset=true;
+      button.disabled=true;
+      button.textContent='Opening...';
+      try{
+        const data=await postJson('/api/video-orchestrator/oauth/youtube/start',payload);
+        if(data.authorization_url){
+          const w=window.open(data.authorization_url,'_blank','noopener,noreferrer');
+          if(w) button.textContent='✓ Auth window opened';
+          else button.textContent='(Popup blocked - check link)';
+        }else{
+          button.textContent='No auth URL';
+        }
+        setTimeout(()=>{
+          button.textContent=originalText;
+          button.disabled=false;
+        }, 3000);
+        await refreshVideoOrchestratorPanels();
+      }catch(err){
+        button.textContent='Error: '+String(err?.message||err).slice(0,25);
+        button.disabled=false;
+        setTimeout(()=>{ button.textContent=originalText; }, 3000);
+        throw err;
+      }
       return;
     }
   }catch(err){
-    alert(String(err&&err.message?err.message:err));
+    console.warn('[Dashboard] Action error:',String(err&&err.message?err.message:err));
   }finally{
-    button.disabled=false;
-    button.textContent=origText;
+    if(!deferButtonReset){
+      button.disabled=false;
+      button.textContent=origText;
+    }
   }
 });
 
