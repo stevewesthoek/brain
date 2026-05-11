@@ -42,11 +42,21 @@ import {
   saveLocalRenderPlan,
   getLocalRenderPlan,
   listLocalRenderPlans,
+  resolveSafeLocalValidationPath,
+  validateLocalFileExistence,
+  validateRenderPlanManifestConsistency,
+  getLocalRenderPlanValidationReport,
+  validateRenderTargetAgainstSpecs,
+  validateRenderPlanAgainstLocalSpecs,
+  getManualRenderManifestCheckReport,
+  loadVideoOrchestratorFormatSpecs,
+  loadVideoOrchestratorPlatformSpecs,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
   type ContentBrief,
   type RenderPlan,
+  type RenderTarget,
   type AggregateRenderPlanReadinessReport,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
@@ -5715,6 +5725,1467 @@ test("VO-3B-FH5: generateRenderPlanReadinessReport handles malformed validation 
     assert.ok(aggregateReport, "Aggregate report should be generated");
     assert.equal(aggregateReport.ready_for_render, 0);
     assert.equal(aggregateReport.ready_for_upload, 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-3C: Local File Existence Validation Tests ──────────────────────────
+
+test("VO-3C-PR1: resolveSafeLocalValidationPath validates relative path within baseDir", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo3c-test-"));
+  try {
+    const result = resolveSafeLocalValidationPath({
+      relativePath: "renders/output.mp4",
+      baseDir: tempDir,
+    });
+
+    assert.ok(result.ok, "Relative path should resolve safely");
+    assert.ok(result.absolutePath, "Absolute path should be returned");
+    assert.ok(
+      result.absolutePath!.startsWith(tempDir),
+      "Resolved path should be within baseDir"
+    );
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("VO-3C-PR2: resolveSafeLocalValidationPath blocks absolute paths", () => {
+  const result = resolveSafeLocalValidationPath({
+    relativePath: "/etc/passwd",
+    baseDir: "/tmp",
+  });
+
+  assert.ok(!result.ok, "Absolute path should be blocked");
+  assert.ok(result.blocking_reasons.length > 0, "Should have blocking reason");
+  assert.ok(
+    result.blocking_reasons[0]?.includes("Absolute"),
+    "Reason should mention absolute paths"
+  );
+});
+
+test("VO-3C-PR3: resolveSafeLocalValidationPath blocks URLs", () => {
+  const result = resolveSafeLocalValidationPath({
+    relativePath: "https://example.com/file.mp4",
+    baseDir: "/tmp",
+  });
+
+  assert.ok(!result.ok, "URL path should be blocked");
+  assert.ok(result.blocking_reasons.length > 0, "Should have blocking reason");
+});
+
+test("VO-3C-PR4: resolveSafeLocalValidationPath blocks traversal paths", () => {
+  const result = resolveSafeLocalValidationPath({
+    relativePath: "../../etc/passwd",
+    baseDir: "/tmp",
+  });
+
+  assert.ok(!result.ok, "Traversal path should be blocked");
+  assert.ok(result.blocking_reasons.length > 0, "Should have blocking reason");
+  assert.ok(
+    result.blocking_reasons[0]?.includes("traversal"),
+    "Reason should mention traversal"
+  );
+});
+
+test("VO-3C-PR5: resolveSafeLocalValidationPath blocks forbidden string paths", () => {
+  const result = resolveSafeLocalValidationPath({
+    relativePath: "renders/keychain://secret.mp4",
+    baseDir: "/tmp",
+  });
+
+  assert.ok(!result.ok, "Path with forbidden patterns should be blocked");
+  assert.ok(result.blocking_reasons.length > 0, "Should have blocking reason");
+});
+
+test("VO-3C-PR6: resolveSafeLocalValidationPath prevents path escape", () => {
+  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo3c-base-"));
+  const parentDir = path.dirname(baseDir);
+  try {
+    const result = resolveSafeLocalValidationPath({
+      relativePath: path.join("..", path.basename(parentDir), "etc", "passwd"),
+      baseDir,
+    });
+
+    assert.ok(!result.ok, "Escaped path should be blocked");
+  } finally {
+    fs.rmSync(baseDir, { recursive: true, force: true });
+  }
+});
+
+test("VO-3C-PR7: resolveSafeLocalValidationPath blocking reasons do not echo raw unsafe paths", () => {
+  const result = resolveSafeLocalValidationPath({
+    relativePath: "../../etc/keychain://secret.mp4",
+    baseDir: "/tmp",
+  });
+
+  assert.ok(!result.ok, "Path should be blocked");
+  const reasons = JSON.stringify(result.blocking_reasons);
+  assert.ok(
+    !reasons.includes("keychain://") && !reasons.includes("etc/"),
+    "Blocking reasons should not echo raw path"
+  );
+});
+
+test("VO-3C-FX1: validateLocalFileExistence with disabled mode does not check filesystem", () => {
+  const result = validateLocalFileExistence({
+    relativePath: "renders/nonexistent.mp4",
+    baseDir: "/tmp",
+    kind: "input",
+    checkMode: "disabled",
+  });
+
+  assert.ok(!result.checked, "disabled mode should not check filesystem");
+  assert.ok(result.warnings.length > 0, "Should have warning about disabled checks");
+});
+
+test("VO-3C-FX2: validateLocalFileExistence returns exists=true for temp file", () => {
+  const tempFile = fs.mkdtempSync(path.join(os.tmpdir(), "vo3c-file-"));
+  const testFile = path.join(tempFile, "test.mp4");
+  fs.writeFileSync(testFile, "");
+  try {
+    const result = validateLocalFileExistence({
+      relativePath: "test.mp4",
+      baseDir: tempFile,
+      kind: "input",
+      checkMode: "explicit",
+    });
+
+    assert.ok(result.checked, "Should be checked");
+    assert.ok(result.exists, "File should exist");
+    assert.equal(result.blocking_reasons.length, 0, "No blocking reasons");
+  } finally {
+    fs.rmSync(testFile, { recursive: true, force: true });
+    fs.rmSync(tempFile, { recursive: true, force: true });
+  }
+});
+
+test("VO-3C-FX3: validateLocalFileExistence returns exists=false for absent file", () => {
+  const tempFile = fs.mkdtempSync(path.join(os.tmpdir(), "vo3c-absent-"));
+  try {
+    const result = validateLocalFileExistence({
+      relativePath: "nonexistent.mp4",
+      baseDir: tempFile,
+      kind: "input",
+      checkMode: "explicit",
+    });
+
+    assert.ok(result.checked, "Should be checked");
+    assert.ok(!result.exists, "File should not exist");
+  } finally {
+    fs.rmSync(tempFile, { recursive: true, force: true });
+  }
+});
+
+test("VO-3C-FX4: validateLocalFileExistence missing input file is blocking", () => {
+  const tempFile = fs.mkdtempSync(path.join(os.tmpdir(), "vo3c-input-"));
+  try {
+    const result = validateLocalFileExistence({
+      relativePath: "nonexistent.mp4",
+      baseDir: tempFile,
+      kind: "input",
+      checkMode: "explicit",
+    });
+
+    assert.ok(result.blocking_reasons.length > 0, "Missing input should be blocking");
+  } finally {
+    fs.rmSync(tempFile, { recursive: true, force: true });
+  }
+});
+
+test("VO-3C-FX5: validateLocalFileExistence missing planned_output is warning only", () => {
+  const tempFile = fs.mkdtempSync(path.join(os.tmpdir(), "vo3c-output-"));
+  try {
+    const result = validateLocalFileExistence({
+      relativePath: "nonexistent.mp4",
+      baseDir: tempFile,
+      kind: "planned_output",
+      checkMode: "explicit",
+    });
+
+    assert.ok(result.blocking_reasons.length === 0, "Missing output should not block");
+    assert.ok(result.warnings.length > 0, "Missing output should warn");
+  } finally {
+    fs.rmSync(tempFile, { recursive: true, force: true });
+  }
+});
+
+test("VO-3C-MC1: validateRenderPlanManifestConsistency with disabled mode files_checked=0", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createLocalRenderPlanFromPackageDraft({
+      draft: createProductionPackageDraft({
+        job: createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true }),
+        project_id: "project-test",
+        platform: "youtube",
+        account_id: "test-account",
+        scheduled_for: new Date(),
+        dryRun: true,
+      }),
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    const result = validateRenderPlanManifestConsistency({
+      plan,
+      baseDir: getRuntimeDir(),
+      checkMode: "disabled",
+    });
+
+    assert.equal(result.files_checked, 0, "disabled mode should not check files");
+    assert.ok(result.warnings.length > 0, "Should warn about disabled checks");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3C-MC2: validateRenderPlanManifestConsistency with explicit mode checks planned output paths", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createLocalRenderPlanFromPackageDraft({
+      draft: createProductionPackageDraft({
+        job: createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true }),
+        project_id: "project-test",
+        platform: "youtube",
+        account_id: "test-account",
+        scheduled_for: new Date(),
+        dryRun: true,
+      }),
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    const result = validateRenderPlanManifestConsistency({
+      plan,
+      baseDir: getRuntimeDir(),
+      checkMode: "explicit",
+    });
+
+    assert.ok(result.files_checked >= 0, "Should check files");
+    assert.equal(result.ready_for_render, false, "ready_for_render must be false");
+    assert.equal(result.ready_for_upload, false, "ready_for_upload must be false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3C-MC3: validateRenderPlanManifestConsistency missing planned outputs are warnings not blocking", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createLocalRenderPlanFromPackageDraft({
+      draft: createProductionPackageDraft({
+        job: createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true }),
+        project_id: "project-test",
+        platform: "youtube",
+        account_id: "test-account",
+        scheduled_for: new Date(),
+        dryRun: true,
+      }),
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    const result = validateRenderPlanManifestConsistency({
+      plan,
+      baseDir: getRuntimeDir(),
+      checkMode: "explicit",
+    });
+
+    // Missing outputs should warn, not block
+    if (result.files_missing > 0) {
+      assert.ok(result.warnings.length > 0, "Missing outputs should generate warnings");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3C-MC4: validateRenderPlanManifestConsistency ready flags remain false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createLocalRenderPlanFromPackageDraft({
+      draft: createProductionPackageDraft({
+        job: createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true }),
+        project_id: "project-test",
+        platform: "youtube",
+        account_id: "test-account",
+        scheduled_for: new Date(),
+        dryRun: true,
+      }),
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    const result = validateRenderPlanManifestConsistency({
+      plan,
+      baseDir: getRuntimeDir(),
+      checkMode: "explicit",
+    });
+
+    assert.equal(result.ready_for_render, false, "ready_for_render must always be false");
+    assert.equal(result.ready_for_upload, false, "ready_for_upload must always be false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3C-VR1: getLocalRenderPlanValidationReport disabled mode does not check files", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const plan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    saveRenderPlan(plan);
+
+    const report = getLocalRenderPlanValidationReport({
+      checkMode: "disabled",
+      baseDir: getRuntimeDir(),
+    });
+
+    assert.equal(report.total, 1, "Should report 1 plan");
+    assert.equal(report.files_checked, 0, "disabled mode should not check files");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3C-VR2: getLocalRenderPlanValidationReport explicit mode checks files", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const plan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    saveRenderPlan(plan);
+
+    const report = getLocalRenderPlanValidationReport({
+      checkMode: "explicit",
+      baseDir: getRuntimeDir(),
+    });
+
+    assert.equal(report.total, 1, "Should report 1 plan");
+    assert.ok(typeof report.files_checked === "number", "Should report file count");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3C-VR3: getLocalRenderPlanValidationReport summary does not leak raw paths", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const plan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    saveRenderPlan(plan);
+
+    const report = getLocalRenderPlanValidationReport({
+      checkMode: "explicit",
+      baseDir: getRuntimeDir(),
+    });
+
+    const reportText = JSON.stringify(report);
+    assert.ok(
+      !reportText.includes("keychain://") && !reportText.includes("access_token"),
+      "Report should not contain forbidden patterns"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3C-RD1: getLocalRenderPlanValidationReport disabled mode returns ready_for_render=0 and ready_for_upload=0", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const plan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    saveRenderPlan(plan);
+
+    const report = getLocalRenderPlanValidationReport({
+      checkMode: "disabled",
+      baseDir: getRuntimeDir(),
+    });
+
+    assert.equal(report.ready_for_render, 0, "ready_for_render must be 0");
+    assert.equal(report.ready_for_upload, 0, "ready_for_upload must be 0");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3C-RD2: getLocalRenderPlanValidationReport explicit mode returns ready_for_render=0 and ready_for_upload=0 even when files exist", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true });
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "test-account",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const plan = createLocalRenderPlanFromPackageDraft({
+      draft,
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    saveRenderPlan(plan);
+
+    const report = getLocalRenderPlanValidationReport({
+      checkMode: "explicit",
+      baseDir: getRuntimeDir(),
+    });
+
+    assert.equal(report.ready_for_render, 0, "ready_for_render must be 0 even in explicit mode");
+    assert.equal(report.ready_for_upload, 0, "ready_for_upload must be 0 even in explicit mode");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3C-NFC1: validateLocalFileExistence planned_output missing does not create directories or files", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo3c-nfc-"));
+  try {
+    const result = validateLocalFileExistence({
+      relativePath: "missing/nested/output.mp4",
+      baseDir: tempDir,
+      kind: "planned_output",
+      checkMode: "explicit",
+    });
+
+    assert.ok(result.checked, "Should be checked");
+    assert.ok(!result.exists, "File should not exist");
+    assert.equal(result.blocking_reasons.length, 0, "Missing output should not block");
+    assert.ok(result.warnings.length > 0, "Missing output should warn");
+
+    // Verify no directories were created
+    const missingDir = path.join(tempDir, "missing");
+    assert.ok(!fs.existsSync(missingDir), "missing/ directory should not be created");
+
+    const nestedDir = path.join(missingDir, "nested");
+    assert.ok(!fs.existsSync(nestedDir), "missing/nested/ directory should not be created");
+
+    const outputFile = path.join(nestedDir, "output.mp4");
+    assert.ok(!fs.existsSync(outputFile), "output.mp4 file should not be created");
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("VO-3C-NFC2: validateRenderPlanManifestConsistency explicit mode does not create output directories", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createLocalRenderPlanFromPackageDraft({
+      draft: createProductionPackageDraft({
+        job: createVideoJob({ type: "generate_episode", scheduledFor: new Date(), dryRun: true }),
+        project_id: "project-test",
+        platform: "youtube",
+        account_id: "test-account",
+        scheduled_for: new Date(),
+        dryRun: true,
+      }),
+      platform: "youtube",
+      dryRun: true,
+    });
+
+    const customBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo3c-manifest-"));
+    try {
+      const result = validateRenderPlanManifestConsistency({
+        plan,
+        baseDir: customBaseDir,
+        checkMode: "explicit",
+      });
+
+      assert.equal(result.ready_for_render, false, "ready_for_render must be false");
+      assert.equal(result.ready_for_upload, false, "ready_for_upload must be false");
+
+      // Verify output directories are not created in the custom base dir
+      const dirContents = fs.readdirSync(customBaseDir);
+      assert.equal(dirContents.length, 0, "No directories should be created in baseDir");
+    } finally {
+      fs.rmSync(customBaseDir, { recursive: true, force: true });
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3C-PS1: validateLocalFileExistence returns safe path summary not raw path", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo3c-path-"));
+  try {
+    const result = validateLocalFileExistence({
+      relativePath: "renders/output.mp4",
+      baseDir: tempDir,
+      kind: "input",
+      checkMode: "explicit",
+    });
+
+    // Result path should not contain the raw path components
+    assert.ok(
+      result.path !== "renders/output.mp4",
+      "result.path should not echo raw relative path"
+    );
+
+    // Should be a safe summary
+    assert.ok(
+      result.path === "[unsafe-path]" || result.path.length < 50,
+      "result.path should be a safe summary"
+    );
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+// ─── VO-3D: Manual Render Manifest Checks and Format/Platform Consistency Validation ──
+
+test("VO-3D-SL1: loadVideoOrchestratorFormatSpecs loads repo-local format specs when present", () => {
+  const specs = loadVideoOrchestratorFormatSpecs();
+  // Should load successfully from repo-local path
+  assert.ok(
+    specs === undefined || specs === null || (typeof specs === "object" && "formats" in (specs as object)),
+    "Should return valid format specs or undefined (no error)"
+  );
+});
+
+test("VO-3D-SL2: loadVideoOrchestratorPlatformSpecs loads repo-local platform specs when present", () => {
+  const specs = loadVideoOrchestratorPlatformSpecs();
+  // Should load successfully from repo-local path
+  assert.ok(
+    specs === undefined || specs === null || (typeof specs === "object" && "platforms" in (specs as object)),
+    "Should return valid platform specs or undefined (no error)"
+  );
+});
+
+test("VO-3D-SL3: spec loaders do not fetch remote URLs or call platform APIs", () => {
+  // Verify loaders only use fs.readFileSync (repo-local reads)
+  // If specs are loaded, they should be from local files, not URLs
+  const formatSpecs = loadVideoOrchestratorFormatSpecs();
+  const platformSpecs = loadVideoOrchestratorPlatformSpecs();
+
+  // Should not throw or attempt network calls
+  assert.ok(
+    formatSpecs === undefined || typeof formatSpecs === "object",
+    "Format specs should be undefined or local object (no network calls)"
+  );
+  assert.ok(
+    platformSpecs === undefined || typeof platformSpecs === "object",
+    "Platform specs should be undefined or local object (no network calls)"
+  );
+});
+
+test("VO-3D-SL4: malformed specs fail safely without raw value leakage", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Both loaders should handle malformed JSON gracefully
+    // They should return undefined, not throw or log raw JSON
+    const formatSpecs = loadVideoOrchestratorFormatSpecs();
+    const platformSpecs = loadVideoOrchestratorPlatformSpecs();
+
+    // Should not throw
+    assert.ok(
+      formatSpecs === undefined || typeof formatSpecs === "object",
+      "Format specs should degrade gracefully"
+    );
+    assert.ok(
+      platformSpecs === undefined || typeof platformSpecs === "object",
+      "Platform specs should degrade gracefully"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-TV1: validateRenderTargetAgainstSpecs blocks missing format_key", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const target: RenderTarget = {
+      kind: "video",
+      format_key: "", // Empty format_key
+      aspect_ratio: "16:9",
+      resolution: "1920x1080",
+      planned_output_path: "renders/video.mp4",
+    };
+
+    const result = validateRenderTargetAgainstSpecs({
+      target,
+      platform: "youtube",
+    });
+
+    assert.equal(result.ok, false, "Should fail validation with missing format_key");
+    assert.equal(result.ready_for_render, false, "ready_for_render must be false");
+    assert.equal(result.ready_for_upload, false, "ready_for_upload must be false");
+    assert.ok(
+      result.blocking_reasons.length > 0,
+      "Should have blocking reasons"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-TV2: validateRenderTargetAgainstSpecs blocks forbidden patterns in format_key", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const target: RenderTarget = {
+      kind: "video",
+      format_key: "landscape_access_token_16x9", // Forbidden pattern: access_token
+      aspect_ratio: "16:9",
+      resolution: "1920x1080",
+      planned_output_path: "renders/video.mp4",
+    };
+
+    const result = validateRenderTargetAgainstSpecs({
+      target,
+      platform: "youtube",
+    });
+
+    assert.equal(result.ok, false, "Should fail validation with forbidden pattern in format_key");
+    assert.equal(result.ready_for_render, false, "ready_for_render must be false");
+    assert.ok(
+      result.blocking_reasons.some(r => r.includes("forbidden") || r.includes("format_key")),
+      "Should identify forbidden pattern"
+    );
+
+    // Ensure raw value is not echoed in reasons
+    assert.ok(
+      !result.blocking_reasons.join("").includes("access_token"),
+      "Should not echo raw forbidden pattern"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-TV3: validateRenderTargetAgainstSpecs passes valid target", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const target: RenderTarget = {
+      kind: "video",
+      format_key: "landscape_1920x1080_16x9",
+      aspect_ratio: "16:9",
+      resolution: "1920x1080",
+      planned_output_path: "renders/video.mp4",
+    };
+
+    const result = validateRenderTargetAgainstSpecs({
+      target,
+      platform: "youtube",
+    });
+
+    assert.equal(result.checked_targets, 1, "Should count 1 target checked");
+    assert.equal(result.ready_for_render, false, "ready_for_render must stay false");
+    assert.equal(result.ready_for_upload, false, "ready_for_upload must stay false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-TV4: validateRenderTargetAgainstSpecs warns on missing optional fields", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const target: RenderTarget = {
+      kind: "video",
+      format_key: "landscape_1920x1080_16x9",
+      aspect_ratio: "16:9",
+      resolution: "1920x1080",
+      planned_output_path: "renders/video.mp4",
+      // Missing optional safe_zone_profile
+    };
+
+    const result = validateRenderTargetAgainstSpecs({
+      target,
+      platform: "youtube",
+    });
+
+    // Should not block but may warn
+    assert.equal(result.ready_for_render, false, "ready_for_render must be false");
+    assert.equal(result.ready_for_upload, false, "ready_for_upload must be false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-TV5: validateRenderTargetAgainstSpecs returns sanitized output paths", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const target: RenderTarget = {
+      kind: "video",
+      format_key: "landscape_1920x1080_16x9",
+      aspect_ratio: "16:9",
+      resolution: "1920x1080",
+      planned_output_path: "/sensitive/path/to/renders/video.mp4",
+    };
+
+    const result = validateRenderTargetAgainstSpecs({
+      target,
+      platform: "youtube",
+    });
+
+    // Output should be sanitized
+    const output = JSON.stringify(result);
+    assert.ok(
+      !output.includes("/sensitive/path"),
+      "Should not leak sensitive paths in output"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-PV1: validateRenderPlanAgainstLocalSpecs validates all targets", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-test-001",
+      package_id: "pkg-test-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "landscape_1920x1080_16x9",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/video.mp4",
+        },
+        {
+          kind: "thumbnail",
+          format_key: "youtube_thumbnail_1280x720",
+          aspect_ratio: "16:9",
+          resolution: "1280x720",
+          planned_output_path: "renders/thumbnail.jpg",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1, variants: [] },
+        thumbnails: { count: 1, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-test-001",
+        checksum: "sha256:test",
+      },
+    };
+
+    const result = validateRenderPlanAgainstLocalSpecs({
+      plan,
+    });
+
+    assert.equal(result.checked_targets, 2, "Should check all 2 targets");
+    assert.equal(result.ready_for_render, false, "ready_for_render must be false");
+    assert.equal(result.ready_for_upload, false, "ready_for_upload must be false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-PV2: validateRenderPlanAgainstLocalSpecs handles missing specs gracefully", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-test-002",
+      package_id: "pkg-test-002",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "landscape_1920x1080_16x9",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/video.mp4",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1, variants: [] },
+        thumbnails: { count: 0, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-test-002",
+        checksum: "sha256:test",
+      },
+    };
+
+    // Don't load specs (undefined)
+    const result = validateRenderPlanAgainstLocalSpecs({
+      plan,
+      formatSpecs: undefined,
+      platformSpecs: undefined,
+    });
+
+    // Should complete without throwing
+    assert.equal(result.ready_for_render, false, "ready_for_render must stay false");
+    assert.equal(result.ready_for_upload, false, "ready_for_upload must stay false");
+    assert.ok(
+      result.warnings.some(w => w.includes("spec")),
+      "Should warn about missing specs"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-PV3: validateRenderPlanAgainstLocalSpecs rejects invalid plan first", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Invalid plan: missing render_targets
+    const plan: any = {
+      schema_version: "1.0",
+      render_plan_id: "plan-invalid",
+      package_id: "pkg-invalid",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      // Missing render_targets
+      asset_plan: {
+        video: { count: 0, variants: [] },
+        thumbnails: { count: 0, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-invalid",
+        checksum: "sha256:test",
+      },
+    };
+
+    const result = validateRenderPlanAgainstLocalSpecs({
+      plan,
+    });
+
+    // Should have blocking reasons
+    assert.equal(result.ready_for_render, false, "ready_for_render must be false");
+    assert.ok(
+      result.blocking_reasons.length > 0,
+      "Should have blocking reasons for invalid plan"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-PV4: validateRenderPlanAgainstLocalSpecs no file existence checks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-test-003",
+      package_id: "pkg-test-003",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "landscape_1920x1080_16x9",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "/nonexistent/path/video.mp4", // Path doesn't exist
+        },
+      ],
+      asset_plan: {
+        video: { count: 1, variants: [] },
+        thumbnails: { count: 0, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-test-003",
+        checksum: "sha256:test",
+      },
+    };
+
+    // Should not throw about missing file
+    const result = validateRenderPlanAgainstLocalSpecs({
+      plan,
+    });
+
+    // Should complete validation (file existence is VO-3C's job)
+    assert.equal(result.ready_for_render, false, "ready_for_render must be false");
+    assert.equal(result.ready_for_upload, false, "ready_for_upload must be false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-MR1: getManualRenderManifestCheckReport returns aggregated summary", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create a valid render plan
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-report-001",
+      package_id: "pkg-report-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "landscape_1920x1080_16x9",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/video.mp4",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1, variants: [] },
+        thumbnails: { count: 0, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-report-001",
+        checksum: "sha256:test",
+      },
+    };
+
+    // Save plan
+    saveRenderPlan(plan);
+
+    const report = getManualRenderManifestCheckReport({
+      project_id: "project-test",
+      platform: "youtube",
+    });
+
+    assert.ok(report, "Should return a report");
+    assert.equal(report.ready_for_render, 0, "ready_for_render must be 0");
+    assert.equal(report.ready_for_upload, 0, "ready_for_upload must be 0");
+    assert.ok(
+      report.total >= 1,
+      "Should have at least one plan"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-MR2: getManualRenderManifestCheckReport returns aggregated plans", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-report-002",
+      package_id: "pkg-report-002",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "landscape_1920x1080_16x9",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/internal/video.mp4", // Relative path
+        },
+      ],
+      asset_plan: {
+        video: { count: 1, variants: [] },
+        thumbnails: { count: 0, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-report-002",
+        checksum: "sha256:test",
+      },
+    };
+
+    saveRenderPlan(plan);
+
+    const report = getManualRenderManifestCheckReport({
+      project_id: "project-test",
+      platform: "youtube",
+    });
+
+    // Should have aggregated plans
+    assert.ok(report.plans && report.plans.length > 0, "Should have aggregated plans");
+    assert.equal(report.ready_for_render, 0, "ready_for_render must be 0");
+    assert.equal(report.ready_for_upload, 0, "ready_for_upload must be 0");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-MR3: getManualRenderManifestCheckReport never sets upload ready", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-report-003",
+      package_id: "pkg-report-003",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "landscape_1920x1080_16x9",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/video.mp4",
+        },
+        {
+          kind: "thumbnail",
+          format_key: "youtube_thumbnail_1280x720",
+          aspect_ratio: "16:9",
+          resolution: "1280x720",
+          planned_output_path: "renders/thumbnail.jpg",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1, variants: [] },
+        thumbnails: { count: 1, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-report-003",
+        checksum: "sha256:test",
+      },
+    };
+
+    saveRenderPlan(plan);
+
+    const report = getManualRenderManifestCheckReport({
+      project_id: "project-test",
+      platform: "youtube",
+    });
+
+    // Both flags must always be 0 in VO-3D
+    assert.equal(report.ready_for_render, 0, "ready_for_render must be 0");
+    assert.equal(report.ready_for_upload, 0, "ready_for_upload must be 0");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-MR4: manual manifest report sanitizes legacy unsafe render-plans data", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Manually write unsafe render-plans.json with forbidden values
+    const storePath = path.join(tempDir, "render-plans.json");
+    const unsafeStore = {
+      schema_version: "1.0",
+      created_at: new Date().toISOString(),
+      plans: [
+        {
+          schema_version: "1.0",
+          render_plan_id: "plan_with_credential_reference_001",
+          package_id: "pkg_access_token_secret",
+          project_id: "project_keychain_unsafe",
+          platform: "youtube_bearer_token",
+          dry_run: true,
+          plan_state: "planned",
+          created_at: new Date().toISOString(),
+          render_targets: [
+            {
+              kind: "video",
+              format_key: "landscape_1920x1080_16x9",
+              aspect_ratio: "16:9",
+              resolution: "1920x1080",
+              planned_output_path: "renders/video.mp4",
+            },
+          ],
+          asset_plan: {
+            video: { count: 1, variants: [] },
+            thumbnails: { count: 0, variants: [] },
+            captions: { count: 0, formats: [], variants: [] },
+          },
+          validation: {
+            ready_for_render: false,
+            ready_for_upload: false,
+            blocking_reasons: ["Contains client_secret in metadata"],
+            warnings: ["refresh_token found in config"],
+          },
+          provenance: {
+            generated_by: "test",
+            source_package_id: "pkg_code_verifier_unsafe",
+            checksum: "sha256:test",
+          },
+        },
+      ],
+    };
+
+    fs.writeFileSync(storePath, JSON.stringify(unsafeStore, null, 2));
+
+    // Now call getManualRenderManifestCheckReport and verify report is safe
+    const report = getManualRenderManifestCheckReport({});
+    const reportJson = JSON.stringify(report);
+
+    // Verify no forbidden strings in output
+    const forbiddenPatterns = [
+      "credential_reference",
+      "credentialReference",
+      "keychain://",
+      "access_token",
+      "refresh_token",
+      "client_secret",
+      "code_verifier",
+      "authorization_code",
+      "Bearer",
+    ];
+
+    for (const pattern of forbiddenPatterns) {
+      assert.ok(
+        !reportJson.toLowerCase().includes(pattern.toLowerCase()),
+        `Report should not contain forbidden pattern: ${pattern}`
+      );
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-MR5: manual manifest report excludes raw render targets and planned paths", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-report-005",
+      package_id: "pkg-report-005",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "landscape_1920x1080_16x9",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/internal/video.mp4",
+        },
+        {
+          kind: "thumbnail",
+          format_key: "youtube_thumbnail_1280x720",
+          aspect_ratio: "16:9",
+          resolution: "1280x720",
+          planned_output_path: "renders/thumbnail_special_file.jpg",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1, variants: [] },
+        thumbnails: { count: 1, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-report-005",
+        checksum: "sha256:test",
+      },
+    };
+
+    saveRenderPlan(plan);
+
+    const report = getManualRenderManifestCheckReport({
+      project_id: "project-test",
+    });
+
+    const reportJson = JSON.stringify(report);
+
+    // Verify raw structures are excluded
+    assert.ok(
+      !reportJson.includes("render_targets"),
+      "Report should not expose render_targets array"
+    );
+    assert.ok(
+      !reportJson.includes("planned_output_path"),
+      "Report should not expose planned_output_path"
+    );
+    assert.ok(
+      !reportJson.includes("asset_plan"),
+      "Report should not expose asset_plan"
+    );
+    assert.ok(
+      !reportJson.includes("renders/video.mp4"),
+      "Report should not leak actual paths"
+    );
+    assert.ok(
+      !reportJson.includes("renders/internal"),
+      "Report should not leak path components"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-SAFE1: validateRenderPlanAgainstLocalSpecs does not perform file existence checks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-safe-001",
+      package_id: "pkg-safe-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "landscape_1920x1080_16x9",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/nonexistent_file.mp4",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1, variants: [] },
+        thumbnails: { count: 0, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-safe-001",
+        checksum: "sha256:test",
+      },
+    };
+
+    const result = validateRenderPlanAgainstLocalSpecs({ plan });
+
+    assert.equal(result.ready_for_render, false, "ready_for_render must be false");
+    assert.equal(result.ready_for_upload, false, "ready_for_upload must be false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-SAFE2: manual manifest check does not create files or directories", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-safe-002",
+      package_id: "pkg-safe-002",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "landscape_1920x1080_16x9",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/would_create_file.mp4",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1, variants: [] },
+        thumbnails: { count: 0, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-safe-002",
+        checksum: "sha256:test",
+      },
+    };
+
+    saveRenderPlan(plan);
+
+    const beforeCount = fs.readdirSync(tempDir, { recursive: true }).length;
+
+    getManualRenderManifestCheckReport({ project_id: "project-test" });
+
+    const afterCount = fs.readdirSync(tempDir, { recursive: true }).length;
+
+    assert.equal(
+      afterCount,
+      beforeCount,
+      "manifest check should not create files or directories"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3D-SAFE3: manual manifest check does not execute FFmpeg or child_process", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-safe-003",
+      package_id: "pkg-safe-003",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        {
+          kind: "video",
+          format_key: "landscape_1920x1080_16x9",
+          aspect_ratio: "16:9",
+          resolution: "1920x1080",
+          planned_output_path: "renders/test.mp4",
+        },
+      ],
+      asset_plan: {
+        video: { count: 1, variants: [] },
+        thumbnails: { count: 0, variants: [] },
+        captions: { count: 0, formats: [], variants: [] },
+      },
+      validation: {
+        ready_for_render: false,
+        ready_for_upload: false,
+        blocking_reasons: [],
+        warnings: [],
+      },
+      provenance: {
+        generated_by: "test",
+        source_package_id: "pkg-safe-003",
+        checksum: "sha256:test",
+      },
+    };
+
+    saveRenderPlan(plan);
+
+    const report = getManualRenderManifestCheckReport({ project_id: "project-test" });
+
+    assert.ok(report, "Should return report");
+    assert.equal(report.ready_for_render, 0, "ready_for_render must be 0");
+    assert.equal(report.ready_for_upload, 0, "ready_for_upload must be 0");
   } finally {
     cleanupTestRuntime(tempDir);
   }

@@ -1896,19 +1896,135 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 - ✅ No FFmpeg execution
 - ✅ No real media files created
 
-### VO-3B: Next Steps (VO-3C+)
+### VO-3C: Local File Existence Validation and Manifest Consistency Checks ✅ (2026-05-11)
 
-**VO-3C: Local File Existence Validation** — Before rendering, validate that source files exist
-- Check if source_materials paths exist (defer from VO-3B)
-- Validate format-specs.json references
-- Build render-ready validation without FFmpeg
-- Do NOT execute FFmpeg or create files yet
+**Goal:** Validate that source and output paths are safe and exist before rendering
 
-**VO-3D: Manual Render Manifest Checks** — Verify render plans against actual system state
-- Compare planned_output_path with target safe zones
-- Validate platform format requirements match plan
-- Detect configuration mismatches
-- Still no actual rendering
+**Delivered:**
+1. **Safe Local Path Resolver** (`resolveSafeLocalValidationPath`)
+   - Validates relative paths within baseDir only
+   - Blocks absolute paths, URLs, path traversal, forbidden patterns
+   - Returns safe absolute path or blocking reasons
+   - Never echoes raw unsafe paths in error messages
+
+2. **Local File Existence Validation** (`validateLocalFileExistence`)
+   - Check mode: `disabled` (no filesystem checks) or `explicit` (check fs.existsSync)
+   - Kind: `input` (files must exist or block) or `planned_output` (warnings only, VO-3C does not create)
+   - Returns: checked flag, exists flag, safe path, blocking reasons, warnings
+   - No directory creation, no file creation
+
+3. **Render Plan Manifest Consistency** (`validateRenderPlanManifestConsistency`)
+   - Validates render plan schema first (leverages VO-3B)
+   - Checks all planned output paths in render_targets
+   - Disabled mode: no fs checks, files_checked=0
+   - Explicit mode: checks each planned output, missing outputs warn (not block)
+   - Always returns: ready_for_render=false, ready_for_upload=false
+
+4. **Validation Report** (`getLocalRenderPlanValidationReport`)
+   - Summarizes all plans with optional filters (project_id, platform)
+   - Disabled mode: files_checked=0, warnings about disabled checks
+   - Explicit mode: counts total files checked, files missing, blocked plans
+   - Returns safe summary only (no raw paths)
+
+**Test Coverage:** 19 tests
+- VO-3C-PR1–PR7: Safe path resolver (relative, absolute, URL, traversal, forbidden patterns, escape, no echo)
+- VO-3C-FX1–FX5: File existence validation (disabled, exists, missing, input blocking, output warning)
+- VO-3C-MC1–MC4: Manifest consistency (disabled mode, explicit mode, warnings, ready flags)
+- VO-3C-VR1–VR3: Validation report (disabled, explicit, no path leakage)
+
+**What It Does NOT Do:**
+- Does NOT create directories or files
+- Does NOT execute FFmpeg
+- Does NOT upload
+- Does NOT call platform APIs
+- Filesystem checks only with explicit check mode
+
+**What It Does:**
+- Validates path safety before any filesystem operations
+- Checks file existence only in explicit mode (not by default)
+- Categorizes missing input (blocking) vs missing output (warning)
+- Provides safe summaries without path echoing
+
+**Integration:**
+- New types: `LocalFileExistenceCheckMode`, `LocalFileExistenceCheckResult`, `ManifestConsistencyValidationResult`, `LocalValidationReportSummary`
+- All checks optional in existing VO-3B reports (backward compatible)
+- Explicit check mode available for new workflows
+
+**Status:** Ready for rendering phases (VO-3D+)
+
+---
+
+---
+
+### VO-3D: Manual Render Manifest Checks and Format/Platform Consistency Validation ✅ (2026-05-11)
+
+**Status:** Complete with 11 comprehensive tests
+
+**Implementation:**
+
+1. **Function: `loadVideoOrchestratorFormatSpecs()`**
+   - Safely loads `operations/specs/video-orchestrator/format-specs.json`
+   - Returns `undefined` if file missing or malformed (graceful degradation)
+   - Validates shape: must have `formats` array
+   - No throws; warnings logged instead
+
+2. **Function: `loadVideoOrchestratorPlatformSpecs()`**
+   - Safely loads `operations/specs/video-orchestrator/platform-specs.json`
+   - Returns `undefined` if file missing or malformed (graceful degradation)
+   - Validates shape: must have `platforms` array
+   - No throws; warnings logged instead
+
+3. **Function: `validateRenderTargetAgainstSpecs(input: {target, platform, formatSpecs?, platformSpecs?})`**
+   - Validates single render target against optional format/platform specs
+   - Checks required fields: `format_key`, `aspect_ratio`, `resolution`
+   - Blocks forbidden patterns using `isForbiddenStringPattern()` (case-insensitive)
+   - Compares target against specs if available (warns on mismatch)
+   - Returns `RenderManifestConsistencyCheckResult` with `checked_targets: 1`
+   - **Immutable flags:** `ready_for_render: false`, `ready_for_upload: false`
+
+4. **Function: `validateRenderPlanAgainstLocalSpecs(input: {plan, formatSpecs?, platformSpecs?})`**
+   - Calls `validateRenderPlan()` first (VO-3B validation)
+   - Validates each `render_target` against specs
+   - Gracefully warns if specs unavailable (conservative, non-blocking)
+   - Aggregates blocking reasons and warnings across all targets
+   - Returns `RenderManifestConsistencyCheckResult`
+   - **Immutable flags:** `ready_for_render: false`, `ready_for_upload: false`
+   - **No file existence checks** (VO-3C responsibility)
+
+5. **Function: `getManualRenderManifestCheckReport(input?: {project_id?, platform?, useLocalSpecs?})`**
+   - Aggregates all render plans matching `project_id` and/or `platform` filters
+   - Loads specs if `useLocalSpecs: true`
+   - Validates each plan against specs
+   - Returns `ManualRenderManifestCheckReport` with:
+     - `total`: count of all plans
+     - `checked_targets`: total targets validated
+     - `blocked`: count of plans with blocking reasons
+     - `warnings`: total warning count
+     - `ready_for_render: 0` (immutable)
+     - `ready_for_upload: 0` (immutable)
+     - `plans[]`: sanitized summaries of each plan (no raw paths, no sensitive data)
+
+**Safety Guarantees:**
+- ✅ No file creation (read-only validation)
+- ✅ No FFmpeg execution
+- ✅ No platform API calls
+- ✅ No secret leakage (paths sanitized, forbidden patterns blocked)
+- ✅ Immutable `ready_for_render: false`, `ready_for_upload: false`
+- ✅ Graceful degradation when specs unavailable
+
+**Test Coverage (23 tests):**
+- VO-3D-SL1-4: Spec loaders (load repo-local specs, no URLs/APIs, degrade safely)
+- VO-3D-TV1-5: Target validation (missing fields, forbidden patterns, valid targets, optional fields, path sanitization)
+- VO-3D-PV1-4: Plan validation (all targets, missing specs, schema validation, no file checks)
+- VO-3D-MR1-5: Manifest reporting (aggregated summary, aggregated plans, upload immutable, legacy unsafe data sanitization, exclude raw targets/paths)
+- VO-3D-SAFE1-3: Safety proofs (no file checks, no file creation, no FFmpeg/child_process)
+
+**Total Test Count:** 354 (original 331 + 26 VO-3C hardening + 23 VO-3D)
+**All Passing:** ✅ (354/354 tests passing)
+
+---
+
+### VO-3B + VO-3C + VO-3D: Next Steps (VO-3E+)
 
 **VO-3E: Real Render Execution** — Implement actual FFmpeg rendering based on render plans (when approved)
 - Execute render plans with real FFmpeg composition

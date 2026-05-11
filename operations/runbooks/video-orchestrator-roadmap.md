@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
-**Date Updated:** 2026-05-11 (VO-2E Complete)  
-**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2D complete; Phase 2E adds CLI, local adapter contracts, and readiness reporting.  
+**Date Updated:** 2026-05-11 (VO-3D Complete)  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks).  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Architecture:** Local-first production + platform adapters (not fully local publishing)
 
@@ -66,6 +66,8 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **VO-2F** | ✅ Done | Content Brief/Input Model Foundation | Content brief schema + example; TypeScript validation with safe error messages; local media asset validation contracts (shape/path only); brief-to-draft bridge with safe metadata; no file I/O, no FFmpeg, no upload |
 | **VO-3A** | ✅ Done | Local Media Validation Contracts | Media asset validation foundation; blocks absolute paths, URLs, traversal; defers real inspection to VO-3B+; hardened to prevent credential leakage in error messages |
 | **VO-3B** | ✅ Done | Local Render Planning & Production Manifest Foundation | Render plan schema + TypeScript types; createLocalRenderPlanFromPackageDraft function; JSON-backed render plan store with sorting; listRenderPlans with project_id/plan_state filters; aggregate readiness report; safe summaries; validates platforms, relative paths, forbidden patterns; dry-run only (ready_for_render=false, ready_for_upload=false); package draft validation (dry-run required, upload-ready blocked, platform matching); 40 tests; no FFmpeg, no file creation, no upload |
+| **VO-3C** | ✅ Done | Local File Existence Validation and Manifest Consistency Checks | Safe path resolver (blocks absolute, URLs, traversal, forbidden patterns); file existence validation (disabled/explicit modes); manifest consistency checks for render plans; validation reports with safe summaries; 26 tests; no file creation, no FFmpeg, no upload |
+| **VO-3D** | ✅ Done | Manual Render Manifest Checks and Format/Platform Consistency Validation | Spec loaders for format and platform specs (graceful degradation if missing, repo-local only); validateRenderTargetAgainstSpecs validates single targets; validateRenderPlanAgainstLocalSpecs validates all targets; getManualRenderManifestCheckReport aggregates safely; legacy unsafe data sanitization; immutable ready_for_render/upload flags; no file checks/creation/FFmpeg; 23 tests |
 | **2A** | May 30–Jun 10 | Production Package MVP | One video → platform-ready packages for all defined platform targets |
 | **2B** | Jun 10–Jun 20 | Local Queue MVP | Batch of 5 videos can fail mid-run and resume without lost work |
 | **2C** | Jun 20–Jun 27 | Local Production Adapters | FFmpeg render/thumbnail outputs and optional Whisper.cpp captions produce real local artifacts |

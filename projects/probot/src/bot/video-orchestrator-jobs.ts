@@ -2148,6 +2148,557 @@ export function generateRenderPlanReadinessReport(
   };
 }
 
+// ─── VO-3C: Local File Existence Validation and Manifest Consistency ───────
+
+export type LocalFileExistenceCheckMode = "disabled" | "explicit";
+
+export interface LocalFileExistenceCheckResult {
+  checked: boolean;
+  exists: boolean;
+  path: string;
+  kind: "input" | "planned_output";
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface ManifestConsistencyValidationResult {
+  ok: boolean;
+  ready_for_render: false;
+  ready_for_upload: false;
+  files_checked: number;
+  files_missing: number;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface LocalValidationReportSummary {
+  total: number;
+  files_checked: number;
+  files_missing: number;
+  blocked: number;
+  warnings: number;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  plans: Array<{
+    render_plan_id: string;
+    files_checked: number;
+    files_missing: number;
+    blocking_reasons_count: number;
+    warnings_count: number;
+  }>;
+}
+
+export function resolveSafeLocalValidationPath(input: {
+  relativePath: string;
+  baseDir: string;
+}): {
+  ok: boolean;
+  absolutePath?: string;
+  blocking_reasons: string[];
+} {
+  const { relativePath, baseDir } = input;
+  const blocking_reasons: string[] = [];
+
+  // Validate input type
+  if (typeof relativePath !== "string") {
+    blocking_reasons.push("Path must be a string");
+    return { ok: false, blocking_reasons };
+  }
+
+  if (!baseDir || typeof baseDir !== "string") {
+    blocking_reasons.push("Base directory must be a string");
+    return { ok: false, blocking_reasons };
+  }
+
+  // Block absolute paths
+  if (path.isAbsolute(relativePath)) {
+    blocking_reasons.push("Absolute paths are not allowed");
+    return { ok: false, blocking_reasons };
+  }
+
+  // Block URLs
+  if (
+    relativePath.includes("://") ||
+    relativePath.startsWith("http") ||
+    relativePath.startsWith("https")
+  ) {
+    blocking_reasons.push("URLs are not allowed");
+    return { ok: false, blocking_reasons };
+  }
+
+  // Block traversal attempts
+  if (relativePath.includes("..")) {
+    blocking_reasons.push("Path traversal is not allowed");
+    return { ok: false, blocking_reasons };
+  }
+
+  // Block forbidden patterns
+  if (isForbiddenStringPattern(relativePath)) {
+    blocking_reasons.push("Path contains forbidden patterns");
+    return { ok: false, blocking_reasons };
+  }
+
+  // Resolve within baseDir
+  try {
+    const absolutePath = path.resolve(path.join(baseDir, relativePath));
+    const baseDirResolved = path.resolve(baseDir);
+
+    // Verify resolved path is within baseDir
+    if (!absolutePath.startsWith(baseDirResolved + path.sep) && absolutePath !== baseDirResolved) {
+      blocking_reasons.push("Path escapes base directory");
+      return { ok: false, blocking_reasons };
+    }
+
+    return { ok: true, absolutePath, blocking_reasons: [] };
+  } catch (err) {
+    blocking_reasons.push("Failed to resolve path");
+    return { ok: false, blocking_reasons };
+  }
+}
+
+export function validateLocalFileExistence(input: {
+  relativePath: string;
+  baseDir: string;
+  kind: "input" | "planned_output";
+  checkMode: LocalFileExistenceCheckMode;
+}): LocalFileExistenceCheckResult {
+  const { relativePath, baseDir, kind, checkMode } = input;
+
+  const result: LocalFileExistenceCheckResult = {
+    checked: false,
+    exists: false,
+    path: sanitizeRenderPlanString(relativePath, "[unsafe-path]"),
+    kind,
+    blocking_reasons: [],
+    warnings: [],
+  };
+
+  if (checkMode === "disabled") {
+    result.warnings.push("File existence check disabled");
+    return result;
+  }
+
+  // Explicit check mode: validate path safety first
+  const resolution = resolveSafeLocalValidationPath({
+    relativePath,
+    baseDir,
+  });
+
+  if (!resolution.ok) {
+    result.blocking_reasons = [...resolution.blocking_reasons];
+    return result;
+  }
+
+  // Safe path: check filesystem
+  const absolutePath = resolution.absolutePath!;
+  result.checked = true;
+
+  try {
+    result.exists = fs.existsSync(absolutePath);
+
+    // Input files missing: blocking
+    if (kind === "input" && !result.exists) {
+      result.blocking_reasons.push("Input file not found");
+    }
+
+    // Planned output files missing: warning only (VO-3C does not create files)
+    if (kind === "planned_output" && !result.exists) {
+      result.warnings.push("Planned output file does not exist (VO-3C does not create files)");
+    }
+  } catch (err) {
+    result.blocking_reasons.push("Failed to check file existence");
+  }
+
+  return result;
+}
+
+export function validateRenderPlanManifestConsistency(input: {
+  plan: RenderPlan;
+  baseDir: string;
+  checkMode: LocalFileExistenceCheckMode;
+}): ManifestConsistencyValidationResult {
+  const { plan, baseDir, checkMode } = input;
+
+  // First validate the plan itself
+  const planValidation = validateRenderPlan(plan);
+
+  const result: ManifestConsistencyValidationResult = {
+    ok: planValidation.ok,
+    ready_for_render: false,
+    ready_for_upload: false,
+    files_checked: 0,
+    files_missing: 0,
+    blocking_reasons: [...planValidation.blocking_reasons],
+    warnings: [...planValidation.warnings],
+  };
+
+  if (checkMode === "disabled") {
+    result.warnings.push("File existence checks disabled");
+    return result;
+  }
+
+  // Explicit check mode: validate planned output paths
+  if (!plan.render_targets || !Array.isArray(plan.render_targets)) {
+    result.warnings.push("No render targets found");
+    return result;
+  }
+
+  // Check each planned output path
+  for (const target of plan.render_targets) {
+    if (!target.planned_output_path) {
+      result.warnings.push("Render target missing planned_output_path");
+      continue;
+    }
+
+    const check = validateLocalFileExistence({
+      relativePath: target.planned_output_path,
+      baseDir,
+      kind: "planned_output",
+      checkMode: "explicit",
+    });
+
+    if (check.checked) {
+      result.files_checked++;
+      if (!check.exists) {
+        result.files_missing++;
+      }
+    }
+
+    if (check.blocking_reasons.length > 0) {
+      result.blocking_reasons.push(...check.blocking_reasons);
+    }
+
+    if (check.warnings.length > 0) {
+      result.warnings.push(...check.warnings);
+    }
+  }
+
+  // Mark as blocked if there are blocking reasons
+  if (result.blocking_reasons.length > 0) {
+    result.ok = false;
+  }
+
+  return result;
+}
+
+export function getLocalRenderPlanValidationReport(input: {
+  checkMode: LocalFileExistenceCheckMode;
+  baseDir?: string;
+  project_id?: string;
+  platform?: string;
+}): LocalValidationReportSummary {
+  const { checkMode, baseDir: providedBaseDir, project_id, platform } = input;
+
+  // Use provided baseDir or fallback to runtime dir
+  const baseDir = providedBaseDir || getRuntimeDir();
+
+  // Get plans with optional filters
+  const filterOptions: { project_id?: string; platform?: string } = {};
+  if (project_id !== undefined) filterOptions.project_id = project_id;
+  if (platform !== undefined) filterOptions.platform = platform;
+  const plans = listRenderPlans(filterOptions);
+
+  let totalFilesChecked = 0;
+  let totalFilesMissing = 0;
+  let totalBlocked = 0;
+  let totalWarnings = 0;
+
+  const planSummaries = plans.map((plan) => {
+    const manifestCheck = validateRenderPlanManifestConsistency({
+      plan,
+      baseDir,
+      checkMode,
+    });
+
+    totalFilesChecked += manifestCheck.files_checked;
+    totalFilesMissing += manifestCheck.files_missing;
+
+    if (!manifestCheck.ok) {
+      totalBlocked++;
+    }
+
+    if (manifestCheck.warnings.length > 0) {
+      totalWarnings++;
+    }
+
+    return {
+      render_plan_id: sanitizeRenderPlanString(plan.render_plan_id, "[unsafe-render-plan-id]"),
+      files_checked: manifestCheck.files_checked,
+      files_missing: manifestCheck.files_missing,
+      blocking_reasons_count: manifestCheck.blocking_reasons.length,
+      warnings_count: manifestCheck.warnings.length,
+    };
+  });
+
+  return {
+    total: plans.length,
+    files_checked: totalFilesChecked,
+    files_missing: totalFilesMissing,
+    blocked: totalBlocked,
+    warnings: totalWarnings,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    plans: planSummaries,
+  };
+}
+
+// ─── VO-3D: Manual Render Manifest Checks and Format/Platform Consistency ───
+
+export interface RenderFormatSpecSummary {
+  format_key: string;
+  platform?: string;
+  aspect_ratio: string;
+  resolution: string;
+  safe_zone_profile?: string;
+  thumbnail_required?: boolean;
+  captions_required?: boolean;
+}
+
+export interface RenderManifestConsistencyCheckResult {
+  ok: boolean;
+  ready_for_render: false;
+  ready_for_upload: false;
+  checked_targets: number;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface ManualRenderManifestCheckReport {
+  total: number;
+  checked_targets: number;
+  blocked: number;
+  warnings: number;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  plans: Array<{
+    render_plan_id: string;
+    package_id: string;
+    project_id: string;
+    platform: string;
+    plan_state: string;
+    checked_targets: number;
+    blocking_reasons_count: number;
+    warnings_count: number;
+  }>;
+}
+
+export function loadVideoOrchestratorFormatSpecs(): unknown {
+  try {
+    const repoRoot = resolveRepoRoot();
+    const specPath = path.join(repoRoot, "operations/specs/video-orchestrator/format-specs.json");
+    if (fs.existsSync(specPath)) {
+      const raw = fs.readFileSync(specPath, "utf8");
+      const specs = JSON.parse(raw);
+      // Conservative shape validation
+      if (specs && typeof specs === "object" && Array.isArray(specs.formats)) {
+        return specs;
+      }
+    }
+  } catch (err) {
+    // Silently ignore errors; caller will handle missing specs
+  }
+  return undefined;
+}
+
+export function loadVideoOrchestratorPlatformSpecs(): unknown {
+  try {
+    const repoRoot = resolveRepoRoot();
+    const specPath = path.join(repoRoot, "operations/specs/video-orchestrator/platform-specs.json");
+    if (fs.existsSync(specPath)) {
+      const raw = fs.readFileSync(specPath, "utf8");
+      const specs = JSON.parse(raw);
+      // Conservative shape validation
+      if (specs && typeof specs === "object" && Array.isArray(specs.platforms)) {
+        return specs;
+      }
+    }
+  } catch (err) {
+    // Silently ignore errors; caller will handle missing specs
+  }
+  return undefined;
+}
+
+export function validateRenderTargetAgainstSpecs(input: {
+  target: RenderTarget;
+  platform: string;
+  formatSpecs?: unknown;
+  platformSpecs?: unknown;
+}): RenderManifestConsistencyCheckResult {
+  const { target, platform, formatSpecs, platformSpecs } = input;
+
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+
+  // Required fields validation
+  if (!target.format_key || typeof target.format_key !== "string") {
+    blocking_reasons.push("Target must have format_key");
+  } else if (isForbiddenStringPattern(target.format_key)) {
+    blocking_reasons.push("Target format_key contains forbidden patterns");
+  }
+
+  if (!target.aspect_ratio || typeof target.aspect_ratio !== "string") {
+    blocking_reasons.push("Target must have aspect_ratio");
+  } else if (isForbiddenStringPattern(target.aspect_ratio)) {
+    blocking_reasons.push("Target aspect_ratio contains forbidden patterns");
+  }
+
+  if (!target.resolution || typeof target.resolution !== "string") {
+    blocking_reasons.push("Target must have resolution");
+  } else if (isForbiddenStringPattern(target.resolution)) {
+    blocking_reasons.push("Target resolution contains forbidden patterns");
+  }
+
+  // Check against format specs if available
+  if (formatSpecs && typeof formatSpecs === "object" && "formats" in formatSpecs) {
+    const formats = (formatSpecs as any).formats;
+    if (Array.isArray(formats)) {
+      const matchedFormat = formats.find((f: any) => f.format_key === target.format_key);
+      if (!matchedFormat) {
+        warnings.push("Format key not found in local format specifications");
+      } else {
+        // Check aspect ratio match
+        if (matchedFormat.aspect_ratio && matchedFormat.aspect_ratio !== target.aspect_ratio) {
+          warnings.push("Target aspect_ratio does not match format specification");
+        }
+        // Check resolution match
+        if (matchedFormat.resolution && matchedFormat.resolution !== target.resolution) {
+          warnings.push("Target resolution does not match format specification");
+        }
+      }
+    }
+  }
+
+  // Check against platform specs if available
+  if (platformSpecs && typeof platformSpecs === "object" && "platforms" in platformSpecs) {
+    const platforms = (platformSpecs as any).platforms;
+    if (Array.isArray(platforms)) {
+      const hasPlatform = platforms.some((p: any) => p.platform === platform);
+      if (!hasPlatform) {
+        warnings.push("Platform not found in local platform specifications");
+      }
+    }
+  }
+
+  return {
+    ok: blocking_reasons.length === 0,
+    ready_for_render: false,
+    ready_for_upload: false,
+    checked_targets: 1,
+    blocking_reasons,
+    warnings,
+  };
+}
+
+export function validateRenderPlanAgainstLocalSpecs(input: {
+  plan: RenderPlan;
+  formatSpecs?: unknown;
+  platformSpecs?: unknown;
+}): RenderManifestConsistencyCheckResult {
+  const { plan, formatSpecs, platformSpecs } = input;
+
+  // First validate the plan itself
+  const planValidation = validateRenderPlan(plan);
+
+  const blocking_reasons = [...planValidation.blocking_reasons];
+  const warnings = [...planValidation.warnings];
+
+  let checkedTargets = 0;
+
+  // Check each render target against specs
+  if (plan.render_targets && Array.isArray(plan.render_targets)) {
+    for (const target of plan.render_targets) {
+      const targetCheck = validateRenderTargetAgainstSpecs({
+        target,
+        platform: plan.platform,
+        formatSpecs,
+        platformSpecs,
+      });
+
+      checkedTargets += targetCheck.checked_targets;
+      blocking_reasons.push(...targetCheck.blocking_reasons);
+      warnings.push(...targetCheck.warnings);
+    }
+  }
+
+  // Warn if specs were not available
+  if (!formatSpecs) {
+    warnings.push("Format specifications not available for validation");
+  }
+  if (!platformSpecs) {
+    warnings.push("Platform specifications not available for validation");
+  }
+
+  return {
+    ok: blocking_reasons.length === 0,
+    ready_for_render: false,
+    ready_for_upload: false,
+    checked_targets: checkedTargets,
+    blocking_reasons,
+    warnings,
+  };
+}
+
+export function getManualRenderManifestCheckReport(input?: {
+  project_id?: string;
+  platform?: string;
+  useLocalSpecs?: boolean;
+}): ManualRenderManifestCheckReport {
+  const { project_id, platform, useLocalSpecs } = input || {};
+
+  // Load specs if requested
+  const formatSpecs = useLocalSpecs ? loadVideoOrchestratorFormatSpecs() : undefined;
+  const platformSpecs = useLocalSpecs ? loadVideoOrchestratorPlatformSpecs() : undefined;
+
+  // Get plans with optional filters
+  const filterOptions: { project_id?: string; platform?: string } = {};
+  if (project_id !== undefined) filterOptions.project_id = project_id;
+  if (platform !== undefined) filterOptions.platform = platform;
+  const plans = listRenderPlans(filterOptions);
+
+  let totalCheckedTargets = 0;
+  let totalBlocked = 0;
+  let totalWarnings = 0;
+
+  const planSummaries = plans.map((plan) => {
+    const manifestCheck = validateRenderPlanAgainstLocalSpecs({
+      plan,
+      formatSpecs,
+      platformSpecs,
+    });
+
+    totalCheckedTargets += manifestCheck.checked_targets;
+
+    if (!manifestCheck.ok) {
+      totalBlocked++;
+    }
+
+    if (manifestCheck.warnings.length > 0) {
+      totalWarnings++;
+    }
+
+    return {
+      render_plan_id: sanitizeRenderPlanString(plan.render_plan_id, "[unsafe-render-plan-id]"),
+      package_id: sanitizeRenderPlanString(plan.package_id, "[unsafe-package-id]"),
+      project_id: sanitizeRenderPlanString(plan.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(plan.platform, "[unsafe-platform]"),
+      plan_state: sanitizeRenderPlanString(plan.plan_state, "blocked"),
+      checked_targets: manifestCheck.checked_targets,
+      blocking_reasons_count: manifestCheck.blocking_reasons.length,
+      warnings_count: manifestCheck.warnings.length,
+    };
+  });
+
+  return {
+    total: plans.length,
+    checked_targets: totalCheckedTargets,
+    blocked: totalBlocked,
+    warnings: totalWarnings,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    plans: planSummaries,
+  };
+}
+
 export function createLocalRenderPlanFromPackageDraft(
   input: CreateRenderPlanInput
 ): RenderPlan {
