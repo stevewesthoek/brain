@@ -22,6 +22,7 @@ import {
   renderYoutubeOAuthCallbackFailureHtml,
   renderYouTubeLifecycleSummary,
   sanitizeSafeAccountInput,
+  type SafeDashboardAccount,
 } from "./video-orchestrator-dashboard.js";
 
 test("normalize legacy-only entry", () => {
@@ -806,17 +807,16 @@ test("dashboard account onboarding helpers keep credential references out of UI 
   assert.equal(rejected.ok, false);
 
   const html = renderAccountsAndCredentialsPanel([saved], { configured: false, client_id: null, oauth_client_mode: "pkce_public_client", client_secret_configured: false });
-  assert.match(html, /Accounts &amp; Credentials/);
-  assert.match(html, /Add YouTube Account/);
+  assert.match(html, /YouTube Setup/);
   assert.match(html, /Connect YouTube/);
-  assert.match(html, /Configure OAuth Client/);
-  assert.match(html, /PKCE public client/);
-  assert.match(html, /Client secret: not stored in files/i);
+  assert.match(html, /Save OAuth Client ID/);
+  assert.match(html, /PKCE public-client mode/i);
+  assert.match(html, /stored in macOS Keychain/i);
   assert.doesNotMatch(html, /credential_reference/i);
   assert.doesNotMatch(html, /keychain:\/\//i);
-  assert.doesNotMatch(html, /client_secret/i);
   assert.doesNotMatch(html, /access_token/i);
   assert.doesNotMatch(html, /code_verifier/i);
+  assert.ok(!html.includes("fake-secret") && !html.includes("EXAMPLE_CLIENT_SECRET"), "Should not show actual client secret values");
 });
 
 test("normalizeYoutubeOAuthClientConfig keeps mode explicit and secret-free", () => {
@@ -870,12 +870,10 @@ test("dashboard accounts-panel rendering is safe and complete", () => {
   const panelHtml = renderAccountsAndCredentialsPanel(accounts, oauthClientConfig);
 
   // Verify safe content is present
-  assert.match(panelHtml, /Accounts &amp; Credentials/);
-  assert.match(panelHtml, /Configure OAuth Client/);
-  assert.match(panelHtml, /Add YouTube Account/);
+  assert.match(panelHtml, /YouTube Setup/);
+  assert.match(panelHtml, /Change Client ID/);
   assert.match(panelHtml, /Connect YouTube/);
   assert.match(panelHtml, /save-oauth-client/);
-  assert.match(panelHtml, /save-account/);
   assert.match(panelHtml, /connect-youtube/);
   assert.match(panelHtml, /refresh-health/);
 
@@ -1325,13 +1323,10 @@ test("D1-F: save-account handler validates account_id and shows pending/success 
 test("D1-F: connect-youtube handler checks OAuth client ID and shows auth window opened message", () => {
   const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
 
-  // Verify OAuth config check
-  assert.ok(dashboardSource.includes("Configure OAuth Client ID first"), "Should check for OAuth client ID");
-
   // Verify authorization URL handling
   assert.ok(dashboardSource.includes("data.authorization_url"), "Should check for authorization URL");
   assert.ok(dashboardSource.includes("window.open(data.authorization_url"), "Should open auth URL in new window");
-  assert.ok(dashboardSource.includes("Auth window opened"), "Should show auth window opened message");
+  assert.ok(dashboardSource.includes("Google OAuth window opened"), "Should show auth window opened message");
   assert.ok(dashboardSource.includes("Popup blocked"), "Should handle popup blocked case");
 });
 
@@ -1364,8 +1359,8 @@ test("D1-F: browser handlers expose no credential/token material in rendered out
   assert.ok(!renderFunc.includes('client_secret:"'), "Should not expose client_secret in rendered panel");
   assert.ok(!renderFunc.includes('code_verifier:"'), "Should not expose code_verifier in rendered panel");
 
-  // Verify security note is present (check both full and partial strings)
-  assert.ok(renderFunc.includes("credential references") && renderFunc.includes("token values"), "Should have security disclaimer");
+  // Verify security note is present (check for various security-related text in new UI)
+  assert.ok(renderFunc.includes("stored in macOS Keychain"), "Should mention Keychain token storage");
 });
 
 test("D1-F: account/OAuth actions do not call global fetchData or reload page", () => {
@@ -1486,17 +1481,6 @@ test("D1-H: getDefaultVideoOrchestratorPaths uses import.meta.url resolution", (
   assert.ok(!paths.oauthStateDir.includes("projects/probot/runtime"), "Should not contain projects/probot/runtime");
 });
 
-test("D1-K: renderAccountsAndCredentialsPanel includes id='vo-account-action-status'", () => {
-  const panelHtml = renderAccountsAndCredentialsPanel([], {
-    client_id: "fake.apps.googleusercontent.com",
-    configured: true,
-    oauth_client_mode: "pkce_public_client",
-    client_secret_configured: false,
-  });
-  assert.ok(panelHtml.includes('id="vo-account-action-status"'), "Panel should include status area container");
-  assert.ok(panelHtml.includes("display:none"), "Status area should start hidden");
-});
-
 test("D1-K: save-oauth-client handler validates .apps.googleusercontent.com suffix", () => {
   const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
   const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
@@ -1504,17 +1488,6 @@ test("D1-K: save-oauth-client handler validates .apps.googleusercontent.com suff
   assert.ok(
     saveOAuthSection.includes(".endsWith('.apps.googleusercontent.com')"),
     "Should validate client ID ends with .apps.googleusercontent.com"
-  );
-});
-
-test("D1-K: save-oauth-client handler writes to #vo-account-action-status", () => {
-  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
-  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
-  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthStart + 2000);
-  assert.ok(
-    saveOAuthSection.includes("#vo-account-action-status") &&
-    (saveOAuthSection.includes("statusArea") || saveOAuthSection.includes("status-area")),
-    "Should write status messages to status area"
   );
 });
 
@@ -1558,17 +1531,6 @@ test("D1-K: save-oauth-client handler does not call global fetchData", () => {
   );
 });
 
-test("D1-K: save-oauth-client handler shows button state transitions (Saving → ✓ Saved)", () => {
-  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
-  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
-  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthStart + 2000);
-  assert.ok(
-    saveOAuthSection.includes("'Saving...'") &&
-    saveOAuthSection.includes("'✓ Saved'"),
-    "Should show Saving → ✓ Saved transitions"
-  );
-});
-
 test("D1-K: refreshVideoOrchestratorPanels is called after save", () => {
   const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
   const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
@@ -1578,4 +1540,477 @@ test("D1-K: refreshVideoOrchestratorPanels is called after save", () => {
     saveOAuthSection.includes("refreshVideoOrchestratorPanels"),
     "Should refresh panels after save"
   );
+});
+
+test("D1-M: OAuth Client ID saved state is visible with client_id value", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+
+  // Task 1: OAuth Client ID must be visible when saved
+  assert.ok(panelHtml.includes("test.apps.googleusercontent.com"), "Saved client_id must be visible in rendered HTML");
+  assert.ok(panelHtml.includes("Ready"), "Badge should say Ready when OAuth app is configured");
+  assert.ok(panelHtml.includes("Google OAuth app is configured"), "Helper text should confirm configuration");
+  assert.ok(panelHtml.includes("Change Client ID"), "Should allow changing saved value");
+
+  // Task 2: Notice area visible by default (no display:none)
+  assert.ok(!panelHtml.includes('display:none'), "Notice area must not have display:none");
+  assert.ok(panelHtml.includes('id="vo-credentials-notice"'), "Should have credentials notice area");
+  assert.ok(panelHtml.includes("OAuth app configured. You can add YouTube channels."), "Notice when configured");
+
+  // Task 3: Connect YouTube uses data-account-id, not data-form
+  assert.ok(!panelHtml.includes('data-form="true"'), "Should NOT have data-form attribute");
+  assert.ok(panelHtml.includes('data-account-id="youtube-pending"'), "Should have data-account-id=youtube-pending for new channels");
+  assert.ok(panelHtml.includes("Connect YouTube"), "Should have Connect YouTube button");
+
+  // Verify no manual account form fields
+  assert.ok(!panelHtml.includes('name="vo-account-id"'), "Should NOT have account ID input");
+  assert.ok(!panelHtml.includes('name="vo-account-label"'), "Should NOT have account label input");
+  assert.ok(!panelHtml.includes('name="vo-display-name"'), "Should NOT have display name input");
+  assert.ok(!panelHtml.includes('name="vo-enabled"'), "Should NOT have enabled checkbox");
+  assert.ok(!panelHtml.includes("Save YouTube Account"), "Old Step 2 button should not appear");
+
+  // Verify old misleading text is gone
+  assert.ok(!panelHtml.includes("Configure OAuth Client ID first"), "Should NOT say Configure OAuth Client");
+  assert.ok(!panelHtml.includes("Configure OAuth Client"), "Old confusing phrase must be gone");
+});
+
+test("D1-M: When OAuth not configured, input is empty and notice says Save first", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: null,
+    configured: false,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+
+  // Task 2: Notice area visible with appropriate message
+  assert.ok(!panelHtml.includes('display:none'), "Notice area must not have display:none");
+  assert.ok(panelHtml.includes("Save OAuth Client ID first"), "Default notice when not configured");
+
+  // Task 1: Empty input state when not configured
+  assert.ok(panelHtml.includes('placeholder="your-client-id'), "Input should be empty with placeholder");
+  assert.ok(panelHtml.includes('name="vo-client-id"'), "Input for entering OAuth Client ID should exist");
+  assert.ok(panelHtml.includes("Save Client ID"), "Should have Save Client ID button");
+  assert.ok(panelHtml.includes("Setup needed"), "Badge should say Setup needed when not configured");
+
+  // Task 3: Connect YouTube button disabled when OAuth client missing
+  const connectButtonMatch = panelHtml.match(/<button[^>]*data-action="connect-youtube"[^>]*>/);
+  assert.ok(connectButtonMatch && connectButtonMatch[0].includes("disabled"), "Connect button should be disabled");
+  assert.ok(panelHtml.includes("Save OAuth Client ID first"), "Should show clear disabled reason");
+  assert.ok(!panelHtml.includes("Configure OAuth Client ID first"), "Should NOT say Configure");
+});
+
+test("D1-L: save-oauth-client handler uses new notification area", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
+  const saveOAuthEnd = dashboardSource.indexOf("if(action==='save-account'");
+  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthEnd);
+
+  assert.ok(
+    saveOAuthSection.includes("#vo-credentials-notice"),
+    "Should use new notice area, not old action-status"
+  );
+  assert.ok(
+    saveOAuthSection.includes("Saving OAuth Client ID") && saveOAuthSection.includes("OAuth Client ID saved"),
+    "Should have clear success message"
+  );
+  assert.ok(
+    saveOAuthSection.includes("Could not save OAuth Client ID"),
+    "Should have clear error message"
+  );
+});
+
+test("D1-M: connect-youtube handler uses data-account-id path, not form inputs", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const connectStart = dashboardSource.indexOf("if(action==='connect-youtube')");
+  const connectEnd = connectStart + 2500;
+  const connectSection = dashboardSource.substring(connectStart, connectEnd);
+
+  // Verify data-account-id path is first
+  assert.ok(connectSection.includes("button.getAttribute('data-account-id')"), "Should read data-account-id from button first");
+
+  // Verify NO form inputs are read
+  assert.ok(!connectSection.includes('querySelector(\'input[name="vo-client-id"]'), "Should NOT read vo-client-id input");
+  assert.ok(!connectSection.includes('querySelector(\'input[name="vo-account-id"]'), "Should NOT read vo-account-id input");
+  assert.ok(!connectSection.includes('querySelector(\'input[name="vo-account-label"]'), "Should NOT read vo-account-label input");
+  assert.ok(!connectSection.includes('querySelector(\'input[name="vo-display-name"]'), "Should NOT read vo-display-name input");
+  assert.ok(!connectSection.includes('querySelector(\'input[name="vo-enabled"]'), "Should NOT read vo-enabled input");
+  assert.ok(!connectSection.includes('data-form'), "Should NOT check for data-form attribute");
+
+  // Verify youtube-pending pending account handling for new channels
+  assert.ok(connectSection.includes("accountId==='youtube-pending'"), "Should check for youtube-pending account ID");
+  assert.ok(connectSection.includes("'pending-youtube-'"), "Should create pending account ID with timestamp");
+  assert.ok(connectSection.includes("display_name:'YouTube Channel (pending)'"), "Should create display_name for pending account");
+
+  // Verify POST to OAuth start
+  assert.ok(connectSection.includes("postJson('/api/video-orchestrator/oauth/youtube/start'"), "Should POST to OAuth start endpoint");
+  assert.ok(connectSection.includes("platform:'youtube'"), "Should set platform to youtube in payload");
+});
+
+test("D1-M: Rendered panel removes all old manual account form terminology", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+
+  // Task 7: Old user-facing terminology must not appear
+  assert.ok(!panelHtml.includes("Account ID"), "Should NOT show Account ID label");
+  assert.ok(!panelHtml.includes("Account Label"), "Should NOT show Account Label label");
+  assert.ok(!panelHtml.includes("Display Name"), "Should NOT show Display Name label");
+  assert.ok(!panelHtml.includes("Enabled"), "Should NOT show Enabled checkbox label");
+  assert.ok(!panelHtml.includes("Save YouTube Account"), "Should NOT show Save YouTube Account button");
+  assert.ok(!panelHtml.includes("Configure OAuth Client"), "Should NOT show Configure OAuth Client phrase");
+  assert.ok(!panelHtml.includes('name="vo-account-id"'), "Should NOT have account ID input field");
+  assert.ok(!panelHtml.includes('name="vo-account-label"'), "Should NOT have account label input field");
+  assert.ok(!panelHtml.includes('name="vo-display-name"'), "Should NOT have display name input field");
+  assert.ok(!panelHtml.includes('name="vo-enabled"'), "Should NOT have enabled checkbox field");
+});
+
+test("D1-M: When OAuth configured, notice says OAuth app configured and button enabled", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+
+  // Task 3: Button enabled with data-account-id, not data-form
+  const connectButtonMatch = panelHtml.match(/<button[^>]*data-action="connect-youtube"[^>]*>/);
+  assert.ok(connectButtonMatch, "Should find Connect YouTube button");
+  assert.ok(!connectButtonMatch[0].includes("disabled"), "Button should be enabled");
+  assert.ok(connectButtonMatch[0].includes('data-account-id="youtube-pending"'), "Button should have data-account-id=youtube-pending for new channels");
+  assert.ok(!connectButtonMatch[0].includes('data-form'), "Button should NOT have data-form attribute");
+
+  // Task 2: Notice visible with saved status
+  assert.ok(panelHtml.includes("OAuth app configured. You can add YouTube channels."), "Notice should say OAuth app configured when configured");
+});
+
+test("D1-M: refresh-health handler updates notice area with status messages", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const refreshStart = dashboardSource.indexOf("if(action==='refresh-health')");
+  const refreshEnd = dashboardSource.indexOf("if(action==='connect-youtube'");
+  const refreshSection = dashboardSource.substring(refreshStart, refreshEnd);
+
+  assert.ok(
+    refreshSection.includes("#vo-credentials-notice"),
+    "Should use notice area"
+  );
+  assert.ok(
+    (refreshSection.includes("Refreshing") || refreshSection.includes("Refresh")) &&
+    (refreshSection.includes("health") || refreshSection.includes("status")),
+    "Should have health/status refresh messaging"
+  );
+});
+
+test("D1-L: Panel does not display sensitive information", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel(
+    [
+      {
+        account_id: "youtube-test",
+        platform: "youtube",
+        account_label: "test-label",
+        display_name: "Test Account",
+        enabled: true,
+        auth_mode: "oauth",
+        status: "green",
+        last_checked_at: "2026-05-11T00:00:00Z",
+        manual_fallback: true,
+        capabilities: { upload: true, status_check: true, refresh_supported: true, analytics: false, manual_fallback: true },
+        warnings: [],
+        next_action: "Ready",
+        notification_state: "dashboard",
+        default_privacy: "private",
+        allowed_privacy: ["private"],
+      },
+    ],
+    { client_id: "test.apps.googleusercontent.com", configured: true, oauth_client_mode: "pkce_public_client", client_secret_configured: false }
+  );
+
+  assert.ok(
+    !panelHtml.includes("credential_reference") &&
+    !panelHtml.includes("credentialReference") &&
+    !panelHtml.includes("keychain://"),
+    "Should not expose credential references"
+  );
+  assert.ok(
+    !panelHtml.includes("access_token") &&
+    !panelHtml.includes("refresh_token"),
+    "Should not show any token material"
+  );
+  assert.ok(
+    !panelHtml.includes("fake-secret") &&
+    !panelHtml.includes("EXAMPLE_CLIENT_SECRET"),
+    "Should not show actual client_secret values"
+  );
+  assert.ok(
+    !panelHtml.includes("code_verifier"),
+    "Should not show PKCE code_verifier"
+  );
+});
+
+test("D1-M: Panel disables Connect YouTube button only when OAuth client missing", () => {
+  // OAuth client missing
+  let panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: null,
+    configured: false,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.ok(panelHtml.includes("Save OAuth Client ID first"), "Should show explanation when OAuth client missing");
+  assert.ok(panelHtml.includes("disabled"), "Should have a disabled button");
+
+  // OAuth client configured - button should be enabled (no "disabled" in button tag)
+  panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  const connectButtonMatch = panelHtml.match(/<button[^>]*data-action="connect-youtube"[^>]*>/);
+  assert.ok(connectButtonMatch && !connectButtonMatch[0].includes("disabled"), "Connect button should be enabled when OAuth client configured");
+
+  // Connected account present - button should be labeled Reconnect
+  panelHtml = renderAccountsAndCredentialsPanel(
+    [
+      {
+        account_id: "youtube-default",
+        platform: "youtube",
+        account_label: "default",
+        display_name: "YouTube Channel",
+        enabled: true,
+        auth_mode: "oauth",
+        status: "green",
+        last_checked_at: "2026-05-11T12:00:00Z",
+        manual_fallback: true,
+        capabilities: { upload: true, status_check: true, refresh_supported: true, analytics: false, manual_fallback: true },
+        warnings: [],
+        next_action: "Connect",
+        notification_state: "dashboard",
+        default_privacy: "private",
+        allowed_privacy: ["private"],
+      },
+    ],
+    { client_id: "test.apps.googleusercontent.com", configured: true, oauth_client_mode: "pkce_public_client", client_secret_configured: false }
+  );
+  assert.ok(panelHtml.includes("Connected Channels"), "Should show Connected Channels section when account exists");
+  assert.ok(panelHtml.includes("Reconnect"), "Should show Reconnect button for connected account");
+  assert.ok(panelHtml.includes("green"), "Should show connection status as green");
+});
+
+test("D1-M: Connected channels section appears only when connected channels exist", () => {
+  let panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.ok(!panelHtml.includes("Connected Channels"), "Should not show Connected Channels section when empty");
+
+  panelHtml = renderAccountsAndCredentialsPanel(
+    [
+      {
+        account_id: "youtube-default",
+        platform: "youtube",
+        account_label: "default",
+        display_name: "YouTube Channel",
+        enabled: true,
+        auth_mode: "oauth",
+        status: "green",
+        last_checked_at: "2026-05-11T00:00:00Z",
+        manual_fallback: true,
+        capabilities: { upload: true, status_check: true, refresh_supported: true, analytics: false, manual_fallback: true },
+        warnings: [],
+        next_action: "Ready",
+        notification_state: "dashboard",
+        default_privacy: "private",
+        allowed_privacy: ["private"],
+      },
+    ],
+    { client_id: "test.apps.googleusercontent.com", configured: true, oauth_client_mode: "pkce_public_client", client_secret_configured: false }
+  );
+  assert.ok(panelHtml.includes("Connected Channels"), "Should show Connected Channels section when connected channels exist");
+  assert.ok(panelHtml.includes("YouTube Channel"), "Should display account display_name");
+  assert.ok(panelHtml.includes("Refresh Connection"), "Should show Refresh Connection button");
+});
+
+test("D1-M: YouTube Setup panel includes optional client secret field", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.ok(panelHtml.includes("Client Secret (Optional)"), "Should show client secret section header");
+  assert.ok(panelHtml.includes("type=\"password\""), "Should have password input type");
+  assert.ok(panelHtml.includes("name=\"vo-client-secret\""), "Should have client secret input");
+  assert.ok(panelHtml.includes('data-action="save-oauth-secret"'), "Should have save-oauth-secret button");
+  assert.ok(panelHtml.includes("Store Secret"), "Should show button text");
+  assert.ok(panelHtml.includes("macOS Keychain"), "Should mention Keychain storage");
+});
+
+test("D1-M: Panel shows client secret status as Stored or Optional", () => {
+  let panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.ok(panelHtml.includes("Optional"), "Should show 'Optional' when client_secret_configured is false");
+
+  panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "client_secret_keychain",
+    client_secret_configured: true,
+  });
+  assert.ok(panelHtml.includes("Stored"), "Should show 'Stored' when client_secret_configured is true");
+});
+
+test("D1-M: Runtime config must not render client secrets or sensitive values", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "client_secret_keychain",
+    client_secret_configured: true,
+  });
+  const secretValue = "some-secret-value-that-would-be-exposed";
+  assert.ok(!panelHtml.includes(secretValue), "Should NOT render actual secret value");
+  assert.ok(!panelHtml.includes("keychain://video-orchestrator"), "Should NOT render full keychain URL");
+  assert.ok(!panelHtml.includes("access_token"), "Should NOT render access_token");
+  assert.ok(!panelHtml.includes("refresh_token"), "Should NOT render refresh_token");
+  assert.ok(!panelHtml.includes("code_verifier"), "Should NOT render code_verifier");
+});
+
+test("D1-M: Dashboard handler for save-oauth-secret exists in source", () => {
+  const dashboardSource = fs.readFileSync(path.join(process.cwd(), "src/bot/dashboard.ts"), "utf8");
+  assert.ok(dashboardSource.includes("if(action==='save-oauth-secret')"), "Should have save-oauth-secret handler");
+  assert.ok(dashboardSource.includes("vo-client-secret"), "Should read vo-client-secret input");
+  assert.ok(dashboardSource.includes('/api/video-orchestrator/oauth/youtube/client-secret'), "Should POST to client-secret endpoint");
+});
+
+test("D1-M: Dashboard API endpoint for client secret does not return secret", () => {
+  const dashboardSource = fs.readFileSync(path.join(process.cwd(), "src/bot/dashboard.ts"), "utf8");
+  const endpointStart = dashboardSource.indexOf('"/api/video-orchestrator/oauth/youtube/client-secret"');
+  assert.ok(endpointStart >= 0, "Should have client-secret endpoint");
+  const endpointSection = dashboardSource.substring(endpointStart, endpointStart + 3000);
+  assert.ok(endpointSection.includes("client_secret_configured"), "Should return client_secret_configured flag");
+  assert.ok(endpointSection.includes("oauth_client_mode"), "Should return oauth_client_mode");
+  assert.ok(!endpointSection.includes('res.end(JSON.stringify(clientSecret'), "Should NOT return the secret itself");
+});
+
+test("D1-M: One-button UI remains (no manual account fields)", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.ok(!panelHtml.includes("Account ID"), "Should NOT show Account ID field");
+  assert.ok(!panelHtml.includes("Account Label"), "Should NOT show Account Label field");
+  assert.ok(!panelHtml.includes("Display Name"), "Should NOT show Display Name field");
+  assert.ok(!panelHtml.includes("Enabled"), "Should NOT show Enabled field");
+  assert.ok(!panelHtml.includes("Save YouTube Account"), "Should NOT show Save YouTube Account button");
+  assert.ok(panelHtml.includes("Connect YouTube"), "Should show Connect YouTube button");
+});
+
+test("D1-N: YouTube Setup UI has Google OAuth App Setup section", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.ok(panelHtml.includes("Google OAuth App Setup"), "Should have OAuth app setup section");
+  assert.ok(panelHtml.includes("This setup is reused for every YouTube channel"), "Should explain setup is one-time");
+  assert.ok(panelHtml.includes("Change Client ID"), "Should have change button");
+});
+
+test("D1-N: YouTube Setup UI has Add YouTube Channel section", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.ok(panelHtml.includes("Add YouTube Channel"), "Should have Add YouTube Channel section");
+  assert.ok(panelHtml.includes("Click Connect YouTube, choose the Google account/channel"), "Should have onboarding copy");
+  assert.ok(panelHtml.includes("To add another YouTube channel, click Connect YouTube again"), "Should mention repeat onboarding");
+  assert.ok(panelHtml.includes('data-action="connect-youtube"'), "Should have connect-youtube button");
+});
+
+test("D1-N: Panel shows data-account-id=youtube-pending for new channel onboarding", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.ok(panelHtml.includes('data-account-id="youtube-pending"'), "Should use youtube-pending for new channel flow");
+});
+
+test("D1-N: Connected Channels list shows multiple accounts", () => {
+  const accounts: SafeDashboardAccount[] = [
+    {
+      account_id: "youtube-1",
+      platform: "youtube",
+      account_label: "channel-1",
+      display_name: "My First Channel",
+      enabled: true,
+      auth_mode: "oauth",
+      status: "green",
+      last_checked_at: "2026-05-11T12:00:00Z",
+      manual_fallback: true,
+      capabilities: { upload: true, status_check: true, refresh_supported: true, analytics: false, manual_fallback: true },
+      warnings: [],
+      next_action: "Ready",
+      notification_state: "dashboard",
+      default_privacy: "private",
+      allowed_privacy: ["private"],
+    },
+    {
+      account_id: "youtube-2",
+      platform: "youtube",
+      account_label: "channel-2",
+      display_name: "My Second Channel",
+      enabled: true,
+      auth_mode: "oauth",
+      status: "green",
+      last_checked_at: "2026-05-11T12:00:00Z",
+      manual_fallback: true,
+      capabilities: { upload: true, status_check: true, refresh_supported: true, analytics: false, manual_fallback: true },
+      warnings: [],
+      next_action: "Ready",
+      notification_state: "dashboard",
+      default_privacy: "private",
+      allowed_privacy: ["private"],
+    },
+  ];
+  const panelHtml = renderAccountsAndCredentialsPanel(accounts, {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.ok(panelHtml.includes("Connected Channels"), "Should show Connected Channels section");
+  assert.ok(panelHtml.includes("My First Channel"), "Should show first channel");
+  assert.ok(panelHtml.includes("My Second Channel"), "Should show second channel");
+  assert.ok(panelHtml.includes("2 channels"), "Should show channel count");
+});
+
+test("D1-N: Panel does NOT expose credential references or sensitive data", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "test.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "client_secret_keychain",
+    client_secret_configured: true,
+  });
+  assert.ok(!panelHtml.includes("credential_reference"), "Should NOT show credential_reference");
+  assert.ok(!panelHtml.includes("keychain://"), "Should NOT show keychain path");
+  assert.ok(!panelHtml.includes("access_token"), "Should NOT show access_token");
+  assert.ok(!panelHtml.includes("refresh_token"), "Should NOT show refresh_token");
 });

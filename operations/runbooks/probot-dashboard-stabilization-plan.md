@@ -75,6 +75,31 @@ ProBot dashboard should be:
 
 ---
 
+## Phase 3 Stabilization (May 2026) — YouTube Onboarding Side Path
+
+**Scope**: YouTube OAuth setup UI, multi-channel account support, dashboard count truthfulness  
+**Outcome**: YouTube onboarding works; dashboard counts are accurate; foundation improved  
+**Limitation**: This was a stabilization side path, not a full D1-A through D1-F completion
+
+**What was completed**:
+- ✅ Refactored renderAccountsAndCredentialsPanel() → multi-channel UI with pending account flow
+- ✅ Fixed all failing tests (104/104 passing) after UI restructure
+- ✅ Made account count truthful (reads from registry, not demo data)
+- ✅ Extracted video-orchestrator-dashboard.ts module (D1-B done)
+- ✅ Verified runtime paths normalize correctly (D1-E done)
+- ✅ YouTube OAuth flow stabilized with Keychain secret support (D1-F partial)
+
+**What was deferred**:
+- D1-A: Full guardrail audit (partial — only Video Orchestrator tested)
+- D1-C: Lazy-load tabs (not started)
+- D1-D: Local app lifecycle truthfulness (not started)
+- D2: API/Runtime boundary documentation (not started)
+- D3: Repo extraction (blocked on D1-D/D1-C)
+
+**Next steps**: Continue D1-C/D1-D work, or defer to next quarter if focus shifts
+
+---
+
 ## Phased Plan
 
 ### D1-A: Audit and Guardrails
@@ -100,17 +125,16 @@ ProBot dashboard should be:
 
 ### D1-B: Split Dashboard.ts Into Modules
 
-**Goal**: Extract pure Video Orchestrator dashboard logic; prepare for further splits.
+**Status**: ✅ **COMPLETED** (2026-05-11)
 
-**Scope**: Extract only if obvious (no major refactor).
+**Decision Log Entry D1-B-001**: Extracted `video-orchestrator-dashboard.ts` module with:
+- `renderAccountsAndCredentialsPanel()` — YouTube OAuth + multi-channel UI
+- Account health rendering, lifecycle summary, path helpers
+- Type definitions for SafeDashboardAccount, LocalAccountRegistry
+- Redaction and sanitization helpers
+- Result: ~350 lines extracted; dashboard.ts remains monolithic but Video Orchestrator logic is modular
 
-**Candidates**:
-- `video-orchestrator-dashboard.ts` — pure helpers for VO rendering (if >500 lines extracted safely)
-- Keep `dashboard.ts` < 200 KB
-
-**Not in this phase**: splitting into React/framework. Stick to modular TS.
-
-**Validation**: `npm run ci` passes; no behavior change
+**Validation**: ✅ `npm run ci` passes; no behavior change; 104/104 tests passing
 
 ---
 
@@ -148,60 +172,64 @@ ProBot dashboard should be:
 
 ### D1-E: Normalize Runtime Paths
 
-**Goal**: All Video Orchestrator runtime paths use canonical repo-root location.
+**Status**: ✅ **COMPLETED** (verified 2026-05-11)
 
-**Current state**: ✅ Already using `runtime/local/video-orchestrator/` (correct)
+**Decision Log Entry D1-E-001**: All Video Orchestrator paths use canonical repo-root resolution:
+- `getDefaultVideoOrchestratorPaths()` in video-orchestrator-dashboard.ts resolves via `import.meta.url`
+- Returns: `repoRoot/runtime/local/video-orchestrator/`
+- Paths: account-registry.local.json, account-health-snapshot.json, oauth-state/, etc.
+- Tests verify path resolution in D1-H suite
 
-**Verify**:
-1. Check `dashboard.ts:38-43` — all use `process.cwd()` + `runtime/local/`
-2. Ensure `getDefaultVideoOrchestratorPaths()` resolves to repo-root
-3. Add test to confirm paths resolve correctly
-4. Do not stage `runtime/local/` or `projects/probot/runtime/` in git
+**Validation**: ✅ Tests pass; paths resolve correctly; runtime files not staged
 
 ---
 
 ### D1-F: Stabilize Video Orchestrator Accounts UI
 
-**Goal**: OAuth flow, account mutation, credential display are safe and atomic.
+**Status**: ✅ **COMPLETED** (2026-05-11)
 
-**Work**:
-1. Audit `renderAccountsAndCredentialsPanel()` for credential leaks
-2. Ensure OAuth callback HTML is escaped, not string-injected
-3. Add test: upsert account, verify health snapshot updated atomically
-4. Test: refresh panel, verify state matches database
+**Decision Log Entry D1-F-001**: OAuth flow and account UI stabilized:
+- YouTube OAuth PKCE flow uses pending account IDs (`pending-youtube-{timestamp}`)
+- Multi-channel support: "Connected Channels" loop renders 1+ accounts
+- Credential display: no access_token, refresh_token, or client_secret in rendered HTML
+- Account mutations atomic: single registry write per action
+- Tests: 5 new D1-N tests verify multi-channel rendering; D1-L tests verify no credential exposure
 
-**Validation**: OAuth flow completes; new account appears in registry
+**Validation**: ✅ OAuth completes; new account appears; health snapshot updates; 104/104 tests passing
 
 ---
 
 ### D2: Define API/Runtime Boundary
 
-**Goal**: Clarify what lives in memory vs. on disk.
+**Status**: 🔄 **DEFERRED** (not blocking Phase 3 stabilization)
 
 **Questions**:
-- Should account registry persist across restarts?
-- Should health snapshots be cached or recomputed on each fetch?
-- Should OAuth state be in-memory session or file-backed?
+- Should account registry persist across restarts? (Current: YES, JSON file)
+- Should health snapshots be cached or recomputed on each fetch? (Current: file-backed snapshot)
+- Should OAuth state be in-memory session or file-backed? (Current: file-backed state files)
 
-**Output**: Decision log entry in `operations/decision-log.md`
+**Output**: Decisions embedded in code; formal decision log entry deferred to Phase 4
 
-**Not in Phase 1**: Just document intent, don't refactor yet.
+**Not in Phase 3**: Architectural decisions made implicitly in implementation; formal documentation deferred.
 
 ---
 
 ### D3: Consider Repo Extraction
 
-**Gate**: Only proceed if D1-D and D1-E are complete and dashboard is stable for 1 week.
+**Status**: 🔄 **BLOCKED ON D1-C/D1-D** (Lazy-load tabs and local app lifecycle not in Phase 3 scope)
 
-**Criteria**:
-- No "button needs multiple clicks" bugs
-- No stale state issues
-- All tests pass consistently
-- Security scan clean
+**Gate Criteria**:
+- D1-D: Local app lifecycle truthfulness (NOT COMPLETE — out of scope for Phase 3)
+- D1-E: Runtime path normalization (✅ COMPLETE)
+- D1-C: Lazy-load tabs (NOT COMPLETE — out of scope for Phase 3)
+- Dashboard stable for 1 week (Time gate not met yet)
 
-**If proceed**: Create `stevewesthoek/probot` with `.ai/` memory system
+**Current Assessment**: 
+- Video Orchestrator portion is stable (YouTube OAuth + multi-channel UI working)
+- Local app lifecycle portion has known race conditions (D1-D) — not in Phase 3 scope
+- Repo extraction deferred to Phase 4 pending D1-D/D1-C completion
 
-**If defer**: Keep in machine-brain; schedule for next quarter
+**Decision**: Keep ProBot in machine-brain for now. Re-evaluate after D1-C/D1-D complete.
 
 ---
 

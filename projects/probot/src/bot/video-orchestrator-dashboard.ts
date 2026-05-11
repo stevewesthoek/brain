@@ -414,71 +414,96 @@ export function renderAccountHealthPanel(accountHealth: AccountHealthStatus | nu
 }
 
 export function renderAccountsAndCredentialsPanel(accounts: SafeDashboardAccount[] | null | undefined, oauthClientConfig: OAuthClientConfig | null | undefined): string {
-  const configured = Boolean(oauthClientConfig?.configured);
-  const clientMode = oauthClientConfig?.oauth_client_mode ?? 'pkce_public_client';
-  const clientSecretConfigured = Boolean(oauthClientConfig?.client_secret_configured);
+  const clientConfigured = Boolean(oauthClientConfig?.configured);
+  const clientId = oauthClientConfig?.client_id ?? null;
+  const youtubeAccounts = accounts?.filter(a => a.platform === 'youtube') ?? [];
+
   let html='<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
-  html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">Accounts &amp; Credentials</h3>';
-  html+='<div id="vo-account-action-status" style="margin-bottom:12px;padding:8px 12px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--muted);font-size:0.9em;min-height:1.4em;display:none"></div>';
-  html+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
-  html+='<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)">OAuth client: <strong>'+ (configured ? 'configured' : 'missing') +'</strong></div>';
-  html+='<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)">Mode: <strong>'+(clientMode === 'pkce_public_client' ? 'PKCE public client' : 'client secret via Keychain')+'</strong></div>';
-  html+='<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--muted)">Client secret: '+(clientSecretConfigured ? 'configured in Keychain' : 'not stored in files')+'</div>';
-  html+='<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--muted)">Dashboard is read-only for uploads and OAuth tokens.</div>';
+  html+='<h3 style="margin:0 0 8px 0;font-size:0.95em;color:var(--text);font-weight:600">YouTube Setup</h3>';
+
+  const noticeMsg = clientConfigured ? 'OAuth app configured. You can add YouTube channels.' : 'Save OAuth Client ID first.';
+  html+='<div id="vo-credentials-notice" style="margin-bottom:16px;padding:10px 12px;border-radius:6px;background:rgba(52,211,153,0.08);border-left:3px solid #34d399;color:var(--text);font-size:0.9em">'+escapeHtml(noticeMsg)+'</div>';
+
+  html+='<div style="display:grid;gap:16px;margin-bottom:20px">';
+
+  html+='<div style="padding:12px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid rgba(255,255,255,0.04)">';
+  html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">';
+  html+='<h4 style="margin:0;color:var(--text);font-size:0.9em;flex:1">Google OAuth App Setup</h4>';
+  html+='<div style="padding:3px 8px;border-radius:3px;background:rgba(255,255,255,0.08);color:'+(clientConfigured?'var(--green)':'var(--muted)')+';font-size:0.8em;font-weight:500">'+(clientConfigured?'Ready':'Setup needed')+'</div>';
   html+='</div>';
-  html+='<div id="vo-accounts-list" style="display:grid;gap:10px">';
-  if(accounts&&accounts.length){
-    for(const account of accounts){
-      html+='<div class="vo-account-card" data-account-id="'+escapeHtml(account.account_id)+'" style="padding:12px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)">';
-      html+='<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">';
-      html+='<div><strong>'+escapeHtml(account.display_name)+'</strong><div style="color:var(--muted);margin-top:2px">Platform: '+escapeHtml(account.platform)+' • Auth: '+escapeHtml(account.auth_mode)+'</div></div>';
-      html+='<div style="text-align:right"><div style="font-weight:600">'+escapeHtml(account.status)+'</div><div style="color:var(--muted)">Last checked: '+escapeHtml(account.last_checked_at || '—')+'</div></div>';
-      html+='</div>';
-      html+='<div style="margin-top:8px;color:var(--muted)">Account label: '+escapeHtml(account.account_label || '—')+' • Manual fallback: '+String(account.manual_fallback ? 'available' : 'disabled')+'</div>';
-      html+='<div style="margin-top:4px;color:var(--muted)">Capabilities: upload '+String(account.capabilities.upload ? 'yes' : 'no')+' • status '+String(account.capabilities.status_check ? 'yes' : 'no')+' • refresh '+String(account.capabilities.refresh_supported ? 'yes' : 'no')+' • manual fallback '+String(account.capabilities.manual_fallback ? 'yes' : 'no')+'</div>';
-      html+='<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
-      html+='<button type="button" data-action="refresh-health" data-account-id="'+escapeHtml(account.account_id)+'" style="padding:6px 10px;border-radius:4px;border:1px solid var(--border);background:var(--subtle);color:var(--text);cursor:pointer">Refresh Health</button>';
-      if(account.platform === 'youtube'){
-        html+='<button type="button" data-action="connect-youtube" data-account-id="'+escapeHtml(account.account_id)+'" style="padding:6px 10px;border-radius:4px;border:1px solid var(--border);background:var(--subtle);color:var(--text);cursor:pointer">Connect YouTube</button>';
-      }
-      html+='</div>';
-      html+='<div style="margin-top:8px;color:var(--muted)">Next action: '+escapeHtml(account.next_action || '—')+'</div>';
-      if(account.warnings&&account.warnings.length){
-        html+='<ul style="margin:8px 0 0 16px;color:var(--muted)">';
-        for(const warning of account.warnings){ html+='<li>'+escapeHtml(warning)+'</li>'; }
-        html+='</ul>';
-      }
-      html+='</div>';
-    }
+  if(clientConfigured && clientId){
+    html+='<p style="margin:0 0 8px 0;color:var(--muted);font-size:0.8em">Google OAuth app is configured. This setup is reused for every YouTube channel you connect.</p>';
+    html+='<div style="padding:8px;border-radius:4px;border:1px solid var(--border);background:rgba(0,229,204,0.08);color:var(--text);font-size:0.85em;margin-bottom:8px;word-break:break-all">'+escapeHtml(clientId)+'</div>';
+    html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">';
+    html+='<button type="button" data-action="save-oauth-client" style="padding:8px 16px;border-radius:4px;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer;font-size:0.85em;font-weight:500">Change Client ID</button>';
+    html+='</div>';
   }else{
-    html+='<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--muted)">No account registry configured yet.</div>';
+    html+='<p style="margin:0 0 8px 0;color:var(--muted);font-size:0.8em">Configure your Google OAuth app once. This setup is reused for every YouTube channel you connect.</p>';
+    html+='<label style="display:grid;gap:4px;margin-bottom:8px;color:var(--muted)">';
+    html+='<span style="font-size:0.85em;font-weight:500">Google OAuth Client ID</span>';
+    html+='<input name="vo-client-id" autocomplete="off" style="padding:8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:0.85em" placeholder="your-client-id.apps.googleusercontent.com">';
+    html+='<span style="font-size:0.8em;color:var(--muted)">Get this from Google Cloud Console. It should end with .apps.googleusercontent.com.</span>';
+    html+='</label>';
+    html+='<div style="display:flex;gap:8px;align-items:center">';
+    html+='<button type="button" data-action="save-oauth-client" style="padding:8px 16px;border-radius:4px;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer;font-size:0.85em;font-weight:500">Save Client ID</button>';
+    html+='</div>';
+    html+='<p style="margin:8px 0 0 0;color:var(--muted);font-size:0.8em">PKCE public-client mode. Optional: Add client secret if Google rejects token exchange.</p>';
   }
   html+='</div>';
-  html+='<div style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.05);border-radius:4px">';
-  html+='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px">';
-  html+='<h4 style="margin:0;color:var(--text);font-size:0.9em">OAuth Client</h4>';
-  html+='<div style="color:var(--muted);font-size:0.8em">'+(configured ? 'configured' : 'missing')+'</div>';
+
+  html+='<div style="padding:12px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid rgba(255,255,255,0.04)">';
+  html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">';
+  html+='<h4 style="margin:0;color:var(--text);font-size:0.9em;flex:1">Client Secret (Optional)</h4>';
+  html+='<div style="padding:3px 8px;border-radius:3px;background:rgba(255,255,255,0.08);color:'+(oauthClientConfig?.client_secret_configured?'var(--green)':'var(--muted)')+';font-size:0.8em;font-weight:500">'+(oauthClientConfig?.client_secret_configured?'Stored':'Optional')+'</div>';
   html+='</div>';
-  html+='<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end">';
-  html+='<label style="display:grid;gap:4px;color:var(--muted)">Client ID<input name="vo-client-id" autocomplete="off" style="padding:8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text)" placeholder="your-client-id.apps.googleusercontent.com"></label>';
-  html+='<button type="button" data-action="save-oauth-client" style="padding:8px 12px;border-radius:4px;border:1px solid var(--border);background:var(--subtle);color:var(--text);cursor:pointer">Configure OAuth Client</button>';
-  html+='</div>';
-  html+='<p style="margin:8px 0 0 0;color:var(--muted)">Phase 4C uses PKCE public-client mode. Only the client ID is stored locally. Client secrets are not stored in files. Tokens stay in macOS Keychain.</p>';
-  html+='</div>';
-  html+='<div style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.05);border-radius:4px">';
-  html+='<h4 style="margin:0 0 8px 0;color:var(--text);font-size:0.9em">Add YouTube Account</h4>';
-  html+='<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:end">';
-  html+='<label style="display:grid;gap:4px;color:var(--muted)">Account ID<input name="vo-account-id" autocomplete="off" style="padding:8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text)" placeholder="youtube-main"></label>';
-  html+='<label style="display:grid;gap:4px;color:var(--muted)">Account Label<input name="vo-account-label" autocomplete="off" style="padding:8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text)" placeholder="main-channel"></label>';
-  html+='<label style="display:grid;gap:4px;color:var(--muted)">Display Name<input name="vo-display-name" autocomplete="off" style="padding:8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text)" placeholder="Main YouTube Channel"></label>';
-  html+='<label style="display:flex;align-items:center;gap:8px;color:var(--muted)"><input type="checkbox" name="vo-enabled"> Enabled</label>';
-  html+='</div>';
-  html+='<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
-  html+='<button type="button" data-action="save-account" style="padding:8px 12px;border-radius:4px;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer">Save Account</button>';
-  html+='<button type="button" data-action="connect-youtube" data-form="true" style="padding:8px 12px;border-radius:4px;border:1px solid var(--border);background:var(--subtle);color:var(--text);cursor:pointer">Connect YouTube</button>';
+  html+='<label style="display:grid;gap:4px;margin-bottom:8px;color:var(--muted)">';
+  html+='<span style="font-size:0.85em;font-weight:500">Google OAuth Client Secret</span>';
+  html+='<input name="vo-client-secret" type="password" autocomplete="off" style="padding:8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:0.85em" placeholder="Paste if Google requires it; stored in macOS Keychain">';
+  html+='<span style="font-size:0.8em;color:var(--muted)">If Google rejects token exchange with invalid_client, paste your app secret here. It is stored in macOS Keychain only and never saved to files.</span>';
+  html+='</label>';
+  html+='<div style="display:flex;gap:8px;align-items:center">';
+  html+='<button type="button" data-action="save-oauth-secret" style="padding:8px 16px;border-radius:4px;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer;font-size:0.85em;font-weight:500">Store Secret</button>';
   html+='</div>';
   html+='</div>';
-  html+='<p style="margin:12px 0 0 0;color:var(--muted)">No credential references, token values, or Keychain labels are displayed here.</p>';
+
+  html+='</div>';
+
+  html+='<div style="padding:12px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid rgba(255,255,255,0.04)">';
+  html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">';
+  html+='<h4 style="margin:0;color:var(--text);font-size:0.9em;flex:1">Add YouTube Channel</h4>';
+  html+='<div style="padding:3px 8px;border-radius:3px;background:rgba(255,255,255,0.08);color:'+(youtubeAccounts.length>0?'var(--green)':'var(--muted)')+';font-size:0.8em;font-weight:500">'+(youtubeAccounts.length>0?youtubeAccounts.length+' channel'+(youtubeAccounts.length===1?'':'s'):'None')+'</div>';
+  html+='</div>';
+  html+='<p style="margin:0 0 12px 0;color:var(--muted);font-size:0.8em">Click Connect YouTube, choose the Google account/channel in the browser, and the dashboard will add the channel automatically.</p>';
+  html+='<div style="display:flex;gap:8px;margin-bottom:8px">';
+  html+='<button type="button" data-action="connect-youtube" data-account-id="youtube-pending" style="padding:10px 20px;border-radius:4px;border:1px solid var(--border);background:'+(clientConfigured?'var(--accent)':'rgba(255,255,255,0.05)')+';color:'+(clientConfigured?'#fff':'var(--muted)')+';cursor:'+(clientConfigured?'pointer':'not-allowed')+';font-size:0.85em;font-weight:600;opacity:'+(clientConfigured?'1':'0.5')+'" '+(clientConfigured?'':'disabled')+'>Connect YouTube</button>';
+  html+='</div>';
+  if(!clientConfigured){
+    html+='<p style="margin:0;color:var(--muted);font-size:0.8em">Save OAuth Client ID first.</p>';
+  }else{
+    html+='<p style="margin:0 0 8px 0;color:var(--muted);font-size:0.8em">To add another YouTube channel, click Connect YouTube again and choose a different Google account or channel.</p>';
+  }
+  html+='</div>';
+
+  if(youtubeAccounts.length>0){
+    html+='<hr style="margin:20px 0;border:0;border-top:1px solid rgba(255,255,255,0.06)">';
+    html+='<h4 style="margin:0 0 12px 0;color:var(--text);font-size:0.9em">Connected Channels</h4>';
+    for(const acct of youtubeAccounts){
+      html+='<div style="padding:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:6px;color:var(--text);font-size:0.85em;margin-bottom:8px">';
+      html+='<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px">';
+      html+='<div><strong>'+escapeHtml(acct.display_name)+'</strong></div>';
+      html+='<div style="text-align:right;font-weight:600;font-size:0.9em;color:'+(acct.status==='green'?'var(--green)':'var(--muted)');'">'+escapeHtml(acct.status)+'</div>';
+      html+='</div>';
+      html+='<div style="color:var(--muted);margin-bottom:8px;font-size:0.85em">';
+      html+='<div>Last checked: '+escapeHtml(acct.last_checked_at || 'never')+'</div>';
+      html+='</div>';
+      html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
+      html+='<button type="button" data-action="refresh-health" data-account-id="'+escapeHtml(acct.account_id)+'" style="padding:6px 12px;border-radius:3px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer;font-size:0.8em">Refresh Connection</button>';
+      html+='<button type="button" data-action="connect-youtube" data-account-id="'+escapeHtml(acct.account_id)+'" style="padding:6px 12px;border-radius:3px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer;font-size:0.8em">Reconnect</button>';
+      html+='</div>';
+      html+='</div>';
+    }
+  }
+
   html+='</div>';
   return html;
 }

@@ -166,10 +166,22 @@ async function getVideoOrchestratorStatus(): Promise<Record<string, unknown>> {
     return JSON.parse(stdout.trim() || "{}") as Record<string, unknown>;
   } catch (err) {
     console.error("[Video Orchestrator] Status check failed:", String(err));
+    let total_accounts = 0;
+    try {
+      const paths = getDefaultVideoOrchestratorPaths();
+      if (fs.existsSync(paths.registryPath)) {
+        const registryContent = fs.readFileSync(paths.registryPath, "utf8");
+        const registry = JSON.parse(registryContent) as Record<string, unknown>;
+        const accounts = registry.accounts as Array<unknown> | undefined;
+        total_accounts = accounts?.length ?? 0;
+      }
+    } catch {
+      total_accounts = 0;
+    }
     return {
       database_status: "disconnected",
       total_videos: 0,
-      total_accounts: 0,
+      total_accounts,
       pending_jobs: 0,
       running_jobs: 0,
       failed_jobs_7d: 0,
@@ -429,12 +441,13 @@ export function loadYoutubeOAuthClientConfig(): OAuthClientConfig {
 
 
 
-function saveYoutubeOAuthClientConfig(clientId: string): OAuthClientConfig {
+function saveYoutubeOAuthClientConfig(clientId?: string, partialConfig?: Partial<OAuthClientConfig>): OAuthClientConfig {
+  const existing = loadYoutubeOAuthClientConfig();
   const config: OAuthClientConfig = {
-    client_id: clientId.trim(),
+    client_id: clientId ? clientId.trim() : (existing.client_id || ''),
     configured: true,
-    oauth_client_mode: 'pkce_public_client',
-    client_secret_configured: false,
+    oauth_client_mode: partialConfig?.oauth_client_mode || existing.oauth_client_mode || 'pkce_public_client',
+    client_secret_configured: partialConfig?.client_secret_configured ?? existing.client_secret_configured ?? false,
   };
   const paths = getVideoPaths();
   writePrettyJson(paths.oauthClientConfigPath, config);
@@ -488,16 +501,31 @@ async function regenerateAccountHealthSnapshot(): Promise<AccountHealthStatus | 
 async function exchangeYoutubeAuthorizationCode(args: { callbackUrl: string; expectedState: string; codeVerifier: string; credentialReference: string; clientId: string }): Promise<Record<string, unknown>> {
   const paths = getVideoPaths();
   const tempConfigPath = path.join(paths.oauthStateDir, `oauth-config-${args.expectedState}.json`);
-  const config = {
+  const oauthConfig = loadYoutubeOAuthClientConfig();
+  let clientSecret: string | undefined;
+  if (oauthConfig.oauth_client_mode === 'client_secret_keychain' && oauthConfig.client_secret_configured) {
+    const secretKeyLabel = args.clientId.split('.')[0] || 'youtube-oauth-secret';
+    const { execFileSync } = await import('node:child_process');
+    const keychainArgs = ["find-generic-password", "-s", `video-orchestrator/youtube-oauth-client`, "-a", secretKeyLabel, "-w"];
+    try {
+      clientSecret = execFileSync("security", keychainArgs, { stdio: ["ignore", "pipe", "pipe"], encoding: 'utf8' }).trim();
+    } catch (keychainErr) {
+      console.warn('[Video Orchestrator] Could not read client secret from Keychain:', redactVideoOrchestratorText(String(keychainErr)));
+    }
+  }
+  const config: Record<string, unknown> = {
     platform: 'youtube',
     phase: '4C',
-    oauth_client_mode: 'pkce_public_client',
+    oauth_client_mode: oauthConfig.oauth_client_mode || 'pkce_public_client',
     dry_run: false,
     client_id: args.clientId,
     redirect_uri: `${new URL(args.callbackUrl).origin}/api/video-orchestrator/oauth/youtube/callback`,
     scope: 'https://www.googleapis.com/auth/youtube.upload',
     credential_reference: args.credentialReference,
   };
+  if (clientSecret) {
+    config.client_secret = clientSecret;
+  }
   writePrettyJson(tempConfigPath, config);
   try {
     const { stdout } = await execFileAsync('node', [
@@ -2474,7 +2502,7 @@ document.addEventListener('click',async(event)=>{
   try{
     if(action==='save-oauth-client'){
       const clientIdInput=document.querySelector('input[name="vo-client-id"]');
-      const statusArea=document.querySelector('#vo-account-action-status');
+      const notice=document.querySelector('#vo-credentials-notice');
       const clientId=clientIdInput?String(clientIdInput.value||'').trim():'';
       if(!clientId) throw new Error('Client ID is required.');
       if(!clientId.endsWith('.apps.googleusercontent.com')) throw new Error('Client ID must end with .apps.googleusercontent.com');
@@ -2482,29 +2510,79 @@ document.addEventListener('click',async(event)=>{
       deferButtonReset=true;
       button.disabled=true;
       button.textContent='Saving...';
-      if(statusArea){
-        statusArea.style.display='block';
-        statusArea.textContent='Saving OAuth Client ID...';
-        statusArea.style.color='var(--muted)';
+      if(notice){
+        notice.style.display='block';
+        notice.textContent='Saving OAuth Client ID…';
+        notice.style.borderLeftColor='#facc15';
+        notice.style.background='rgba(250,204,21,0.08)';
+        notice.style.color='var(--text)';
       }
       try{
         await postJson('/api/video-orchestrator/oauth/youtube/client-config',{client_id:clientId});
         button.textContent='✓ Saved';
-        if(statusArea){
-          statusArea.textContent='OAuth Client ID saved.';
-          statusArea.style.color='var(--text)';
+        if(notice){
+          notice.textContent='OAuth Client ID saved.';
+          notice.style.borderLeftColor='#34d399';
+          notice.style.background='rgba(52,211,153,0.08)';
         }
         setTimeout(()=>{
           button.textContent=originalText;
           button.disabled=false;
-        }, 2000);
+        }, 2500);
         await refreshVideoOrchestratorPanels();
       }catch(err){
         const errMsg=String(err?.message||err).slice(0,60);
         button.textContent='Save failed';
-        if(statusArea){
-          statusArea.textContent='Error: '+errMsg;
-          statusArea.style.color='#ff6b6b';
+        if(notice){
+          notice.textContent='Could not save OAuth Client ID: '+errMsg;
+          notice.style.borderLeftColor='#f87171';
+          notice.style.background='rgba(248,113,113,0.08)';
+          notice.style.color='#f87171';
+        }
+        button.disabled=false;
+        setTimeout(()=>{ button.textContent=originalText; }, 3000);
+        throw err;
+      }
+      return;
+    }
+    if(action==='save-oauth-secret'){
+      const clientSecretInput=document.querySelector('input[name="vo-client-secret"]');
+      const notice=document.querySelector('#vo-credentials-notice');
+      const clientSecret=clientSecretInput?String(clientSecretInput.value||'').trim():'';
+      if(!clientSecret) throw new Error('Client secret is required.');
+      const originalText=button.textContent;
+      deferButtonReset=true;
+      button.disabled=true;
+      button.textContent='Storing...';
+      if(notice){
+        notice.style.display='block';
+        notice.textContent='Storing client secret in Keychain…';
+        notice.style.borderLeftColor='#facc15';
+        notice.style.background='rgba(250,204,21,0.08)';
+        notice.style.color='var(--text)';
+      }
+      try{
+        await postJson('/api/video-orchestrator/oauth/youtube/client-secret',{client_secret:clientSecret});
+        button.textContent='✓ Stored';
+        if(notice){
+          notice.textContent='Client secret stored in Keychain.';
+          notice.style.borderLeftColor='#34d399';
+          notice.style.background='rgba(52,211,153,0.08)';
+        }
+        if(clientSecretInput) clientSecretInput.value='';
+        setTimeout(()=>{
+          button.textContent=originalText;
+          button.disabled=false;
+        }, 2500);
+        await refreshVideoOrchestratorPanels();
+      }catch(err){
+        const errMsg=String(err?.message||err).slice(0,60);
+        button.textContent='Save failed';
+        if(notice){
+          notice.textContent='Could not store client secret: '+errMsg;
+          notice.style.borderLeftColor='#f87171';
+          notice.style.background='rgba(248,113,113,0.08)';
+          notice.style.color='#f87171';
         }
         button.disabled=false;
         setTimeout(()=>{ button.textContent=originalText; }, 3000);
@@ -2513,7 +2591,7 @@ document.addEventListener('click',async(event)=>{
       return;
     }
     if(action==='save-account'){
-      const statusArea=document.querySelector('#vo-account-action-status');
+      const notice=document.querySelector('#vo-credentials-notice');
       const payload={
         platform:'youtube',
         account_id:String((document.querySelector('input[name="vo-account-id"]')||{}).value||'').trim(),
@@ -2526,29 +2604,34 @@ document.addEventListener('click',async(event)=>{
       deferButtonReset=true;
       button.disabled=true;
       button.textContent='Saving...';
-      if(statusArea){
-        statusArea.style.display='block';
-        statusArea.textContent='Saving account...';
-        statusArea.style.color='var(--muted)';
+      if(notice){
+        notice.style.display='block';
+        notice.textContent='Saving YouTube account…';
+        notice.style.borderLeftColor='#facc15';
+        notice.style.background='rgba(250,204,21,0.08)';
+        notice.style.color='var(--text)';
       }
       try{
         await postJson('/api/video-orchestrator/accounts',payload);
         button.textContent='✓ Saved';
-        if(statusArea){
-          statusArea.textContent='Account saved.';
-          statusArea.style.color='var(--text)';
+        if(notice){
+          notice.textContent='YouTube account saved.';
+          notice.style.borderLeftColor='#34d399';
+          notice.style.background='rgba(52,211,153,0.08)';
         }
         setTimeout(()=>{
           button.textContent=originalText;
           button.disabled=false;
-        }, 2000);
+        }, 2500);
         await refreshVideoOrchestratorPanels();
       }catch(err){
         const errMsg=String(err?.message||err).slice(0,60);
         button.textContent='Save failed';
-        if(statusArea){
-          statusArea.textContent='Error: '+errMsg;
-          statusArea.style.color='#ff6b6b';
+        if(notice){
+          notice.textContent='Could not save YouTube account: '+errMsg;
+          notice.style.borderLeftColor='#f87171';
+          notice.style.background='rgba(248,113,113,0.08)';
+          notice.style.color='#f87171';
         }
         button.disabled=false;
         setTimeout(()=>{ button.textContent=originalText; }, 3000);
@@ -2557,36 +2640,41 @@ document.addEventListener('click',async(event)=>{
       return;
     }
     if(action==='refresh-health'){
-      const statusArea=document.querySelector('#vo-account-action-status');
+      const notice=document.querySelector('#vo-credentials-notice');
       const accountId=button.getAttribute('data-account-id');
       if(!accountId) throw new Error('Missing account id.');
       const originalText=button.textContent;
       deferButtonReset=true;
       button.disabled=true;
       button.textContent='Checking...';
-      if(statusArea){
-        statusArea.style.display='block';
-        statusArea.textContent='Refreshing account health...';
-        statusArea.style.color='var(--muted)';
+      if(notice){
+        notice.style.display='block';
+        notice.textContent='Refreshing account health…';
+        notice.style.borderLeftColor='#facc15';
+        notice.style.background='rgba(250,204,21,0.08)';
+        notice.style.color='var(--text)';
       }
       try{
         await postJson('/api/video-orchestrator/accounts/'+encodeURIComponent(accountId)+'/health-check',{});
         button.textContent='✓ Checked';
-        if(statusArea){
-          statusArea.textContent='Account health checked.';
-          statusArea.style.color='var(--text)';
+        if(notice){
+          notice.textContent='Account health refreshed.';
+          notice.style.borderLeftColor='#34d399';
+          notice.style.background='rgba(52,211,153,0.08)';
         }
         setTimeout(()=>{
           button.textContent=originalText;
           button.disabled=false;
-        }, 2000);
+        }, 2500);
         await refreshVideoOrchestratorPanels();
       }catch(err){
         const errMsg=String(err?.message||err).slice(0,60);
         button.textContent='Error';
-        if(statusArea){
-          statusArea.textContent='Error: '+errMsg;
-          statusArea.style.color='#ff6b6b';
+        if(notice){
+          notice.textContent='Could not refresh health: '+errMsg;
+          notice.style.borderLeftColor='#f87171';
+          notice.style.background='rgba(248,113,113,0.08)';
+          notice.style.color='#f87171';
         }
         button.disabled=false;
         setTimeout(()=>{ button.textContent=originalText; }, 3000);
@@ -2595,52 +2683,75 @@ document.addEventListener('click',async(event)=>{
       return;
     }
     if(action==='connect-youtube'){
-      const clientIdInput=document.querySelector('input[name="vo-client-id"]');
-      const clientId=clientIdInput?String(clientIdInput.value||'').trim():'';
-      if(!clientId) throw new Error('Configure OAuth Client ID first.');
-      let payload;
-      if(button.getAttribute('data-form')==='true'){
-        const accountId=String((document.querySelector('input[name="vo-account-id"]')||{}).value||'').trim();
-        if(!accountId) throw new Error('Save account first (enter Account ID).');
-        payload={
-          platform:'youtube',
-          account_id:accountId,
-          account_label:String((document.querySelector('input[name="vo-account-label"]')||{}).value||'').trim(),
-          display_name:String((document.querySelector('input[name="vo-display-name"]')||{}).value||'').trim(),
-          enabled:Boolean(document.querySelector('input[name="vo-enabled"]')?.checked),
-        };
-      }else{
-        const accountId=button.getAttribute('data-account-id');
-        const safeAccount=[...((window.__videoOrchestratorStatus&&window.__videoOrchestratorStatus.accounts)||[])].find(a=>String(a.account_id)===String(accountId));
-        payload=safeAccount?{
-          platform:'youtube',
-          account_id:safeAccount.account_id,
-          account_label:safeAccount.account_label,
-          display_name:safeAccount.display_name,
-          enabled:true,
-        }:null;
+      const notice=document.querySelector('#vo-credentials-notice');
+      const accountId=button.getAttribute('data-account-id');
+      if(!accountId){
+        throw new Error('Missing account ID.');
       }
-      if(!payload) throw new Error('Missing account data.');
+      let payload;
+      const safeAccount=[...((window.__videoOrchestratorStatus&&window.__videoOrchestratorStatus.accounts)||[])].find(a=>String(a.account_id)===String(accountId));
+      if(safeAccount){
+        payload={platform:'youtube',account_id:safeAccount.account_id,account_label:safeAccount.account_label,display_name:safeAccount.display_name,enabled:true};
+      }else if(accountId==='youtube-pending'){
+        const timestamp=Date.now();
+        const pendingId='pending-youtube-'+timestamp;
+        payload={platform:'youtube',account_id:pendingId,account_label:pendingId,display_name:'YouTube Channel (pending)',enabled:true};
+      }else{
+        throw new Error('Account not found.');
+      }
       const originalText=button.textContent;
       deferButtonReset=true;
       button.disabled=true;
       button.textContent='Opening...';
+      if(notice){
+        notice.textContent='Opening Google OAuth…';
+        notice.style.borderLeftColor='#facc15';
+        notice.style.background='rgba(250,204,21,0.08)';
+        notice.style.color='var(--text)';
+      }
       try{
         const data=await postJson('/api/video-orchestrator/oauth/youtube/start',payload);
         if(data.authorization_url){
           const w=window.open(data.authorization_url,'_blank','noopener,noreferrer');
-          if(w) button.textContent='✓ Auth window opened';
-          else button.textContent='(Popup blocked - check link)';
+          if(w){
+            button.textContent='✓ Window opened';
+            if(notice){
+              notice.textContent='Google OAuth window opened. Complete login in the browser.';
+              notice.style.borderLeftColor='#34d399';
+              notice.style.background='rgba(52,211,153,0.08)';
+            }
+          }else{
+            button.textContent='Popup blocked';
+            if(notice){
+              notice.textContent='Popup blocked. Check your browser settings or try again.';
+              notice.style.borderLeftColor='#f87171';
+              notice.style.background='rgba(248,113,113,0.08)';
+              notice.style.color='#f87171';
+            }
+          }
         }else{
-          button.textContent='No auth URL';
+          button.textContent='Error';
+          if(notice){
+            notice.textContent='No authorization URL received.';
+            notice.style.borderLeftColor='#f87171';
+            notice.style.background='rgba(248,113,113,0.08)';
+            notice.style.color='#f87171';
+          }
         }
         setTimeout(()=>{
           button.textContent=originalText;
           button.disabled=false;
-        }, 3000);
+        }, 3500);
         await refreshVideoOrchestratorPanels();
       }catch(err){
-        button.textContent='Error: '+String(err?.message||err).slice(0,25);
+        button.textContent='Error';
+        const errMsg=String(err?.message||err).slice(0,60);
+        if(notice){
+          notice.textContent='OAuth error: '+errMsg;
+          notice.style.borderLeftColor='#f87171';
+          notice.style.background='rgba(248,113,113,0.08)';
+          notice.style.color='#f87171';
+        }
         button.disabled=false;
         setTimeout(()=>{ button.textContent=originalText; }, 3000);
         throw err;
@@ -4530,6 +4641,51 @@ export function createDashboardServer(app: AppContext): http.Server {
         const oauthClientConfig = saveYoutubeOAuthClientConfig(clientId);
         res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
         res.end(JSON.stringify({ ok: true, oauth_client_config: oauthClientConfig }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: redactVideoOrchestratorText(String(err)) }));
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url === "/api/video-orchestrator/oauth/youtube/client-secret") {
+      if (!isLocalDashboardRequest(req)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Client secret is only available on localhost." }));
+        return;
+      }
+      try {
+        let body = "";
+        for await (const chunk of req) body += chunk;
+        const payload = JSON.parse(body) as Record<string, unknown>;
+        const clientSecret = String(payload.client_secret ?? '').trim();
+        if (!clientSecret) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "client_secret is required." }));
+          return;
+        }
+        if (clientSecret.length < 8) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "client_secret must be at least 8 characters." }));
+          return;
+        }
+        const oauthConfig = loadYoutubeOAuthClientConfig();
+        if (!oauthConfig.client_id) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "Save OAuth Client ID first." }));
+          return;
+        }
+        const secretKeyLabel = oauthConfig.client_id.split('.')[0] || 'youtube-oauth-secret';
+        const { execFileSync } = await import('node:child_process');
+        const keychainArgs = ["add-generic-password", "-s", `video-orchestrator/youtube-oauth-client`, "-a", secretKeyLabel, "-w", clientSecret, "-U"];
+        try {
+          execFileSync("security", keychainArgs, { stdio: ["ignore", "pipe", "pipe"] });
+        } catch (keychainErr) {
+          throw new Error(`Failed to store in Keychain: ${String(keychainErr).slice(0, 80)}`);
+        }
+        saveYoutubeOAuthClientConfig(undefined, { client_secret_configured: true, oauth_client_mode: 'client_secret_keychain' });
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" });
+        res.end(JSON.stringify({ ok: true, client_secret_configured: true, oauth_client_mode: 'client_secret_keychain' }));
       } catch (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: false, error: redactVideoOrchestratorText(String(err)) }));
