@@ -2474,22 +2474,38 @@ document.addEventListener('click',async(event)=>{
   try{
     if(action==='save-oauth-client'){
       const clientIdInput=document.querySelector('input[name="vo-client-id"]');
+      const statusArea=document.querySelector('#vo-account-action-status');
       const clientId=clientIdInput?String(clientIdInput.value||'').trim():'';
       if(!clientId) throw new Error('Client ID is required.');
+      if(!clientId.endsWith('.apps.googleusercontent.com')) throw new Error('Client ID must end with .apps.googleusercontent.com');
       const originalText=button.textContent;
       deferButtonReset=true;
       button.disabled=true;
       button.textContent='Saving...';
+      if(statusArea){
+        statusArea.style.display='block';
+        statusArea.textContent='Saving OAuth Client ID...';
+        statusArea.style.color='var(--muted)';
+      }
       try{
         await postJson('/api/video-orchestrator/oauth/youtube/client-config',{client_id:clientId});
         button.textContent='✓ Saved';
+        if(statusArea){
+          statusArea.textContent='OAuth Client ID saved.';
+          statusArea.style.color='var(--text)';
+        }
         setTimeout(()=>{
           button.textContent=originalText;
           button.disabled=false;
         }, 2000);
         await refreshVideoOrchestratorPanels();
       }catch(err){
-        button.textContent='Error: '+String(err?.message||err).slice(0,30);
+        const errMsg=String(err?.message||err).slice(0,60);
+        button.textContent='Save failed';
+        if(statusArea){
+          statusArea.textContent='Error: '+errMsg;
+          statusArea.style.color='#ff6b6b';
+        }
         button.disabled=false;
         setTimeout(()=>{ button.textContent=originalText; }, 3000);
         throw err;
@@ -2497,6 +2513,7 @@ document.addEventListener('click',async(event)=>{
       return;
     }
     if(action==='save-account'){
+      const statusArea=document.querySelector('#vo-account-action-status');
       const payload={
         platform:'youtube',
         account_id:String((document.querySelector('input[name="vo-account-id"]')||{}).value||'').trim(),
@@ -2509,16 +2526,30 @@ document.addEventListener('click',async(event)=>{
       deferButtonReset=true;
       button.disabled=true;
       button.textContent='Saving...';
+      if(statusArea){
+        statusArea.style.display='block';
+        statusArea.textContent='Saving account...';
+        statusArea.style.color='var(--muted)';
+      }
       try{
         await postJson('/api/video-orchestrator/accounts',payload);
         button.textContent='✓ Saved';
+        if(statusArea){
+          statusArea.textContent='Account saved.';
+          statusArea.style.color='var(--text)';
+        }
         setTimeout(()=>{
           button.textContent=originalText;
           button.disabled=false;
         }, 2000);
         await refreshVideoOrchestratorPanels();
       }catch(err){
-        button.textContent='Error: '+String(err?.message||err).slice(0,30);
+        const errMsg=String(err?.message||err).slice(0,60);
+        button.textContent='Save failed';
+        if(statusArea){
+          statusArea.textContent='Error: '+errMsg;
+          statusArea.style.color='#ff6b6b';
+        }
         button.disabled=false;
         setTimeout(()=>{ button.textContent=originalText; }, 3000);
         throw err;
@@ -2526,22 +2557,37 @@ document.addEventListener('click',async(event)=>{
       return;
     }
     if(action==='refresh-health'){
+      const statusArea=document.querySelector('#vo-account-action-status');
       const accountId=button.getAttribute('data-account-id');
       if(!accountId) throw new Error('Missing account id.');
       const originalText=button.textContent;
       deferButtonReset=true;
       button.disabled=true;
       button.textContent='Checking...';
+      if(statusArea){
+        statusArea.style.display='block';
+        statusArea.textContent='Refreshing account health...';
+        statusArea.style.color='var(--muted)';
+      }
       try{
         await postJson('/api/video-orchestrator/accounts/'+encodeURIComponent(accountId)+'/health-check',{});
         button.textContent='✓ Checked';
+        if(statusArea){
+          statusArea.textContent='Account health checked.';
+          statusArea.style.color='var(--text)';
+        }
         setTimeout(()=>{
           button.textContent=originalText;
           button.disabled=false;
         }, 2000);
         await refreshVideoOrchestratorPanels();
       }catch(err){
+        const errMsg=String(err?.message||err).slice(0,60);
         button.textContent='Error';
+        if(statusArea){
+          statusArea.textContent='Error: '+errMsg;
+          statusArea.style.color='#ff6b6b';
+        }
         button.disabled=false;
         setTimeout(()=>{ button.textContent=originalText; }, 3000);
         throw err;

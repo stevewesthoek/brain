@@ -419,6 +419,7 @@ export function renderAccountsAndCredentialsPanel(accounts: SafeDashboardAccount
   const clientSecretConfigured = Boolean(oauthClientConfig?.client_secret_configured);
   let html='<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
   html+='<h3 style="margin:0 0 12px 0;font-size:0.95em;color:var(--text);font-weight:600">Accounts &amp; Credentials</h3>';
+  html+='<div id="vo-account-action-status" style="margin-bottom:12px;padding:8px 12px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--muted);font-size:0.9em;min-height:1.4em;display:none"></div>';
   html+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
   html+='<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)">OAuth client: <strong>'+ (configured ? 'configured' : 'missing') +'</strong></div>';
   html+='<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text)">Mode: <strong>'+(clientMode === 'pkce_public_client' ? 'PKCE public client' : 'client secret via Keychain')+'</strong></div>';

@@ -1374,7 +1374,7 @@ test("D1-F: account/OAuth actions do not call global fetchData or reload page", 
   // Verify actions only refresh Video Orchestrator panels
   const saveOAuthClientAction = dashboardSource.slice(
     dashboardSource.indexOf("if(action==='save-oauth-client')"),
-    dashboardSource.indexOf("if(action==='save-oauth-client')") + 1000
+    dashboardSource.indexOf("if(action==='save-oauth-client')") + 2500
   );
   assert.ok(saveOAuthClientAction.includes("refreshVideoOrchestratorPanels"), "Should refresh VO panels after OAuth save");
   assert.ok(!saveOAuthClientAction.includes("location.reload"), "Should not reload page");
@@ -1383,7 +1383,7 @@ test("D1-F: account/OAuth actions do not call global fetchData or reload page", 
   // Verify account action
   const saveAccountAction = dashboardSource.slice(
     dashboardSource.indexOf("if(action==='save-account')"),
-    dashboardSource.indexOf("if(action==='save-account')") + 1000
+    dashboardSource.indexOf("if(action==='save-account')") + 2500
   );
   assert.ok(saveAccountAction.includes("refreshVideoOrchestratorPanels"), "Should refresh VO panels after account save");
 });
@@ -1484,4 +1484,98 @@ test("D1-H: getDefaultVideoOrchestratorPaths uses import.meta.url resolution", (
   assert.ok(!paths.registryPath.includes("projects/probot/runtime"), "Should not contain projects/probot/runtime");
   assert.ok(!paths.oauthClientConfigPath.includes("projects/probot/runtime"), "Should not contain projects/probot/runtime");
   assert.ok(!paths.oauthStateDir.includes("projects/probot/runtime"), "Should not contain projects/probot/runtime");
+});
+
+test("D1-K: renderAccountsAndCredentialsPanel includes id='vo-account-action-status'", () => {
+  const panelHtml = renderAccountsAndCredentialsPanel([], {
+    client_id: "fake.apps.googleusercontent.com",
+    configured: true,
+    oauth_client_mode: "pkce_public_client",
+    client_secret_configured: false,
+  });
+  assert.ok(panelHtml.includes('id="vo-account-action-status"'), "Panel should include status area container");
+  assert.ok(panelHtml.includes("display:none"), "Status area should start hidden");
+});
+
+test("D1-K: save-oauth-client handler validates .apps.googleusercontent.com suffix", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
+  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthStart + 1500);
+  assert.ok(
+    saveOAuthSection.includes(".endsWith('.apps.googleusercontent.com')"),
+    "Should validate client ID ends with .apps.googleusercontent.com"
+  );
+});
+
+test("D1-K: save-oauth-client handler writes to #vo-account-action-status", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
+  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthStart + 2000);
+  assert.ok(
+    saveOAuthSection.includes("#vo-account-action-status") &&
+    (saveOAuthSection.includes("statusArea") || saveOAuthSection.includes("status-area")),
+    "Should write status messages to status area"
+  );
+});
+
+test("D1-K: save-oauth-client handler POSTs to /api/video-orchestrator/oauth/youtube/client-config", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
+  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthStart + 1500);
+  assert.ok(
+    saveOAuthSection.includes("/api/video-orchestrator/oauth/youtube/client-config"),
+    "Should POST to correct endpoint"
+  );
+});
+
+test("D1-K: save-oauth-client handler does not call alert", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
+  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthStart + 2000);
+  assert.ok(
+    !saveOAuthSection.includes("alert("),
+    "Should not use alert() for feedback"
+  );
+});
+
+test("D1-K: save-oauth-client handler does not call location.reload", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
+  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthStart + 2000);
+  assert.ok(
+    !saveOAuthSection.includes("location.reload"),
+    "Should not reload the page"
+  );
+});
+
+test("D1-K: save-oauth-client handler does not call global fetchData", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
+  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthStart + 2000);
+  assert.ok(
+    !saveOAuthSection.includes("fetchData()"),
+    "Should not call global fetchData"
+  );
+});
+
+test("D1-K: save-oauth-client handler shows button state transitions (Saving → ✓ Saved)", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
+  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthStart + 2000);
+  assert.ok(
+    saveOAuthSection.includes("'Saving...'") &&
+    saveOAuthSection.includes("'✓ Saved'"),
+    "Should show Saving → ✓ Saved transitions"
+  );
+});
+
+test("D1-K: refreshVideoOrchestratorPanels is called after save", () => {
+  const dashboardSource = fs.readFileSync("src/bot/dashboard.ts", "utf8");
+  const saveOAuthStart = dashboardSource.indexOf("if(action==='save-oauth-client')");
+  const saveOAuthEnd = dashboardSource.indexOf("if(action==='save-account'");
+  const saveOAuthSection = dashboardSource.substring(saveOAuthStart, saveOAuthEnd);
+  assert.ok(
+    saveOAuthSection.includes("refreshVideoOrchestratorPanels"),
+    "Should refresh panels after save"
+  );
 });
