@@ -1809,25 +1809,125 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 ❌ Check disk space or system resources
 ❌ Support non-dry-run mode (dryRun must be true)
 
+### VO-3B Hardening (2026-05-11) ✅
+
+**Goal:** Strengthen VO-3B safety and complete missing functionality.
+
+**Hardening Changes:**
+
+1. **Package Draft Validation in createLocalRenderPlanFromPackageDraft:**
+   - Blocks non-dry-run package drafts: "VO-3B only supports dry-run package drafts"
+   - Blocks upload-ready drafts: "VO-3B cannot create render plans from upload-ready drafts"
+   - Platform matching: input.platform must equal draft.platform (no override)
+
+2. **Enhanced listRenderPlans Filtering:**
+   - Added filters: project_id, plan_state (in addition to package_id, platform)
+   - Stable sorting: by created_at ascending, then render_plan_id
+   - Immutable filtering: does not mutate store array
+
+3. **Aggregate Render Plan Readiness Report:**
+   - New function: `getLocalRenderPlanReadinessReport(options?: { project_id?, platform? })`
+   - Returns: AggregateRenderPlanReadinessReport with counts and summaries
+   - Safe output: no planned_output_path, render_targets, asset_plan, source_materials
+   - ready_for_render and ready_for_upload always 0 in VO-3B
+   - Sanitized keys in by_state and by_platform (no raw unsafe values)
+
+4. **Safe Summary Builder:**
+   - New function: `buildRenderPlanSummary(plan) → RenderPlanSummary`
+   - Safe string sanitization: blocks long values, forbidden patterns, non-alphanumeric
+   - Fallback values for unsafe fields: "[unsafe-render-plan-id]", "[unsafe-platform]", etc.
+   - Used by aggregate report for consistent safe output
+
+5. **Store Safety Enhancements:**
+   - saveRenderPlansStore now sorts by created_at then render_plan_id before writing
+   - Prevents duplicate render_plan_id (upserts instead of appends)
+   - Validates before storing (rejects invalid, unsafe, or non-dry-run plans)
+
+6. **Compatibility Wrappers:**
+   - `saveLocalRenderPlan` → `saveRenderPlan`
+   - `getLocalRenderPlan` → `loadRenderPlan`
+   - `listLocalRenderPlans` → `listRenderPlans`
+   - Supports code using either naming convention
+
+7. **Test Coverage (40 tests total):**
+   - Original 24 VO-3B tests + 16 hardening tests
+   - VO-3B-H1: Non-dry-run package draft rejection
+   - VO-3B-H2: Upload-ready draft rejection
+   - VO-3B-H3: Mismatched platform rejection
+   - VO-3B-H4: Platform error does not echo raw values
+   - VO-3B-H5: Filter by project_id
+   - VO-3B-H6: Filter by plan_state
+   - VO-3B-H7: Sorting by created_at then render_plan_id
+   - VO-3B-H8: Store sorted on write
+   - VO-3B-H9: Aggregate report counts total
+   - VO-3B-H10: Groups by sanitized state/platform
+   - VO-3B-H11: ready_for_render is 0
+   - VO-3B-H12: ready_for_upload is 0
+   - VO-3B-H13: Report excludes paths/targets/asset_plan
+   - VO-3B-H14: JSON.stringify report contains no forbidden strings
+   - VO-3B-H15: Compatibility wrappers work
+   - VO-3B-H16: buildRenderPlanSummary sanitizes unsafe values
+   - **All 304 tests passing** (264 existing + 40 VO-3B)
+
+### VO-3B: Hardening Summary
+
+**Safety:**
+- ✅ Package drafts must be dry-run (non-dry-run rejected)
+- ✅ Upload-ready drafts rejected (VO-2E concern only)
+- ✅ Platform must match between draft and plan (no multi-platform override)
+- ✅ Error messages never echo raw platform/plan_id/project_id values
+- ✅ Aggregate report sanitizes all output (no paths, targets, or assets)
+- ✅ Store always sorted and validated before writing
+- ✅ ready_for_render and ready_for_upload remain false (immutable in VO-3B)
+
+**Functionality:**
+- ✅ Complete list filtering (package_id, project_id, platform, plan_state)
+- ✅ Stable sorting (by created_at then render_plan_id)
+- ✅ Aggregate readiness reporting
+- ✅ Safe summaries for CLI/reports
+- ✅ Compatibility naming conventions
+
+**Verification:**
+- ✅ All 304 tests passing
+- ✅ No raw unsafe values in reports
+- ✅ No credential leakage in error messages
+- ✅ No upload capability added
+- ✅ No platform API calls
+- ✅ No FFmpeg execution
+- ✅ No real media files created
+
 ### VO-3B: Next Steps (VO-3C+)
 
-**VO-3C: Real Render Execution** — Implement actual FFmpeg rendering based on render plans
+**VO-3C: Local File Existence Validation** — Before rendering, validate that source files exist
+- Check if source_materials paths exist (defer from VO-3B)
+- Validate format-specs.json references
+- Build render-ready validation without FFmpeg
+- Do NOT execute FFmpeg or create files yet
+
+**VO-3D: Manual Render Manifest Checks** — Verify render plans against actual system state
+- Compare planned_output_path with target safe zones
+- Validate platform format requirements match plan
+- Detect configuration mismatches
+- Still no actual rendering
+
+**VO-3E: Real Render Execution** — Implement actual FFmpeg rendering based on render plans (when approved)
 - Execute render plans with real FFmpeg composition
 - Create actual output files to planned_output_path
 - Verify files meet expected specifications (duration, resolution, codec)
 - Update render plan state to track execution progress
+- **EXPLICIT APPROVAL REQUIRED** before this phase
 
-**VO-3D: Render Status Tracking** — Track render job status
+**VO-3F: Render Status Tracking** — Track render job status
 - Queuing (pending, in_progress, completed, failed)
 - Progress reporting (percentage complete, ETA)
 - Error recovery and retry logic
 
-**VO-3E: Upload Orchestration** — Implement platform upload based on rendered assets
+**VO-3G: Upload Orchestration** — Implement platform upload based on rendered assets
 - Prepare upload manifests for each platform
 - Call platform adapters to upload videos, thumbnails, metadata
 - Set ready_for_upload=true when all uploads complete
 
-**VO-3F: Multi-Account Distribution** — Extend to multiple accounts per platform
+**VO-3H: Multi-Account Distribution** — Extend to multiple accounts per platform
 - Account registry lookup
 - Per-account cooldowns and duplicate prevention
 - Queuing and scheduling across accounts

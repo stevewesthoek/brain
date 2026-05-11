@@ -1865,6 +1865,13 @@ function loadRenderPlansStore(): RenderPlansStore {
 
 function saveRenderPlansStore(store: RenderPlansStore): void {
   try {
+    // Sort plans by created_at ascending, then render_plan_id before writing
+    store.plans.sort((a, b) => {
+      const timeCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (timeCompare !== 0) return timeCompare;
+      return a.render_plan_id.localeCompare(b.render_plan_id);
+    });
+
     const storePath = getRenderPlansPath();
     fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
   } catch (err) {
@@ -1898,16 +1905,34 @@ export function loadRenderPlan(renderPlanId: string): RenderPlan | null {
   return store.plans.find((p) => p.render_plan_id === renderPlanId) ?? null;
 }
 
-export function listRenderPlans(options?: { package_id?: string; platform?: string }): RenderPlan[] {
+export function listRenderPlans(options?: {
+  package_id?: string;
+  project_id?: string;
+  platform?: string;
+  plan_state?: string;
+}): RenderPlan[] {
   const store = loadRenderPlansStore();
   let plans = [...store.plans];
 
   if (options?.package_id) {
     plans = plans.filter((p) => p.package_id === options.package_id);
   }
+  if (options?.project_id) {
+    plans = plans.filter((p) => p.project_id === options.project_id);
+  }
   if (options?.platform) {
     plans = plans.filter((p) => p.platform === options.platform);
   }
+  if (options?.plan_state) {
+    plans = plans.filter((p) => p.plan_state === options.plan_state);
+  }
+
+  // Stable sort by created_at ascending, then render_plan_id
+  plans.sort((a, b) => {
+    const timeCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    if (timeCompare !== 0) return timeCompare;
+    return a.render_plan_id.localeCompare(b.render_plan_id);
+  });
 
   return plans;
 }
@@ -1934,6 +1959,134 @@ export interface RenderPlanReadinessReport {
   summary: string;
 }
 
+function sanitizeRenderPlanString(value: unknown, fallback: string): string {
+  // Never include raw unsafe render plan values in reports
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  // Reject long values (prevent leakage)
+  if (value.length > 80) {
+    return fallback;
+  }
+  // Reject values containing forbidden patterns
+  if (isForbiddenStringPattern(value)) {
+    return fallback;
+  }
+  // Safe to include short alphanumeric values
+  if (/^[a-zA-Z0-9_:-]+$/.test(value)) {
+    return value;
+  }
+  return fallback;
+}
+
+export interface RenderPlanSummary {
+  render_plan_id: string;
+  package_id: string;
+  project_id: string;
+  platform: string;
+  plan_state: string;
+  ready_for_render: boolean;
+  ready_for_upload: boolean;
+  blocking_reasons_count: number;
+  warnings_count: number;
+  created_at: string;
+}
+
+export function buildRenderPlanSummary(plan: RenderPlan): RenderPlanSummary {
+  // Safely get blocking_reasons count (handle malformed validation)
+  let blockingReasonsCount = 0;
+  if (
+    plan.validation &&
+    typeof plan.validation === "object" &&
+    Array.isArray(plan.validation.blocking_reasons)
+  ) {
+    blockingReasonsCount = plan.validation.blocking_reasons.length;
+  } else if (plan.validation && typeof plan.validation === "object") {
+    // Malformed: validation exists but blocking_reasons is not an array
+    blockingReasonsCount = 1; // Count as at least 1 blocking reason
+  }
+
+  // Safely get warnings count (handle malformed validation)
+  let warningsCount = 0;
+  if (
+    plan.validation &&
+    typeof plan.validation === "object" &&
+    Array.isArray(plan.validation.warnings)
+  ) {
+    warningsCount = plan.validation.warnings.length;
+  }
+  // If validation.warnings is malformed or missing, count as 0 warnings
+
+  return {
+    render_plan_id: sanitizeRenderPlanString(plan.render_plan_id, "[unsafe-render-plan-id]"),
+    package_id: sanitizeRenderPlanString(plan.package_id, "[unsafe-package-id]"),
+    project_id: sanitizeRenderPlanString(plan.project_id, "[unsafe-project]"),
+    platform: sanitizeRenderPlanString(plan.platform, "[unsafe-platform]"),
+    plan_state: sanitizeRenderPlanString(plan.plan_state, "blocked"),
+    ready_for_render: false,
+    ready_for_upload: false,
+    blocking_reasons_count: blockingReasonsCount,
+    warnings_count: warningsCount,
+    created_at: sanitizeRenderPlanString(plan.created_at, "[unsafe-created-at]"),
+  };
+}
+
+export interface AggregateRenderPlanReadinessReport {
+  total: number;
+  by_state: Record<string, number>;
+  by_platform: Record<string, number>;
+  ready_for_render: number;
+  ready_for_upload: number;
+  blocked: number;
+  warnings: number;
+  plans: RenderPlanSummary[];
+}
+
+export function getLocalRenderPlanReadinessReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): AggregateRenderPlanReadinessReport {
+  const plans = listRenderPlans(options);
+
+  // Safe aggregate counts
+  const by_state: Record<string, number> = {};
+  const by_platform: Record<string, number> = {};
+  let blockedCount = 0;
+  let warningsCount = 0;
+
+  // Build summaries with safe values
+  const summaries = plans.map((plan) => {
+    const summary = buildRenderPlanSummary(plan);
+
+    // Count by state (using sanitized state)
+    by_state[summary.plan_state] = (by_state[summary.plan_state] ?? 0) + 1;
+
+    // Count by platform (using sanitized platform)
+    by_platform[summary.platform] = (by_platform[summary.platform] ?? 0) + 1;
+
+    // Count blocked and warnings
+    if (summary.plan_state === "blocked" || summary.blocking_reasons_count > 0) {
+      blockedCount++;
+    }
+    if (summary.warnings_count > 0) {
+      warningsCount++;
+    }
+
+    return summary;
+  });
+
+  return {
+    total: plans.length,
+    by_state,
+    by_platform,
+    ready_for_render: 0, // Always 0 in VO-3B (planning only)
+    ready_for_upload: 0, // Always 0 in VO-3B (no upload)
+    blocked: blockedCount,
+    warnings: warningsCount,
+    plans: summaries,
+  };
+}
+
 export function generateRenderPlanReadinessReport(
   renderPlanId: string
 ): RenderPlanReadinessReport | null {
@@ -1942,35 +2095,56 @@ export function generateRenderPlanReadinessReport(
     return null;
   }
 
-  const validation = plan.validation;
-  const blockingReasons = [...validation.blocking_reasons];
-  const warnings = [...validation.warnings];
+  // Use safe summary to sanitize all values
+  const summary = buildRenderPlanSummary(plan);
 
-  // Additional readiness checks based on plan state
-  if (plan.plan_state === "draft") {
-    blockingReasons.push("Plan is still in draft state");
-  } else if (plan.plan_state === "blocked") {
+  // Get safe plan_state (summary.plan_state is already a safe PlanState | fallback)
+  const safePlanState = (summary.plan_state as PlanState) || ("blocked" as const);
+
+  // Build generic summary messages without echoing raw values
+  let summaryText = "";
+  if (safePlanState === "draft") {
+    summaryText = "Plan is in draft state. Rendering is still disabled in VO-3B.";
+  } else if (safePlanState === "blocked") {
+    summaryText = "Plan is blocked. Review sanitized readiness counts.";
+  } else if (safePlanState === "planned") {
+    summaryText = "Plan is planned. Rendering is still disabled in VO-3B.";
+  } else {
+    summaryText = "Plan state is unknown. Rendering is still disabled in VO-3B.";
+  }
+
+  // Build blocking reasons and warnings safely (no raw echoing)
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  // Add generic blocking reasons based on plan state
+  if (safePlanState === "draft") {
+    blockingReasons.push("Plan is in draft state");
+  } else if (safePlanState === "blocked") {
     blockingReasons.push("Plan is blocked");
   }
 
-  // Build summary
-  let summary = "";
-  if (plan.plan_state === "draft") {
-    summary = "Plan is in draft state. Finalize to proceed.";
-  } else if (plan.plan_state === "blocked") {
-    summary = `Plan is blocked. Fix: ${blockingReasons.slice(0, 2).join("; ")}`;
-  } else if (plan.plan_state === "planned") {
-    summary = `Planned for ${plan.platform}. Ready for VO-3C+ rendering.`;
+  // Add a generic message about rendering being disabled in VO-3B
+  blockingReasons.push("Real rendering not implemented in VO-3B");
+
+  // Add generic warning if there are blocking reasons from validation
+  if (summary.blocking_reasons_count > 0) {
+    warnings.push("Plan has blocking issues");
+  }
+
+  // Add generic warning if there are warnings from validation
+  if (summary.warnings_count > 0) {
+    warnings.push("Plan has warnings");
   }
 
   return {
-    render_plan_id: plan.render_plan_id,
+    render_plan_id: summary.render_plan_id,
     ready_for_render: false,
     ready_for_upload: false,
-    plan_state: plan.plan_state,
+    plan_state: safePlanState,
     blocking_reasons: blockingReasons,
     warnings,
-    summary,
+    summary: summaryText,
   };
 }
 
@@ -1987,6 +2161,18 @@ export function createLocalRenderPlanFromPackageDraft(
     throw new Error("Package draft is required");
   }
 
+  const draft = input.draft;
+
+  // Draft must be dry-run
+  if (draft.dry_run !== true) {
+    throw new Error("VO-3B only supports dry-run package drafts");
+  }
+
+  // Draft must not be upload-ready
+  if (draft.readiness?.ready_to_post === true) {
+    throw new Error("VO-3B cannot create render plans from upload-ready drafts");
+  }
+
   // Validate platform
   const validPlatforms = [
     "youtube",
@@ -1999,10 +2185,14 @@ export function createLocalRenderPlanFromPackageDraft(
     "x",
   ];
   if (!validPlatforms.includes(input.platform)) {
-    throw new Error(`Invalid platform: ${input.platform}`);
+    throw new Error("Platform must be valid");
   }
 
-  const draft = input.draft;
+  // Platform must match draft platform (or document intentional override)
+  if (draft.platform !== input.platform) {
+    throw new Error("Render plan platform must match draft platform");
+  }
+
   const renderPlanId = `plan-${draft.package_id}-${input.platform}`;
 
   // Build render targets based on platform and draft metadata
@@ -2320,6 +2510,12 @@ export function validateRenderPlan(plan: unknown): RenderPlanValidationResult {
 
   return { ok, blocking_reasons, warnings };
 }
+
+// ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
+
+export const saveLocalRenderPlan = saveRenderPlan;
+export const getLocalRenderPlan = loadRenderPlan;
+export const listLocalRenderPlans = listRenderPlans;
 
 // Export internal functions for testing and CLI
 export {
