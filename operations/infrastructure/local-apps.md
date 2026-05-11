@@ -87,6 +87,7 @@ For new local applications, add the app to `local-apps.json` first and provide l
 | Family Finance | 3060 | 5452 | Local-only household finance tracker | `cd ~/Repos/stevewesthoek/brain/operations/database/standalone/familyfinance && docker compose up -d && cd ~/Repos/stevewesthoek/family-finance && PORT=3060 NEXT_PUBLIC_APP_URL=http://localhost:3060 npm run dev > /tmp/family-finance.log 2>&1 &` |
 | Fala | 3050 | - | Portuguese language learning app | `echo 'Manual start required'` |
 | BuildFlow | 3054 | - | Unified lifecycle for agent (3052), web (3054), and relay (3053) | `bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh start` |
+| TradeBot | 3061 | 5454 | TradeBot read-only Crypto.com cockpit and staged trading lab | `cd ~/Repos/stevewesthoek/tradebot && PORT=3061 NEXT_PUBLIC_APP_URL=http://localhost:3061 npm run dev > /tmp/tradebot.log 2>&1 &` |
 
 ## OrbStack database inventory
 
@@ -106,6 +107,7 @@ The standalone Postgres stacks under `operations/database/standalone/` use these
 | SaaSKit Studio | 5450 | `saaskitstudio` |
 | OpenFund | 5451 | `openfund` |
 | Family Finance | 5452 | `family_finance` |
+| TradeBot | 5454 | `tradebot` |
 | ProKit | 5455 | `prokit` |
 | SaaSKit | 5457 | `saaskit` |
 
@@ -118,6 +120,27 @@ ComfyUI is a local service, not a database-backed app. ProBot can start and stop
 - Start: `~/.local/bin/comfyui-start`
 - Stop: `~/.local/bin/comfyui-stop`
 - UI / health: `http://localhost:8188`
+
+## TradeBot lifecycle
+
+TradeBot is a Phase 1 read-only cockpit.
+
+- Fixed app port: 3061
+- App URL: http://localhost:3061/dashboard
+- Health check: http://localhost:3061/api/health
+- Future local PostgreSQL port: 5454
+- Log file: /tmp/tradebot.log
+
+TradeBot must stay read-only in Phase 1:
+- no live trading
+- no withdrawals
+- no margin
+- no leverage
+- no derivatives
+- no Freqtrade execution integration
+- no LLM trade authority
+
+ProBot should start TradeBot with PORT=3061.
 
 ## How ProBot loads this file
 

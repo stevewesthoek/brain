@@ -32,7 +32,7 @@ The registry is dual-compatible during the migration window:
 - legacy consumers may continue to use `port`, `url`, `check`, `start`, and `stop`
 - both sets of fields are kept aligned in `local-apps.json`
 
-Current inventory: ProBot (7070), Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), Via di Eden (3057 / DB 5447), Oliveto Organizing (3059 / DB 5453), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060 / DB 5452), Fala (3050), BuildFlow (3054).
+Current inventory: ProBot (7070), Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), Via di Eden (3057 / DB 5447), Oliveto Organizing (3059 / DB 5453), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060 / DB 5452), Fala (3050), BuildFlow (3054), TradeBot (3061 / DB 5454).
 
 To add a new local app, edit `local-apps.json` — the ProBot "Local Apps" tab updates immediately.
 
@@ -428,6 +428,23 @@ Known sites still present on Hetzner server filesystem (not yet deleted):
 - **Manual execution**: ⚠️ Avoid `npm run dev` outside ProBot; use ProBot dashboard instead to ensure port isolation and health-check compliance
 - **Reference**: Canonical local database compose at `operations/database/standalone/familyfinance/docker-compose.yml`
 - **Constraint**: Future agents must not create Family Finance databases on production Supabase, must not attempt to deploy to Dokploy, and must only verify local OrbStack runtime via ProBot dashboard
+
+### TradeBot
+- Status: Local-only Phase 1 read-only cockpit
+- Registry: local-apps.json entry with name "TradeBot" — canonical configuration source
+- Canonical local execution: ProBot dashboard manages lifecycle
+  - App port: 3061 (http://localhost:3061/dashboard)
+  - Health check: http://localhost:3061/api/health
+  - Future database: OrbStack PostgreSQL reserved at localhost:5454/tradebot
+  - Log file: /tmp/tradebot.log
+- Safety boundary:
+  - no live trading
+  - no withdrawals
+  - no margin/leverage/derivatives
+  - no Freqtrade execution integration
+  - no LLM trade authority
+- Manual execution: avoid running on port 3000; use reserved port 3061
+- Constraint: Future agents must not reuse ProChat DB port 5434 for TradeBot. TradeBot database port is reserved as 5454.
 
 ## Gaps / TODO
 
