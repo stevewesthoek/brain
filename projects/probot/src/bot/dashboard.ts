@@ -60,14 +60,18 @@ const execFileAsync = promisify(execFile);
 function base64Url(buffer: Buffer): string {
   return buffer.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
-const VIDEO_ORCHESTRATOR_RUNTIME_DIR = path.resolve(process.cwd(), "runtime/local/video-orchestrator");
-const VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "account-registry.local.json");
-const ACCOUNT_HEALTH_SNAPSHOT_PATH = path.resolve(process.cwd(), 'runtime/local/video-orchestrator/account-health-snapshot.json');
-const VIDEO_ORCHESTRATOR_OAUTH_CLIENT_CONFIG_PATH = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "youtube-oauth-client.local.json");
-const VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "oauth-state");
-const VIDEO_ORCHESTRATOR_ACCOUNT_HEALTH_LOG_PATH = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "account-health.log");
-const VIDEO_ORCHESTRATOR_ACCOUNT_HEALTH_SCRIPT = path.resolve(process.cwd(), "tools/scripts/video-orchestrator-account-health.mjs");
-const VIDEO_ORCHESTRATOR_CREDENTIAL_HELPER = path.resolve(process.cwd(), "tools/scripts/video-orchestrator-credential-helper.mjs");
+
+// Initialize paths lazily on first access to ensure repo root is resolved via import.meta.url
+let cachedPaths: ReturnType<typeof getDefaultVideoOrchestratorPaths> | null = null;
+function getVideoPaths() {
+  if (!cachedPaths) {
+    cachedPaths = getDefaultVideoOrchestratorPaths();
+  }
+  return cachedPaths;
+}
+
+const VIDEO_ORCHESTRATOR_ACCOUNT_HEALTH_SCRIPT = path.resolve(getDefaultVideoOrchestratorPaths().repoRoot, "tools/scripts/video-orchestrator-account-health.mjs");
+const VIDEO_ORCHESTRATOR_CREDENTIAL_HELPER = path.resolve(getDefaultVideoOrchestratorPaths().repoRoot, "tools/scripts/video-orchestrator-credential-helper.mjs");
 const FAVICON_SVG = `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="lobster-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -185,8 +189,9 @@ async function getVideoOrchestratorStatus(): Promise<Record<string, unknown>> {
 
 function readAccountHealthSnapshot(): AccountHealthStatus | null {
   try {
-    if (!fs.existsSync(ACCOUNT_HEALTH_SNAPSHOT_PATH)) return null;
-    const raw = JSON.parse(fs.readFileSync(ACCOUNT_HEALTH_SNAPSHOT_PATH, 'utf8')) as RawAccountHealthSnapshot;
+    const paths = getVideoPaths();
+    if (!fs.existsSync(paths.snapshotPath)) return null;
+    const raw = JSON.parse(fs.readFileSync(paths.snapshotPath, 'utf8')) as RawAccountHealthSnapshot;
     return normalizeAccountHealthSnapshot(raw);
   } catch {
     return null;
@@ -308,9 +313,10 @@ function containsForbiddenAccountPayload(value: unknown): boolean {
 
 
 function initializeLocalAccountRegistryIfMissing(): LocalAccountRegistry {
-  const existing = readJsonFileIfExists<LocalAccountRegistry>(VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH);
+  const paths = getVideoPaths();
+  const existing = readJsonFileIfExists<LocalAccountRegistry>(paths.registryPath);
   if (existing?.schema_version === '1.0' && Array.isArray(existing.accounts)) return existing;
-  const example = readJsonFileIfExists<LocalAccountRegistry>(path.resolve(process.cwd(), 'operations/specs/video-orchestrator/examples/account-registry.example.json'));
+  const example = readJsonFileIfExists<LocalAccountRegistry>(path.resolve(paths.repoRoot, 'operations/specs/video-orchestrator/examples/account-registry.example.json'));
   const registry: LocalAccountRegistry = {
     schema_version: '1.0',
     accounts: example?.accounts ?? [],
@@ -325,7 +331,8 @@ function loadLocalAccountRegistry(): LocalAccountRegistry {
 
 function saveLocalAccountRegistry(registry: LocalAccountRegistry): void {
   ensureVideoOrchestratorRuntimeDir();
-  writePrettyJson(VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH, registry);
+  const paths = getVideoPaths();
+  writePrettyJson(paths.registryPath, registry);
 }
 
 
@@ -415,7 +422,8 @@ function listSafeAccountsFromRegistry(): SafeDashboardAccount[] {
 }
 
 export function loadYoutubeOAuthClientConfig(): OAuthClientConfig {
-  const raw = readJsonFileIfExists<{ client_id?: unknown; oauth_client_mode?: unknown; client_secret_configured?: unknown }>(VIDEO_ORCHESTRATOR_OAUTH_CLIENT_CONFIG_PATH);
+  const paths = getVideoPaths();
+  const raw = readJsonFileIfExists<{ client_id?: unknown; oauth_client_mode?: unknown; client_secret_configured?: unknown }>(paths.oauthClientConfigPath);
   return normalizeYoutubeOAuthClientConfig(raw);
 }
 
@@ -428,7 +436,8 @@ function saveYoutubeOAuthClientConfig(clientId: string): OAuthClientConfig {
     oauth_client_mode: 'pkce_public_client',
     client_secret_configured: false,
   };
-  writePrettyJson(VIDEO_ORCHESTRATOR_OAUTH_CLIENT_CONFIG_PATH, config);
+  const paths = getVideoPaths();
+  writePrettyJson(paths.oauthClientConfigPath, config);
   return config;
 }
 
@@ -443,27 +452,31 @@ function generateOAuthState(): string {
 }
 
 function saveOAuthState(record: OAuthStateRecord): void {
-  writePrettyJson(path.join(VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR, `${record.state}.json`), record);
+  const paths = getVideoPaths();
+  writePrettyJson(path.join(paths.oauthStateDir, `${record.state}.json`), record);
 }
 
 function loadOAuthState(state: string): OAuthStateRecord | null {
-  return readJsonFileIfExists<OAuthStateRecord>(path.join(VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR, `${state}.json`));
+  const paths = getVideoPaths();
+  return readJsonFileIfExists<OAuthStateRecord>(path.join(paths.oauthStateDir, `${state}.json`));
 }
 
 function deleteOAuthState(state: string): void {
-  const filePath = path.join(VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR, `${state}.json`);
+  const paths = getVideoPaths();
+  const filePath = path.join(paths.oauthStateDir, `${state}.json`);
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 }
 
 async function regenerateAccountHealthSnapshot(): Promise<AccountHealthStatus | null> {
   ensureVideoOrchestratorRuntimeDir();
   try {
+    const paths = getVideoPaths();
     await execFileAsync('node', [
       VIDEO_ORCHESTRATOR_ACCOUNT_HEALTH_SCRIPT,
       'write-nightly-snapshot',
-      VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH,
+      paths.registryPath,
       '--snapshot',
-      ACCOUNT_HEALTH_SNAPSHOT_PATH,
+      paths.snapshotPath,
       '--dry-run',
     ]);
     return readAccountHealthSnapshot();
@@ -473,7 +486,8 @@ async function regenerateAccountHealthSnapshot(): Promise<AccountHealthStatus | 
 }
 
 async function exchangeYoutubeAuthorizationCode(args: { callbackUrl: string; expectedState: string; codeVerifier: string; credentialReference: string; clientId: string }): Promise<Record<string, unknown>> {
-  const tempConfigPath = path.join(VIDEO_ORCHESTRATOR_OAUTH_STATE_DIR, `oauth-config-${args.expectedState}.json`);
+  const paths = getVideoPaths();
+  const tempConfigPath = path.join(paths.oauthStateDir, `oauth-config-${args.expectedState}.json`);
   const config = {
     platform: 'youtube',
     phase: '4C',

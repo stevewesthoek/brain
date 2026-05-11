@@ -5,6 +5,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -493,8 +494,22 @@ export function renderYoutubeOAuthCallbackFailureHtml(error: string): string {
 
 // ─── Path helpers ───────────────────────────────────────────────────────────
 
+function resolveRepoRoot(): string {
+  // This file: brain/projects/probot/src/bot/video-orchestrator-dashboard.ts
+  // We need to traverse: bot -> src -> probot -> projects -> brain
+  const fileDir = path.dirname(fileURLToPath(import.meta.url));
+  const botDir = fileDir;
+  const srcDir = path.dirname(botDir);
+  const probotDir = path.dirname(srcDir);
+  const projectsDir = path.dirname(probotDir);
+  const brainDir = path.dirname(projectsDir);
+  return brainDir;
+}
+
 export function getDefaultVideoOrchestratorPaths() {
-  const VIDEO_ORCHESTRATOR_RUNTIME_DIR = path.resolve(process.cwd(), "runtime/local/video-orchestrator");
+  const repoRoot = resolveRepoRoot();
+  const runtimeRoot = path.resolve(repoRoot, "runtime/local");
+  const VIDEO_ORCHESTRATOR_RUNTIME_DIR = path.resolve(runtimeRoot, "video-orchestrator");
   const VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "account-registry.local.json");
   const ACCOUNT_HEALTH_SNAPSHOT_PATH = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "account-health-snapshot.json");
   const VIDEO_ORCHESTRATOR_OAUTH_CLIENT_CONFIG_PATH = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "youtube-oauth-client.local.json");
@@ -502,6 +517,8 @@ export function getDefaultVideoOrchestratorPaths() {
   const VIDEO_ORCHESTRATOR_ACCOUNT_HEALTH_LOG_PATH = path.join(VIDEO_ORCHESTRATOR_RUNTIME_DIR, "account-health.log");
 
   return {
+    repoRoot,
+    runtimeRoot,
     runtimeDir: VIDEO_ORCHESTRATOR_RUNTIME_DIR,
     registryPath: VIDEO_ORCHESTRATOR_ACCOUNT_REGISTRY_PATH,
     snapshotPath: ACCOUNT_HEALTH_SNAPSHOT_PATH,

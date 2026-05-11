@@ -1016,17 +1016,6 @@ test("dashboard production pipeline has safe fallback when lifecycle panel fetch
 
 // ─── ProBot Dashboard Stabilization Guardrails ───────────────────────────
 
-test("stabilization: video orchestrator runtime paths use canonical repo-root", () => {
-  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
-
-  // All Video Orchestrator paths should resolve to repo-root runtime/local/
-  assert.match(dashboardSource, /process\.cwd\(\).*runtime\/local\/video-orchestrator/);
-  assert.match(dashboardSource, /const VIDEO_ORCHESTRATOR_RUNTIME_DIR = path\.resolve\(process\.cwd\(\), "runtime\/local\/video-orchestrator"\);/);
-  assert.match(dashboardSource, /const ACCOUNT_HEALTH_SNAPSHOT_PATH = path\.resolve\(process\.cwd\(\), 'runtime\/local\/video-orchestrator\/account-health-snapshot\.json'\);/);
-
-  // Should NOT hardcode projects/probot/runtime in path definitions
-  assert.doesNotMatch(dashboardSource, /const VIDEO_ORCHESTRATOR_RUNTIME_DIR = ".*projects\/probot\/runtime/);
-});
 
 test("stabilization: local app lifecycle handlers return consistent state", () => {
   const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
@@ -1234,4 +1223,75 @@ test("D1-D: restart script refuses non-recognized processes", () => {
 
   assert.match(restartSource, /Refusing to kill/);
   assert.match(restartSource, /throw new Error/);
+});
+
+/* D1-E Runtime Paths Normalization */
+
+test("D1-E: getDefaultVideoOrchestratorPaths returns canonical root paths", () => {
+  const paths = getDefaultVideoOrchestratorPaths();
+
+  // Verify repoRoot is returned and ends with /brain
+  assert.ok(paths.repoRoot, "repoRoot should be present");
+  assert.ok(paths.repoRoot.endsWith("/brain"), `repoRoot should end with /brain, got: ${paths.repoRoot}`);
+
+  // Verify runtimeRoot is returned and ends with /runtime/local
+  assert.ok(paths.runtimeRoot, "runtimeRoot should be present");
+  assert.ok(paths.runtimeRoot.endsWith("/runtime/local"), `runtimeRoot should end with /runtime/local, got: ${paths.runtimeRoot}`);
+
+  // Verify runtimeDir ends with /runtime/local/video-orchestrator
+  assert.ok(paths.runtimeDir.endsWith("/runtime/local/video-orchestrator"), `runtimeDir should end with /runtime/local/video-orchestrator, got: ${paths.runtimeDir}`);
+
+  // Should NOT contain projects/probot/runtime
+  assert.ok(!paths.runtimeDir.includes("projects/probot/runtime"), `runtimeDir should NOT contain projects/probot/runtime, got: ${paths.runtimeDir}`);
+  assert.ok(paths.registryPath.includes("runtime/local/video-orchestrator"), `registryPath should be canonical, got: ${paths.registryPath}`);
+  assert.ok(paths.snapshotPath.includes("runtime/local/video-orchestrator"), `snapshotPath should be canonical, got: ${paths.snapshotPath}`);
+  assert.ok(paths.oauthClientConfigPath.includes("runtime/local/video-orchestrator"), `oauthClientConfigPath should be canonical, got: ${paths.oauthClientConfigPath}`);
+  assert.ok(paths.oauthStateDir.includes("runtime/local/video-orchestrator"), `oauthStateDir should be canonical, got: ${paths.oauthStateDir}`);
+  assert.ok(paths.accountHealthLogPath.includes("runtime/local/video-orchestrator"), `accountHealthLogPath should be canonical, got: ${paths.accountHealthLogPath}`);
+});
+
+test("D1-E: restart-probot-dashboard.mjs log path points to repo-root runtime/local/probot-dev.log", () => {
+  const restartSource = fs.readFileSync(path.join(import.meta.dirname, "..", "..", "..", "..", "tools", "scripts", "restart-probot-dashboard.mjs"), "utf8");
+
+  // Should use runtime/local, not projects/probot/runtime
+  assert.ok(restartSource.includes("runtime/local") && restartSource.includes("probot-dev.log"), "restart script should use runtime/local/probot-dev.log");
+  assert.ok(!restartSource.includes("projects/probot/runtime"), "restart script should NOT use projects/probot/runtime");
+});
+
+test("D1-E: dashboard.ts uses getDefaultVideoOrchestratorPaths for all runtime paths", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Verify getVideoPaths() is called and getDefaultVideoOrchestratorPaths is imported
+  assert.match(dashboardSource, /getDefaultVideoOrchestratorPaths/);
+  assert.match(dashboardSource, /getVideoPaths\(\)/);
+
+  // Verify all old hardcoded path constants have been removed
+  assert.ok(!dashboardSource.includes('const VIDEO_ORCHESTRATOR_RUNTIME_DIR = path.resolve(process.cwd()'), "Should not have old VIDEO_ORCHESTRATOR_RUNTIME_DIR with process.cwd()");
+  assert.ok(!dashboardSource.includes('const ACCOUNT_HEALTH_SNAPSHOT_PATH = path.resolve(process.cwd()'), "Should not have old ACCOUNT_HEALTH_SNAPSHOT_PATH with process.cwd()");
+});
+
+test("D1-E: helper script paths resolved from repoRoot/tools/scripts, not runtimeDir", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+
+  // Verify helper scripts use paths.repoRoot
+  assert.ok(dashboardSource.includes('path.resolve(getDefaultVideoOrchestratorPaths().repoRoot, "tools/scripts/video-orchestrator-account-health.mjs")'),
+    "account-health script should use repoRoot");
+  assert.ok(dashboardSource.includes('path.resolve(getDefaultVideoOrchestratorPaths().repoRoot, "tools/scripts/video-orchestrator-credential-helper.mjs")'),
+    "credential helper script should use repoRoot");
+
+  // Should NOT use runtimeDir/../.. pattern for helper scripts
+  assert.ok(!dashboardSource.includes('path.resolve(getDefaultVideoOrchestratorPaths().runtimeDir, "..", "..", "tools/scripts'),
+    "Should not use runtimeDir/../.. for helper script paths");
+});
+
+test("D1-E: source contains no hardcoded projects/probot/runtime writes", () => {
+  const dashboardSource = fs.readFileSync(path.join(import.meta.dirname, "dashboard.ts"), "utf8");
+  const voSource = fs.readFileSync(path.join(import.meta.dirname, "video-orchestrator-dashboard.ts"), "utf8");
+
+  // Should NOT have literal 'projects/probot/runtime' in paths
+  assert.ok(!dashboardSource.includes('projects/probot/runtime'), "dashboard.ts should not hardcode projects/probot/runtime");
+  assert.ok(!voSource.includes('projects/probot/runtime'), "video-orchestrator-dashboard.ts should not hardcode projects/probot/runtime");
+
+  // All runtime paths should go through getDefaultVideoOrchestratorPaths
+  assert.match(dashboardSource, /getVideoPaths\(\)/);
 });
