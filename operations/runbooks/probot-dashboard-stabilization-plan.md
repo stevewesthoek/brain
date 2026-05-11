@@ -323,7 +323,20 @@ Video uploads must go through dedicated `video-orchestrator` service (separate r
 
 ## Decision Log
 
-To be updated as decisions are made during implementation.
+**D1-C COMPLETED: 2026-05-11**
+
+Lazy-load all non-main tabs independently:
+- Global /api/data interval only runs when active tab is main tabs (sessions, dokploy, nr, scheduler, umami, google-ads, stripe, domains, tunnels)
+- Local Apps and Production Pipeline load only when user clicks their tabs
+- Per-tab state tracking (pending, loaded, error, lastLoadedAt) prevents duplicate fetches within 10-second window
+- All tab fetches use fetchJsonWithTimeout() with 5-second AbortController timeout
+- Each sub-panel (Content Strategy, Production Pipeline, YouTube Lifecycle) handles fetch errors independently
+- Refresh button is now async, detects active tab, awaits appropriate loader, disables button during fetch
+- Action buttons (Save, Configure, Connect) show pending state, disable during request, restore on completion
+- 9 regression tests document lazy-load behavior and guard against regressions
+- All 52 tests pass, typecheck passes, helper scripts validate correctly
+
+Result: Dashboard startup no longer loads Production Pipeline or Local Apps eagerly. Only active tab loads on demand. Tab switches are fast. API endpoint failures are isolated to their tab. No repeated button clicks needed.
 
 See `operations/decision-log.md` for permanent records.
 
@@ -331,8 +344,11 @@ See `operations/decision-log.md` for permanent records.
 
 ## Next Steps
 
-1. **Now (D1-A)**: Audit, guardrails, tests
-2. **Week 1 (D1-B through D1-F)**: Modularization, fixes, normalization
-3. **Week 2**: Validation, security scan, manual testing
-4. **Week 3**: Review, assess stability
-5. **Week 4+**: D2 boundary definition; decide on D3 extraction
+1. ✅ **D1-A**: Audit, guardrails, tests — COMPLETE
+2. ✅ **D1-B**: Module extraction — COMPLETE (video-orchestrator-dashboard.ts extracted, 1131 lines moved)
+3. ✅ **D1-C**: Lazy-load tabs — COMPLETE (per-tab state, independent endpoints, button pending behavior)
+4. **D1-D**: Local app lifecycle truthfulness (start/stop status reflects actual port state immediately)
+5. **D1-E**: Normalize runtime paths (verify canonical repo-root location)
+6. **D1-F**: Stabilize Video Orchestrator accounts UI (OAuth flow, account mutation, credential display safety)
+7. **D2**: Define API/runtime boundary (persistence, caching, session management)
+8. **D3**: Consider repo extraction (gate: D1 complete + 1 week stable, no new bugs)
