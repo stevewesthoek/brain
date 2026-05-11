@@ -3062,6 +3062,485 @@ export function validateRenderPlan(plan: unknown): RenderPlanValidationResult {
   return { ok, blocking_reasons, warnings };
 }
 
+// ─── VO-3E: Render Execution Gate and Manual Export Bundle ──────────────────
+
+function getRenderExecutionGatesPath(): string {
+  return path.join(getRuntimeDir(), "render-execution-gates.json");
+}
+
+function getManualExportBundlesPath(): string {
+  return path.join(getRuntimeDir(), "manual-export-bundles.json");
+}
+
+export type RenderExecutionGateState = "blocked" | "needs_operator_approval" | "approved_for_manual_render" | "rejected";
+
+export interface RenderExecutionGateCheck {
+  check_id: string;
+  kind: "render_plan_validation" | "manifest_consistency" | "local_file_existence" | "format_platform_specs" | "operator_approval";
+  ok: boolean;
+  blocking_reasons_count: number;
+  warnings_count: number;
+}
+
+export interface RenderExecutionGate {
+  gate_id: string;
+  render_plan_id: string;
+  package_id: string;
+  project_id: string;
+  platform: string;
+  gate_state: RenderExecutionGateState;
+  dry_run: true;
+  approval_required: true;
+  created_at: string;
+  evaluated_at: string;
+  checks: RenderExecutionGateCheck[];
+  blocking_reasons: string[];
+  warnings: string[];
+  operator_instructions: string;
+  provenance: {
+    generated_by: string;
+    source_plan_id: string;
+    checksum: string;
+  };
+}
+
+export type ManualExportBundleState = "draft" | "blocked" | "ready_for_operator_review";
+
+export interface PlannedOutputSummary {
+  output_kind: "video" | "thumbnail" | "caption" | "metadata";
+  format_key: string;
+  expected_relative_path_summary: string;
+  required: boolean;
+}
+
+export interface ManualExportBundle {
+  schema_version: "1.0";
+  bundle_id: string;
+  gate_id: string;
+  render_plan_id: string;
+  package_id: string;
+  project_id: string;
+  platform: string;
+  dry_run: true;
+  bundle_state: ManualExportBundleState;
+  created_at: string;
+  manifest_summary: {
+    total_outputs: number;
+    by_kind: Record<string, number>;
+  };
+  operator_checklist: string[];
+  planned_outputs: PlannedOutputSummary[];
+  validation: {
+    ready_for_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: string;
+    source_gate_id: string;
+    checksum: string;
+  };
+}
+
+// Evaluate render plan for execution gate
+export function evaluateRenderExecutionGate(input: {
+  plan: RenderPlan;
+  checkMode: "disabled" | "explicit";
+  baseDir?: string;
+  useLocalSpecs?: boolean;
+  dryRun: true;
+}): RenderExecutionGate {
+  if (!input.dryRun) {
+    throw new Error("VO-3E gates only support dryRun=true");
+  }
+
+  const { plan, checkMode, baseDir, useLocalSpecs } = input;
+  const gate_id = `render-gate-${crypto.randomBytes(6).toString("hex")}`;
+  const checks: RenderExecutionGateCheck[] = [];
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+
+  // Check 1: Render plan validation
+  const planValidation = validateRenderPlan(plan);
+  checks.push({
+    check_id: `check-plan-${gate_id}`,
+    kind: "render_plan_validation",
+    ok: planValidation.ok,
+    blocking_reasons_count: planValidation.blocking_reasons.length,
+    warnings_count: planValidation.warnings.length,
+  });
+  if (!planValidation.ok) {
+    blocking_reasons.push(...planValidation.blocking_reasons);
+  }
+  warnings.push(...planValidation.warnings);
+
+  // Check 2: Manifest consistency
+  const manifestCheck = validateRenderPlanManifestConsistency({
+    plan,
+    checkMode,
+    baseDir: baseDir || process.cwd(),
+  });
+  checks.push({
+    check_id: `check-manifest-${gate_id}`,
+    kind: "manifest_consistency",
+    ok: manifestCheck.ok,
+    blocking_reasons_count: manifestCheck.blocking_reasons.length,
+    warnings_count: manifestCheck.warnings.length,
+  });
+  if (!manifestCheck.ok) {
+    blocking_reasons.push(...manifestCheck.blocking_reasons);
+  }
+  warnings.push(...manifestCheck.warnings);
+
+  // Check 3: Format/platform specs
+  const specsCheck = validateRenderPlanAgainstLocalSpecs({
+    plan,
+    formatSpecs: useLocalSpecs ? loadVideoOrchestratorFormatSpecs() : undefined,
+    platformSpecs: useLocalSpecs ? loadVideoOrchestratorPlatformSpecs() : undefined,
+  });
+  checks.push({
+    check_id: `check-specs-${gate_id}`,
+    kind: "format_platform_specs",
+    ok: specsCheck.ok,
+    blocking_reasons_count: specsCheck.blocking_reasons.length,
+    warnings_count: specsCheck.warnings.length,
+  });
+  if (!specsCheck.ok) {
+    blocking_reasons.push(...specsCheck.blocking_reasons);
+  }
+  warnings.push(...specsCheck.warnings);
+
+  // Check 4: Operator approval required (never auto-approved)
+  checks.push({
+    check_id: `check-approval-${gate_id}`,
+    kind: "operator_approval",
+    ok: false, // Always requires approval
+    blocking_reasons_count: 0,
+    warnings_count: 0,
+  });
+
+  const gate_state: RenderExecutionGateState =
+    blocking_reasons.length > 0 ? "blocked" : "needs_operator_approval";
+
+  return {
+    gate_id,
+    render_plan_id: plan.render_plan_id,
+    package_id: plan.package_id,
+    project_id: plan.project_id,
+    platform: plan.platform,
+    gate_state,
+    dry_run: true,
+    approval_required: true,
+    created_at: new Date().toISOString(),
+    evaluated_at: new Date().toISOString(),
+    checks,
+    blocking_reasons,
+    warnings,
+    operator_instructions: "Review this render gate evaluation before proceeding. All rendering must be explicitly approved.",
+    provenance: {
+      generated_by: "evaluateRenderExecutionGate",
+      source_plan_id: plan.render_plan_id,
+      checksum: `sha256:${crypto.randomBytes(16).toString("hex")}`,
+    },
+  };
+}
+
+interface RenderExecutionGatesStore {
+  schema_version: "1.0";
+  created_at: string;
+  gates: RenderExecutionGate[];
+}
+
+function loadRenderExecutionGatesStore(): RenderExecutionGatesStore {
+  const storePath = getRenderExecutionGatesPath();
+  if (fs.existsSync(storePath)) {
+    try {
+      return JSON.parse(fs.readFileSync(storePath, "utf8")) as RenderExecutionGatesStore;
+    } catch {
+      // corrupt or invalid, start fresh
+    }
+  }
+  return {
+    schema_version: "1.0",
+    created_at: new Date().toISOString(),
+    gates: [],
+  };
+}
+
+function saveRenderExecutionGatesStore(store: RenderExecutionGatesStore): void {
+  const storePath = getRenderExecutionGatesPath();
+  fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+}
+
+export function saveRenderExecutionGate(gate: RenderExecutionGate): void {
+  if (!gate.dry_run) {
+    throw new Error("VO-3E gates only support dry_run=true");
+  }
+  if (!gate.approval_required) {
+    throw new Error("VO-3E gates require approval_required=true");
+  }
+
+  const store = loadRenderExecutionGatesStore();
+  const idx = store.gates.findIndex(g => g.gate_id === gate.gate_id);
+  if (idx >= 0) {
+    store.gates[idx] = gate;
+  } else {
+    store.gates.push(gate);
+  }
+  store.gates.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.gate_id.localeCompare(b.gate_id));
+  saveRenderExecutionGatesStore(store);
+}
+
+export function listRenderExecutionGates(options?: {
+  render_plan_id?: string;
+  project_id?: string;
+  platform?: string;
+  gate_state?: string;
+}): RenderExecutionGate[] {
+  const store = loadRenderExecutionGatesStore();
+  return store.gates.filter(g => {
+    if (options?.render_plan_id && g.render_plan_id !== options.render_plan_id) return false;
+    if (options?.project_id && g.project_id !== options.project_id) return false;
+    if (options?.platform && g.platform !== options.platform) return false;
+    if (options?.gate_state && g.gate_state !== options.gate_state) return false;
+    return true;
+  });
+}
+
+export function getRenderExecutionGate(gate_id: string): RenderExecutionGate | null {
+  const store = loadRenderExecutionGatesStore();
+  return store.gates.find(g => g.gate_id === gate_id) || null;
+}
+
+// Create manual export bundle from gate
+export function createManualExportBundleFromGate(input: {
+  gate: RenderExecutionGate;
+  plan: RenderPlan;
+  dryRun: true;
+}): ManualExportBundle {
+  if (!input.dryRun) {
+    throw new Error("VO-3E bundles only support dryRun=true");
+  }
+  if (!input.gate.dry_run) {
+    throw new Error("VO-3E bundles require gate.dry_run=true");
+  }
+  if (!input.plan.dry_run) {
+    throw new Error("VO-3E bundles require plan.dry_run=true");
+  }
+
+  const bundle_id = `manual-export-bundle-${crypto.randomBytes(6).toString("hex")}`;
+  const bundle_state: ManualExportBundleState =
+    input.gate.gate_state === "blocked" ? "blocked" : "ready_for_operator_review";
+
+  const planned_outputs: PlannedOutputSummary[] = input.plan.render_targets.map((target, idx) => ({
+    output_kind: target.kind,
+    format_key: target.format_key,
+    expected_relative_path_summary: `[output-${idx + 1}]`,
+    required: target.kind === "video" || target.kind === "thumbnail",
+  }));
+
+  const by_kind: Record<string, number> = {};
+  for (const target of input.plan.render_targets) {
+    by_kind[target.kind] = (by_kind[target.kind] || 0) + 1;
+  }
+
+  return {
+    schema_version: "1.0",
+    bundle_id,
+    gate_id: input.gate.gate_id,
+    render_plan_id: input.plan.render_plan_id,
+    package_id: input.plan.package_id,
+    project_id: input.plan.project_id,
+    platform: input.plan.platform,
+    dry_run: true,
+    bundle_state,
+    created_at: new Date().toISOString(),
+    manifest_summary: {
+      total_outputs: input.plan.render_targets.length,
+      by_kind,
+    },
+    operator_checklist: [
+      "Review render plan validation results",
+      "Verify all required output formats present",
+      "Check file paths are safe and relative",
+      "Confirm platform compatibility",
+      "Approve or reject for manual rendering",
+    ],
+    planned_outputs,
+    validation: {
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: input.gate.blocking_reasons,
+      warnings: input.gate.warnings,
+    },
+    provenance: {
+      generated_by: "createManualExportBundleFromGate",
+      source_gate_id: input.gate.gate_id,
+      checksum: `sha256:${crypto.randomBytes(16).toString("hex")}`,
+    },
+  };
+}
+
+interface ManualExportBundlesStore {
+  schema_version: "1.0";
+  created_at: string;
+  bundles: ManualExportBundle[];
+}
+
+function loadManualExportBundlesStore(): ManualExportBundlesStore {
+  const storePath = getManualExportBundlesPath();
+  if (fs.existsSync(storePath)) {
+    try {
+      return JSON.parse(fs.readFileSync(storePath, "utf8")) as ManualExportBundlesStore;
+    } catch {
+      // corrupt or invalid, start fresh
+    }
+  }
+  return {
+    schema_version: "1.0",
+    created_at: new Date().toISOString(),
+    bundles: [],
+  };
+}
+
+function saveManualExportBundlesStore(store: ManualExportBundlesStore): void {
+  const storePath = getManualExportBundlesPath();
+  fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+}
+
+export function saveManualExportBundle(bundle: ManualExportBundle): void {
+  if (!bundle.dry_run) {
+    throw new Error("VO-3E bundles only support dry_run=true");
+  }
+  if (bundle.validation.ready_for_render !== false) {
+    throw new Error("VO-3E bundles require ready_for_render=false");
+  }
+  if (bundle.validation.ready_for_upload !== false) {
+    throw new Error("VO-3E bundles require ready_for_upload=false");
+  }
+
+  const store = loadManualExportBundlesStore();
+  const idx = store.bundles.findIndex(b => b.bundle_id === bundle.bundle_id);
+  if (idx >= 0) {
+    store.bundles[idx] = bundle;
+  } else {
+    store.bundles.push(bundle);
+  }
+  store.bundles.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.bundle_id.localeCompare(b.bundle_id));
+  saveManualExportBundlesStore(store);
+}
+
+export function listManualExportBundles(options?: {
+  project_id?: string;
+  platform?: string;
+  bundle_state?: string;
+}): ManualExportBundle[] {
+  const store = loadManualExportBundlesStore();
+  return store.bundles.filter(b => {
+    if (options?.project_id && b.project_id !== options.project_id) return false;
+    if (options?.platform && b.platform !== options.platform) return false;
+    if (options?.bundle_state && b.bundle_state !== options.bundle_state) return false;
+    return true;
+  });
+}
+
+export function getManualExportBundle(bundle_id: string): ManualExportBundle | null {
+  const store = loadManualExportBundlesStore();
+  return store.bundles.find(b => b.bundle_id === bundle_id) || null;
+}
+
+// Reports
+export function getRenderExecutionGateReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  needs_operator_approval: number;
+  approved_for_manual_render: number;
+  rejected: number;
+  gates: Array<{
+    gate_id: string;
+    render_plan_id: string;
+    project_id: string;
+    platform: string;
+    gate_state: string;
+    blocking_reasons_count: number;
+    warnings_count: number;
+  }>;
+} {
+  const gates = listRenderExecutionGates(options);
+  const by_state: Record<string, number> = {};
+  for (const gate of gates) {
+    by_state[gate.gate_state] = (by_state[gate.gate_state] || 0) + 1;
+  }
+
+  return {
+    total: gates.length,
+    by_state,
+    blocked: by_state.blocked || 0,
+    needs_operator_approval: by_state.needs_operator_approval || 0,
+    approved_for_manual_render: by_state.approved_for_manual_render || 0,
+    rejected: by_state.rejected || 0,
+    gates: gates.map(g => ({
+      gate_id: g.gate_id,
+      render_plan_id: sanitizeRenderPlanString(g.render_plan_id, "[unsafe-plan]"),
+      project_id: sanitizeRenderPlanString(g.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(g.platform, "[unsafe-platform]"),
+      gate_state: g.gate_state,
+      blocking_reasons_count: g.blocking_reasons.length,
+      warnings_count: g.warnings.length,
+    })),
+  };
+}
+
+export function getManualExportBundleReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  ready_for_operator_review: number;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  bundles: Array<{
+    bundle_id: string;
+    render_plan_id: string;
+    project_id: string;
+    platform: string;
+    bundle_state: string;
+    blocking_reasons_count: number;
+    warnings_count: number;
+  }>;
+} {
+  const bundles = listManualExportBundles(options);
+  const by_state: Record<string, number> = {};
+  for (const bundle of bundles) {
+    by_state[bundle.bundle_state] = (by_state[bundle.bundle_state] || 0) + 1;
+  }
+
+  return {
+    total: bundles.length,
+    by_state,
+    blocked: by_state.blocked || 0,
+    ready_for_operator_review: by_state.ready_for_operator_review || 0,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    bundles: bundles.map(b => ({
+      bundle_id: b.bundle_id,
+      render_plan_id: sanitizeRenderPlanString(b.render_plan_id, "[unsafe-plan]"),
+      project_id: sanitizeRenderPlanString(b.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(b.platform, "[unsafe-platform]"),
+      bundle_state: b.bundle_state,
+      blocking_reasons_count: b.validation.blocking_reasons.length,
+      warnings_count: b.validation.warnings.length,
+    })),
+  };
+}
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;

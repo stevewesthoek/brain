@@ -51,6 +51,16 @@ import {
   getManualRenderManifestCheckReport,
   loadVideoOrchestratorFormatSpecs,
   loadVideoOrchestratorPlatformSpecs,
+  evaluateRenderExecutionGate,
+  saveRenderExecutionGate,
+  listRenderExecutionGates,
+  getRenderExecutionGate,
+  createManualExportBundleFromGate,
+  saveManualExportBundle,
+  listManualExportBundles,
+  getManualExportBundle,
+  getRenderExecutionGateReport,
+  getManualExportBundleReport,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
@@ -58,6 +68,8 @@ import {
   type RenderPlan,
   type RenderTarget,
   type AggregateRenderPlanReadinessReport,
+  type RenderExecutionGate,
+  type ManualExportBundle,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -7190,3 +7202,415 @@ test("VO-3D-SAFE3: manual manifest check does not execute FFmpeg or child_proces
     cleanupTestRuntime(tempDir);
   }
 });
+
+// ─── VO-3E: Render Execution Gate and Manual Export Bundle ──────────────────
+
+test("VO-3E-G1: evaluateRenderExecutionGate blocks dryRun=false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-gate-test-001",
+      package_id: "pkg-gate-test-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-gate-test-001", checksum: "sha256:test" },
+    };
+
+    assert.throws(
+      () => evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: false as any }),
+      /dryRun=true/,
+      "Should reject dryRun=false"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-G2: evaluateRenderExecutionGate returns needs_operator_approval for valid plan", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-gate-test-002",
+      package_id: "pkg-gate-test-002",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-gate-test-002", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+
+    assert.ok(gate.gate_id, "Should have gate_id");
+    assert.equal(gate.dry_run, true, "dry_run must be true");
+    assert.equal(gate.approval_required, true, "approval_required must be true");
+    assert.ok(["needs_operator_approval", "blocked"].includes(gate.gate_state), "Should be needs_operator_approval or blocked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-G3: evaluateRenderExecutionGate returns blocked for invalid plan", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: any = {
+      schema_version: "1.0",
+      render_plan_id: "plan-gate-test-invalid",
+      package_id: "pkg-gate-test-invalid",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      // Missing render_targets
+      asset_plan: { video: { count: 0, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-gate-test-invalid", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+
+    assert.equal(gate.gate_state, "blocked", "Should be blocked");
+    assert.ok(gate.blocking_reasons.length > 0, "Should have blocking reasons");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-G4: gate output sanitizes paths and no raw render_targets/asset_plan", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-gate-test-003",
+      package_id: "pkg-gate-test-003",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-gate-test-003", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const output = JSON.stringify(gate);
+
+    assert.ok(!output.includes("render_targets"), "Should not contain render_targets");
+    assert.ok(!output.includes("asset_plan"), "Should not contain asset_plan");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-G5: gate never auto-approves", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-gate-test-004",
+      package_id: "pkg-gate-test-004",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-gate-test-004", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+
+    assert.notEqual(gate.gate_state, "approved_for_manual_render", "Should never auto-approve");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-G6: gate ready flags remain false/absent", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-gate-test-005",
+      package_id: "pkg-gate-test-005",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-gate-test-005", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const output = JSON.stringify(gate);
+
+    assert.ok(!output.includes('"ready_for_render"'), "Should not have ready_for_render field");
+    assert.ok(!output.includes('"ready_for_upload"'), "Should not have ready_for_upload field");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-GS1: gate store save/list/get works", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-gs1-001",
+      package_id: "pkg-gs1-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-gs1-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    saveRenderExecutionGate(gate);
+
+    const listed = listRenderExecutionGates({ project_id: "project-test" });
+    assert.ok(listed.length > 0, "Should list gates");
+
+    const retrieved = getRenderExecutionGate(gate.gate_id);
+    assert.ok(retrieved, "Should retrieve gate");
+    assert.equal(retrieved?.gate_id, gate.gate_id, "Should match gate_id");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-GS2: gate store rejects dryRun=false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const gate = {
+      gate_id: "gate-invalid-001",
+      render_plan_id: "plan-001",
+      package_id: "pkg-001",
+      project_id: "project-test",
+      platform: "youtube",
+      gate_state: "blocked" as const,
+      dry_run: false,
+      approval_required: true,
+      created_at: new Date().toISOString(),
+      evaluated_at: new Date().toISOString(),
+      checks: [],
+      blocking_reasons: [],
+      warnings: [],
+      operator_instructions: "test",
+      provenance: { generated_by: "test", source_plan_id: "plan-001", checksum: "sha256:test" },
+    };
+
+    assert.throws(() => saveRenderExecutionGate(gate as any), /dry_run=true/, "Should reject dry_run=false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-B1: createManualExportBundleFromGate works from needs_operator_approval gate", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-b1-001",
+      package_id: "pkg-b1-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [
+        { kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" },
+        { kind: "thumbnail", format_key: "youtube_thumbnail_1280x720", aspect_ratio: "16:9", resolution: "1280x720", planned_output_path: "renders/thumbnail.jpg" },
+      ],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 1, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-b1-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+
+    assert.ok(bundle.bundle_id, "Should have bundle_id");
+    assert.equal(bundle.dry_run, true, "dry_run must be true");
+    assert.equal(bundle.validation.ready_for_render, false, "ready_for_render must be false");
+    assert.equal(bundle.validation.ready_for_upload, false, "ready_for_upload must be false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-B2: bundle excludes raw render_targets/asset_plan/paths", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-b2-001",
+      package_id: "pkg-b2-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/important_video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-b2-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const output = JSON.stringify(bundle);
+
+    assert.ok(!output.includes("render_targets"), "Should not contain render_targets");
+    assert.ok(!output.includes("asset_plan"), "Should not contain asset_plan");
+    assert.ok(!output.includes("important_video.mp4"), "Should not leak paths");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-BS1: bundle store save/list/get works", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-bs1-001",
+      package_id: "pkg-bs1-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-bs1-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    saveManualExportBundle(bundle);
+
+    const listed = listManualExportBundles({ project_id: "project-test" });
+    assert.ok(listed.length > 0, "Should list bundles");
+
+    const retrieved = getManualExportBundle(bundle.bundle_id);
+    assert.ok(retrieved, "Should retrieve bundle");
+    assert.equal(retrieved?.bundle_id, bundle.bundle_id, "Should match bundle_id");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-BS2: bundle store rejects ready_for_render=true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const bundle: any = {
+      schema_version: "1.0",
+      bundle_id: "bundle-invalid-001",
+      gate_id: "gate-001",
+      render_plan_id: "plan-001",
+      package_id: "pkg-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      bundle_state: "draft",
+      created_at: new Date().toISOString(),
+      manifest_summary: { total_outputs: 1, by_kind: { video: 1 } },
+      operator_checklist: [],
+      planned_outputs: [],
+      validation: { ready_for_render: true, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_gate_id: "gate-001", checksum: "sha256:test" },
+    };
+
+    assert.throws(() => saveManualExportBundle(bundle), /ready_for_render=false/, "Should reject ready_for_render=true");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-R1: getRenderExecutionGateReport counts states and sanitizes", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-r1-001",
+      package_id: "pkg-r1-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-r1-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    saveRenderExecutionGate(gate);
+
+    const report = getRenderExecutionGateReport({ project_id: "project-test" });
+
+    assert.ok(report.total >= 1, "Should have gates");
+    assert.ok(report.by_state, "Should have by_state");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-3E-R2: getManualExportBundleReport keeps ready flags at 0", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "plan-r2-001",
+      package_id: "pkg-r2-001",
+      project_id: "project-test",
+      platform: "youtube",
+      dry_run: true,
+      plan_state: "planned",
+      created_at: new Date().toISOString(),
+      render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "test", source_package_id: "pkg-r2-001", checksum: "sha256:test" },
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    saveManualExportBundle(bundle);
+
+    const report = getManualExportBundleReport({ project_id: "project-test" });
+
+    assert.equal(report.ready_for_render, 0, "ready_for_render must be 0");
+    assert.equal(report.ready_for_upload, 0, "ready_for_upload must be 0");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+

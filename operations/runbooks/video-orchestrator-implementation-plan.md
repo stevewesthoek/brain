@@ -2019,19 +2019,144 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 - VO-3D-MR1-5: Manifest reporting (aggregated summary, aggregated plans, upload immutable, legacy unsafe data sanitization, exclude raw targets/paths)
 - VO-3D-SAFE1-3: Safety proofs (no file checks, no file creation, no FFmpeg/child_process)
 
-**Total Test Count:** 354 (original 331 + 26 VO-3C hardening + 23 VO-3D)
-**All Passing:** ✅ (354/354 tests passing)
+**Total Test Count:** 368 (original 331 + 26 VO-3C hardening + 23 VO-3D + 14 VO-3E)
+**All Passing:** ✅ (368/368 tests passing)
 
 ---
 
-### VO-3B + VO-3C + VO-3D: Next Steps (VO-3E+)
+## Phase VO-3E: Render Execution Gate, Manual Export Bundle, and Operator Approval Workflow ✅ (DONE)
 
-**VO-3E: Real Render Execution** — Implement actual FFmpeg rendering based on render plans (when approved)
-- Execute render plans with real FFmpeg composition
+**Status:** 2026-05-11 (complete)
+
+**Purpose:** Explicit operator approval gate before any render execution. Pre-render phase that validates render plans and packages them for operator review without running FFmpeg, creating files, or calling platform APIs.
+
+**Key Concept:** This is **NOT render execution yet**. This is the approval gate that precedes it. No actual rendering, no file creation, no upload capability. Strictly dry-run with explicit operator review required.
+
+### Deliverables
+
+**1. Render Execution Gate (evaluateRenderExecutionGate)**
+- Four-check validation against render plan:
+  1. Validates render plan itself (dry_run=true enforced, platform matching)
+  2. Checks manifest consistency (planned_outputs match asset references)
+  3. Validates file references (relative paths only, no traversal)
+  4. Validates format/platform specs (SDXL, Wave, etc. known locally)
+- Returns gate with state: `blocked`, `needs_operator_approval`, `approved_for_manual_render`, or `rejected`
+- Gate states determine workflow: blocked gates stop; needs_operator_approval gates await human approval; only approved gates can proceed to render (in future phases)
+- Safety: Blocks any render_plan with dry_run=false; throws error if encountered
+- Output: Sanitized gate report (no raw paths, no render_targets/asset_plan exposure)
+
+**2. Manual Export Bundle Schema + Example**
+- Schema: `operations/specs/video-orchestrator/manual-export-bundle.schema.json`
+  - JSON Schema (draft-07) defining bundle structure
+  - Required fields: schema_version, bundle_id, gate_id, render_plan_id, package_id, project_id, platform, dry_run (const true), bundle_state, created_at, manifest_summary, operator_checklist, planned_outputs, validation, provenance
+  - Validation object: ready_for_render (const false), ready_for_upload (const false), blocking_reasons, warnings
+  - Planned outputs: Kind, format_key, safe summary of relative path, required flag
+  - No raw paths, credentials, or forbidden strings per schema design
+- Example: `operations/specs/video-orchestrator/examples/manual-export-bundle.example.json`
+  - Bundle with 4 planned outputs (1 video, 1 thumbnail, 2 captions)
+  - Safe summaries: `[output-1]`, `[output-2]`, etc. format
+  - Empty blocking_reasons and warnings arrays
+  - Demonstrates pre-render state (ready_for_render=false, ready_for_upload=false)
+
+**3. Manual Export Bundle Creation (createManualExportBundleFromGate)**
+- Creates pre-render bundle from a gate in needs_operator_approval state
+- Enforces: dry_run=true consistency, bundle_state="ready_for_operator_review"
+- Generates planned_outputs summaries from gate validation results
+- Excludes internal details: no render_targets, no asset_plan, no full paths
+- Outputs bundled for operator review: manifest_summary, operator_checklist, planned_outputs (safe summaries)
+- Safety: Bundle never has ready_for_render=true or ready_for_upload=true; immutably false/0
+- Provenance: Tracks source gate_id and generation function
+
+**4. Gate & Bundle Stores (JSON-backed persistence)**
+- Gate store functions:
+  - loadRenderExecutionGatesStore(): Load all gates from runtime JSON
+  - saveRenderExecutionGate(gate): Persist individual gate
+  - listRenderExecutionGates(filters): Query gates by state/project/plan
+  - getRenderExecutionGate(gateId): Fetch specific gate
+- Bundle store functions:
+  - loadManualExportBundlesStore(): Load all bundles from runtime JSON
+  - saveManualExportBundle(bundle): Persist individual bundle
+  - listManualExportBundles(filters): Query bundles by state/project/platform
+  - getManualExportBundle(bundleId): Fetch specific bundle
+- Safety: Store functions reject dry_run=false in gates or ready_for_render=true in bundles (throw error)
+- Storage: `runtime/render-execution-gates.json` and `runtime/manual-export-bundles.json`
+
+**5. Reports (sanitized aggregation)**
+- getRenderExecutionGateReport(): Returns aggregated gate stats
+  - Counts by state (blocked, needs_operator_approval, approved_for_manual_render, rejected)
+  - Sample sanitized summaries (no paths, no render_targets/asset_plan)
+  - Total gates and ready_for_render/upload hardcoded to false/0
+- getManualExportBundleReport(): Returns aggregated bundle stats
+  - Counts by state (draft, blocked, ready_for_operator_review)
+  - Total bundles and planned_outputs summaries
+  - ready_for_render/upload always hardcoded to 0 (immutable)
+
+**6. Test Coverage (14 new tests)**
+- VO-3E-G1: evaluateRenderExecutionGate blocks dryRun=false
+- VO-3E-G2: evaluateRenderExecutionGate returns needs_operator_approval for valid plan
+- VO-3E-G3: evaluateRenderExecutionGate returns blocked for invalid plan
+- VO-3E-G4: Gate output sanitizes paths (no render_targets/asset_plan leakage)
+- VO-3E-G5: Gate never auto-approves (needs operator)
+- VO-3E-G6: Gate ready flags remain false/absent
+- VO-3E-GS1: Gate store save/list/get works
+- VO-3E-GS2: Gate store rejects dryRun=false
+- VO-3E-B1: createManualExportBundleFromGate works from needs_operator_approval gate
+- VO-3E-B2: Bundle excludes raw render_targets/asset_plan/paths
+- VO-3E-BS1: Bundle store save/list/get works
+- VO-3E-BS2: Bundle store rejects ready_for_render=true
+- VO-3E-R1: getRenderExecutionGateReport counts states and sanitizes
+- VO-3E-R2: getManualExportBundleReport keeps ready flags at 0
+
+### Safety Guarantees (Enforced at Type and Function Level)
+
+1. **dry_run=true always** — Enforced at type level (const true in schema), and function level (throw if false)
+2. **approval_required=true always** — Gate states enforce workflow: only needs_operator_approval or approved_for_manual_render can proceed
+3. **No automatic approval** — evaluateRenderExecutionGate returns needs_operator_approval; does not auto-approve or execute
+4. **No FFmpeg execution** — No child_process or FFmpeg calls anywhere
+5. **No file creation** — No fs.writeFile, fs.mkdir, or file I/O beyond JSON store reads/writes
+6. **No platform API calls** — No axios, fetch, or network calls
+7. **No rendering** — No actual composition, encoding, or media generation
+8. **No uploads** — No platform API posting or file export
+9. **Paths never leaked** — All gate/bundle outputs use sanitized summaries (e.g., [output-1])
+10. **ready_for_render/upload immutable false** — Const false in validation schema; hardcoded 0 in reports; never true
+
+### Files Modified/Created
+
+**Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts` — Added gate functions, bundle functions, stores, and reports
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts` — Added 14 test cases
+
+**Created:**
+- `operations/specs/video-orchestrator/manual-export-bundle.schema.json` — Bundle schema
+- `operations/specs/video-orchestrator/examples/manual-export-bundle.example.json` — Bundle example
+
+### Backward Compatibility
+
+- All VO-3A, VO-3B, VO-3C, VO-3D functions and types remain unchanged
+- New functions are additive only (evaluateRenderExecutionGate, createManualExportBundleFromGate, etc.)
+- Existing render plan and package draft functionality unaffected
+- No breaking changes to export or public API
+
+### Next Phase Context
+
+**VO-3E is complete. The next phase is:**
+- **VO-3F: Real Render Execution** (when explicitly approved and operator chooses to proceed)
+  - Execute FFmpeg rendering based on approved render plans
+  - Create actual output files to planned_output_path
+  - Verify files meet expected specifications
+  - Update render plan state to track execution progress
+  - **EXPLICIT OPERATOR APPROVAL IN VO-3E GATE REQUIRED** before this phase
+
+---
+
+### VO-3B + VO-3C + VO-3D + VO-3E: Next Steps (VO-3F+)
+
+**VO-3F: Real Render Execution** — Implement actual FFmpeg rendering based on render plans (when approved)
+- Execute render plans with real FFmpeg composition based on approved gate/bundle
 - Create actual output files to planned_output_path
 - Verify files meet expected specifications (duration, resolution, codec)
 - Update render plan state to track execution progress
-- **EXPLICIT APPROVAL REQUIRED** before this phase
+- **Requires: VO-3E operator approval (approved_for_manual_render state)**
 
 **VO-3F: Render Status Tracking** — Track render job status
 - Queuing (pending, in_progress, completed, failed)

@@ -1,0 +1,167 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Manual Export Bundle Schema",
+  "description": "Pre-render safe bundle for operator approval and manual media export (no real media, dry-run only)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "bundle_id",
+    "gate_id",
+    "render_plan_id",
+    "package_id",
+    "project_id",
+    "platform",
+    "dry_run",
+    "bundle_state",
+    "created_at",
+    "manifest_summary",
+    "operator_checklist",
+    "planned_outputs",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version for backward compatibility"
+    },
+    "bundle_id": {
+      "type": "string",
+      "description": "Unique identifier for this export bundle"
+    },
+    "gate_id": {
+      "type": "string",
+      "description": "Reference to render execution gate that created this bundle"
+    },
+    "render_plan_id": {
+      "type": "string",
+      "description": "Reference to the render plan being exported"
+    },
+    "package_id": {
+      "type": "string",
+      "description": "Package identifier"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Project identifier"
+    },
+    "platform": {
+      "type": "string",
+      "description": "Target platform (youtube, tiktok, instagram, linkedin, facebook, bluesky, x)"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "const": true,
+      "description": "Must be true; no real rendering or export"
+    },
+    "bundle_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "ready_for_operator_review"],
+      "description": "Current state of the export bundle"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when bundle was created"
+    },
+    "manifest_summary": {
+      "type": "object",
+      "required": ["total_outputs", "by_kind"],
+      "properties": {
+        "total_outputs": {
+          "type": "number",
+          "description": "Total number of planned outputs"
+        },
+        "by_kind": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Count of outputs by kind (video, thumbnail, caption, metadata)"
+        }
+      }
+    },
+    "operator_checklist": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Checklist items for operator review"
+    },
+    "planned_outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["output_kind", "format_key", "expected_relative_path_summary", "required"],
+        "properties": {
+          "output_kind": {
+            "type": "string",
+            "enum": ["video", "thumbnail", "caption", "metadata"],
+            "description": "Kind of output"
+          },
+          "format_key": {
+            "type": "string",
+            "description": "Format identifier"
+          },
+          "expected_relative_path_summary": {
+            "type": "string",
+            "description": "Safe summary of expected relative path (not full path)"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether this output is required for publish"
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["ready_for_render", "ready_for_upload", "blocking_reasons", "warnings"],
+      "properties": {
+        "ready_for_render": {
+          "type": "boolean",
+          "const": false,
+          "description": "Must be false; this is pre-render"
+        },
+        "ready_for_upload": {
+          "type": "boolean",
+          "const": false,
+          "description": "Must be false; this is pre-render"
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Blocking reasons from validation"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Warning messages from validation"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["generated_by", "source_gate_id", "checksum"],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "description": "Function that generated this bundle"
+        },
+        "source_gate_id": {
+          "type": "string",
+          "description": "Gate ID that created this bundle"
+        },
+        "checksum": {
+          "type": "string",
+          "description": "Checksum for integrity"
+        }
+      }
+    }
+  }
+}
