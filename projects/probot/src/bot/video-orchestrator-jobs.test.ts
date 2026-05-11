@@ -15,6 +15,7 @@ import {
   getSchedulerLogPath,
   getRuntimeDir,
   planProjectDistribution,
+  scheduleProjectDistributionPlan,
   type ProjectDistribution,
   type ProjectPlanResult,
 } from "./video-orchestrator-jobs.js";
@@ -778,5 +779,281 @@ test("Schema/Example Validation: No forbidden sensitive strings in example", (t)
       !exampleText.includes(forbidden),
       `Example does not contain forbidden string: ${forbidden}`
     );
+  }
+});
+
+// ─── VO-2B Project Distribution Dry-Run Scheduling Tests ───────────────────────
+
+test("VO-2B-1: scheduleProjectDistributionPlan blocks dryRun=false", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "test-project",
+        project_name: "Test",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-main", posts_per_week: 1 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    assert.throws(
+      () => {
+        scheduleProjectDistributionPlan({
+          projects,
+          dryRun: false,
+          weeks: 1,
+        });
+      },
+      /VO-2B only supports dry-run/,
+      "Should throw when dryRun is false"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2B-2: scheduleProjectDistributionPlan creates jobs based on posts_per_week", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const startDate = new Date("2026-05-11");
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "test-project",
+        project_name: "Test",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-main", posts_per_week: 2 },
+          facebook: { account_id: "facebook-main", posts_per_week: 1 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    const result = scheduleProjectDistributionPlan({
+      projects,
+      dryRun: true,
+      startDate,
+      weeks: 1,
+    });
+
+    assert.equal(result.created, 3, "Should create 3 jobs (2 YouTube + 1 Facebook)");
+    assert.equal(result.skipped, 0, "Should skip none");
+
+    const jobs = listVideoJobs();
+    const publishJobs = jobs.filter((j) => j.type === "publish_episode" && j.dry_run);
+    assert.equal(publishJobs.length, 3, "All jobs should be publish_episode dry-run");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2B-3: scheduled jobs include project/platform/account metadata safely", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "metadata-test",
+        project_name: "Test",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-safe", posts_per_week: 1 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    scheduleProjectDistributionPlan({
+      projects,
+      dryRun: true,
+      weeks: 1,
+    });
+
+    const jobs = listVideoJobs();
+    const job = jobs[jobs.length - 1];
+    assert.ok(job, "Job should exist");
+
+    assert.ok(job.result, "Job should have result metadata");
+    const output = job.result.output as Record<string, unknown>;
+    assert.equal(output.project_id, "metadata-test", "Should include project_id");
+    assert.equal(output.platform, "youtube", "Should include platform");
+    assert.equal(output.account_id, "youtube-safe", "Should include account_id");
+    assert.equal(output.cadence_source, "project_distribution", "Should include cadence_source");
+
+    // Verify no secrets in metadata
+    const metadataText = JSON.stringify(output);
+    const forbiddenStrings = ["credential_reference", "keychain://", "access_token", "client_secret"];
+    for (const forbidden of forbiddenStrings) {
+      assert.ok(!metadataText.includes(forbidden), `Metadata should not contain: ${forbidden}`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2B-4: respects disabled project", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "enabled",
+        project_name: "Enabled",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-1", posts_per_week: 1 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+      {
+        project_id: "disabled",
+        project_name: "Disabled",
+        enabled: false,
+        platform_accounts: {
+          youtube: { account_id: "youtube-2", posts_per_week: 1 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    const result = scheduleProjectDistributionPlan({
+      projects,
+      dryRun: true,
+      weeks: 1,
+    });
+
+    assert.equal(result.created, 1, "Should only create job for enabled project");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2B-5: respects disabled platform", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "test-project",
+        project_name: "Test",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-1", posts_per_week: 1, enabled: true },
+          facebook: { account_id: "facebook-1", posts_per_week: 1, enabled: false },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    const result = scheduleProjectDistributionPlan({
+      projects,
+      dryRun: true,
+      weeks: 1,
+    });
+
+    assert.equal(result.created, 1, "Should only create job for enabled platform");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2B-6: avoids duplicate jobs on second run", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const startDate = new Date("2026-05-11");
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "test-project",
+        project_name: "Test",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-main", posts_per_week: 1 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    const result1 = scheduleProjectDistributionPlan({
+      projects,
+      dryRun: true,
+      startDate,
+      weeks: 1,
+    });
+    assert.equal(result1.created, 1, "First run should create 1 job");
+
+    const result2 = scheduleProjectDistributionPlan({
+      projects,
+      dryRun: true,
+      startDate,
+      weeks: 1,
+    });
+    assert.equal(result2.created, 0, "Second run should create 0 jobs");
+    assert.equal(result2.existing, 1, "Should detect 1 existing job");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2B-7: does not create real publish/upload jobs", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "test-project",
+        project_name: "Test",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-main", posts_per_week: 1 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    scheduleProjectDistributionPlan({
+      projects,
+      dryRun: true,
+      weeks: 1,
+    });
+
+    const jobs = listVideoJobs();
+    for (const job of jobs) {
+      assert.equal(job.dry_run, true, "All jobs should be dry_run=true");
+      assert.ok(job.result?.simulated, "All jobs should be marked as simulated");
+      const outputStr = JSON.stringify(job.result?.output || {});
+      assert.ok(!outputStr.includes("videos.insert"), "No upload capability");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2B-8: result contains no credential references or sensitive data", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "test-project",
+        project_name: "Test",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-main", posts_per_week: 1 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    const result = scheduleProjectDistributionPlan({
+      projects,
+      dryRun: true,
+      weeks: 1,
+    });
+
+    const resultText = JSON.stringify(result);
+    const forbiddenStrings = ["credential_reference", "keychain://", "access_token", "refresh_token", "client_secret"];
+    for (const forbidden of forbiddenStrings) {
+      assert.ok(!resultText.includes(forbidden), `Result should not contain: ${forbidden}`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
   }
 });

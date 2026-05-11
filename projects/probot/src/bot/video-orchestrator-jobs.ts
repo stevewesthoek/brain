@@ -566,5 +566,157 @@ export function planProjectDistribution(projects: ProjectDistribution[]): Projec
   return results;
 }
 
+// ─── VO-2B: Project Distribution Dry-Run Scheduling ───────────────────────────
+
+export interface ScheduleProjectDistributionInput {
+  projects: ProjectDistribution[];
+  dryRun: boolean;
+  startDate?: Date;
+  weeks?: number;
+}
+
+export interface ScheduleProjectDistributionResult {
+  created: number;
+  existing: number;
+  skipped: number;
+  planned: ProjectPlanResult[];
+}
+
+export function scheduleProjectDistributionPlan(input: ScheduleProjectDistributionInput): ScheduleProjectDistributionResult {
+  if (!input.dryRun) {
+    throw new Error("VO-2B only supports dry-run project distribution scheduling. Set dryRun to true.");
+  }
+
+  const plans = planProjectDistribution(input.projects);
+  const startDate = input.startDate ?? new Date();
+  const weeks = input.weeks ?? 1;
+
+  let created = 0;
+  let existing = 0;
+  let skipped = 0;
+
+  for (const plan of plans) {
+    if (plan.planned_weekly_slots === 0) {
+      skipped++;
+      logSchedulerEvent("Project distribution skipped (no weekly slots)", {
+        project_id: plan.project_id,
+      });
+      continue;
+    }
+
+    for (const slot of plan.platform_slots) {
+      if (slot.posts_per_week === 0) continue;
+
+      const daysInWeek = 7;
+      const preferredDays = slot.preferred_days && slot.preferred_days.length > 0
+        ? slot.preferred_days
+        : ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
+      const dayToIndex = (day: string): number => {
+        const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+        return days.indexOf(day.toLowerCase());
+      };
+
+      const postsPerWeek = slot.posts_per_week;
+      let scheduledCount = 0;
+
+      for (let weekOffset = 0; weekOffset < weeks; weekOffset++) {
+        for (let postIndex = 0; postIndex < postsPerWeek; postIndex++) {
+          // Distribute posts across preferred days
+          const dayIndex = preferredDays[postIndex % preferredDays.length] ?? "monday";
+          const dayOfWeekIndex = dayToIndex(dayIndex);
+
+          const scheduledDate = new Date(startDate);
+          scheduledDate.setDate(scheduledDate.getDate() + weekOffset * 7);
+
+          // Find the next occurrence of the preferred day
+          const currentDayOfWeek = scheduledDate.getDay();
+          let daysUntilTarget = dayOfWeekIndex - currentDayOfWeek;
+          if (daysUntilTarget < 0) {
+            daysUntilTarget += 7;
+          }
+          if (daysUntilTarget === 0 && weekOffset > 0) {
+            daysUntilTarget = 7;
+          }
+
+          scheduledDate.setDate(scheduledDate.getDate() + daysUntilTarget);
+
+          // Apply preferred time if provided
+          if (slot.preferred_time_local) {
+            const timeParts = slot.preferred_time_local.split(":").map(Number);
+            const hours = timeParts[0] ?? 0;
+            const minutes = timeParts[1] ?? 0;
+            scheduledDate.setHours(hours, minutes, 0, 0);
+          }
+
+          // Check for duplicate job
+          const existingJob = listVideoJobs().find(
+            (j) =>
+              j.type === "publish_episode" &&
+              j.scheduled_for === scheduledDate.toISOString() &&
+              j.dry_run &&
+              (j.result?.output as Record<string, unknown>)?.project_id === plan.project_id &&
+              (j.result?.output as Record<string, unknown>)?.platform === slot.platform &&
+              (j.result?.output as Record<string, unknown>)?.account_id === slot.account_id
+          );
+
+          if (existingJob) {
+            existing++;
+          } else {
+            const job = createVideoJob({
+              type: "publish_episode",
+              scheduledFor: scheduledDate,
+              dryRun: true,
+            });
+
+            // Attach safe project/platform metadata
+            const store = loadJobStore();
+            const jobToUpdate = store.jobs.find((j) => j.id === job.id);
+            if (jobToUpdate) {
+              jobToUpdate.result = {
+                simulated: true,
+                output: {
+                  project_id: plan.project_id,
+                  platform: slot.platform,
+                  account_id: slot.account_id,
+                  cadence_source: "project_distribution",
+                  weekly_slots: plan.planned_weekly_slots,
+                },
+              };
+              saveJobStore(store);
+            }
+
+            created++;
+            scheduledCount++;
+          }
+        }
+      }
+
+      logSchedulerEvent("Project distribution jobs scheduled", {
+        project_id: plan.project_id,
+        platform: slot.platform,
+        account_id: slot.account_id,
+        posts_per_week: slot.posts_per_week,
+        weeks,
+        created: scheduledCount,
+      });
+    }
+  }
+
+  logSchedulerEvent("Project distribution scheduling complete", {
+    total_planned: plans.length,
+    created,
+    existing,
+    skipped,
+  });
+
+  return {
+    created,
+    existing,
+    skipped,
+    planned: plans,
+  };
+}
+
 // Export internal functions for testing
 export { logSchedulerEvent, loadQuotaState, saveQuotaState, getQuotaStatePath, getSchedulerLogPath, getRuntimeDir };

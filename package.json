@@ -12,7 +12,8 @@
     "probot:video:status": "npm --prefix projects/probot run probot:video:status",
     "probot:video:reset-quota": "npm --prefix projects/probot run probot:video:reset-quota",
     "probot:video:schedule-month": "npm --prefix projects/probot run probot:video:schedule-month --",
-    "probot:video:run-due": "npm --prefix projects/probot run probot:video:run-due --"
+    "probot:video:run-due": "npm --prefix projects/probot run probot:video:run-due --",
+    "probot:video:plan-projects": "npm --prefix projects/probot run probot:video:plan-projects --"
   },
   "keywords": [
     "claude",

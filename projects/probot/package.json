@@ -16,7 +16,8 @@
     "probot:video:status": "tsx src/scripts/video-orchestrator-scheduler.mjs status",
     "probot:video:reset-quota": "tsx src/scripts/video-orchestrator-scheduler.mjs reset-quota",
     "probot:video:schedule-month": "tsx src/scripts/video-orchestrator-scheduler.mjs schedule-month",
-    "probot:video:run-due": "tsx src/scripts/video-orchestrator-scheduler.mjs run-due"
+    "probot:video:run-due": "tsx src/scripts/video-orchestrator-scheduler.mjs run-due",
+    "probot:video:plan-projects": "tsx src/scripts/video-orchestrator-project-scheduler.mjs"
   },
   "dependencies": {
     "@slack/bolt": "^4.6.0",

@@ -339,6 +339,115 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 
 ---
 
+### Phase VO-2B: Project Distribution Dry-Run Scheduling (May 11 – May 30)
+**Goal:** Convert project distribution plans into safe dry-run scheduler jobs; does NOT publish, does NOT call platform APIs, does NOT add real publishing adapters
+
+**What VO-2B Does:**
+- Takes ProjectPlanResult from VO-2A planning
+- Creates dry-run `publish_episode` scheduler jobs based on posts_per_week
+- Distributes posts across preferred_days when specified
+- Applies preferred_time_local to job scheduled_for timestamps
+- Attaches safe project/platform/account metadata to each job
+- Detects and avoids duplicate jobs on subsequent runs
+- Logs all scheduling events for auditability
+
+**What VO-2B Does NOT Do:**
+- Does not call YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, or any platform APIs
+- Does not upload or publish content
+- Does not create real publishing jobs (only dry_run=true jobs)
+- Does not store or access credentials, tokens, or keychain URLs
+- Does not implement OAuth or account onboarding (Phase 3+)
+- Does not enforce posting quotas or rate limits (Phase 4)
+- dryRun=false is explicitly blocked with clear error
+
+**Deliverables:**
+
+1. **Dry-Run Job Scheduling Function** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - Function: `scheduleProjectDistributionPlan(input: ScheduleProjectDistributionInput): ScheduleProjectDistributionResult`
+   - Input interface:
+     * `projects: ProjectDistribution[]` — array of projects to schedule
+     * `dryRun: boolean` — must be true; false throws error
+     * `startDate?: Date` — start date for scheduling (default: today)
+     * `weeks?: number` — number of weeks to schedule (default: 1)
+   - Output interface:
+     * `created: number` — jobs created in this run
+     * `existing: number` — jobs detected as existing (duplicates)
+     * `skipped: number` — projects skipped (no enabled platforms, no weekly slots)
+     * `planned: ProjectPlanResult[]` — full plan results
+   - Behavior:
+     * Blocks if dryRun === false with error message
+     * Calls planProjectDistribution to get project plans
+     * For each plan, iterates platform_slots
+     * Creates dry_run=true jobs for each posts_per_week slot
+     * Distributes posts across preferred_days (cycles if slots > days)
+     * Sets job.result with safe metadata: project_id, platform, account_id, cadence_source
+     * Detects duplicates by checking (type + scheduled_for + project_id + platform + account_id)
+     * No credentials, tokens, keychain URLs, or secrets in metadata
+     * No platform API calls, no uploads
+
+2. **Duplicate Detection** (built into scheduling function)
+   - Checks existing jobs for matching (publish_episode + scheduled_for + project_id + platform + account_id)
+   - Increments `existing` counter instead of creating duplicate
+   - Ensures idempotent scheduling: running twice with same input creates no new jobs
+
+3. **CLI Command** (`projects/probot/src/scripts/video-orchestrator-project-scheduler.mjs`)
+   - Usage: `npm run probot:video:plan-projects -- --dry-run=true --file <path> --weeks <n>`
+   - Arguments:
+     * `--dry-run=true|false` (required): enable/disable dry-run (false blocked)
+     * `--file <path>` (required): path to project distribution JSON file
+     * `--weeks <number>` (optional): number of weeks to schedule (default 1)
+     * `--start-date <ISO>` (optional): ISO 8601 start date (default today)
+   - Behavior:
+     * Reads and validates project distribution JSON file
+     * Calls scheduleProjectDistributionPlan with dryRun=true
+     * Prints summary: created, existing, skipped, total projects, total weekly slots
+     * Exits with error if --dry-run=false
+   - Root proxy: `npm run probot:video:plan-projects -- --dry-run=true --file <path>`
+
+4. **Tests** (in `projects/probot/src/bot/video-orchestrator-jobs.test.ts`)
+   - **VO-2B-1:** scheduleProjectDistributionPlan blocks dryRun=false with clear error
+   - **VO-2B-2:** Creates jobs based on posts_per_week (2 YouTube + 1 Facebook = 3 jobs/week)
+   - **VO-2B-3:** Scheduled jobs include safe metadata (project_id, platform, account_id) with no secrets
+   - **VO-2B-4:** Respects disabled project (skip entirely)
+   - **VO-2B-5:** Respects disabled platform (skip that platform only)
+   - **VO-2B-6:** Duplicate detection (second run creates 0 jobs, marks as existing)
+   - **VO-2B-7:** Does not create real upload jobs (all dry_run=true, no videos.insert)
+   - **VO-2B-8:** Result contains no credential references or sensitive strings
+
+**Testing Checklist:**
+- ✓ dryRun=false throws error with message
+- ✓ Jobs created correctly based on posts_per_week
+- ✓ Job metadata includes project/platform/account safely
+- ✓ Disabled projects filtered
+- ✓ Disabled platforms filtered
+- ✓ Duplicate detection works (idempotent)
+- ✓ All jobs are dry_run=true
+- ✓ No videos.insert calls
+- ✓ No credential strings in output
+- ✓ CLI command parses args correctly
+- ✓ TypeScript typecheck: 0 errors
+- ✓ All 148 tests pass
+
+**Architecture Decisions:**
+- **Dry-run only:** dryRun=false explicitly blocked; real publishing deferred to Phase 3+
+- **Job metadata, not execution:** Jobs are created with safe result metadata; they are not executed/published by VO-2B
+- **Safe account references:** account_id is the safe label (e.g., "youtube-channel-main"); credentials not involved
+- **Duplicate protection:** Scheduled jobs include enough metadata to detect duplicates; prevents re-scheduling
+- **Preferred days distribution:** Posts_per_week slots distributed across preferred_days (cycles if slots > days)
+- **Timezone in metadata only:** preferred_time_local stored in job result; no complex timezone conversion in VO-2B
+
+**Success Criteria:**
+- Dry-run scheduling creates jobs with correct posts_per_week distribution
+- Disabled projects and platforms respected
+- Jobs include safe project/platform/account metadata
+- Duplicates detected (second run creates 0 new jobs)
+- All jobs are dry_run=true (no real publishing)
+- CLI command works with --file and --weeks arguments
+- dryRun=false blocked with clear error
+- Foundation ready for Phase 2C (production packages) and Phase 3 (real adapters)
+
+---
+
 ### Phase 2C: Local Production Adapters
 **Goal:** Replace placeholder-only execution with real local artifacts where local tools are available.
 
