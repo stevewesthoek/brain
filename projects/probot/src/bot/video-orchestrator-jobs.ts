@@ -479,5 +479,92 @@ export function resetQuota(): void {
   logSchedulerEvent("Quota reset");
 }
 
+// ─── Project Distribution (VO-2A Foundation) ────────────────────────────────
+
+export interface ProjectDistribution {
+  project_id: string;
+  project_name: string;
+  theme?: string;
+  enabled: boolean;
+  platform_accounts: Record<
+    string,
+    {
+      account_id: string;
+      posts_per_week?: number;
+      preferred_days?: string[];
+      preferred_time_local?: string;
+      timezone?: string;
+      enabled?: boolean;
+    }
+  >;
+  scheduler_policy: {
+    dry_run_default: boolean;
+    max_jobs_per_run?: number;
+  };
+}
+
+export interface PlatformSlot {
+  platform: string;
+  account_id: string;
+  posts_per_week: number;
+  preferred_days?: string[] | undefined;
+  preferred_time_local?: string | undefined;
+  timezone?: string | undefined;
+}
+
+export interface ProjectPlanResult {
+  project_id: string;
+  planned_platforms: number;
+  planned_weekly_slots: number;
+  platform_slots: PlatformSlot[];
+  dry_run_confirmed: boolean;
+  next_run_window: string;
+}
+
+export function planProjectDistribution(projects: ProjectDistribution[]): ProjectPlanResult[] {
+  const results: ProjectPlanResult[] = [];
+
+  for (const project of projects) {
+    if (!project.enabled) continue;
+
+    const platformSlots: PlatformSlot[] = [];
+    let totalWeeklySlots = 0;
+
+    for (const [platform, config] of Object.entries(project.platform_accounts)) {
+      if (config.enabled === false) continue;
+
+      const postsPerWeek = config.posts_per_week ?? 0;
+      totalWeeklySlots += postsPerWeek;
+
+      platformSlots.push({
+        platform,
+        account_id: config.account_id,
+        posts_per_week: postsPerWeek,
+        preferred_days: config.preferred_days,
+        preferred_time_local: config.preferred_time_local,
+        timezone: config.timezone,
+      });
+    }
+
+    results.push({
+      project_id: project.project_id,
+      planned_platforms: platformSlots.length,
+      planned_weekly_slots: totalWeeklySlots,
+      platform_slots: platformSlots,
+      dry_run_confirmed: project.scheduler_policy.dry_run_default,
+      next_run_window: new Date().toISOString(),
+    });
+
+    logSchedulerEvent("Project plan generated", {
+      project_id: project.project_id,
+      platforms: platformSlots.length,
+      weekly_slots: totalWeeklySlots,
+      dry_run: project.scheduler_policy.dry_run_default,
+    });
+  }
+
+  return results;
+}
+
 // Export internal functions for testing
 export { logSchedulerEvent, loadQuotaState, saveQuotaState, getQuotaStatePath, getSchedulerLogPath, getRuntimeDir };

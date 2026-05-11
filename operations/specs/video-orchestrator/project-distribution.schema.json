@@ -1,0 +1,189 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Video Orchestrator Project Distribution Model",
+  "description": "Project-based routing configuration for multi-platform, multi-account video distribution. Defines which accounts a project uses and cadence per platform.",
+  "type": "object",
+  "required": ["schema_version", "projects"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version for compatibility tracking"
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/project"
+      },
+      "minItems": 1,
+      "description": "Array of project distributions"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "project": {
+      "type": "object",
+      "required": [
+        "project_id",
+        "project_name",
+        "enabled",
+        "platform_accounts",
+        "scheduler_policy"
+      ],
+      "properties": {
+        "project_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Unique project identifier (lowercase alphanumeric, underscore, dash)"
+        },
+        "project_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "Human-readable project name"
+        },
+        "theme": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "Optional theme or brand name"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this project is active for scheduling"
+        },
+        "platform_accounts": {
+          "type": "object",
+          "description": "Platform account references and cadence config",
+          "properties": {
+            "youtube": {
+              "$ref": "#/definitions/platform_config"
+            },
+            "tiktok": {
+              "$ref": "#/definitions/platform_config"
+            },
+            "instagram": {
+              "$ref": "#/definitions/platform_config"
+            },
+            "facebook": {
+              "$ref": "#/definitions/platform_config"
+            },
+            "linkedin": {
+              "$ref": "#/definitions/platform_config"
+            },
+            "bluesky": {
+              "$ref": "#/definitions/platform_config"
+            },
+            "x": {
+              "$ref": "#/definitions/platform_config"
+            }
+          },
+          "additionalProperties": false
+        },
+        "content_policy": {
+          "$ref": "#/definitions/content_policy"
+        },
+        "scheduler_policy": {
+          "$ref": "#/definitions/scheduler_policy"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about this project"
+        }
+      },
+      "additionalProperties": false
+    },
+    "platform_config": {
+      "type": "object",
+      "required": ["account_id"],
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[a-z0-9_-]+$",
+          "description": "Local account reference label (e.g., 'youtube-channel-main', 'tiktok-account-1'). Must be a symbolic reference, never a YouTube channel ID, credential reference, keychain:// URL, token, or secret. Maps to credentials stored in OS Keychain."
+        },
+        "posts_per_week": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7,
+          "description": "Target number of posts per week for this platform. Omit or set to 0 if no posting intended on this platform for this project."
+        },
+        "preferred_days": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+          },
+          "minItems": 0,
+          "description": "Optional preferred days for posting. Empty array means any day. No 'daily' keyword; use explicit day names instead."
+        },
+        "preferred_time_local": {
+          "type": "string",
+          "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "Optional preferred posting time in HH:MM format (local timezone, e.g., '09:00', '18:30')."
+        },
+        "timezone": {
+          "type": "string",
+          "description": "Optional IANA timezone identifier (e.g., 'America/Los_Angeles'). Used with preferred_time_local. If omitted, UTC assumed."
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this platform is active for this project. false = platform is defined but skipped during planning and scheduling."
+        }
+      },
+      "additionalProperties": false
+    },
+    "content_policy": {
+      "type": "object",
+      "properties": {
+        "allowed_formats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["16:9", "9:16", "1:1", "4:5"]
+          },
+          "description": "Allowed aspect ratios for content"
+        },
+        "private_only": {
+          "type": "boolean",
+          "description": "If true, all uploads must be private (useful for unlisted/private-only content)"
+        },
+        "description_template": {
+          "type": "string",
+          "description": "Optional template for descriptions (e.g., 'Watch more at {{url}}')"
+        },
+        "hashtag_policy": {
+          "type": "string",
+          "enum": ["none", "minimal", "standard", "aggressive"],
+          "description": "Hashtag inclusion level"
+        }
+      },
+      "additionalProperties": false
+    },
+    "scheduler_policy": {
+      "type": "object",
+      "required": ["dry_run_default"],
+      "properties": {
+        "dry_run_default": {
+          "type": "boolean",
+          "description": "Default to dry-run mode (no actual publishing) for this project"
+        },
+        "max_jobs_per_run": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of jobs to process in a single scheduler run"
+        },
+        "quota_policy_name": {
+          "type": "string",
+          "description": "Reference to quota policy (e.g., 'conservative', 'standard', 'aggressive')"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

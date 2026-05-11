@@ -242,6 +242,103 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 
    Implementation note: render/caption/thumbnail commands are adapter hooks supplied through `task_config`. Without real commands, the worker writes explicit placeholder artifacts for queue/resume testing only; placeholders must not count as production-ready media.
 
+### Phase VO-2A: Project-Based Distribution Model Foundation (May 11 – May 30)
+**Goal:** Create a planning-only schema and dry-run model for multi-platform distribution; does NOT schedule real jobs, does NOT connect accounts, does NOT call platform APIs, does NOT upload
+
+**What VO-2A Does:**
+- Defines a JSON Schema for projects with safe account references
+- Provides example projects with realistic multi-platform configurations
+- Implements a dry-run planning function that calculates weekly cadence per project
+- Returns readable plan metadata (platform slots, weekly totals, account IDs) for a later scheduler phase
+- Logs planning events for auditability
+
+**What VO-2A Does NOT Do:**
+- Does not create jobs in the scheduler queue
+- Does not call any platform APIs (YouTube, TikTok, etc.)
+- Does not upload or publish content
+- Does not store credentials, tokens, keys, or keychain URLs in project configs
+- Does not implement OAuth or account onboarding (that's Phase 3+)
+- Does not enforce posting quotas or rate limits (that's Phase 4)
+
+**Deliverables:**
+
+1. **Project Distribution Schema** (`operations/specs/video-orchestrator/project-distribution.schema.json`)
+   - JSON Schema Draft 7 for projects
+   - Root fields: `schema_version` (1.0), `projects` (array)
+   - Project fields: `project_id`, `project_name`, `theme` (optional), `enabled`, `platform_accounts`, `content_policy` (optional), `scheduler_policy`
+   - Platform account config: `account_id` (required, safe label only), `posts_per_week` (optional, 0–7), `preferred_days` (optional weekday names), `preferred_time_local` (optional HH:MM), `timezone` (optional), `enabled` (optional, defaults true)
+   - **Safety guarantees:** account_id is a symbolic label only (e.g., "youtube-channel-main"); never contains credentials, tokens, keychain URLs, or secrets
+   - **Schema validation:** Enforces no "daily" keyword (use explicit day names); enforces account_id pattern `^[a-z0-9_-]+$`
+
+2. **Example Projects** (`operations/specs/video-orchestrator/examples/project-distribution.example.json`)
+   - Two realistic projects with no real credentials
+   - Project Alpha: Educational Technology (YouTube 2/week + Facebook 1/week = 3 weekly slots)
+   - Project Beta: Creative Content (YouTube 3/week + TikTok 5/week + Instagram 4/week + Facebook 2/week = 14 weekly slots)
+   - Demonstrates multi-platform cadence, preferred days, and timezone handling
+   - All account_id values are placeholder labels only
+
+3. **Project Distribution Planning Interfaces & Function** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - Interface: `ProjectDistribution` — represents the input project config (matches schema structure)
+   - Interface: `PlatformSlot` — per-platform info within a plan result (platform, account_id, posts_per_week, preferred_days, timezone, etc.)
+   - Interface: `ProjectPlanResult` — output metadata:
+     * `project_id`: project identifier
+     * `planned_platforms`: count of enabled platforms
+     * `planned_weekly_slots`: sum of posts_per_week across enabled platforms (honest cadence measure)
+     * `platform_slots`: array of PlatformSlot objects with full cadence details
+     * `dry_run_confirmed`: inherits project's scheduler_policy.dry_run_default
+     * `next_run_window`: ISO 8601 timestamp
+   - Function: `planProjectDistribution(projects: ProjectDistribution[]): ProjectPlanResult[]`
+   - Behavior:
+     * Filters enabled projects only (skips if project.enabled === false)
+     * For each project, iterates platform_accounts
+     * Skips disabled platforms (enabled === false)
+     * Treats missing posts_per_week as 0
+     * Sums posts_per_week to calculate planned_weekly_slots
+     * Returns full platform_slots array for downstream scheduler use
+     * Logs planning event with project_id, platforms count, weekly_slots, dry_run flag
+     * No side effects: does not create jobs, does not call APIs, does not write files
+
+4. **Comprehensive Project Distribution Tests** (in `projects/probot/src/bot/video-orchestrator-jobs.test.ts`)
+   - **VO-2A-1:** Planning creates plan without uploading (single project)
+   - **VO-2A-2:** Multiple projects with different cadences (Project A: 3 slots, Project B: 14 slots)
+   - **VO-2A-3:** Respects enabled flag for both projects and platforms (disabled platform filtered from count)
+   - **VO-2A-4:** Planning does not call platform APIs or create jobs (verifies no publish_episode jobs created)
+   - **VO-2A-5:** platform_slots includes full cadence details (posts_per_week, preferred_days, timezone, etc.)
+   - **VO-2A-6:** Missing posts_per_week treated as 0 (honest default)
+   - **VO-2A-7:** Plan output contains no credential references or sensitive data (scans JSON for forbidden strings)
+   - **Schema/Example Validation (5 tests):** Validates schema JSON parses, example JSON parses, all preferred_days use valid weekday names only, all platform accounts have account_id, no forbidden sensitive strings in example
+
+**Testing Checklist:**
+- ✓ Schema JSON parses (valid JSON)
+- ✓ Example JSON parses and conforms to schema structure
+- ✓ All preferred_days values are valid weekday names (no "daily")
+- ✓ All platform accounts have account_id
+- ✓ No forbidden strings in schema or example (access_token, refresh_token, client_secret, keychain://, credential_reference, etc.)
+- ✓ All 7 VO-2A planning tests pass
+- ✓ All 5 schema/example validation tests pass
+- ✓ No video jobs created by planning
+- ✓ No platform APIs called
+- ✓ TypeScript typecheck: 0 errors
+- ✓ All 143 tests pass (cumulative)
+
+**Architecture Decisions:**
+- **Planning is separate from execution:** The planner returns metadata; a future VO-2B scheduler will map plans into actual jobs
+- **Account references are labels only:** account_id like "youtube-channel-main" maps to real account credentials stored in Keychain (Phase 3+)
+- **Weekly cadence is truth:** planned_weekly_slots sums posts_per_week (not platform count); more honest for downstream scheduling
+- **Disabled platforms are skipped:** Both project.enabled and platform.enabled are respected; disabled platforms do not appear in platform_slots
+- **No upload capability yet:** Schema defines fields but no code reads YouTube channel IDs, no OAuth, no videos.insert
+
+**Success Criteria:**
+- Projects defined with safe account references; planning function works
+- Example projects validate against schema
+- Planning does not create jobs or call APIs
+- Weekly cadence calculated correctly per project
+- Disabled projects and platforms handled correctly
+- Plan output includes all info needed for future scheduler (platform_slots with cadence details)
+- Foundation ready for Phase 2B (production package MVP) and Phase 3 (adapter work)
+
+---
+
 ### Phase 2C: Local Production Adapters
 **Goal:** Replace placeholder-only execution with real local artifacts where local tools are available.
 

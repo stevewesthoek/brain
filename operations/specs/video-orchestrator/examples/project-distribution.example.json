@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "projects": [
+    {
+      "project_id": "project-alpha",
+      "project_name": "Project Alpha",
+      "theme": "Educational Technology",
+      "enabled": true,
+      "platform_accounts": {
+        "youtube": {
+          "account_id": "youtube-channel-main",
+          "posts_per_week": 2,
+          "preferred_days": ["wednesday", "friday"],
+          "preferred_time_local": "09:00",
+          "timezone": "America/Los_Angeles",
+          "enabled": true
+        },
+        "facebook": {
+          "account_id": "facebook-page-main",
+          "posts_per_week": 1,
+          "preferred_days": ["monday"],
+          "preferred_time_local": "18:00",
+          "timezone": "America/Los_Angeles",
+          "enabled": true
+        }
+      },
+      "content_policy": {
+        "allowed_formats": ["16:9", "9:16"],
+        "private_only": false,
+        "hashtag_policy": "minimal"
+      },
+      "scheduler_policy": {
+        "dry_run_default": true,
+        "max_jobs_per_run": 10,
+        "quota_policy_name": "conservative"
+      },
+      "notes": "Educational technology focus. YouTube for long-form, Facebook for community engagement."
+    },
+    {
+      "project_id": "project-beta",
+      "project_name": "Project Beta",
+      "theme": "Creative Content",
+      "enabled": true,
+      "platform_accounts": {
+        "youtube": {
+          "account_id": "youtube-channel-creative",
+          "posts_per_week": 3,
+          "preferred_days": ["monday", "wednesday", "friday"],
+          "preferred_time_local": "12:00",
+          "timezone": "America/New_York",
+          "enabled": true
+        },
+        "tiktok": {
+          "account_id": "tiktok-account-creative",
+          "posts_per_week": 5,
+          "preferred_days": ["tuesday", "thursday", "saturday"],
+          "preferred_time_local": "19:00",
+          "timezone": "America/New_York",
+          "enabled": true
+        },
+        "instagram": {
+          "account_id": "instagram-account-creative",
+          "posts_per_week": 4,
+          "preferred_days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+          "preferred_time_local": "08:00",
+          "timezone": "America/New_York",
+          "enabled": true
+        },
+        "facebook": {
+          "account_id": "facebook-page-creative",
+          "posts_per_week": 2,
+          "preferred_days": ["wednesday", "sunday"],
+          "preferred_time_local": "20:00",
+          "timezone": "America/New_York",
+          "enabled": true
+        }
+      },
+      "content_policy": {
+        "allowed_formats": ["16:9", "9:16", "1:1", "4:5"],
+        "private_only": false,
+        "hashtag_policy": "standard"
+      },
+      "scheduler_policy": {
+        "dry_run_default": true,
+        "max_jobs_per_run": 20,
+        "quota_policy_name": "standard"
+      },
+      "notes": "Creative/entertainment focus. Multi-platform distribution with format-specific targeting."
+    }
+  ]
+}

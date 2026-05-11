@@ -14,6 +14,9 @@ import {
   saveQuotaState,
   getSchedulerLogPath,
   getRuntimeDir,
+  planProjectDistribution,
+  type ProjectDistribution,
+  type ProjectPlanResult,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -400,6 +403,267 @@ test("VO-1B-6: Runtime directory override env var works", (t) => {
   }
 });
 
+// ─── VO-2A Project Distribution Tests ────────────────────────────────────────
+
+test("VO-2A-1: Project distribution planning creates plan without uploading", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "test-project-1",
+        project_name: "Test Project 1",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-main", posts_per_week: 2 },
+          facebook: { account_id: "facebook-main", posts_per_week: 1 },
+        },
+        scheduler_policy: {
+          dry_run_default: true,
+          max_jobs_per_run: 10,
+        },
+      },
+    ];
+
+    const result = planProjectDistribution(projects);
+
+    assert.equal(result.length, 1, "Should plan for 1 project");
+    const plan = result[0];
+    assert.ok(plan, "Plan should exist");
+    assert.equal(plan.project_id, "test-project-1");
+    assert.equal(plan.planned_platforms, 2, "Should count 2 enabled platforms");
+    assert.equal(plan.planned_weekly_slots, 3, "YouTube 2 + Facebook 1 = 3 weekly slots");
+    assert.ok(Array.isArray(plan.platform_slots), "platform_slots should be array");
+    assert.equal(plan.platform_slots.length, 2, "Should have 2 platform slots");
+    assert.equal(plan.dry_run_confirmed, true, "Should confirm dry-run mode");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2A-2: Project distribution supports multiple projects with different cadences", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "project-a",
+        project_name: "Project A",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-a", posts_per_week: 2 },
+          facebook: { account_id: "facebook-a", posts_per_week: 1 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+      {
+        project_id: "project-b",
+        project_name: "Project B",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-b", posts_per_week: 3 },
+          tiktok: { account_id: "tiktok-b", posts_per_week: 5 },
+          instagram: { account_id: "instagram-b", posts_per_week: 4 },
+          facebook: { account_id: "facebook-b", posts_per_week: 2 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    const result = planProjectDistribution(projects);
+
+    assert.equal(result.length, 2, "Should plan for 2 projects");
+    const planA = result[0];
+    const planB = result[1];
+    assert.ok(planA && planB, "Both plans should exist");
+    assert.equal(planA.planned_platforms, 2, "Project A should have 2 platforms");
+    assert.equal(planA.planned_weekly_slots, 3, "Project A weekly slots: 2 + 1 = 3");
+    assert.equal(planB.planned_platforms, 4, "Project B should have 4 platforms");
+    assert.equal(planB.planned_weekly_slots, 14, "Project B weekly slots: 3 + 5 + 4 + 2 = 14");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2A-3: Project distribution respects enabled flag for projects and platforms", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "enabled-project",
+        project_name: "Enabled",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-1", posts_per_week: 2, enabled: true },
+          facebook: { account_id: "facebook-1", posts_per_week: 1, enabled: false },
+          tiktok: { account_id: "tiktok-1", posts_per_week: 3 }, // enabled defaults to true
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+      {
+        project_id: "disabled-project",
+        project_name: "Disabled",
+        enabled: false,
+        platform_accounts: {
+          youtube: { account_id: "youtube-2", posts_per_week: 2 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    const result = planProjectDistribution(projects);
+
+    assert.equal(result.length, 1, "Should only plan for enabled projects");
+    const plan = result[0];
+    assert.ok(plan, "Plan should exist");
+    assert.equal(plan.project_id, "enabled-project");
+    assert.equal(plan.planned_platforms, 2, "Should have youtube and tiktok (facebook disabled)");
+    assert.equal(plan.planned_weekly_slots, 5, "YouTube 2 + TikTok 3 = 5 (Facebook disabled)");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2A-4: Project distribution planning does not call platform APIs or upload", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "test-no-upload",
+        project_name: "No Upload Test",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-safe" },
+          tiktok: { account_id: "tiktok-safe" },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    // Planning should complete without errors or side effects
+    const result = planProjectDistribution(projects);
+
+    assert.ok(result.length > 0, "Planning should succeed");
+    const plan = result[0];
+    assert.ok(plan, "Plan should exist");
+    assert.equal(plan.dry_run_confirmed, true, "Must be in dry-run mode");
+
+    // Verify no jobs were actually created
+    const jobs = listVideoJobs();
+    const uploadJobs = jobs.filter((j) => j.type === "publish_episode");
+    assert.equal(uploadJobs.length, 0, "No publish jobs should have been created");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2A-5: Project planner includes platform_slots with full cadence details", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "detailed-plan",
+        project_name: "Detailed Plan",
+        enabled: true,
+        platform_accounts: {
+          youtube: {
+            account_id: "youtube-main",
+            posts_per_week: 2,
+            preferred_days: ["monday", "wednesday"],
+            preferred_time_local: "09:00",
+            timezone: "America/New_York",
+          },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    const result = planProjectDistribution(projects);
+    const plan = result[0];
+
+    assert.ok(plan, "Plan should exist");
+    assert.ok(Array.isArray(plan.platform_slots), "platform_slots should be array");
+    assert.equal(plan.platform_slots.length, 1, "Should have 1 platform slot");
+
+    const slot = plan.platform_slots[0];
+    assert.ok(slot, "Slot should exist");
+    assert.equal(slot.platform, "youtube", "Platform should be youtube");
+    assert.equal(slot.account_id, "youtube-main", "account_id should match");
+    assert.equal(slot.posts_per_week, 2, "posts_per_week should be 2");
+    assert.deepEqual(slot.preferred_days, ["monday", "wednesday"], "preferred_days should match");
+    assert.equal(slot.preferred_time_local, "09:00", "preferred_time_local should match");
+    assert.equal(slot.timezone, "America/New_York", "timezone should match");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2A-6: Planner treats missing posts_per_week as 0", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "test-zero-posts",
+        project_name: "Zero Posts",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-no-posts" }, // No posts_per_week specified
+          facebook: { account_id: "facebook-explicit-1", posts_per_week: 1 },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    const result = planProjectDistribution(projects);
+    const plan = result[0];
+
+    assert.ok(plan, "Plan should exist");
+    assert.equal(plan.planned_weekly_slots, 1, "Should count only Facebook's 1 post/week (YouTube 0)");
+    const youtubeSlot = plan.platform_slots.find((s) => s.platform === "youtube");
+    assert.ok(youtubeSlot, "YouTube slot should exist");
+    assert.equal(youtubeSlot.posts_per_week, 0, "YouTube posts_per_week should be 0 when not specified");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2A-7: Planner output contains no credential references or sensitive data", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const projects: ProjectDistribution[] = [
+      {
+        project_id: "sensitive-test",
+        project_name: "Sensitive Data Test",
+        enabled: true,
+        platform_accounts: {
+          youtube: { account_id: "youtube-test" },
+        },
+        scheduler_policy: { dry_run_default: true },
+      },
+    ];
+
+    const result = planProjectDistribution(projects);
+    const resultText = JSON.stringify(result);
+
+    const forbiddenStrings = [
+      "access_token",
+      "refresh_token",
+      "client_secret",
+      "code_verifier",
+      "keychain://",
+      "credential_reference",
+      "credentialReference",
+    ];
+
+    for (const forbidden of forbiddenStrings) {
+      assert.ok(
+        !resultText.includes(forbidden),
+        `Plan output should not contain: ${forbidden}`
+      );
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
 // ─── CLI Parser Tests (no side effects) ─────────────────────────────────────
 
 test("CLI: parseSchedulerArgs parser import causes no filesystem side effects", (t) => {
@@ -417,5 +681,102 @@ test("CLI: parseSchedulerArgs parser import causes no filesystem side effects", 
     assert.ok(!fs.existsSync(logPath), "scheduler.log should not be created by parser import");
   } finally {
     cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── Schema and Example Validation Tests ────────────────────────────────────────
+
+test("Schema/Example Validation: Schema and example JSON parse", (t) => {
+  const repoRoot = path.resolve(process.cwd(), "../..");
+  const schemaPath = path.resolve(repoRoot, "operations/specs/video-orchestrator/project-distribution.schema.json");
+  const examplePath = path.resolve(repoRoot, "operations/specs/video-orchestrator/examples/project-distribution.example.json");
+
+  assert.ok(fs.existsSync(schemaPath), `Schema file exists at ${schemaPath}`);
+  assert.ok(fs.existsSync(examplePath), `Example file exists at ${examplePath}`);
+
+  const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+
+  assert.ok(schema, "Schema parses as valid JSON");
+  assert.ok(example, "Example parses as valid JSON");
+});
+
+test("Schema/Example Validation: Schema has required fields", (t) => {
+  const repoRoot = path.resolve(process.cwd(), "../..");
+  const schemaPath = path.resolve(repoRoot, "operations/specs/video-orchestrator/project-distribution.schema.json");
+  const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+
+  assert.ok(schema.required, "Schema has required array");
+  assert.deepEqual(schema.required, ["schema_version", "projects"], "Required fields include schema_version and projects");
+  assert.equal(schema.properties.projects.type, "array", "Projects is array type");
+});
+
+test("Schema/Example Validation: Example has valid schema_version and projects", (t) => {
+  const repoRoot = path.resolve(process.cwd(), "../..");
+  const examplePath = path.resolve(repoRoot, "operations/specs/video-orchestrator/examples/project-distribution.example.json");
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+
+  assert.equal(example.schema_version, "1.0", "Schema version is 1.0");
+  assert.ok(Array.isArray(example.projects), "Example has projects array");
+  assert.ok(example.projects.length > 0, "Projects array is not empty");
+});
+
+test("Schema/Example Validation: preferred_days only uses valid weekday names", (t) => {
+  const repoRoot = path.resolve(process.cwd(), "../..");
+  const examplePath = path.resolve(repoRoot, "operations/specs/video-orchestrator/examples/project-distribution.example.json");
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+
+  const validDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const forbiddenKeywords = ["daily", "everyday"];
+
+  for (const project of example.projects) {
+    for (const [platform, config] of Object.entries(project.platform_accounts)) {
+      const cfg = config as Record<string, unknown>;
+      if (cfg.preferred_days && Array.isArray(cfg.preferred_days)) {
+        for (const day of cfg.preferred_days) {
+          const dayStr = day as unknown as string;
+          assert.ok(validDays.includes(dayStr), `preferred_days contains valid weekday: ${dayStr}`);
+          assert.ok(!forbiddenKeywords.includes(dayStr), `preferred_days does not contain forbidden keyword: ${dayStr}`);
+        }
+      }
+    }
+  }
+});
+
+test("Schema/Example Validation: All platform accounts have account_id", (t) => {
+  const repoRoot = path.resolve(process.cwd(), "../..");
+  const examplePath = path.resolve(repoRoot, "operations/specs/video-orchestrator/examples/project-distribution.example.json");
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+
+  for (const project of example.projects) {
+    assert.ok(project.platform_accounts, `Project ${project.project_id} has platform_accounts`);
+    for (const [platform, config] of Object.entries(project.platform_accounts)) {
+      const cfg = config as Record<string, unknown>;
+      assert.ok(cfg.account_id, `Platform ${platform} in project ${project.project_id} has account_id`);
+      assert.equal(typeof cfg.account_id, "string", `account_id is a string`);
+    }
+  }
+});
+
+test("Schema/Example Validation: No forbidden sensitive strings in example", (t) => {
+  const repoRoot = path.resolve(process.cwd(), "../..");
+  const examplePath = path.resolve(repoRoot, "operations/specs/video-orchestrator/examples/project-distribution.example.json");
+  const exampleText = fs.readFileSync(examplePath, "utf8");
+
+  const forbiddenStrings = [
+    "credential_reference",
+    "credentialReference",
+    "keychain://",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "code_verifier",
+  ];
+
+  for (const forbidden of forbiddenStrings) {
+    assert.ok(
+      !exampleText.includes(forbidden),
+      `Example does not contain forbidden string: ${forbidden}`
+    );
   }
 });
