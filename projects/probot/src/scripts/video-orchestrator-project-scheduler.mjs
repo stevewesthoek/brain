@@ -3,8 +3,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseSchedulerArgs } from "./video-orchestrator-scheduler-args.ts";
-import { scheduleProjectDistributionPlan } from "../bot/video-orchestrator-jobs.ts";
+import { parseSchedulerArgs } from "./video-orchestrator-scheduler-args.js";
+import { scheduleProjectDistributionPlan } from "../bot/video-orchestrator-jobs.js";
+import { resolveProjectDistributionFilePath } from "./video-orchestrator-project-scheduler-paths.js";
 
 const __filename = fileURLToPath(import.meta.url);
 
@@ -58,9 +59,11 @@ async function main() {
     process.exit(1);
   }
 
-  const filePath = String(args.file);
-  if (!fs.existsSync(filePath)) {
-    console.error(`Error: File not found: ${filePath}`);
+  let filePath;
+  try {
+    filePath = resolveProjectDistributionFilePath(String(args.file));
+  } catch (err) {
+    console.error(`Error: ${err}`);
     process.exit(1);
   }
 

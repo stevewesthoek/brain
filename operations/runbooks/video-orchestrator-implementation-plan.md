@@ -402,7 +402,19 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
      * Calls scheduleProjectDistributionPlan with dryRun=true
      * Prints summary: created, existing, skipped, total projects, total weekly slots
      * Exits with error if --dry-run=false
-   - Root proxy: `npm run probot:video:plan-projects -- --dry-run=true --file <path>`
+   - **Smart path resolution** (VO-2B-H1):
+     * Resolves --file paths in order: absolute, cwd-relative, repo-root-relative, projects/probot-relative
+     * No need for manual path adjustment across different working directories
+     * Throws clear error if file not found (lists attempted paths safely, no secrets)
+   - Command examples (from repo root):
+     ```bash
+     npm run probot:video:plan-projects -- --dry-run=true --file operations/specs/video-orchestrator/examples/project-distribution.example.json --weeks=1
+     npm run probot:video:plan-projects -- --dry-run=true --file operations/specs/video-orchestrator/examples/project-distribution.example.json --weeks=4 --start-date=2026-05-15
+     ```
+   - Command examples (from projects/probot):
+     ```bash
+     npm run probot:video:plan-projects -- --dry-run=true --file ../../operations/specs/video-orchestrator/examples/project-distribution.example.json --weeks=1
+     ```
 
 4. **Tests** (in `projects/probot/src/bot/video-orchestrator-jobs.test.ts`)
    - **VO-2B-1:** scheduleProjectDistributionPlan blocks dryRun=false with clear error
