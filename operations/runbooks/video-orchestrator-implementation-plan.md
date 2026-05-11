@@ -460,6 +460,98 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 
 ---
 
+### Phase VO-2C: Production Package Foundation (May 11 – May 30)
+**Goal:** Define production package schema, create example, and implement safe package draft function; metadata only, no real rendering.
+
+**What VO-2C Does:**
+- Defines production-package.schema.json (existing; describes complete manifest for all platform variants)
+- Creates production-package.example.json (safe example with placeholder local paths)
+- Implements createProductionPackageDraft function to create package metadata from scheduled jobs
+- Package drafts store safe metadata: project_id, platform, account_id, scheduled_for, etc.
+- Marks ready_to_post=false with blocking reasons (rendering not implemented)
+- Prepares architecture for VO-2D (media adapters) and VO-3A (manual upload)
+
+**What VO-2C Does NOT Do:**
+- Does NOT render video files (FFmpeg)
+- Does NOT generate thumbnails (beyond placeholder references)
+- Does NOT transcribe audio or generate captions (beyond placeholder references)
+- Does NOT call platform APIs
+- Does NOT publish or upload
+- Does NOT store or access credentials
+- Does NOT implement OAuth
+
+**Deliverables:**
+
+1. **Production Package Schema (VO-2C Draft Model)** (`operations/specs/video-orchestrator/production-package.schema.json`)
+   - JSON schema v7 defining VO-2C draft structure (metadata only, no media rendering)
+   - Required fields: schema_version, package_id, project_id, platform, account_id, source_job_id, package_state, dry_run, created_at, scheduled_for, assets, platform_target, readiness, provenance
+   - account_id is "local symbolic reference only" — never a token, credential, or keychain URL
+   - assets.metadata: scalar-only map (string | number | boolean | null) to prevent credential leakage
+   - No file_size_bytes, duration_seconds, or other indicators that media was rendered
+   - readiness.ready_to_post always false in VO-2C with blocking reason: "Media rendering is not implemented in VO-2C. Real video/thumbnail/caption rendering deferred to VO-2D."
+
+2. **Production Package Example (VO-2C Metadata-Only Draft)** (`operations/specs/video-orchestrator/examples/production-package.example.json`)
+   - True metadata-only draft showing schema structure without fake media indicators
+   - package_state: "draft", dry_run: true, ready_to_post: false
+   - assets.captions: [] (no rendered file paths)
+   - assets.metadata: safe scalars only (job_type, job_status, job_dry_run, job_scheduled_for)
+   - platform_target: format_key with aspect_ratio and resolution inferred from key
+   - No upload instructions, render outputs, or manual publishing steps
+   - Warnings explain: "metadata-only package draft" and "Use for schema validation and planning only"
+
+3. **Package Draft Function (Safe Metadata Handling)** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - Function: `createProductionPackageDraft(input: CreateProductionPackageDraftInput): ProductionPackageDraft`
+   - Input: scheduled job, project_id, platform, account_id, scheduled_for, dryRun
+   - Output: package draft with safe metadata only
+   - Behavior:
+     * Blocks if dryRun === false with error message
+     * Generates package_id from job.id
+     * Sets package_state = "draft"
+     * Sets ready_to_post = false with blocking reason
+     * Sanitizes job.result using allowlist-based filter to remove dangerous fields (credential_reference, keychain://, access_token, refresh_token, client_secret, code_verifier, authorization_code, bearer)
+     * Only copies scalar values from sanitized result (prevents nested object leakage)
+     * Infers aspect_ratio/resolution from format_key
+   - Helper function: `sanitizeJobResultForPackageMetadata(result: unknown): Record<string, unknown>`
+     * Rejects keys containing credential, keychain, access_token, refresh_token, client_secret, code_verifier, authorization_code, bearer
+     * Only copies string | number | boolean | null values
+     * Never copies nested objects or arrays (prevents structure-based attacks)
+
+4. **Tests** (in `projects/probot/src/bot/video-orchestrator-jobs.test.ts`)
+   - **VO-2C-1:** Schema has required VO-2C draft fields (package_id, source_job_id, package_state, dry_run, readiness, provenance)
+   - **VO-2C-2:** Example matches schema structure with all required root fields
+   - **VO-2C-3:** Example is metadata-only (no file_size_bytes, no duration_seconds, no upload steps)
+   - **VO-2C-4:** Example contains no credential refs, tokens, or secrets
+   - **VO-2C-10:** Draft does not copy raw job.result (sanitized only)
+     * Metadata includes job_type, job_status, job_dry_run, job_scheduled_for
+     * No dangerous key patterns in metadata
+   - **VO-2C-11:** Sanitization blocks malicious job.result values
+     * access_token, client_secret, sk_test, keychain, and nested objects all blocked
+     * Safe fields pass through (job_type, job_status, safe_field)
+
+**Architecture Decisions:**
+- **Metadata only:** Package drafts are safe JSON metadata; no FFmpeg, no real files, no fake media indicators
+- **Dry-run only:** dryRun=false explicitly blocked with error; real rendering deferred to VO-2D
+- **Allowlist-based sanitization:** Job result metadata filtered by dangerous key patterns; only scalars copied (prevents credential leakage and structure-based attacks)
+- **account_id as safe reference:** Symbolic reference only — never a token, credential, or keychain URL
+- **assets.metadata type restriction:** Scalar-only map (string | number | boolean | null) to prevent nested objects from carrying credentials
+- **Format inference:** Aspect ratio and resolution inferred from format_key string (e.g., "landscape_1920x1080_16x9")
+- **Blocking transparency:** ready_to_post always false with clear reason explaining why package cannot be uploaded yet
+- **Schema-driven validation:** All drafts validated against JSON schema; no draft escapes without required fields
+
+**Success Criteria:**
+- Production package schema valid JSON conforming to JSON schema v7 spec
+- Example valid JSON matching schema structure exactly
+- Example is true metadata-only draft (no file_size_bytes, no duration_seconds, no rendered media paths)
+- Example contains no credential/token references, keychain URLs, or unsafe patterns
+- createProductionPackageDraft creates safe drafts from scheduled jobs
+- Job result sanitization blocks dangerous fields (credential_reference, keychain://, access_token, refresh_token, client_secret, code_verifier, authorization_code, bearer)
+- All drafts mark ready_to_post=false with clear blocking reason
+- assets.metadata restricted to scalars only (no nested objects or arrays)
+- No upload/API capability, no OAuth, no platform calls
+- All 163 tests passing including VO-2C-10 and VO-2C-11 sanitization tests
+
+---
+
 ### Phase 2C: Local Production Adapters
 **Goal:** Replace placeholder-only execution with real local artifacts where local tools are available.
 

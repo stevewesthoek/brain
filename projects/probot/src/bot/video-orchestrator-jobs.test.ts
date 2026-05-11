@@ -16,12 +16,18 @@ import {
   getRuntimeDir,
   planProjectDistribution,
   scheduleProjectDistributionPlan,
+  createProductionPackageDraft,
   type ProjectDistribution,
   type ProjectPlanResult,
+  type ProductionPackageDraft,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ─── Test Isolation ─────────────────────────────────────────────────────────
 
@@ -1053,6 +1059,402 @@ test("VO-2B-8: result contains no credential references or sensitive data", (t) 
     for (const forbidden of forbiddenStrings) {
       assert.ok(!resultText.includes(forbidden), `Result should not contain: ${forbidden}`);
     }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-2C: Production Package Foundation Tests ─────────────────────────────
+
+test("VO-2C-1: Schema has VO-2C draft model required fields", () => {
+  const schemaPath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/production-package.schema.json");
+  const schemaText = fs.readFileSync(schemaPath, "utf8");
+  const schema = JSON.parse(schemaText);
+  assert.ok(schema.title.includes("VO-2C"));
+  assert.ok(schema.properties.package_id);
+  assert.ok(schema.properties.source_job_id);
+  assert.ok(schema.properties.package_state);
+  assert.ok(schema.properties.dry_run);
+  assert.ok(schema.properties.readiness);
+  assert.ok(schema.properties.provenance);
+  assert.ok(schema.required.includes("package_id"));
+  assert.ok(schema.required.includes("source_job_id"));
+  assert.ok(schema.required.includes("package_state"));
+  assert.ok(schema.required.includes("dry_run"));
+  assert.ok(schema.required.includes("readiness"));
+  assert.ok(schema.required.includes("provenance"));
+});
+
+test("VO-2C-2: Example matches schema structure", () => {
+  const examplePath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
+  const exampleText = fs.readFileSync(examplePath, "utf8");
+  const example = JSON.parse(exampleText);
+  assert.ok(example.schema_version === "1.0");
+  assert.ok(example.package_id);
+  assert.ok(example.project_id === "project-alpha");
+  assert.ok(example.platform === "youtube");
+  assert.ok(example.account_id === "youtube-channel-main");
+  assert.ok(example.source_job_id);
+  assert.ok(example.package_state === "draft");
+  assert.ok(example.dry_run === true);
+  assert.ok(example.created_at);
+  assert.ok(example.scheduled_for);
+  assert.ok(example.assets);
+  assert.ok(example.platform_target);
+  assert.ok(example.readiness);
+  assert.ok(example.provenance);
+});
+
+test("VO-2C-3: Example is metadata-only draft (not fake rendered)", () => {
+  const examplePath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
+  const exampleText = fs.readFileSync(examplePath, "utf8");
+  const example = JSON.parse(exampleText);
+  assert.ok(example.package_state === "draft");
+  assert.ok(example.dry_run === true);
+  assert.ok(example.readiness.ready_to_post === false);
+  // Must not have fake file sizes or media durations that imply rendering
+  assert.ok(!exampleText.includes("file_size_bytes"));
+  assert.ok(!exampleText.includes("duration_seconds"));
+  // Must not have render instructions or upload steps
+  assert.ok(!exampleText.includes("manual_steps") && !exampleText.includes("upload") && !exampleText.includes("publish"));
+});
+
+test("VO-2C-4: Example contains no credential refs, tokens, or secrets", () => {
+  const examplePath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
+  const exampleText = fs.readFileSync(examplePath, "utf8");
+  const forbiddenStrings = ["credential_reference", "keychain://", "access_token", "refresh_token", "client_secret", "code_verifier", "authorization_code"];
+  for (const forbidden of forbiddenStrings) {
+    assert.ok(!exampleText.includes(forbidden), `Example should not contain: ${forbidden}`);
+  }
+});
+
+test("VO-2C-Schema: Example structure matches schema requirements", () => {
+  const schemaPath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/production-package.schema.json");
+  const examplePath = path.resolve(__dirname, "../../../../operations/specs/video-orchestrator/examples/production-package.example.json");
+
+  const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+
+  // Verify all required schema fields exist in example
+  const requiredFields = schema.required || [];
+  for (const field of requiredFields) {
+    assert.ok(example.hasOwnProperty(field), `Example missing required field: ${field}`);
+  }
+
+  // Verify no optional null fields are present unless schema allows null
+  assert.strictEqual(example.provenance.source_manifest_path, undefined, "provenance.source_manifest_path should not be present (null not allowed)");
+  assert.strictEqual(example.provenance.checksum, undefined, "provenance.checksum should not be present (null not allowed)");
+
+  // Verify state flags are correct
+  assert.strictEqual(example.readiness.ready_to_post, false, "ready_to_post must be false in VO-2C");
+  assert.strictEqual(example.package_state, "draft", "package_state must be draft in VO-2C");
+  assert.strictEqual(example.dry_run, true, "dry_run must be true in VO-2C");
+});
+
+test("VO-2C-4: createProductionPackageDraft blocks dryRun=false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-01T09:00:00Z"),
+      dryRun: true,
+    });
+
+    assert.throws(
+      () => createProductionPackageDraft({
+        job,
+        project_id: "test-project",
+        platform: "youtube",
+        account_id: "youtube-main",
+        scheduled_for: new Date(),
+        dryRun: false,
+      }),
+      (err: any) => {
+        assert.ok(err.message.includes("VO-2C only supports dry-run"));
+        return true;
+      }
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2C-5: Draft includes project_id, platform, account_id, scheduled_for", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-01T09:00:00Z"),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "test-project-001",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date("2026-06-15T14:00:00Z"),
+      dryRun: true,
+    });
+
+    assert.strictEqual(draft.project_id, "test-project-001");
+    assert.strictEqual(draft.platform, "youtube");
+    assert.strictEqual(draft.account_id, "youtube-channel-main");
+    assert.ok(draft.scheduled_for.includes("2026-06-15"));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2C-6: Draft ready_to_post is false by default", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-01T09:00:00Z"),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "test-project",
+      platform: "tiktok",
+      account_id: "tiktok-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    assert.strictEqual(draft.readiness.ready_to_post, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2C-7: Draft includes blocking reason for unimplemented rendering", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-01T09:00:00Z"),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "test-project",
+      platform: "instagram",
+      account_id: "instagram-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    assert.ok(draft.readiness.blocking_reasons.length > 0);
+    const blockingText = draft.readiness.blocking_reasons.join(" ");
+    assert.ok(blockingText.includes("rendering") || blockingText.includes("VO-2C") || blockingText.includes("VO-2D"));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2C-8: No upload/API calls in package draft function", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-01T09:00:00Z"),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const draftText = JSON.stringify(draft);
+    const forbiddenStrings = ["videos.insert", "youtube.videos", "api.youtube", "AccessToken"];
+    for (const forbidden of forbiddenStrings) {
+      assert.ok(!draftText.includes(forbidden), `Draft should not contain: ${forbidden}`);
+    }
+
+    // Verify no credential references
+    assert.ok(!draftText.includes("access_token"));
+    assert.ok(!draftText.includes("refresh_token"));
+    assert.ok(!draftText.includes("client_secret"));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2C-9: Draft format_key determines aspect_ratio and resolution", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-01T09:00:00Z"),
+      dryRun: true,
+    });
+
+    // Test landscape format
+    const landscapeDraft = createProductionPackageDraft({
+      job,
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+      format_key: "landscape_1920x1080_16x9",
+    });
+    assert.strictEqual(landscapeDraft.platform_target.aspect_ratio, "16:9");
+    assert.strictEqual(landscapeDraft.platform_target.resolution, "1920x1080");
+
+    // Test vertical format
+    const verticalDraft = createProductionPackageDraft({
+      job,
+      project_id: "test-project",
+      platform: "tiktok",
+      account_id: "tiktok-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+      format_key: "vertical_1080x1920_9x16",
+    });
+    assert.strictEqual(verticalDraft.platform_target.aspect_ratio, "9:16");
+    assert.strictEqual(verticalDraft.platform_target.resolution, "1080x1920");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2C-10: Draft does not copy raw job.result (sanitized only)", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    // Create job with safe result
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-01T09:00:00Z"),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const metadata = draft.assets.metadata;
+    assert.ok(metadata.job_type);
+    assert.ok(metadata.job_status);
+    assert.ok(metadata.job_dry_run !== undefined);
+    assert.ok(metadata.job_scheduled_for);
+    // Verify no dangerous key patterns in metadata
+    const metadataText = JSON.stringify(metadata);
+    assert.ok(!metadataText.includes("credential"));
+    assert.ok(!metadataText.includes("token"));
+    assert.ok(!metadataText.includes("secret"));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2C-11: Sanitization blocks malicious job.result values", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-01T09:00:00Z"),
+      dryRun: true,
+    });
+
+    // Manually inject malicious result (simulating a compromised job)
+    (job as any).result = {
+      safe_field: "value",
+      access_token: "[REDACTED]",
+      client_secret: "[REDACTED]",
+      nested_dangerous: {
+        keychain_ref: "keychain://credential",
+      },
+    };
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const metadata = draft.assets.metadata;
+    const metadataText = JSON.stringify(metadata);
+    // Sanitizer should have blocked the dangerous fields
+    assert.ok(!metadataText.includes("access_token"));
+    assert.ok(!metadataText.includes("client_secret"));
+    assert.ok(!metadataText.includes("keychain"));
+    // Nested objects should not be copied
+    assert.ok(!metadataText.includes("nested_dangerous"));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2C-12: Sanitization blocks dangerous string values", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const job = createVideoJob({
+      type: "publish_episode",
+      scheduledFor: new Date("2026-06-01T09:00:00Z"),
+      dryRun: true,
+    });
+
+    // Manually inject result with dangerous values in safe-looking keys
+    (job as any).result = {
+      safe_field: "value",
+      safe_note: "Bearer fake-token-12345",
+      safe_url: "keychain://video-orchestrator/youtube/main",
+      config_value: "credential_reference://secret",
+      another_safe: "credentialReference://somewhere",
+      access_token: "[REDACTED]",
+      client_secret: "[REDACTED]",
+      nested_dangerous: {
+        keychain_ref: "keychain://credential",
+      },
+    };
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "test-project",
+      platform: "youtube",
+      account_id: "youtube-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const metadata = draft.assets.metadata;
+    const metadataText = JSON.stringify(metadata);
+
+    // Safe field should be preserved
+    assert.strictEqual(metadata.safe_field, "value");
+
+    // Dangerous string values should be omitted
+    assert.ok(!metadataText.includes("Bearer"));
+    assert.ok(!metadataText.includes("keychain://"));
+    assert.ok(!metadataText.includes("credential_reference"));
+    assert.ok(!metadataText.includes("credentialReference"));
+    assert.ok(!metadataText.includes("access_token"));
+    assert.ok(!metadataText.includes("client_secret"));
+    assert.ok(!metadataText.includes("nested_dangerous"));
+
+    // Verify safe keys were not included when they had dangerous values
+    assert.ok(!metadata.safe_note);
+    assert.ok(!metadata.safe_url);
+    assert.ok(!metadata.config_value);
+    assert.ok(!metadata.another_safe);
   } finally {
     cleanupTestRuntime(tempDir);
   }

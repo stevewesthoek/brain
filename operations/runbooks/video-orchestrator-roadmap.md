@@ -59,7 +59,8 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **0–1** | ✅ Done | Smart routing + 4 models installed | Models tested, thermal stable, local setup confirmed |
 | **VO-1–1B** | ✅ Done | Scheduler Foundation Hardening | Dry-run scheduler tested, job persistence, quota management, isolated tests |
 | **VO-2A** | ✅ Done | Project-Based Distribution Model Foundation | JSON schema for projects; planning model with weekly cadence; dry-run planning only (no job creation, no APIs, no upload) |
-| **VO-2B** | 🚧 In Progress | Project Distribution Dry-Run Scheduling | Convert project plans to dry-run scheduler jobs; distribute by posts_per_week and preferred_days; detect duplicates; no APIs, no upload |
+| **VO-2B** | ✅ Done | Project Distribution Dry-Run Scheduling | Convert project plans to dry-run scheduler jobs; distribute by posts_per_week and preferred_days; detect duplicates; no APIs, no upload |
+| **VO-2C** | 🚧 In Progress | Production Package Foundation (Metadata-Only Drafts) | Metadata-only package draft schema + example + safe draft function; no fake media, no rendering, ready_to_post always false; VO-2D adds real media validation |
 | **2A** | May 30–Jun 10 | Production Package MVP | One video → platform-ready packages for all defined platform targets |
 | **2B** | Jun 10–Jun 20 | Local Queue MVP | Batch of 5 videos can fail mid-run and resume without lost work |
 | **2C** | Jun 20–Jun 27 | Local Production Adapters | FFmpeg render/thumbnail outputs and optional Whisper.cpp captions produce real local artifacts |

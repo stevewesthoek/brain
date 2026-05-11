@@ -718,5 +718,174 @@ export function scheduleProjectDistributionPlan(input: ScheduleProjectDistributi
   };
 }
 
+// Production package draft interfaces and functions (VO-2C)
+
+export interface ProductionPackageDraft {
+  package_id: string;
+  video_id?: string;
+  project_id: string;
+  platform: string;
+  account_id: string;
+  source_job_id: string;
+  package_state: "draft" | "ready" | "blocked" | "exported";
+  dry_run: boolean;
+  created_at: string;
+  scheduled_for: string;
+  assets: {
+    video?: string;
+    thumbnail?: string;
+    captions: string[];
+    metadata: Record<string, unknown>;
+  };
+  platform_target: {
+    format_key: string;
+    aspect_ratio: string;
+    resolution: string;
+    safe_zone_profile?: string;
+  };
+  readiness: {
+    ready_to_post: boolean;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: string;
+    source_manifest_path?: string;
+    checksum?: string;
+  };
+}
+
+export interface CreateProductionPackageDraftInput {
+  job: ScheduledVideoJob;
+  project_id: string;
+  platform: string;
+  account_id: string;
+  scheduled_for: Date;
+  dryRun: boolean;
+  format_key?: string;
+}
+
+function sanitizeJobResultForPackageMetadata(result: unknown): Record<string, unknown> {
+  // Allowlist-based sanitization: never copy sensitive fields or structures
+  const forbiddenPatterns = [
+    "credential_reference",
+    "credentialreference",
+    "credential",
+    "keychain",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "code_verifier",
+    "authorization_code",
+    "bearer",
+  ];
+
+  const sanitized: Record<string, unknown> = {};
+
+  // Only copy safe scalar values from result if it's an object
+  if (typeof result === "object" && result !== null && !Array.isArray(result)) {
+    const obj = result as Record<string, unknown>;
+    for (const [key, value] of Object.entries(obj)) {
+      // Reject keys with forbidden patterns (case-insensitive)
+      const keyLower = key.toLowerCase();
+      if (forbiddenPatterns.some((p) => keyLower.includes(p))) {
+        continue;
+      }
+
+      // Only copy scalars to prevent arbitrary nested data
+      if (
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean" ||
+        value === null
+      ) {
+        // If value is a string, also check for forbidden content (case-insensitive)
+        if (typeof value === "string") {
+          const valueLower = value.toLowerCase();
+          if (forbiddenPatterns.some((p) => valueLower.includes(p))) {
+            continue;
+          }
+        }
+        sanitized[key] = value;
+      }
+    }
+  }
+
+  return sanitized;
+}
+
+export function createProductionPackageDraft(input: CreateProductionPackageDraftInput): ProductionPackageDraft {
+  // VO-2C only supports dry-run package drafts
+  if (!input.dryRun) {
+    throw new Error("VO-2C only supports dry-run production packages. Set dryRun to true.");
+  }
+
+  const packageId = `pkg-${input.job.id}`;
+  const now = new Date().toISOString();
+  const formatKey = input.format_key ?? "landscape_1920x1080_16x9";
+  const aspectRatio = formatKey.includes("1920x1080") || formatKey.includes("16x9") ? "16:9"
+    : formatKey.includes("1080x1920") || formatKey.includes("9x16") ? "9:16"
+    : formatKey.includes("1080x1080") || formatKey.includes("1x1") ? "1:1"
+    : "16:9";
+  const resolution = formatKey.includes("1920x1080") ? "1920x1080"
+    : formatKey.includes("1080x1920") ? "1080x1920"
+    : formatKey.includes("1080x1080") ? "1080x1080"
+    : "1920x1080";
+
+  const blockingReasons = [
+    "Media rendering is not implemented in VO-2C. Real video/thumbnail/caption rendering deferred to VO-2D.",
+  ];
+
+  const warnings = [
+    "This is a metadata-only package draft. No actual media files have been rendered.",
+    "Use for schema validation and planning only.",
+  ];
+
+  logSchedulerEvent("Production package draft created", {
+    package_id: packageId,
+    project_id: input.project_id,
+    platform: input.platform,
+    account_id: input.account_id,
+    dry_run: input.dryRun,
+  });
+
+  return {
+    package_id: packageId,
+    project_id: input.project_id,
+    platform: input.platform,
+    account_id: input.account_id,
+    source_job_id: input.job.id,
+    package_state: "draft",
+    dry_run: input.dryRun,
+    created_at: now,
+    scheduled_for: input.scheduled_for.toISOString(),
+    assets: {
+      captions: [],
+      metadata: {
+        job_type: input.job.type,
+        job_status: input.job.status,
+        job_dry_run: input.job.dry_run,
+        job_scheduled_for: input.job.scheduled_for,
+        // Sanitized job result (safe scalars only, no credentials)
+        ...sanitizeJobResultForPackageMetadata(input.job.result),
+      },
+    },
+    platform_target: {
+      format_key: formatKey,
+      aspect_ratio: aspectRatio,
+      resolution,
+      safe_zone_profile: aspectRatio === "9:16" ? "mobile_vertical" : "desktop_landscape",
+    },
+    readiness: {
+      ready_to_post: false,
+      blocking_reasons: blockingReasons,
+      warnings,
+    },
+    provenance: {
+      generated_by: "VO-2C createProductionPackageDraft",
+    },
+  };
+}
+
 // Export internal functions for testing
 export { logSchedulerEvent, loadQuotaState, saveQuotaState, getQuotaStatePath, getSchedulerLogPath, getRuntimeDir };

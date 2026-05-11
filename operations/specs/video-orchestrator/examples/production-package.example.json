@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "package_id": "pkg-example-001",
+  "video_id": "episode-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "account_id": "youtube-channel-main",
+  "source_job_id": "job-scheduled-001",
+  "package_state": "draft",
+  "dry_run": true,
+  "created_at": "2026-05-11T10:00:00Z",
+  "scheduled_for": "2026-05-15T14:00:00Z",
+  "assets": {
+    "captions": [],
+    "metadata": {
+      "job_type": "schedule_episode",
+      "job_status": "scheduled",
+      "job_dry_run": true,
+      "job_scheduled_for": "2026-05-15T14:00:00Z"
+    }
+  },
+  "platform_target": {
+    "format_key": "landscape_1920x1080_16x9",
+    "aspect_ratio": "16:9",
+    "resolution": "1920x1080",
+    "safe_zone_profile": "desktop_landscape"
+  },
+  "readiness": {
+    "ready_to_post": false,
+    "blocking_reasons": [
+      "Media rendering is not implemented in VO-2C. Real video/thumbnail/caption rendering deferred to VO-2D."
+    ],
+    "warnings": [
+      "This is a metadata-only package draft. No actual media files have been rendered.",
+      "Use for schema validation and planning only."
+    ]
+  },
+  "provenance": {
+    "generated_by": "VO-2C createProductionPackageDraft"
+  }
+}
