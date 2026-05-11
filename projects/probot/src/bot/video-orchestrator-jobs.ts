@@ -6,6 +6,89 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
+import os from "node:os";
+
+// ─── Runtime Storage ────────────────────────────────────────────────────────
+
+function getRuntimeDir(): string {
+  // Test override: PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR env var
+  if (process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR) {
+    const dir = process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR;
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+  }
+  // Default: ~/.local/probot/video-orchestrator
+  const homeDir = os.homedir();
+  const dir = path.join(homeDir, ".local", "probot", "video-orchestrator");
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+}
+
+// ─── Logging ────────────────────────────────────────────────────────────────
+
+function getSchedulerLogPath(): string {
+  return path.join(getRuntimeDir(), "scheduler.log");
+}
+
+function logSchedulerEvent(event: string, details?: unknown): void {
+  try {
+    const timestamp = new Date().toISOString();
+    const logLine = details ? `[${timestamp}] ${event}: ${JSON.stringify(details)}` : `[${timestamp}] ${event}`;
+    fs.appendFileSync(getSchedulerLogPath(), logLine + "\n");
+  } catch (err) {
+    console.warn("Failed to write scheduler log:", err);
+  }
+}
+
+// ─── Quota Persistence ──────────────────────────────────────────────────────
+
+function getQuotaStatePath(): string {
+  return path.join(getRuntimeDir(), "quota.json");
+}
+
+interface QuotaState {
+  total_used: number;
+  reset_at: string;
+}
+
+function loadQuotaState(): QuotaState {
+  try {
+    const quotaFile = getQuotaStatePath();
+    if (fs.existsSync(quotaFile)) {
+      const data = JSON.parse(fs.readFileSync(quotaFile, "utf8")) as QuotaState;
+      const resetAt = new Date(data.reset_at);
+      if (new Date() >= resetAt) {
+        // Quota has expired; reset it
+        return {
+          total_used: 0,
+          reset_at: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1, 0, 0, 0).toISOString(),
+        };
+      }
+      return data;
+    }
+  } catch (err) {
+    console.warn("Failed to load quota state:", err);
+  }
+  // Initialize new quota for today
+  const now = new Date();
+  return {
+    total_used: 0,
+    reset_at: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0).toISOString(),
+  };
+}
+
+function saveQuotaState(state: QuotaState): void {
+  try {
+    const quotaFile = getQuotaStatePath();
+    fs.writeFileSync(quotaFile, JSON.stringify(state, null, 2));
+  } catch (err) {
+    console.warn("Failed to save quota state:", err);
+  }
+}
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -50,46 +133,50 @@ export interface QuotaGuard {
 }
 
 // YouTube quota: 10,000 units/day per account (conservative estimate: ~1 unit per job)
-// For VO-1, use a simple per-day counter
+// For VO-1, use a simple per-day counter with persistent state
 class SimpleQuotaGuard implements QuotaGuard {
-  private quota_used: number = 0;
   private quota_limit: number = 10; // conservative for testing
-  private quota_reset_at: Date;
-
-  constructor() {
-    const now = new Date();
-    this.quota_reset_at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-  }
 
   checkAndRecord(jobType: JobType): QuotaCheckResult {
-    if (new Date() >= this.quota_reset_at) {
-      this.quota_used = 0;
-      const next = new Date(this.quota_reset_at);
+    const state = loadQuotaState();
+    if (new Date() >= new Date(state.reset_at)) {
+      state.total_used = 0;
+      const next = new Date();
       next.setDate(next.getDate() + 1);
-      this.quota_reset_at = next;
+      next.setHours(0, 0, 0, 0);
+      state.reset_at = next.toISOString();
+      saveQuotaState(state);
     }
 
-    if (this.quota_used >= this.quota_limit) {
+    if (state.total_used >= this.quota_limit) {
       return {
         allowed: false,
-        reason: `Quota exhausted: ${this.quota_used}/${this.quota_limit}`,
-        quota_reset_at: this.quota_reset_at.toISOString(),
+        reason: `Quota exhausted: ${state.total_used}/${this.quota_limit}`,
+        quota_reset_at: state.reset_at,
       };
     }
 
-    this.quota_used++;
+    state.total_used++;
+    saveQuotaState(state);
     return { allowed: true };
   }
 
   reset(): void {
-    this.quota_used = 0;
+    const next = new Date();
+    next.setDate(next.getDate() + 1);
+    next.setHours(0, 0, 0, 0);
+    saveQuotaState({
+      total_used: 0,
+      reset_at: next.toISOString(),
+    });
   }
 
   getStatus() {
+    const state = loadQuotaState();
     return {
-      total_used: this.quota_used,
+      total_used: state.total_used,
       limit: this.quota_limit,
-      reset_at: this.quota_reset_at.toISOString(),
+      reset_at: state.reset_at,
     };
   }
 }
@@ -117,11 +204,11 @@ function resolveRepoRoot(): string {
 
 function getJobStorePaths() {
   const repoRoot = resolveRepoRoot();
-  const localPath = path.join(process.env.HOME || "/Users/Office", ".local/probot/video-orchestrator");
+  const runtimeDir = getRuntimeDir();
   const runtimePath = path.join(repoRoot, "runtime/local/video-orchestrator");
 
   return {
-    primary: path.join(localPath, "jobs.json"),
+    primary: path.join(runtimeDir, "jobs.json"),
     fallback: path.join(runtimePath, "jobs.json"),
   };
 }
@@ -201,7 +288,8 @@ export function createVideoJob(input: { type: JobType; scheduledFor: Date; dryRu
 export function updateVideoJobStatus(
   jobId: string,
   status: JobStatus,
-  result?: { simulated?: boolean; output?: unknown }
+  result?: { simulated?: boolean; output?: unknown },
+  errorMessage?: string
 ): void {
   const store = loadJobStore();
   const job = store.jobs.find((j) => j.id === jobId);
@@ -216,6 +304,9 @@ export function updateVideoJobStatus(
   }
   if (result) {
     job.result = result;
+  }
+  if (errorMessage) {
+    job.error_message = errorMessage;
   }
 
   saveJobStore(store);
@@ -286,7 +377,13 @@ export interface RunDueJobsResult {
 
 export async function runDueVideoJobs(options: RunDueJobsOptions): Promise<RunDueJobsResult> {
   const now = options.forDate ?? new Date();
-  const due = listVideoJobs({ status: "scheduled", before: now });
+
+  // Include both scheduled and paused_quota jobs that are due
+  const scheduled = listVideoJobs({ status: "scheduled", before: now });
+  const pausedDue = listVideoJobs({ status: "paused_quota", before: now });
+  const due = [...scheduled, ...pausedDue].sort((a, b) =>
+    new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime()
+  );
 
   const maxJobs = options.maxJobs ?? 5;
   const quota = getQuotaGuard();
@@ -299,36 +396,50 @@ export async function runDueVideoJobs(options: RunDueJobsOptions): Promise<RunDu
     const job = due[i];
     if (!job) continue;
 
-    // Check quota before running
-    const quotaCheck = quota.checkAndRecord(job.type);
-    if (!quotaCheck.allowed) {
-      updateVideoJobStatus(job.id, "paused_quota");
-      quota_paused++;
-      continue;
+    // Check if quota allows before running (only for dry-run to test quota logic)
+    // Non-dry-run jobs are blocked anyway, so we don't consume quota for them
+    if (options.dryRun) {
+      const quotaCheck = quota.checkAndRecord(job.type);
+      if (!quotaCheck.allowed) {
+        updateVideoJobStatus(job.id, "paused_quota", undefined, `Quota exhausted: ${quotaCheck.reason}`);
+        quota_paused++;
+        logSchedulerEvent("Job quota paused", { job_id: job.id.slice(0, 8), reason: quotaCheck.reason });
+        continue;
+      }
     }
 
     try {
       // Transition to running
       updateVideoJobStatus(job.id, "running");
 
-      // Simulate execution
-      const result = options.dryRun
-        ? { simulated: true, output: `Dry-run: ${job.type} scheduled for ${job.scheduled_for}` }
-        : { output: `Executed: ${job.type}` };
-
-      // Transition to completed
-      updateVideoJobStatus(job.id, "completed", result);
-      ran++;
+      if (options.dryRun) {
+        // Dry-run: simulate execution
+        const result = { simulated: true, output: `Dry-run: ${job.type} scheduled for ${job.scheduled_for}` };
+        updateVideoJobStatus(job.id, "completed", result);
+        logSchedulerEvent("Completed (dry-run)", { job_id: job.id.slice(0, 8), type: job.type });
+        ran++;
+      } else {
+        // Non-dry-run: block execution until real adapters exist
+        const blockReason = "Real execution is not implemented for VO-1. Run with --dry-run=true.";
+        updateVideoJobStatus(job.id, "failed", {
+          simulated: false,
+          output: blockReason,
+        }, blockReason);
+        logSchedulerEvent("Job blocked (no real executor)", { job_id: job.id.slice(0, 8), type: job.type });
+        failed++;
+      }
     } catch (err) {
+      const errorMsg = String(err);
       updateVideoJobStatus(job.id, "failed", {
         simulated: false,
-        output: String(err),
-      });
-      job.error_message = String(err);
+        output: errorMsg,
+      }, errorMsg);
+      logSchedulerEvent("Job failed", { job_id: job.id.slice(0, 8), error: errorMsg });
       failed++;
     }
   }
 
+  logSchedulerEvent("Run due completed", { ran, quota_paused, failed });
   return { ran, quota_paused, failed };
 }
 
@@ -365,4 +476,8 @@ export function getVideoJobsStatus(): VideoJobsStatus {
 
 export function resetQuota(): void {
   getQuotaGuard().reset();
+  logSchedulerEvent("Quota reset");
 }
+
+// Export internal functions for testing
+export { logSchedulerEvent, loadQuotaState, saveQuotaState, getQuotaStatePath, getSchedulerLogPath, getRuntimeDir };

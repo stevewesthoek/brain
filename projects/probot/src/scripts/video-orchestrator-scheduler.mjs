@@ -2,9 +2,9 @@
 // Video Orchestrator scheduler CLI
 // Manual entry point for scheduling and running video jobs
 // Usage:
-//   node video-orchestrator-scheduler.mjs schedule-month [--dry-run=true] [--episode-count=3]
-//   node video-orchestrator-scheduler.mjs run-due [--dry-run=true] [--max-jobs=2]
-//   node video-orchestrator-scheduler.mjs list [--status=scheduled]
+//   npm run probot:video:schedule-month -- [--dry-run=true] [--episode-count=3]
+//   npm run probot:video:run-due -- [--dry-run=true] [--max-jobs=2]
+//   npm run probot:video:jobs -- [--status=scheduled]
 
 import {
   listVideoJobs,
@@ -13,16 +13,14 @@ import {
   getVideoJobsStatus,
   resetQuota,
 } from "../bot/video-orchestrator-jobs.ts";
+import { parseSchedulerArgs } from "./video-orchestrator-scheduler-args.ts";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 const command = process.argv[2] || "list";
 
 function parseArgs() {
-  const args = {};
-  for (const arg of process.argv.slice(3)) {
-    const [key, value] = arg.replace(/^--/, "").split("=");
-    args[key] = value === "true" ? true : value === "false" ? false : value;
-  }
-  return args;
+  return parseSchedulerArgs(process.argv.slice(3));
 }
 
 function formatDate(isoString) {
@@ -100,12 +98,12 @@ async function main() {
 
       default:
         console.log(`❌ Unknown command: ${command}`);
-        console.log(`\nUsage:`);
-        console.log(`  schedule-month [--dry-run=true] [--episode-count=3]`);
-        console.log(`  run-due [--dry-run=true] [--max-jobs=2] [--for-date=2026-05-15]`);
-        console.log(`  list [--status=scheduled]`);
-        console.log(`  status`);
-        console.log(`  reset-quota`);
+        console.log(`\nUsage (via npm from projects/probot/ or repo root):`);
+        console.log(`  npm run probot:video:jobs -- [--status=scheduled]`);
+        console.log(`  npm run probot:video:status`);
+        console.log(`  npm run probot:video:reset-quota`);
+        console.log(`  npm run probot:video:schedule-month -- [--dry-run=true] [--episode-count=3]`);
+        console.log(`  npm run probot:video:run-due -- [--dry-run=true] [--max-jobs=2]`);
     }
   } catch (err) {
     console.error(`❌ Error: ${String(err)}`);
@@ -113,7 +111,13 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+const __filename = fileURLToPath(import.meta.url);
+const execArgv = process.argv[1];
+const isDirectExecution = path.resolve(__filename) === path.resolve(execArgv);
+
+if (isDirectExecution) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
