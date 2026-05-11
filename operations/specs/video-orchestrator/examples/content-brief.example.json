@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "brief_id": "brief-example-001",
+  "project_id": "project-alpha",
+  "title": "Example Educational Video",
+  "objective": "Introduce viewers to video orchestrator concepts and workflow.",
+  "target_platforms": ["youtube", "tiktok"],
+  "content_type": "short_form",
+  "source_materials": [
+    {
+      "material_id": "script-001",
+      "kind": "script",
+      "local_path": "drafts/script-001.md",
+      "summary": "Main script outline covering VO architecture and phases."
+    },
+    {
+      "material_id": "research-001",
+      "kind": "research",
+      "local_path": "research/platform-specs.md",
+      "summary": "Platform-specific requirements and formats."
+    },
+    {
+      "material_id": "image-prompt-001",
+      "kind": "image_prompt",
+      "summary": "Thumbnail concept: clean technical diagram with color coding for phases."
+    }
+  ],
+  "production_constraints": {
+    "language": "en",
+    "max_duration_seconds": 600,
+    "aspect_ratios": ["9:16", "16:9"],
+    "captions_required": true,
+    "thumbnail_required": true,
+    "safe_zone_profile": "mobile_vertical",
+    "brand_voice": "professional and educational",
+    "prohibited_claims": [
+      "guaranteed results",
+      "no technical knowledge required"
+    ],
+    "compliance_notes": [
+      "disclose that this is educational content",
+      "include links to documentation"
+    ]
+  },
+  "created_at": "2026-05-11T10:00:00Z"
+}

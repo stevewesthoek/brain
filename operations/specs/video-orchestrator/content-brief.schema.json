@@ -1,0 +1,192 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Video Orchestrator Content Brief (VO-2F)",
+  "description": "Input specification for one future video. Defines source materials, constraints, and platform targets. Schema-only in VO-2F; no media rendering, no platform APIs, no upload.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "brief_id",
+    "project_id",
+    "title",
+    "objective",
+    "target_platforms",
+    "content_type",
+    "source_materials",
+    "production_constraints",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version for this brief format.",
+      "enum": ["1.0"]
+    },
+    "brief_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Local symbolic identifier for this content brief. Never a credential, token, or secret."
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "References project_id from project distribution plan."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Human-readable working title for this content."
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "Short purpose statement: what this video is meant to accomplish."
+    },
+    "target_platforms": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "youtube",
+          "youtube_shorts",
+          "tiktok",
+          "instagram",
+          "facebook",
+          "linkedin",
+          "bluesky",
+          "x"
+        ]
+      },
+      "minItems": 1,
+      "description": "Target platforms for this content."
+    },
+    "content_type": {
+      "type": "string",
+      "enum": ["short_form", "long_form", "carousel", "text_post", "mixed"],
+      "description": "Content category: short-form (TikTok, Reels), long-form (YouTube), carousel (multi-slide), text_post (social), mixed."
+    },
+    "source_materials": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/source_material"
+      },
+      "minItems": 0,
+      "description": "Array of source material references. Can be empty for outline-only briefs."
+    },
+    "production_constraints": {
+      "$ref": "#/definitions/production_constraints"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when brief was created."
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "source_material": {
+      "type": "object",
+      "required": ["material_id", "kind"],
+      "properties": {
+        "material_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$",
+          "description": "Local identifier for this material reference."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["script", "outline", "notes", "transcript", "research", "image_prompt", "other"],
+          "description": "Type of source material."
+        },
+        "local_path": {
+          "type": "string",
+          "description": "Optional relative path to material (e.g., 'drafts/script-001.md'). Must be relative, not absolute, not a URL. Used for reference only; not read by VO-2F."
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Optional brief description of this material. No personal data, no secrets."
+        }
+      },
+      "additionalProperties": false
+    },
+    "production_constraints": {
+      "type": "object",
+      "required": ["language", "captions_required", "thumbnail_required"],
+      "properties": {
+        "language": {
+          "type": "string",
+          "enum": [
+            "en",
+            "es",
+            "fr",
+            "de",
+            "it",
+            "pt",
+            "ru",
+            "zh",
+            "ja",
+            "ko",
+            "ar",
+            "hi",
+            "other"
+          ],
+          "description": "Primary language for this content."
+        },
+        "max_duration_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400,
+          "description": "Optional maximum duration in seconds (e.g., TikTok 10min, YouTube 12hr)."
+        },
+        "aspect_ratios": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["16:9", "9:16", "1:1", "4:5"]
+          },
+          "minItems": 1,
+          "description": "Required aspect ratios for this content."
+        },
+        "captions_required": {
+          "type": "boolean",
+          "description": "Whether captions are required (most platforms now require)."
+        },
+        "thumbnail_required": {
+          "type": "boolean",
+          "description": "Whether custom thumbnail is required."
+        },
+        "safe_zone_profile": {
+          "type": "string",
+          "enum": ["desktop_landscape", "mobile_vertical", "square", "portrait"],
+          "description": "Optional safe zone profile for safe area guidance."
+        },
+        "brand_voice": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Optional tone/voice guidance (e.g., 'professional', 'conversational', 'humorous')."
+        },
+        "prohibited_claims": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Optional list of claims/statements to avoid."
+        },
+        "compliance_notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Optional compliance/legal notes (e.g., 'disclose affiliate links', 'include health disclaimer')."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

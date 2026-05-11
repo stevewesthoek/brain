@@ -63,6 +63,8 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **VO-2C** | ✅ Done | Production Package Foundation (Metadata-Only Drafts) | Metadata-only package draft schema + example + safe draft function; no fake media, no rendering, ready_to_post always false |
 | **VO-2D** | ✅ Done | Package Draft Persistence and Local Validation | Local JSON-backed package draft storage; metadata-only validation; no media rendering, no platform APIs, no upload |
 | **VO-2E** | ✅ Done | Package Draft CLI, Local Adapter Contracts, and Readiness Reporting | CLI for create/list/validate/status; formal local adapter contract types; readiness summary reporting; no rendering, no APIs, no upload |
+| **VO-2F** | ✅ Done | Content Brief/Input Model Foundation | Content brief schema + example; TypeScript validation with safe error messages; local media asset validation contracts (shape/path only); brief-to-draft bridge with safe metadata; no file I/O, no FFmpeg, no upload |
+| **VO-3A** | ✅ Done | Local Media Validation Contracts | Media asset validation foundation; blocks absolute paths, URLs, traversal; defers real inspection to VO-3B+; hardened to prevent credential leakage in error messages |
 | **2A** | May 30–Jun 10 | Production Package MVP | One video → platform-ready packages for all defined platform targets |
 | **2B** | Jun 10–Jun 20 | Local Queue MVP | Batch of 5 videos can fail mid-run and resume without lost work |
 | **2C** | Jun 20–Jun 27 | Local Production Adapters | FFmpeg render/thumbnail outputs and optional Whisper.cpp captions produce real local artifacts |

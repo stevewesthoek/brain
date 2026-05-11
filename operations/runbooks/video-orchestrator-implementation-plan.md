@@ -1461,5 +1461,111 @@ All timelines assume feedback and iteration; adjust as needed.
 - No forbidden patterns leak through report structure, keys, or CLI output
 - No placeholder tests (all real assertions)
 
-**Next Phase (VO-2F):**
-Implement the first safe local media validation/render adapter contract (likely render + FFmpeg integration) only after VO-2E is stable and CLI/adapter patterns are validated in production use.
+---
+
+## VO-2F + VO-3A Foundation: Content Brief & Media Asset Validation (2026-05-11) ✅
+
+**Goal:** Prepare the pipeline for local production by defining:
+1. Local media asset validation contracts (shape/path only, no FFmpeg, no file I/O)
+2. Content brief/input model specification for one future video
+3. Safe schema/examples and comprehensive tests
+4. Bridge content briefs into production package draft metadata safely
+
+**Deliverables:**
+
+### VO-2F: Content Brief Schema & Input Validation
+- **`content-brief.schema.json`** (5.8 KB): JSON schema with required fields
+  - `schema_version`, `brief_id`, `project_id`, `title`, `objective`, `target_platforms`, `content_type`, `source_materials`, `production_constraints`, `created_at`
+  - Enum validation: platforms (youtube, tiktok, instagram, etc.), content_type (short_form, long_form, etc.)
+  - No credentials, tokens, or secrets allowed
+  
+- **`content-brief.example.json`**: Safe example with fake data only
+
+- **TypeScript Types & Validation:**
+  - `ContentBrief`, `ContentBriefSourceMaterial`, `ContentBriefProductionConstraints`
+  - `validateContentBrief(brief): ContentBriefValidationResult`
+    - Validates all required fields
+    - Checks platform/content_type enums
+    - Blocks absolute paths, URLs, path traversal in local_path
+    - Recursively scans for 12 forbidden patterns: access_token, refresh_token, keychain://, Bearer, client_secret, code_verifier, authorization_code, private_key, password, token, credential_reference, credentialReference
+    - **Safe error messages:** No raw input values echoed in blocking_reasons (prevents credential leakage)
+    - Returns `{ok, blocking_reasons, warnings}`
+
+### VO-3A: Local Media Asset Validation
+- **TypeScript Types:**
+  - `LocalMediaAssetKind`: video | thumbnail | caption | metadata
+  - `LocalMediaAssetReference`, `LocalMediaAssetValidationResult`
+  
+- **Validation Function:**
+  - `validateLocalMediaAssetReference(asset): LocalMediaAssetValidationResult`
+    - Shape/path validation only (no file existence checks, no media inspection)
+    - Blocks absolute paths, URLs, path traversal
+    - **Safe error messages:** Does not echo malicious strings in blocking_reasons
+    - Returns `ready_for_render=false`, `ready_for_upload=false` (VO-2F behavior; inspection deferred to VO-3B+)
+
+### Content Brief → Package Draft Bridge
+- **Function:** `attachContentBriefToPackageDraft(input: {draft, brief, dryRun: true}): ProductionPackageDraft`
+  - Requires `dryRun=true` (blocks production mode)
+  - Validates brief before attaching
+  - Creates safe copy (no mutation of original draft)
+  - Adds safe metadata fields only:
+    - `brief_id`, `brief_title`, `content_type`
+    - `target_platforms_count`, `target_platforms` (as array, validated safe)
+    - `constraints_language`, `constraints_captions_required`, `constraints_thumbnail_required`
+  - **Does NOT copy:**
+    - `source_materials`, `local_path`, `summaries`
+    - `prohibited_claims`, `compliance_notes`
+  - Preserves `ready_to_post=false`
+  - Verifies output is safe via `assertProductionPackageDraftSafeForStorage()`
+
+**Hardening (ChatGPT Verification):**
+1. **Safe Validation Messages:** Added `safeValidationLabel(value, fallback)` helper
+   - Rejects values >80 chars (token leak prevention)
+   - Rejects values containing forbidden patterns
+   - Only allows short alphanumeric identifiers in messages
+   - Example: `"Unknown platform: youtube-access_token-leak"` → `"Unknown platform at target_platforms[0]"`
+
+2. **Blocked Credential Leakage Vectors:**
+   - Removed raw input values from all blocking_reasons (e.g., path validation no longer echoes paths)
+   - Media asset validation does not echo URLs or Bearer tokens
+   - Error messages use array indices instead of raw values
+
+3. **Metadata Hardening:**
+   - Attached brief metadata excludes source_materials and freeform fields
+   - Only stores validated/safe summary fields
+   - Storage verification ensures no forbidden patterns
+
+**Tests (9 new hardening tests):**
+- VO-2F-H1–H9: Safe error messages, credential non-leakage, metadata safety, storage acceptance/rejection
+- Content brief validation with malicious platform names, content_types, paths
+- Media asset validation with tokens, URLs, Bearer strings
+- Attached metadata excludes sensitive fields
+- All 34 VO-2F tests passing (25 original + 9 hardening)
+
+**Files Created:**
+- `operations/specs/video-orchestrator/content-brief.schema.json`
+- `operations/specs/video-orchestrator/examples/content-brief.example.json`
+
+**Files Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts`: +334 lines (types, validation, bridge, helpers)
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts`: +698 lines (34 tests)
+- `operations/runbooks/video-orchestrator-roadmap.md`: Added VO-2F, VO-3A status
+- `operations/runbooks/video-orchestrator-implementation-plan.md`: Added VO-2F, VO-3A details
+
+**What VO-2F + VO-3A Do NOT Do:**
+- No real FFmpeg execution (validation is shape/path only)
+- No platform API calls (no YouTube, TikTok, Instagram, etc.)
+- No upload capability
+- No file creation or file I/O (except JSON schema/example)
+- No file existence checks (deferred to VO-3B+)
+- No credential handling beyond pattern blocking
+- No real media files created
+
+**Test Results:**
+- 260 total tests (226 existing VO-1–VO-2E + 34 new VO-2F)
+- **260 passing, 0 failing**
+- TypeScript: no errors
+- Security scan: no forbidden patterns leak in examples or output
+
+**Next Phase (VO-3B):**
+Implement local render planning and manifest generation (still dry-run/no FFmpeg execution unless explicitly approved later). Prepare for actual media validation contracts when render pipeline is ready.

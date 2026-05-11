@@ -27,9 +27,13 @@ import {
   getLocalPackageAdapterRegistry,
   getProductionPackageReadinessReport,
   buildProductionPackageDraftSummary,
+  validateContentBrief,
+  validateLocalMediaAssetReference,
+  attachContentBriefToPackageDraft,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
+  type ContentBrief,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -2631,7 +2635,7 @@ test("VO-2E-16: unsafe platform in by_platform keys does not leak", () => {
   const tempDir = setupTestRuntime();
   try {
     const store = {
-      schema_version: "1.0",
+      schema_version: "1.0" as const,
       created_at: new Date().toISOString(),
       drafts: [
         {
@@ -2674,7 +2678,7 @@ test("VO-2E-17: unsafe package_state in by_state keys does not leak", () => {
   const tempDir = setupTestRuntime();
   try {
     const store = {
-      schema_version: "1.0",
+      schema_version: "1.0" as const,
       created_at: new Date().toISOString(),
       drafts: [
         {
@@ -2714,7 +2718,7 @@ test("VO-2E-18: unsafe package_id in report.drafts does not leak", () => {
   const tempDir = setupTestRuntime();
   try {
     const store = {
-      schema_version: "1.0",
+      schema_version: "1.0" as const,
       created_at: new Date().toISOString(),
       drafts: [
         {
@@ -2753,7 +2757,7 @@ test("VO-2E-19: unsafe project_id in report.drafts does not leak", () => {
   const tempDir = setupTestRuntime();
   try {
     const store = {
-      schema_version: "1.0",
+      schema_version: "1.0" as const,
       created_at: new Date().toISOString(),
       drafts: [
         {
@@ -2792,7 +2796,7 @@ test("VO-2E-20: ready_to_post remains false even if raw readiness.ready_to_post 
   const tempDir = setupTestRuntime();
   try {
     const store = {
-      schema_version: "1.0",
+      schema_version: "1.0" as const,
       created_at: new Date().toISOString(),
       drafts: [
         {
@@ -2833,7 +2837,7 @@ test("VO-2E-21: JSON.stringify(report) contains no forbidden strings", () => {
   try {
     // Create drafts with many unsafe patterns
     const store = {
-      schema_version: "1.0",
+      schema_version: "1.0" as const,
       created_at: new Date().toISOString(),
       drafts: [
         {
@@ -2880,6 +2884,1145 @@ test("VO-2E-21: JSON.stringify(report) contains no forbidden strings", () => {
         !reportJson.toLowerCase().includes(pattern.toLowerCase()),
         `report JSON should not contain forbidden pattern: ${pattern}`
       );
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-2F Content Brief and Media Asset Validation Tests ───────────────────
+
+test("VO-2F-1: Content brief schema version must be 1.0", () => {
+  const invalidBrief = {
+    schema_version: "2.0",
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(invalidBrief);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("schema_version")));
+});
+
+test("VO-2F-2: Valid content brief passes validation", () => {
+  const validBrief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-example-001",
+    project_id: "project-alpha",
+    title: "Example Educational Video",
+    objective: "Introduce viewers to video orchestrator concepts.",
+    target_platforms: ["youtube", "tiktok"],
+    content_type: "short_form" as const,
+    source_materials: [
+      { material_id: "script-001", kind: "script" as const, local_path: "drafts/script-001.md" },
+    ],
+    production_constraints: {
+      language: "en",
+      max_duration_seconds: 600,
+      aspect_ratios: ["9:16", "16:9"],
+      captions_required: true,
+      thumbnail_required: true,
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(validBrief);
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.blocking_reasons.length, 0);
+});
+
+test("VO-2F-3: Missing required field blocks validation", () => {
+  const incompleteBrief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    // Missing title
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(incompleteBrief);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("title")));
+});
+
+test("VO-2F-4: Empty target_platforms blocks validation", () => {
+  const noPlatformsBrief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: [],
+    content_type: "short_form" as const,
+    source_materials: [],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(noPlatformsBrief);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("target_platforms")));
+});
+
+test("VO-2F-5: Unknown platform blocks validation", () => {
+  const unknownPlatformBrief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube", "unknown-platform"],
+    content_type: "short_form" as const,
+    source_materials: [],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(unknownPlatformBrief);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("Unknown platform")));
+});
+
+test("VO-2F-6: Forbidden key pattern blocks validation", () => {
+  const forbiddenKeyBrief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+      access_token: "secret123", // forbidden key
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(forbiddenKeyBrief);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("Forbidden")));
+});
+
+test("VO-2F-7: Forbidden string value blocks validation", () => {
+  const forbiddenValueBrief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test with refresh_token in it",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(forbiddenValueBrief);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("Forbidden pattern")));
+});
+
+test("VO-2F-8: Absolute local_path blocks validation", () => {
+  const absolutePathBrief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [
+      { material_id: "script-001", kind: "script" as const, local_path: "/absolute/path/script.md" },
+    ],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(absolutePathBrief);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("must be relative")));
+});
+
+test("VO-2F-9: URL local_path blocks validation", () => {
+  const urlPathBrief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [{ material_id: "script-001", kind: "script" as const, local_path: "https://example.com/script" }],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(urlPathBrief);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("must be local")));
+});
+
+test("VO-2F-10: Traversal path (..) blocks validation", () => {
+  const traversalBrief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [{ material_id: "script-001", kind: "script" as const, local_path: "../../etc/passwd" }],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(traversalBrief);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("traversal")));
+});
+
+test("VO-2F-11: Valid relative local_path passes shape validation", () => {
+  const validPathBrief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [{ material_id: "script-001", kind: "script" as const, local_path: "drafts/script-001.md" }],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(validPathBrief);
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.blocking_reasons.length, 0);
+});
+
+test("VO-2F-12: Valid media asset reference passes shape validation", () => {
+  const validAsset = {
+    kind: "video",
+    path: "renders/output.mp4",
+    expected_format: "mp4",
+    expected_resolution: "1920x1080",
+    required: true,
+  };
+  const result = validateLocalMediaAssetReference(validAsset);
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.ready_for_upload, false);
+  assert.ok(result.warnings.some((w: string) => w.includes("VO-2F")));
+});
+
+test("VO-2F-13: Absolute path in media asset blocks", () => {
+  const absoluteAsset = { kind: "video", path: "/var/tmp/output.mp4", required: true };
+  const result = validateLocalMediaAssetReference(absoluteAsset);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("must be relative")));
+});
+
+test("VO-2F-14: URL path in media asset blocks", () => {
+  const urlAsset = { kind: "video", path: "https://cdn.example.com/video.mp4", required: true };
+  const result = validateLocalMediaAssetReference(urlAsset);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("must be local")));
+});
+
+test("VO-2F-15: Traversal path in media asset blocks", () => {
+  const traversalAsset = { kind: "video", path: "../../sensitive/file.mp4", required: true };
+  const result = validateLocalMediaAssetReference(traversalAsset);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r: string) => r.includes("traversal")));
+});
+
+test("VO-2F-16: Missing required field in media asset blocks", () => {
+  const incompleteAsset = { kind: "video" }; // missing path and required
+  const result = validateLocalMediaAssetReference(incompleteAsset);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.length > 0);
+});
+
+test("VO-2F-17: Media asset validation does not check file existence", () => {
+  const nonexistentAsset = { kind: "video", path: "renders/nonexistent.mp4", required: true };
+  const result = validateLocalMediaAssetReference(nonexistentAsset);
+  assert.strictEqual(result.exists_checked, false);
+  assert.strictEqual(result.ready_for_render, false);
+  assert.strictEqual(result.ready_for_upload, false);
+});
+
+test("VO-2F-18: Attach brief to draft creates copy and adds metadata", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const brief = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      project_id: "project-alpha",
+      title: "Test",
+      objective: "Test objective",
+      target_platforms: ["youtube"],
+      content_type: "short_form" as const,
+      source_materials: [],
+      production_constraints: {
+        language: "en",
+        captions_required: true,
+        thumbnail_required: true,
+        aspect_ratios: ["16:9"],
+      },
+      created_at: "2026-05-11T10:00:00Z",
+    };
+
+    const updated = attachContentBriefToPackageDraft({
+      draft,
+      brief,
+      dryRun: true,
+    });
+
+    assert.ok(updated.assets.metadata.brief_id);
+    assert.strictEqual(updated.assets.metadata.brief_id, "brief-001");
+    assert.strictEqual(updated.assets.metadata.content_type, "short_form");
+    assert.ok(updated.readiness.ready_to_post === false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2F-19: Attach brief does not mutate original draft", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const originalMetadata = JSON.stringify(draft.assets.metadata);
+
+    const brief = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      project_id: "project-alpha",
+      title: "Test",
+      objective: "Test objective",
+      target_platforms: ["youtube"],
+      content_type: "short_form" as const,
+      source_materials: [],
+      production_constraints: {
+        language: "en",
+        captions_required: true,
+        thumbnail_required: true,
+        aspect_ratios: ["16:9"],
+      },
+      created_at: "2026-05-11T10:00:00Z",
+    };
+
+    attachContentBriefToPackageDraft({ draft, brief, dryRun: true });
+
+    assert.strictEqual(JSON.stringify(draft.assets.metadata), originalMetadata);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2F-20: Attach brief blocks if dryRun is false", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const brief = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      project_id: "project-alpha",
+      title: "Test",
+      objective: "Test objective",
+      target_platforms: ["youtube"],
+      content_type: "short_form" as const,
+      source_materials: [],
+      production_constraints: {
+        language: "en",
+        captions_required: true,
+        thumbnail_required: true,
+        aspect_ratios: ["16:9"],
+      },
+      created_at: "2026-05-11T10:00:00Z",
+    };
+
+    assert.throws(
+      () => attachContentBriefToPackageDraft({ draft, brief, dryRun: false as any }),
+      /dryRun=true/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2F-21: Attach brief blocks if brief validation fails", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const invalidBrief = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      // missing project_id, title, objective, etc.
+    };
+
+    assert.throws(
+      () => attachContentBriefToPackageDraft({ draft, brief: invalidBrief as any, dryRun: true }),
+      /validation failed/
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2F-22: Attached brief output ready_to_post remains false", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const brief = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      project_id: "project-alpha",
+      title: "Test",
+      objective: "Test objective",
+      target_platforms: ["youtube"],
+      content_type: "short_form" as const,
+      source_materials: [],
+      production_constraints: {
+        language: "en",
+        captions_required: true,
+        thumbnail_required: true,
+        aspect_ratios: ["16:9"],
+      },
+      created_at: "2026-05-11T10:00:00Z",
+    };
+
+    const updated = attachContentBriefToPackageDraft({
+      draft,
+      brief,
+      dryRun: true,
+    });
+
+    assert.strictEqual(updated.readiness.ready_to_post, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2F-23: Attached brief output contains no forbidden strings", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const brief = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      project_id: "project-alpha",
+      title: "Test",
+      objective: "Test objective",
+      target_platforms: ["youtube"],
+      content_type: "short_form" as const,
+      source_materials: [],
+      production_constraints: {
+        language: "en",
+        captions_required: true,
+        thumbnail_required: true,
+        aspect_ratios: ["16:9"],
+      },
+      created_at: "2026-05-11T10:00:00Z",
+    };
+
+    const updated = attachContentBriefToPackageDraft({
+      draft,
+      brief,
+      dryRun: true,
+    });
+
+    const outputJson = JSON.stringify(updated).toLowerCase();
+    const forbidden = [
+      "access_token",
+      "refresh_token",
+      "client_secret",
+      "keychain://",
+      "bearer",
+      "private_key",
+    ];
+
+    for (const pattern of forbidden) {
+      assert.ok(!outputJson.includes(pattern), `Output should not contain ${pattern}`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2F-24: saveProductionPackageDraft accepts safe attached draft", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const brief = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      project_id: "project-alpha",
+      title: "Test",
+      objective: "Test objective",
+      target_platforms: ["youtube"],
+      content_type: "short_form" as const,
+      source_materials: [],
+      production_constraints: {
+        language: "en",
+        captions_required: true,
+        thumbnail_required: true,
+        aspect_ratios: ["16:9"],
+      },
+      created_at: "2026-05-11T10:00:00Z",
+    };
+
+    const updated = attachContentBriefToPackageDraft({
+      draft,
+      brief,
+      dryRun: true,
+    });
+
+    // Should not throw
+    saveProductionPackageDraft(updated);
+    assert.ok(true);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2F-25: saveProductionPackageDraft rejects unsafe attached draft", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const unsafeDraft = {
+      ...draft,
+      assets: {
+        ...draft.assets,
+        metadata: {
+          ...draft.assets.metadata,
+          access_token: "secret123", // forbidden
+        },
+      },
+    };
+
+    assert.throws(() => saveProductionPackageDraft(unsafeDraft), /unsafe/);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-2F Hardening: Safe Validation Error Messages ────────────────────────
+
+test("VO-2F-H1: Invalid platform in target_platforms blocks without echoing value", () => {
+  const brief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube-access_token-leak"],
+    content_type: "short_form" as const,
+    source_materials: [],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(brief);
+  assert.strictEqual(result.ok, false);
+  const blockingText = result.blocking_reasons.join("|").toLowerCase();
+  assert.ok(!blockingText.includes("access_token"), "Should not echo forbidden pattern");
+  assert.ok(!blockingText.includes("youtube-access_token-leak"), "Should not echo malicious value");
+  assert.ok(blockingText.includes("unknown platform"), "Should indicate validation failure");
+});
+
+test("VO-2F-H2: Invalid content_type blocks without echoing value", () => {
+  const brief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "client_secret-leak",
+    source_materials: [],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(brief);
+  assert.strictEqual(result.ok, false);
+  const blockingText = result.blocking_reasons.join("|").toLowerCase();
+  assert.ok(!blockingText.includes("client_secret"), "Should not echo forbidden pattern");
+  assert.ok(!blockingText.includes("client_secret-leak"), "Should not echo malicious value");
+  assert.ok(blockingText.includes("invalid content_type"), "Should indicate validation failure");
+});
+
+test("VO-2F-H3: Malicious local_path blocks without echoing keychain://-like values", () => {
+  const brief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [
+      { material_id: "script-001", kind: "script" as const, local_path: "keychain://secret" },
+    ],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+  const result = validateContentBrief(brief);
+  assert.strictEqual(result.ok, false);
+  const blockingText = result.blocking_reasons.join("|").toLowerCase();
+  assert.ok(!blockingText.includes("keychain://"), "Should not echo forbidden pattern");
+  assert.ok(!blockingText.includes("secret"), "Should not echo secret");
+});
+
+test("VO-2F-H4: Media asset with Bearer token blocks without echoing it", () => {
+  const asset = { kind: "video", path: "Bearer fake-token", required: true };
+  const result = validateLocalMediaAssetReference(asset);
+  assert.strictEqual(result.ok, false);
+  const blockingText = result.blocking_reasons.join("|").toLowerCase();
+  assert.ok(!blockingText.includes("bearer"), "Should not echo forbidden pattern");
+  assert.ok(!blockingText.includes("fake-token"), "Should not echo token");
+});
+
+test("VO-2F-H5: Media asset with URL path blocks without echoing URL", () => {
+  const asset = { kind: "video", path: "https://api.example.com/secret/video.mp4?token=xyz", required: true };
+  const result = validateLocalMediaAssetReference(asset);
+  assert.strictEqual(result.ok, false);
+  const blockingText = result.blocking_reasons.join("|");
+  assert.ok(!blockingText.includes("https://"), "Should not echo URL");
+  assert.ok(!blockingText.includes("token="), "Should not echo query params");
+  assert.ok(blockingText.includes("must be local"), "Should indicate validation failure");
+});
+
+test("VO-2F-H6: Attached brief metadata excludes source_materials and sensitive fields", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const brief = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      project_id: "project-alpha",
+      title: "Test",
+      objective: "Test objective",
+      target_platforms: ["youtube"],
+      content_type: "short_form" as const,
+      source_materials: [
+        {
+          material_id: "script-001",
+          kind: "script" as const,
+          local_path: "sensitive/path/script.md",
+          summary: "Sensitive summary text",
+        },
+      ],
+      production_constraints: {
+        language: "en",
+        captions_required: true,
+        thumbnail_required: true,
+        aspect_ratios: ["16:9"],
+        prohibited_claims: ["This should not be stored"],
+        compliance_notes: ["Confidential compliance info"],
+      },
+      created_at: "2026-05-11T10:00:00Z",
+    };
+
+    const updated = attachContentBriefToPackageDraft({ draft, brief, dryRun: true });
+    const metadataStr = JSON.stringify(updated.assets.metadata);
+
+    assert.ok(!metadataStr.includes("source_materials"), "Should not copy source_materials");
+    assert.ok(!metadataStr.includes("local_path"), "Should not copy local paths");
+    assert.ok(!metadataStr.includes("sensitive/path"), "Should not leak file paths");
+    assert.ok(!metadataStr.includes("prohibited_claims"), "Should not copy prohibited_claims");
+    assert.ok(!metadataStr.includes("compliance_notes"), "Should not copy compliance_notes");
+    assert.ok(!metadataStr.includes("This should not"), "Should not include claim text");
+    assert.ok(!metadataStr.includes("Confidential"), "Should not include compliance info");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2F-H7: Attached brief metadata contains no forbidden patterns", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const brief = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      project_id: "project-alpha",
+      title: "Test",
+      objective: "Test objective",
+      target_platforms: ["youtube"],
+      content_type: "short_form" as const,
+      source_materials: [],
+      production_constraints: {
+        language: "en",
+        captions_required: true,
+        thumbnail_required: true,
+        aspect_ratios: ["16:9"],
+      },
+      created_at: "2026-05-11T10:00:00Z",
+    };
+
+    const updated = attachContentBriefToPackageDraft({ draft, brief, dryRun: true });
+    const metadataStr = JSON.stringify(updated.assets.metadata).toLowerCase();
+
+    const forbidden = [
+      "access_token",
+      "refresh_token",
+      "client_secret",
+      "keychain://",
+      "bearer",
+      "private_key",
+    ];
+    for (const pattern of forbidden) {
+      assert.ok(!metadataStr.includes(pattern), `Metadata should not contain ${pattern}`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2F-H8: saveProductionPackageDraft accepts safe attached draft", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const brief = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      project_id: "project-alpha",
+      title: "Test",
+      objective: "Test objective",
+      target_platforms: ["youtube"],
+      content_type: "short_form" as const,
+      source_materials: [],
+      production_constraints: {
+        language: "en",
+        captions_required: true,
+        thumbnail_required: true,
+        aspect_ratios: ["16:9"],
+      },
+      created_at: "2026-05-11T10:00:00Z",
+    };
+
+    const updated = attachContentBriefToPackageDraft({ draft, brief, dryRun: true });
+    saveProductionPackageDraft(updated);
+    assert.ok(true);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-2F-H9: saveProductionPackageDraft rejects unsafe attached draft", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const unsafeDraft = {
+      ...draft,
+      assets: {
+        ...draft.assets,
+        metadata: {
+          ...draft.assets.metadata,
+          access_token: "secret123",
+        },
+      },
+    };
+
+    assert.throws(() => saveProductionPackageDraft(unsafeDraft), /unsafe/);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+// ─── VO-2F Final Hardening: Unsafe Key-Name Non-Leakage ─────────────────────
+
+test("VO-2F-FH1: Extra forbidden key does not echo key name in blocking_reasons", () => {
+  const brief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+    access_token_super_secret: "malicious_value",
+  } as any;
+
+  const result = validateContentBrief(brief);
+  assert.strictEqual(result.ok, false);
+  const blockingText = result.blocking_reasons.join("|").toLowerCase();
+
+  // Should NOT echo any of these
+  assert.ok(!blockingText.includes("access_token_super_secret"), "Should not echo full key name");
+  assert.ok(!blockingText.includes("access_token"), "Should not echo access_token");
+  assert.ok(!blockingText.includes("super_secret"), "Should not echo secret");
+  assert.ok(!blockingText.includes("token"), "Should not echo token");
+  assert.ok(!blockingText.includes("secret"), "Should not echo secret");
+});
+
+test("VO-2F-FH2: Nested forbidden key does not echo key name in blocking_reasons", () => {
+  const brief = {
+    schema_version: "1.0" as const,
+    brief_id: "brief-001",
+    project_id: "project-alpha",
+    title: "Test",
+    objective: "Test objective",
+    target_platforms: ["youtube"],
+    content_type: "short_form" as const,
+    source_materials: [
+      {
+        material_id: "script-001",
+        kind: "script" as const,
+        client_secret_note: "This should not appear",
+      } as any,
+    ],
+    production_constraints: {
+      language: "en",
+      captions_required: true,
+      thumbnail_required: true,
+      aspect_ratios: ["16:9"],
+    },
+    created_at: "2026-05-11T10:00:00Z",
+  };
+
+  const result = validateContentBrief(brief);
+  assert.strictEqual(result.ok, false);
+  const blockingText = result.blocking_reasons.join("|").toLowerCase();
+
+  // Should NOT echo any of these
+  assert.ok(!blockingText.includes("client_secret_note"), "Should not echo full key name");
+  assert.ok(!blockingText.includes("client_secret"), "Should not echo client_secret");
+  assert.ok(!blockingText.includes("_note"), "Should not echo _note");
+  assert.ok(!blockingText.includes("secret"), "Should not echo secret");
+});
+
+test("VO-2F-FH3: Media asset with forbidden key does not echo key name", () => {
+  const asset = {
+    kind: "video",
+    path: "renders/video.mp4",
+    required: true,
+    "keychain://bad": "Should not leak",
+  } as any;
+
+  const result = validateLocalMediaAssetReference(asset);
+  assert.strictEqual(result.ok, false);
+  const blockingText = result.blocking_reasons.join("|").toLowerCase();
+
+  // Should NOT echo any of these
+  assert.ok(!blockingText.includes("keychain://bad"), "Should not echo full key");
+  assert.ok(!blockingText.includes("keychain://"), "Should not echo keychain://");
+  assert.ok(!blockingText.includes("bad"), "Should not echo bad");
+});
+
+test("VO-2F-FH4: Attached brief with forbidden key throws safely without echoing key", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo-test-"));
+  process.env.PROBOT_VIDEO_ORCHESTRATOR_RUNTIME_DIR = tempDir;
+  try {
+    const job = createVideoJob({
+      type: "generate_episode",
+      scheduledFor: new Date(),
+      dryRun: true,
+    });
+
+    const draft = createProductionPackageDraft({
+      job,
+      project_id: "project-alpha",
+      platform: "youtube",
+      account_id: "youtube-channel-main",
+      scheduled_for: new Date(),
+      dryRun: true,
+    });
+
+    const briefWithForbiddenKey = {
+      schema_version: "1.0" as const,
+      brief_id: "brief-001",
+      project_id: "project-alpha",
+      title: "Test",
+      objective: "Test objective",
+      target_platforms: ["youtube"],
+      content_type: "short_form" as const,
+      source_materials: [],
+      production_constraints: {
+        language: "en",
+        captions_required: true,
+        thumbnail_required: true,
+        aspect_ratios: ["16:9"],
+      },
+      created_at: "2026-05-11T10:00:00Z",
+      access_token: "malicious",
+      client_secret: "also_bad",
+      "Bearer token": "another_leak",
+    } as any;
+
+    try {
+      attachContentBriefToPackageDraft({ draft, brief: briefWithForbiddenKey, dryRun: true });
+      assert.fail("Should have thrown");
+    } catch (err) {
+      const errorText = String(err).toLowerCase();
+      // Should NOT echo these
+      assert.ok(!errorText.includes("access_token"), "Error should not echo access_token");
+      assert.ok(!errorText.includes("client_secret"), "Error should not echo client_secret");
+      assert.ok(!errorText.includes("bearer"), "Error should not echo Bearer");
+      assert.ok(!errorText.includes("token"), "Error should not echo token");
+      assert.ok(!errorText.includes("secret"), "Error should not echo secret");
+      assert.ok(!errorText.includes("malicious"), "Error should not echo value");
+      assert.ok(!errorText.includes("also_bad"), "Error should not echo value");
     }
   } finally {
     cleanupTestRuntime(tempDir);

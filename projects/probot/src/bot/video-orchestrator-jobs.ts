@@ -1377,6 +1377,373 @@ export function getProductionPackageReadinessReport(options?: {
   };
 }
 
+// ─── VO-2F: Content Brief and Media Asset Validation ───────────────────────
+
+export type ContentType = "short_form" | "long_form" | "carousel" | "text_post" | "mixed";
+export type SourceMaterialKind = "script" | "outline" | "notes" | "transcript" | "research" | "image_prompt" | "other";
+export type LocalMediaAssetKind = "video" | "thumbnail" | "caption" | "metadata";
+
+export interface ContentBriefSourceMaterial {
+  material_id: string;
+  kind: SourceMaterialKind;
+  local_path?: string;
+  summary?: string;
+}
+
+export interface ContentBriefProductionConstraints {
+  language: string;
+  max_duration_seconds?: number;
+  aspect_ratios: string[];
+  captions_required: boolean;
+  thumbnail_required: boolean;
+  safe_zone_profile?: string;
+  brand_voice?: string;
+  prohibited_claims?: string[];
+  compliance_notes?: string[];
+}
+
+export interface ContentBrief {
+  schema_version: "1.0";
+  brief_id: string;
+  project_id: string;
+  title: string;
+  objective: string;
+  target_platforms: string[];
+  content_type: ContentType;
+  source_materials: ContentBriefSourceMaterial[];
+  production_constraints: ContentBriefProductionConstraints;
+  created_at: string;
+}
+
+export interface ContentBriefValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface LocalMediaAssetReference {
+  kind: LocalMediaAssetKind;
+  path: string;
+  expected_format?: string;
+  expected_aspect_ratio?: string;
+  expected_resolution?: string;
+  required: boolean;
+}
+
+export interface LocalMediaAssetValidationResult {
+  ok: boolean;
+  exists_checked: false;
+  ready_for_render: false;
+  ready_for_upload: false;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+function isForbiddenStringPattern(value: string): boolean {
+  const forbidden = [
+    "credential_reference",
+    "credentialreference",
+    "keychain://",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "code_verifier",
+    "authorization_code",
+    "bearer",
+    "private_key",
+    "password",
+    "token",
+  ];
+  const lower = value.toLowerCase();
+  return forbidden.some((p) => lower.includes(p));
+}
+
+function safeValidationLabel(value: unknown, fallback: string): string {
+  // Never include raw user input in validation messages
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  // Reject long values (prevent token leakage)
+  if (value.length > 80) {
+    return fallback;
+  }
+  // Reject values containing forbidden patterns
+  if (isForbiddenStringPattern(value)) {
+    return fallback;
+  }
+  // Safe to include short alphanumeric values
+  if (/^[a-zA-Z0-9_-]+$/.test(value)) {
+    return value;
+  }
+  return fallback;
+}
+
+function recursivelyCheckForForbiddenPatterns(obj: unknown): string[] {
+  const violations: string[] = [];
+
+  function check(val: unknown, path: string = "root", depth: number = 0): void {
+    // Limit recursion depth to prevent stack overflow from circular references
+    if (depth > 100) {
+      return;
+    }
+
+    if (typeof val === "string") {
+      if (isForbiddenStringPattern(val)) {
+        violations.push(`Forbidden pattern found at ${path}`);
+      }
+    } else if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+      const o = val as Record<string, unknown>;
+      for (const [k, v] of Object.entries(o)) {
+        if (isForbiddenStringPattern(k)) {
+          // Do not echo the key name, only indicate a forbidden pattern was found in an object
+          violations.push(`Forbidden key pattern found at ${path}`);
+        }
+        // Use safe path construction: "parent.field" or just increment without raw key
+        const fieldPath = path === "root" ? "field" : "nested_field";
+        check(v, `${path}.${fieldPath}`, depth + 1);
+      }
+    } else if (Array.isArray(val)) {
+      for (let i = 0; i < val.length; i++) {
+        check(val[i], `${path}[${i}]`, depth + 1);
+      }
+    }
+  }
+
+  check(obj);
+  return violations;
+}
+
+export function validateContentBrief(brief: unknown): ContentBriefValidationResult {
+  const blocking: string[] = [];
+  const warnings: string[] = [];
+
+  // Type guard
+  if (typeof brief !== "object" || brief === null) {
+    return {
+      ok: false,
+      blocking_reasons: ["Content brief must be an object"],
+      warnings: [],
+    };
+  }
+
+  const b = brief as Record<string, unknown>;
+
+  // Required fields
+  if (!b.brief_id || typeof b.brief_id !== "string") {
+    blocking.push("brief_id is required and must be a string");
+  }
+  if (!b.project_id || typeof b.project_id !== "string") {
+    blocking.push("project_id is required and must be a string");
+  }
+  if (!b.title || typeof b.title !== "string") {
+    blocking.push("title is required and must be a string");
+  }
+  if (!b.objective || typeof b.objective !== "string") {
+    blocking.push("objective is required and must be a string");
+  }
+  if (!Array.isArray(b.target_platforms) || b.target_platforms.length === 0) {
+    blocking.push("target_platforms is required and must be non-empty array");
+  }
+  if (!b.content_type || typeof b.content_type !== "string") {
+    blocking.push("content_type is required and must be a string");
+  }
+  if (!Array.isArray(b.source_materials)) {
+    blocking.push("source_materials is required and must be an array");
+  }
+  if (typeof b.production_constraints !== "object" || b.production_constraints === null) {
+    blocking.push("production_constraints is required and must be an object");
+  }
+  if (!b.created_at || typeof b.created_at !== "string") {
+    blocking.push("created_at is required and must be a string (ISO 8601)");
+  }
+
+  // Schema version
+  if (b.schema_version !== "1.0") {
+    blocking.push("schema_version must be '1.0'");
+  }
+
+  // Validate target platforms if present and is array
+  if (Array.isArray(b.target_platforms)) {
+    const validPlatforms = [
+      "youtube",
+      "youtube_shorts",
+      "tiktok",
+      "instagram",
+      "facebook",
+      "linkedin",
+      "bluesky",
+      "x",
+    ];
+    for (let i = 0; i < b.target_platforms.length; i++) {
+      const platform = b.target_platforms[i];
+      if (typeof platform === "string" && !validPlatforms.includes(platform)) {
+        blocking.push(`Unknown platform at target_platforms[${i}]`);
+      }
+    }
+  }
+
+  // Validate content_type if present
+  if (typeof b.content_type === "string") {
+    const validTypes = ["short_form", "long_form", "carousel", "text_post", "mixed"];
+    if (!validTypes.includes(b.content_type)) {
+      blocking.push("Invalid content_type");
+    }
+  }
+
+  // Check source_materials for local_path issues
+  if (Array.isArray(b.source_materials)) {
+    for (let i = 0; i < b.source_materials.length; i++) {
+      const mat = b.source_materials[i];
+      if (typeof mat === "object" && mat !== null) {
+        const m = mat as Record<string, unknown>;
+        if (m.local_path && typeof m.local_path === "string") {
+          const p = m.local_path;
+          // Check for absolute paths
+          if (p.startsWith("/") || p.startsWith("~")) {
+            blocking.push(
+              `source_materials[${i}].local_path must be relative, not absolute`
+            );
+          }
+          // Check for URLs
+          if (p.includes("://") || p.includes("http")) {
+            blocking.push(
+              `source_materials[${i}].local_path must be local, not a URL`
+            );
+          }
+          // Check for traversal
+          if (p.includes("..")) {
+            blocking.push(
+              `source_materials[${i}].local_path contains traversal (..) which is not allowed`
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // Check for forbidden patterns in all string values recursively
+  const forbiddenViolations = recursivelyCheckForForbiddenPatterns(brief);
+  blocking.push(...forbiddenViolations);
+
+  return {
+    ok: blocking.length === 0,
+    blocking_reasons: blocking,
+    warnings,
+  };
+}
+
+export function validateLocalMediaAssetReference(
+  asset: unknown
+): LocalMediaAssetValidationResult {
+  const blocking: string[] = [];
+  const warnings: string[] = [
+    "VO-2F performs shape validation only. Real media inspection is deferred to VO-3B+.",
+  ];
+
+  // Type guard
+  if (typeof asset !== "object" || asset === null) {
+    return {
+      ok: false,
+      exists_checked: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: ["Media asset must be an object"],
+      warnings,
+    };
+  }
+
+  const a = asset as Record<string, unknown>;
+
+  // Required fields
+  if (!a.kind || typeof a.kind !== "string") {
+    blocking.push("kind is required and must be a string");
+  }
+  if (!a.path || typeof a.path !== "string") {
+    blocking.push("path is required and must be a string");
+  }
+  if (typeof a.required !== "boolean") {
+    blocking.push("required is required and must be a boolean");
+  }
+
+  // Validate path
+  if (typeof a.path === "string") {
+    const p = a.path;
+    // Check for absolute paths
+    if (p.startsWith("/") || p.startsWith("~")) {
+      blocking.push(`path must be relative, not absolute`);
+    }
+    // Check for URLs
+    if (p.includes("://") || p.includes("http")) {
+      blocking.push(`path must be local, not a URL`);
+    }
+    // Check for traversal
+    if (p.includes("..")) {
+      blocking.push(`path contains traversal (..) which is not allowed`);
+    }
+  }
+
+  // Check for forbidden patterns
+  const forbiddenViolations = recursivelyCheckForForbiddenPatterns(asset);
+  blocking.push(...forbiddenViolations);
+
+  return {
+    ok: blocking.length === 0,
+    exists_checked: false,
+    ready_for_render: false,
+    ready_for_upload: false,
+    blocking_reasons: blocking,
+    warnings,
+  };
+}
+
+export interface AttachContentBriefToDraftInput {
+  draft: ProductionPackageDraft;
+  brief: ContentBrief;
+  dryRun: true;
+}
+
+export function attachContentBriefToPackageDraft(
+  input: AttachContentBriefToDraftInput
+): ProductionPackageDraft {
+  // VO-2F only supports dry-run
+  if (input.dryRun !== true) {
+    throw new Error("VO-2F attachContentBriefToPackageDraft requires dryRun=true");
+  }
+
+  // Validate content brief
+  const briefValidation = validateContentBrief(input.brief);
+  if (!briefValidation.ok) {
+    throw new Error(
+      `Content brief validation failed: ${briefValidation.blocking_reasons.join("; ")}`
+    );
+  }
+
+  // Create a copy to avoid mutation. Only store safe summary fields.
+  // Do not copy: source_materials, local_path, summaries, prohibited_claims, compliance_notes
+  const updated: ProductionPackageDraft = {
+    ...input.draft,
+    assets: {
+      ...input.draft.assets,
+      metadata: {
+        ...input.draft.assets.metadata,
+        brief_id: input.brief.brief_id,
+        brief_title: input.brief.title,
+        content_type: input.brief.content_type,
+        target_platforms_count: input.brief.target_platforms.length,
+        target_platforms: input.brief.target_platforms,
+        constraints_language: input.brief.production_constraints.language,
+        constraints_captions_required: input.brief.production_constraints.captions_required,
+        constraints_thumbnail_required: input.brief.production_constraints.thumbnail_required,
+      },
+    },
+  };
+
+  // Verify the updated draft is still safe for storage
+  assertProductionPackageDraftSafeForStorage(updated);
+
+  return updated;
+}
+
 // Export internal functions for testing and CLI
 export {
   logSchedulerEvent,
