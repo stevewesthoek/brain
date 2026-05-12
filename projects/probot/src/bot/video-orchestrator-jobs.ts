@@ -5240,6 +5240,382 @@ export function getRendererBinaryDiscoveryReport(options?: {
   };
 }
 
+// ─── VO-4D: Operator-Approved Renderer Version Check Plan ──────────────────────
+
+export type RendererVersionCheckPlanState = "draft" | "blocked" | "ready_for_operator_review";
+export type RendererVersionCheckMode = "planned_only";
+
+export interface RendererVersionPlannedCheck {
+  check_id: string;
+  tool_label: string;
+  expected_tool_kind: "ffmpeg" | "imagemagick" | "placeholder" | "custom";
+  binary_label: string;
+  planned_version_command_summary: string;
+  execution_allowed: false;
+  executable_invoked: false;
+  version_checked: false;
+  process_output_captured: false;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RendererVersionCheckPlan {
+  schema_version: "1.0";
+  version_check_plan_id: string;
+  discovery_id: string;
+  preflight_id: string;
+  command_manifest_id: string;
+  project_id: string;
+  platform: string;
+  dry_run: true;
+  plan_state: RendererVersionCheckPlanState;
+  created_at: string;
+  approval_required: true;
+  check_mode: RendererVersionCheckMode;
+  planned_checks: RendererVersionPlannedCheck[];
+  validation: {
+    ready_for_execution: false;
+    ready_for_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRendererVersionCheckPlan";
+    source_discovery_id: string;
+    source_preflight_id: string;
+    source_manifest_id: string;
+  };
+}
+
+export interface RendererVersionCheckPlanValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+interface RendererVersionCheckPlansStore {
+  plans: RendererVersionCheckPlan[];
+}
+
+function getRendererVersionCheckPlansPath(): string {
+  return path.join(getRuntimeDir(), "renderer-version-check-plans.json");
+}
+
+function loadRendererVersionCheckPlansStore(): RendererVersionCheckPlansStore {
+  const storePath = getRendererVersionCheckPlansPath();
+  if (!fs.existsSync(storePath)) {
+    return { plans: [] };
+  }
+  try {
+    const content = fs.readFileSync(storePath, "utf8");
+    return JSON.parse(content);
+  } catch (err) {
+    console.warn("Failed to parse renderer version check plans store:", err);
+    return { plans: [] };
+  }
+}
+
+function saveRendererVersionCheckPlansStore(store: RendererVersionCheckPlansStore): void {
+  const storePath = getRendererVersionCheckPlansPath();
+  fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+}
+
+export function createRendererVersionCheckPlan(input: {
+  discovery: RendererBinaryDiscovery;
+  dryRun: true;
+  checkMode: "planned_only";
+}): RendererVersionCheckPlan {
+  if (!input.dryRun) {
+    throw new Error("Version check plan only supports dryRun=true");
+  }
+
+  if (input.checkMode !== "planned_only") {
+    throw new Error("Version check plan only supports checkMode=planned_only");
+  }
+
+  if (!input.discovery.dry_run) {
+    throw new Error("Discovery must have dry_run=true");
+  }
+
+  // Verify all binary checks are safe
+  for (const check of input.discovery.binary_checks) {
+    if (check.path_checked !== false) {
+      throw new Error("Binary check must have path_checked=false");
+    }
+    if (check.executable_invoked !== false) {
+      throw new Error("Binary check must have executable_invoked=false");
+    }
+    if (check.version_checked !== false) {
+      throw new Error("Binary check must have version_checked=false");
+    }
+  }
+
+  // Derive planned checks from binary checks
+  const plannedChecks: RendererVersionPlannedCheck[] = input.discovery.binary_checks.map((bc) => ({
+    check_id: `check-${crypto.randomBytes(4).toString("hex")}`,
+    tool_label: bc.tool_label,
+    expected_tool_kind: bc.expected_tool_kind,
+    binary_label: bc.binary_label,
+    planned_version_command_summary: `[would-run-${bc.expected_tool_kind}-version-if-approved]`,
+    execution_allowed: false,
+    executable_invoked: false,
+    version_checked: false,
+    process_output_captured: false,
+    blocking_reasons: [],
+    warnings: [],
+  }));
+
+  // Determine plan state based on discovery validation
+  const plan_state: RendererVersionCheckPlanState = input.discovery.validation.blocking_reasons.length === 0
+    ? "ready_for_operator_review"
+    : "blocked";
+
+  const plan: RendererVersionCheckPlan = {
+    schema_version: "1.0",
+    version_check_plan_id: `version-check-plan-${crypto.randomBytes(8).toString("hex")}`,
+    discovery_id: input.discovery.discovery_id,
+    preflight_id: input.discovery.preflight_id,
+    command_manifest_id: input.discovery.command_manifest_id,
+    project_id: input.discovery.project_id,
+    platform: input.discovery.platform,
+    dry_run: true,
+    plan_state,
+    created_at: new Date().toISOString(),
+    approval_required: true,
+    check_mode: "planned_only",
+    planned_checks: plannedChecks,
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: input.discovery.validation.blocking_reasons,
+      warnings: input.discovery.validation.warnings,
+    },
+    provenance: {
+      generated_by: "createRendererVersionCheckPlan",
+      source_discovery_id: input.discovery.discovery_id,
+      source_preflight_id: input.discovery.preflight_id,
+      source_manifest_id: input.discovery.command_manifest_id,
+    },
+  };
+
+  return plan;
+}
+
+export function validateRendererVersionCheckPlan(plan: unknown): RendererVersionCheckPlanValidationResult {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  if (typeof plan !== "object" || plan === null) {
+    blockingReasons.push("Plan must be an object");
+    return { ok: false, blocking_reasons: blockingReasons, warnings };
+  }
+
+  const p = plan as Record<string, unknown>;
+
+  // Required fields
+  if (p.schema_version !== "1.0") {
+    blockingReasons.push("schema_version must be '1.0'");
+  }
+  if (p.dry_run !== true) {
+    blockingReasons.push("dry_run must be true");
+  }
+  if (p.approval_required !== true) {
+    blockingReasons.push("approval_required must be true");
+  }
+  if (p.check_mode !== "planned_only") {
+    blockingReasons.push("check_mode must be 'planned_only'");
+  }
+
+  // Validation structure
+  if (typeof p.validation !== "object" || p.validation === null) {
+    blockingReasons.push("validation is required");
+  } else {
+    const v = p.validation as Record<string, unknown>;
+    if (v.ready_for_execution !== false) {
+      blockingReasons.push("validation.ready_for_execution must be false");
+    }
+    if (v.ready_for_render !== false) {
+      blockingReasons.push("validation.ready_for_render must be false");
+    }
+    if (v.ready_for_upload !== false) {
+      blockingReasons.push("validation.ready_for_upload must be false");
+    }
+  }
+
+  // Planned checks validation
+  if (!Array.isArray(p.planned_checks)) {
+    blockingReasons.push("planned_checks must be an array");
+  } else {
+    for (const check of p.planned_checks) {
+      if (typeof check !== "object" || check === null) continue;
+      const c = check as Record<string, unknown>;
+      if (c.execution_allowed !== false) {
+        blockingReasons.push("Planned check must have execution_allowed=false");
+      }
+      if (c.executable_invoked !== false) {
+        blockingReasons.push("Planned check must have executable_invoked=false");
+      }
+      if (c.version_checked !== false) {
+        blockingReasons.push("Planned check must have version_checked=false");
+      }
+      if (c.process_output_captured !== false) {
+        blockingReasons.push("Planned check must have process_output_captured=false");
+      }
+    }
+  }
+
+  // Check for forbidden patterns
+  const forbiddenPatternReasons = recursivelyCheckForForbiddenPatterns(p);
+  blockingReasons.push(...forbiddenPatternReasons);
+
+  const ok = blockingReasons.length === 0;
+  return { ok, blocking_reasons: blockingReasons, warnings };
+}
+
+export function saveRendererVersionCheckPlan(plan: RendererVersionCheckPlan): void {
+  if (plan.dry_run !== true) {
+    throw new Error("Cannot save version check plan with dry_run=false");
+  }
+
+  if (plan.approval_required !== true) {
+    throw new Error("Cannot save version check plan with approval_required=false");
+  }
+
+  if (plan.check_mode !== "planned_only") {
+    throw new Error("Cannot save version check plan with check_mode other than planned_only");
+  }
+
+  for (const check of plan.planned_checks) {
+    if (check.execution_allowed !== false) {
+      throw new Error("Cannot save plan with execution_allowed=true");
+    }
+    if (check.executable_invoked !== false) {
+      throw new Error("Cannot save plan with executable_invoked=true");
+    }
+    if (check.version_checked !== false) {
+      throw new Error("Cannot save plan with version_checked=true");
+    }
+    if (check.process_output_captured !== false) {
+      throw new Error("Cannot save plan with process_output_captured=true");
+    }
+  }
+
+  if (plan.validation.ready_for_execution !== false) {
+    throw new Error("Cannot save plan with ready_for_execution=true");
+  }
+  if (plan.validation.ready_for_render !== false) {
+    throw new Error("Cannot save plan with ready_for_render=true");
+  }
+  if (plan.validation.ready_for_upload !== false) {
+    throw new Error("Cannot save plan with ready_for_upload=true");
+  }
+
+  const store = loadRendererVersionCheckPlansStore();
+  const existingIndex = store.plans.findIndex((p) => p.version_check_plan_id === plan.version_check_plan_id);
+  if (existingIndex >= 0) {
+    store.plans[existingIndex] = plan;
+  } else {
+    store.plans.push(plan);
+  }
+
+  store.plans.sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.version_check_plan_id.localeCompare(b.version_check_plan_id);
+  });
+
+  saveRendererVersionCheckPlansStore(store);
+}
+
+export function listRendererVersionCheckPlans(options?: {
+  project_id?: string;
+  platform?: string;
+  plan_state?: string;
+  discovery_id?: string;
+  preflight_id?: string;
+}): RendererVersionCheckPlan[] {
+  const store = loadRendererVersionCheckPlansStore();
+  let result = [...store.plans];
+
+  if (options?.project_id) {
+    result = result.filter((p) => p.project_id === options.project_id);
+  }
+
+  if (options?.platform) {
+    result = result.filter((p) => p.platform === options.platform);
+  }
+
+  if (options?.plan_state) {
+    result = result.filter((p) => p.plan_state === options.plan_state);
+  }
+
+  if (options?.discovery_id) {
+    result = result.filter((p) => p.discovery_id === options.discovery_id);
+  }
+
+  if (options?.preflight_id) {
+    result = result.filter((p) => p.preflight_id === options.preflight_id);
+  }
+
+  return result;
+}
+
+export function getRendererVersionCheckPlan(version_check_plan_id: string): RendererVersionCheckPlan | null {
+  const store = loadRendererVersionCheckPlansStore();
+  return store.plans.find((p) => p.version_check_plan_id === version_check_plan_id) || null;
+}
+
+export function getRendererVersionCheckPlanReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  ready_for_operator_review: number;
+  ready_for_execution: 0;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  plans: Array<{
+    version_check_plan_id: string;
+    discovery_id: string;
+    preflight_id: string;
+    command_manifest_id: string;
+    platform: string;
+    project_id: string;
+    plan_state: string;
+    planned_check_count: number;
+  }>;
+} {
+  const plans = listRendererVersionCheckPlans(options);
+  const byState: Record<string, number> = {};
+
+  for (const p of plans) {
+    byState[p.plan_state] = (byState[p.plan_state] || 0) + 1;
+  }
+
+  return {
+    total: plans.length,
+    by_state: byState,
+    blocked: byState.blocked || 0,
+    ready_for_operator_review: byState.ready_for_operator_review || 0,
+    ready_for_execution: 0,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    plans: plans.map((p) => ({
+      version_check_plan_id: sanitizeRenderPlanString(p.version_check_plan_id, "[unsafe-id]"),
+      discovery_id: sanitizeRenderPlanString(p.discovery_id, "[unsafe-id]"),
+      preflight_id: sanitizeRenderPlanString(p.preflight_id, "[unsafe-id]"),
+      command_manifest_id: sanitizeRenderPlanString(p.command_manifest_id, "[unsafe-id]"),
+      platform: sanitizeRenderPlanString(p.platform, "[unsafe-platform]"),
+      project_id: sanitizeRenderPlanString(p.project_id, "[unsafe-project]"),
+      plan_state: p.plan_state,
+      planned_check_count: p.planned_checks.length,
+    })),
+  };
+}
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;

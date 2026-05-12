@@ -1,0 +1,239 @@
+{
+  "schema_version": "1.0",
+  "title": "Renderer Version Check Plan",
+  "description": "Operator-approved plan for future version checks of renderer binaries. Defines what would be checked, under what approval, and how results would be recorded later, but does not execute binaries or capture process output. Pure planning and validation only. No child_process, spawn, execSync, or version command execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "version_check_plan_id",
+    "discovery_id",
+    "preflight_id",
+    "command_manifest_id",
+    "project_id",
+    "platform",
+    "dry_run",
+    "plan_state",
+    "created_at",
+    "approval_required",
+    "check_mode",
+    "planned_checks",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version (immutable)"
+    },
+    "version_check_plan_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Unique identifier for this version check plan"
+    },
+    "discovery_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source binary discovery artifact ID"
+    },
+    "preflight_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source preflight artifact ID"
+    },
+    "command_manifest_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source command manifest ID"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Project identifier"
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"],
+      "description": "Target platform"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "enum": [true],
+      "description": "Must be true. Version check planning is planning only, no execution."
+    },
+    "plan_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "ready_for_operator_review"],
+      "description": "Version check plan state"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "approval_required": {
+      "type": "boolean",
+      "enum": [true],
+      "description": "Must be true. Operator approval required before any version checks can execute."
+    },
+    "check_mode": {
+      "type": "string",
+      "enum": ["planned_only"],
+      "description": "Check mode (planned_only: no execution, no version commands, no process output capture)"
+    },
+    "planned_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "check_id",
+          "tool_label",
+          "expected_tool_kind",
+          "binary_label",
+          "planned_version_command_summary",
+          "execution_allowed",
+          "executable_invoked",
+          "version_checked",
+          "process_output_captured",
+          "blocking_reasons",
+          "warnings"
+        ],
+        "properties": {
+          "check_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$",
+            "description": "Unique identifier for this planned check"
+          },
+          "tool_label": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$",
+            "description": "Tool label (e.g., 'ffmpeg', 'imagemagick', 'placeholder')"
+          },
+          "expected_tool_kind": {
+            "type": "string",
+            "enum": ["ffmpeg", "imagemagick", "placeholder", "custom"],
+            "description": "Expected tool kind"
+          },
+          "binary_label": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$",
+            "description": "Binary identifier for this check"
+          },
+          "planned_version_command_summary": {
+            "type": "string",
+            "description": "Safe placeholder/summary text (never a raw command). Example: '[version-check-planned]' or '[would-run-ffmpeg-version]'"
+          },
+          "execution_allowed": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. Version check execution deferred to separate approval."
+          },
+          "executable_invoked": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. Binary not executed."
+          },
+          "version_checked": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. No version command executed."
+          },
+          "process_output_captured": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. No process output captured."
+          },
+          "blocking_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Safe blocking reason descriptions (no echo of paths/commands/env vars)"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Safe warning descriptions"
+          }
+        }
+      },
+      "description": "Planned version checks derived from binary checks (no execution)"
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ready_for_execution",
+        "ready_for_render",
+        "ready_for_upload",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "ready_for_execution": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Version check plan does not enable execution."
+        },
+        "ready_for_render": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Version check plan does not enable rendering."
+        },
+        "ready_for_upload": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Version check plan does not enable upload."
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Safe blocking reason descriptions"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Safe warning descriptions"
+        }
+      },
+      "description": "Validation results"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by", "source_discovery_id", "source_preflight_id", "source_manifest_id"],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "const": "createRendererVersionCheckPlan",
+          "description": "Function that created this artifact"
+        },
+        "source_discovery_id": {
+          "type": "string",
+          "description": "Source binary discovery ID"
+        },
+        "source_preflight_id": {
+          "type": "string",
+          "description": "Source preflight ID"
+        },
+        "source_manifest_id": {
+          "type": "string",
+          "description": "Source command manifest ID"
+        }
+      },
+      "description": "Provenance information"
+    }
+  }
+}

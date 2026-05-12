@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
-**Date:** 2026-05-12 (VO-4C Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests); detailed guide for phases 3B+  
+**Date:** 2026-05-12 (VO-4D Complete)  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -2628,7 +2628,90 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 - `operations/specs/video-orchestrator/renderer-binary-discovery.schema.json` (created)
 - `operations/specs/video-orchestrator/examples/renderer-binary-discovery.example.json` (created)
 
-### Safety Constraints: Immutable and Verified (VO-4B + VO-4C)
+---
+
+## Phase VO-4D: Operator-Approved Renderer Version Check Plan ✅ (DONE)
+
+**What VO-4D Does:**
+- Creates operator-approved plans for future version checks
+- Defines what would be checked, under what approval, and how results would be recorded
+- Planned checks are pure planning artifacts (no execution)
+- Derives planned checks from binary discovery
+- Validates immutable constraints (dry_run=true, approval_required=true, check_mode="planned_only", no execution flags)
+- Stores and queries version check plans with filters
+- Reports version check plan status and state summaries
+
+**What VO-4D Does NOT Do:**
+- Does NOT execute binaries or version checks
+- Does NOT resolve filesystem paths
+- Does NOT invoke child_process, spawn, or execSync
+- Does NOT run FFmpeg commands
+- Does NOT read environment variables
+- Does NOT capture process output
+- Does NOT create files or directories
+- Does NOT render media
+- Does NOT call platform APIs
+- Does NOT enable any rendering or execution capability
+
+**Immutable Safety Constraints:**
+- `dry_run = true` (const in schema and types)
+- `approval_required = true` (const in schema and types)
+- `check_mode = "planned_only"` (only allowed mode)
+- `execution_allowed = false` (const in all planned checks)
+- `executable_invoked = false` (const in all planned checks)
+- `version_checked = false` (const in all planned checks)
+- `process_output_captured = false` (const in all planned checks)
+- `ready_for_execution = false` (const in validation)
+- `ready_for_render = false` (const in validation)
+- `ready_for_upload = false` (const in validation)
+
+**Key Design:**
+- Version check plan is a **pure planning artifact** (no execution)
+- Derives from binary discovery checks (planned_only mode, no discovery execution)
+- Safe command summaries (e.g., "[would-run-ffmpeg-version-if-approved]", never raw commands)
+- Maps binary checks to planned checks with check_id, tool_label, expected_tool_kind, binary_label
+- Validates and blocks execution patterns (child_process, spawn, execSync, ffmpeg, youtube.videos().insert, etc.)
+- Sanitizes all output (no raw paths, commands, env vars, process output)
+- Report counts plan_state distribution with hardcoded readiness=0
+- plan_state: draft/blocked/ready_for_operator_review
+
+**Deliverables:**
+
+1. **Schema Files**
+   - `operations/specs/video-orchestrator/renderer-version-check-plan.schema.json` — JSON schema v7 with immutable constraints
+   - `operations/specs/video-orchestrator/examples/renderer-version-check-plan.example.json` — Safe example with planned checks for placeholder and ffmpeg
+
+2. **TypeScript Types** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `type RendererVersionCheckPlanState = "draft" | "blocked" | "ready_for_operator_review"`
+   - `type RendererVersionCheckMode = "planned_only"`
+   - `interface RendererVersionPlannedCheck` — check_id, tool_label, expected_tool_kind, binary_label, planned_version_command_summary, execution_allowed (false), executable_invoked (false), version_checked (false), process_output_captured (false), blocking_reasons, warnings
+   - `interface RendererVersionCheckPlan` — full manifest structure with all immutable constraints
+   - `interface RendererVersionCheckPlanValidationResult` — ok, blocking_reasons, warnings
+
+3. **Core Functions** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `createRendererVersionCheckPlan(input: {discovery: RendererBinaryDiscovery; dryRun: true; checkMode: "planned_only"}): RendererVersionCheckPlan` — Derives planned_checks from binary discovery with safe summaries
+   - `validateRendererVersionCheckPlan(plan: unknown): RendererVersionCheckPlanValidationResult` — Enforces schema_version, dry_run, approval_required, check_mode, immutable flags, forbidden patterns
+   - `saveRendererVersionCheckPlan(plan: RendererVersionCheckPlan): void` — Persists to JSON-backed local store with constraint validation
+   - `listRendererVersionCheckPlans(options?: {project_id?, platform?, plan_state?, discovery_id?, preflight_id?}): RendererVersionCheckPlan[]` — Queries with filtering and sorting
+   - `getRendererVersionCheckPlan(version_check_plan_id: string): RendererVersionCheckPlan | null` — Single lookup
+   - `getRendererVersionCheckPlanReport(options?: {project_id?, platform?}): {total, by_state, blocked, ready_for_operator_review, readiness=0, plans}` — Aggregates state counts with hardcoded readiness=0
+
+4. **Tests** (46 VO-4D tests in `projects/probot/src/bot/video-orchestrator-jobs.test.ts`)
+   - **VO-4D-SCHEMA-1 to 4:** Schema validation, example parsing, forbidden strings, no raw paths/commands/env vars
+   - **VO-4D-CREATE-5 to 17:** Creation constraints, planned check derivation, flag enforcement, file creation blocking, output safety
+   - **VO-4D-VALIDATION-18 to 33:** Validation enforcement, immutable flag checks, ready flags false, forbidden patterns
+   - **VO-4D-STORE-34 to 41:** Persistence, filtering (project_id, platform, plan_state, discovery_id, preflight_id), constraint enforcement
+   - **VO-4D-REPORT-42 to 46:** State counting, data sanitization, readiness hardcoded to 0
+
+**Files Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts` — Added VO-4D types, functions, stores (~600 lines)
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts` — Added 46 VO-4D tests (~1,000 lines)
+
+**New Files Created:**
+- `operations/specs/video-orchestrator/renderer-version-check-plan.schema.json` (created)
+- `operations/specs/video-orchestrator/examples/renderer-version-check-plan.example.json` (created)
+
+### Safety Constraints: Immutable and Verified (VO-4B + VO-4C + VO-4D)
 
 ✅ dry_run must be true (const in types and validation)
 ✅ executable_invoked must be false (const in types)
@@ -2649,17 +2732,18 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 
 ### Next Phase Context
 
-**VO-4A, VO-4B, and VO-4C are complete** (render executor contract, preflight environment checks, binary discovery manifests). Future phases will add:
+**VO-4A, VO-4B, VO-4C, and VO-4D are complete** (render executor contract, preflight environment checks, binary discovery manifests, version check plans). Future phases will add:
 - **VO-3G: Real Render Execution** (requires explicit separate approval)
   - Operator explicitly approves and triggers actual rendering
   - FFmpeg execution only when explicitly approved
   - File creation only when explicitly approved
   - Upload queuing only when explicitly approved
-  - Requires separate gating mechanism beyond VO-4C binary discovery
+  - Requires separate gating mechanism beyond VO-4D version check plans
   
-- **VO-4D: Operator-Approved Version-Check Planning** (optional next phase)
-  - Explicit operator approval for version-check contracts (separate from binary discovery)
-  - Still no rendering capability; version checks remain planning-only artifacts
+- **VO-4E: Explicit Mocked Executor Tests** (optional next phase)
+  - Test mocked executor contracts without real FFmpeg execution
+  - Define expected version check results in advance
+  - Still no rendering capability; tests remain planning artifacts
   - No execution unless separately approved in VO-3G
 
 ---

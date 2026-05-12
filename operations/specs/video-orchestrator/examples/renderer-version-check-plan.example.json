@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "version_check_plan_id": "version-check-plan-001",
+  "discovery_id": "renderer-binary-discovery-example-001",
+  "preflight_id": "renderer-preflight-example-001",
+  "command_manifest_id": "render-command-manifest-example-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "dry_run": true,
+  "plan_state": "ready_for_operator_review",
+  "created_at": "2026-05-12T14:35:00Z",
+  "approval_required": true,
+  "check_mode": "planned_only",
+  "planned_checks": [
+    {
+      "check_id": "check-001",
+      "tool_label": "placeholder",
+      "expected_tool_kind": "placeholder",
+      "binary_label": "placeholder-binary",
+      "planned_version_command_summary": "[version-check-planned]",
+      "execution_allowed": false,
+      "executable_invoked": false,
+      "version_checked": false,
+      "process_output_captured": false,
+      "blocking_reasons": [],
+      "warnings": []
+    },
+    {
+      "check_id": "check-002",
+      "tool_label": "ffmpeg",
+      "expected_tool_kind": "ffmpeg",
+      "binary_label": "ffmpeg-binary",
+      "planned_version_command_summary": "[would-run-ffmpeg-version-if-approved]",
+      "execution_allowed": false,
+      "executable_invoked": false,
+      "version_checked": false,
+      "process_output_captured": false,
+      "blocking_reasons": [],
+      "warnings": []
+    }
+  ],
+  "validation": {
+    "ready_for_execution": false,
+    "ready_for_render": false,
+    "ready_for_upload": false,
+    "blocking_reasons": [],
+    "warnings": []
+  },
+  "provenance": {
+    "generated_by": "createRendererVersionCheckPlan",
+    "source_discovery_id": "renderer-binary-discovery-example-001",
+    "source_preflight_id": "renderer-preflight-example-001",
+    "source_manifest_id": "render-command-manifest-example-001"
+  }
+}
