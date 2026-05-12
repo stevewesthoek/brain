@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "output_directory_approval_id": "output-directory-approval-001",
+  "production_render_request_id": "production-render-request-001",
+  "source_media_inventory_id": "source-media-inventory-001",
+  "render_plan_id": "render-plan-control-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "approval_state": "ready_for_operator_review",
+  "created_at": "2026-05-12T18:00:00Z",
+  "approval_mode": "operator_review_only",
+  "output_policy": {
+    "output_directory_approval_required": true,
+    "output_directory_approved": false,
+    "output_write_allowed": false,
+    "media_creation_allowed": false,
+    "overwrite_allowed": false,
+    "cleanup_required": true,
+    "output_file_count_limit": 1,
+    "allowed_output_kinds": ["video", "image", "audio", "caption", "thumbnail", "manifest"]
+  },
+  "write_boundary": {
+    "output_directory_summary": "[output-directory]",
+    "directory_exists_checked": false,
+    "directory_writable_checked": false,
+    "directory_created": false,
+    "raw_path_stored": false,
+    "allowed_relative_prefix_summary": "[safe-relative-prefix]",
+    "blocking_reasons": [],
+    "warnings": ["Output directory approval pending operator review."]
+  },
+  "validation": {
+    "ready_for_production_render": false,
+    "ready_for_upload": false,
+    "blocking_reasons": [],
+    "warnings": ["Output directory approval pending operator review."]
+  },
+  "provenance": {
+    "generated_by": "createOutputDirectoryApproval",
+    "source_production_render_request_id": "production-render-request-001",
+    "source_source_media_inventory_id": "source-media-inventory-001",
+    "source_render_plan_id": "render-plan-control-001"
+  }
+}

@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
 **Date Updated:** 2026-05-12 (VO-5B Complete)  
-**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) in progress.  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) in progress.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Architecture:** Local-first production + platform adapters (not fully local publishing)
 
@@ -150,6 +150,26 @@ This phase adds a metadata-only inventory layer and an explicit read-only valida
 
 **Expected follow-up:**
 - If approved later, the next step may add output directory approval, still without enabling production rendering.
+
+### VO-6D: Output Directory Approval and Write Boundary
+
+This phase approves a future output boundary only and keeps writing disabled.
+
+**What it does**
+- Introduces a safe output directory approval artifact for operator review.
+- Records only a summary of the future output boundary.
+- Allows explicit validation to check directory existence/writability without creating directories or files.
+
+**What it does not do**
+- Does not create directories.
+- Does not write output files.
+- Does not render.
+- Does not upload.
+- Does not call platform APIs.
+- Does not enable `output_write_allowed` or `media_creation_allowed`.
+
+**Next phase guidance**
+- If approved later, the next step may add a final production render execution request, still gated and still separate from upload capability.
 
 **Total Timeline:** 6 months  
 **Total Resource Estimate:** 50 hours Claude Code (revised for adapter complexity)  

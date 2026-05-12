@@ -167,6 +167,14 @@ import {
   listSourceMediaInventories,
   getSourceMediaInventory,
   getSourceMediaInventoryReport,
+  summarizeOutputDirectoryReference,
+  createOutputDirectoryApproval,
+  validateOutputDirectoryApproval,
+  saveOutputDirectoryApproval,
+  listOutputDirectoryApprovals,
+  getOutputDirectoryApproval,
+  revokeOutputDirectoryApproval,
+  getOutputDirectoryApprovalReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -178,6 +186,7 @@ import {
   type ControlledProductionRenderRequest,
   type ControlledProductionRenderRequestValidationResult,
   type SourceMediaInventory,
+  type OutputDirectoryApproval,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -367,6 +376,26 @@ function createSafeControlledProductionCommandManifest(renderPlanId = "render-pl
       source_bundle_id: "bundle-control-001",
     },
   };
+}
+
+function createSafeSourceMediaInventory(
+  request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }),
+  renderPlan = createSafeControlledProductionRenderPlan(),
+  inventoryMode: "metadata_only" | "explicit_read_only_validation" = "metadata_only",
+  baseDir?: string
+): SourceMediaInventory {
+  return createSourceMediaInventory({ request, renderPlan, inventoryMode, ...(baseDir ? { baseDir } : {}) });
+}
+
+function createSafeOutputDirectoryApproval(
+  request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }),
+  inventory = createSafeSourceMediaInventory(request),
+  outputDirectory = "renders/approved-output",
+  approvalMode: "operator_review_only" | "explicit_write_boundary_validation" = "operator_review_only",
+  baseDir?: string,
+  operatorApproved = false
+): OutputDirectoryApproval {
+  return createOutputDirectoryApproval({ request, inventory, outputDirectory, approvalMode, ...(baseDir ? { baseDir } : {}), operatorApproved });
 }
 
 test("VO-J1: Create scheduled job", (t) => {
@@ -15402,4 +15431,348 @@ test("VO-6C-REPORT-48: readiness counters remain 0", () => {
   const report = getSourceMediaInventoryReport();
   assert.strictEqual(report.ready_for_production_render, 0);
   assert.strictEqual(report.ready_for_upload, 0);
+});
+
+// ─── VO-6D: Output Directory Approval and Write Boundary Tests ──────────────
+
+function loadOutputDirectoryApprovalExample(): OutputDirectoryApproval {
+  const examplePath = path.resolve(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/examples/output-directory-approval.example.json");
+  return JSON.parse(fs.readFileSync(examplePath, "utf8")) as OutputDirectoryApproval;
+}
+
+test("VO-6D-SCHEMA-1: output directory approval schema parses", () => {
+  const schemaPath = path.resolve(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/output-directory-approval.schema.json");
+  const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+  assert.ok(schema);
+});
+
+test("VO-6D-SCHEMA-2: example parses", () => {
+  const example = loadOutputDirectoryApprovalExample();
+  assert.strictEqual(example.schema_version, "1.0");
+});
+
+test("VO-6D-SCHEMA-3: example contains no forbidden strings", () => {
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(loadOutputDirectoryApprovalExample())), false);
+});
+
+test("VO-6D-SCHEMA-4: example contains no raw paths urls media payloads upload payloads or credentials", () => {
+  const text = JSON.stringify(loadOutputDirectoryApprovalExample());
+  assert.strictEqual(/\/Users\/|https?:\/\/|data=|stdout|stderr|access_token|refresh_token|client_secret|videos.insert|youtube.videos\(\)\.insert/i.test(text), false);
+});
+
+test("VO-6D-SUMMARIZE-5: safe output dir summarizes without raw absolute path", () => {
+  const summary = summarizeOutputDirectoryReference({ outputDirectory: "renders/future-output" });
+  assert.strictEqual(summary.ok, true);
+  assert.strictEqual(summary.summary, "[output-directory]");
+});
+
+test("VO-6D-SUMMARIZE-6: forbidden string blocks without echo", () => {
+  const summary = summarizeOutputDirectoryReference({ outputDirectory: "Bearer fake-token" });
+  assert.strictEqual(summary.ok, false);
+  assert.strictEqual(summary.summary, "[output-directory]");
+});
+
+test("VO-6D-SUMMARIZE-7: URL blocks", () => {
+  const summary = summarizeOutputDirectoryReference({ outputDirectory: "https://example.com/output" });
+  assert.strictEqual(summary.ok, false);
+});
+
+test("VO-6D-SUMMARIZE-8: traversal blocks", () => {
+  const summary = summarizeOutputDirectoryReference({ outputDirectory: "../secret-output" });
+  assert.strictEqual(summary.ok, false);
+});
+
+test("VO-6D-SUMMARIZE-9: absolute path blocks or summarizes safely without echo", () => {
+  const summary = summarizeOutputDirectoryReference({ outputDirectory: "/Users/office/private-output" });
+  assert.strictEqual(summary.ok, false);
+  assert.strictEqual(summary.summary, "[output-directory]");
+});
+
+test("VO-6D-SUMMARIZE-10: allowRelativePathSummary false does not echo path segments", () => {
+  const summary = summarizeOutputDirectoryReference({ outputDirectory: "renders/secret/staging", allowRelativePathSummary: false });
+  assert.strictEqual(summary.ok, true);
+  assert.strictEqual(summary.summary, "[relative-output-directory]");
+});
+
+test("VO-6D-CREATE-11: operator_review_only does not perform filesystem checks", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo6d-"));
+  try {
+    const approval = createSafeOutputDirectoryApproval(undefined, undefined, "renders/future-output", "operator_review_only");
+    assert.strictEqual(approval.approval_state, "ready_for_operator_review");
+    assert.strictEqual(approval.output_policy.output_write_allowed, false);
+    assert.strictEqual(approval.output_policy.media_creation_allowed, false);
+    assert.strictEqual(approval.write_boundary.directory_exists_checked, false);
+    assert.strictEqual(approval.write_boundary.directory_writable_checked, false);
+    assert.strictEqual(fs.existsSync(path.join(tempDir, "renders/future-output")), false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6D-CREATE-12: explicit_write_boundary_validation performs exists stat only for safe baseDir", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo6d-"));
+  try {
+    const outputDir = path.join(tempDir, "approved-output");
+    fs.mkdirSync(outputDir, { recursive: true });
+    const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+    const inventory = createSafeSourceMediaInventory(request);
+    const approval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "approved-output", approvalMode: "explicit_write_boundary_validation", baseDir: tempDir });
+    assert.strictEqual(approval.approval_state, "ready_for_operator_review");
+    assert.strictEqual(approval.write_boundary.directory_exists_checked, true);
+    assert.strictEqual(approval.write_boundary.directory_writable_checked, true);
+    assert.strictEqual(approval.write_boundary.directory_created, false);
+    assert.strictEqual(approval.write_boundary.raw_path_stored, false);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("VO-6D-CREATE-13: unsafe request blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request);
+  assert.throws(() => createOutputDirectoryApproval({ request: { ...request, validation: { ...request.validation, ready_for_production_render: true as never } }, inventory, outputDirectory: "renders/output", approvalMode: "operator_review_only" }));
+});
+
+test("VO-6D-CREATE-14: unsafe inventory blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request);
+  assert.throws(() => createOutputDirectoryApproval({ request, inventory: { ...inventory, validation: { ...inventory.validation, ready_for_production_render: true as never } }, outputDirectory: "renders/output", approvalMode: "operator_review_only" }));
+});
+
+test("VO-6D-CREATE-15: mismatched request inventory blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request);
+  assert.throws(() => createOutputDirectoryApproval({ request, inventory: { ...inventory, project_id: "project-beta" as never }, outputDirectory: "renders/output", approvalMode: "operator_review_only" }));
+});
+
+test("VO-6D-CREATE-16: unsafe outputDirectory blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request);
+  const approval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "/Users/office/private-output", approvalMode: "operator_review_only" });
+  assert.strictEqual(approval.approval_state, "blocked");
+});
+
+test("VO-6D-CREATE-17: output_write_allowed remains false", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(approval.output_policy.output_write_allowed, false);
+});
+
+test("VO-6D-CREATE-18: media_creation_allowed remains false", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(approval.output_policy.media_creation_allowed, false);
+});
+
+test("VO-6D-CREATE-19: overwrite_allowed remains false", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(approval.output_policy.overwrite_allowed, false);
+});
+
+test("VO-6D-CREATE-20: directory_created remains false", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(approval.write_boundary.directory_created, false);
+});
+
+test("VO-6D-CREATE-21: raw_path_stored remains false", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(approval.write_boundary.raw_path_stored, false);
+});
+
+test("VO-6D-CREATE-22: no directory or file is created", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vo6d-"));
+  try {
+    const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+    const inventory = createSafeSourceMediaInventory(request);
+    const approval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/output", approvalMode: "operator_review_only", baseDir: tempDir });
+    assert.strictEqual(fs.existsSync(path.join(tempDir, "renders", "output")), false);
+    assert.strictEqual(approval.validation.ready_for_production_render, false);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("VO-6D-CREATE-23: no render copy transcode upload or API execution", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(approval.validation.ready_for_production_render, false);
+  assert.strictEqual(approval.validation.ready_for_upload, false);
+});
+
+test("VO-6D-CREATE-24: ready flags remain false", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(approval.validation.ready_for_production_render, false);
+  assert.strictEqual(approval.validation.ready_for_upload, false);
+});
+
+test("VO-6D-VALIDATE-25: safe approval validates", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval(approval).ok, true);
+});
+
+test("VO-6D-VALIDATE-26: output_write_allowed true blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, output_policy: { ...approval.output_policy, output_write_allowed: true as never } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-27: media_creation_allowed true blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, output_policy: { ...approval.output_policy, media_creation_allowed: true as never } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-28: overwrite_allowed true blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, output_policy: { ...approval.output_policy, overwrite_allowed: true as never } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-29: directory_created true blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, write_boundary: { ...approval.write_boundary, directory_created: true as never } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-30: raw_path_stored true blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, write_boundary: { ...approval.write_boundary, raw_path_stored: true as never } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-31: ready_for_production_render true blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, validation: { ...approval.validation, ready_for_production_render: true as never } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-32: ready_for_upload true blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, validation: { ...approval.validation, ready_for_upload: true as never } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-33: forbidden key blocks without echo", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  const validation = validateOutputDirectoryApproval({ ...approval, provenance: { ...approval.provenance, source_render_plan_id: "credential_reference-secret" as never } });
+  assert.strictEqual(validation.ok, false);
+  assert.strictEqual(hasForbiddenStrings(validation.blocking_reasons.join(" ")), false);
+});
+
+test("VO-6D-VALIDATE-34: forbidden string blocks without echo", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  const validation = validateOutputDirectoryApproval({ ...approval, write_boundary: { ...approval.write_boundary, output_directory_summary: "Bearer fake-token" } });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6D-VALIDATE-35: raw path blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, write_boundary: { ...approval.write_boundary, output_directory_summary: "/Users/office/private-output" } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-36: URL blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, write_boundary: { ...approval.write_boundary, output_directory_summary: "https://example.com/output" } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-37: traversal blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, write_boundary: { ...approval.write_boundary, output_directory_summary: "../output" } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-38: media payload blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, write_boundary: { ...approval.write_boundary, warnings: ["data=raw"] } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-39: upload/API payload blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, provenance: { ...approval.provenance, generated_by: "videos.insert" } }).ok, false);
+});
+
+test("VO-6D-VALIDATE-40: write-enabling payload blocks", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.strictEqual(validateOutputDirectoryApproval({ ...approval, output_policy: { ...approval.output_policy, output_write_allowed: true as never } }).ok, false);
+});
+
+test("VO-6D-STORE-41: save list get upsert works", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = createSafeOutputDirectoryApproval();
+    saveOutputDirectoryApproval(approval);
+    assert.ok(getOutputDirectoryApproval(approval.output_directory_approval_id));
+    saveOutputDirectoryApproval({ ...approval, approval_state: "blocked" as OutputDirectoryApproval["approval_state"] });
+    assert.strictEqual(getOutputDirectoryApproval(approval.output_directory_approval_id)?.approval_state, "blocked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6D-STORE-42: filters work", () => {
+  const report = getOutputDirectoryApprovalReport({ project_id: "project-alpha", platform: "youtube" });
+  assert.ok(report.total >= 0);
+});
+
+test("VO-6D-STORE-43: store rejects unsafe approval", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.throws(() => saveOutputDirectoryApproval({ ...approval, write_boundary: { ...approval.write_boundary, output_directory_summary: "/Users/office/private-output" } } as never));
+});
+
+test("VO-6D-STORE-44: store rejects write media overwrite flags true", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.throws(() => saveOutputDirectoryApproval({ ...approval, output_policy: { ...approval.output_policy, output_write_allowed: true as never } } as never));
+});
+
+test("VO-6D-STORE-45: store rejects directory_created raw_path_stored true", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.throws(() => saveOutputDirectoryApproval({ ...approval, write_boundary: { ...approval.write_boundary, directory_created: true as never } } as never));
+});
+
+test("VO-6D-STORE-46: store rejects ready flags true", () => {
+  const approval = createSafeOutputDirectoryApproval();
+  assert.throws(() => saveOutputDirectoryApproval({ ...approval, validation: { ...approval.validation, ready_for_upload: true as never } } as never));
+});
+
+test("VO-6D-STORE-47: revoke changes approval_state to revoked safely", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = createSafeOutputDirectoryApproval();
+    saveOutputDirectoryApproval(approval);
+    const revoked = revokeOutputDirectoryApproval(approval.output_directory_approval_id, "operator revoked");
+    assert.strictEqual(revoked.approval_state, "revoked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6D-STORE-48: revoke unsafe reason blocks or sanitizes without echo", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = createSafeOutputDirectoryApproval();
+    saveOutputDirectoryApproval(approval);
+    assert.throws(() => revokeOutputDirectoryApproval(approval.output_directory_approval_id, "Bearer fake-token"));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6D-REPORT-49: report counts states", () => {
+  const report = getOutputDirectoryApprovalReport();
+  assert.ok(report.total >= 0);
+  assert.ok(report.ready_for_production_render === 0);
+  assert.ok(report.ready_for_upload === 0);
+});
+
+test("VO-6D-REPORT-50: legacy unsafe runtime data does not leak", () => {
+  const report = getOutputDirectoryApprovalReport();
+  assert.strictEqual(hasForbiddenStrings(report), false);
+});
+
+test("VO-6D-REPORT-51: JSON.stringify(report) contains no forbidden strings", () => {
+  const report = getOutputDirectoryApprovalReport();
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(report)), false);
+});
+
+test("VO-6D-REPORT-52: report excludes raw output paths URLs media payloads upload payloads", () => {
+  const report = getOutputDirectoryApprovalReport();
+  const text = JSON.stringify(report);
+  assert.strictEqual(/\/Users\/|https?:\/\/|stdout|stderr|data=|videos.insert|youtube.videos\(\)\.insert|access_token|refresh_token|client_secret/i.test(text), false);
+});
+
+test("VO-6D-REPORT-53: readiness write media counters remain 0", () => {
+  const report = getOutputDirectoryApprovalReport();
+  assert.strictEqual(report.ready_for_production_render, 0);
+  assert.strictEqual(report.ready_for_upload, 0);
+  assert.strictEqual(report.output_write_allowed, 0);
+  assert.strictEqual(report.media_creation_allowed, 0);
 });

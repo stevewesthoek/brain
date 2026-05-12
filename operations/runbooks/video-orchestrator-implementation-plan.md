@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
 **Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C in progress (source media inventory and read-only validation); detailed guide for phases 3B+  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D in progress (output directory approval and write boundary); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -80,6 +80,26 @@ This phase adds a metadata-only inventory layer and an explicit read-only valida
 
 **Next phase guidance**
 - If approved later, the next step may add output directory approval, still without enabling production rendering.
+
+### VO-6D: Output Directory Approval and Write Boundary
+
+This phase approves a future output boundary only and keeps writing disabled.
+
+**What it does**
+- Introduces an output-directory approval artifact for operator review.
+- Stores only safe summaries for the approved boundary.
+- Allows explicit validation to inspect a safe directory without creating or writing anything.
+
+**What it does not do**
+- Does not create directories.
+- Does not write files.
+- Does not render.
+- Does not upload.
+- Does not call platform APIs.
+- Does not enable `output_write_allowed` or `media_creation_allowed`.
+
+**Next phase guidance**
+- If approved, the next step may add a final production render execution request while keeping upload capability separate.
 
 ---
 

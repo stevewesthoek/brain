@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0",
+  "title": "Output Directory Approval",
+  "description": "Approval of a future output write boundary only. This is not a render result and does not create production media. It records only a safe operator-review artifact for where future outputs may be written. No raw absolute paths, URLs, traversal, file contents, commands, process output, env vars, credentials, or tokens may be stored.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "output_directory_approval_id",
+    "production_render_request_id",
+    "source_media_inventory_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "approval_state",
+    "created_at",
+    "approval_mode",
+    "output_policy",
+    "write_boundary",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["1.0"] },
+    "output_directory_approval_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "production_render_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "source_media_inventory_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "render_plan_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "project_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"]
+    },
+    "approval_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "ready_for_operator_review", "approved_for_future_render_output", "rejected", "revoked"]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "approval_mode": {
+      "type": "string",
+      "enum": ["operator_review_only", "explicit_write_boundary_validation"]
+    },
+    "output_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_directory_approval_required",
+        "output_directory_approved",
+        "output_write_allowed",
+        "media_creation_allowed",
+        "overwrite_allowed",
+        "cleanup_required",
+        "output_file_count_limit",
+        "allowed_output_kinds"
+      ],
+      "properties": {
+        "output_directory_approval_required": { "type": "boolean", "enum": [true] },
+        "output_directory_approved": { "type": "boolean" },
+        "output_write_allowed": { "type": "boolean", "enum": [false] },
+        "media_creation_allowed": { "type": "boolean", "enum": [false] },
+        "overwrite_allowed": { "type": "boolean", "enum": [false] },
+        "cleanup_required": { "type": "boolean", "enum": [true] },
+        "output_file_count_limit": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "allowed_output_kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["video", "image", "audio", "caption", "thumbnail", "manifest"]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "write_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_directory_summary",
+        "directory_exists_checked",
+        "directory_writable_checked",
+        "directory_created",
+        "raw_path_stored",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "output_directory_summary": { "type": "string" },
+        "directory_exists_checked": { "type": "boolean" },
+        "directory_writable_checked": { "type": "boolean" },
+        "directory_created": { "type": "boolean", "enum": [false] },
+        "raw_path_stored": { "type": "boolean", "enum": [false] },
+        "allowed_relative_prefix_summary": { "type": "string" },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ready_for_production_render", "ready_for_upload", "blocking_reasons", "warnings"],
+      "properties": {
+        "ready_for_production_render": { "type": "boolean", "enum": [false] },
+        "ready_for_upload": { "type": "boolean", "enum": [false] },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by", "source_production_render_request_id", "source_source_media_inventory_id", "source_render_plan_id"],
+      "properties": {
+        "generated_by": { "type": "string" },
+        "source_production_render_request_id": { "type": "string" },
+        "source_source_media_inventory_id": { "type": "string" },
+        "source_render_plan_id": { "type": "string" }
+      }
+    }
+  }
+}

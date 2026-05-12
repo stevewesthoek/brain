@@ -7411,6 +7411,415 @@ export function getSourceMediaInventoryReport(options?: {
   };
 }
 
+export type OutputDirectoryApprovalMode = "operator_review_only" | "explicit_write_boundary_validation";
+
+export type OutputDirectoryApprovalState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_render_output" | "rejected" | "revoked";
+
+export interface OutputDirectoryPolicy {
+  output_directory_approval_required: true;
+  output_directory_approved: boolean;
+  output_write_allowed: false;
+  media_creation_allowed: false;
+  overwrite_allowed: false;
+  cleanup_required: true;
+  output_file_count_limit: 1;
+  allowed_output_kinds: Array<"video" | "image" | "audio" | "caption" | "thumbnail" | "manifest">;
+}
+
+export interface OutputWriteBoundary {
+  output_directory_summary: string;
+  directory_exists_checked: boolean;
+  directory_writable_checked: boolean;
+  directory_created: false;
+  raw_path_stored: false;
+  allowed_relative_prefix_summary?: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface OutputDirectoryApprovalValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface OutputDirectoryApproval {
+  schema_version: "1.0";
+  output_directory_approval_id: string;
+  production_render_request_id: string;
+  source_media_inventory_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  approval_state: OutputDirectoryApprovalState;
+  created_at: string;
+  approval_mode: OutputDirectoryApprovalMode;
+  output_policy: OutputDirectoryPolicy;
+  write_boundary: OutputWriteBoundary;
+  validation: {
+    ready_for_production_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createOutputDirectoryApproval";
+    source_production_render_request_id: string;
+    source_source_media_inventory_id: string;
+    source_render_plan_id: string;
+  };
+}
+
+interface OutputDirectoryApprovalsStore {
+  schema_version: "1.0";
+  created_at: string;
+  approvals: OutputDirectoryApproval[];
+}
+
+function getOutputDirectoryApprovalsPath(): string {
+  return path.join(getRuntimeDir(), "output-directory-approvals.json");
+}
+
+function loadOutputDirectoryApprovalsStore(): OutputDirectoryApprovalsStore {
+  try {
+    const filePath = getOutputDirectoryApprovalsPath();
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, "utf8")) as OutputDirectoryApprovalsStore;
+    }
+  } catch {
+    // start fresh
+  }
+  return { schema_version: "1.0", created_at: new Date().toISOString(), approvals: [] };
+}
+
+function saveOutputDirectoryApprovalsStore(store: OutputDirectoryApprovalsStore): void {
+  const filePath = getOutputDirectoryApprovalsPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  store.approvals.sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.output_directory_approval_id.localeCompare(b.output_directory_approval_id);
+  });
+  fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8");
+}
+
+function resolveSafeOutputDirectoryPath(outputDirectory: string, baseDir?: string): { ok: boolean; absolutePath?: string; blocking_reasons: string[] } {
+  const blocking_reasons: string[] = [];
+  const summary = summarizeOutputDirectoryReference({ outputDirectory, allowRelativePathSummary: true });
+  if (!summary.ok) {
+    blocking_reasons.push(...summary.blocking_reasons);
+    return { ok: false, blocking_reasons };
+  }
+  const raw = typeof outputDirectory === "string" ? outputDirectory.trim() : "";
+  const resolvedBase = path.resolve(baseDir ?? getRuntimeDir());
+  const absolutePath = path.isAbsolute(raw) ? raw : path.resolve(resolvedBase, raw);
+  if (!absolutePath.startsWith(resolvedBase + path.sep) && absolutePath !== resolvedBase) {
+    blocking_reasons.push("output directory must stay within the safe base directory");
+    return { ok: false, blocking_reasons };
+  }
+  return { ok: true, absolutePath, blocking_reasons: [] };
+}
+
+export function summarizeOutputDirectoryReference(input: {
+  outputDirectory: string;
+  allowRelativePathSummary?: boolean;
+}): {
+  ok: boolean;
+  summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+} {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof input.outputDirectory !== "string" || input.outputDirectory.length === 0) {
+    blocking_reasons.push("output directory must be a string");
+    return { ok: false, summary: "[output-directory]", blocking_reasons, warnings };
+  }
+  const dir = input.outputDirectory.trim();
+  if (isForbiddenStringPattern(dir)) {
+    blocking_reasons.push("output directory contains forbidden patterns");
+    return { ok: false, summary: "[output-directory]", blocking_reasons, warnings };
+  }
+  if (dir.includes("://") || /^https?:\/\//i.test(dir)) {
+    blocking_reasons.push("output directory URLs are not allowed");
+    return { ok: false, summary: "[output-directory]", blocking_reasons, warnings };
+  }
+  if (dir.includes("..")) {
+    blocking_reasons.push("output directory traversal is not allowed");
+    return { ok: false, summary: "[output-directory]", blocking_reasons, warnings };
+  }
+  if (path.isAbsolute(dir)) {
+    blocking_reasons.push("output directory absolute paths are not allowed");
+    return { ok: false, summary: "[output-directory]", blocking_reasons, warnings };
+  }
+  if (input.allowRelativePathSummary === false) {
+    return { ok: true, summary: "[relative-output-directory]", blocking_reasons, warnings };
+  }
+  return { ok: true, summary: "[output-directory]", blocking_reasons, warnings };
+}
+
+function safeOutputDirectorySummary(outputDirectory: string): string {
+  const summary = summarizeOutputDirectoryReference({ outputDirectory, allowRelativePathSummary: false });
+  return summary.ok ? summary.summary : "[output-directory]";
+}
+
+export function createOutputDirectoryApproval(input: {
+  request: ControlledProductionRenderRequest;
+  inventory: SourceMediaInventory;
+  outputDirectory: string;
+  approvalMode: "operator_review_only" | "explicit_write_boundary_validation";
+  baseDir?: string;
+  operatorApproved?: boolean;
+}): OutputDirectoryApproval {
+  const requestValidation = validateControlledProductionRenderRequest(input.request);
+  if (!requestValidation.ok) {
+    throw new Error("createOutputDirectoryApproval: request must validate");
+  }
+  const inventoryValidation = validateSourceMediaInventory(input.inventory);
+  if (!inventoryValidation.ok) {
+    throw new Error("createOutputDirectoryApproval: inventory must validate");
+  }
+  if (input.request.production_render_request_id !== input.inventory.production_render_request_id || input.request.render_plan_id !== input.inventory.render_plan_id || input.request.project_id !== input.inventory.project_id || input.request.platform !== input.inventory.platform) {
+    throw new Error("createOutputDirectoryApproval: request and inventory must match");
+  }
+  if (input.request.validation.ready_for_production_render !== false || input.inventory.validation.ready_for_production_render !== false) {
+    throw new Error("createOutputDirectoryApproval: request and inventory must not be ready for production render");
+  }
+
+  const summary = summarizeOutputDirectoryReference({ outputDirectory: input.outputDirectory, allowRelativePathSummary: false });
+  const blockers = [...summary.blocking_reasons];
+  const warnings = [...summary.warnings];
+  const approvalMode = input.approvalMode;
+  let directoryExistsChecked = false;
+  let directoryWritableChecked = false;
+
+  if (approvalMode === "explicit_write_boundary_validation") {
+    const resolved = resolveSafeOutputDirectoryPath(input.outputDirectory, input.baseDir);
+    blockers.push(...resolved.blocking_reasons);
+    if (resolved.ok && resolved.absolutePath) {
+      directoryExistsChecked = true;
+      directoryWritableChecked = true;
+      try {
+        const stat = fs.existsSync(resolved.absolutePath) ? fs.statSync(resolved.absolutePath) : null;
+        if (!stat) {
+          warnings.push("Output directory does not currently exist.");
+        } else if (!stat.isDirectory()) {
+          blockers.push("output directory must be a directory");
+        } else {
+          try {
+            fs.accessSync(resolved.absolutePath, fs.constants.W_OK);
+          } catch {
+            blockers.push("output directory is not writable");
+          }
+        }
+      } catch {
+        blockers.push("output directory validation failed");
+      }
+    }
+  }
+
+  const operatorApproved = input.operatorApproved === true;
+  const approvalState: OutputDirectoryApprovalState = blockers.length > 0 ? "blocked" : operatorApproved ? "approved_for_future_render_output" : "ready_for_operator_review";
+  if (approvalState === "ready_for_operator_review") {
+    warnings.push("Output directory approval pending operator review.");
+  }
+
+  return {
+    schema_version: "1.0",
+    output_directory_approval_id: `output-directory-approval-${crypto.randomUUID()}`,
+    production_render_request_id: input.request.production_render_request_id,
+    source_media_inventory_id: input.inventory.source_media_inventory_id,
+    render_plan_id: input.request.render_plan_id,
+    project_id: input.request.project_id,
+    platform: input.request.platform,
+    approval_state: approvalState,
+    created_at: new Date().toISOString(),
+    approval_mode: approvalMode,
+    output_policy: {
+      output_directory_approval_required: true,
+      output_directory_approved: operatorApproved && blockers.length === 0,
+      output_write_allowed: false,
+      media_creation_allowed: false,
+      overwrite_allowed: false,
+      cleanup_required: true,
+      output_file_count_limit: 1,
+      allowed_output_kinds: ["video", "image", "audio", "caption", "thumbnail", "manifest"],
+    },
+    write_boundary: {
+      output_directory_summary: safeOutputDirectorySummary(input.outputDirectory),
+      directory_exists_checked: directoryExistsChecked,
+      directory_writable_checked: directoryWritableChecked,
+      directory_created: false,
+      raw_path_stored: false,
+      ...(input.approvalMode === "explicit_write_boundary_validation" && input.baseDir ? { allowed_relative_prefix_summary: "[safe-relative-prefix]" } : {}),
+      blocking_reasons: blockers,
+      warnings,
+    },
+    validation: {
+      ready_for_production_render: false,
+      ready_for_upload: false,
+      blocking_reasons: blockers,
+      warnings,
+    },
+    provenance: {
+      generated_by: "createOutputDirectoryApproval",
+      source_production_render_request_id: input.request.production_render_request_id,
+      source_source_media_inventory_id: input.inventory.source_media_inventory_id,
+      source_render_plan_id: input.request.render_plan_id,
+    },
+  };
+}
+
+export function validateOutputDirectoryApproval(approval: unknown): OutputDirectoryApprovalValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!approval || typeof approval !== "object") {
+    return { ok: false, blocking_reasons: ["Output directory approval must be an object"], warnings };
+  }
+  const a = approval as Record<string, unknown>;
+  const required = ["schema_version", "output_directory_approval_id", "production_render_request_id", "source_media_inventory_id", "render_plan_id", "project_id", "platform", "approval_state", "created_at", "approval_mode", "output_policy", "write_boundary", "validation", "provenance"];
+  for (const key of required) {
+    if (!(key in a)) blocking_reasons.push("Output directory approval is missing a required field");
+  }
+  if (a.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["draft", "blocked", "ready_for_operator_review", "approved_for_future_render_output", "rejected", "revoked"].includes(String(a.approval_state))) blocking_reasons.push("approval_state is invalid");
+  if (!["operator_review_only", "explicit_write_boundary_validation"].includes(String(a.approval_mode))) blocking_reasons.push("approval_mode is invalid");
+  const forbidden = recursivelyCheckForForbiddenPatterns(approval);
+  blocking_reasons.push(...forbidden);
+  const text = JSON.stringify(approval);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env[") || text.includes("stdout") || text.includes("stderr") || text.includes("data=") || text.includes("payload")) {
+    blocking_reasons.push("Output directory approval contains forbidden payload content");
+  }
+  const policy = a.output_policy as Record<string, unknown> | undefined;
+  if (!policy || policy.output_directory_approval_required !== true || typeof policy.output_directory_approved !== "boolean" || policy.output_write_allowed !== false || policy.media_creation_allowed !== false || policy.overwrite_allowed !== false || policy.cleanup_required !== true || policy.output_file_count_limit !== 1) {
+    blocking_reasons.push("Output policy is unsafe");
+  }
+  if (!Array.isArray(policy?.allowed_output_kinds) || (policy.allowed_output_kinds as unknown[]).some((kind) => !["video", "image", "audio", "caption", "thumbnail", "manifest"].includes(String(kind)))) {
+    blocking_reasons.push("Allowed output kinds are unsafe");
+  }
+  const boundary = a.write_boundary as Record<string, unknown> | undefined;
+  if (!boundary || typeof boundary.output_directory_summary !== "string" || boundary.directory_exists_checked !== false && boundary.directory_exists_checked !== true || boundary.directory_writable_checked !== false && boundary.directory_writable_checked !== true || boundary.directory_created !== false || boundary.raw_path_stored !== false) {
+    blocking_reasons.push("Write boundary is unsafe");
+  }
+  if (typeof boundary?.output_directory_summary === "string" && (boundary.output_directory_summary.includes("://") || boundary.output_directory_summary.startsWith("/") || boundary.output_directory_summary.includes(".."))) {
+    blocking_reasons.push("Write boundary summary is unsafe");
+  }
+  const validation = a.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_production_render !== false || validation.ready_for_upload !== false) {
+    blocking_reasons.push("Validation readiness must remain false");
+  }
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function saveOutputDirectoryApproval(approval: OutputDirectoryApproval): void {
+  const validation = validateOutputDirectoryApproval(approval);
+  if (!validation.ok) {
+    throw new Error("Unsafe output directory approval cannot be stored.");
+  }
+  const store = loadOutputDirectoryApprovalsStore();
+  const existing = store.approvals.findIndex((item) => item.output_directory_approval_id === approval.output_directory_approval_id);
+  if (existing >= 0) store.approvals[existing] = approval;
+  else store.approvals.push(approval);
+  saveOutputDirectoryApprovalsStore(store);
+}
+
+export function listOutputDirectoryApprovals(options?: {
+  project_id?: string;
+  platform?: string;
+  approval_state?: string;
+  production_render_request_id?: string;
+  source_media_inventory_id?: string;
+}): OutputDirectoryApproval[] {
+  const store = loadOutputDirectoryApprovalsStore();
+  return store.approvals.filter((approval) => {
+    if (options?.project_id && approval.project_id !== options.project_id) return false;
+    if (options?.platform && approval.platform !== options.platform) return false;
+    if (options?.approval_state && approval.approval_state !== options.approval_state) return false;
+    if (options?.production_render_request_id && approval.production_render_request_id !== options.production_render_request_id) return false;
+    if (options?.source_media_inventory_id && approval.source_media_inventory_id !== options.source_media_inventory_id) return false;
+    return true;
+  }).sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.output_directory_approval_id.localeCompare(b.output_directory_approval_id);
+  });
+}
+
+export function getOutputDirectoryApproval(output_directory_approval_id: string): OutputDirectoryApproval | null {
+  const store = loadOutputDirectoryApprovalsStore();
+  return store.approvals.find((approval) => approval.output_directory_approval_id === output_directory_approval_id) ?? null;
+}
+
+export function revokeOutputDirectoryApproval(output_directory_approval_id: string, reason: string): OutputDirectoryApproval {
+  const store = loadOutputDirectoryApprovalsStore();
+  const approval = store.approvals.find((item) => item.output_directory_approval_id === output_directory_approval_id);
+  if (!approval) {
+    throw new Error(`Output directory approval not found: ${output_directory_approval_id}`);
+  }
+  if (typeof reason !== "string" || reason.length === 0) {
+    throw new Error("Revoke reason must be a safe string");
+  }
+  const summary = summarizeOutputDirectoryReference({ outputDirectory: reason, allowRelativePathSummary: false });
+  if (!summary.ok) {
+    throw new Error("Revoke reason contains unsafe content");
+  }
+  approval.approval_state = "revoked";
+  approval.write_boundary.warnings = [...approval.write_boundary.warnings, "[revoked-by-operator]"];
+  approval.validation.warnings = [...approval.validation.warnings, "[revoked-by-operator]"];
+  saveOutputDirectoryApproval(approval);
+  return approval;
+}
+
+export function getOutputDirectoryApprovalReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  ready_for_operator_review: number;
+  approved_for_future_render_output: number;
+  rejected: number;
+  revoked: number;
+  ready_for_production_render: 0;
+  ready_for_upload: 0;
+  output_write_allowed: 0;
+  media_creation_allowed: 0;
+  approvals: Array<{
+    output_directory_approval_id: string;
+    approval_state: string;
+    project_id: string;
+    platform: string;
+    output_directory_summary: string;
+    created_at: string;
+  }>;
+} {
+  const approvals = listOutputDirectoryApprovals(options);
+  const byState: Record<string, number> = {};
+  for (const approval of approvals) {
+    byState[approval.approval_state] = (byState[approval.approval_state] || 0) + 1;
+  }
+  return {
+    total: approvals.length,
+    by_state: byState,
+    blocked: byState.blocked || 0,
+    ready_for_operator_review: byState.ready_for_operator_review || 0,
+    approved_for_future_render_output: byState.approved_for_future_render_output || 0,
+    rejected: byState.rejected || 0,
+    revoked: byState.revoked || 0,
+    ready_for_production_render: 0,
+    ready_for_upload: 0,
+    output_write_allowed: 0,
+    media_creation_allowed: 0,
+    approvals: approvals.map((approval) => ({
+      output_directory_approval_id: sanitizeRenderPlanString(approval.output_directory_approval_id, "[unsafe-id]"),
+      approval_state: approval.approval_state,
+      project_id: sanitizeRenderPlanString(approval.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(approval.platform, "[unsafe-platform]"),
+      output_directory_summary: safeOutputDirectorySummary(approval.write_boundary.output_directory_summary),
+      created_at: approval.created_at,
+    })),
+  };
+}
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {
