@@ -1,0 +1,293 @@
+{
+  "schema_version": "1.0",
+  "title": "Mock Renderer Execution Result",
+  "description": "Mock-only execution result for renderer binary checks. Represents a simulated execution without actually running FFmpeg, other renderers, or subprocess calls. Pure planning artifact showing what a future real execution result might look like, but only with mock/planned outcomes. No child_process, spawn, execSync, FFmpeg execution, file creation, or process output capture. No media files created. No platform API calls.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mock_result_id",
+    "version_check_plan_id",
+    "discovery_id",
+    "preflight_id",
+    "command_manifest_id",
+    "project_id",
+    "platform",
+    "dry_run",
+    "result_state",
+    "created_at",
+    "execution_mode",
+    "mock_checks",
+    "output_summary",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version (immutable)"
+    },
+    "mock_result_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Unique identifier for this mock execution result"
+    },
+    "version_check_plan_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source version check plan ID"
+    },
+    "discovery_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source binary discovery artifact ID"
+    },
+    "preflight_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source preflight artifact ID"
+    },
+    "command_manifest_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source command manifest ID"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Project identifier"
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"],
+      "description": "Target platform"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "enum": [true],
+      "description": "Must be true. Mock execution result is mock-only, no real execution."
+    },
+    "result_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "mock_passed", "mock_failed"],
+      "description": "Mock result state"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "execution_mode": {
+      "type": "string",
+      "enum": ["mock_only"],
+      "description": "Execution mode (mock_only: no subprocess execution, no binary checks, no version commands, no process output capture)"
+    },
+    "mock_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "check_id",
+          "tool_label",
+          "expected_tool_kind",
+          "simulated_result",
+          "execution_allowed",
+          "executable_invoked",
+          "version_checked",
+          "command_executed",
+          "process_output_captured",
+          "media_created",
+          "blocking_reasons",
+          "warnings"
+        ],
+        "properties": {
+          "check_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$",
+            "description": "Unique identifier for this mock check"
+          },
+          "tool_label": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$",
+            "description": "Tool label (e.g., 'ffmpeg', 'imagemagick', 'placeholder')"
+          },
+          "expected_tool_kind": {
+            "type": "string",
+            "enum": ["ffmpeg", "imagemagick", "placeholder", "custom"],
+            "description": "Expected tool kind"
+          },
+          "simulated_result": {
+            "type": "string",
+            "description": "Safe simulation result (e.g., '[mock-pass]', '[mock-skip]', '[mock-unavailable]'). Never raw output."
+          },
+          "execution_allowed": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. Execution not allowed in mock mode."
+          },
+          "executable_invoked": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. Binary not executed."
+          },
+          "version_checked": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. No version command executed."
+          },
+          "command_executed": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. No command executed."
+          },
+          "process_output_captured": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. No process output captured."
+          },
+          "media_created": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. No media files created."
+          },
+          "blocking_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Safe blocking reason descriptions (no echo of paths/commands/env vars)"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Safe warning descriptions"
+          }
+        }
+      },
+      "description": "Mock execution checks derived from planned checks (no execution)"
+    },
+    "output_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "planned_output_count",
+        "actual_output_count",
+        "output_files_created",
+        "media_files_created",
+        "output_path_summaries"
+      ],
+      "properties": {
+        "planned_output_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of outputs that would be created if executed"
+        },
+        "actual_output_count": {
+          "type": "integer",
+          "enum": [0],
+          "description": "Must be 0. No actual outputs created in mock mode."
+        },
+        "output_files_created": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. No output files created in mock mode."
+        },
+        "media_files_created": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. No media files created in mock mode."
+        },
+        "output_path_summaries": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Safe summaries of planned outputs (e.g., '[would-create-video]'). Never actual paths."
+          },
+          "description": "Safe summaries of what outputs would be created (no actual paths)"
+        }
+      },
+      "description": "Summary of output expectations"
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ready_for_execution",
+        "ready_for_render",
+        "ready_for_upload",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "ready_for_execution": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Mock result does not enable execution."
+        },
+        "ready_for_render": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Mock result does not enable rendering."
+        },
+        "ready_for_upload": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Mock result does not enable upload."
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Safe blocking reason descriptions"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Safe warning descriptions"
+        }
+      },
+      "description": "Validation results"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by", "source_plan_id", "source_discovery_id", "source_preflight_id", "source_manifest_id"],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "const": "createMockRendererExecutionResult",
+          "description": "Function that created this artifact"
+        },
+        "source_plan_id": {
+          "type": "string",
+          "description": "Source version check plan ID"
+        },
+        "source_discovery_id": {
+          "type": "string",
+          "description": "Source binary discovery ID"
+        },
+        "source_preflight_id": {
+          "type": "string",
+          "description": "Source preflight ID"
+        },
+        "source_manifest_id": {
+          "type": "string",
+          "description": "Source command manifest ID"
+        }
+      },
+      "description": "Provenance information"
+    }
+  }
+}

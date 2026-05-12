@@ -5616,6 +5616,472 @@ export function getRendererVersionCheckPlanReport(options?: {
   };
 }
 
+// ─── VO-4E: Mock Renderer Execution Result ─────────────────────────────────
+
+export type MockRendererExecutionResultState = "draft" | "blocked" | "mock_passed" | "mock_failed";
+export type MockRendererExecutionMode = "mock_only";
+
+export interface MockRendererExecutionCheck {
+  check_id: string;
+  tool_label: string;
+  expected_tool_kind: string;
+  simulated_result: string;
+  execution_allowed: false;
+  executable_invoked: false;
+  version_checked: false;
+  command_executed: false;
+  process_output_captured: false;
+  media_created: false;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface MockRendererExecutionOutputSummary {
+  planned_output_count: number;
+  actual_output_count: 0;
+  output_files_created: false;
+  media_files_created: false;
+  output_path_summaries: string[];
+}
+
+export interface MockRendererExecutionResult {
+  schema_version: "1.0";
+  mock_result_id: string;
+  version_check_plan_id: string;
+  discovery_id: string;
+  preflight_id: string;
+  command_manifest_id: string;
+  project_id: string;
+  platform: string;
+  dry_run: true;
+  result_state: MockRendererExecutionResultState;
+  created_at: string;
+  execution_mode: MockRendererExecutionMode;
+  mock_checks: MockRendererExecutionCheck[];
+  output_summary: MockRendererExecutionOutputSummary;
+  validation: {
+    ready_for_execution: false;
+    ready_for_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createMockRendererExecutionResult";
+    source_plan_id: string;
+    source_discovery_id: string;
+    source_preflight_id: string;
+    source_manifest_id: string;
+  };
+}
+
+export interface MockRendererExecutionResultValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+interface MockRendererExecutionResultsStore {
+  results: MockRendererExecutionResult[];
+}
+
+function getMockRendererExecutionResultsPath(): string {
+  return path.join(getRuntimeDir(), "mock-renderer-execution-results.json");
+}
+
+function loadMockRendererExecutionResultsStore(): MockRendererExecutionResultsStore {
+  const storePath = getMockRendererExecutionResultsPath();
+  if (!fs.existsSync(storePath)) {
+    return { results: [] };
+  }
+  try {
+    const content = fs.readFileSync(storePath, "utf8");
+    return JSON.parse(content);
+  } catch (err) {
+    console.warn("Failed to parse mock renderer execution results store:", err);
+    return { results: [] };
+  }
+}
+
+function saveMockRendererExecutionResultsStore(store: MockRendererExecutionResultsStore): void {
+  const storePath = getMockRendererExecutionResultsPath();
+  fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+}
+
+export function createMockRendererExecutionResult(input: {
+  plan: RendererVersionCheckPlan;
+  dryRun: true;
+  executionMode: "mock_only";
+}): MockRendererExecutionResult {
+  if (!input.dryRun) {
+    throw new Error("Mock execution result only supports dryRun=true");
+  }
+
+  if (input.executionMode !== "mock_only") {
+    throw new Error("Mock execution result only supports executionMode=mock_only");
+  }
+
+  if (!input.plan.dry_run) {
+    throw new Error("Plan must have dry_run=true");
+  }
+
+  if (input.plan.check_mode !== "planned_only") {
+    throw new Error("Plan must have check_mode=planned_only");
+  }
+
+  // Verify all planned checks have correct flags
+  for (const check of input.plan.planned_checks) {
+    if (check.execution_allowed !== false) {
+      throw new Error("Planned check must have execution_allowed=false");
+    }
+    if (check.executable_invoked !== false) {
+      throw new Error("Planned check must have executable_invoked=false");
+    }
+    if (check.version_checked !== false) {
+      throw new Error("Planned check must have version_checked=false");
+    }
+    if (check.process_output_captured !== false) {
+      throw new Error("Planned check must have process_output_captured=false");
+    }
+  }
+
+  // Derive mock checks from planned checks
+  const mockChecks: MockRendererExecutionCheck[] = input.plan.planned_checks.map((pc) => ({
+    check_id: pc.check_id,
+    tool_label: pc.tool_label,
+    expected_tool_kind: pc.expected_tool_kind,
+    simulated_result: "[mock-pass]",
+    execution_allowed: false,
+    executable_invoked: false,
+    version_checked: false,
+    command_executed: false,
+    process_output_captured: false,
+    media_created: false,
+    blocking_reasons: [],
+    warnings: [],
+  }));
+
+  // Determine result state based on plan validation
+  const result_state: MockRendererExecutionResultState = input.plan.validation.blocking_reasons.length === 0
+    ? "mock_passed"
+    : "blocked";
+
+  const result: MockRendererExecutionResult = {
+    schema_version: "1.0",
+    mock_result_id: `mock-result-${crypto.randomBytes(8).toString("hex")}`,
+    version_check_plan_id: input.plan.version_check_plan_id,
+    discovery_id: input.plan.discovery_id,
+    preflight_id: input.plan.preflight_id,
+    command_manifest_id: input.plan.command_manifest_id,
+    project_id: input.plan.project_id,
+    platform: input.plan.platform,
+    dry_run: true,
+    result_state,
+    created_at: new Date().toISOString(),
+    execution_mode: "mock_only",
+    mock_checks: mockChecks,
+    output_summary: {
+      planned_output_count: 2,
+      actual_output_count: 0,
+      output_files_created: false,
+      media_files_created: false,
+      output_path_summaries: ["[would-create-video]", "[would-create-thumbnail]"],
+    },
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: input.plan.validation.blocking_reasons,
+      warnings: input.plan.validation.warnings,
+    },
+    provenance: {
+      generated_by: "createMockRendererExecutionResult",
+      source_plan_id: input.plan.version_check_plan_id,
+      source_discovery_id: input.plan.discovery_id,
+      source_preflight_id: input.plan.preflight_id,
+      source_manifest_id: input.plan.command_manifest_id,
+    },
+  };
+
+  return result;
+}
+
+export function validateMockRendererExecutionResult(result: unknown): MockRendererExecutionResultValidationResult {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  if (typeof result !== "object" || result === null) {
+    blockingReasons.push("Result must be an object");
+    return { ok: false, blocking_reasons: blockingReasons, warnings };
+  }
+
+  const r = result as Record<string, unknown>;
+
+  // Required fields
+  if (r.schema_version !== "1.0") {
+    blockingReasons.push("schema_version must be '1.0'");
+  }
+  if (r.dry_run !== true) {
+    blockingReasons.push("dry_run must be true");
+  }
+  if (r.execution_mode !== "mock_only") {
+    blockingReasons.push("execution_mode must be 'mock_only'");
+  }
+
+  // Verify all mock checks have correct flags
+  if (Array.isArray(r.mock_checks)) {
+    for (const check of r.mock_checks as Record<string, unknown>[]) {
+      if (check.execution_allowed !== false) {
+        blockingReasons.push("Mock check must have execution_allowed=false");
+      }
+      if (check.executable_invoked !== false) {
+        blockingReasons.push("Mock check must have executable_invoked=false");
+      }
+      if (check.version_checked !== false) {
+        blockingReasons.push("Mock check must have version_checked=false");
+      }
+      if (check.command_executed !== false) {
+        blockingReasons.push("Mock check must have command_executed=false");
+      }
+      if (check.process_output_captured !== false) {
+        blockingReasons.push("Mock check must have process_output_captured=false");
+      }
+      if (check.media_created !== false) {
+        blockingReasons.push("Mock check must have media_created=false");
+      }
+    }
+  }
+
+  // Verify output summary
+  if (typeof r.output_summary === "object" && r.output_summary !== null) {
+    const out = r.output_summary as Record<string, unknown>;
+    if (out.actual_output_count !== 0) {
+      blockingReasons.push("actual_output_count must be 0");
+    }
+    if (out.output_files_created !== false) {
+      blockingReasons.push("output_files_created must be false");
+    }
+    if (out.media_files_created !== false) {
+      blockingReasons.push("media_files_created must be false");
+    }
+  }
+
+  // Verify validation flags
+  if (typeof r.validation === "object" && r.validation !== null) {
+    const val = r.validation as Record<string, unknown>;
+    if (val.ready_for_execution !== false) {
+      blockingReasons.push("ready_for_execution must be false");
+    }
+    if (val.ready_for_render !== false) {
+      blockingReasons.push("ready_for_render must be false");
+    }
+    if (val.ready_for_upload !== false) {
+      blockingReasons.push("ready_for_upload must be false");
+    }
+  }
+
+  // Forbidden patterns check
+  const forbiddenPatterns = [
+    "credential_reference",
+    "credential_reference_id",
+    "credentialReference",
+    "credentialReferenceId",
+    "keychain://",
+    "videos.insert",
+    "youtube.videos",
+    "child_process",
+    "execSync",
+    "spawn",
+    "ffmpeg -version",
+    "ffprobe",
+    "process.env",
+    "/Users/",
+    "/home/",
+    "~",
+  ];
+
+  function checkValue(val: unknown): boolean {
+    if (typeof val === "string") {
+      for (const pattern of forbiddenPatterns) {
+        if (val.includes(pattern)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    if (typeof val === "object" && val !== null) {
+      for (const key of Object.keys(val as Record<string, unknown>)) {
+        if (forbiddenPatterns.includes(key)) {
+          blockingReasons.push("Contains forbidden key");
+          return true;
+        }
+        if (checkValue((val as Record<string, unknown>)[key])) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return false;
+  }
+
+  checkValue(r);
+  if (blockingReasons.length > 0 && blockingReasons[blockingReasons.length - 1] === "Contains forbidden key") {
+    // Already added
+  } else if (checkValue(r)) {
+    blockingReasons.push("Contains forbidden patterns or values");
+  }
+
+  return {
+    ok: blockingReasons.length === 0,
+    blocking_reasons: blockingReasons,
+    warnings,
+  };
+}
+
+export function saveMockRendererExecutionResult(result: MockRendererExecutionResult): void {
+  const validation = validateMockRendererExecutionResult(result);
+  if (!validation.ok) {
+    throw new Error(`Cannot save result: ${validation.blocking_reasons.join(", ")}`);
+  }
+
+  // Additional safety checks before storage
+  if (result.dry_run !== true) {
+    throw new Error("Cannot save result with dry_run=false");
+  }
+  if (result.execution_mode !== "mock_only") {
+    throw new Error("Cannot save result with execution_mode other than mock_only");
+  }
+  if (result.output_summary.actual_output_count !== 0) {
+    throw new Error("Cannot save result with actual_output_count > 0");
+  }
+  if (result.output_summary.output_files_created !== false) {
+    throw new Error("Cannot save result with output_files_created=true");
+  }
+  if (result.output_summary.media_files_created !== false) {
+    throw new Error("Cannot save result with media_files_created=true");
+  }
+  if (result.validation.ready_for_execution !== false) {
+    throw new Error("Cannot save result with ready_for_execution=true");
+  }
+  if (result.validation.ready_for_render !== false) {
+    throw new Error("Cannot save result with ready_for_render=true");
+  }
+  if (result.validation.ready_for_upload !== false) {
+    throw new Error("Cannot save result with ready_for_upload=true");
+  }
+
+  const store = loadMockRendererExecutionResultsStore();
+  const existingIndex = store.results.findIndex((r) => r.mock_result_id === result.mock_result_id);
+  if (existingIndex >= 0) {
+    store.results[existingIndex] = result;
+  } else {
+    store.results.push(result);
+  }
+
+  store.results.sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.mock_result_id.localeCompare(b.mock_result_id);
+  });
+
+  saveMockRendererExecutionResultsStore(store);
+}
+
+export function listMockRendererExecutionResults(options?: {
+  project_id?: string;
+  platform?: string;
+  result_state?: string;
+  version_check_plan_id?: string;
+  command_manifest_id?: string;
+}): MockRendererExecutionResult[] {
+  const store = loadMockRendererExecutionResultsStore();
+  let result = [...store.results];
+
+  if (options?.project_id) {
+    result = result.filter((r) => r.project_id === options.project_id);
+  }
+
+  if (options?.platform) {
+    result = result.filter((r) => r.platform === options.platform);
+  }
+
+  if (options?.result_state) {
+    result = result.filter((r) => r.result_state === options.result_state);
+  }
+
+  if (options?.version_check_plan_id) {
+    result = result.filter((r) => r.version_check_plan_id === options.version_check_plan_id);
+  }
+
+  if (options?.command_manifest_id) {
+    result = result.filter((r) => r.command_manifest_id === options.command_manifest_id);
+  }
+
+  return result;
+}
+
+export function getMockRendererExecutionResult(mock_result_id: string): MockRendererExecutionResult | null {
+  const store = loadMockRendererExecutionResultsStore();
+  return store.results.find((r) => r.mock_result_id === mock_result_id) || null;
+}
+
+export function getMockRendererExecutionResultReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  mock_passed: number;
+  mock_failed: number;
+  ready_for_execution: 0;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  actual_output_count: 0;
+  media_files_created: 0;
+  results: Array<{
+    mock_result_id: string;
+    version_check_plan_id: string;
+    discovery_id: string;
+    preflight_id: string;
+    command_manifest_id: string;
+    platform: string;
+    project_id: string;
+    result_state: string;
+    mock_check_count: number;
+  }>;
+} {
+  const results = listMockRendererExecutionResults(options);
+  const byState: Record<string, number> = {};
+
+  for (const r of results) {
+    byState[r.result_state] = (byState[r.result_state] || 0) + 1;
+  }
+
+  return {
+    total: results.length,
+    by_state: byState,
+    blocked: byState.blocked || 0,
+    mock_passed: byState.mock_passed || 0,
+    mock_failed: byState.mock_failed || 0,
+    ready_for_execution: 0,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    actual_output_count: 0,
+    media_files_created: 0,
+    results: results.map((r) => ({
+      mock_result_id: sanitizeRenderPlanString(r.mock_result_id, "[unsafe-id]"),
+      version_check_plan_id: sanitizeRenderPlanString(r.version_check_plan_id, "[unsafe-id]"),
+      discovery_id: sanitizeRenderPlanString(r.discovery_id, "[unsafe-id]"),
+      preflight_id: sanitizeRenderPlanString(r.preflight_id, "[unsafe-id]"),
+      command_manifest_id: sanitizeRenderPlanString(r.command_manifest_id, "[unsafe-id]"),
+      platform: sanitizeRenderPlanString(r.platform, "[unsafe-platform]"),
+      project_id: sanitizeRenderPlanString(r.project_id, "[unsafe-project]"),
+      result_state: r.result_state,
+      mock_check_count: r.mock_checks.length,
+    })),
+  };
+}
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;

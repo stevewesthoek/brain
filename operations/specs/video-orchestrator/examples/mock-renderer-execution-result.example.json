@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "mock_result_id": "mock-result-001",
+  "version_check_plan_id": "version-check-plan-001",
+  "discovery_id": "renderer-binary-discovery-example-001",
+  "preflight_id": "renderer-preflight-example-001",
+  "command_manifest_id": "render-command-manifest-example-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "dry_run": true,
+  "result_state": "mock_passed",
+  "created_at": "2026-05-12T14:45:00Z",
+  "execution_mode": "mock_only",
+  "mock_checks": [
+    {
+      "check_id": "check-001",
+      "tool_label": "placeholder",
+      "expected_tool_kind": "placeholder",
+      "simulated_result": "[mock-pass]",
+      "execution_allowed": false,
+      "executable_invoked": false,
+      "version_checked": false,
+      "command_executed": false,
+      "process_output_captured": false,
+      "media_created": false,
+      "blocking_reasons": [],
+      "warnings": []
+    },
+    {
+      "check_id": "check-002",
+      "tool_label": "ffmpeg",
+      "expected_tool_kind": "ffmpeg",
+      "simulated_result": "[mock-pass]",
+      "execution_allowed": false,
+      "executable_invoked": false,
+      "version_checked": false,
+      "command_executed": false,
+      "process_output_captured": false,
+      "media_created": false,
+      "blocking_reasons": [],
+      "warnings": []
+    }
+  ],
+  "output_summary": {
+    "planned_output_count": 2,
+    "actual_output_count": 0,
+    "output_files_created": false,
+    "media_files_created": false,
+    "output_path_summaries": [
+      "[would-create-video]",
+      "[would-create-thumbnail]"
+    ]
+  },
+  "validation": {
+    "ready_for_execution": false,
+    "ready_for_render": false,
+    "ready_for_upload": false,
+    "blocking_reasons": [],
+    "warnings": []
+  },
+  "provenance": {
+    "generated_by": "createMockRendererExecutionResult",
+    "source_plan_id": "version-check-plan-001",
+    "source_discovery_id": "renderer-binary-discovery-example-001",
+    "source_preflight_id": "renderer-preflight-example-001",
+    "source_manifest_id": "render-command-manifest-example-001"
+  }
+}

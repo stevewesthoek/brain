@@ -2748,6 +2748,105 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 
 ---
 
+## VO-4E: Mock Renderer Execution Result Contract
+
+**Purpose:** Define the contract for mock-only renderer execution results. This gives us a safe result structure for planning before any real rendering spike. Execution results remain dry-run-only, behind approval gates, and marked for future real execution approval.
+
+**What it does:**
+- Defines mock execution result schema and TypeScript types
+- Creates mock results from version check plans (no FFmpeg, no rendering)
+- Validates all result constraints (execution flags false, output count 0, media not created)
+- Stores and reports mock results with safe summaries
+- Prepares contract for future real execution (still behind approval gate)
+
+**What it does NOT do:**
+- Does NOT execute FFmpeg
+- Does NOT run version commands (`ffmpeg -version`, `ffprobe`, etc.)
+- Does NOT run any renderer binaries
+- Does NOT invoke `child_process`, `spawn`, or `execSync`
+- Does NOT create files or directories
+- Does NOT capture process output
+- Does NOT read environment variables
+- Does NOT call platform APIs
+- Does NOT enable rendering capability (still dry_run=true, ready_for_render/upload=false)
+
+### Deliverables
+
+1. **Schema and Example** (in `operations/specs/video-orchestrator/`)
+   - `mock-renderer-execution-result.schema.json` — JSON Schema v7 with immutable constraints (dry_run true, execution_mode="mock_only", all execution flags false const, actual_output_count=0 const, ready flags false const)
+   - `examples/mock-renderer-execution-result.example.json` — Safe example with mock checks and output summaries
+
+2. **TypeScript Types** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `type MockRendererExecutionResultState = "draft" | "blocked" | "mock_passed" | "mock_failed"`
+   - `type MockRendererExecutionMode = "mock_only"`
+   - `interface MockRendererExecutionCheck` — check_id, tool_label, expected_tool_kind, simulated_result (e.g., "[mock-pass]"), execution_allowed (false), executable_invoked (false), version_checked (false), command_executed (false), process_output_captured (false), media_created (false), blocking_reasons, warnings
+   - `interface MockRendererExecutionOutputSummary` — planned_output_count, actual_output_count (0), output_files_created (false), media_files_created (false), output_path_summaries
+   - `interface MockRendererExecutionResult` — full manifest structure with all immutable constraints
+   - `interface MockRendererExecutionResultValidationResult` — ok, blocking_reasons, warnings
+
+3. **Core Functions** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `createMockRendererExecutionResult(input: {plan: RendererVersionCheckPlan; dryRun: true; executionMode: "mock_only"}): MockRendererExecutionResult` — Derives mock_checks from planned_checks with safe simulation results
+   - `validateMockRendererExecutionResult(result: unknown): MockRendererExecutionResultValidationResult` — Enforces schema_version, dry_run, execution_mode, immutable flags, forbidden patterns
+   - `saveMockRendererExecutionResult(result: MockRendererExecutionResult): void` — Persists to JSON-backed local store with constraint validation
+   - `listMockRendererExecutionResults(options?: {project_id?, platform?, result_state?, version_check_plan_id?, command_manifest_id?}): MockRendererExecutionResult[]` — Queries with filtering and sorting
+   - `getMockRendererExecutionResult(mock_result_id: string): MockRendererExecutionResult | null` — Single lookup
+   - `getMockRendererExecutionResultReport(options?: {project_id?, platform?}): {total, by_state, blocked, mock_passed, mock_failed, readiness=0, media_files_created=0, results}` — Aggregates state counts with hardcoded readiness/media flags
+
+4. **Tests** (50 VO-4E tests in `projects/probot/src/bot/video-orchestrator-jobs.test.ts`)
+   - **VO-4E-SCHEMA-1 to 4:** Schema validation, example parsing, forbidden strings, no raw paths/commands/env vars/process output
+   - **VO-4E-CREATE-5 to 17:** Creation constraints, mock check derivation, flag enforcement, file creation blocking, output safety
+   - **VO-4E-VALIDATE-18 to 35:** Validation enforcement, immutable flag checks (execution_allowed/executable_invoked/command_executed/version_checked/process_output_captured/media_created all false), output constraints (actual_output_count=0, output_files_created=false, media_files_created=false), ready flags false, forbidden patterns
+   - **VO-4E-STORE-36 to 44:** Persistence, filtering (project_id, platform, result_state, version_check_plan_id, command_manifest_id), constraint enforcement, rejection of unsafe results
+   - **VO-4E-REPORT-45 to 50:** State counting, data sanitization, readiness hardcoded to 0, media_files_created hardcoded to 0
+
+**Files Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts` — Added VO-4E types, functions, stores (~650 lines)
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts` — Added 50 VO-4E tests (~1,100 lines)
+
+**New Files Created:**
+- `operations/specs/video-orchestrator/mock-renderer-execution-result.schema.json` (created)
+- `operations/specs/video-orchestrator/examples/mock-renderer-execution-result.example.json` (created)
+
+### Safety Constraints: Immutable and Verified (VO-4B + VO-4C + VO-4D + VO-4E)
+
+✅ dry_run must be true (const in types and validation)
+✅ execution_mode must be "mock_only" (const in types)
+✅ execution_allowed must be false (const in types)
+✅ executable_invoked must be false (const in types)
+✅ command_executed must be false (const in types)
+✅ version_checked must be false (const in types)
+✅ process_output_captured must be false (const in types)
+✅ media_created must be false (const in types)
+✅ actual_output_count must be 0 (const in types)
+✅ output_files_created must be false (const in types)
+✅ media_files_created must be false (const in types)
+✅ ready_for_execution/render/upload hardcoded to false (const in types)
+✅ No child_process execution (validation blocks it)
+✅ No FFmpeg execution
+✅ No rendering
+✅ No version command execution
+✅ No environment variable reading
+✅ No file creation
+✅ No process output capture
+✅ Validation blocks execution commands without echoing values
+✅ Validation blocks credential patterns without echoing values
+
+### Backward Compatibility
+
+✅ No breaking changes to VO-3A/3B/3C/3D/3E/3F or VO-4A/4B/4C/4D functions or types
+
+### Next Phase Context
+
+**VO-4A, VO-4B, VO-4C, VO-4D, and VO-4E are complete** (render executor contract, preflight environment checks, binary discovery manifests, version check plans, mock execution results). Future phases will add:
+- **VO-3G: Real Render Execution** (requires explicit separate approval)
+  - Operator explicitly approves and triggers actual rendering
+  - FFmpeg execution only when explicitly approved
+  - File creation only when explicitly approved
+  - Upload queuing only when explicitly approved
+  - Requires separate gating mechanism beyond VO-4E mock execution results
+
+---
+
 ### VO-3B + VO-3C + VO-3D + VO-3E + VO-3F + VO-4A: Next Steps (VO-4B+)
 
 **VO-4B: Explicit Renderer Preflight** — Validate rendering readiness without execution (when approved)
