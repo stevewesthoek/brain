@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "production_render_spike_result_id": "production-render-spike-001",
+  "final_render_execution_request_id": "final-render-execution-request-001",
+  "production_render_request_id": "production-render-request-001",
+  "source_media_inventory_id": "source-media-inventory-001",
+  "output_directory_approval_id": "output-directory-approval-001",
+  "command_manifest_id": "command-manifest-control-001",
+  "render_plan_id": "render-plan-control-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "execution_mode": "controlled_local_production_render_spike",
+  "created_at": "2026-05-12T18:45:00Z",
+  "completed_at": "2026-05-12T18:45:01Z",
+  "spike_scope": {
+    "production_project_allowed": true,
+    "source_media_read_allowed": true,
+    "source_media_mutation_allowed": false,
+    "source_media_copy_allowed": false,
+    "source_media_transcode_allowed": false,
+    "output_write_allowed": true,
+    "media_creation_allowed": true,
+    "upload_allowed": false,
+    "platform_api_calls_allowed": false,
+    "max_output_files": 1
+  },
+  "execution_permissions": {
+    "operator_confirmed": true,
+    "child_process_allowed": true,
+    "ffmpeg_execution_allowed": true,
+    "renderer_execution_allowed": false,
+    "env_access_allowed": false,
+    "process_output_capture_allowed": "redacted_summary_only",
+    "raw_command_storage_allowed": false
+  },
+  "source_summary": {
+    "source_item_count": 1,
+    "source_items_used_count": 1,
+    "raw_source_paths_stored": false,
+    "source_media_mutated": false,
+    "source_media_copied": false,
+    "source_media_transcoded": false
+  },
+  "output_summary": {
+    "output_directory_summary": "[ignored-runtime-production-dir]/production-render-spike/production-render-spike-001",
+    "output_file_count": 1,
+    "output_files_created": true,
+    "media_files_created": true,
+    "output_path_summaries": ["[production-render-spike-output]"],
+    "bytes_written": 12345,
+    "duration_seconds": 1
+  },
+  "process_summary": {
+    "command_invoked": true,
+    "command_label": "ffmpeg",
+    "raw_command_stored": false,
+    "stdout_stored": false,
+    "stderr_stored": false,
+    "exit_code": 0,
+    "timed_out": false,
+    "runtime_ms": 250
+  },
+  "validation": {
+    "spike_passed": true,
+    "ready_for_upload": false,
+    "blocking_reasons": [],
+    "warnings": ["Controlled local spike completed; no upload or API calls were performed."]
+  },
+  "provenance": {
+    "generated_by": "runControlledLocalProductionRenderSpike",
+    "source_final_render_execution_request_id": "final-render-execution-request-001",
+    "source_production_render_request_id": "production-render-request-001",
+    "source_source_media_inventory_id": "source-media-inventory-001",
+    "source_output_directory_approval_id": "output-directory-approval-001",
+    "source_manifest_id": "command-manifest-control-001"
+  }
+}

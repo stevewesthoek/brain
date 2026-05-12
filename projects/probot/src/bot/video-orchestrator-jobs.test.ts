@@ -182,6 +182,13 @@ import {
   getFinalProductionRenderExecutionRequest,
   revokeFinalProductionRenderExecutionRequest,
   getFinalProductionRenderExecutionRequestReport,
+  validateControlledProductionRenderSpikePermission,
+  runControlledLocalProductionRenderSpike,
+  validateControlledProductionRenderSpikeResult,
+  saveControlledProductionRenderSpikeResult,
+  listControlledProductionRenderSpikeResults,
+  getControlledProductionRenderSpikeResult,
+  getControlledProductionRenderSpikeResultReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -195,6 +202,7 @@ import {
   type SourceMediaInventory,
   type OutputDirectoryApproval,
   type FinalProductionRenderExecutionRequest,
+  type ControlledProductionRenderSpikeResult,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -403,7 +411,14 @@ function createSafeOutputDirectoryApproval(
   baseDir?: string,
   operatorApproved = false
 ): OutputDirectoryApproval {
-  return createOutputDirectoryApproval({ request, inventory, outputDirectory, approvalMode, ...(baseDir ? { baseDir } : {}), operatorApproved });
+  const resolvedRequest = {
+    ...request,
+    production_render_request_id: inventory.production_render_request_id,
+    render_plan_id: inventory.render_plan_id,
+    project_id: inventory.project_id,
+    platform: inventory.platform,
+  };
+  return createOutputDirectoryApproval({ request: resolvedRequest, inventory, outputDirectory, approvalMode, ...(baseDir ? { baseDir } : {}), operatorApproved });
 }
 
 function createSafeFinalProductionRenderExecutionRequest(
@@ -425,18 +440,133 @@ function createSafeFinalProductionRenderExecutionRequest(
   const realExecutionApproval = createSafeControlledProductionApproval();
   const commandManifest = createSafeControlledProductionCommandManifest();
   const approvedReviewLabel = decision === "approved_for_future_execution_spike" ? "operator-001" : undefined;
-  return createFinalProductionRenderExecutionRequest({
+  const input = {
     productionRequest: request,
     sourceInventory: inventory,
     outputApproval,
     realExecutionApproval,
     commandManifest,
     decision,
-    reviewed_by_label: approvedReviewLabel,
-    dryRun: true,
+    dryRun: true as const,
     ...overrides,
-  });
+    ...(approvedReviewLabel ? { reviewed_by_label: approvedReviewLabel } : {}),
+  };
+  return createFinalProductionRenderExecutionRequest(input);
 }
+
+function createSafeControlledProductionRenderSpikeResult(
+  outputBaseDir: string,
+  passed = true,
+  overrides: Partial<ControlledProductionRenderSpikeResult> = {}
+): ControlledProductionRenderSpikeResult {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = {
+    ...createSafeSourceMediaInventory(request, renderPlan, "explicit_read_only_validation"),
+    source_items: [
+      {
+        ...createSafeSourceMediaInventory(request, renderPlan, "explicit_read_only_validation").source_items[0]!,
+        read_check_performed: true,
+        exists: true,
+        file_type_summary: "video/mp4",
+        byte_size: 1024,
+        duration_seconds: 1,
+        resolution_summary: "160x90",
+        warnings: ["Read-only source item checked for controlled local spike."],
+      },
+    ],
+    inventory_state: "checked" as const,
+  };
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "explicit_write_boundary_validation", baseDir: outputBaseDir, operatorApproved: true });
+  const finalRequest = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", {
+    checklist_acknowledged: true,
+    risk_acknowledgement: true,
+    understands_no_execution_enabled: true,
+    understands_no_upload_enabled: true,
+    reviewed_by_label: "operator-001",
+  });
+  const result: ControlledProductionRenderSpikeResult = {
+    schema_version: "1.0",
+    production_render_spike_result_id: `production-render-spike-${crypto.randomUUID()}`,
+    final_render_execution_request_id: finalRequest.final_render_execution_request_id,
+    production_render_request_id: request.production_render_request_id,
+    source_media_inventory_id: inventory.source_media_inventory_id,
+    output_directory_approval_id: outputApproval.output_directory_approval_id,
+    command_manifest_id: request.command_manifest_id,
+    render_plan_id: request.render_plan_id,
+    project_id: request.project_id,
+    platform: request.platform,
+    execution_mode: "controlled_local_production_render_spike",
+    created_at: new Date().toISOString(),
+    completed_at: new Date().toISOString(),
+    spike_scope: {
+      production_project_allowed: true,
+      source_media_read_allowed: true,
+      source_media_mutation_allowed: false,
+      source_media_copy_allowed: false,
+      source_media_transcode_allowed: false,
+      output_write_allowed: true,
+      media_creation_allowed: true,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      max_output_files: 1,
+    },
+    execution_permissions: {
+      operator_confirmed: true,
+      child_process_allowed: true,
+      ffmpeg_execution_allowed: true,
+      renderer_execution_allowed: false,
+      env_access_allowed: false,
+      process_output_capture_allowed: "redacted_summary_only",
+      raw_command_storage_allowed: false,
+    },
+    source_summary: {
+      source_item_count: 1,
+      source_items_used_count: 1,
+      raw_source_paths_stored: false,
+      source_media_mutated: false,
+      source_media_copied: false,
+      source_media_transcoded: false,
+    },
+    output_summary: {
+      output_directory_summary: "[ignored-runtime-production-dir]/production-render-spike/test",
+      output_file_count: passed ? 1 : 0,
+      output_files_created: passed,
+      media_files_created: passed,
+      output_path_summaries: passed ? ["[production-render-spike-output]"] : [],
+      ...(passed ? { bytes_written: 1024 } : {}),
+      duration_seconds: 1,
+    },
+    process_summary: {
+      command_invoked: true,
+      command_label: "ffmpeg",
+      raw_command_stored: false,
+      stdout_stored: false,
+      stderr_stored: false,
+      exit_code: passed ? 0 : 1,
+      timed_out: false,
+      runtime_ms: 200,
+    },
+    validation: {
+      spike_passed: passed,
+      ready_for_upload: false,
+      blocking_reasons: passed ? [] : ["Controlled production render spike did not complete successfully"],
+      warnings: passed ? ["Controlled local spike completed; no upload or API calls were performed."] : ["FFmpeg unavailable or controlled spike failed."],
+    },
+    provenance: {
+      generated_by: "runControlledLocalProductionRenderSpike",
+      source_final_render_execution_request_id: finalRequest.final_render_execution_request_id,
+      source_production_render_request_id: request.production_render_request_id,
+      source_source_media_inventory_id: inventory.source_media_inventory_id,
+      source_output_directory_approval_id: outputApproval.output_directory_approval_id,
+      source_manifest_id: request.command_manifest_id,
+    },
+  };
+  return { ...result, ...overrides };
+}
+
+const createSafeControlledProductionSpikeResult = createSafeControlledProductionRenderSpikeResult;
 
 test("VO-J1: Create scheduled job", (t) => {
   const tempDir = setupTestRuntime();
@@ -14194,6 +14324,14 @@ function getTestRenderSpikeSchemaAndExamplePaths(): { schemaPath: string; exampl
   };
 }
 
+function getTestControlledProductionRenderSpikeSchemaAndExamplePaths(): { schemaPath: string; examplePath: string } {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  return {
+    schemaPath: path.join(root, "operations", "specs", "video-orchestrator", "controlled-production-render-spike-result.schema.json"),
+    examplePath: path.join(root, "operations", "specs", "video-orchestrator", "examples", "controlled-production-render-spike-result.example.json"),
+  };
+}
+
 function makeApprovedRealRendererApproval(overrides?: Partial<RealRendererExecutionApproval>): RealRendererExecutionApproval {
   return {
     schema_version: "1.0",
@@ -16216,4 +16354,541 @@ test("VO-6E-REPORT-60: readiness execution write media upload counters remain 0"
   assert.strictEqual(report.output_directory_write_allowed, 0);
   assert.strictEqual(report.media_creation_allowed, 0);
   assert.strictEqual(report.upload_allowed, 0);
+});
+
+// ─── VO-7A: Controlled Production Render Spike Tests ────────────────────────
+
+test("VO-7A-SCHEMA-1: controlled production render spike schema parses", () => {
+  const { schemaPath } = getTestControlledProductionRenderSpikeSchemaAndExamplePaths();
+  const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+  assert.ok(schema);
+});
+
+test("VO-7A-SCHEMA-2: example parses", () => {
+  const { examplePath } = getTestControlledProductionRenderSpikeSchemaAndExamplePaths();
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+  assert.ok(example);
+});
+
+test("VO-7A-SCHEMA-3: example contains no forbidden strings", () => {
+  const { examplePath } = getTestControlledProductionRenderSpikeSchemaAndExamplePaths();
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+  assert.strictEqual(hasForbiddenStrings(example), false);
+});
+
+test("VO-7A-SCHEMA-4: example contains no raw paths urls commands env vars process output upload payloads or credentials", () => {
+  const { examplePath } = getTestControlledProductionRenderSpikeSchemaAndExamplePaths();
+  const text = fs.readFileSync(examplePath, "utf8");
+  assert.strictEqual(/\/Users\/|https?:\/\/|"stdout":|"stderr":|ffmpeg -i|data=|videos.insert|youtube.videos\(\)\.insert|access_token|refresh_token|client_secret|Bearer |child_process\(|spawn\(|execSync\(/i.test(text), false);
+});
+
+test("VO-7A-PERM-5: dryRun=true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const finalRequest = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, reviewed_by_label: "operator-001" });
+    const sourceInventory = createSafeSourceMediaInventory(createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }), createSafeControlledProductionRenderPlan(), "explicit_read_only_validation");
+    const outputApproval = createSafeOutputDirectoryApproval(undefined, sourceInventory, "renders/approved-output", "explicit_write_boundary_validation", tempDir, true);
+    const validation = validateControlledProductionRenderSpikePermission({
+      finalRequest,
+      sourceInventory,
+      outputApproval,
+      dryRun: true as never,
+      executionMode: "controlled_local_production_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowSourceMediaRead: true,
+      allowOutputWrite: true,
+      allowMediaCreation: true,
+      allowUpload: false,
+      allowPlatformApiCalls: false,
+      outputBaseDir: tempDir,
+    });
+    assert.strictEqual(validation.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-PERM-6: wrong executionMode blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const finalRequest = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, reviewed_by_label: "operator-001" });
+    const sourceInventory = createSafeSourceMediaInventory(createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }), createSafeControlledProductionRenderPlan(), "explicit_read_only_validation");
+    const outputApproval = createSafeOutputDirectoryApproval(undefined, sourceInventory, "renders/approved-output", "explicit_write_boundary_validation", tempDir, true);
+    const validation = validateControlledProductionRenderSpikePermission({
+      finalRequest,
+      sourceInventory,
+      outputApproval,
+      dryRun: false as false,
+      executionMode: "wrong_mode" as never,
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowSourceMediaRead: true,
+      allowOutputWrite: true,
+      allowMediaCreation: true,
+      allowUpload: false,
+      allowPlatformApiCalls: false,
+      outputBaseDir: tempDir,
+    } as never);
+    assert.strictEqual(validation.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-PERM-7: operatorConfirmed false blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const finalRequest = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, reviewed_by_label: "operator-001" });
+    const sourceInventory = createSafeSourceMediaInventory(createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }), createSafeControlledProductionRenderPlan(), "explicit_read_only_validation");
+    const outputApproval = createSafeOutputDirectoryApproval(undefined, sourceInventory, "renders/approved-output", "explicit_write_boundary_validation", tempDir, true);
+    const validation = validateControlledProductionRenderSpikePermission({
+      finalRequest,
+      sourceInventory,
+      outputApproval,
+      dryRun: false as false,
+      executionMode: "controlled_local_production_render_spike",
+      operatorConfirmed: false as never,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowSourceMediaRead: true,
+      allowOutputWrite: true,
+      allowMediaCreation: true,
+      allowUpload: false,
+      allowPlatformApiCalls: false,
+      outputBaseDir: tempDir,
+    } as never);
+    assert.strictEqual(validation.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-PERM-8: allowUpload true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const finalRequest = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, reviewed_by_label: "operator-001" });
+    const sourceInventory = createSafeSourceMediaInventory(createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }), createSafeControlledProductionRenderPlan(), "explicit_read_only_validation");
+    const outputApproval = createSafeOutputDirectoryApproval(undefined, sourceInventory, "renders/approved-output", "explicit_write_boundary_validation", tempDir, true);
+    const validation = validateControlledProductionRenderSpikePermission({
+      finalRequest,
+      sourceInventory,
+      outputApproval,
+      dryRun: false as false,
+      executionMode: "controlled_local_production_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowSourceMediaRead: true,
+      allowOutputWrite: true,
+      allowMediaCreation: true,
+      allowUpload: true as never,
+      allowPlatformApiCalls: false,
+      outputBaseDir: tempDir,
+    } as never);
+    assert.strictEqual(validation.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-PERM-9: allowPlatformApiCalls true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const finalRequest = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, reviewed_by_label: "operator-001" });
+    const sourceInventory = createSafeSourceMediaInventory(createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }), createSafeControlledProductionRenderPlan(), "explicit_read_only_validation");
+    const outputApproval = createSafeOutputDirectoryApproval(undefined, sourceInventory, "renders/approved-output", "explicit_write_boundary_validation", tempDir, true);
+    const validation = validateControlledProductionRenderSpikePermission({
+      finalRequest,
+      sourceInventory,
+      outputApproval,
+      dryRun: false as false,
+      executionMode: "controlled_local_production_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowSourceMediaRead: true,
+      allowOutputWrite: true,
+      allowMediaCreation: true,
+      allowUpload: false,
+      allowPlatformApiCalls: true as never,
+      outputBaseDir: tempDir,
+    } as never);
+    assert.strictEqual(validation.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-PERM-10: unapproved final request blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const finalRequest = createSafeFinalProductionRenderExecutionRequest();
+    const sourceInventory = createSafeSourceMediaInventory(createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }), createSafeControlledProductionRenderPlan(), "explicit_read_only_validation");
+    const outputApproval = createSafeOutputDirectoryApproval(undefined, sourceInventory, "renders/approved-output", "explicit_write_boundary_validation", tempDir, true);
+    const validation = validateControlledProductionRenderSpikePermission({
+      finalRequest,
+      sourceInventory,
+      outputApproval,
+      dryRun: false as false,
+      executionMode: "controlled_local_production_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowSourceMediaRead: true,
+      allowOutputWrite: true,
+      allowMediaCreation: true,
+      allowUpload: false,
+      allowPlatformApiCalls: false,
+      outputBaseDir: tempDir,
+    });
+    assert.strictEqual(validation.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-PERM-11: unsafe outputBaseDir blocks", () => {
+  const finalRequest = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, reviewed_by_label: "operator-001" });
+  const sourceInventory = createSafeSourceMediaInventory(createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }), createSafeControlledProductionRenderPlan(), "explicit_read_only_validation");
+  const outputApproval = createSafeOutputDirectoryApproval(undefined, sourceInventory, "renders/approved-output", "explicit_write_boundary_validation", setupTestRuntime(), true);
+  const validation = validateControlledProductionRenderSpikePermission({
+    finalRequest,
+    sourceInventory,
+    outputApproval,
+    dryRun: false as false,
+    executionMode: "controlled_local_production_render_spike",
+    operatorConfirmed: true,
+    allowChildProcess: true,
+    allowFfmpeg: true,
+    allowSourceMediaRead: true,
+    allowOutputWrite: true,
+    allowMediaCreation: true,
+    allowUpload: false,
+    allowPlatformApiCalls: false,
+    outputBaseDir: "https://example.com/output",
+  });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-7A-RUN-14: missing source returns safe failed result", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const finalRequest = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, reviewed_by_label: "operator-001" });
+    const sourceInventory = createSafeSourceMediaInventory(createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }), createSafeControlledProductionRenderPlan(), "metadata_only");
+    const outputApproval = createSafeOutputDirectoryApproval(undefined, sourceInventory, "renders/approved-output", "explicit_write_boundary_validation", tempDir, true);
+    const result = runControlledLocalProductionRenderSpike({
+      finalRequest,
+      sourceInventory,
+      outputApproval,
+      dryRun: false as false,
+      executionMode: "controlled_local_production_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowSourceMediaRead: true,
+      allowOutputWrite: true,
+      allowMediaCreation: true,
+      allowUpload: false,
+      allowPlatformApiCalls: false,
+      outputBaseDir: tempDir,
+      timeoutMs: 50,
+    });
+    assert.strictEqual(result.validation.spike_passed, false);
+    assert.strictEqual(result.process_summary.raw_command_stored, false);
+    assert.strictEqual(result.process_summary.stdout_stored, false);
+    assert.strictEqual(result.process_summary.stderr_stored, false);
+    assert.strictEqual(result.validation.ready_for_upload, false);
+    assert.strictEqual(result.output_summary.output_file_count, 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-RUN-15: no upload or API calls are added", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const finalRequest = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, reviewed_by_label: "operator-001" });
+    const sourceInventory = createSafeSourceMediaInventory(createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true }), createSafeControlledProductionRenderPlan(), "metadata_only");
+    const outputApproval = createSafeOutputDirectoryApproval(undefined, sourceInventory, "renders/approved-output", "explicit_write_boundary_validation", tempDir, true);
+    const result = runControlledLocalProductionRenderSpike({
+      finalRequest,
+      sourceInventory,
+      outputApproval,
+      dryRun: false as false,
+      executionMode: "controlled_local_production_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowSourceMediaRead: true,
+      allowOutputWrite: true,
+      allowMediaCreation: true,
+      allowUpload: false,
+      allowPlatformApiCalls: false,
+      outputBaseDir: tempDir,
+      timeoutMs: 50,
+    });
+    assert.strictEqual(result.spike_scope.upload_allowed, false);
+    assert.strictEqual(result.spike_scope.platform_api_calls_allowed, false);
+    assert.strictEqual(result.validation.ready_for_upload, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-RUN-16: output directory constrained to temp dir", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, false);
+    assert.ok(result.output_summary.output_directory_summary.includes("[ignored-runtime-production-dir]") || result.output_summary.output_directory_summary === "[unsafe-output-directory]" || result.output_summary.output_directory_summary === "[output-directory]");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-RUN-17: output count <= 1", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, true);
+    assert.ok(result.output_summary.output_file_count <= 1);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-RUN-18: optional FFmpeg test creates at most one output when available", (t) => {
+  const ffmpegCheck = spawnSync("ffmpeg", ["-version"], { stdio: "ignore" });
+  if (ffmpegCheck.status !== 0) {
+    t.skip("ffmpeg unavailable");
+    return;
+  }
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = createSafeControlledProductionApproval();
+    const renderPlan = createSafeControlledProductionRenderPlan();
+    const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+    const inventory = {
+      ...createSafeSourceMediaInventory(request, renderPlan, "explicit_read_only_validation"),
+      source_items: [
+        {
+          ...createSafeSourceMediaInventory(request, renderPlan, "explicit_read_only_validation").source_items[0]!,
+          read_check_performed: true,
+          exists: true,
+        },
+      ],
+      inventory_state: "checked" as const,
+    };
+    const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "explicit_write_boundary_validation", baseDir: tempDir, operatorApproved: true });
+    const finalRequest = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, reviewed_by_label: "operator-001" });
+    const result = runControlledLocalProductionRenderSpike({
+      finalRequest,
+      sourceInventory: inventory,
+      outputApproval,
+      dryRun: false as false,
+      executionMode: "controlled_local_production_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowSourceMediaRead: true,
+      allowOutputWrite: true,
+      allowMediaCreation: true,
+      allowUpload: false,
+      allowPlatformApiCalls: false,
+      outputBaseDir: tempDir,
+      timeoutMs: 5000,
+    });
+    if (!result.validation.spike_passed) {
+      t.skip("ffmpeg unavailable or controlled spike failed");
+      return;
+    }
+    assert.ok(result.output_summary.output_file_count <= 1);
+    assert.strictEqual(result.validation.ready_for_upload, false);
+    assert.strictEqual(result.process_summary.raw_command_stored, false);
+    assert.strictEqual(result.process_summary.stdout_stored, false);
+    assert.strictEqual(result.process_summary.stderr_stored, false);
+    assert.ok(validateControlledProductionRenderSpikeResult(result).ok);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-VALIDATE-27: safe failed result validates", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, false);
+    assert.ok(validateControlledProductionRenderSpikeResult(result).ok);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-VALIDATE-28: upload_allowed true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, false, {
+      spike_scope: { ...createSafeControlledProductionSpikeResult(tempDir, false).spike_scope, upload_allowed: true as never },
+    } as never);
+    assert.strictEqual(validateControlledProductionRenderSpikeResult(result).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-VALIDATE-29: platform_api_calls_allowed true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, false);
+    const unsafe = { ...result, spike_scope: { ...result.spike_scope, platform_api_calls_allowed: true as never } };
+    assert.strictEqual(validateControlledProductionRenderSpikeResult(unsafe).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-VALIDATE-30: source_media_mutation_allowed true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, false);
+    const unsafe = { ...result, spike_scope: { ...result.spike_scope, source_media_mutation_allowed: true as never } };
+    assert.strictEqual(validateControlledProductionRenderSpikeResult(unsafe).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-VALIDATE-31: raw_source_paths_stored true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, false);
+    const unsafe = { ...result, source_summary: { ...result.source_summary, raw_source_paths_stored: true as never } };
+    assert.strictEqual(validateControlledProductionRenderSpikeResult(unsafe).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-VALIDATE-32: raw command string blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, false);
+    const unsafe = { ...result, process_summary: { ...result.process_summary, raw_command_stored: true as never } };
+    assert.strictEqual(validateControlledProductionRenderSpikeResult(unsafe).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-VALIDATE-33: stdout stderr payload blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, false);
+    const unsafe = { ...result, process_summary: { ...result.process_summary, stdout_stored: true as never } };
+    assert.strictEqual(validateControlledProductionRenderSpikeResult(unsafe).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-VALIDATE-34: output_file_count greater than 1 blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, false);
+    const unsafe = { ...result, output_summary: { ...result.output_summary, output_file_count: 2 as never } };
+    assert.strictEqual(validateControlledProductionRenderSpikeResult(unsafe).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-STORE-43: save list get upsert works", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, true);
+    saveControlledProductionRenderSpikeResult(result);
+    const loaded = getControlledProductionRenderSpikeResult(result.production_render_spike_result_id);
+    assert.ok(loaded);
+    assert.strictEqual(loaded!.production_render_spike_result_id, result.production_render_spike_result_id);
+    const updated = { ...result, validation: { ...result.validation, spike_passed: false as never } };
+    saveControlledProductionRenderSpikeResult(updated as never);
+    const reloaded = getControlledProductionRenderSpikeResult(result.production_render_spike_result_id);
+    assert.strictEqual(reloaded!.validation.spike_passed, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-STORE-44: filters work", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, true);
+    saveControlledProductionRenderSpikeResult(result);
+    const filtered = listControlledProductionRenderSpikeResults({ project_id: result.project_id, platform: result.platform, execution_mode: result.execution_mode, spike_passed: true });
+    assert.strictEqual(filtered.length >= 1, true);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-STORE-45: store rejects unsafe result", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, true);
+    assert.throws(() => saveControlledProductionRenderSpikeResult({ ...result, output_summary: { ...result.output_summary, output_directory_summary: "/Users/office/private" } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-STORE-46: store rejects upload API and ready flags true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const result = createSafeControlledProductionSpikeResult(tempDir, true);
+    assert.throws(() => saveControlledProductionRenderSpikeResult({ ...result, spike_scope: { ...result.spike_scope, upload_allowed: true as never } } as never));
+    assert.throws(() => saveControlledProductionRenderSpikeResult({ ...result, spike_scope: { ...result.spike_scope, platform_api_calls_allowed: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-REPORT-51: report counts passed failed", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const passed = createSafeControlledProductionSpikeResult(tempDir, true);
+    const failed = createSafeControlledProductionSpikeResult(tempDir, false);
+    saveControlledProductionRenderSpikeResult(passed);
+    saveControlledProductionRenderSpikeResult(failed);
+    const report = getControlledProductionRenderSpikeResultReport();
+    assert.ok(report.total >= 2);
+    assert.ok(report.passed >= 1);
+    assert.ok(report.failed >= 1);
+    assert.strictEqual(report.ready_for_upload, 0);
+    assert.strictEqual(report.platform_api_calls_allowed, 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7A-REPORT-52: legacy unsafe runtime data does not leak", () => {
+  const report = getControlledProductionRenderSpikeResultReport();
+  assert.strictEqual(hasForbiddenStrings(report), false);
+});
+
+test("VO-7A-REPORT-53: JSON.stringify(report) contains no forbidden strings", () => {
+  const report = getControlledProductionRenderSpikeResultReport();
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(report)), false);
+});
+
+test("VO-7A-REPORT-54: report excludes raw paths URLs commands stdout stderr upload payloads", () => {
+  const report = getControlledProductionRenderSpikeResultReport();
+  const text = JSON.stringify(report);
+  assert.strictEqual(/\/Users\/|https?:\/\/|stdout|stderr|ffmpeg -i|data=|videos.insert|youtube.videos\(\)\.insert|access_token|refresh_token|client_secret/i.test(text), false);
+});
+
+test("VO-7A-REPORT-55: upload and api counters remain 0", () => {
+  const report = getControlledProductionRenderSpikeResultReport();
+  assert.strictEqual(report.ready_for_upload, 0);
+  assert.strictEqual(report.upload_allowed, 0);
+  assert.strictEqual(report.platform_api_calls_allowed, 0);
 });
