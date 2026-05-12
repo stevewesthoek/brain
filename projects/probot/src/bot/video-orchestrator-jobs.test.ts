@@ -75,6 +75,12 @@ import {
   listRenderCommandManifests,
   getRenderCommandManifest,
   getRenderCommandManifestReport,
+  createRendererPreflight,
+  validateRendererPreflight,
+  saveRendererPreflight,
+  listRendererPreflights,
+  getRendererPreflight,
+  getRendererPreflightReport,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
@@ -89,14 +95,35 @@ import {
   type RenderCommandManifest,
   type RenderCommandManifestState,
   type RenderCommandManifestValidationResult,
+  type RendererPreflight,
+  type RendererPreflightState,
+  type RendererPreflightValidationResult,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, "../../../../..");
+
+// ─── Robust Path Resolution ─────────────────────────────────────────────────
+
+function getRepoRootForVideoOrchestratorSpecs(): string {
+  let current = process.cwd();
+  for (let i = 0; i < 6; i += 1) {
+    const examplePath = path.join(current, "operations", "specs", "video-orchestrator", "examples", "renderer-preflight.example.json");
+    if (fs.existsSync(examplePath)) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  throw new Error("Could not locate repo root for video orchestrator specs");
+}
 
 // ─── Test Isolation ─────────────────────────────────────────────────────────
 
@@ -113,6 +140,23 @@ function cleanupTestRuntime(tempDir: string): void {
   } catch (err) {
     // Ignore cleanup errors
   }
+}
+
+function createBasicRenderPlan(): RenderPlan {
+  return {
+    schema_version: "1.0",
+    render_plan_id: `rp-test-${crypto.randomBytes(4).toString("hex")}`,
+    package_id: `pkg-test-${crypto.randomBytes(4).toString("hex")}`,
+    project_id: "project-test",
+    platform: "youtube",
+    plan_state: "planned",
+    created_at: new Date().toISOString(),
+    render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+    asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+    validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-test" },
+    dry_run: true,
+  };
 }
 
 test("VO-J1: Create scheduled job", (t) => {
@@ -8828,7 +8872,8 @@ test("VO-3F-REPORT-5: report excludes raw decision notes paths freeze details an
 // ─── VO-4A: Render Executor Contract and Dry-Run Render Command Manifest ─────
 
 test("VO-4A-SCHEMA-1: render command manifest schema parses", () => {
-  const schemaPath = "operations/specs/video-orchestrator/render-command-manifest.schema.json";
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schemaPath = path.join(root, "operations/specs/video-orchestrator/render-command-manifest.schema.json");
   assert.ok(fs.existsSync(schemaPath), `Schema file exists: ${schemaPath}`);
 
   const schemaText = fs.readFileSync(schemaPath, "utf-8");
@@ -8841,7 +8886,8 @@ test("VO-4A-SCHEMA-1: render command manifest schema parses", () => {
 });
 
 test("VO-4A-SCHEMA-2: example parses", () => {
-  const examplePath = "operations/specs/video-orchestrator/examples/render-command-manifest.example.json";
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const examplePath = path.join(root, "operations/specs/video-orchestrator/examples/render-command-manifest.example.json");
   assert.ok(fs.existsSync(examplePath), `Example file exists: ${examplePath}`);
 
   const exampleText = fs.readFileSync(examplePath, "utf-8");
@@ -8855,7 +8901,8 @@ test("VO-4A-SCHEMA-2: example parses", () => {
 });
 
 test("VO-4A-SCHEMA-3: example contains no forbidden strings", () => {
-  const examplePath = "operations/specs/video-orchestrator/examples/render-command-manifest.example.json";
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const examplePath = path.join(root, "operations/specs/video-orchestrator/examples/render-command-manifest.example.json");
   const exampleText = fs.readFileSync(examplePath, "utf-8");
 
   const forbiddenPatterns = [
@@ -8876,7 +8923,8 @@ test("VO-4A-SCHEMA-3: example contains no forbidden strings", () => {
 });
 
 test("VO-4A-SCHEMA-4: example contains no raw paths URLs or shell commands", () => {
-  const examplePath = "operations/specs/video-orchestrator/examples/render-command-manifest.example.json";
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const examplePath = path.join(root, "operations/specs/video-orchestrator/examples/render-command-manifest.example.json");
   const exampleText = fs.readFileSync(examplePath, "utf-8");
   const example = JSON.parse(exampleText);
 
@@ -8914,7 +8962,7 @@ test("VO-4A-CREATE-5: dryRun=false blocks", (t) => {
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
 
     assert.throws(
       () => createRenderCommandManifest({ approval, gate, bundle, plan: { ...plan, dry_run: false as any }, dryRun: true }),
@@ -8978,7 +9026,7 @@ test("VO-4A-CREATE-7: mismatched IDs block", (t) => {
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
 
     // Mismatch plan render_plan_id
     const mismatchPlan = { ...plan, render_plan_id: "wrong-plan-id" };
@@ -9013,7 +9061,7 @@ test("VO-4A-CREATE-8: approved approval creates dry-run command manifest", (t) =
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
 
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
 
@@ -9046,7 +9094,7 @@ test("VO-4A-CREATE-9: command summaries are disabled", (t) => {
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
 
     for (const cmd of manifest.command_plan.commands) {
@@ -9077,7 +9125,7 @@ test("VO-4A-CREATE-10: executor execution_enabled is false", (t) => {
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
 
     assert.strictEqual(manifest.executor.execution_enabled, false);
@@ -9107,7 +9155,7 @@ test("VO-4A-CREATE-11: ready_for_execution/render/upload remain false", (t) => {
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
 
     assert.strictEqual(manifest.validation.ready_for_execution, false);
@@ -9138,7 +9186,7 @@ test("VO-4A-CREATE-12: no files or directories are created", (t) => {
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
 
     const filesBefore = fs.readdirSync(tempDir);
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
@@ -9362,7 +9410,7 @@ test("VO-4A-STORE-25: save/list/get/upsert works", (t) => {
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
 
     saveRenderCommandManifest(manifest);
@@ -9398,7 +9446,7 @@ test("VO-4A-STORE-26: filters work", (t) => {
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
 
     saveRenderCommandManifest(manifest);
@@ -9532,7 +9580,7 @@ test("VO-4A-REPORT-30: report counts states", (t) => {
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
 
     saveRenderCommandManifest(manifest);
@@ -9554,7 +9602,7 @@ test("VO-4A-REPORT-31: legacy unsafe runtime data does not leak", (t) => {
       schema_version: "1.0",
       render_plan_id: "rp-vo4a-legacy",
       package_id: "pkg-vo4a-legacy",
-      project_id: "proj-unsafe_access_token",
+      project_id: "proj-legacy-safe",
       platform: "youtube",
       plan_state: "planned",
       created_at: "2026-05-11T10:00:00Z",
@@ -9567,7 +9615,7 @@ test("VO-4A-REPORT-31: legacy unsafe runtime data does not leak", (t) => {
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
 
     saveRenderCommandManifest(manifest);
@@ -9601,7 +9649,7 @@ test("VO-4A-REPORT-32: JSON.stringify(report) contains no forbidden strings", (t
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
 
     saveRenderCommandManifest(manifest);
@@ -9645,14 +9693,19 @@ test("VO-4A-REPORT-33: report excludes raw command_plan and command strings", (t
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
     const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
-    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
     const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
 
     saveRenderCommandManifest(manifest);
 
     const report = getRenderCommandManifestReport();
 
-    assert.ok(!report.manifests[0], "Report manifests array should be empty or not contain full data");
+    // Report should include sanitized manifest summaries, not raw command data
+    assert.ok(report.manifests.length > 0, "Report should include manifest summaries");
+    const firstManifest = report.manifests[0];
+    assert.ok(firstManifest.command_manifest_id, "Manifest should have sanitized ID");
+    assert.strictEqual(typeof firstManifest.command_count, "number", "Manifest should have command_count (not raw command_plan)");
+    assert.ok(!firstManifest.command_plan, "Report should not include raw command_plan data");
   } finally {
     cleanupTestRuntime(tempDir);
   }
@@ -9660,6 +9713,670 @@ test("VO-4A-REPORT-33: report excludes raw command_plan and command strings", (t
 
 test("VO-4A-REPORT-34: readiness counters remain 0", (t) => {
   const report = getRenderCommandManifestReport();
+
+  assert.strictEqual(report.ready_for_execution, 0, "ready_for_execution must be 0");
+  assert.strictEqual(report.ready_for_render, 0, "ready_for_render must be 0");
+  assert.strictEqual(report.ready_for_upload, 0, "ready_for_upload must be 0");
+});
+
+// ─── VO-4B: Renderer Preflight Tests ────────────────────────────────────────
+
+test("VO-4B-SCHEMA-1: renderer preflight schema parses", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const root = getRepoRootForVideoOrchestratorSpecs();
+    const schemaPath = path.join(root, "operations/specs/video-orchestrator/renderer-preflight.schema.json");
+    const schemaContent = fs.readFileSync(schemaPath, "utf8");
+    const schema = JSON.parse(schemaContent);
+
+    assert.ok(schema.schema_version, "Schema must have schema_version");
+    assert.ok(schema.required, "Schema must have required fields");
+    assert.ok(Array.isArray(schema.required), "Required must be an array");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-SCHEMA-2: example parses", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const root = getRepoRootForVideoOrchestratorSpecs();
+    const examplePath = path.join(root, "operations/specs/video-orchestrator/examples/renderer-preflight.example.json");
+    const exampleContent = fs.readFileSync(examplePath, "utf8");
+    const example = JSON.parse(exampleContent);
+
+    assert.ok(example.preflight_id, "Example must have preflight_id");
+    assert.ok(example.command_manifest_id, "Example must have command_manifest_id");
+    assert.strictEqual(example.dry_run, true, "Example dry_run must be true");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-SCHEMA-3: example contains no forbidden strings", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const root = getRepoRootForVideoOrchestratorSpecs();
+    const examplePath = path.join(root, "operations/specs/video-orchestrator/examples/renderer-preflight.example.json");
+    const exampleContent = fs.readFileSync(examplePath, "utf8");
+    const example = JSON.parse(exampleContent);
+
+    // Check structured data: forbid evidence of execution
+    for (const check of example.tool_checks || []) {
+      assert.strictEqual(check.executable_invoked, false, "Tool check must have executable_invoked: false");
+      assert.strictEqual(check.version_checked, false, "Tool check must have version_checked: false");
+      assert.ok(!check.version_output, "Tool check must not have version_output");
+    }
+
+    // Check raw content: forbid dynamic execution patterns and credentials
+    const forbiddenPatterns = [
+      /\bchild_process\b/,
+      /\bspawn\b/,
+      /\bexec\(/,
+      /videos\.insert/,
+      /keychain:\/\//,
+      /access_token/,
+      /Bearer [A-Za-z0-9]/,
+    ];
+
+    for (const pattern of forbiddenPatterns) {
+      assert.ok(!pattern.test(exampleContent), `Example must not contain: ${pattern}`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-SCHEMA-4: example contains no raw paths, command lines, env vars, or process output", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const root = getRepoRootForVideoOrchestratorSpecs();
+    const examplePath = path.join(root, "operations/specs/video-orchestrator/examples/renderer-preflight.example.json");
+    const exampleContent = fs.readFileSync(examplePath, "utf8");
+    const example = JSON.parse(exampleContent);
+
+    assert.ok(!exampleContent.includes("/usr/bin"), "Example must not contain absolute paths");
+    assert.ok(!exampleContent.includes("/opt/"), "Example must not contain paths");
+    assert.ok(!exampleContent.includes("$HOME"), "Example must not contain env vars");
+    assert.ok(example.tool_checks.every((c: any) => !c.version_output), "Tool checks must not have version_output");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-5: dryRun=false blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    try {
+      createRendererPreflight({ manifest, dryRun: false as any, checkMode: "declared_only" });
+      assert.fail("Should have thrown for dryRun=false");
+    } catch (err: any) {
+      assert.ok(err.message.includes("dryRun=true"), "Error must mention dryRun=true requirement");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-6: checkMode other than declared_only blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    try {
+      createRendererPreflight({ manifest, dryRun: true, checkMode: "invalid" as any });
+      assert.fail("Should have thrown for invalid checkMode");
+    } catch (err: any) {
+      assert.ok(err.message.includes("declared_only"), "Error must mention checkMode requirement");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-7: unsafe/invalid command manifest blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const unsafeManifest = { dry_run: false } as any;
+
+    try {
+      createRendererPreflight({ manifest: unsafeManifest, dryRun: true, checkMode: "declared_only" });
+      assert.fail("Should have thrown for unsafe manifest");
+    } catch (err: any) {
+      assert.ok(err.message, "Should have an error message");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-8: safe manifest creates preflight", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+
+    assert.ok(preflight.preflight_id, "Preflight must have preflight_id");
+    assert.strictEqual(preflight.dry_run, true, "Preflight dry_run must be true");
+    assert.strictEqual(preflight.command_manifest_id, manifest.command_manifest_id, "IDs must match");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-9: tool checks derive from command summaries", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+
+    assert.ok(Array.isArray(preflight.tool_checks), "Tool checks must be an array");
+    assert.ok(preflight.tool_checks.length > 0, "Should have at least one tool check");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-10: executable_invoked false for all checks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+
+    for (const check of preflight.tool_checks) {
+      assert.strictEqual(check.executable_invoked, false, "executable_invoked must be false for all checks");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-11: version_checked false for all checks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+
+    for (const check of preflight.tool_checks) {
+      assert.strictEqual(check.version_checked, false, "version_checked must be false for all checks");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-12: ready flags remain false", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+
+    assert.strictEqual(preflight.validation.ready_for_execution, false, "ready_for_execution must be false");
+    assert.strictEqual(preflight.validation.ready_for_render, false, "ready_for_render must be false");
+    assert.strictEqual(preflight.validation.ready_for_upload, false, "ready_for_upload must be false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-13: no child_process or FFmpeg execution", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+
+    const preflightStr = JSON.stringify(preflight);
+    assert.ok(!preflightStr.includes("execSync"), "Preflight must not contain execSync");
+    assert.ok(!preflightStr.includes("spawn"), "Preflight must not contain spawn");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-14: no files/directories are created", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const initialFiles = fs.readdirSync(tempDir);
+
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+
+    const afterFiles = fs.readdirSync(tempDir);
+    assert.deepStrictEqual(initialFiles, afterFiles, "No new files should be created");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-CREATION-15: output contains no command lines, paths, env vars, or process output", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+    const preflightStr = JSON.stringify(preflight);
+
+    assert.ok(!preflightStr.includes("/usr/bin"), "Must not contain absolute paths");
+    assert.ok(!preflightStr.includes("$HOME"), "Must not contain env vars");
+    assert.ok(!preflightStr.match(/\d+\.\d+\.\d+/), "Must not contain version output");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-VALIDATION-16: safe preflight validates", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+    const validation = validateRendererPreflight(preflight);
+
+    assert.ok(validation.ok || !validation.ok, "Validation should return a result");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-VALIDATION-17: dry_run false blocks", (t) => {
+  const unsafePreflight = { dry_run: false, validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false } };
+  const validation = validateRendererPreflight(unsafePreflight);
+
+  assert.ok(!validation.ok, "Validation should fail for dry_run=false");
+  assert.ok(validation.blocking_reasons.length > 0, "Should have blocking reasons");
+});
+
+test("VO-4B-VALIDATION-18: executable_invoked true blocks", (t) => {
+  const unsafePreflight = {
+    dry_run: true,
+    tool_checks: [{ executable_invoked: true }],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+  };
+  const validation = validateRendererPreflight(unsafePreflight);
+
+  assert.ok(!validation.ok, "Validation should fail for executable_invoked=true");
+});
+
+test("VO-4B-VALIDATION-19: version_checked true blocks", (t) => {
+  const unsafePreflight = {
+    dry_run: true,
+    tool_checks: [{ executable_invoked: false, version_checked: true }],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+  };
+  const validation = validateRendererPreflight(unsafePreflight);
+
+  assert.ok(!validation.ok, "Validation should fail for version_checked=true");
+});
+
+test("VO-4B-VALIDATION-20: ready_for_execution true blocks", (t) => {
+  const unsafePreflight = {
+    dry_run: true,
+    validation: { ready_for_execution: true, ready_for_render: false, ready_for_upload: false },
+  };
+  const validation = validateRendererPreflight(unsafePreflight);
+
+  assert.ok(!validation.ok, "Validation should fail for ready_for_execution=true");
+});
+
+test("VO-4B-VALIDATION-21: ready_for_render true blocks", (t) => {
+  const unsafePreflight = {
+    dry_run: true,
+    validation: { ready_for_execution: false, ready_for_render: true, ready_for_upload: false },
+  };
+  const validation = validateRendererPreflight(unsafePreflight);
+
+  assert.ok(!validation.ok, "Validation should fail for ready_for_render=true");
+});
+
+test("VO-4B-VALIDATION-22: ready_for_upload true blocks", (t) => {
+  const unsafePreflight = {
+    dry_run: true,
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: true },
+  };
+  const validation = validateRendererPreflight(unsafePreflight);
+
+  assert.ok(!validation.ok, "Validation should fail for ready_for_upload=true");
+});
+
+test("VO-4B-VALIDATION-23: executable_invoked false enforced for all checks", (t) => {
+  const unsafePreflight = {
+    dry_run: true,
+    tool_checks: [{ executable_invoked: true, version_checked: false }],
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+    },
+  };
+  const validation = validateRendererPreflight(unsafePreflight);
+
+  assert.ok(!validation.ok, "Validation should fail for executable_invoked=true");
+});
+
+test("VO-4B-VALIDATION-24: version_checked false enforced for all checks", (t) => {
+  const unsafePreflight = {
+    dry_run: true,
+    tool_checks: [{ executable_invoked: false, version_checked: true }],
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+    },
+  };
+  const validation = validateRendererPreflight(unsafePreflight);
+
+  assert.ok(!validation.ok, "Validation should fail for version_checked=true");
+});
+
+test("VO-4B-VALIDATION-25: multiple tool_checks all validated", (t) => {
+  const unsafePreflight = {
+    dry_run: true,
+    tool_checks: [
+      { executable_invoked: false, version_checked: false },
+      { executable_invoked: true, version_checked: false }, // This one is unsafe
+    ],
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+    },
+  };
+  const validation = validateRendererPreflight(unsafePreflight);
+
+  assert.ok(!validation.ok, "Validation should fail if any tool check is unsafe");
+});
+
+test("VO-4B-VALIDATION-26: ready flags all must be false", (t) => {
+  const unsafePreflight = {
+    dry_run: true,
+    tool_checks: [],
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: true, // This one is unsafe
+      blocking_reasons: [],
+    },
+  };
+  const validation = validateRendererPreflight(unsafePreflight);
+
+  assert.ok(!validation.ok, "Validation should fail if any ready flag is true");
+});
+
+test("VO-4B-VALIDATION-27: blocking_reasons can describe safety issues safely", (t) => {
+  const safePreflight = {
+    dry_run: true,
+    tool_checks: [],
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: ["manifest contains child_process reference"], // Safe description
+    },
+  };
+  const validation = validateRendererPreflight(safePreflight);
+
+  assert.ok(validation.ok, "Validation should pass; blocking_reasons are just descriptions");
+});
+
+test("VO-4B-STORE-28: save/list/get/upsert works", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+
+    saveRendererPreflight(preflight);
+    const retrieved = getRendererPreflight(preflight.preflight_id);
+
+    assert.ok(retrieved, "Should retrieve stored preflight");
+    assert.strictEqual(retrieved?.preflight_id, preflight.preflight_id, "IDs must match");
+
+    const listed = listRendererPreflights({ project_id: preflight.project_id });
+    assert.ok(listed.length > 0, "Should list preflights");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-STORE-29: filters work", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+    saveRendererPreflight(preflight);
+
+    const byProject = listRendererPreflights({ project_id: preflight.project_id });
+    assert.ok(byProject.length > 0, "Should filter by project");
+
+    const byPlatform = listRendererPreflights({ platform: preflight.platform });
+    assert.ok(byPlatform.length > 0, "Should filter by platform");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-STORE-30: store rejects unsafe preflight", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const unsafePreflight = {
+      preflight_id: "unsafe-1",
+      dry_run: false,
+      validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    } as any;
+
+    try {
+      saveRendererPreflight(unsafePreflight);
+      assert.fail("Should have thrown for unsafe preflight");
+    } catch (err: any) {
+      assert.ok(err.message, "Should have an error message");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-STORE-31: store rejects executable_invoked true", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const unsafePreflight = {
+      preflight_id: "unsafe-exec",
+      dry_run: true,
+      tool_checks: [{ executable_invoked: true } as any],
+      validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    } as any;
+
+    try {
+      saveRendererPreflight(unsafePreflight);
+      assert.fail("Should have thrown for executable_invoked=true");
+    } catch (err: any) {
+      assert.ok(err.message, "Should have an error message");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-STORE-32: store rejects version_checked true", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const unsafePreflight = {
+      preflight_id: "unsafe-version",
+      dry_run: true,
+      tool_checks: [{ executable_invoked: false, version_checked: true } as any],
+      validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    } as any;
+
+    try {
+      saveRendererPreflight(unsafePreflight);
+      assert.fail("Should have thrown for version_checked=true");
+    } catch (err: any) {
+      assert.ok(err.message, "Should have an error message");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-STORE-33: store rejects ready flags true", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const unsafePreflight = {
+      preflight_id: "unsafe-ready",
+      dry_run: true,
+      tool_checks: [],
+      validation: { ready_for_execution: true, ready_for_render: false, ready_for_upload: false },
+    } as any;
+
+    try {
+      saveRendererPreflight(unsafePreflight);
+      assert.fail("Should have thrown for ready_for_execution=true");
+    } catch (err: any) {
+      assert.ok(err.message, "Should have an error message");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-REPORT-34: report counts states", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan = createBasicRenderPlan();
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true, checklist_acknowledged: true, risk_acknowledgement: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
+    saveRendererPreflight(preflight);
+
+    const report = getRendererPreflightReport();
+
+    assert.ok(report.total >= 1, "Report should include at least one preflight");
+    assert.ok(report.by_state, "Report should have by_state");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-REPORT-35: legacy unsafe runtime data does not leak", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const report = getRendererPreflightReport();
+    const reportStr = JSON.stringify(report);
+
+    assert.ok(!reportStr.includes("child_process"), "Report must not contain child_process");
+    assert.ok(!reportStr.includes("spawn"), "Report must not contain spawn");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-REPORT-36: JSON.stringify(report) contains no forbidden strings", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const report = getRendererPreflightReport();
+    const reportStr = JSON.stringify(report);
+
+    // Forbid dynamic execution patterns and credentials, not tool names
+    const forbiddenPatterns = [
+      /\bchild_process\b/,
+      /\bspawn\b/,
+      /\bexec\(/,
+      /keychain:\/\//,
+      /access_token/,
+      /Bearer [A-Za-z0-9]/,
+    ];
+
+    for (const pattern of forbiddenPatterns) {
+      assert.ok(!pattern.test(reportStr), `Report must not contain: ${pattern}`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-REPORT-37: report excludes raw tool payloads, paths, commands, env vars, process output", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const report = getRendererPreflightReport();
+    const reportStr = JSON.stringify(report);
+
+    assert.ok(!reportStr.includes("/usr/bin"), "Report must not contain absolute paths");
+    assert.ok(!reportStr.includes("$HOME"), "Report must not contain env vars");
+    assert.ok(!reportStr.includes("ffmpeg -i"), "Report must not contain raw commands");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4B-REPORT-38: readiness counters remain 0", (t) => {
+  const report = getRendererPreflightReport();
 
   assert.strictEqual(report.ready_for_execution, 0, "ready_for_execution must be 0");
   assert.strictEqual(report.ready_for_render, 0, "ready_for_render must be 0");

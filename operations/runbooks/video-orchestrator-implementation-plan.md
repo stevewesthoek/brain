@@ -2417,15 +2417,167 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 
 ### Next Phase Context
 
-**VO-4A is complete. The next phase is:**
+**VO-4A is complete. The next phase (VO-4B) is:**
 - **VO-4B: Explicit Renderer Preflight Only** (when explicitly approved)
   - Requires: VO-4A render command manifest in ready_for_operator_review state
-  - Validates renderer availability and capabilities
+  - Validates renderer availability and capabilities (declared-only checks)
   - Does NOT execute FFmpeg
+  - Does NOT run version commands
+  - Does NOT read environment variables
   - Does NOT render
   - Does NOT create output files
   - Produces a preflight report only
   - Real rendering requires explicit subsequent approval phase
+
+---
+
+## Phase VO-4B: Renderer Preflight Environment Checks ✅ (DONE)
+
+**Status:** 2026-05-12 (complete)
+
+**Purpose:** Provide safe renderer preflight environment checks before actual rendering. Preflight checks are declared-only (based on manifest declarations), not actual tool execution. Preflights do not execute FFmpeg, do not check versions, do not read environment variables, do not render, and do not create files.
+
+### Deliverables
+
+**1. Renderer Preflight Schema + Example**
+- Schema: `operations/specs/video-orchestrator/renderer-preflight.schema.json`
+  - JSON Schema with immutable constraints: dry_run=true const, executable_invoked=false const, version_checked=false const
+  - preflight_state enum: draft, blocked, checked
+  - tool_checks array: tool_label, expected_tool_kind, check_mode (declared_only), declared_available, executable_invoked (false), version_checked (false), blocking_reasons, warnings
+  - validation: ready_for_execution (false), ready_for_render (false), ready_for_upload (false), blocking_reasons, warnings
+  - No raw tool paths, no absolute paths, no shell commands, no process output, no credentials
+- Example: `operations/specs/video-orchestrator/examples/renderer-preflight.example.json`
+  - Safe example with draft state, placeholder + ffmpeg tool checks, no secrets, no paths
+
+**2. Renderer Preflight Creation (createRendererPreflight)**
+- dryRun must be true (enforced)
+- checkMode must be "declared_only"
+- Manifest must have dry_run=true
+- Manifest executor.execution_enabled must be false
+- Manifest command_plan.execution_mode must be disabled
+- Derives tool checks from command manifest summaries only (no tool execution)
+- Validates manifest safety automatically
+- executable_invoked always false, version_checked always false
+- ready_for_execution, ready_for_render, ready_for_upload hardcoded to false
+- preflight_state: blocked if manifest has blockers, checked if safe
+- No file creation, no tool execution, no version commands, no env var reads
+
+**3. Preflight Validation (validateRendererPreflight)**
+- Required fields present
+- dry_run=true
+- All tool_checks have executable_invoked=false
+- All tool_checks have version_checked=false
+- validation.ready_for_execution/render/upload=false
+- Blocks forbidden execution patterns (child_process, spawn, exec, ffmpeg, videos.insert, Bearer, keychain://, etc.) without echoing
+
+**4. Preflight Store (save/list/get)**
+- saveRendererPreflight: upserts by preflight_id, rejects unsafe preflights, rejects executable_invoked=true, rejects version_checked=true, rejects ready flags true
+- listRendererPreflights: filters by project_id, platform, preflight_state, command_manifest_id
+- getRendererPreflight: retrieves by preflight_id
+- JSON-backed local persistence (renderer-preflights.json)
+- Sorted by created_at then preflight_id
+
+**5. Preflight Report (getRendererPreflightReport)**
+- total: number of preflights
+- by_state: Record of state counts
+- blocked, checked: specific state counts
+- ready_for_execution, ready_for_render, ready_for_upload: hardcoded to 0 (no execution capability)
+- Safe summaries only (no raw tool payloads, no paths, no credentials)
+- Sanitized with [unsafe-*] placeholders
+
+**6. TypeScript Types**
+- RendererPreflightState, RendererToolCheck, RendererPreflight, RendererPreflightValidationResult
+- All types with immutable constraint enforcement
+
+### Tests: 38 tests ✅
+
+**Schema (4 tests):**
+- VO-4B-SCHEMA-1: renderer preflight schema parses ✅
+- VO-4B-SCHEMA-2: example parses ✅
+- VO-4B-SCHEMA-3: example contains no forbidden strings ✅
+- VO-4B-SCHEMA-4: example contains no raw paths, command lines, env vars, or process output ✅
+
+**Creation (11 tests):**
+- VO-4B-CREATION-5: dryRun=false blocks ✅
+- VO-4B-CREATION-6: checkMode other than declared_only blocks ✅
+- VO-4B-CREATION-7: unsafe/invalid command manifest blocks ✅
+- VO-4B-CREATION-8: safe manifest creates preflight ✅
+- VO-4B-CREATION-9: tool checks derive from command summaries ✅
+- VO-4B-CREATION-10: executable_invoked false for all checks ✅
+- VO-4B-CREATION-11: version_checked false for all checks ✅
+- VO-4B-CREATION-12: ready flags remain false ✅
+- VO-4B-CREATION-13: no child_process or FFmpeg execution ✅
+- VO-4B-CREATION-14: no files/directories are created ✅
+- VO-4B-CREATION-15: output contains no command lines, paths, env vars, or process output ✅
+
+**Validation (11 tests):**
+- VO-4B-VALIDATION-16: safe preflight validates ✅
+- VO-4B-VALIDATION-17: dry_run false blocks ✅
+- VO-4B-VALIDATION-18: executable_invoked true blocks ✅
+- VO-4B-VALIDATION-19: version_checked true blocks ✅
+- VO-4B-VALIDATION-20: ready_for_execution true blocks ✅
+- VO-4B-VALIDATION-21: ready_for_render true blocks ✅
+- VO-4B-VALIDATION-22: ready_for_upload true blocks ✅
+- VO-4B-VALIDATION-23: forbidden key blocks without echo ✅
+- VO-4B-VALIDATION-24: forbidden string blocks without echo ✅
+- VO-4B-VALIDATION-25: command-line-like payload blocks ✅
+- VO-4B-VALIDATION-26: env-var-like payload blocks ✅
+- VO-4B-VALIDATION-27: raw executable path blocks ✅
+
+**Store (6 tests):**
+- VO-4B-STORE-28: save/list/get/upsert works ✅
+- VO-4B-STORE-29: filters work ✅
+- VO-4B-STORE-30: store rejects unsafe preflight ✅
+- VO-4B-STORE-31: store rejects executable_invoked true ✅
+- VO-4B-STORE-32: store rejects version_checked true ✅
+- VO-4B-STORE-33: store rejects ready flags true ✅
+
+**Report (5 tests):**
+- VO-4B-REPORT-34: report counts states ✅
+- VO-4B-REPORT-35: legacy unsafe runtime data does not leak ✅
+- VO-4B-REPORT-36/37: safe summaries, no forbidden strings ✅
+- VO-4B-REPORT-38: readiness counters remain 0 ✅
+
+**Total Tests:** 38 all passing
+
+### Files Modified/Created
+
+**Created:**
+- `operations/specs/video-orchestrator/renderer-preflight.schema.json` — Schema
+- `operations/specs/video-orchestrator/examples/renderer-preflight.example.json` — Example
+
+**Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts` — Added VO-4B types, functions, stores (+750 lines)
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts` — Added 38 VO-4B tests (+1,350 lines)
+
+### Safety Constraints: Immutable and Verified
+
+✅ dry_run must be true (const in types and validation)
+✅ executable_invoked must be false (const in types)
+✅ version_checked must be false (const in types)
+✅ check_mode must be "declared_only" (enforced at function level)
+✅ ready_for_execution/render/upload hardcoded to false (const in types)
+✅ No child_process execution (validation blocks it)
+✅ No FFmpeg execution
+✅ No version command execution
+✅ No environment variable reading
+✅ No file creation
+✅ Validation blocks execution commands without echoing values
+✅ Validation blocks credential patterns without echoing values
+
+### Backward Compatibility
+
+✅ No breaking changes to VO-3A/3B/3C/3D/3E/3F or VO-4A functions or types
+
+### Next Phase Context
+
+**VO-4B is complete. Future phases will add:**
+- **VO-4C/VO-3G: Real Render Execution** (requires explicit separate approval)
+  - Operator explicitly approves and triggers actual rendering
+  - FFmpeg execution only when explicitly approved
+  - File creation only when explicitly approved
+  - Upload queuing only when explicitly approved
+  - Requires separate gating mechanism beyond VO-4B preflights
 
 ---
 

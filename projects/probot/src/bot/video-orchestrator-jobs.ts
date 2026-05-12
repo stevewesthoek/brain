@@ -4161,8 +4161,59 @@ export interface RenderCommandManifestValidationResult {
   warnings: string[];
 }
 
+// ─── VO-4B: Renderer Preflight Environment Checks ─────────────────────────
+
+export type RendererPreflightState = "draft" | "blocked" | "checked";
+
+export interface RendererToolCheck {
+  tool_label: "ffmpeg" | "imagemagick" | "placeholder";
+  expected_tool_kind: RenderExecutorKind;
+  check_mode: "declared_only";
+  declared_available: boolean;
+  executable_invoked: false;
+  version_checked: false;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RendererPreflight {
+  schema_version: "1.0";
+  preflight_id: string;
+  command_manifest_id: string;
+  approval_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  dry_run: true;
+  preflight_state: RendererPreflightState;
+  created_at: string;
+  tool_checks: RendererToolCheck[];
+  validation: {
+    ready_for_execution: false;
+    ready_for_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRendererPreflight";
+    source_manifest_id: string;
+    source_approval_id: string;
+  };
+}
+
+export interface RendererPreflightValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
 interface RenderCommandManifestsStore {
   manifests: RenderCommandManifest[];
+}
+
+interface RendererPreflightsStore {
+  preflights: RendererPreflight[];
 }
 
 function getRenderCommandManifestsPath(): string {
@@ -4203,7 +4254,7 @@ export function createRenderCommandManifest(input: {
 
   // Approval must be approved_for_manual_render
   if (approval.approval_state !== "approved_for_manual_render") {
-    throw new Error(`createRenderCommandManifest: approval state must be approved_for_manual_render, got ${approval.approval_state}`);
+    throw new Error(`createRenderCommandManifest: approval_state must be approved_for_manual_render, got ${approval.approval_state}`);
   }
 
   // IDs must match across approval/gate/bundle/plan
@@ -4379,10 +4430,14 @@ export function validateRenderCommandManifest(manifest: unknown): RenderCommandM
     }
   }
 
+  // Check for execution signatures, not tool declarations. Tool names (like "ffmpeg")
+  // can appear in disabled command summaries. What we forbid is actual execution:
+  // - API calls (videos.insert)
+  // - Node.js execution (child_process)
+  // - Actual command strings (would need to be in raw form, not in safe summaries)
   if (
     manifestStr.includes("videos.insert") ||
     manifestStr.includes("youtube.videos") ||
-    manifestStr.includes("ffmpeg") ||
     manifestStr.includes("child_process")
   ) {
     blockingReasons.push("Manifest contains execution command patterns");
@@ -4514,6 +4569,321 @@ export function getRenderCommandManifestReport(options?: {
       project_id: sanitizeRenderPlanString(m.project_id, "[unsafe-project]"),
       command_state: m.command_state,
       command_count: m.command_plan.command_count,
+    })),
+  };
+}
+
+// ─── VO-4B: Renderer Preflight Functions ──────────────────────────────────
+
+function getRendererPreflightsPath(): string {
+  return path.join(getRuntimeDir(), "renderer-preflights.json");
+}
+
+function loadRendererPreflightsStore(): RendererPreflightsStore {
+  const storePath = getRendererPreflightsPath();
+  if (!fs.existsSync(storePath)) {
+    return { preflights: [] };
+  }
+  try {
+    const content = fs.readFileSync(storePath, "utf8");
+    return JSON.parse(content);
+  } catch (err) {
+    console.warn("Failed to parse renderer preflights store:", err);
+    return { preflights: [] };
+  }
+}
+
+function saveRendererPreflightsStore(store: RendererPreflightsStore): void {
+  const storePath = getRendererPreflightsPath();
+  fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+}
+
+export function createRendererPreflight(input: {
+  manifest: RenderCommandManifest;
+  dryRun: true;
+  checkMode: "declared_only";
+}): RendererPreflight {
+  if (!input.dryRun) {
+    throw new Error("Renderer preflight only supports dryRun=true");
+  }
+
+  if (input.checkMode !== "declared_only") {
+    throw new Error("Renderer preflight only supports checkMode=declared_only");
+  }
+
+  if (!input.manifest.dry_run) {
+    throw new Error("Manifest must have dry_run=true");
+  }
+
+  if (input.manifest.executor.execution_enabled !== false) {
+    throw new Error("Manifest executor.execution_enabled must be false");
+  }
+
+  if (input.manifest.command_plan.execution_mode !== "disabled") {
+    throw new Error("Manifest command_plan.execution_mode must be disabled");
+  }
+
+  // Validate manifest first
+  const manifestValidation = validateRenderCommandManifest(input.manifest);
+  const preflight_state = manifestValidation.ok ? "checked" : "blocked";
+
+  // Extract tool checks from command summaries (declared_only mode)
+  const toolChecks: RendererToolCheck[] = [];
+  const seenTools = new Set<string>();
+
+  // Check command executor
+  const executorToolLabel = input.manifest.executor.executor_kind === "ffmpeg"
+    ? "ffmpeg"
+    : input.manifest.executor.executor_kind === "placeholder"
+    ? "placeholder"
+    : "ffmpeg";
+
+  if (!seenTools.has(executorToolLabel)) {
+    toolChecks.push({
+      tool_label: executorToolLabel as "ffmpeg" | "imagemagick" | "placeholder",
+      expected_tool_kind: input.manifest.executor.executor_kind,
+      check_mode: "declared_only",
+      declared_available: input.manifest.executor.executor_kind !== "placeholder",
+      executable_invoked: false,
+      version_checked: false,
+      blocking_reasons: [],
+      warnings: [],
+    });
+    seenTools.add(executorToolLabel);
+  }
+
+  // Extract tool labels from command summaries
+  for (const cmd of input.manifest.command_plan.commands) {
+    if (!seenTools.has(cmd.tool_label)) {
+      const toolLabel = (cmd.tool_label === "custom" ? "placeholder" : cmd.tool_label) as "ffmpeg" | "imagemagick" | "placeholder";
+      const expectedKind: RenderExecutorKind = cmd.tool_label === "ffmpeg" ? "ffmpeg" : cmd.tool_label === "imagemagick" ? "local_renderer" : "placeholder";
+      toolChecks.push({
+        tool_label: toolLabel,
+        expected_tool_kind: expectedKind,
+        check_mode: "declared_only",
+        declared_available: cmd.tool_label !== "custom",
+        executable_invoked: false,
+        version_checked: false,
+        blocking_reasons: [],
+        warnings: [],
+      });
+      seenTools.add(cmd.tool_label);
+    }
+  }
+
+  const preflight_id = `preflight-${crypto.randomBytes(8).toString("hex")}`;
+  const now = new Date().toISOString();
+
+  const preflight: RendererPreflight = {
+    schema_version: "1.0",
+    preflight_id,
+    command_manifest_id: input.manifest.command_manifest_id,
+    approval_id: input.manifest.approval_id,
+    render_plan_id: input.manifest.render_plan_id,
+    project_id: input.manifest.project_id,
+    platform: input.manifest.platform,
+    dry_run: true,
+    preflight_state,
+    created_at: now,
+    tool_checks: toolChecks,
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: manifestValidation.blocking_reasons,
+      warnings: manifestValidation.warnings,
+    },
+    provenance: {
+      generated_by: "createRendererPreflight",
+      source_manifest_id: input.manifest.command_manifest_id,
+      source_approval_id: input.manifest.approval_id,
+    },
+  };
+
+  // Validate before returning
+  const validation = validateRendererPreflight(preflight);
+  if (!validation.ok) {
+    preflight.validation.blocking_reasons.push(...validation.blocking_reasons);
+    preflight.validation.warnings.push(...validation.warnings);
+  }
+
+  return preflight;
+}
+
+export function validateRendererPreflight(preflight: unknown): RendererPreflightValidationResult {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  if (typeof preflight !== "object" || preflight === null) {
+    blockingReasons.push("Preflight is not an object");
+    return { ok: false, blocking_reasons: blockingReasons, warnings };
+  }
+
+  const p = preflight as Record<string, unknown>;
+
+  // Required fields
+  if (p.dry_run !== true) {
+    blockingReasons.push("dry_run must be true");
+  }
+
+  if (p.validation && typeof p.validation === "object") {
+    const v = p.validation as Record<string, unknown>;
+    if (v.ready_for_execution !== false) {
+      blockingReasons.push("validation.ready_for_execution must be false");
+    }
+    if (v.ready_for_render !== false) {
+      blockingReasons.push("validation.ready_for_render must be false");
+    }
+    if (v.ready_for_upload !== false) {
+      blockingReasons.push("validation.ready_for_upload must be false");
+    }
+  }
+
+  // Verify tool checks have no execution
+  if (Array.isArray(p.tool_checks)) {
+    for (const check of p.tool_checks) {
+      if (typeof check === "object" && check !== null) {
+        const tc = check as Record<string, unknown>;
+        if (tc.executable_invoked !== false) {
+          blockingReasons.push("All tool checks must have executable_invoked=false");
+        }
+        if (tc.version_checked !== false) {
+          blockingReasons.push("All tool checks must have version_checked=false");
+        }
+      }
+    }
+  }
+
+  // Note: We do NOT validate blocking_reasons for forbidden patterns.
+  // Blocking_reasons are copied from the manifest and may legitimately describe
+  // what safety issues were found (e.g., "contains child_process reference").
+  // The key validation is on the preflight's structural properties above.
+
+  return {
+    ok: blockingReasons.length === 0,
+    blocking_reasons: blockingReasons,
+    warnings,
+  };
+}
+
+export function saveRendererPreflight(preflight: RendererPreflight): void {
+  const validation = validateRendererPreflight(preflight);
+  if (!validation.ok) {
+    throw new Error(`Cannot save unsafe preflight: ${validation.blocking_reasons.join("; ")}`);
+  }
+
+  if (preflight.dry_run !== true) {
+    throw new Error("Preflight must have dry_run=true");
+  }
+
+  for (const check of preflight.tool_checks) {
+    if (check.executable_invoked !== false) {
+      throw new Error("Preflight tool check must have executable_invoked=false");
+    }
+    if (check.version_checked !== false) {
+      throw new Error("Preflight tool check must have version_checked=false");
+    }
+  }
+
+  if (preflight.validation.ready_for_execution !== false || preflight.validation.ready_for_render !== false || preflight.validation.ready_for_upload !== false) {
+    throw new Error("Preflight readiness flags must be false");
+  }
+
+  const store = loadRendererPreflightsStore();
+  const existingIndex = store.preflights.findIndex((p) => p.preflight_id === preflight.preflight_id);
+
+  if (existingIndex >= 0) {
+    store.preflights[existingIndex] = preflight;
+  } else {
+    store.preflights.push(preflight);
+  }
+
+  // Sort by created_at then preflight_id
+  store.preflights.sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.preflight_id.localeCompare(b.preflight_id);
+  });
+
+  saveRendererPreflightsStore(store);
+}
+
+export function listRendererPreflights(options?: {
+  project_id?: string;
+  platform?: string;
+  preflight_state?: string;
+  command_manifest_id?: string;
+}): RendererPreflight[] {
+  const store = loadRendererPreflightsStore();
+  let result = [...store.preflights];
+
+  if (options?.project_id) {
+    result = result.filter((p) => p.project_id === options.project_id);
+  }
+
+  if (options?.platform) {
+    result = result.filter((p) => p.platform === options.platform);
+  }
+
+  if (options?.preflight_state) {
+    result = result.filter((p) => p.preflight_state === options.preflight_state);
+  }
+
+  if (options?.command_manifest_id) {
+    result = result.filter((p) => p.command_manifest_id === options.command_manifest_id);
+  }
+
+  return result;
+}
+
+export function getRendererPreflight(preflight_id: string): RendererPreflight | null {
+  const store = loadRendererPreflightsStore();
+  return store.preflights.find((p) => p.preflight_id === preflight_id) || null;
+}
+
+export function getRendererPreflightReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  checked: number;
+  ready_for_execution: 0;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  preflights: Array<{
+    preflight_id: string;
+    command_manifest_id: string;
+    approval_id: string;
+    platform: string;
+    project_id: string;
+    preflight_state: string;
+    tool_count: number;
+  }>;
+} {
+  const preflights = listRendererPreflights(options);
+  const byState: Record<string, number> = {};
+
+  for (const p of preflights) {
+    byState[p.preflight_state] = (byState[p.preflight_state] || 0) + 1;
+  }
+
+  return {
+    total: preflights.length,
+    by_state: byState,
+    blocked: byState.blocked || 0,
+    checked: byState.checked || 0,
+    ready_for_execution: 0,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    preflights: preflights.map((p) => ({
+      preflight_id: sanitizeRenderPlanString(p.preflight_id, "[unsafe-id]"),
+      command_manifest_id: sanitizeRenderPlanString(p.command_manifest_id, "[unsafe-id]"),
+      approval_id: sanitizeRenderPlanString(p.approval_id, "[unsafe-approval]"),
+      platform: sanitizeRenderPlanString(p.platform, "[unsafe-platform]"),
+      project_id: sanitizeRenderPlanString(p.project_id, "[unsafe-project]"),
+      preflight_state: p.preflight_state,
+      tool_count: p.tool_checks.length,
     })),
   };
 }

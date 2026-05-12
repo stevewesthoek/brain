@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "preflight_id": "renderer-preflight-example-001",
+  "command_manifest_id": "render-command-manifest-example-001",
+  "approval_id": "approval-example-001",
+  "render_plan_id": "render-plan-example-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "dry_run": true,
+  "preflight_state": "draft",
+  "created_at": "2026-05-12T14:35:00Z",
+  "tool_checks": [
+    {
+      "tool_label": "placeholder",
+      "expected_tool_kind": "placeholder",
+      "check_mode": "declared_only",
+      "declared_available": false,
+      "executable_invoked": false,
+      "version_checked": false,
+      "blocking_reasons": [],
+      "warnings": []
+    },
+    {
+      "tool_label": "ffmpeg",
+      "expected_tool_kind": "ffmpeg",
+      "check_mode": "declared_only",
+      "declared_available": true,
+      "executable_invoked": false,
+      "version_checked": false,
+      "blocking_reasons": [],
+      "warnings": []
+    }
+  ],
+  "validation": {
+    "ready_for_execution": false,
+    "ready_for_render": false,
+    "ready_for_upload": false,
+    "blocking_reasons": [],
+    "warnings": []
+  },
+  "provenance": {
+    "generated_by": "createRendererPreflight",
+    "source_manifest_id": "render-command-manifest-example-001",
+    "source_approval_id": "approval-example-001"
+  }
+}

@@ -1,0 +1,212 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Renderer Preflight Environment Check Schema",
+  "description": "Dry-run renderer preflight environment checks. Never executes tools, never checks versions, never reads environment variables, never creates files. Safe summaries of declared tool availability only.",
+  "type": "object",
+  "schema_version": "1.0",
+  "required": [
+    "schema_version",
+    "preflight_id",
+    "command_manifest_id",
+    "approval_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "dry_run",
+    "preflight_state",
+    "created_at",
+    "tool_checks",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version"
+    },
+    "preflight_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Unique identifier for this preflight check"
+    },
+    "command_manifest_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Reference to render command manifest being checked"
+    },
+    "approval_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Reference to operator approval record"
+    },
+    "render_plan_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Reference to render plan"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Project identifier"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "youtube",
+        "tiktok",
+        "instagram",
+        "facebook",
+        "linkedin",
+        "bluesky",
+        "x"
+      ],
+      "description": "Target platform"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "enum": [true],
+      "description": "Must be true. No real checks or execution."
+    },
+    "preflight_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "checked"],
+      "description": "Current state of preflight: draft=newly created, blocked=manifest has blockers, checked=ready for operator review"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Preflight creation timestamp"
+    },
+    "tool_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "tool_label",
+          "expected_tool_kind",
+          "check_mode",
+          "declared_available",
+          "executable_invoked",
+          "version_checked",
+          "blocking_reasons",
+          "warnings"
+        ],
+        "properties": {
+          "tool_label": {
+            "type": "string",
+            "enum": ["ffmpeg", "imagemagick", "placeholder"],
+            "description": "Tool being checked"
+          },
+          "expected_tool_kind": {
+            "type": "string",
+            "enum": ["ffmpeg", "local_renderer", "manual_renderer", "placeholder"],
+            "description": "Expected kind of tool executor"
+          },
+          "check_mode": {
+            "type": "string",
+            "enum": ["declared_only"],
+            "description": "Check mode: declared_only means checking command manifest declarations only, not running actual tools"
+          },
+          "declared_available": {
+            "type": "boolean",
+            "description": "Whether manifest declares tool available"
+          },
+          "executable_invoked": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. No executable invocation."
+          },
+          "version_checked": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. No version commands run."
+          },
+          "blocking_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Safe blocking reasons (no echoed unsafe values)"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Safe warnings (no echoed unsafe values)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Array of tool checks derived from command manifest"
+    },
+    "validation": {
+      "type": "object",
+      "required": [
+        "ready_for_execution",
+        "ready_for_render",
+        "ready_for_upload",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "ready_for_execution": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Preflight does not enable execution."
+        },
+        "ready_for_render": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Preflight is environment check only."
+        },
+        "ready_for_upload": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. No upload capability in preflight."
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Safe blocking reasons (no echoed unsafe values)"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Safe warnings (no echoed unsafe values)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "generated_by",
+        "source_manifest_id",
+        "source_approval_id"
+      ],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "enum": ["createRendererPreflight"],
+          "description": "Function that created this preflight"
+        },
+        "source_manifest_id": {
+          "type": "string",
+          "description": "Command manifest ID used to create this preflight"
+        },
+        "source_approval_id": {
+          "type": "string",
+          "description": "Approval ID used to create this preflight"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
