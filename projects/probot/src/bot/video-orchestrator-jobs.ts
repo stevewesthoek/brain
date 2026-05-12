@@ -4093,6 +4093,431 @@ export function getOperatorApprovalReport(options?: {
   };
 }
 
+// ─── VO-4A: Render Executor Contract and Dry-Run Render Command Manifest ────
+
+export type RenderCommandManifestState = "draft" | "blocked" | "ready_for_operator_review";
+
+export type RenderExecutorKind = "ffmpeg" | "local_renderer" | "manual_renderer" | "placeholder";
+
+export interface RenderCommandSummary {
+  command_id: string;
+  purpose: string;
+  tool_label: "ffmpeg" | "imagemagick" | "custom";
+  input_summary: string;
+  output_summary: string;
+  arguments_summary: string;
+  disabled: true;
+}
+
+export interface RenderCommandManifest {
+  schema_version: "1.0";
+  command_manifest_id: string;
+  approval_id: string;
+  gate_id: string;
+  bundle_id: string;
+  render_plan_id: string;
+  package_id: string;
+  project_id: string;
+  platform: string;
+  dry_run: true;
+  command_state: RenderCommandManifestState;
+  created_at: string;
+  executor: {
+    executor_id: string;
+    executor_kind: RenderExecutorKind;
+    execution_enabled: false;
+    requires_explicit_operator_run: true;
+  };
+  command_plan: {
+    commands: RenderCommandSummary[];
+    command_count: number;
+    contains_shell: false;
+    execution_mode: "disabled";
+  };
+  planned_outputs: {
+    output_count: number;
+    by_kind: Record<string, number>;
+    platform: string;
+    project_id: string;
+  };
+  validation: {
+    ready_for_execution: false;
+    ready_for_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRenderCommandManifest";
+    source_approval_id: string;
+    source_gate_id: string;
+    source_bundle_id: string;
+  };
+}
+
+export interface RenderCommandManifestValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+interface RenderCommandManifestsStore {
+  manifests: RenderCommandManifest[];
+}
+
+function getRenderCommandManifestsPath(): string {
+  return path.join(getRuntimeDir(), "render-command-manifests.json");
+}
+
+function loadRenderCommandManifestsStore(): RenderCommandManifestsStore {
+  const storePath = getRenderCommandManifestsPath();
+  if (!fs.existsSync(storePath)) {
+    return { manifests: [] };
+  }
+  try {
+    const content = fs.readFileSync(storePath, "utf8");
+    return JSON.parse(content);
+  } catch (err) {
+    return { manifests: [] };
+  }
+}
+
+function saveRenderCommandManifestsStore(store: RenderCommandManifestsStore): void {
+  const storePath = getRenderCommandManifestsPath();
+  fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+}
+
+export function createRenderCommandManifest(input: {
+  approval: OperatorApprovalRecord;
+  gate: RenderExecutionGate;
+  bundle: ManualExportBundle;
+  plan: RenderPlan;
+  dryRun: true;
+}): RenderCommandManifest {
+  const { approval, gate, bundle, plan } = input;
+
+  // All inputs must have dry_run=true
+  if (!approval.dry_run || !gate.dry_run || !bundle.dry_run || !plan.dry_run) {
+    throw new Error("createRenderCommandManifest: all inputs must have dry_run=true");
+  }
+
+  // Approval must be approved_for_manual_render
+  if (approval.approval_state !== "approved_for_manual_render") {
+    throw new Error(`createRenderCommandManifest: approval state must be approved_for_manual_render, got ${approval.approval_state}`);
+  }
+
+  // IDs must match across approval/gate/bundle/plan
+  if (
+    approval.gate_id !== gate.gate_id ||
+    approval.bundle_id !== bundle.bundle_id ||
+    approval.render_plan_id !== plan.render_plan_id ||
+    approval.package_id !== gate.package_id
+  ) {
+    throw new Error("createRenderCommandManifest: ID mismatch across approval/gate/bundle/plan");
+  }
+
+  // Safe command summaries only (no raw commands, no paths, no shell syntax)
+  const commands: RenderCommandSummary[] = [
+    {
+      command_id: "cmd-compose",
+      purpose: "Compose video assets and apply format constraints",
+      tool_label: "custom",
+      input_summary: "Media assets and format specification",
+      output_summary: "Video in target format",
+      arguments_summary: `codec=h264, bitrate=5000k, dimensions=${plan.render_targets[0]?.resolution || "1920x1080"}`,
+      disabled: true,
+    },
+    {
+      command_id: "cmd-encode",
+      purpose: "Encode for platform delivery",
+      tool_label: "ffmpeg",
+      input_summary: "Composed video in working format",
+      output_summary: "Deliverable video in platform-native format",
+      arguments_summary: "preset=medium, crf=28, audio_bitrate=128k",
+      disabled: true,
+    },
+  ];
+
+  const outputsByKind: Record<string, number> = {
+    video: 1,
+  };
+
+  const manifest: RenderCommandManifest = {
+    schema_version: "1.0",
+    command_manifest_id: `rcm-${crypto.randomBytes(8).toString("hex")}`,
+    approval_id: approval.approval_id,
+    gate_id: gate.gate_id,
+    bundle_id: bundle.bundle_id,
+    render_plan_id: plan.render_plan_id,
+    package_id: gate.package_id,
+    project_id: gate.project_id,
+    platform: gate.platform,
+    dry_run: true,
+    command_state: "draft",
+    created_at: new Date().toISOString(),
+    executor: {
+      executor_id: "executor-placeholder",
+      executor_kind: "placeholder",
+      execution_enabled: false,
+      requires_explicit_operator_run: true,
+    },
+    command_plan: {
+      commands,
+      command_count: commands.length,
+      contains_shell: false,
+      execution_mode: "disabled",
+    },
+    planned_outputs: {
+      output_count: 1,
+      by_kind: outputsByKind,
+      platform: gate.platform,
+      project_id: gate.project_id,
+    },
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createRenderCommandManifest",
+      source_approval_id: approval.approval_id,
+      source_gate_id: gate.gate_id,
+      source_bundle_id: bundle.bundle_id,
+    },
+  };
+
+  // Validate before returning
+  const validation = validateRenderCommandManifest(manifest);
+  if (!validation.ok) {
+    manifest.command_state = "blocked";
+    manifest.validation.blocking_reasons = validation.blocking_reasons;
+    manifest.validation.warnings = validation.warnings;
+  }
+
+  return manifest;
+}
+
+export function validateRenderCommandManifest(manifest: unknown): RenderCommandManifestValidationResult {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  if (typeof manifest !== "object" || manifest === null) {
+    blockingReasons.push("Manifest is not an object");
+    return { ok: false, blocking_reasons: blockingReasons, warnings };
+  }
+
+  const m = manifest as Record<string, unknown>;
+
+  // Required fields
+  if (m.dry_run !== true) {
+    blockingReasons.push("dry_run must be true");
+  }
+
+  if (m.executor && typeof m.executor === "object") {
+    const exec = m.executor as Record<string, unknown>;
+    if (exec.execution_enabled !== false) {
+      blockingReasons.push("executor.execution_enabled must be false");
+    }
+    if (exec.requires_explicit_operator_run !== true) {
+      blockingReasons.push("executor.requires_explicit_operator_run must be true");
+    }
+  }
+
+  if (m.command_plan && typeof m.command_plan === "object") {
+    const plan = m.command_plan as Record<string, unknown>;
+    if (plan.execution_mode !== "disabled") {
+      blockingReasons.push("command_plan.execution_mode must be disabled");
+    }
+    if (plan.contains_shell !== false) {
+      blockingReasons.push("command_plan.contains_shell must be false");
+    }
+
+    if (Array.isArray(plan.commands)) {
+      for (const cmd of plan.commands) {
+        if (typeof cmd === "object" && cmd !== null) {
+          const c = cmd as Record<string, unknown>;
+          if (c.disabled !== true) {
+            blockingReasons.push("All commands must have disabled=true");
+          }
+        }
+      }
+    }
+  }
+
+  if (m.validation && typeof m.validation === "object") {
+    const val = m.validation as Record<string, unknown>;
+    if (val.ready_for_execution !== false) {
+      blockingReasons.push("validation.ready_for_execution must be false");
+    }
+    if (val.ready_for_render !== false) {
+      blockingReasons.push("validation.ready_for_render must be false");
+    }
+    if (val.ready_for_upload !== false) {
+      blockingReasons.push("validation.ready_for_upload must be false");
+    }
+  }
+
+  // Check for forbidden patterns without echoing them
+  const manifestStr = JSON.stringify(manifest);
+  const forbiddenPatterns = [
+    "keychain://",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "code_verifier",
+    "authorization_code",
+    "credential_reference",
+    "credentialReference",
+  ];
+
+  for (const pattern of forbiddenPatterns) {
+    if (manifestStr.includes(pattern)) {
+      blockingReasons.push("Manifest contains forbidden credential pattern");
+      break;
+    }
+  }
+
+  if (
+    manifestStr.includes("videos.insert") ||
+    manifestStr.includes("youtube.videos") ||
+    manifestStr.includes("ffmpeg") ||
+    manifestStr.includes("child_process")
+  ) {
+    blockingReasons.push("Manifest contains execution command patterns");
+  }
+
+  return {
+    ok: blockingReasons.length === 0,
+    blocking_reasons: blockingReasons,
+    warnings,
+  };
+}
+
+export function saveRenderCommandManifest(manifest: RenderCommandManifest): void {
+  if (manifest.dry_run !== true) {
+    throw new Error("Cannot save render command manifest with dry_run=false");
+  }
+
+  if (manifest.executor.execution_enabled !== false) {
+    throw new Error("Cannot save render command manifest with execution_enabled=true");
+  }
+
+  if (manifest.validation.ready_for_execution !== false) {
+    throw new Error("Cannot save manifest with ready_for_execution=true");
+  }
+
+  if (manifest.validation.ready_for_render !== false) {
+    throw new Error("Cannot save manifest with ready_for_render=true");
+  }
+
+  if (manifest.validation.ready_for_upload !== false) {
+    throw new Error("Cannot save manifest with ready_for_upload=true");
+  }
+
+  const validation = validateRenderCommandManifest(manifest);
+  if (!validation.ok) {
+    throw new Error(`Cannot save invalid manifest: ${validation.blocking_reasons[0]}`);
+  }
+
+  const store = loadRenderCommandManifestsStore();
+  const idx = store.manifests.findIndex((m) => m.command_manifest_id === manifest.command_manifest_id);
+
+  if (idx >= 0) {
+    store.manifests[idx] = manifest;
+  } else {
+    store.manifests.push(manifest);
+  }
+
+  // Sort by created_at then command_manifest_id
+  store.manifests.sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.command_manifest_id.localeCompare(b.command_manifest_id);
+  });
+
+  saveRenderCommandManifestsStore(store);
+}
+
+export function listRenderCommandManifests(options?: {
+  project_id?: string;
+  platform?: string;
+  command_state?: string;
+  approval_id?: string;
+}): RenderCommandManifest[] {
+  const store = loadRenderCommandManifestsStore();
+  let result = [...store.manifests];
+
+  if (options?.project_id) {
+    result = result.filter((m) => m.project_id === options.project_id);
+  }
+
+  if (options?.platform) {
+    result = result.filter((m) => m.platform === options.platform);
+  }
+
+  if (options?.command_state) {
+    result = result.filter((m) => m.command_state === options.command_state);
+  }
+
+  if (options?.approval_id) {
+    result = result.filter((m) => m.approval_id === options.approval_id);
+  }
+
+  return result;
+}
+
+export function getRenderCommandManifest(command_manifest_id: string): RenderCommandManifest | null {
+  const store = loadRenderCommandManifestsStore();
+  return store.manifests.find((m) => m.command_manifest_id === command_manifest_id) || null;
+}
+
+export function getRenderCommandManifestReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  ready_for_operator_review: number;
+  ready_for_execution: 0;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  manifests: Array<{
+    command_manifest_id: string;
+    approval_id: string;
+    platform: string;
+    project_id: string;
+    command_state: string;
+    command_count: number;
+  }>;
+} {
+  const manifests = listRenderCommandManifests(options);
+  const byState: Record<string, number> = {};
+
+  for (const m of manifests) {
+    byState[m.command_state] = (byState[m.command_state] || 0) + 1;
+  }
+
+  return {
+    total: manifests.length,
+    by_state: byState,
+    blocked: byState.blocked || 0,
+    ready_for_operator_review: byState.ready_for_operator_review || 0,
+    ready_for_execution: 0,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    manifests: manifests.map((m) => ({
+      command_manifest_id: sanitizeRenderPlanString(m.command_manifest_id, "[unsafe-id]"),
+      approval_id: sanitizeRenderPlanString(m.approval_id, "[unsafe-approval]"),
+      platform: sanitizeRenderPlanString(m.platform, "[unsafe-platform]"),
+      project_id: sanitizeRenderPlanString(m.project_id, "[unsafe-project]"),
+      command_state: m.command_state,
+      command_count: m.command_plan.command_count,
+    })),
+  };
+}
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;

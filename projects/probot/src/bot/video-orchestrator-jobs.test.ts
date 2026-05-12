@@ -69,6 +69,12 @@ import {
   revokeOperatorApprovalRecord,
   getOperatorApprovalReport,
   buildRenderReadinessFreezeSnapshot,
+  createRenderCommandManifest,
+  validateRenderCommandManifest,
+  saveRenderCommandManifest,
+  listRenderCommandManifests,
+  getRenderCommandManifest,
+  getRenderCommandManifestReport,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
@@ -80,6 +86,9 @@ import {
   type ManualExportBundle,
   type OperatorApprovalRecord,
   type OperatorApprovalValidationResult,
+  type RenderCommandManifest,
+  type RenderCommandManifestState,
+  type RenderCommandManifestValidationResult,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -8814,4 +8823,845 @@ test("VO-3F-REPORT-5: report excludes raw decision notes paths freeze details an
   } finally {
     cleanupTestRuntime(tempDir);
   }
+});
+
+// ─── VO-4A: Render Executor Contract and Dry-Run Render Command Manifest ─────
+
+test("VO-4A-SCHEMA-1: render command manifest schema parses", () => {
+  const schemaPath = "operations/specs/video-orchestrator/render-command-manifest.schema.json";
+  assert.ok(fs.existsSync(schemaPath), `Schema file exists: ${schemaPath}`);
+
+  const schemaText = fs.readFileSync(schemaPath, "utf-8");
+  const schema = JSON.parse(schemaText);
+
+  assert.strictEqual(schema.schema_version, "1.0", "Schema version correct");
+  assert.ok(schema.title.includes("Render Command Manifest"), "Schema title present");
+  assert.ok(schema.properties.dry_run, "dry_run property required");
+  assert.deepStrictEqual(schema.properties.dry_run.enum, [true], "dry_run must be true");
+});
+
+test("VO-4A-SCHEMA-2: example parses", () => {
+  const examplePath = "operations/specs/video-orchestrator/examples/render-command-manifest.example.json";
+  assert.ok(fs.existsSync(examplePath), `Example file exists: ${examplePath}`);
+
+  const exampleText = fs.readFileSync(examplePath, "utf-8");
+  const example = JSON.parse(exampleText);
+
+  assert.strictEqual(example.schema_version, "1.0");
+  assert.strictEqual(example.dry_run, true);
+  assert.strictEqual(example.command_state, "draft");
+  assert.strictEqual(example.executor.execution_enabled, false);
+  assert.strictEqual(example.executor.requires_explicit_operator_run, true);
+});
+
+test("VO-4A-SCHEMA-3: example contains no forbidden strings", () => {
+  const examplePath = "operations/specs/video-orchestrator/examples/render-command-manifest.example.json";
+  const exampleText = fs.readFileSync(examplePath, "utf-8");
+
+  const forbiddenPatterns = [
+    "keychain://",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "videos.insert",
+    "youtube.videos",
+  ];
+
+  for (const pattern of forbiddenPatterns) {
+    assert.ok(
+      !exampleText.includes(pattern),
+      `Example must not contain: ${pattern}`
+    );
+  }
+});
+
+test("VO-4A-SCHEMA-4: example contains no raw paths URLs or shell commands", () => {
+  const examplePath = "operations/specs/video-orchestrator/examples/render-command-manifest.example.json";
+  const exampleText = fs.readFileSync(examplePath, "utf-8");
+  const example = JSON.parse(exampleText);
+
+  // Check no absolute paths
+  assert.ok(!exampleText.includes("/usr/"), "No absolute paths");
+  assert.ok(!exampleText.includes("/tmp/"), "No /tmp paths");
+
+  // Check no URLs
+  assert.ok(!exampleText.includes("http://"), "No http URLs");
+  assert.ok(!exampleText.includes("https://"), "No https URLs");
+
+  // Check command summaries are disabled
+  for (const cmd of example.command_plan.commands) {
+    assert.strictEqual(cmd.disabled, true, "All commands must be disabled");
+  }
+});
+
+test("VO-4A-CREATE-5: dryRun=false blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-5",
+      package_id: "pkg-vo4a-5",
+      project_id: "proj-vo4a",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+
+    assert.throws(
+      () => createRenderCommandManifest({ approval, gate, bundle, plan: { ...plan, dry_run: false as any }, dryRun: true }),
+      /dry_run.*true/,
+      "Should block if plan.dry_run=false"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-CREATE-6: non-approved approval blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-6",
+      package_id: "pkg-vo4a-6",
+      project_id: "proj-vo4a",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "draft", dryRun: true });
+
+    assert.throws(
+      () => createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true }),
+      /approval_state.*approved_for_manual_render/,
+      "Should block if approval is not approved_for_manual_render"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-CREATE-7: mismatched IDs block", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-7",
+      package_id: "pkg-vo4a-7",
+      project_id: "proj-vo4a",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+
+    // Mismatch plan render_plan_id
+    const mismatchPlan = { ...plan, render_plan_id: "wrong-plan-id" };
+
+    assert.throws(
+      () => createRenderCommandManifest({ approval, gate, bundle, plan: mismatchPlan, dryRun: true }),
+      /ID mismatch/,
+      "Should block if IDs don't match"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-CREATE-8: approved approval creates dry-run command manifest", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-8",
+      package_id: "pkg-vo4a-8",
+      project_id: "proj-vo4a",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    assert.strictEqual(manifest.schema_version, "1.0");
+    assert.strictEqual(manifest.dry_run, true);
+    assert.strictEqual(manifest.command_state, "draft");
+    assert.ok(manifest.command_manifest_id);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-CREATE-9: command summaries are disabled", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-9",
+      package_id: "pkg-vo4a-9",
+      project_id: "proj-vo4a",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    for (const cmd of manifest.command_plan.commands) {
+      assert.strictEqual(cmd.disabled, true, "All commands must be disabled");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-CREATE-10: executor execution_enabled is false", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-10",
+      package_id: "pkg-vo4a-10",
+      project_id: "proj-vo4a",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    assert.strictEqual(manifest.executor.execution_enabled, false);
+    assert.strictEqual(manifest.executor.requires_explicit_operator_run, true);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-CREATE-11: ready_for_execution/render/upload remain false", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-11",
+      package_id: "pkg-vo4a-11",
+      project_id: "proj-vo4a",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    assert.strictEqual(manifest.validation.ready_for_execution, false);
+    assert.strictEqual(manifest.validation.ready_for_render, false);
+    assert.strictEqual(manifest.validation.ready_for_upload, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-CREATE-12: no files or directories are created", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-12",
+      package_id: "pkg-vo4a-12",
+      project_id: "proj-vo4a",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+
+    const filesBefore = fs.readdirSync(tempDir);
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+    const filesAfter = fs.readdirSync(tempDir);
+
+    assert.deepStrictEqual(filesBefore, filesAfter, "No new files created");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-VALIDATE-14: safe manifest validates", (t) => {
+  const manifest = {
+    schema_version: "1.0",
+    command_manifest_id: "test-manifest",
+    approval_id: "test-approval",
+    gate_id: "test-gate",
+    bundle_id: "test-bundle",
+    render_plan_id: "test-plan",
+    package_id: "test-package",
+    project_id: "test-project",
+    platform: "youtube",
+    dry_run: true,
+    command_state: "draft",
+    created_at: new Date().toISOString(),
+    executor: {
+      executor_id: "test-executor",
+      executor_kind: "placeholder" as const,
+      execution_enabled: false,
+      requires_explicit_operator_run: true,
+    },
+    command_plan: {
+      commands: [],
+      command_count: 0,
+      contains_shell: false,
+      execution_mode: "disabled" as const,
+    },
+    planned_outputs: {
+      output_count: 0,
+      by_kind: {},
+      platform: "youtube",
+      project_id: "test-project",
+    },
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createRenderCommandManifest" as const,
+      source_approval_id: "test-approval",
+      source_gate_id: "test-gate",
+      source_bundle_id: "test-bundle",
+    },
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, true, "Safe manifest should validate");
+});
+
+test("VO-4A-VALIDATE-15: dry_run false blocks", (t) => {
+  const manifest = {
+    dry_run: false,
+    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r) => r.includes("dry_run")));
+});
+
+test("VO-4A-VALIDATE-16: execution_enabled true blocks", (t) => {
+  const manifest = {
+    dry_run: true,
+    executor: { execution_enabled: true, requires_explicit_operator_run: true },
+    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r) => r.includes("execution_enabled")));
+});
+
+test("VO-4A-VALIDATE-17: command disabled false blocks", (t) => {
+  const manifest = {
+    dry_run: true,
+    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    command_plan: {
+      execution_mode: "disabled",
+      contains_shell: false,
+      commands: [{ disabled: false }],
+    },
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r) => r.includes("disabled")));
+});
+
+test("VO-4A-VALIDATE-18: contains_shell true blocks", (t) => {
+  const manifest = {
+    dry_run: true,
+    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    command_plan: {
+      execution_mode: "disabled",
+      contains_shell: true,
+      commands: [],
+    },
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r) => r.includes("contains_shell")));
+});
+
+test("VO-4A-VALIDATE-19: ready_for_execution true blocks", (t) => {
+  const manifest = {
+    dry_run: true,
+    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
+    validation: { ready_for_execution: true, ready_for_render: false, ready_for_upload: false },
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r) => r.includes("ready_for_execution")));
+});
+
+test("VO-4A-VALIDATE-20: ready_for_render true blocks", (t) => {
+  const manifest = {
+    dry_run: true,
+    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
+    validation: { ready_for_execution: false, ready_for_render: true, ready_for_upload: false },
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r) => r.includes("ready_for_render")));
+});
+
+test("VO-4A-VALIDATE-21: ready_for_upload true blocks", (t) => {
+  const manifest = {
+    dry_run: true,
+    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: true },
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r) => r.includes("ready_for_upload")));
+});
+
+test("VO-4A-VALIDATE-22: forbidden key blocks without echo", (t) => {
+  const manifest = {
+    dry_run: true,
+    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    access_token: "secret123",
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.length > 0 && !result.blocking_reasons[0]!.includes("secret123"), "Should not echo value");
+});
+
+test("VO-4A-VALIDATE-23: forbidden string blocks without echo", (t) => {
+  const manifest = {
+    dry_run: true,
+    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    custom_field: "keychain://video-orchestrator/youtube",
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.length > 0 && !result.blocking_reasons[0]!.includes("keychain://"), "Should not echo pattern");
+});
+
+test("VO-4A-VALIDATE-24: execution-command-like payload blocks", (t) => {
+  const manifest = {
+    dry_run: true,
+    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    purpose: "Use videos.insert to upload",
+  };
+
+  const result = validateRenderCommandManifest(manifest);
+  assert.strictEqual(result.ok, false);
+  assert.ok(result.blocking_reasons.some((r) => r.includes("execution")));
+});
+
+test("VO-4A-STORE-25: save/list/get/upsert works", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-store",
+      package_id: "pkg-vo4a-store",
+      project_id: "proj-vo4a",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    saveRenderCommandManifest(manifest);
+
+    const retrieved = getRenderCommandManifest(manifest.command_manifest_id);
+    assert.ok(retrieved, "Should retrieve saved manifest");
+    assert.strictEqual(retrieved!.command_manifest_id, manifest.command_manifest_id);
+
+    const list = listRenderCommandManifests({ project_id: "proj-vo4a" });
+    assert.ok(list.length > 0, "Should list manifests");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-STORE-26: filters work", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-filter",
+      package_id: "pkg-vo4a-filter",
+      project_id: "proj-filter1",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    saveRenderCommandManifest(manifest);
+
+    const byProject = listRenderCommandManifests({ project_id: "proj-filter1" });
+    assert.ok(byProject.length > 0, "Filter by project_id works");
+
+    const byWrongProject = listRenderCommandManifests({ project_id: "proj-nonexistent" });
+    assert.strictEqual(byWrongProject.length, 0, "Filter excludes non-matching projects");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-STORE-27: store rejects unsafe manifest", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const unsafeManifest = {
+      schema_version: "1.0",
+      command_manifest_id: "unsafe-manifest",
+      approval_id: "test",
+      gate_id: "test",
+      bundle_id: "test",
+      render_plan_id: "test",
+      package_id: "test",
+      project_id: "test",
+      platform: "youtube",
+      dry_run: false,
+      command_state: "draft",
+      created_at: new Date().toISOString(),
+      executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
+      command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+      planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test" },
+      validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+    } as any;
+
+    assert.throws(
+      () => saveRenderCommandManifest(unsafeManifest),
+      /dry_run/,
+      "Should reject dry_run=false"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-STORE-28: store rejects execution_enabled true", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const unsafeManifest = {
+      schema_version: "1.0",
+      command_manifest_id: "unsafe-manifest",
+      approval_id: "test",
+      gate_id: "test",
+      bundle_id: "test",
+      render_plan_id: "test",
+      package_id: "test",
+      project_id: "test",
+      platform: "youtube",
+      dry_run: true,
+      command_state: "draft",
+      created_at: new Date().toISOString(),
+      executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: true, requires_explicit_operator_run: true },
+      command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+      planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test" },
+      validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+    } as any;
+
+    assert.throws(
+      () => saveRenderCommandManifest(unsafeManifest),
+      /execution_enabled/,
+      "Should reject execution_enabled=true"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-STORE-29: store rejects ready flags true", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const unsafeManifest = {
+      schema_version: "1.0",
+      command_manifest_id: "unsafe-manifest",
+      approval_id: "test",
+      gate_id: "test",
+      bundle_id: "test",
+      render_plan_id: "test",
+      package_id: "test",
+      project_id: "test",
+      platform: "youtube",
+      dry_run: true,
+      command_state: "draft",
+      created_at: new Date().toISOString(),
+      executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
+      command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+      planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test" },
+      validation: { ready_for_execution: false, ready_for_render: true, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+    } as any;
+
+    assert.throws(
+      () => saveRenderCommandManifest(unsafeManifest),
+      /ready_for_render/,
+      "Should reject ready_for_render=true"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-REPORT-30: report counts states", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-report",
+      package_id: "pkg-vo4a-report",
+      project_id: "proj-report",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    saveRenderCommandManifest(manifest);
+
+    const report = getRenderCommandManifestReport({ project_id: "proj-report" });
+    assert.strictEqual(report.total >= 1, true, "Should count manifests");
+    assert.strictEqual(report.ready_for_execution, 0, "ready_for_execution must be 0");
+    assert.strictEqual(report.ready_for_render, 0, "ready_for_render must be 0");
+    assert.strictEqual(report.ready_for_upload, 0, "ready_for_upload must be 0");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-REPORT-31: legacy unsafe runtime data does not leak", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-legacy",
+      package_id: "pkg-vo4a-legacy",
+      project_id: "proj-unsafe_access_token",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    saveRenderCommandManifest(manifest);
+
+    const report = getRenderCommandManifestReport();
+    const reportStr = JSON.stringify(report);
+
+    assert.ok(!reportStr.includes("access_token"), "Should not leak access_token");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-REPORT-32: JSON.stringify(report) contains no forbidden strings", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-report-forbid",
+      package_id: "pkg-vo4a-report-forbid",
+      project_id: "proj-forbid",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    saveRenderCommandManifest(manifest);
+
+    const report = getRenderCommandManifestReport();
+    const reportStr = JSON.stringify(report);
+
+    const forbiddenPatterns = [
+      "keychain://",
+      "access_token",
+      "refresh_token",
+      "client_secret",
+      "videos.insert",
+    ];
+
+    for (const pattern of forbiddenPatterns) {
+      assert.ok(!reportStr.includes(pattern), `Report must not contain: ${pattern}`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-REPORT-33: report excludes raw command_plan and command strings", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const plan: RenderPlan = {
+      schema_version: "1.0",
+      render_plan_id: "rp-vo4a-report-exclude",
+      package_id: "pkg-vo4a-report-exclude",
+      project_id: "proj-exclude",
+      platform: "youtube",
+      plan_state: "planned",
+      created_at: "2026-05-11T10:00:00Z",
+      render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+      asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
+      dry_run: true,
+    };
+
+    const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
+    const bundle = createManualExportBundleFromGate({ gate, plan, dryRun: true });
+    const approval = createOperatorApprovalRecord({ gate, bundle, decision: "approved_for_manual_render", dryRun: true });
+    const manifest = createRenderCommandManifest({ approval, gate, bundle, plan, dryRun: true });
+
+    saveRenderCommandManifest(manifest);
+
+    const report = getRenderCommandManifestReport();
+
+    assert.ok(!report.manifests[0], "Report manifests array should be empty or not contain full data");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4A-REPORT-34: readiness counters remain 0", (t) => {
+  const report = getRenderCommandManifestReport();
+
+  assert.strictEqual(report.ready_for_execution, 0, "ready_for_execution must be 0");
+  assert.strictEqual(report.ready_for_render, 0, "ready_for_render must be 0");
+  assert.strictEqual(report.ready_for_upload, 0, "ready_for_upload must be 0");
 });

@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "command_manifest_id": "render-command-manifest-example-001",
+  "approval_id": "approval-example-001",
+  "gate_id": "render-gate-example-001",
+  "bundle_id": "manual-export-bundle-example-001",
+  "render_plan_id": "render-plan-example-001",
+  "package_id": "pkg-example-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "dry_run": true,
+  "command_state": "draft",
+  "created_at": "2026-05-11T14:35:00Z",
+  "executor": {
+    "executor_id": "executor-placeholder-001",
+    "executor_kind": "placeholder",
+    "execution_enabled": false,
+    "requires_explicit_operator_run": true
+  },
+  "command_plan": {
+    "commands": [
+      {
+        "command_id": "cmd-001",
+        "purpose": "Compose video assets and apply format constraints",
+        "tool_label": "custom",
+        "input_summary": "1 video asset, 1 thumbnail, 2 caption files",
+        "output_summary": "1 video file in target format",
+        "arguments_summary": "codec=h264, bitrate=5000k, dimensions=1920x1080, duration=300s",
+        "disabled": true
+      },
+      {
+        "command_id": "cmd-002",
+        "purpose": "Encode for platform delivery",
+        "tool_label": "ffmpeg",
+        "input_summary": "Composed video in working format",
+        "output_summary": "Deliverable video in platform-native format",
+        "arguments_summary": "preset=medium, crf=28, audio_bitrate=128k",
+        "disabled": true
+      },
+      {
+        "command_id": "cmd-003",
+        "purpose": "Burn captions into video",
+        "tool_label": "ffmpeg",
+        "input_summary": "Video file and caption file",
+        "output_summary": "Video with burned captions",
+        "arguments_summary": "font_size=32, position=bottom, color=white",
+        "disabled": true
+      }
+    ],
+    "command_count": 3,
+    "contains_shell": false,
+    "execution_mode": "disabled"
+  },
+  "planned_outputs": {
+    "output_count": 1,
+    "by_kind": {
+      "video": 1
+    },
+    "platform": "youtube",
+    "project_id": "project-alpha"
+  },
+  "validation": {
+    "ready_for_execution": false,
+    "ready_for_render": false,
+    "ready_for_upload": false,
+    "blocking_reasons": [],
+    "warnings": []
+  },
+  "provenance": {
+    "generated_by": "createRenderCommandManifest",
+    "source_approval_id": "approval-example-001",
+    "source_gate_id": "render-gate-example-001",
+    "source_bundle_id": "manual-export-bundle-example-001"
+  }
+}

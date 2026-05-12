@@ -1,0 +1,309 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Render Command Manifest Schema",
+  "description": "Dry-run render command manifest for operator review. Never executed, never creates files, never calls platform APIs. All commands are disabled summaries only. A planning artifact only.",
+  "type": "object",
+  "schema_version": "1.0",
+  "required": [
+    "schema_version",
+    "command_manifest_id",
+    "approval_id",
+    "gate_id",
+    "bundle_id",
+    "render_plan_id",
+    "package_id",
+    "project_id",
+    "platform",
+    "dry_run",
+    "command_state",
+    "created_at",
+    "executor",
+    "command_plan",
+    "planned_outputs",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version"
+    },
+    "command_manifest_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Unique identifier for this render command manifest"
+    },
+    "approval_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Reference to operator approval record"
+    },
+    "gate_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Reference to render execution gate"
+    },
+    "bundle_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Reference to manual export bundle"
+    },
+    "render_plan_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Reference to render plan"
+    },
+    "package_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Reference to production package"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Project identifier"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "youtube",
+        "tiktok",
+        "instagram",
+        "facebook",
+        "linkedin",
+        "bluesky",
+        "x"
+      ],
+      "description": "Target platform for rendering"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "enum": [true],
+      "description": "Must be true. No real execution."
+    },
+    "command_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "ready_for_operator_review"],
+      "description": "Current state of command manifest"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Manifest creation timestamp"
+    },
+    "executor": {
+      "type": "object",
+      "required": [
+        "executor_id",
+        "executor_kind",
+        "execution_enabled",
+        "requires_explicit_operator_run"
+      ],
+      "properties": {
+        "executor_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$",
+          "description": "Executor identifier"
+        },
+        "executor_kind": {
+          "type": "string",
+          "enum": ["ffmpeg", "local_renderer", "manual_renderer", "placeholder"],
+          "description": "Type of executor (all use disabled mode)"
+        },
+        "execution_enabled": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. No execution permitted."
+        },
+        "requires_explicit_operator_run": {
+          "type": "boolean",
+          "enum": [true],
+          "description": "True: operator must explicitly approve real execution"
+        }
+      },
+      "additionalProperties": false
+    },
+    "command_plan": {
+      "type": "object",
+      "required": [
+        "commands",
+        "command_count",
+        "contains_shell",
+        "execution_mode"
+      ],
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "command_id",
+              "purpose",
+              "tool_label",
+              "input_summary",
+              "output_summary",
+              "arguments_summary",
+              "disabled"
+            ],
+            "properties": {
+              "command_id": {
+                "type": "string",
+                "pattern": "^[a-z0-9_-]+$",
+                "description": "Unique command identifier"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "Safe purpose description (no shell syntax, no paths)"
+              },
+              "tool_label": {
+                "type": "string",
+                "enum": ["ffmpeg", "imagemagick", "custom"],
+                "description": "Tool being summarized"
+              },
+              "input_summary": {
+                "type": "string",
+                "description": "Safe summary of inputs (format, count, media type)"
+              },
+              "output_summary": {
+                "type": "string",
+                "description": "Safe summary of outputs (format, media type, purpose)"
+              },
+              "arguments_summary": {
+                "type": "string",
+                "description": "Safe summary of key arguments (codec, bitrate, dimensions) — no raw command line"
+              },
+              "disabled": {
+                "type": "boolean",
+                "enum": [true],
+                "description": "Must be true. Command is disabled for review only."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Array of disabled command summaries only"
+        },
+        "command_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of commands in plan"
+        },
+        "contains_shell": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. No shell syntax in manifest."
+        },
+        "execution_mode": {
+          "type": "string",
+          "enum": ["disabled"],
+          "description": "Must be 'disabled'. No execution."
+        }
+      },
+      "additionalProperties": false
+    },
+    "planned_outputs": {
+      "type": "object",
+      "required": [
+        "output_count",
+        "by_kind",
+        "platform",
+        "project_id"
+      ],
+      "properties": {
+        "output_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total planned outputs"
+        },
+        "by_kind": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Output count by kind (video, thumbnail, caption, etc.)"
+        },
+        "platform": {
+          "type": "string",
+          "description": "Target platform (copy of parent platform)"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "Project identifier (copy of parent project_id)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "required": [
+        "ready_for_execution",
+        "ready_for_render",
+        "ready_for_upload",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "ready_for_execution": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Commands are disabled."
+        },
+        "ready_for_render": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. No rendering in this phase."
+        },
+        "ready_for_upload": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. No upload permitted."
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Safe blocking reasons (no echoed unsafe values)"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Safe warnings (no echoed unsafe values)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "generated_by",
+        "source_approval_id",
+        "source_gate_id",
+        "source_bundle_id"
+      ],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "enum": ["createRenderCommandManifest"],
+          "description": "Function that created this manifest"
+        },
+        "source_approval_id": {
+          "type": "string",
+          "description": "Approval ID used to create this manifest"
+        },
+        "source_gate_id": {
+          "type": "string",
+          "description": "Gate ID used to create this manifest"
+        },
+        "source_bundle_id": {
+          "type": "string",
+          "description": "Bundle ID used to create this manifest"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

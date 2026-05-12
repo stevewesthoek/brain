@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
-**Date:** 2026-05-11 (VO-2E Complete)  
-**Status:** VO-2E complete (CLI, adapter contracts, readiness reporting); detailed guide for phases 2A/2B/2C/2D/2E  
+**Date:** 2026-05-12 (VO-4A Complete)  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -2283,14 +2283,169 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 
 ---
 
-### VO-3B + VO-3C + VO-3D + VO-3E + VO-3F: Next Steps (VO-3G+)
+## Phase VO-4A: Render Executor Contract and Dry-Run Render Command Manifest ✅ (DONE)
 
-**VO-3G: Real Render Execution** — Implement actual FFmpeg rendering based on render plans (when approved)
+**Status:** 2026-05-12 (complete)
+
+**Purpose:** Define the render executor contract and create dry-run render command manifests. Command manifests are planning artifacts only — they do not execute FFmpeg, do not render, do not create files, do not call platform APIs. All commands are disabled summaries for operator review.
+
+### Deliverables
+
+**1. Render Command Manifest Schema + Example**
+- Schema: `operations/specs/video-orchestrator/render-command-manifest.schema.json`
+  - JSON Schema with immutable constraints: dry_run=true const, execution_enabled=false const, requires_explicit_operator_run=true const
+  - command_state enum: draft, blocked, ready_for_operator_review
+  - executor: executor_id, executor_kind (ffmpeg, local_renderer, manual_renderer, placeholder), execution_enabled (false), requires_explicit_operator_run (true)
+  - command_plan: commands array (all disabled=true), command_count, contains_shell (false const), execution_mode (disabled const)
+  - command_summary: command_id, purpose, tool_label, input/output/arguments summaries (safe, no raw commands), disabled (true const)
+  - planned_outputs: output_count, by_kind, platform, project_id (safe summaries only)
+  - validation: ready_for_execution (false), ready_for_render (false), ready_for_upload (false), blocking_reasons, warnings
+  - No raw command lines, no paths, no URLs, no credentials, no shell syntax
+- Example: `operations/specs/video-orchestrator/examples/render-command-manifest.example.json`
+  - Safe example with draft state, placeholder executor, disabled commands, no personal data, no secrets
+
+**2. Render Command Manifest Creation (createRenderCommandManifest)**
+- dryRun must be true (enforced)
+- All inputs must have dry_run=true
+- Approval state must be approved_for_manual_render
+- IDs must match across approval/gate/bundle/plan
+- Generates safe command summaries (no raw commands, no paths, no shell syntax)
+- Validation applied automatically during creation
+- ready_for_execution, ready_for_render, ready_for_upload hardcoded to false
+- No file creation, no FFmpeg execution, no platform API calls
+
+**3. Manifest Validation (validateRenderCommandManifest)**
+- Required fields present
+- dry_run=true
+- executor.execution_enabled=false
+- executor.requires_explicit_operator_run=true
+- command_plan.execution_mode=disabled
+- All commands have disabled=true
+- contains_shell=false
+- ready_for_execution/render/upload=false
+- Blocks forbidden credential patterns (no echo)
+- Blocks execution command patterns (videos.insert, ffmpeg, child_process) without echoing
+
+**4. Manifest Store (save/list/get)**
+- saveRenderCommandManifest: upserts by command_manifest_id, rejects dry_run=false, rejects execution_enabled=true, rejects ready flags true
+- listRenderCommandManifests: filters by project_id, platform, command_state, approval_id
+- getRenderCommandManifest: retrieves by command_manifest_id
+- JSON-backed local persistence (render-command-manifests.json)
+- Sorted by created_at then command_manifest_id
+
+**5. Manifest Report (getRenderCommandManifestReport)**
+- total: number of manifests
+- by_state: Record of state counts
+- blocked, ready_for_operator_review: specific state counts
+- ready_for_execution, ready_for_render, ready_for_upload: hardcoded to 0 (no execution capability)
+- Safe summaries only (no raw command_plan, no paths, no credentials)
+- Sanitized with [unsafe-*] placeholders
+
+**6. TypeScript Types**
+- RenderCommandManifestState, RenderExecutorKind, RenderCommandSummary, RenderCommandManifest, RenderCommandManifestValidationResult
+- All types with immutable constraint enforcement
+
+### Tests: 30 tests ✅
+
+**Schema & Example (4 tests):**
+- VO-4A-SCHEMA-1: schema parses ✅
+- VO-4A-SCHEMA-2: example parses ✅
+- VO-4A-SCHEMA-3: example contains no forbidden strings ✅
+- VO-4A-SCHEMA-4: example contains no raw paths, URLs, or shell commands ✅
+
+**Creation (8 tests):**
+- VO-4A-CREATE-5: dryRun=false blocks ✅
+- VO-4A-CREATE-6: non-approved approval blocks ✅
+- VO-4A-CREATE-7: mismatched IDs block ✅
+- VO-4A-CREATE-8: approved approval creates manifest ✅
+- VO-4A-CREATE-9: command summaries disabled ✅
+- VO-4A-CREATE-10: executor execution_enabled=false ✅
+- VO-4A-CREATE-11: readiness flags remain false ✅
+- VO-4A-CREATE-12: no files created ✅
+
+**Validation (11 tests):**
+- VO-4A-VALIDATE-14: safe manifest validates ✅
+- VO-4A-VALIDATE-15: dry_run=false blocks ✅
+- VO-4A-VALIDATE-16: execution_enabled=true blocks ✅
+- VO-4A-VALIDATE-17: command disabled=false blocks ✅
+- VO-4A-VALIDATE-18: contains_shell=true blocks ✅
+- VO-4A-VALIDATE-19/20/21: ready flags true block ✅
+- VO-4A-VALIDATE-22/23: forbidden keys/strings block without echo ✅
+- VO-4A-VALIDATE-24: execution-command payloads block ✅
+
+**Store (5 tests):**
+- VO-4A-STORE-25: save/list/get/upsert works ✅
+- VO-4A-STORE-26: filters work ✅
+- VO-4A-STORE-27/28/29: rejects unsafe manifests ✅
+
+**Report (5 tests):**
+- VO-4A-REPORT-30: counts states ✅
+- VO-4A-REPORT-31: legacy data doesn't leak ✅
+- VO-4A-REPORT-32/33: safe summaries, no forbidden strings ✅
+- VO-4A-REPORT-34: readiness remains 0 ✅
+
+**Total Tests:** 30 all passing
+
+### Files Modified/Created
+
+**Created:**
+- `operations/specs/video-orchestrator/render-command-manifest.schema.json` — Schema
+- `operations/specs/video-orchestrator/examples/render-command-manifest.example.json` — Example
+
+**Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts` — Added VO-4A types, functions, stores (+880 lines)
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts` — Added 30 VO-4A tests (+1,020 lines)
+
+### Safety Constraints: Immutable and Verified
+
+✅ dry_run must be true (const in types and validation)
+✅ execution_enabled must be false (const in types and validation)
+✅ requires_explicit_operator_run must be true (const)
+✅ command_plan.execution_mode must be "disabled" (const)
+✅ All commands have disabled=true (validated)
+✅ contains_shell must be false (const in validation)
+✅ ready_for_execution/render/upload hardcoded to false (const in types)
+✅ Validation blocks credential patterns without echoing
+✅ Validation blocks execution commands (videos.insert, ffmpeg, child_process)
+✅ No file creation in manifest creation
+✅ No FFmpeg execution
+✅ No platform API calls
+
+### Backward Compatibility
+
+✅ No breaking changes to VO-3A/3B/3C/3D/3E/3F functions or types
+
+### Next Phase Context
+
+**VO-4A is complete. The next phase is:**
+- **VO-4B: Explicit Renderer Preflight Only** (when explicitly approved)
+  - Requires: VO-4A render command manifest in ready_for_operator_review state
+  - Validates renderer availability and capabilities
+  - Does NOT execute FFmpeg
+  - Does NOT render
+  - Does NOT create output files
+  - Produces a preflight report only
+  - Real rendering requires explicit subsequent approval phase
+
+---
+
+### VO-3B + VO-3C + VO-3D + VO-3E + VO-3F + VO-4A: Next Steps (VO-4B+)
+
+**VO-4B: Explicit Renderer Preflight** — Validate rendering readiness without execution (when approved)
+- Validate renderer availability and capabilities
+- Check output paths and dependencies
+- Verify resource availability
+- Produce preflight report only
+- **Does NOT execute FFmpeg, does NOT render, does NOT create files**
+- **Requires: VO-4A render command manifest in ready_for_operator_review state**
+
+**VO-3G: Real Render Execution** — Implement actual FFmpeg rendering (when explicitly approved)
 - Execute render plans with real FFmpeg composition based on approved approval record
 - Create actual output files to planned_output_path
 - Verify files meet expected specifications (duration, resolution, codec)
 - Update render plan state to track execution progress
 - **Requires: VO-3F operator approval record with approved_for_manual_render state**
+- **Requires: VO-4B preflight report confirming readiness**
 
 **VO-3H: Render Status Tracking** — Track render job status
 - Queuing (pending, in_progress, completed, failed)
