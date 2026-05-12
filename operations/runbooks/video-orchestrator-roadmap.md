@@ -391,6 +391,29 @@ This phase adds the comprehensive strategy/design artifact for a future real upl
 **Next phase guidance**
 - If approved later, the next step may add a real upload execution plan artifact, still without API calls.
 
+### VO-7K: Real Upload Execution Plan
+
+This phase adds a plan artifact only for a future dry-run upload execution phase. It stays plan-only and keeps all real upload, network, API, credential, token, keychain, env, and media-file access disabled.
+
+**What it does**
+- Documents safe summaries for the execution plan, including credential, network, platform API, media access, retry, rollback, verification, failure-handling, and operator runbook planning.
+- Keeps upload, network calls, platform APIs, credentials, tokens, keychain, and env access disabled.
+- Records planned steps only; it does not create execution code or raw payloads.
+- Keeps file move, copy, delete, modify, and media-file read operations disabled.
+
+**What it does not do**
+- Does not upload.
+- Does not call platform APIs.
+- Does not make network calls.
+- Does not access credentials, tokens, keychain, or env vars.
+- Does not read media files.
+- Does not store raw output paths, raw account IDs, raw platform payloads, or response payloads.
+- Does not move, copy, delete, or modify generated output files.
+- Does not make ready_for_real_upload true.
+
+**Next phase guidance**
+- If approved later, the next step may add a dry-run real upload execution simulator, still without API, network, or credential access.
+
 **Total Timeline:** 6 months  
 **Total Resource Estimate:** 50 hours Claude Code (revised for adapter complexity)  
 **Local Infrastructure Cost:** $0 (excluding electricity ~$50/month, storage costs, paid platform APIs, optional cloud LLM/TTS)

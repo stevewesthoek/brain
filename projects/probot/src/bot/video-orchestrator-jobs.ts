@@ -12558,6 +12558,305 @@ export function getRealUploadStrategyDesign(real_upload_strategy_design_id: stri
 export function revokeRealUploadStrategyDesign(real_upload_strategy_design_id: string, reason: string): RealUploadStrategyDesign { const design = getRealUploadStrategyDesign(real_upload_strategy_design_id); if (!design) throw new Error("Real upload strategy design not found"); const safeReason = safeRealUploadStrategyString(reason, "[unsafe-reason]"); if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload strategy design reason cannot be stored."); const revoked: RealUploadStrategyDesign = { ...design, strategy_state: "revoked", validation: { ...design.validation, blocking_reasons: [...design.validation.blocking_reasons, safeReason], warnings: [...design.validation.warnings, "Real upload strategy design revoked."] }, provenance: { ...design.provenance, generated_by: "revokeRealUploadStrategyDesign" } }; saveRealUploadStrategyDesign(revoked); return revoked; }
 export function getRealUploadStrategyDesignReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_upload_execution_plan: number; rejected: number; revoked: number; ready_for_future_upload_execution_plan: number; ready_for_real_upload: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; strategy_sections_total: number; strategy_sections_with_blockers: number; designs: Array<RealUploadStrategyDesignsStoreSummaryItem>; } { const designs = listRealUploadStrategyDesigns(options); const by_state: Record<string, number> = {}; let blocked = 0, ready = 0, approved = 0, rejected = 0, revoked = 0, readyPlan = 0, sectionsTotal = 0, sectionsBlocked = 0; const summaries = designs.map((design) => { by_state[design.strategy_state] = (by_state[design.strategy_state] ?? 0) + 1; if (design.strategy_state === "blocked") blocked++; if (design.strategy_state === "ready_for_operator_review") ready++; if (design.strategy_state === "approved_for_future_upload_execution_plan") approved++; if (design.strategy_state === "rejected") rejected++; if (design.strategy_state === "revoked") revoked++; if (design.validation.ready_for_future_upload_execution_plan) readyPlan++; const sections = [design.credential_strategy, design.network_strategy, design.platform_api_strategy, design.media_access_strategy, design.upload_retry_strategy, design.rollback_strategy, design.post_upload_verification_strategy, design.failure_handling_strategy]; sectionsTotal += sections.length; sectionsBlocked += sections.filter((s) => s.blocking_reasons.length > 0).length; return safeRealUploadStrategySummary(design); }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_upload_execution_plan: approved, rejected, revoked, ready_for_future_upload_execution_plan: readyPlan, ready_for_real_upload: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, strategy_sections_total: sectionsTotal, strategy_sections_with_blockers: sectionsBlocked, designs: summaries }; }
 
+export type RealUploadExecutionPlanMode = "real_upload_execution_plan_only" | "operator_review_real_upload_execution_plan";
+export type RealUploadExecutionPlanState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_upload_execution_dry_run" | "rejected" | "revoked";
+
+export interface RealUploadExecutionPlanRequiredArtifacts {
+  real_upload_strategy_design_validated: boolean;
+  real_upload_execution_request_validated: boolean;
+  real_upload_readiness_assessment_validated: boolean;
+  dry_run_upload_spike_result_validated: boolean;
+  upload_execution_design_validated: boolean;
+  upload_execution_approval_validated: boolean;
+  platform_upload_request_validated: boolean;
+  upload_package_design_validated: boolean;
+  local_output_review_validated: boolean;
+  spike_result_validated: boolean;
+}
+
+export interface RealUploadExecutionPlanScope {
+  future_upload_execution_dry_run_requested: boolean;
+  current_real_upload_requested: false;
+  current_network_calls_requested: false;
+  current_platform_api_calls_requested: false;
+  current_credential_access_requested: false;
+  plan_only: true;
+}
+
+export interface RealUploadExecutionPlannedStep {
+  step_id: string;
+  step_kind: "operator_preflight_confirmation" | "artifact_validation" | "credential_boundary_check" | "media_reference_resolution_strategy" | "metadata_payload_strategy" | "platform_endpoint_strategy" | "network_boundary_check" | "upload_attempt_strategy" | "retry_idempotency_strategy" | "post_upload_verification_strategy" | "failure_handling_strategy" | "rollback_strategy" | "final_operator_go_no_go";
+  step_order: number;
+  safe_summary: string;
+  execution_enabled: false;
+  upload_side_effect_allowed: false;
+  network_side_effect_allowed: false;
+  credential_access_allowed: false;
+  platform_api_call_allowed: false;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadExecutionCredentialPlan { plan_required: true; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; credential_reference_stored: false; token_reference_stored: false; secret_material_stored: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadExecutionNetworkPlan { plan_required: true; network_calls_allowed: false; network_calls_made: false; external_side_effects_allowed: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadExecutionPlatformApiPlan { plan_required: true; platform_endpoint_selected: false; platform_api_payload_created: false; platform_api_payload_stored: false; raw_account_ids_stored: false; upload_payload_created: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadExecutionMediaAccessPlan { plan_required: true; media_file_read: false; raw_media_path_stored: false; media_file_modified: false; media_file_copied: false; media_file_moved: false; media_file_deleted: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadExecutionRetryPlan { plan_required: true; max_upload_attempts: 0; retry_execution_enabled: false; idempotency_plan_defined: boolean; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadExecutionRollbackPlan { plan_required: true; rollback_execution_enabled: false; destructive_action_allowed: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadExecutionPostUploadVerificationPlan { plan_required: true; verification_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadExecutionFailureHandlingPlan { plan_required: true; failure_handling_execution_enabled: false; alerting_execution_enabled: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadExecutionOperatorRunbookPlan { runbook_required: true; checklist_acknowledged: boolean; understands_plan_only: boolean; understands_no_upload_enabled: boolean; understands_no_credentials_accessed: boolean; understands_no_network_calls: boolean; understands_future_dry_run_execution_phase_required: boolean; reviewed_by_label?: string; decision_note_summary?: string; safe_summary: string; }
+export interface RealUploadExecutionPlanBoundary { upload_allowed: false; upload_execution_enabled: false; real_upload_execution_allowed: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; ready_for_real_upload: false; }
+export interface RealUploadExecutionPlanValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadExecutionPlan {
+  schema_version: "1.0";
+  real_upload_execution_plan_id: string;
+  real_upload_strategy_design_id: string;
+  real_upload_execution_request_id: string;
+  real_upload_readiness_assessment_id: string;
+  dry_run_upload_spike_result_id: string;
+  upload_execution_design_id: string;
+  upload_execution_approval_id: string;
+  platform_upload_request_id: string;
+  upload_package_design_id: string;
+  local_output_review_id: string;
+  production_render_spike_result_id: string;
+  final_render_execution_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  plan_state: RealUploadExecutionPlanState;
+  created_at: string;
+  plan_mode: RealUploadExecutionPlanMode;
+  required_artifacts: RealUploadExecutionPlanRequiredArtifacts;
+  execution_plan_scope: RealUploadExecutionPlanScope;
+  planned_steps: RealUploadExecutionPlannedStep[];
+  credential_plan: RealUploadExecutionCredentialPlan;
+  network_plan: RealUploadExecutionNetworkPlan;
+  platform_api_plan: RealUploadExecutionPlatformApiPlan;
+  media_access_plan: RealUploadExecutionMediaAccessPlan;
+  retry_plan: RealUploadExecutionRetryPlan;
+  rollback_plan: RealUploadExecutionRollbackPlan;
+  post_upload_verification_plan: RealUploadExecutionPostUploadVerificationPlan;
+  failure_handling_plan: RealUploadExecutionFailureHandlingPlan;
+  operator_runbook_plan: RealUploadExecutionOperatorRunbookPlan;
+  execution_boundary: RealUploadExecutionPlanBoundary;
+  validation: {
+    ready_for_future_upload_execution_dry_run: boolean;
+    ready_for_real_upload: false;
+    upload_allowed: false;
+    upload_execution_enabled: false;
+    platform_api_calls_allowed: false;
+    network_calls_allowed: false;
+    credentials_accessed: false;
+    token_accessed: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRealUploadExecutionPlan" | "revokeRealUploadExecutionPlan";
+    source_real_upload_strategy_design_id: string;
+    source_real_upload_execution_request_id: string;
+    source_real_upload_readiness_assessment_id: string;
+    source_dry_run_upload_spike_result_id: string;
+    source_upload_execution_design_id: string;
+    source_upload_execution_approval_id: string;
+    source_platform_upload_request_id: string;
+    source_upload_package_design_id: string;
+    source_local_output_review_id: string;
+    source_production_render_spike_result_id: string;
+    source_final_render_execution_request_id: string;
+    source_render_plan_id: string;
+  };
+}
+
+interface RealUploadExecutionPlansStore { schema_version: "1.0"; created_at: string; plans: RealUploadExecutionPlan[]; }
+function getRealUploadExecutionPlansPath(): string { return path.join(getRuntimeDir(), "real-upload-execution-plans.json"); }
+function loadRealUploadExecutionPlansStore(): RealUploadExecutionPlansStore { try { const filePath = getRealUploadExecutionPlansPath(); if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as RealUploadExecutionPlansStore; } catch {} return { schema_version: "1.0", created_at: new Date().toISOString(), plans: [] }; }
+function saveRealUploadExecutionPlansStore(store: RealUploadExecutionPlansStore): void { const filePath = getRealUploadExecutionPlansPath(); fs.mkdirSync(path.dirname(filePath), { recursive: true }); store.plans.sort((a, b) => { const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); return compare !== 0 ? compare : a.real_upload_execution_plan_id.localeCompare(b.real_upload_execution_plan_id); }); fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8"); }
+function safeRealUploadExecutionPlanString(value: unknown, fallback: string): string { return safeRealUploadStrategyString(value, fallback); }
+function validateRealUploadExecutionPlanShape(plan: unknown): RealUploadExecutionPlanValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof plan !== "object" || plan === null) return { ok: false, blocking_reasons: ["Real upload execution plan must be an object"], warnings };
+  const p = plan as Record<string, unknown>;
+  const required = ["schema_version","real_upload_execution_plan_id","real_upload_strategy_design_id","real_upload_execution_request_id","real_upload_readiness_assessment_id","dry_run_upload_spike_result_id","upload_execution_design_id","upload_execution_approval_id","platform_upload_request_id","upload_package_design_id","local_output_review_id","production_render_spike_result_id","final_render_execution_request_id","render_plan_id","project_id","platform","plan_state","created_at","plan_mode","required_artifacts","execution_plan_scope","planned_steps","credential_plan","network_plan","platform_api_plan","media_access_plan","retry_plan","rollback_plan","post_upload_verification_plan","failure_handling_plan","operator_runbook_plan","execution_boundary","validation","provenance"];
+  for (const key of required) if (!(key in p)) blocking_reasons.push("Real upload execution plan is missing a required field");
+  if (p.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["real_upload_execution_plan_only","operator_review_real_upload_execution_plan"].includes(String(p.plan_mode))) blocking_reasons.push("plan_mode is invalid");
+  if (!["draft","blocked","ready_for_operator_review","approved_for_future_upload_execution_dry_run","rejected","revoked"].includes(String(p.plan_state))) blocking_reasons.push("plan_state is invalid");
+  const text = JSON.stringify(plan);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env") || text.includes("keychain://") || text.includes("stdout") || text.includes("stderr") || text.includes("ffmpeg -i") || text.includes("Bearer ") || text.includes("data:") || text.includes("base64,") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../")) blocking_reasons.push("Real upload execution plan contains forbidden payload content");
+  const requiredArtifacts = p.required_artifacts as Record<string, unknown> | undefined;
+  if (!requiredArtifacts || requiredArtifacts.real_upload_strategy_design_validated !== true || requiredArtifacts.real_upload_execution_request_validated !== true || requiredArtifacts.real_upload_readiness_assessment_validated !== true || requiredArtifacts.dry_run_upload_spike_result_validated !== true || requiredArtifacts.upload_execution_design_validated !== true || requiredArtifacts.upload_execution_approval_validated !== true || requiredArtifacts.platform_upload_request_validated !== true || requiredArtifacts.upload_package_design_validated !== true || requiredArtifacts.local_output_review_validated !== true || requiredArtifacts.spike_result_validated !== true) blocking_reasons.push("Required artifacts are unsafe");
+  const scope = p.execution_plan_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.plan_only !== true || scope.future_upload_execution_dry_run_requested !== true || scope.current_real_upload_requested !== false || scope.current_network_calls_requested !== false || scope.current_platform_api_calls_requested !== false || scope.current_credential_access_requested !== false) blocking_reasons.push("Execution plan scope is unsafe");
+  const steps = p.planned_steps as Record<string, unknown>[] | undefined;
+  const requiredKinds = new Set(["operator_preflight_confirmation","artifact_validation","credential_boundary_check","media_reference_resolution_strategy","metadata_payload_strategy","platform_endpoint_strategy","network_boundary_check","upload_attempt_strategy","retry_idempotency_strategy","post_upload_verification_strategy","failure_handling_strategy","rollback_strategy","final_operator_go_no_go"]);
+  if (!Array.isArray(steps) || steps.length < requiredKinds.size) blocking_reasons.push("Planned steps are unsafe");
+  else {
+    const seen = new Set<string>();
+    for (const step of steps) {
+      if (!step || typeof step.step_id !== "string" || typeof step.step_kind !== "string" || typeof step.step_order !== "number" || typeof step.safe_summary !== "string" || step.execution_enabled !== false || step.upload_side_effect_allowed !== false || step.network_side_effect_allowed !== false || step.credential_access_allowed !== false || step.platform_api_call_allowed !== false || !Array.isArray(step.blocking_reasons) || !Array.isArray(step.warnings)) {
+        blocking_reasons.push("Planned step is unsafe");
+        continue;
+      }
+      seen.add(String(step.step_kind));
+      const safe = step.safe_summary.toLowerCase();
+      if (safe.length === 0 || safe.length > 200 || safe.includes("://") || safe.includes("stdout") || safe.includes("stderr") || safe.includes("process.env") || safe.includes("keychain://") || safe.includes("access_token") || safe.includes("refresh_token") || safe.includes("client_secret") || safe.includes("authorization_code") || safe.includes("code_verifier") || safe.includes("bearer") || safe.includes("/users/") || safe.includes("../")) blocking_reasons.push("Planned step summary is unsafe");
+    }
+    for (const kind of requiredKinds) if (!seen.has(kind)) blocking_reasons.push("Missing required planned step kind");
+  }
+  const credentialPlan = p.credential_plan as Record<string, unknown> | undefined;
+  if (!credentialPlan || credentialPlan.plan_required !== true || credentialPlan.credentials_accessed !== false || credentialPlan.token_accessed !== false || credentialPlan.keychain_accessed !== false || credentialPlan.env_accessed !== false || credentialPlan.credential_reference_stored !== false || credentialPlan.token_reference_stored !== false || credentialPlan.secret_material_stored !== false) blocking_reasons.push("Credential plan is unsafe");
+  const networkPlan = p.network_plan as Record<string, unknown> | undefined;
+  if (!networkPlan || networkPlan.plan_required !== true || networkPlan.network_calls_allowed !== false || networkPlan.network_calls_made !== false || networkPlan.external_side_effects_allowed !== false) blocking_reasons.push("Network plan is unsafe");
+  const platformPlan = p.platform_api_plan as Record<string, unknown> | undefined;
+  if (!platformPlan || platformPlan.plan_required !== true || platformPlan.platform_endpoint_selected !== false || platformPlan.platform_api_payload_created !== false || platformPlan.platform_api_payload_stored !== false || platformPlan.raw_account_ids_stored !== false || platformPlan.upload_payload_created !== false) blocking_reasons.push("Platform API plan is unsafe");
+  if (looksLikeRawUploadPlatformId(platformPlan?.account_reference_summary) || looksLikeRawUploadPlatformId(platformPlan?.channel_or_profile_reference_summary)) blocking_reasons.push("Platform API plan contains unsafe account identifiers");
+  const mediaPlan = p.media_access_plan as Record<string, unknown> | undefined;
+  if (!mediaPlan || mediaPlan.plan_required !== true || mediaPlan.media_file_read !== false || mediaPlan.raw_media_path_stored !== false || mediaPlan.media_file_modified !== false || mediaPlan.media_file_copied !== false || mediaPlan.media_file_moved !== false || mediaPlan.media_file_deleted !== false) blocking_reasons.push("Media access plan is unsafe");
+  const retryPlan = p.retry_plan as Record<string, unknown> | undefined;
+  if (!retryPlan || retryPlan.plan_required !== true || retryPlan.max_upload_attempts !== 0 || retryPlan.retry_execution_enabled !== false) blocking_reasons.push("Retry plan is unsafe");
+  const rollbackPlan = p.rollback_plan as Record<string, unknown> | undefined;
+  if (!rollbackPlan || rollbackPlan.plan_required !== true || rollbackPlan.rollback_execution_enabled !== false || rollbackPlan.destructive_action_allowed !== false) blocking_reasons.push("Rollback plan is unsafe");
+  const verificationPlan = p.post_upload_verification_plan as Record<string, unknown> | undefined;
+  if (!verificationPlan || verificationPlan.plan_required !== true || verificationPlan.verification_execution_enabled !== false || verificationPlan.platform_api_calls_allowed !== false || verificationPlan.network_calls_allowed !== false) blocking_reasons.push("Verification plan is unsafe");
+  const failurePlan = p.failure_handling_plan as Record<string, unknown> | undefined;
+  if (!failurePlan || failurePlan.plan_required !== true || failurePlan.failure_handling_execution_enabled !== false || failurePlan.alerting_execution_enabled !== false) blocking_reasons.push("Failure handling plan is unsafe");
+  const runbook = p.operator_runbook_plan as Record<string, unknown> | undefined;
+  if (!runbook || runbook.runbook_required !== true || runbook.checklist_acknowledged !== true || runbook.understands_plan_only !== true || runbook.understands_no_upload_enabled !== true || runbook.understands_no_credentials_accessed !== true || runbook.understands_no_network_calls !== true || runbook.understands_future_dry_run_execution_phase_required !== true) blocking_reasons.push("Operator runbook plan is unsafe");
+  const boundary = p.execution_boundary as Record<string, unknown> | undefined;
+  if (!boundary || boundary.upload_allowed !== false || boundary.upload_execution_enabled !== false || boundary.real_upload_execution_allowed !== false || boundary.platform_api_calls_allowed !== false || boundary.network_calls_allowed !== false || boundary.credentials_accessed !== false || boundary.token_accessed !== false || boundary.keychain_accessed !== false || boundary.env_accessed !== false || boundary.ready_for_real_upload !== false) blocking_reasons.push("Execution boundary is unsafe");
+  const validation = p.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_future_upload_execution_dry_run !== false && validation.ready_for_future_upload_execution_dry_run !== true || validation.ready_for_real_upload !== false || validation.upload_allowed !== false || validation.upload_execution_enabled !== false || validation.platform_api_calls_allowed !== false || validation.network_calls_allowed !== false || validation.credentials_accessed !== false || validation.token_accessed !== false) blocking_reasons.push("Validation is unsafe");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadExecutionPlan(input: {
+  strategyDesign: RealUploadStrategyDesign;
+  realUploadExecutionRequest: RealUploadExecutionRequest;
+  readinessAssessment: RealUploadReadinessAssessment;
+  dryRunUploadSpikeResult: DryRunUploadSpikeResult;
+  uploadExecutionDesign: UploadExecutionDesign;
+  uploadExecutionApproval: UploadExecutionApproval;
+  platformUploadRequest: PlatformUploadRequest;
+  uploadPackageDesign: UploadPackageDesign;
+  localOutputReview: LocalOutputOperatorReview;
+  spikeResult: ControlledProductionRenderSpikeResult;
+  decision?: "draft" | "approved_for_future_upload_execution_dry_run" | "rejected";
+  reviewed_by_label?: string;
+  checklist_acknowledged?: boolean;
+  understands_plan_only?: boolean;
+  understands_no_upload_enabled?: boolean;
+  understands_no_credentials_accessed?: boolean;
+  understands_no_network_calls?: boolean;
+  understands_future_dry_run_execution_phase_required?: boolean;
+  decision_note_summary?: string;
+  dryRun: true;
+}): RealUploadExecutionPlan {
+  if (input.dryRun !== true) throw new Error("dryRun must be true");
+  if (!validateRealUploadStrategyDesign(input.strategyDesign).ok) throw new Error("strategyDesign must validate");
+  if (!validateRealUploadExecutionRequest(input.realUploadExecutionRequest).ok) throw new Error("realUploadExecutionRequest must validate");
+  if (!validateRealUploadReadinessAssessment(input.readinessAssessment).ok) throw new Error("readinessAssessment must validate");
+  if (!validateDryRunUploadSpikeResult(input.dryRunUploadSpikeResult).ok) throw new Error("dryRunUploadSpikeResult must validate");
+  if (!validateUploadExecutionDesign(input.uploadExecutionDesign).ok) throw new Error("uploadExecutionDesign must validate");
+  if (!validateUploadExecutionApproval(input.uploadExecutionApproval).ok) throw new Error("uploadExecutionApproval must validate");
+  if (!validatePlatformUploadRequest(input.platformUploadRequest).ok) throw new Error("platformUploadRequest must validate");
+  if (!validateUploadPackageDesign(input.uploadPackageDesign).ok) throw new Error("uploadPackageDesign must validate");
+  if (!validateLocalOutputOperatorReview(input.localOutputReview).ok) throw new Error("localOutputReview must validate");
+  if (!validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("spikeResult must validate");
+  if (input.strategyDesign.strategy_state !== "approved_for_future_upload_execution_plan") throw new Error("strategyDesign must be approved_for_future_upload_execution_plan");
+  if (input.strategyDesign.validation.ready_for_real_upload !== false || input.realUploadExecutionRequest.validation.ready_for_real_upload !== false || input.readinessAssessment.validation.ready_for_real_upload !== false) throw new Error("readiness for real upload must remain false");
+  if (input.strategyDesign.real_upload_execution_request_id !== input.realUploadExecutionRequest.real_upload_execution_request_id || input.strategyDesign.real_upload_readiness_assessment_id !== input.readinessAssessment.real_upload_readiness_assessment_id || input.strategyDesign.dry_run_upload_spike_result_id !== input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id || input.strategyDesign.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.strategyDesign.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.strategyDesign.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.strategyDesign.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.strategyDesign.local_output_review_id !== input.localOutputReview.local_output_review_id || input.strategyDesign.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.strategyDesign.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.strategyDesign.render_plan_id !== input.spikeResult.render_plan_id || input.strategyDesign.project_id !== input.spikeResult.project_id || input.strategyDesign.platform !== input.spikeResult.platform) throw new Error("strategy inputs must match");
+  if (input.realUploadExecutionRequest.real_upload_readiness_assessment_id !== input.readinessAssessment.real_upload_readiness_assessment_id || input.realUploadExecutionRequest.dry_run_upload_spike_result_id !== input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id || input.realUploadExecutionRequest.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.realUploadExecutionRequest.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.realUploadExecutionRequest.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.realUploadExecutionRequest.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.realUploadExecutionRequest.local_output_review_id !== input.localOutputReview.local_output_review_id || input.realUploadExecutionRequest.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.realUploadExecutionRequest.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.realUploadExecutionRequest.render_plan_id !== input.spikeResult.render_plan_id || input.realUploadExecutionRequest.project_id !== input.spikeResult.project_id || input.realUploadExecutionRequest.platform !== input.spikeResult.platform) throw new Error("request inputs must match");
+  const decision = input.decision ?? "draft";
+  const approved = decision === "approved_for_future_upload_execution_dry_run";
+  if (approved && (!input.checklist_acknowledged || !input.understands_plan_only || !input.understands_no_upload_enabled || !input.understands_no_credentials_accessed || !input.understands_no_network_calls || !input.understands_future_dry_run_execution_phase_required)) throw new Error("approved plan requires acknowledgements");
+  const reviewedBy = safeRealUploadExecutionPlanString(input.reviewed_by_label ?? "", "[unsafe-reviewer]");
+  const note = safeRealUploadExecutionPlanString(input.decision_note_summary ?? "", "[unsafe-plan-note]");
+  const plan: RealUploadExecutionPlan = {
+    schema_version: "1.0",
+    real_upload_execution_plan_id: `real-upload-execution-plan-${crypto.randomUUID()}`,
+    real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id,
+    real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id,
+    real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id,
+    dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+    upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+    upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+    platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+    upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+    local_output_review_id: input.localOutputReview.local_output_review_id,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.spikeResult.project_id,
+    platform: input.spikeResult.platform,
+    plan_state: approved ? "approved_for_future_upload_execution_dry_run" : "ready_for_operator_review",
+    created_at: new Date().toISOString(),
+    plan_mode: "real_upload_execution_plan_only",
+    required_artifacts: {
+      real_upload_strategy_design_validated: true,
+      real_upload_execution_request_validated: true,
+      real_upload_readiness_assessment_validated: true,
+      dry_run_upload_spike_result_validated: true,
+      upload_execution_design_validated: true,
+      upload_execution_approval_validated: true,
+      platform_upload_request_validated: true,
+      upload_package_design_validated: true,
+      local_output_review_validated: true,
+      spike_result_validated: true,
+    },
+    execution_plan_scope: {
+      future_upload_execution_dry_run_requested: true,
+      current_real_upload_requested: false,
+      current_network_calls_requested: false,
+      current_platform_api_calls_requested: false,
+      current_credential_access_requested: false,
+      plan_only: true,
+    },
+    planned_steps: [
+      { step_id: "step-1", step_kind: "operator_preflight_confirmation", step_order: 1, safe_summary: "Operator confirms this is a plan only.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Future execution remains separate."], warnings: [] },
+      { step_id: "step-2", step_kind: "artifact_validation", step_order: 2, safe_summary: "Validate all prior artifacts again.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Validation only."], warnings: [] },
+      { step_id: "step-3", step_kind: "credential_boundary_check", step_order: 3, safe_summary: "Confirm credentials remain inaccessible.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Credential access remains disabled."], warnings: [] },
+      { step_id: "step-4", step_kind: "media_reference_resolution_strategy", step_order: 4, safe_summary: "Describe media reference strategy only.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Media read access remains disabled."], warnings: [] },
+      { step_id: "step-5", step_kind: "metadata_payload_strategy", step_order: 5, safe_summary: "Describe metadata strategy without payloads.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Payload creation remains disabled."], warnings: [] },
+      { step_id: "step-6", step_kind: "platform_endpoint_strategy", step_order: 6, safe_summary: "Document platform endpoint strategy only.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Endpoint selection remains disabled."], warnings: [] },
+      { step_id: "step-7", step_kind: "network_boundary_check", step_order: 7, safe_summary: "Confirm no network calls are allowed.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Network calls remain disabled."], warnings: [] },
+      { step_id: "step-8", step_kind: "upload_attempt_strategy", step_order: 8, safe_summary: "Describe upload attempt strategy only.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Upload attempts remain disabled."], warnings: [] },
+      { step_id: "step-9", step_kind: "retry_idempotency_strategy", step_order: 9, safe_summary: "Describe retry and idempotency strategy only.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Retry execution remains disabled."], warnings: [] },
+      { step_id: "step-10", step_kind: "post_upload_verification_strategy", step_order: 10, safe_summary: "Describe verification strategy only.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Verification remains disabled."], warnings: [] },
+      { step_id: "step-11", step_kind: "failure_handling_strategy", step_order: 11, safe_summary: "Describe failure handling strategy only.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Failure handling remains disabled."], warnings: [] },
+      { step_id: "step-12", step_kind: "rollback_strategy", step_order: 12, safe_summary: "Describe rollback strategy only.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Rollback remains disabled."], warnings: [] },
+      { step_id: "step-13", step_kind: "final_operator_go_no_go", step_order: 13, safe_summary: "Final operator go/no-go remains separate from execution.", execution_enabled: false, upload_side_effect_allowed: false, network_side_effect_allowed: false, credential_access_allowed: false, platform_api_call_allowed: false, blocking_reasons: ["Execution still requires a future phase."], warnings: [] },
+    ],
+    credential_plan: { plan_required: true, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, credential_reference_stored: false, token_reference_stored: false, secret_material_stored: false, safe_summary: "Credential plan is future-only.", blocking_reasons: ["Credential access remains disabled."], warnings: [] },
+    network_plan: { plan_required: true, network_calls_allowed: false, network_calls_made: false, external_side_effects_allowed: false, safe_summary: "Network plan is future-only.", blocking_reasons: ["Network calls remain disabled."], warnings: [] },
+    platform_api_plan: { plan_required: true, platform_endpoint_selected: false, platform_api_payload_created: false, platform_api_payload_stored: false, raw_account_ids_stored: false, upload_payload_created: false, safe_summary: "Platform API plan is future-only.", blocking_reasons: ["Platform API payloads remain disabled."], warnings: [] },
+    media_access_plan: { plan_required: true, media_file_read: false, raw_media_path_stored: false, media_file_modified: false, media_file_copied: false, media_file_moved: false, media_file_deleted: false, safe_summary: "Media access plan is future-only.", blocking_reasons: ["Media reads remain disabled."], warnings: [] },
+    retry_plan: { plan_required: true, max_upload_attempts: 0, retry_execution_enabled: false, idempotency_plan_defined: true, safe_summary: "Retry plan is summary only.", blocking_reasons: ["Retry execution remains disabled."], warnings: [] },
+    rollback_plan: { plan_required: true, rollback_execution_enabled: false, destructive_action_allowed: false, safe_summary: "Rollback plan is summary only.", blocking_reasons: ["Rollback execution remains disabled."], warnings: [] },
+    post_upload_verification_plan: { plan_required: true, verification_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, safe_summary: "Verification plan is summary only.", blocking_reasons: ["Verification execution remains disabled."], warnings: [] },
+    failure_handling_plan: { plan_required: true, failure_handling_execution_enabled: false, alerting_execution_enabled: false, safe_summary: "Failure handling plan is summary only.", blocking_reasons: ["Failure handling execution remains disabled."], warnings: [] },
+    operator_runbook_plan: { runbook_required: true, checklist_acknowledged: input.checklist_acknowledged === true, understands_plan_only: input.understands_plan_only === true, understands_no_upload_enabled: input.understands_no_upload_enabled === true, understands_no_credentials_accessed: input.understands_no_credentials_accessed === true, understands_no_network_calls: input.understands_no_network_calls === true, understands_future_dry_run_execution_phase_required: input.understands_future_dry_run_execution_phase_required === true, ...(reviewedBy ? { reviewed_by_label: reviewedBy } : {}), ...(note ? { decision_note_summary: note } : {}), safe_summary: "Operator runbook is future-only." },
+    execution_boundary: { upload_allowed: false, upload_execution_enabled: false, real_upload_execution_allowed: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, ready_for_real_upload: false },
+    validation: { ready_for_future_upload_execution_dry_run: approved, ready_for_real_upload: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, blocking_reasons: [], warnings: approved ? ["Real upload execution plan remains dry-run only."] : [] },
+    provenance: { generated_by: "createRealUploadExecutionPlan", source_real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id, source_real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id, source_real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id, source_dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id, source_upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id, source_upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id, source_platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id, source_upload_package_design_id: input.uploadPackageDesign.upload_package_design_id, source_local_output_review_id: input.localOutputReview.local_output_review_id, source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id, source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id, source_render_plan_id: input.spikeResult.render_plan_id },
+  };
+  if (!validateRealUploadExecutionPlan(plan).ok) throw new Error("Unsafe real upload execution plan cannot be created.");
+  return plan;
+}
+
+export function validateRealUploadExecutionPlan(plan: unknown): RealUploadExecutionPlanValidationResult { return validateRealUploadExecutionPlanShape(plan); }
+
+interface RealUploadExecutionPlansStoreSummaryItem { real_upload_execution_plan_id: string; project_id: string; platform: string; plan_state: string; created_at: string; }
+function safeRealUploadExecutionPlanSummary(plan: RealUploadExecutionPlan): RealUploadExecutionPlansStoreSummaryItem { return { real_upload_execution_plan_id: safeRealUploadExecutionPlanString(plan.real_upload_execution_plan_id, "[unsafe-id]"), project_id: safeRealUploadExecutionPlanString(plan.project_id, "[unsafe-project]"), platform: safeRealUploadExecutionPlanString(plan.platform, "[unsafe-platform]"), plan_state: plan.plan_state, created_at: plan.created_at }; }
+export function saveRealUploadExecutionPlan(plan: RealUploadExecutionPlan): void { if (!validateRealUploadExecutionPlan(plan).ok) throw new Error("Unsafe real upload execution plan cannot be stored."); const store = loadRealUploadExecutionPlansStore(); const existing = store.plans.findIndex((item) => item.real_upload_execution_plan_id === plan.real_upload_execution_plan_id); if (existing >= 0) store.plans[existing] = plan; else store.plans.push(plan); saveRealUploadExecutionPlansStore(store); }
+export function listRealUploadExecutionPlans(options?: { project_id?: string; platform?: string; plan_state?: string; real_upload_strategy_design_id?: string; real_upload_execution_request_id?: string }): RealUploadExecutionPlan[] { const store = loadRealUploadExecutionPlansStore(); return store.plans.filter((plan) => (!options?.project_id || plan.project_id === options.project_id) && (!options?.platform || plan.platform === options.platform) && (!options?.plan_state || plan.plan_state === options.plan_state) && (!options?.real_upload_strategy_design_id || plan.real_upload_strategy_design_id === options.real_upload_strategy_design_id) && (!options?.real_upload_execution_request_id || plan.real_upload_execution_request_id === options.real_upload_execution_request_id)).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_execution_plan_id.localeCompare(b.real_upload_execution_plan_id)); }
+export function getRealUploadExecutionPlan(real_upload_execution_plan_id: string): RealUploadExecutionPlan | null { return loadRealUploadExecutionPlansStore().plans.find((plan) => plan.real_upload_execution_plan_id === real_upload_execution_plan_id) ?? null; }
+export function revokeRealUploadExecutionPlan(real_upload_execution_plan_id: string, reason: string): RealUploadExecutionPlan { const plan = getRealUploadExecutionPlan(real_upload_execution_plan_id); if (!plan) throw new Error("Real upload execution plan not found"); const safeReason = safeRealUploadExecutionPlanString(reason, "[unsafe-reason]"); if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload execution plan reason cannot be stored."); const revoked: RealUploadExecutionPlan = { ...plan, plan_state: "revoked", validation: { ...plan.validation, blocking_reasons: [...plan.validation.blocking_reasons, safeReason], warnings: [...plan.validation.warnings, "Real upload execution plan revoked."] }, provenance: { ...plan.provenance, generated_by: "revokeRealUploadExecutionPlan" } }; saveRealUploadExecutionPlan(revoked); return revoked; }
+export function getRealUploadExecutionPlanReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_upload_execution_dry_run: number; rejected: number; revoked: number; ready_for_future_upload_execution_dry_run: number; ready_for_real_upload: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; planned_steps_total: number; planned_steps_with_blockers: number; plans: Array<RealUploadExecutionPlansStoreSummaryItem>; } { const plans = listRealUploadExecutionPlans(options); const by_state: Record<string, number> = {}; let blocked = 0, ready = 0, approved = 0, rejected = 0, revoked = 0, readyFuture = 0, stepsTotal = 0, stepsBlocked = 0; const summaries = plans.map((plan) => { by_state[plan.plan_state] = (by_state[plan.plan_state] ?? 0) + 1; if (plan.plan_state === "blocked") blocked++; if (plan.plan_state === "ready_for_operator_review") ready++; if (plan.plan_state === "approved_for_future_upload_execution_dry_run") approved++; if (plan.plan_state === "rejected") rejected++; if (plan.plan_state === "revoked") revoked++; if (plan.validation.ready_for_future_upload_execution_dry_run) readyFuture++; stepsTotal += plan.planned_steps.length; stepsBlocked += plan.planned_steps.filter((step) => step.blocking_reasons.length > 0).length; return safeRealUploadExecutionPlanSummary(plan); }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_upload_execution_dry_run: approved, rejected, revoked, ready_for_future_upload_execution_dry_run: readyFuture, ready_for_real_upload: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, planned_steps_total: stepsTotal, planned_steps_with_blockers: stepsBlocked, plans: summaries }; }
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {

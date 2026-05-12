@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
 **Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B complete (operator review of generated local output). VO-7C complete (upload package design). VO-7D complete (platform upload request artifact). VO-7E complete (upload execution approval). VO-7F complete (upload execution design). VO-7G complete (dry-run upload spike simulation). VO-7H complete (real upload readiness assessment). VO-7I complete (real upload execution request). VO-7J complete (real upload strategy design); detailed guide for phases 3B+  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B complete (operator review of generated local output). VO-7C complete (upload package design). VO-7D complete (platform upload request artifact). VO-7E complete (upload execution approval). VO-7F complete (upload execution design). VO-7G complete (dry-run upload spike simulation). VO-7H complete (real upload readiness assessment). VO-7I complete (real upload execution request). VO-7J complete (real upload strategy design). VO-7K complete (real upload execution plan); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -320,6 +320,29 @@ This phase adds the comprehensive strategy/design artifact for a future real upl
 
 **Next phase guidance**
 - If approved later, the next step may add a real upload execution plan artifact, still without API calls.
+
+### VO-7K: Real Upload Execution Plan
+
+This phase adds a plan artifact only for a future dry-run upload execution phase. It stays plan-only and keeps all real upload, network, API, credential, token, keychain, env, and media-file access disabled.
+
+**What it does**
+- Documents safe summaries for the execution plan, including credential, network, platform API, media access, retry, rollback, verification, failure-handling, and operator runbook planning.
+- Keeps upload, network calls, platform APIs, credentials, tokens, keychain, and env access disabled.
+- Records planned steps only; it does not create execution code or raw payloads.
+- Keeps file move, copy, delete, modify, and media-file read operations disabled.
+
+**What it does not do**
+- Does not upload.
+- Does not call platform APIs.
+- Does not make network calls.
+- Does not access credentials, tokens, keychain, or env vars.
+- Does not read media files.
+- Does not store raw output paths, raw account IDs, raw platform payloads, or response payloads.
+- Does not move, copy, delete, or modify generated output files.
+- Does not make ready_for_real_upload true.
+
+**Next phase guidance**
+- If approved later, the next step may add a dry-run real upload execution simulator, still without API, network, or credential access.
 
 ---
 
