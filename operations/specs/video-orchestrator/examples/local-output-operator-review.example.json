@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "local_output_review_id": "local-output-review-001",
+  "production_render_spike_result_id": "production-render-spike-001",
+  "final_render_execution_request_id": "final-render-execution-request-001",
+  "production_render_request_id": "production-render-request-001",
+  "output_directory_approval_id": "output-directory-approval-001",
+  "render_plan_id": "render-plan-control-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "review_state": "ready_for_operator_review",
+  "created_at": "2026-05-12T19:00:00Z",
+  "review_mode": "metadata_review_only",
+  "output_artifact_summary": {
+    "output_file_count": 1,
+    "media_files_created": true,
+    "raw_output_paths_stored": false,
+    "output_path_summaries": ["[production-render-spike-output]"],
+    "output_file_accessed_for_review": true,
+    "output_file_modified": false,
+    "output_file_copied": false,
+    "output_file_moved": false,
+    "output_file_deleted": false,
+    "output_file_uploaded": false
+  },
+  "operator_review": {
+    "reviewed_by_label": "operator-001",
+    "checklist_acknowledged": true,
+    "content_quality_acknowledged": true,
+    "platform_fit_acknowledged": true,
+    "rights_and_safety_acknowledged": true,
+    "understands_no_upload_enabled": true,
+    "decision_note_summary": "[local-output-review]"
+  },
+  "review_decision": {
+    "decision": "approved_for_upload_design",
+    "decision_reasons": ["Local output is safe to design an upload package for."],
+    "blocking_reasons": [],
+    "warnings": ["This approval does not enable upload."]
+  },
+  "validation": {
+    "ready_for_upload_design": true,
+    "ready_for_upload": false,
+    "upload_allowed": false,
+    "platform_api_calls_allowed": false,
+    "blocking_reasons": [],
+    "warnings": ["No upload or platform API calls are enabled."]
+  },
+  "provenance": {
+    "generated_by": "createLocalOutputOperatorReview",
+    "source_production_render_spike_result_id": "production-render-spike-001",
+    "source_final_render_execution_request_id": "final-render-execution-request-001",
+    "source_production_render_request_id": "production-render-request-001",
+    "source_output_directory_approval_id": "output-directory-approval-001",
+    "source_manifest_id": "command-manifest-control-001"
+  }
+}

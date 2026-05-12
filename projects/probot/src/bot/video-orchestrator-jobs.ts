@@ -8747,6 +8747,376 @@ export function getControlledProductionRenderSpikeResultReport(options?: {
   };
 }
 
+export type LocalOutputOperatorReviewMode = "metadata_review_only" | "operator_visual_review_record";
+
+export type LocalOutputOperatorReviewState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_upload_design" | "rejected" | "revoked";
+
+export interface LocalOutputArtifactSummary {
+  output_file_count: number;
+  media_files_created: boolean;
+  raw_output_paths_stored: false;
+  output_path_summaries: string[];
+  output_file_accessed_for_review: boolean;
+  output_file_modified: false;
+  output_file_copied: false;
+  output_file_moved: false;
+  output_file_deleted: false;
+  output_file_uploaded: false;
+}
+
+export interface LocalOutputOperatorReviewChecklist {
+  reviewed_by_label?: string;
+  checklist_acknowledged: boolean;
+  content_quality_acknowledged: boolean;
+  platform_fit_acknowledged: boolean;
+  rights_and_safety_acknowledged: boolean;
+  understands_no_upload_enabled: boolean;
+  decision_note_summary?: string;
+}
+
+export interface LocalOutputReviewDecision {
+  decision: "draft" | "approved_for_upload_design" | "rejected" | "revoked";
+  decision_reasons: string[];
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface LocalOutputOperatorReviewValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface LocalOutputOperatorReview {
+  schema_version: "1.0";
+  local_output_review_id: string;
+  production_render_spike_result_id: string;
+  final_render_execution_request_id: string;
+  production_render_request_id: string;
+  output_directory_approval_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  review_state: LocalOutputOperatorReviewState;
+  created_at: string;
+  review_mode: LocalOutputOperatorReviewMode;
+  output_artifact_summary: LocalOutputArtifactSummary;
+  operator_review: LocalOutputOperatorReviewChecklist;
+  review_decision: LocalOutputReviewDecision;
+  validation: {
+    ready_for_upload_design: boolean;
+    ready_for_upload: false;
+    upload_allowed: false;
+    platform_api_calls_allowed: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createLocalOutputOperatorReview" | "revokeLocalOutputOperatorReview";
+    source_production_render_spike_result_id: string;
+    source_final_render_execution_request_id: string;
+    source_production_render_request_id: string;
+    source_output_directory_approval_id: string;
+    source_manifest_id: string;
+  };
+}
+
+interface LocalOutputOperatorReviewsStore {
+  schema_version: "1.0";
+  created_at: string;
+  reviews: LocalOutputOperatorReview[];
+}
+
+function getLocalOutputOperatorReviewsPath(): string {
+  return path.join(getRuntimeDir(), "local-output-operator-reviews.json");
+}
+
+function loadLocalOutputOperatorReviewsStore(): LocalOutputOperatorReviewsStore {
+  try {
+    const filePath = getLocalOutputOperatorReviewsPath();
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, "utf8")) as LocalOutputOperatorReviewsStore;
+    }
+  } catch {
+    // start fresh
+  }
+  return { schema_version: "1.0", created_at: new Date().toISOString(), reviews: [] };
+}
+
+function saveLocalOutputOperatorReviewsStore(store: LocalOutputOperatorReviewsStore): void {
+  const filePath = getLocalOutputOperatorReviewsPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  store.reviews.sort((a, b) => {
+    const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return compare !== 0 ? compare : a.local_output_review_id.localeCompare(b.local_output_review_id);
+  });
+  fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8");
+}
+
+function safeLocalOutputArtifactSummary(value: unknown): string {
+  if (typeof value !== "string" || value.length === 0 || value.length > 160) return "[unsafe-output-artifact]";
+  const lower = value.toLowerCase();
+  if (isForbiddenStringPattern(value) || lower.includes("://") || lower.startsWith("/users/") || lower.startsWith("/") || lower.includes("..") || lower.includes("stdout") || lower.includes("stderr") || lower.includes("ffmpeg") || lower.includes("videos.insert") || lower.includes("bearer ")) {
+    return "[unsafe-output-artifact]";
+  }
+  return value.startsWith("[") ? value : "[output-artifact]";
+}
+
+function validateLocalOutputOperatorReviewShape(review: unknown): LocalOutputOperatorReviewValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof review !== "object" || review === null) return { ok: false, blocking_reasons: ["Local output operator review must be an object"], warnings };
+  const r = review as Record<string, unknown>;
+  const required = ["schema_version", "local_output_review_id", "production_render_spike_result_id", "final_render_execution_request_id", "production_render_request_id", "output_directory_approval_id", "render_plan_id", "project_id", "platform", "review_state", "created_at", "review_mode", "output_artifact_summary", "operator_review", "review_decision", "validation", "provenance"];
+  for (const key of required) {
+    if (!(key in r)) blocking_reasons.push("Local output operator review is missing a required field");
+  }
+  if (r.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (r.review_mode !== "metadata_review_only" && r.review_mode !== "operator_visual_review_record") blocking_reasons.push("review_mode is unsafe");
+  if (!["draft", "blocked", "ready_for_operator_review", "approved_for_upload_design", "rejected", "revoked"].includes(String(r.review_state))) {
+    blocking_reasons.push("review_state is unsafe");
+  }
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(review));
+  const text = JSON.stringify(review);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env[") || text.includes("\"stdout\":") || text.includes("\"stderr\":") || text.includes("ffmpeg -i") || text.includes(" -i ") || text.includes("Bearer ") || text.includes("data=") || text.includes("payload") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../")) {
+    blocking_reasons.push("Local output operator review contains forbidden payload content");
+  }
+  const art = r.output_artifact_summary as Record<string, unknown> | undefined;
+  if (!art || art.raw_output_paths_stored !== false || art.output_file_modified !== false || art.output_file_copied !== false || art.output_file_moved !== false || art.output_file_deleted !== false || art.output_file_uploaded !== false) {
+    blocking_reasons.push("Output artifact summary is unsafe");
+  }
+  if (typeof art?.output_file_count === "number" && art.output_file_count > 1) blocking_reasons.push("output_file_count exceeds limit");
+  const reviewChecklist = r.operator_review as Record<string, unknown> | undefined;
+  if (!reviewChecklist || reviewChecklist.checklist_acknowledged !== true || reviewChecklist.content_quality_acknowledged !== true || reviewChecklist.platform_fit_acknowledged !== true || reviewChecklist.rights_and_safety_acknowledged !== true || reviewChecklist.understands_no_upload_enabled !== true) {
+    blocking_reasons.push("Operator review checklist is unsafe");
+  }
+  const decision = r.review_decision as Record<string, unknown> | undefined;
+  if (!decision || !["draft", "approved_for_upload_design", "rejected", "revoked"].includes(String(decision.decision)) || decision.decision_reasons === undefined || decision.blocking_reasons === undefined || decision.warnings === undefined) {
+    blocking_reasons.push("Review decision is unsafe");
+  }
+  const validation = r.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_upload !== false || validation.upload_allowed !== false || validation.platform_api_calls_allowed !== false) {
+    blocking_reasons.push("Validation state is unsafe");
+  }
+  if (validation?.ready_for_upload_design !== undefined && typeof validation.ready_for_upload_design === "boolean" && validation.ready_for_upload_design === true && decision?.decision !== "approved_for_upload_design") {
+    warnings.push("ready_for_upload_design is only appropriate for approved reviews");
+  }
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createLocalOutputOperatorReview(input: {
+  spikeResult: ControlledProductionRenderSpikeResult;
+  decision?: "draft" | "approved_for_upload_design" | "rejected";
+  reviewed_by_label?: string;
+  checklist_acknowledged?: boolean;
+  content_quality_acknowledged?: boolean;
+  platform_fit_acknowledged?: boolean;
+  rights_and_safety_acknowledged?: boolean;
+  understands_no_upload_enabled?: boolean;
+  decision_note_summary?: string;
+  dryRun: true;
+}): LocalOutputOperatorReview {
+  if (input.dryRun !== true) throw new Error("dryRun must be true");
+  if (!validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("spikeResult must validate");
+  if (input.spikeResult.output_summary.output_file_count > 1) throw new Error("output_file_count exceeds limit");
+  if (input.spikeResult.validation.ready_for_upload !== false) throw new Error("spikeResult must not be ready for upload");
+  const decision = input.decision ?? "draft";
+  const reviewedBy = sanitizeRenderPlanString(input.reviewed_by_label ?? "", "[unsafe-reviewer]");
+  const note = sanitizeRenderPlanString(input.decision_note_summary ?? "", "[unsafe-review-note]");
+  const checklist = {
+    checklist_acknowledged: input.checklist_acknowledged === true,
+    content_quality_acknowledged: input.content_quality_acknowledged === true,
+    platform_fit_acknowledged: input.platform_fit_acknowledged === true,
+    rights_and_safety_acknowledged: input.rights_and_safety_acknowledged === true,
+    understands_no_upload_enabled: input.understands_no_upload_enabled === true,
+    ...(note !== "" ? { decision_note_summary: note } : {}),
+    ...(reviewedBy !== "" ? { reviewed_by_label: reviewedBy } : {}),
+  };
+  const approved = decision === "approved_for_upload_design";
+  if (approved && (!input.spikeResult.validation.spike_passed || checklist.checklist_acknowledged !== true || checklist.content_quality_acknowledged !== true || checklist.platform_fit_acknowledged !== true || checklist.rights_and_safety_acknowledged !== true || checklist.understands_no_upload_enabled !== true)) {
+    throw new Error("approved_for_upload_design requires safe acknowledgements");
+  }
+  const review: LocalOutputOperatorReview = {
+    schema_version: "1.0",
+    local_output_review_id: `local-output-review-${crypto.randomUUID()}`,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    production_render_request_id: input.spikeResult.production_render_request_id,
+    output_directory_approval_id: input.spikeResult.output_directory_approval_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.spikeResult.project_id,
+    platform: input.spikeResult.platform,
+    review_state: approved ? "approved_for_upload_design" : "ready_for_operator_review",
+    created_at: new Date().toISOString(),
+    review_mode: "metadata_review_only",
+    output_artifact_summary: {
+      output_file_count: input.spikeResult.output_summary.output_file_count,
+      media_files_created: input.spikeResult.output_summary.media_files_created,
+      raw_output_paths_stored: false,
+      output_path_summaries: input.spikeResult.output_summary.output_path_summaries.map((item) => safeControlledProductionSpikeOutputDirectorySummary(item)),
+      output_file_accessed_for_review: input.spikeResult.output_summary.output_file_count > 0,
+      output_file_modified: false,
+      output_file_copied: false,
+      output_file_moved: false,
+      output_file_deleted: false,
+      output_file_uploaded: false,
+    },
+    operator_review: checklist,
+    review_decision: {
+      decision,
+      decision_reasons: approved ? ["Local output is safe to design an upload package for."] : [],
+      blocking_reasons: approved ? [] : [],
+      warnings: approved ? ["This approval does not enable upload."] : [],
+    },
+    validation: {
+      ready_for_upload_design: approved && input.spikeResult.validation.spike_passed,
+      ready_for_upload: false,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      blocking_reasons: [],
+      warnings: approved ? ["No upload or platform API calls are enabled."] : [],
+    },
+    provenance: {
+      generated_by: "createLocalOutputOperatorReview",
+      source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+      source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+      source_production_render_request_id: input.spikeResult.production_render_request_id,
+      source_output_directory_approval_id: input.spikeResult.output_directory_approval_id,
+      source_manifest_id: input.spikeResult.command_manifest_id,
+    },
+  };
+  if (!validateLocalOutputOperatorReview(review).ok) throw new Error("Unsafe local output operator review cannot be created.");
+  return review;
+}
+
+export function validateLocalOutputOperatorReview(review: unknown): LocalOutputOperatorReviewValidationResult {
+  return validateLocalOutputOperatorReviewShape(review);
+}
+
+export function saveLocalOutputOperatorReview(review: LocalOutputOperatorReview): void {
+  const validation = validateLocalOutputOperatorReview(review);
+  if (!validation.ok) throw new Error("Unsafe local output operator review cannot be stored.");
+  const store = loadLocalOutputOperatorReviewsStore();
+  const existing = store.reviews.findIndex((item) => item.local_output_review_id === review.local_output_review_id);
+  if (existing >= 0) store.reviews[existing] = review;
+  else store.reviews.push(review);
+  saveLocalOutputOperatorReviewsStore(store);
+}
+
+export function listLocalOutputOperatorReviews(options?: {
+  project_id?: string;
+  platform?: string;
+  review_state?: string;
+  production_render_spike_result_id?: string;
+  final_render_execution_request_id?: string;
+}): LocalOutputOperatorReview[] {
+  const store = loadLocalOutputOperatorReviewsStore();
+  return store.reviews.filter((review) => {
+    if (options?.project_id && review.project_id !== options.project_id) return false;
+    if (options?.platform && review.platform !== options.platform) return false;
+    if (options?.review_state && review.review_state !== options.review_state) return false;
+    if (options?.production_render_spike_result_id && review.production_render_spike_result_id !== options.production_render_spike_result_id) return false;
+    if (options?.final_render_execution_request_id && review.final_render_execution_request_id !== options.final_render_execution_request_id) return false;
+    return true;
+  }).sort((a, b) => {
+    const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return compare !== 0 ? compare : a.local_output_review_id.localeCompare(b.local_output_review_id);
+  });
+}
+
+export function getLocalOutputOperatorReview(local_output_review_id: string): LocalOutputOperatorReview | null {
+  const store = loadLocalOutputOperatorReviewsStore();
+  return store.reviews.find((review) => review.local_output_review_id === local_output_review_id) ?? null;
+}
+
+export function revokeLocalOutputOperatorReview(local_output_review_id: string, reason: string): LocalOutputOperatorReview {
+  const review = getLocalOutputOperatorReview(local_output_review_id);
+  if (!review) throw new Error("Local output operator review not found");
+  const safeReason = sanitizeRenderPlanString(reason, "[unsafe-review-reason]");
+  if (safeReason === "[unsafe-review-reason]") throw new Error("Unsafe local output operator review reason cannot be stored.");
+  const revoked: LocalOutputOperatorReview = {
+    ...review,
+    review_state: "revoked",
+    review_decision: {
+      ...review.review_decision,
+      decision: "revoked",
+      blocking_reasons: [...review.review_decision.blocking_reasons, safeReason],
+      warnings: [...review.review_decision.warnings, "Review revoked."],
+    },
+    provenance: {
+      ...review.provenance,
+      generated_by: "revokeLocalOutputOperatorReview",
+    },
+  };
+  saveLocalOutputOperatorReview(revoked);
+  return revoked;
+}
+
+export function getLocalOutputOperatorReviewReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  ready_for_operator_review: number;
+  approved_for_upload_design: number;
+  rejected: number;
+  revoked: number;
+  ready_for_upload_design: number;
+  ready_for_upload: 0;
+  upload_allowed: 0;
+  platform_api_calls_allowed: 0;
+  reviews: Array<{
+    local_output_review_id: string;
+    project_id: string;
+    platform: string;
+    review_state: string;
+    output_file_count: number;
+    created_at: string;
+  }>;
+} {
+  const reviews = listLocalOutputOperatorReviews(options);
+  const byState: Record<string, number> = {};
+  let blocked = 0;
+  let readyForReview = 0;
+  let approved = 0;
+  let rejected = 0;
+  let revoked = 0;
+  let readyForUploadDesign = 0;
+  const summaries = reviews.map((review) => {
+    byState[review.review_state] = (byState[review.review_state] ?? 0) + 1;
+    if (review.review_state === "blocked") blocked++;
+    if (review.review_state === "ready_for_operator_review") readyForReview++;
+    if (review.review_state === "approved_for_upload_design") approved++;
+    if (review.review_state === "rejected") rejected++;
+    if (review.review_state === "revoked") revoked++;
+    if (review.validation.ready_for_upload_design) readyForUploadDesign++;
+    return {
+      local_output_review_id: sanitizeRenderPlanString(review.local_output_review_id, "[unsafe-id]"),
+      project_id: sanitizeRenderPlanString(review.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(review.platform, "[unsafe-platform]"),
+      review_state: review.review_state,
+      output_file_count: review.output_artifact_summary.output_file_count,
+      created_at: review.created_at,
+    };
+  });
+  return {
+    total: reviews.length,
+    by_state: byState,
+    blocked,
+    ready_for_operator_review: readyForReview,
+    approved_for_upload_design: approved,
+    rejected,
+    revoked,
+    ready_for_upload_design: readyForUploadDesign,
+    ready_for_upload: 0,
+    upload_allowed: 0,
+    platform_api_calls_allowed: 0,
+    reviews: summaries,
+  };
+}
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {

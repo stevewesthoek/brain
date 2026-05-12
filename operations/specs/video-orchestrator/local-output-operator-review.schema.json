@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0",
+  "title": "Local Output Operator Review",
+  "description": "Operator review artifact for a generated local render spike output. This is not an upload request and does not move, copy, delete, modify, or upload files. It only records safe summaries for future upload-design review.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "local_output_review_id",
+    "production_render_spike_result_id",
+    "final_render_execution_request_id",
+    "production_render_request_id",
+    "output_directory_approval_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "review_state",
+    "created_at",
+    "review_mode",
+    "output_artifact_summary",
+    "operator_review",
+    "review_decision",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["1.0"] },
+    "local_output_review_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "production_render_spike_result_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "final_render_execution_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "production_render_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "output_directory_approval_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "render_plan_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "project_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"]
+    },
+    "review_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "ready_for_operator_review", "approved_for_upload_design", "rejected", "revoked"]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "review_mode": {
+      "type": "string",
+      "enum": ["metadata_review_only", "operator_visual_review_record"]
+    },
+    "output_artifact_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_file_count",
+        "media_files_created",
+        "raw_output_paths_stored",
+        "output_path_summaries",
+        "output_file_accessed_for_review",
+        "output_file_modified",
+        "output_file_copied",
+        "output_file_moved",
+        "output_file_deleted",
+        "output_file_uploaded"
+      ],
+      "properties": {
+        "output_file_count": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "media_files_created": { "type": "boolean" },
+        "raw_output_paths_stored": { "type": "boolean", "enum": [false] },
+        "output_path_summaries": { "type": "array", "items": { "type": "string" } },
+        "output_file_accessed_for_review": { "type": "boolean" },
+        "output_file_modified": { "type": "boolean", "enum": [false] },
+        "output_file_copied": { "type": "boolean", "enum": [false] },
+        "output_file_moved": { "type": "boolean", "enum": [false] },
+        "output_file_deleted": { "type": "boolean", "enum": [false] },
+        "output_file_uploaded": { "type": "boolean", "enum": [false] }
+      }
+    },
+    "operator_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checklist_acknowledged",
+        "content_quality_acknowledged",
+        "platform_fit_acknowledged",
+        "rights_and_safety_acknowledged",
+        "understands_no_upload_enabled"
+      ],
+      "properties": {
+        "reviewed_by_label": { "type": "string" },
+        "checklist_acknowledged": { "type": "boolean" },
+        "content_quality_acknowledged": { "type": "boolean" },
+        "platform_fit_acknowledged": { "type": "boolean" },
+        "rights_and_safety_acknowledged": { "type": "boolean" },
+        "understands_no_upload_enabled": { "type": "boolean" },
+        "decision_note_summary": { "type": "string" }
+      }
+    },
+    "review_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "decision_reasons", "blocking_reasons", "warnings"],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["draft", "approved_for_upload_design", "rejected", "revoked"]
+        },
+        "decision_reasons": { "type": "array", "items": { "type": "string" } },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ready_for_upload_design", "ready_for_upload", "upload_allowed", "platform_api_calls_allowed", "blocking_reasons", "warnings"],
+      "properties": {
+        "ready_for_upload_design": { "type": "boolean" },
+        "ready_for_upload": { "type": "boolean", "enum": [false] },
+        "upload_allowed": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generated_by",
+        "source_production_render_spike_result_id",
+        "source_final_render_execution_request_id",
+        "source_production_render_request_id",
+        "source_output_directory_approval_id",
+        "source_manifest_id"
+      ],
+      "properties": {
+        "generated_by": { "type": "string" },
+        "source_production_render_spike_result_id": { "type": "string" },
+        "source_final_render_execution_request_id": { "type": "string" },
+        "source_production_render_request_id": { "type": "string" },
+        "source_output_directory_approval_id": { "type": "string" },
+        "source_manifest_id": { "type": "string" }
+      }
+    }
+  }
+}

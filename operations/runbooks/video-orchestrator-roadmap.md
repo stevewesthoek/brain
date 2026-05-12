@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
 **Date Updated:** 2026-05-12 (VO-5B Complete)  
-**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) complete. Phase 5F—Final Production Render Execution Request (VO-6E) complete. Phase 5G—Controlled Production Render Spike (VO-7A) in progress.  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) complete. Phase 5F—Final Production Render Execution Request (VO-6E) complete. Phase 5G—Controlled Production Render Spike (VO-7A) complete. Phase 5H—Operator Review of Generated Local Output (VO-7B) in progress.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Architecture:** Local-first production + platform adapters (not fully local publishing)
 
@@ -215,6 +215,26 @@ This is the first controlled local production-media render spike. It is explicit
 
 **Next phase guidance**
 - If this spike is useful and approved, the next step should add operator review of the generated local output before any upload design.
+
+### VO-7B: Operator Review of Generated Local Output
+
+This phase adds an operator-review artifact for the locally generated render output. It is a review-only step before any upload package design.
+
+**What it does**
+- Reviews local render spike output only.
+- Records safe metadata and operator acknowledgements.
+- Keeps upload and platform APIs disabled.
+- Keeps file move, copy, delete, and modify operations disabled.
+
+**What it does not do**
+- Does not upload.
+- Does not call platform APIs.
+- Does not move, copy, delete, or modify generated output files.
+- Does not store raw output paths.
+- Does not enable upload capability.
+
+**Next phase guidance**
+- If approved later, the next step may add upload package design, still without API calls.
 
 **Total Timeline:** 6 months  
 **Total Resource Estimate:** 50 hours Claude Code (revised for adapter complexity)  

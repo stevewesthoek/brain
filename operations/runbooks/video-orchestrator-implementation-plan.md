@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
 **Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A in progress (controlled production render spike); detailed guide for phases 3B+  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B in progress (operator review of generated local output); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -145,6 +145,26 @@ This is the first controlled local production-media render spike. It is explicit
 
 **Next phase guidance**
 - If this spike is useful and approved, the next step should add operator review of the generated local output before any upload design.
+
+### VO-7B: Operator Review of Generated Local Output
+
+This phase adds an operator-review artifact for the locally generated render output. It is a review-only step before any upload package design.
+
+**What it does**
+- Reviews local render spike output only.
+- Records safe metadata and operator acknowledgements.
+- Keeps upload and platform APIs disabled.
+- Keeps file move, copy, delete, and modify operations disabled.
+
+**What it does not do**
+- Does not upload.
+- Does not call platform APIs.
+- Does not move, copy, delete, or modify generated output files.
+- Does not store raw output paths.
+- Does not enable upload capability.
+
+**Next phase guidance**
+- If approved later, the next step may add upload package design, still without API calls.
 
 ---
 

@@ -189,6 +189,13 @@ import {
   listControlledProductionRenderSpikeResults,
   getControlledProductionRenderSpikeResult,
   getControlledProductionRenderSpikeResultReport,
+  createLocalOutputOperatorReview,
+  validateLocalOutputOperatorReview,
+  saveLocalOutputOperatorReview,
+  listLocalOutputOperatorReviews,
+  getLocalOutputOperatorReview,
+  revokeLocalOutputOperatorReview,
+  getLocalOutputOperatorReviewReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -203,6 +210,7 @@ import {
   type OutputDirectoryApproval,
   type FinalProductionRenderExecutionRequest,
   type ControlledProductionRenderSpikeResult,
+  type LocalOutputOperatorReview,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -567,6 +575,35 @@ function createSafeControlledProductionRenderSpikeResult(
 }
 
 const createSafeControlledProductionSpikeResult = createSafeControlledProductionRenderSpikeResult;
+
+function createSafeLocalOutputOperatorReview(
+  spikeResult: ControlledProductionRenderSpikeResult,
+  decision: "draft" | "approved_for_upload_design" | "rejected" = "draft",
+  overrides: Partial<{
+    reviewed_by_label: string;
+    checklist_acknowledged: boolean;
+    content_quality_acknowledged: boolean;
+    platform_fit_acknowledged: boolean;
+    rights_and_safety_acknowledged: boolean;
+    understands_no_upload_enabled: boolean;
+    decision_note_summary: string;
+  }> = {}
+): LocalOutputOperatorReview {
+  const review = createLocalOutputOperatorReview({
+    spikeResult,
+    decision,
+    dryRun: true,
+    reviewed_by_label: "operator-001",
+    checklist_acknowledged: true,
+    content_quality_acknowledged: true,
+    platform_fit_acknowledged: true,
+    rights_and_safety_acknowledged: true,
+    understands_no_upload_enabled: true,
+    decision_note_summary: "[local-output-review]",
+    ...overrides,
+  });
+  return review;
+}
 
 test("VO-J1: Create scheduled job", (t) => {
   const tempDir = setupTestRuntime();
@@ -16888,6 +16925,243 @@ test("VO-7A-REPORT-54: report excludes raw paths URLs commands stdout stderr upl
 
 test("VO-7A-REPORT-55: upload and api counters remain 0", () => {
   const report = getControlledProductionRenderSpikeResultReport();
+  assert.strictEqual(report.ready_for_upload, 0);
+  assert.strictEqual(report.upload_allowed, 0);
+  assert.strictEqual(report.platform_api_calls_allowed, 0);
+});
+
+function getTestLocalOutputOperatorReviewSchemaAndExamplePaths(): { schemaPath: string; examplePath: string } {
+  const repo = getRepoRootForVideoOrchestratorSpecs();
+  return {
+    schemaPath: path.join(repo, "operations", "specs", "video-orchestrator", "local-output-operator-review.schema.json"),
+    examplePath: path.join(repo, "operations", "specs", "video-orchestrator", "examples", "local-output-operator-review.example.json"),
+  };
+}
+
+test("VO-7B-SCHEMA-1: local output operator review schema parses", () => {
+  const { schemaPath } = getTestLocalOutputOperatorReviewSchemaAndExamplePaths();
+  JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+});
+
+test("VO-7B-SCHEMA-2: example parses", () => {
+  const { examplePath } = getTestLocalOutputOperatorReviewSchemaAndExamplePaths();
+  JSON.parse(fs.readFileSync(examplePath, "utf8"));
+});
+
+test("VO-7B-SCHEMA-3: example contains no forbidden strings", () => {
+  const { examplePath } = getTestLocalOutputOperatorReviewSchemaAndExamplePaths();
+  assert.strictEqual(hasForbiddenStrings(fs.readFileSync(examplePath, "utf8")), false);
+});
+
+test("VO-7B-SCHEMA-4: example contains no raw paths urls commands env vars process output media payloads upload payloads or credentials", () => {
+  const { examplePath } = getTestLocalOutputOperatorReviewSchemaAndExamplePaths();
+  const text = fs.readFileSync(examplePath, "utf8");
+  assert.strictEqual(/\/Users\/|https?:\/\/|stdout|stderr|ffmpeg -i|data=|videos.insert|youtube.videos\(\)\.insert|access_token|refresh_token|client_secret|Bearer /i.test(text), false);
+});
+
+test("VO-7B-CREATE-5: dryRun=false blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    assert.throws(() => createLocalOutputOperatorReview({ spikeResult: spike, dryRun: false as never }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-CREATE-6: unsafe spike result blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    assert.throws(() => createLocalOutputOperatorReview({ spikeResult: { ...spike, output_summary: { ...spike.output_summary, output_directory_summary: "/Users/office/private" } } as never, dryRun: true }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-CREATE-7: draft review can be created from safe spike result", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "draft");
+    assert.strictEqual(review.review_state, "ready_for_operator_review");
+    assert.strictEqual(review.validation.ready_for_upload, false);
+    assert.strictEqual(review.validation.upload_allowed, false);
+    assert.strictEqual(review.validation.platform_api_calls_allowed, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-CREATE-8: approved decision requires spike_passed true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const failed = createSafeControlledProductionSpikeResult(tempDir, false);
+    assert.throws(() => createLocalOutputOperatorReview({ spikeResult: failed, decision: "approved_for_upload_design", checklist_acknowledged: true, content_quality_acknowledged: true, platform_fit_acknowledged: true, rights_and_safety_acknowledged: true, understands_no_upload_enabled: true, dryRun: true }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-CREATE-9: approved decision requires acknowledgements", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    assert.throws(() => createLocalOutputOperatorReview({ spikeResult: spike, decision: "approved_for_upload_design", checklist_acknowledged: true, content_quality_acknowledged: false, platform_fit_acknowledged: true, rights_and_safety_acknowledged: true, understands_no_upload_enabled: true, dryRun: true }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-CREATE-10: approved_for_upload_design still keeps ready_for_upload false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createLocalOutputOperatorReview({ spikeResult: createSafeControlledProductionSpikeResult(tempDir, true), decision: "approved_for_upload_design", checklist_acknowledged: true, content_quality_acknowledged: true, platform_fit_acknowledged: true, rights_and_safety_acknowledged: true, understands_no_upload_enabled: true, dryRun: true });
+    assert.strictEqual(review.validation.ready_for_upload, false);
+    assert.strictEqual(review.validation.upload_allowed, false);
+    assert.strictEqual(review.validation.platform_api_calls_allowed, false);
+    assert.strictEqual(review.output_artifact_summary.raw_output_paths_stored, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-VALIDATE-22: safe review validates", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "approved_for_upload_design");
+    assert.ok(validateLocalOutputOperatorReview(review).ok);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-VALIDATE-23: raw_output_paths_stored true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "draft");
+    assert.strictEqual(validateLocalOutputOperatorReview({ ...review, output_artifact_summary: { ...review.output_artifact_summary, raw_output_paths_stored: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-VALIDATE-24: output_file_modified true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "draft");
+    assert.strictEqual(validateLocalOutputOperatorReview({ ...review, output_artifact_summary: { ...review.output_artifact_summary, output_file_modified: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-VALIDATE-25: raw path blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "draft");
+    assert.strictEqual(validateLocalOutputOperatorReview({ ...review, output_artifact_summary: { ...review.output_artifact_summary, output_path_summaries: ["/Users/office/private"] } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-STORE-42: save list get upsert works", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "approved_for_upload_design");
+    saveLocalOutputOperatorReview(review);
+    const loaded = getLocalOutputOperatorReview(review.local_output_review_id);
+    assert.ok(loaded);
+    assert.strictEqual(loaded!.review_state, "approved_for_upload_design");
+    saveLocalOutputOperatorReview({ ...review, review_state: "blocked" as never });
+    assert.strictEqual(getLocalOutputOperatorReview(review.local_output_review_id)?.review_state, "blocked");
+    const filtered = listLocalOutputOperatorReviews({ project_id: review.project_id, platform: review.platform, review_state: "blocked" });
+    assert.ok(filtered.some((item) => item.local_output_review_id === review.local_output_review_id));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-STORE-45: store rejects raw_output_paths_stored true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "draft");
+    assert.throws(() => saveLocalOutputOperatorReview({ ...review, output_artifact_summary: { ...review.output_artifact_summary, raw_output_paths_stored: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-STORE-46: store rejects output file mutation flags true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "draft");
+    assert.throws(() => saveLocalOutputOperatorReview({ ...review, output_artifact_summary: { ...review.output_artifact_summary, output_file_deleted: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-STORE-47: store rejects ready upload API true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "draft");
+    assert.throws(() => saveLocalOutputOperatorReview({ ...review, validation: { ...review.validation, ready_for_upload: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-STORE-48: revoke changes review_state to revoked safely", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const review = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "approved_for_upload_design");
+    saveLocalOutputOperatorReview(review);
+    const revoked = revokeLocalOutputOperatorReview(review.local_output_review_id, "revoked");
+    assert.strictEqual(revoked.review_state, "revoked");
+    assert.strictEqual(getLocalOutputOperatorReview(review.local_output_review_id)?.review_state, "revoked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-REPORT-50: report counts states", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approved = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "approved_for_upload_design");
+    const draft = createSafeLocalOutputOperatorReview(createSafeControlledProductionSpikeResult(tempDir, true), "draft");
+    saveLocalOutputOperatorReview(approved);
+    saveLocalOutputOperatorReview(draft);
+    const report = getLocalOutputOperatorReviewReport({ project_id: approved.project_id, platform: approved.platform });
+    assert.ok(report.total >= 2);
+    assert.ok(report.approved_for_upload_design >= 1);
+    assert.ok(report.ready_for_operator_review >= 1);
+    assert.strictEqual(report.ready_for_upload, 0);
+    assert.strictEqual(report.upload_allowed, 0);
+    assert.strictEqual(report.platform_api_calls_allowed, 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7B-REPORT-51: legacy unsafe runtime data does not leak", () => {
+  const report = getLocalOutputOperatorReviewReport();
+  assert.strictEqual(hasForbiddenStrings(report), false);
+});
+
+test("VO-7B-REPORT-52: JSON.stringify(report) contains no forbidden strings", () => {
+  const report = getLocalOutputOperatorReviewReport();
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(report)), false);
+});
+
+test("VO-7B-REPORT-53: report excludes raw paths URLs commands process output media payloads upload payloads", () => {
+  const report = getLocalOutputOperatorReviewReport();
+  const text = JSON.stringify(report);
+  assert.strictEqual(/\/Users\/|https?:\/\/|stdout|stderr|ffmpeg -i|data=|videos.insert|youtube.videos\(\)\.insert|access_token|refresh_token|client_secret/i.test(text), false);
+});
+
+test("VO-7B-REPORT-54: upload API counters remain 0", () => {
+  const report = getLocalOutputOperatorReviewReport();
   assert.strictEqual(report.ready_for_upload, 0);
   assert.strictEqual(report.upload_allowed, 0);
   assert.strictEqual(report.platform_api_calls_allowed, 0);
