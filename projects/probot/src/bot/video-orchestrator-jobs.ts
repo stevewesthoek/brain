@@ -10843,6 +10843,471 @@ export function getUploadExecutionDesignReport(options?: { project_id?: string; 
   };
 }
 
+export type DryRunUploadSpikeSimulationMode = "local_dry_run_upload_spike_simulation";
+export type DryRunUploadSpikeSimulationState = "draft" | "blocked" | "simulated" | "failed" | "revoked";
+
+export interface DryRunUploadSpikeRequiredArtifacts {
+  upload_execution_design_validated: boolean;
+  upload_execution_approval_validated: boolean;
+  platform_upload_request_validated: boolean;
+  upload_package_design_validated: boolean;
+  local_output_review_validated: boolean;
+  spike_result_validated: boolean;
+}
+
+export interface DryRunUploadSimulatedPlan {
+  upload_requested: false;
+  upload_allowed: false;
+  upload_execution_enabled: false;
+  dry_run_upload_simulated: boolean;
+  platform_api_calls_allowed: false;
+  network_calls_allowed: false;
+  resumable_upload_allowed: false;
+  direct_upload_allowed: false;
+  credentials_required: false;
+  credentials_accessed: false;
+  token_accessed: false;
+  keychain_accessed: false;
+  env_access_allowed: false;
+  max_upload_attempts: 0;
+  media_file_reference_summary: string;
+  metadata_reference_summary: string;
+  raw_media_path_stored: false;
+  raw_platform_payload_created: false;
+  raw_platform_payload_stored: false;
+}
+
+export interface DryRunUploadExecutionSummary {
+  simulation_steps_total: number;
+  simulation_steps_passed: number;
+  simulation_steps_failed: number;
+  media_file_existence_checked: false;
+  media_file_read: false;
+  media_file_uploaded: false;
+  metadata_payload_constructed: false;
+  platform_endpoint_selected: false;
+  network_request_constructed: false;
+  network_request_sent: false;
+  response_received: false;
+  raw_response_stored: false;
+  warnings: string[];
+  blocking_reasons: string[];
+}
+
+export interface DryRunUploadNetworkBoundary {
+  network_calls_allowed: false;
+  network_calls_made: false;
+  platform_api_calls_allowed: false;
+  platform_api_calls_made: false;
+  external_side_effects_allowed: false;
+  external_side_effects_observed: false;
+}
+
+export interface DryRunUploadCredentialBoundary {
+  credentials_required: false;
+  credentials_accessed: false;
+  token_accessed: false;
+  keychain_accessed: false;
+  env_accessed: false;
+  credential_reference_stored: false;
+  token_reference_stored: false;
+}
+
+export interface DryRunUploadPlatformBoundary {
+  platform_endpoint_selected: false;
+  platform_api_payload_created: false;
+  platform_api_payload_stored: false;
+  raw_account_ids_stored: false;
+  account_reference_summary?: string;
+  channel_or_profile_reference_summary?: string;
+}
+
+export interface DryRunUploadSpikeResultValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface DryRunUploadSpikeResult {
+  schema_version: "1.0";
+  dry_run_upload_spike_result_id: string;
+  upload_execution_design_id: string;
+  upload_execution_approval_id: string;
+  platform_upload_request_id: string;
+  upload_package_design_id: string;
+  local_output_review_id: string;
+  production_render_spike_result_id: string;
+  final_render_execution_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  simulation_state: DryRunUploadSpikeSimulationState;
+  created_at: string;
+  completed_at?: string;
+  simulation_mode: DryRunUploadSpikeSimulationMode;
+  required_artifacts: DryRunUploadSpikeRequiredArtifacts;
+  simulated_upload_plan: DryRunUploadSimulatedPlan;
+  dry_run_execution_summary: DryRunUploadExecutionSummary;
+  network_boundary: DryRunUploadNetworkBoundary;
+  credential_boundary: DryRunUploadCredentialBoundary;
+  platform_boundary: DryRunUploadPlatformBoundary;
+  validation: {
+    dry_run_upload_spike_passed: boolean;
+    ready_for_real_upload: false;
+    upload_allowed: false;
+    upload_execution_enabled: false;
+    platform_api_calls_allowed: false;
+    network_calls_allowed: false;
+    credentials_accessed: false;
+    token_accessed: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createDryRunUploadSpikeResult" | "revokeDryRunUploadSpikeResult";
+    source_upload_execution_design_id: string;
+    source_upload_execution_approval_id: string;
+    source_platform_upload_request_id: string;
+    source_upload_package_design_id: string;
+    source_local_output_review_id: string;
+    source_production_render_spike_result_id: string;
+    source_final_render_execution_request_id: string;
+    source_render_plan_id: string;
+  };
+}
+
+interface DryRunUploadSpikeResultsStore {
+  schema_version: "1.0";
+  created_at: string;
+  results: DryRunUploadSpikeResult[];
+}
+
+function getDryRunUploadSpikeResultsPath(): string {
+  return path.join(getRuntimeDir(), "dry-run-upload-spike-results.json");
+}
+
+function loadDryRunUploadSpikeResultsStore(): DryRunUploadSpikeResultsStore {
+  try {
+    const filePath = getDryRunUploadSpikeResultsPath();
+    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as DryRunUploadSpikeResultsStore;
+  } catch {
+    // start fresh
+  }
+  return { schema_version: "1.0", created_at: new Date().toISOString(), results: [] };
+}
+
+function saveDryRunUploadSpikeResultsStore(store: DryRunUploadSpikeResultsStore): void {
+  const filePath = getDryRunUploadSpikeResultsPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  store.results.sort((a, b) => {
+    const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return compare !== 0 ? compare : a.dry_run_upload_spike_result_id.localeCompare(b.dry_run_upload_spike_result_id);
+  });
+  fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8");
+}
+
+function safeDryRunUploadSpikeString(value: unknown, fallback: string): string {
+  return safeUploadExecutionDesignString(value, fallback);
+}
+
+function validateDryRunUploadSpikeShape(result: unknown): DryRunUploadSpikeResultValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof result !== "object" || result === null) return { ok: false, blocking_reasons: ["Dry-run upload spike result must be an object"], warnings };
+  const r = result as Record<string, unknown>;
+  const required = ["schema_version","dry_run_upload_spike_result_id","upload_execution_design_id","upload_execution_approval_id","platform_upload_request_id","upload_package_design_id","local_output_review_id","production_render_spike_result_id","final_render_execution_request_id","render_plan_id","project_id","platform","simulation_state","created_at","simulation_mode","required_artifacts","simulated_upload_plan","dry_run_execution_summary","network_boundary","credential_boundary","platform_boundary","validation","provenance"];
+  for (const key of required) if (!(key in r)) blocking_reasons.push("Dry-run upload spike result is missing a required field");
+  if (r.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (r.simulation_mode !== "local_dry_run_upload_spike_simulation") blocking_reasons.push("simulation_mode is invalid");
+  if (!["draft","blocked","simulated","failed","revoked"].includes(String(r.simulation_state))) blocking_reasons.push("simulation_state is invalid");
+  const text = JSON.stringify(result);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env") || text.includes("keychain://") || text.includes("stdout") || text.includes("stderr") || text.includes("ffmpeg -i") || text.includes(" -i ") || text.includes("Bearer ") || text.includes("data:") || text.includes("base64,") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../")) {
+    blocking_reasons.push("Dry-run upload spike result contains forbidden payload content");
+  }
+  const requiredArtifacts = r.required_artifacts as Record<string, unknown> | undefined;
+  if (!requiredArtifacts || requiredArtifacts.upload_execution_design_validated !== true || requiredArtifacts.upload_execution_approval_validated !== true || requiredArtifacts.platform_upload_request_validated !== true || requiredArtifacts.upload_package_design_validated !== true || requiredArtifacts.local_output_review_validated !== true || requiredArtifacts.spike_result_validated !== true) blocking_reasons.push("Required artifacts are unsafe");
+  const plan = r.simulated_upload_plan as Record<string, unknown> | undefined;
+  if (!plan || plan.upload_requested !== false || plan.upload_allowed !== false || plan.upload_execution_enabled !== false || plan.dry_run_upload_simulated !== true && plan.dry_run_upload_simulated !== false || plan.platform_api_calls_allowed !== false || plan.network_calls_allowed !== false || plan.resumable_upload_allowed !== false || plan.direct_upload_allowed !== false || plan.credentials_required !== false || plan.credentials_accessed !== false || plan.token_accessed !== false || plan.keychain_accessed !== false || plan.env_access_allowed !== false || plan.max_upload_attempts !== 0 || plan.raw_media_path_stored !== false || plan.raw_platform_payload_created !== false || plan.raw_platform_payload_stored !== false) blocking_reasons.push("Simulated upload plan is unsafe");
+  const summary = r.dry_run_execution_summary as Record<string, unknown> | undefined;
+  if (!summary || summary.media_file_existence_checked !== false || summary.media_file_read !== false || summary.media_file_uploaded !== false || summary.metadata_payload_constructed !== false || summary.platform_endpoint_selected !== false || summary.network_request_constructed !== false || summary.network_request_sent !== false || summary.response_received !== false || summary.raw_response_stored !== false) blocking_reasons.push("Dry-run execution summary is unsafe");
+  const network = r.network_boundary as Record<string, unknown> | undefined;
+  if (!network || network.network_calls_allowed !== false || network.network_calls_made !== false || network.platform_api_calls_allowed !== false || network.platform_api_calls_made !== false || network.external_side_effects_allowed !== false || network.external_side_effects_observed !== false) blocking_reasons.push("Network boundary is unsafe");
+  const credential = r.credential_boundary as Record<string, unknown> | undefined;
+  if (!credential || credential.credentials_required !== false || credential.credentials_accessed !== false || credential.token_accessed !== false || credential.keychain_accessed !== false || credential.env_accessed !== false || credential.credential_reference_stored !== false || credential.token_reference_stored !== false) blocking_reasons.push("Credential boundary is unsafe");
+  const platform = r.platform_boundary as Record<string, unknown> | undefined;
+  if (!platform || platform.platform_endpoint_selected !== false || platform.platform_api_payload_created !== false || platform.platform_api_payload_stored !== false || platform.raw_account_ids_stored !== false) blocking_reasons.push("Platform boundary is unsafe");
+  if (looksLikeRawUploadPlatformId(platform?.account_reference_summary) || looksLikeRawUploadPlatformId(platform?.channel_or_profile_reference_summary)) blocking_reasons.push("Platform boundary contains unsafe account identifiers");
+  const validation = r.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.dry_run_upload_spike_passed !== false && validation.dry_run_upload_spike_passed !== true || validation.ready_for_real_upload !== false || validation.upload_allowed !== false || validation.upload_execution_enabled !== false || validation.platform_api_calls_allowed !== false || validation.network_calls_allowed !== false || validation.credentials_accessed !== false || validation.token_accessed !== false) blocking_reasons.push("Validation state is unsafe");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createDryRunUploadSpikeResult(input: {
+  uploadExecutionDesign: UploadExecutionDesign;
+  uploadExecutionApproval: UploadExecutionApproval;
+  platformUploadRequest: PlatformUploadRequest;
+  uploadPackageDesign: UploadPackageDesign;
+  localOutputReview: LocalOutputOperatorReview;
+  spikeResult: ControlledProductionRenderSpikeResult;
+  simulatePass?: boolean;
+  dryRun: true;
+}): DryRunUploadSpikeResult {
+  if (input.dryRun !== true) throw new Error("createDryRunUploadSpikeResult: dryRun=true required");
+  if (!validateUploadExecutionDesign(input.uploadExecutionDesign).ok) throw new Error("createDryRunUploadSpikeResult: uploadExecutionDesign must validate");
+  if (!validateUploadExecutionApproval(input.uploadExecutionApproval).ok) throw new Error("createDryRunUploadSpikeResult: uploadExecutionApproval must validate");
+  if (!validatePlatformUploadRequest(input.platformUploadRequest).ok) throw new Error("createDryRunUploadSpikeResult: platformUploadRequest must validate");
+  if (!validateUploadPackageDesign(input.uploadPackageDesign).ok) throw new Error("createDryRunUploadSpikeResult: uploadPackageDesign must validate");
+  if (!validateLocalOutputOperatorReview(input.localOutputReview).ok) throw new Error("createDryRunUploadSpikeResult: localOutputReview must validate");
+  if (!validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("createDryRunUploadSpikeResult: spikeResult must validate");
+  if (input.uploadExecutionDesign.design_state !== "approved_for_future_dry_run_upload_spike") throw new Error("createDryRunUploadSpikeResult: uploadExecutionDesign must be approved_for_future_dry_run_upload_spike");
+  if (input.uploadExecutionApproval.approval_state !== "approved_for_future_upload_execution_design" || input.platformUploadRequest.request_state !== "approved_for_future_upload_execution" || input.uploadPackageDesign.design_state !== "approved_for_upload_request_design" || input.localOutputReview.review_state !== "approved_for_upload_design" || input.spikeResult.validation.spike_passed !== true) {
+    throw new Error("createDryRunUploadSpikeResult: source artifacts must be approved");
+  }
+  if (input.uploadExecutionDesign.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.uploadExecutionDesign.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.uploadExecutionDesign.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.uploadExecutionDesign.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.uploadExecutionDesign.local_output_review_id !== input.localOutputReview.local_output_review_id || input.uploadExecutionDesign.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.uploadExecutionDesign.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.uploadExecutionDesign.render_plan_id !== input.spikeResult.render_plan_id || input.uploadExecutionDesign.project_id !== input.spikeResult.project_id || input.uploadExecutionDesign.platform !== input.spikeResult.platform) {
+    throw new Error("createDryRunUploadSpikeResult: artifacts must match");
+  }
+  const simulatePass = input.simulatePass === true;
+  const dryRunPassed = simulatePass;
+  const mediaSummary = safeDryRunUploadSpikeString(input.spikeResult.output_summary.output_path_summaries.join(" | "), "[media-file-reference]");
+  const metadataSummary = safeDryRunUploadSpikeString([
+    input.platformUploadRequest.metadata_request.title_summary,
+    input.platformUploadRequest.metadata_request.description_summary,
+    input.platformUploadRequest.metadata_request.tags_summary.join(","),
+    input.platformUploadRequest.metadata_request.visibility_summary,
+  ].join(" | "), "[metadata-reference]");
+  const result: DryRunUploadSpikeResult = {
+    schema_version: "1.0",
+    dry_run_upload_spike_result_id: `dry-run-upload-spike-${crypto.randomUUID()}`,
+    upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+    upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+    platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+    upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+    local_output_review_id: input.localOutputReview.local_output_review_id,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.spikeResult.project_id,
+    platform: input.spikeResult.platform,
+    simulation_state: dryRunPassed ? "simulated" : "blocked",
+    created_at: new Date().toISOString(),
+    simulation_mode: "local_dry_run_upload_spike_simulation",
+    required_artifacts: {
+      upload_execution_design_validated: true,
+      upload_execution_approval_validated: true,
+      platform_upload_request_validated: true,
+      upload_package_design_validated: true,
+      local_output_review_validated: true,
+      spike_result_validated: true,
+    },
+    simulated_upload_plan: {
+      upload_requested: false,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      dry_run_upload_simulated: dryRunPassed,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      resumable_upload_allowed: false,
+      direct_upload_allowed: false,
+      credentials_required: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      keychain_accessed: false,
+      env_access_allowed: false,
+      max_upload_attempts: 0,
+      media_file_reference_summary: mediaSummary,
+      metadata_reference_summary: metadataSummary,
+      raw_media_path_stored: false,
+      raw_platform_payload_created: false,
+      raw_platform_payload_stored: false,
+    },
+    dry_run_execution_summary: {
+      simulation_steps_total: 5,
+      simulation_steps_passed: dryRunPassed ? 5 : 0,
+      simulation_steps_failed: dryRunPassed ? 0 : 5,
+      media_file_existence_checked: false,
+      media_file_read: false,
+      media_file_uploaded: false,
+      metadata_payload_constructed: false,
+      platform_endpoint_selected: false,
+      network_request_constructed: false,
+      network_request_sent: false,
+      response_received: false,
+      raw_response_stored: false,
+      warnings: dryRunPassed ? ["Dry-run upload workflow simulated locally with no network or credential access."] : ["Dry-run upload workflow blocked or not simulated."],
+      blocking_reasons: dryRunPassed ? [] : ["Dry-run upload spike simulation did not pass."],
+    },
+    network_boundary: {
+      network_calls_allowed: false,
+      network_calls_made: false,
+      platform_api_calls_allowed: false,
+      platform_api_calls_made: false,
+      external_side_effects_allowed: false,
+      external_side_effects_observed: false,
+    },
+    credential_boundary: {
+      credentials_required: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      keychain_accessed: false,
+      env_accessed: false,
+      credential_reference_stored: false,
+      token_reference_stored: false,
+    },
+    platform_boundary: {
+      platform_endpoint_selected: false,
+      platform_api_payload_created: false,
+      platform_api_payload_stored: false,
+      raw_account_ids_stored: false,
+    },
+    validation: {
+      dry_run_upload_spike_passed: dryRunPassed,
+      ready_for_real_upload: false,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      blocking_reasons: dryRunPassed ? [] : ["Dry-run upload spike simulation blocked."],
+      warnings: dryRunPassed ? ["Simulation completed locally without network or credential access."] : ["Simulation did not pass."],
+    },
+    provenance: {
+      generated_by: "createDryRunUploadSpikeResult",
+      source_upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+      source_upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+      source_platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+      source_upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+      source_local_output_review_id: input.localOutputReview.local_output_review_id,
+      source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+      source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+      source_render_plan_id: input.spikeResult.render_plan_id,
+    },
+  };
+  if (!validateDryRunUploadSpikeResult(result).ok) throw new Error("Unsafe dry-run upload spike result cannot be created.");
+  return result;
+}
+
+export function validateDryRunUploadSpikeResult(result: unknown): DryRunUploadSpikeResultValidationResult {
+  return validateDryRunUploadSpikeShape(result);
+}
+
+interface DryRunUploadSpikeResultsStoreSummaryItem {
+  dry_run_upload_spike_result_id: string;
+  project_id: string;
+  platform: string;
+  simulation_state: string;
+  created_at: string;
+}
+
+function safeDryRunUploadSpikeSummary(result: DryRunUploadSpikeResult): DryRunUploadSpikeResultsStoreSummaryItem {
+  return {
+    dry_run_upload_spike_result_id: safeDryRunUploadSpikeString(result.dry_run_upload_spike_result_id, "[unsafe-id]"),
+    project_id: safeDryRunUploadSpikeString(result.project_id, "[unsafe-project]"),
+    platform: safeDryRunUploadSpikeString(result.platform, "[unsafe-platform]"),
+    simulation_state: result.simulation_state,
+    created_at: result.created_at,
+  };
+}
+
+export function saveDryRunUploadSpikeResult(result: DryRunUploadSpikeResult): void {
+  const validation = validateDryRunUploadSpikeResult(result);
+  if (!validation.ok) throw new Error("Unsafe dry-run upload spike result cannot be stored.");
+  const store = loadDryRunUploadSpikeResultsStore();
+  const existing = store.results.findIndex((item) => item.dry_run_upload_spike_result_id === result.dry_run_upload_spike_result_id);
+  if (existing >= 0) store.results[existing] = result;
+  else store.results.push(result);
+  saveDryRunUploadSpikeResultsStore(store);
+}
+
+export function listDryRunUploadSpikeResults(options?: { project_id?: string; platform?: string; simulation_state?: string; upload_execution_design_id?: string; upload_execution_approval_id?: string }): DryRunUploadSpikeResult[] {
+  const store = loadDryRunUploadSpikeResultsStore();
+  return store.results.filter((result) => {
+    if (options?.project_id && result.project_id !== options.project_id) return false;
+    if (options?.platform && result.platform !== options.platform) return false;
+    if (options?.simulation_state && result.simulation_state !== options.simulation_state) return false;
+    if (options?.upload_execution_design_id && result.upload_execution_design_id !== options.upload_execution_design_id) return false;
+    if (options?.upload_execution_approval_id && result.upload_execution_approval_id !== options.upload_execution_approval_id) return false;
+    return true;
+  }).sort((a, b) => {
+    const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return compare !== 0 ? compare : a.dry_run_upload_spike_result_id.localeCompare(b.dry_run_upload_spike_result_id);
+  });
+}
+
+export function getDryRunUploadSpikeResult(dry_run_upload_spike_result_id: string): DryRunUploadSpikeResult | null {
+  const store = loadDryRunUploadSpikeResultsStore();
+  return store.results.find((result) => result.dry_run_upload_spike_result_id === dry_run_upload_spike_result_id) ?? null;
+}
+
+export function revokeDryRunUploadSpikeResult(dry_run_upload_spike_result_id: string, reason: string): DryRunUploadSpikeResult {
+  const result = getDryRunUploadSpikeResult(dry_run_upload_spike_result_id);
+  if (!result) throw new Error("Dry-run upload spike result not found");
+  const safeReason = safeDryRunUploadSpikeString(reason, "[unsafe-reason]");
+  if (safeReason === "[unsafe-reason]") throw new Error("Unsafe dry-run upload spike reason cannot be stored.");
+  const revoked: DryRunUploadSpikeResult = {
+    ...result,
+    simulation_state: "revoked",
+    validation: { ...result.validation, blocking_reasons: [...result.validation.blocking_reasons, safeReason], warnings: [...result.validation.warnings, "Dry-run upload spike result revoked."] },
+    provenance: { ...result.provenance, generated_by: "revokeDryRunUploadSpikeResult" },
+  };
+  saveDryRunUploadSpikeResult(revoked);
+  return revoked;
+}
+
+export function getDryRunUploadSpikeResultReport(options?: { project_id?: string; platform?: string }): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  simulated: number;
+  failed: number;
+  revoked: number;
+  dry_run_upload_spike_passed: number;
+  ready_for_real_upload: 0;
+  upload_allowed: 0;
+  upload_execution_enabled: 0;
+  platform_api_calls_allowed: 0;
+  network_calls_allowed: 0;
+  network_calls_made: 0;
+  credentials_accessed: 0;
+  token_accessed: 0;
+  results: Array<DryRunUploadSpikeResultsStoreSummaryItem>;
+} {
+  const results = listDryRunUploadSpikeResults(options);
+  const by_state: Record<string, number> = {};
+  let blocked = 0;
+  let simulated = 0;
+  let failed = 0;
+  let revoked = 0;
+  let passed = 0;
+  const summaries = results.map((result) => {
+    by_state[result.simulation_state] = (by_state[result.simulation_state] ?? 0) + 1;
+    if (result.simulation_state === "blocked") blocked++;
+    if (result.simulation_state === "simulated") simulated++;
+    if (result.simulation_state === "failed") failed++;
+    if (result.simulation_state === "revoked") revoked++;
+    if (result.validation.dry_run_upload_spike_passed) passed++;
+    return safeDryRunUploadSpikeSummary(result);
+  });
+  return {
+    total: summaries.length,
+    by_state,
+    blocked,
+    simulated,
+    failed,
+    revoked,
+    dry_run_upload_spike_passed: passed,
+    ready_for_real_upload: 0,
+    upload_allowed: 0,
+    upload_execution_enabled: 0,
+    platform_api_calls_allowed: 0,
+    network_calls_allowed: 0,
+    network_calls_made: 0,
+    credentials_accessed: 0,
+    token_accessed: 0,
+    results: summaries,
+  };
+}
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {
