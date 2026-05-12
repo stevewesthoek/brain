@@ -1,0 +1,391 @@
+{
+  "schema_version": "1.0",
+  "title": "Real Renderer Execution Approval Record",
+  "description": "Explicit approval record for real renderer execution. This is an audit/approval artifact only, not an execution command and not an execution log. Operator reviews safety preconditions from the real execution gate and explicitly acknowledges risks. Approval does not enable execution — execution remains disabled. This is NOT a real execution artifact — it is a planning/approval record only. No child_process, spawn, execSync, FFmpeg execution, file creation, or process output capture. No media files created. No platform API calls. Requires explicit operator decision before any later phase may execute a real rendering spike.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "real_execution_approval_id",
+    "real_execution_gate_id",
+    "mock_result_id",
+    "version_check_plan_id",
+    "discovery_id",
+    "preflight_id",
+    "command_manifest_id",
+    "project_id",
+    "platform",
+    "dry_run",
+    "approval_state",
+    "created_at",
+    "approval_scope",
+    "operator_review",
+    "execution_permissions",
+    "required_acknowledgements",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version (immutable)"
+    },
+    "real_execution_approval_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Unique identifier for this approval record"
+    },
+    "real_execution_gate_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source real execution gate ID"
+    },
+    "mock_result_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source mock execution result ID"
+    },
+    "version_check_plan_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source version check plan ID"
+    },
+    "discovery_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source binary discovery artifact ID"
+    },
+    "preflight_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source preflight artifact ID"
+    },
+    "command_manifest_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source command manifest ID"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Project identifier"
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"],
+      "description": "Target platform"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "enum": [true],
+      "description": "Must be true. Approval record is planning/audit only, no actual execution yet."
+    },
+    "approval_state": {
+      "type": "string",
+      "enum": ["draft", "rejected", "approved_for_future_real_execution_request", "revoked"],
+      "description": "Approval record state"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "approval_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope_kind",
+        "one_time_only",
+        "max_output_files",
+        "allowed_output_directory_summary",
+        "allowed_tools"
+      ],
+      "properties": {
+        "scope_kind": {
+          "type": "string",
+          "const": "real_renderer_execution_spike",
+          "description": "Scope is limited to real renderer execution spike (no broader capability)"
+        },
+        "one_time_only": {
+          "type": "boolean",
+          "enum": [true],
+          "description": "Must be true. Approval is one-time-only; a future phase must request again if needed."
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional expiration timestamp"
+        },
+        "max_runtime_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600,
+          "description": "Optional maximum runtime in seconds (safe number, no injection)"
+        },
+        "max_output_files": {
+          "type": "integer",
+          "enum": [0],
+          "description": "Must be 0. No output files allowed yet."
+        },
+        "allowed_output_directory_summary": {
+          "type": "string",
+          "description": "Safe placeholder only (never raw path). Example: '[not-approved-yet]'"
+        },
+        "allowed_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 0,
+          "description": "Must be empty. No tools enabled yet."
+        }
+      },
+      "description": "Approval scope constraints (all disabled until separately approved)"
+    },
+    "operator_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewed_by_label",
+        "checklist_acknowledged",
+        "risk_acknowledgement",
+        "understands_real_execution_not_enabled"
+      ],
+      "properties": {
+        "reviewed_by_label": {
+          "type": "string",
+          "description": "Safe operator label (never raw email/username/keychain ref). Example: 'operator-001'"
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional review timestamp"
+        },
+        "decision_note_summary": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Optional safe summary (never raw paths/commands/env vars)"
+        },
+        "checklist_acknowledged": {
+          "type": "boolean",
+          "description": "Operator has reviewed the safety checklist"
+        },
+        "risk_acknowledgement": {
+          "type": "boolean",
+          "description": "Operator acknowledges risks of real execution"
+        },
+        "understands_real_execution_not_enabled": {
+          "type": "boolean",
+          "description": "Operator understands this approval does not enable execution yet"
+        }
+      },
+      "description": "Operator review metadata"
+    },
+    "execution_permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "real_execution_requested",
+        "execution_enabled",
+        "child_process_allowed",
+        "ffmpeg_execution_allowed",
+        "renderer_execution_allowed",
+        "media_creation_allowed",
+        "upload_allowed",
+        "platform_api_calls_allowed",
+        "env_access_allowed",
+        "process_output_capture_allowed"
+      ],
+      "properties": {
+        "real_execution_requested": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Real execution not requested yet."
+        },
+        "execution_enabled": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Execution not enabled yet."
+        },
+        "child_process_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. child_process/spawn/execSync not allowed yet."
+        },
+        "ffmpeg_execution_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. FFmpeg execution not allowed yet."
+        },
+        "renderer_execution_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Renderer execution not allowed yet."
+        },
+        "media_creation_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Media file creation not allowed yet."
+        },
+        "upload_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Upload not allowed yet."
+        },
+        "platform_api_calls_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Platform API calls not allowed yet."
+        },
+        "env_access_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Environment variable access not allowed yet."
+        },
+        "process_output_capture_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Process output capture not allowed yet."
+        }
+      },
+      "description": "Execution permissions (all disabled until separately approved)"
+    },
+    "required_acknowledgements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "acknowledgement_id",
+          "kind",
+          "acknowledged",
+          "blocking_reasons",
+          "warnings"
+        ],
+        "properties": {
+          "acknowledgement_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$",
+            "description": "Unique identifier for this acknowledgement"
+          },
+          "kind": {
+            "type": "string",
+            "description": "Kind of acknowledgement (e.g., 'approval_scope_understood', 'risks_acknowledged', 'execution_disabled_confirmed')"
+          },
+          "acknowledged": {
+            "type": "boolean",
+            "description": "Whether acknowledgement is satisfied"
+          },
+          "blocking_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Safe blocking reason descriptions (no echo of paths/commands/env vars)"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Safe warning descriptions"
+          }
+        }
+      },
+      "description": "Required acknowledgements for this approval"
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ready_for_real_execution",
+        "ready_for_render",
+        "ready_for_upload",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "ready_for_real_execution": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Approval does not enable real execution."
+        },
+        "ready_for_render": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Approval does not enable rendering."
+        },
+        "ready_for_upload": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Approval does not enable upload."
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Safe blocking reason descriptions"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Safe warning descriptions"
+        }
+      },
+      "description": "Validation results"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generated_by",
+        "source_gate_id",
+        "source_mock_result_id",
+        "source_version_check_plan_id",
+        "source_discovery_id",
+        "source_preflight_id",
+        "source_manifest_id"
+      ],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "const": "createRealRendererExecutionApproval",
+          "description": "Function that created this artifact"
+        },
+        "source_gate_id": {
+          "type": "string",
+          "description": "Source real execution gate ID"
+        },
+        "source_mock_result_id": {
+          "type": "string",
+          "description": "Source mock result ID"
+        },
+        "source_version_check_plan_id": {
+          "type": "string",
+          "description": "Source version check plan ID"
+        },
+        "source_discovery_id": {
+          "type": "string",
+          "description": "Source binary discovery ID"
+        },
+        "source_preflight_id": {
+          "type": "string",
+          "description": "Source preflight ID"
+        },
+        "source_manifest_id": {
+          "type": "string",
+          "description": "Source manifest ID"
+        }
+      },
+      "description": "Provenance information"
+    }
+  }
+}

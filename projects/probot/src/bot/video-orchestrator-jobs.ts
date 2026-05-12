@@ -6550,6 +6550,614 @@ export function getRealRendererExecutionGateReport(options?: {
   };
 }
 
+// ─── VO-5B: Real Renderer Execution Approval Record ──────────────────────────
+
+export type RealRendererExecutionApprovalState = "draft" | "rejected" | "approved_for_future_real_execution_request" | "revoked";
+
+export interface RealRendererExecutionApprovalScope {
+  scope_kind: "real_renderer_execution_spike";
+  one_time_only: true;
+  expires_at?: string;
+  max_runtime_seconds?: number;
+  max_output_files: 0;
+  allowed_output_directory_summary: string;
+  allowed_tools: [];
+}
+
+export interface RealRendererExecutionOperatorReview {
+  reviewed_by_label: string;
+  reviewed_at?: string;
+  decision_note_summary?: string;
+  checklist_acknowledged: boolean;
+  risk_acknowledgement: boolean;
+  understands_real_execution_not_enabled: boolean;
+}
+
+export interface RealRendererExecutionPermissions {
+  real_execution_requested: false;
+  execution_enabled: false;
+  child_process_allowed: false;
+  ffmpeg_execution_allowed: false;
+  renderer_execution_allowed: false;
+  media_creation_allowed: false;
+  upload_allowed: false;
+  platform_api_calls_allowed: false;
+  env_access_allowed: false;
+  process_output_capture_allowed: false;
+}
+
+export interface RealRendererExecutionAcknowledgement {
+  acknowledgement_id: string;
+  kind: string;
+  acknowledged: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealRendererExecutionApproval {
+  schema_version: "1.0";
+  real_execution_approval_id: string;
+  real_execution_gate_id: string;
+  mock_result_id: string;
+  version_check_plan_id: string;
+  discovery_id: string;
+  preflight_id: string;
+  command_manifest_id: string;
+  project_id: string;
+  platform: string;
+  dry_run: true;
+  approval_state: RealRendererExecutionApprovalState;
+  created_at: string;
+  approval_scope: RealRendererExecutionApprovalScope;
+  operator_review: RealRendererExecutionOperatorReview;
+  execution_permissions: RealRendererExecutionPermissions;
+  required_acknowledgements: RealRendererExecutionAcknowledgement[];
+  validation: {
+    ready_for_real_execution: false;
+    ready_for_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRealRendererExecutionApproval";
+    source_gate_id: string;
+    source_mock_result_id: string;
+    source_version_check_plan_id: string;
+    source_discovery_id: string;
+    source_preflight_id: string;
+    source_manifest_id: string;
+  };
+}
+
+export interface RealRendererExecutionApprovalValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+interface RealRendererExecutionApprovalsStore {
+  approvals: RealRendererExecutionApproval[];
+}
+
+function getRealRendererExecutionApprovalsPath(): string {
+  const runtimeDir = getRuntimeDir();
+  return path.join(runtimeDir, "real-renderer-execution-approvals.json");
+}
+
+function loadRealRendererExecutionApprovalsStore(): RealRendererExecutionApprovalsStore {
+  try {
+    const filePath = getRealRendererExecutionApprovalsPath();
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, "utf8");
+      return JSON.parse(content);
+    }
+  } catch (e) {
+    // Continue with empty store
+  }
+  return { approvals: [] };
+}
+
+function saveRealRendererExecutionApprovalsStore(store: RealRendererExecutionApprovalsStore): void {
+  const filePath = getRealRendererExecutionApprovalsPath();
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8");
+}
+
+export function createRealRendererExecutionApproval(input: {
+  gate: RealRendererExecutionGate;
+  decision: "draft" | "approved_for_future_real_execution_request" | "rejected";
+  reviewed_by_label?: string;
+  decision_note_summary?: string;
+  checklist_acknowledged?: boolean;
+  risk_acknowledgement?: boolean;
+  understands_real_execution_not_enabled?: boolean;
+  dryRun: true;
+}): RealRendererExecutionApproval {
+  if (input.dryRun !== true) {
+    throw new Error("dryRun=true required");
+  }
+  if (input.gate.dry_run !== true) {
+    throw new Error("gate.dry_run=true required");
+  }
+  if (input.gate.real_execution_requested !== false) {
+    throw new Error("gate.real_execution_requested=false required");
+  }
+  if (input.gate.explicit_operator_approval_required !== true) {
+    throw new Error("gate.explicit_operator_approval_required=true required");
+  }
+  if (input.gate.validation.ready_for_real_execution !== false) {
+    throw new Error("gate.validation.ready_for_real_execution=false required");
+  }
+  if (input.gate.validation.ready_for_render !== false) {
+    throw new Error("gate.validation.ready_for_render=false required");
+  }
+  if (input.gate.validation.ready_for_upload !== false) {
+    throw new Error("gate.validation.ready_for_upload=false required");
+  }
+
+  // Check all execution constraints are false
+  for (const [key, value] of Object.entries(input.gate.execution_constraints)) {
+    if (key !== "allowed_output_directory_summary" && key !== "allowed_tools" && value !== false) {
+      throw new Error(`gate.execution_constraints.${key}=false required`);
+    }
+  }
+  if (input.gate.execution_constraints.allowed_tools.length > 0) {
+    throw new Error("gate.execution_constraints.allowed_tools must be empty");
+  }
+
+  // For approved decision, require all acknowledgements
+  if (input.decision === "approved_for_future_real_execution_request") {
+    if (input.gate.gate_state !== "ready_for_explicit_operator_approval") {
+      throw new Error("gate.gate_state must be ready_for_explicit_operator_approval for approval");
+    }
+    if (input.checklist_acknowledged !== true) {
+      throw new Error("checklist_acknowledged=true required for approval");
+    }
+    if (input.risk_acknowledgement !== true) {
+      throw new Error("risk_acknowledgement=true required for approval");
+    }
+    if (input.understands_real_execution_not_enabled !== true) {
+      throw new Error("understands_real_execution_not_enabled=true required for approval");
+    }
+  }
+
+  // Validate reviewed_by_label if provided
+  if (input.reviewed_by_label && typeof input.reviewed_by_label === "string") {
+    if (!/^[a-z0-9_-]+$/.test(input.reviewed_by_label)) {
+      throw new Error("reviewed_by_label must match safe pattern");
+    }
+  }
+
+  // Validate decision_note_summary if provided
+  if (input.decision_note_summary && typeof input.decision_note_summary === "string") {
+    if (input.decision_note_summary.length > 200) {
+      throw new Error("decision_note_summary must be <= 200 chars");
+    }
+    const forbiddenPatterns = [
+      "credential_reference",
+      "keychain://",
+      "access_token",
+      "refresh_token",
+      "client_secret",
+      "/usr/",
+      "/bin/",
+      "~/",
+      "child_process",
+      "spawn(",
+      "execSync(",
+      "ffmpeg -version",
+      "ffprobe",
+      "videos.insert",
+      "process.env[",
+    ];
+    for (const pattern of forbiddenPatterns) {
+      if (input.decision_note_summary.includes(pattern)) {
+        throw new Error("decision_note_summary contains forbidden pattern");
+      }
+    }
+  }
+
+  const approvalId = `approval-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+  const approval: RealRendererExecutionApproval = {
+    schema_version: "1.0",
+    real_execution_approval_id: approvalId,
+    real_execution_gate_id: input.gate.real_execution_gate_id,
+    mock_result_id: input.gate.mock_result_id,
+    version_check_plan_id: input.gate.version_check_plan_id,
+    discovery_id: input.gate.discovery_id,
+    preflight_id: input.gate.preflight_id,
+    command_manifest_id: input.gate.command_manifest_id,
+    project_id: input.gate.project_id,
+    platform: input.gate.platform,
+    dry_run: true,
+    approval_state: input.decision as RealRendererExecutionApprovalState,
+    created_at: new Date().toISOString(),
+    approval_scope: {
+      scope_kind: "real_renderer_execution_spike",
+      one_time_only: true,
+      max_output_files: 0,
+      allowed_output_directory_summary: "[not-approved-yet]",
+      allowed_tools: [],
+    },
+    operator_review: {
+      reviewed_by_label: input.reviewed_by_label || "[not-reviewed]",
+      reviewed_at: input.decision !== "draft" ? new Date().toISOString() : undefined,
+      decision_note_summary: input.decision_note_summary || undefined,
+      checklist_acknowledged: input.checklist_acknowledged ?? false,
+      risk_acknowledgement: input.risk_acknowledgement ?? false,
+      understands_real_execution_not_enabled: input.understands_real_execution_not_enabled ?? false,
+    },
+    execution_permissions: {
+      real_execution_requested: false,
+      execution_enabled: false,
+      child_process_allowed: false,
+      ffmpeg_execution_allowed: false,
+      renderer_execution_allowed: false,
+      media_creation_allowed: false,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      env_access_allowed: false,
+      process_output_capture_allowed: false,
+    },
+    required_acknowledgements: [
+      {
+        acknowledgement_id: "ack-scope-understood",
+        kind: "approval_scope_understood",
+        acknowledged: input.decision === "approved_for_future_real_execution_request",
+        blocking_reasons: [],
+        warnings: [],
+      },
+      {
+        acknowledgement_id: "ack-risks-acknowledged",
+        kind: "risks_acknowledged",
+        acknowledged: input.decision === "approved_for_future_real_execution_request" && (input.risk_acknowledgement ?? false),
+        blocking_reasons: [],
+        warnings: [],
+      },
+      {
+        acknowledgement_id: "ack-execution-disabled-confirmed",
+        kind: "execution_disabled_confirmed",
+        acknowledged: input.decision === "approved_for_future_real_execution_request" && (input.understands_real_execution_not_enabled ?? false),
+        blocking_reasons: [],
+        warnings: [],
+      },
+    ],
+    validation: {
+      ready_for_real_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createRealRendererExecutionApproval",
+      source_gate_id: input.gate.real_execution_gate_id,
+      source_mock_result_id: input.gate.mock_result_id,
+      source_version_check_plan_id: input.gate.version_check_plan_id,
+      source_discovery_id: input.gate.discovery_id,
+      source_preflight_id: input.gate.preflight_id,
+      source_manifest_id: input.gate.command_manifest_id,
+    },
+  };
+
+  return approval;
+}
+
+export function validateRealRendererExecutionApproval(approval: unknown): RealRendererExecutionApprovalValidationResult {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  if (!approval || typeof approval !== "object") {
+    blockingReasons.push("Not an object");
+    return { ok: false, blocking_reasons: blockingReasons, warnings };
+  }
+
+  const a = approval as any;
+
+  // Check required fields
+  const requiredFields = [
+    "schema_version",
+    "real_execution_approval_id",
+    "real_execution_gate_id",
+    "dry_run",
+    "approval_state",
+    "approval_scope",
+    "operator_review",
+    "execution_permissions",
+    "required_acknowledgements",
+    "validation",
+  ];
+  for (const field of requiredFields) {
+    if (!(field in a)) {
+      blockingReasons.push(`Missing required field: ${field}`);
+    }
+  }
+
+  // Check immutable constraints
+  if (a.dry_run !== true) {
+    blockingReasons.push("dry_run must be true");
+  }
+  if (a.approval_scope?.one_time_only !== true) {
+    blockingReasons.push("approval_scope.one_time_only must be true");
+  }
+  if (a.approval_scope?.max_output_files !== 0) {
+    blockingReasons.push("approval_scope.max_output_files must be 0");
+  }
+  if (!Array.isArray(a.approval_scope?.allowed_tools) || a.approval_scope.allowed_tools.length > 0) {
+    blockingReasons.push("approval_scope.allowed_tools must be empty");
+  }
+
+  // Check execution permissions
+  if (a.execution_permissions?.real_execution_requested !== false) {
+    blockingReasons.push("execution_permissions.real_execution_requested must be false");
+  }
+  if (a.execution_permissions?.execution_enabled !== false) {
+    blockingReasons.push("execution_permissions.execution_enabled must be false");
+  }
+  if (a.execution_permissions?.child_process_allowed !== false) {
+    blockingReasons.push("execution_permissions.child_process_allowed must be false");
+  }
+  if (a.execution_permissions?.ffmpeg_execution_allowed !== false) {
+    blockingReasons.push("execution_permissions.ffmpeg_execution_allowed must be false");
+  }
+  if (a.execution_permissions?.renderer_execution_allowed !== false) {
+    blockingReasons.push("execution_permissions.renderer_execution_allowed must be false");
+  }
+  if (a.execution_permissions?.media_creation_allowed !== false) {
+    blockingReasons.push("execution_permissions.media_creation_allowed must be false");
+  }
+  if (a.execution_permissions?.upload_allowed !== false) {
+    blockingReasons.push("execution_permissions.upload_allowed must be false");
+  }
+  if (a.execution_permissions?.platform_api_calls_allowed !== false) {
+    blockingReasons.push("execution_permissions.platform_api_calls_allowed must be false");
+  }
+  if (a.execution_permissions?.env_access_allowed !== false) {
+    blockingReasons.push("execution_permissions.env_access_allowed must be false");
+  }
+  if (a.execution_permissions?.process_output_capture_allowed !== false) {
+    blockingReasons.push("execution_permissions.process_output_capture_allowed must be false");
+  }
+
+  // Check validation flags
+  if (a.validation?.ready_for_real_execution !== false) {
+    blockingReasons.push("validation.ready_for_real_execution must be false");
+  }
+  if (a.validation?.ready_for_render !== false) {
+    blockingReasons.push("validation.ready_for_render must be false");
+  }
+  if (a.validation?.ready_for_upload !== false) {
+    blockingReasons.push("validation.ready_for_upload must be false");
+  }
+
+  // Check for forbidden patterns
+  const forbiddenKeys = [
+    "credential_reference",
+    "credentialReference",
+    "keychain",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "code_verifier",
+    "authorization_code",
+  ];
+
+  function checkValue(obj: any): boolean {
+    if (!obj || typeof obj !== "object") {
+      if (typeof obj === "string") {
+        const lowerStr = obj.toLowerCase();
+        for (const key of forbiddenKeys) {
+          if (lowerStr.includes(key.toLowerCase())) {
+            return true;
+          }
+        }
+        const patterns = [
+          "/usr/",
+          "/bin/",
+          "/home/",
+          "~/",
+          "child_process(",
+          "spawn(",
+          "execSync(",
+          "ffmpeg -version",
+          "ffprobe",
+          "process.env[",
+          "videos.insert",
+          "Bearer ",
+        ];
+        for (const p of patterns) {
+          if (obj.includes(p)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    for (const [k, v] of Object.entries(obj)) {
+      const keyLower = k.toLowerCase();
+      for (const forbiddenKey of forbiddenKeys) {
+        if (keyLower.includes(forbiddenKey.toLowerCase())) {
+          blockingReasons.push("Contains forbidden key");
+          return true;
+        }
+      }
+      if (checkValue(v)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  checkValue(a);
+  if (blockingReasons.filter((r) => r === "Contains forbidden patterns or values").length === 0 && blockingReasons.filter((r) => r === "Contains forbidden key").length === 0) {
+    if (checkValue(a)) {
+      blockingReasons.push("Contains forbidden patterns or values");
+    }
+  }
+
+  return {
+    ok: blockingReasons.length === 0,
+    blocking_reasons: blockingReasons,
+    warnings,
+  };
+}
+
+export function saveRealRendererExecutionApproval(approval: RealRendererExecutionApproval): void {
+  const validation = validateRealRendererExecutionApproval(approval);
+  if (!validation.ok) {
+    throw new Error(`Cannot save approval: ${validation.blocking_reasons.join(", ")}`);
+  }
+
+  if (approval.dry_run !== true) {
+    throw new Error("Cannot save approval with dry_run=false");
+  }
+  if (approval.execution_permissions.real_execution_requested !== false) {
+    throw new Error("Cannot save approval with real_execution_requested=true");
+  }
+  if (approval.execution_permissions.execution_enabled !== false) {
+    throw new Error("Cannot save approval with execution_enabled=true");
+  }
+  if (approval.validation.ready_for_real_execution !== false) {
+    throw new Error("Cannot save approval with ready_for_real_execution=true");
+  }
+
+  const store = loadRealRendererExecutionApprovalsStore();
+  const existingIndex = store.approvals.findIndex((a) => a.real_execution_approval_id === approval.real_execution_approval_id);
+  if (existingIndex >= 0) {
+    store.approvals[existingIndex] = approval;
+  } else {
+    store.approvals.push(approval);
+  }
+
+  store.approvals.sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.real_execution_approval_id.localeCompare(b.real_execution_approval_id);
+  });
+
+  saveRealRendererExecutionApprovalsStore(store);
+}
+
+export function listRealRendererExecutionApprovals(options?: {
+  project_id?: string;
+  platform?: string;
+  approval_state?: string;
+  real_execution_gate_id?: string;
+  command_manifest_id?: string;
+}): RealRendererExecutionApproval[] {
+  const store = loadRealRendererExecutionApprovalsStore();
+  let result = [...store.approvals];
+
+  if (options?.project_id) {
+    result = result.filter((a) => a.project_id === options.project_id);
+  }
+
+  if (options?.platform) {
+    result = result.filter((a) => a.platform === options.platform);
+  }
+
+  if (options?.approval_state) {
+    result = result.filter((a) => a.approval_state === options.approval_state);
+  }
+
+  if (options?.real_execution_gate_id) {
+    result = result.filter((a) => a.real_execution_gate_id === options.real_execution_gate_id);
+  }
+
+  if (options?.command_manifest_id) {
+    result = result.filter((a) => a.command_manifest_id === options.command_manifest_id);
+  }
+
+  return result;
+}
+
+export function getRealRendererExecutionApproval(real_execution_approval_id: string): RealRendererExecutionApproval | null {
+  const store = loadRealRendererExecutionApprovalsStore();
+  return store.approvals.find((a) => a.real_execution_approval_id === real_execution_approval_id) || null;
+}
+
+export function revokeRealRendererExecutionApproval(real_execution_approval_id: string, reason: string): RealRendererExecutionApproval {
+  const store = loadRealRendererExecutionApprovalsStore();
+  const approval = store.approvals.find((a) => a.real_execution_approval_id === real_execution_approval_id);
+  if (!approval) {
+    throw new Error(`Approval not found: ${real_execution_approval_id}`);
+  }
+
+  // Validate reason if provided
+  if (reason && typeof reason === "string") {
+    if (reason.length > 200) {
+      throw new Error("Revoke reason must be <= 200 chars");
+    }
+    const forbiddenPatterns = ["credential_reference", "keychain://", "/usr/", "/bin/", "~/", "process.env[", "access_token"];
+    for (const pattern of forbiddenPatterns) {
+      if (reason.includes(pattern)) {
+        throw new Error("Revoke reason contains forbidden pattern");
+      }
+    }
+  }
+
+  approval.approval_state = "revoked";
+  saveRealRendererExecutionApproval(approval);
+  return approval;
+}
+
+export function getRealRendererExecutionApprovalReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  draft: number;
+  approved_for_future_real_execution_request: number;
+  rejected: number;
+  revoked: number;
+  ready_for_real_execution: 0;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  real_execution_requested: 0;
+  execution_enabled: 0;
+  approvals: Array<{
+    real_execution_approval_id: string;
+    approval_state: string;
+    project_id: string;
+    platform: string;
+    created_at: string;
+  }>;
+} {
+  const approvals = listRealRendererExecutionApprovals(options);
+  const byState: Record<string, number> = {};
+
+  for (const a of approvals) {
+    byState[a.approval_state] = (byState[a.approval_state] || 0) + 1;
+  }
+
+  return {
+    total: approvals.length,
+    by_state: byState,
+    draft: byState.draft || 0,
+    approved_for_future_real_execution_request: byState.approved_for_future_real_execution_request || 0,
+    rejected: byState.rejected || 0,
+    revoked: byState.revoked || 0,
+    ready_for_real_execution: 0,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    real_execution_requested: 0,
+    execution_enabled: 0,
+    approvals: approvals.map((a) => ({
+      real_execution_approval_id: sanitizeRenderPlanString(a.real_execution_approval_id, "[unsafe-id]"),
+      approval_state: a.approval_state,
+      project_id: sanitizeRenderPlanString(a.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(a.platform, "[unsafe-platform]"),
+      created_at: a.created_at,
+    })),
+  };
+}
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;

@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
-**Date:** 2026-05-12 (VO-5A Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate); detailed guide for phases 3B+  
+**Date:** 2026-05-12 (VO-5B Complete)  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -2943,6 +2943,109 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
   - File creation only when explicitly approved
   - Upload queuing only when explicitly approved
   - Requires separate explicit approval beyond this gate and all prior gates
+
+---
+
+## VO-5B: Real Renderer Execution Approval Record
+
+**Purpose:** Explicit approval record for hypothetical future real rendering. This is an audit/approval artifact only, not an execution command and not an execution log. Operator reviews safety preconditions from the real execution gate and explicitly acknowledges risks. Approval does not enable execution — execution remains disabled. This is a planning/approval record only.
+
+**What it does:**
+- Defines real execution approval record schema and TypeScript types
+- Creates approval records from validated execution gates
+- Tracks operator decisions (draft, approved_for_future_real_execution_request, rejected, revoked)
+- Records operator review (reviewed_by_label, decision_note_summary, acknowledgements)
+- Stores and reports approval records with safe summaries
+- Provides revoke support for reversing approvals
+
+**What it does NOT do:**
+- Does NOT execute FFmpeg or any renderers
+- Does NOT run version commands or child processes
+- Does NOT create files or directories
+- Does NOT capture process output or read environment variables
+- Does NOT call platform APIs or enable uploads
+- Does NOT enable rendering (all execution_permissions remain false)
+- Does NOT approve real execution (remains in approval workflow only)
+
+### Deliverables
+
+1. **Schema and Example** (in `operations/specs/video-orchestrator/`)
+   - `real-renderer-execution-approval.schema.json` — JSON Schema v7 with immutable constraints
+   - `examples/real-renderer-execution-approval.example.json` — Safe example with approval_state="draft"
+
+2. **TypeScript Types** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `RealRendererExecutionApprovalState` — state enum
+   - `RealRendererExecutionApprovalScope` — approval scope with max_output_files=0, allowed_tools=[]
+   - `RealRendererExecutionOperatorReview` — operator review metadata
+   - `RealRendererExecutionPermissions` — all execution permissions false (const)
+   - `RealRendererExecutionAcknowledgement` — acknowledgement records
+   - `RealRendererExecutionApproval` — full approval record structure
+   - `RealRendererExecutionApprovalValidationResult` — validation result
+
+3. **Core Functions** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `createRealRendererExecutionApproval(input: {gate, decision, reviewed_by_label?, decision_note_summary?, checklist_acknowledged?, risk_acknowledgement?, understands_real_execution_not_enabled?, dryRun: true}): RealRendererExecutionApproval`
+   - `validateRealRendererExecutionApproval(approval: unknown): RealRendererExecutionApprovalValidationResult`
+   - `saveRealRendererExecutionApproval(approval): void`
+   - `listRealRendererExecutionApprovals(options?): RealRendererExecutionApproval[]`
+   - `getRealRendererExecutionApproval(id): RealRendererExecutionApproval | null`
+   - `revokeRealRendererExecutionApproval(id, reason): RealRendererExecutionApproval`
+   - `getRealRendererExecutionApprovalReport(options?): {...approval states, hardcoded readiness=0}`
+
+4. **Tests** (38 VO-5B tests in `projects/probot/src/bot/video-orchestrator-jobs.test.ts`)
+   - **VO-5B-SCHEMA-1 to 4:** Schema/example parsing, forbidden strings, no raw paths/commands/env vars
+   - **VO-5B-CREATE-5 to 22:** Creation constraints, decision validation, acknowledgement requirements, flag enforcement, output safety (18 tests)
+   - **VO-5B-VALIDATE-23 to 33:** Validation enforcement, immutable flag checks, forbidden patterns (11 tests)
+   - **VO-5B-STORE-34 to 35:** Persistence, filtering, constraint enforcement (2 tests)
+   - **VO-5B-REPORT-36 to 38:** State counting, sanitization, hardcoded counters (3 tests)
+
+**Files Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts` — Added VO-5B types, functions, stores (~1,000 lines)
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts` — Added 38 VO-5B tests (~1,500 lines)
+
+**New Files Created:**
+- `operations/specs/video-orchestrator/real-renderer-execution-approval.schema.json` (created)
+- `operations/specs/video-orchestrator/examples/real-renderer-execution-approval.example.json` (created)
+
+### Safety Constraints: Immutable and Verified (VO-5A + VO-5B)
+
+✅ dry_run must be true (const in types, enum in schema)
+✅ all execution_permissions false (const in types, enum in schema)
+✅ real_execution_requested must be false (const in types, enum in schema)
+✅ execution_enabled must be false (const in types, enum in schema)
+✅ child_process_allowed must be false (const in types, enum in schema)
+✅ ffmpeg_execution_allowed must be false (const in types, enum in schema)
+✅ renderer_execution_allowed must be false (const in types, enum in schema)
+✅ media_creation_allowed must be false (const in types, enum in schema)
+✅ upload_allowed must be false (const in types, enum in schema)
+✅ platform_api_calls_allowed must be false (const in types, enum in schema)
+✅ env_access_allowed must be false (const in types, enum in schema)
+✅ process_output_capture_allowed must be false (const in types, enum in schema)
+✅ allowed_tools must be empty (const in types, maxItems: 0 in schema)
+✅ max_output_files must be 0 (const in types, enum in schema)
+✅ all ready_for_* flags hardcoded to false (const in types, enum in schema)
+✅ No child_process execution (validation blocks it)
+✅ No FFmpeg execution
+✅ No rendering
+✅ No version command execution
+✅ No environment variable reading
+✅ No file creation
+✅ No process output capture
+✅ Validation blocks execution-enabling payloads without echoing values
+✅ Validation blocks credential patterns without echoing values
+✅ Approval does not enable execution
+
+### Backward Compatibility
+
+✅ No breaking changes to VO-3A/3B/3C/3D/3E/3F or VO-4A/4B/4C/4D/4E/VO-5A functions or types
+
+### Next Phase Context
+
+**VO-5B (real execution approval record) is complete** (approval record for operator decisions on real rendering spike). Future phases will add:
+- **VO-5C: Explicit Real Execution Request** (if and when approved to proceed)
+  - Operator explicitly requests real execution in a separate request artifact
+  - Sets real_execution_requested=true in that artifact (not in approval)
+  - Operator acknowledges final confirmation
+  - Requires separate explicit request beyond this approval and all prior gates
 
 ---
 
