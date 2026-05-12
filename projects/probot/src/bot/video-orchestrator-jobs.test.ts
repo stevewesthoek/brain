@@ -196,6 +196,13 @@ import {
   getLocalOutputOperatorReview,
   revokeLocalOutputOperatorReview,
   getLocalOutputOperatorReviewReport,
+  createUploadPackageDesign,
+  validateUploadPackageDesign,
+  saveUploadPackageDesign,
+  listUploadPackageDesigns,
+  getUploadPackageDesign,
+  revokeUploadPackageDesign,
+  getUploadPackageDesignReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -211,6 +218,7 @@ import {
   type FinalProductionRenderExecutionRequest,
   type ControlledProductionRenderSpikeResult,
   type LocalOutputOperatorReview,
+  type UploadPackageDesign,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -603,6 +611,52 @@ function createSafeLocalOutputOperatorReview(
     ...overrides,
   });
   return review;
+}
+
+function createSafeUploadPackageDesign(
+  localOutputReview: LocalOutputOperatorReview,
+  spikeResult: ControlledProductionRenderSpikeResult,
+  decision: "draft" | "approved_for_upload_request_design" | "rejected" = "draft",
+  overrides: Partial<{
+    reviewed_by_label: string;
+    checklist_acknowledged: boolean;
+    metadata_quality_acknowledged: boolean;
+    platform_target_acknowledged: boolean;
+    understands_no_upload_enabled: boolean;
+    decision_note_summary: string;
+    platform_target_summary: string;
+    account_reference_summary: string;
+    channel_or_profile_reference_summary: string;
+    title_summary: string;
+    description_summary: string;
+    tags_summary: string[];
+    category_summary: string;
+    visibility_summary: string;
+    thumbnail_summary: string;
+  }> = {}
+): UploadPackageDesign {
+  return createUploadPackageDesign({
+    localOutputReview,
+    spikeResult,
+    decision,
+    dryRun: true,
+    reviewed_by_label: "operator-001",
+    checklist_acknowledged: true,
+    metadata_quality_acknowledged: true,
+    platform_target_acknowledged: true,
+    understands_no_upload_enabled: true,
+    decision_note_summary: "[upload-package-design]",
+    platform_target_summary: "[platform-target]",
+    account_reference_summary: "[account-reference]",
+    channel_or_profile_reference_summary: "[channel-reference]",
+    title_summary: "Safe upload package design title",
+    description_summary: "Safe upload package design description",
+    tags_summary: ["tag1", "tag2"],
+    category_summary: "education",
+    visibility_summary: "unlisted",
+    thumbnail_summary: "[thumbnail-design]",
+    ...overrides,
+  });
 }
 
 test("VO-J1: Create scheduled job", (t) => {
@@ -17165,4 +17219,801 @@ test("VO-7B-REPORT-54: upload API counters remain 0", () => {
   assert.strictEqual(report.ready_for_upload, 0);
   assert.strictEqual(report.upload_allowed, 0);
   assert.strictEqual(report.platform_api_calls_allowed, 0);
+});
+
+function getTestUploadPackageDesignSchemaAndExamplePaths(): { schemaPath: string; examplePath: string } {
+  const repo = getRepoRootForVideoOrchestratorSpecs();
+  return {
+    schemaPath: path.join(repo, "operations", "specs", "video-orchestrator", "upload-package-design.schema.json"),
+    examplePath: path.join(repo, "operations", "specs", "video-orchestrator", "examples", "upload-package-design.example.json"),
+  };
+}
+
+test("VO-7C-SCHEMA-1: upload package design schema parses", () => {
+  const { schemaPath } = getTestUploadPackageDesignSchemaAndExamplePaths();
+  JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+});
+
+test("VO-7C-SCHEMA-2: example parses", () => {
+  const { examplePath } = getTestUploadPackageDesignSchemaAndExamplePaths();
+  JSON.parse(fs.readFileSync(examplePath, "utf8"));
+});
+
+test("VO-7C-SCHEMA-3: example contains no forbidden strings", () => {
+  const { examplePath } = getTestUploadPackageDesignSchemaAndExamplePaths();
+  assert.strictEqual(hasForbiddenStrings(fs.readFileSync(examplePath, "utf8")), false);
+});
+
+test("VO-7C-SCHEMA-4: example contains no raw paths account ids commands env vars process output media payloads upload payloads or credentials", () => {
+  const { examplePath } = getTestUploadPackageDesignSchemaAndExamplePaths();
+  const text = fs.readFileSync(examplePath, "utf8");
+  assert.strictEqual(/\/Users\/|https?:\/\/|stdout|stderr|ffmpeg -i|data=|videos.insert|youtube.videos\(\)\.insert|access_token|refresh_token|client_secret|Bearer /i.test(text), false);
+});
+
+test("VO-7C-CREATE-5: dryRun=false blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    assert.throws(() => createUploadPackageDesign({ localOutputReview: review, spikeResult: spike, dryRun: false as never }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-6: unsafe local output review blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    assert.throws(() => createUploadPackageDesign({ localOutputReview: { ...review, operator_review: { ...review.operator_review, reviewed_by_label: "Bearer fake-token" } } as never, spikeResult: spike, dryRun: true }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-7: unsafe spike result blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    assert.throws(() => createUploadPackageDesign({ localOutputReview: review, spikeResult: { ...spike, output_summary: { ...spike.output_summary, output_directory_summary: "/Users/office/private" } } as never, dryRun: true }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-8: draft design can be created from safe review spike", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(design.design_state, "ready_for_operator_review");
+    assert.strictEqual(design.validation.ready_for_upload, false);
+    assert.strictEqual(design.validation.upload_allowed, false);
+    assert.strictEqual(design.validation.platform_api_calls_allowed, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-9: approved decision requires local output review approved_for_upload_design", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "draft");
+    assert.throws(() => createUploadPackageDesign({ localOutputReview: review, spikeResult: spike, decision: "approved_for_upload_request_design", checklist_acknowledged: true, metadata_quality_acknowledged: true, platform_target_acknowledged: true, understands_no_upload_enabled: true, dryRun: true }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-10: approved decision requires acknowledgements", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    assert.throws(() => createUploadPackageDesign({ localOutputReview: review, spikeResult: spike, decision: "approved_for_upload_request_design", checklist_acknowledged: true, metadata_quality_acknowledged: false, platform_target_acknowledged: true, understands_no_upload_enabled: true, dryRun: true }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-11: approved_for_upload_request_design keeps ready_for_upload false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createUploadPackageDesign({
+      localOutputReview: review,
+      spikeResult: spike,
+      decision: "approved_for_upload_request_design",
+      checklist_acknowledged: true,
+      metadata_quality_acknowledged: true,
+      platform_target_acknowledged: true,
+      understands_no_upload_enabled: true,
+      dryRun: true,
+    });
+    assert.strictEqual(design.validation.ready_for_upload, false);
+    assert.strictEqual(design.validation.upload_allowed, false);
+    assert.strictEqual(design.validation.platform_api_calls_allowed, false);
+    assert.strictEqual(design.media_artifact_summary.raw_output_paths_stored, false);
+    assert.strictEqual(design.platform_target.raw_account_ids_stored, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-24: safe design validates", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    assert.ok(validateUploadPackageDesign(design).ok);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-25: raw_output_paths_stored true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, raw_output_paths_stored: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-26: output_file_modified true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, output_file_modified: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-31: raw_account_ids_stored true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, platform_target: { ...design.platform_target, raw_account_ids_stored: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-50: save list get upsert works", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    saveUploadPackageDesign(design);
+    const loaded = getUploadPackageDesign(design.upload_package_design_id);
+    assert.ok(loaded);
+    assert.strictEqual(loaded!.design_state, "approved_for_upload_request_design");
+    saveUploadPackageDesign({ ...design, design_state: "blocked" as never });
+    assert.strictEqual(getUploadPackageDesign(design.upload_package_design_id)?.design_state, "blocked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-55: store rejects raw path account ids true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.throws(() => saveUploadPackageDesign({ ...design, platform_target: { ...design.platform_target, account_reference_summary: "/Users/office/private" } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-56: store rejects upload API flags true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.throws(() => saveUploadPackageDesign({ ...design, upload_constraints: { ...design.upload_constraints, upload_allowed: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-57: store rejects max_upload_attempts greater than 0", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.throws(() => saveUploadPackageDesign({ ...design, upload_constraints: { ...design.upload_constraints, max_upload_attempts: 1 as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-59: revoke changes design_state to revoked safely", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    saveUploadPackageDesign(design);
+    const revoked = revokeUploadPackageDesign(design.upload_package_design_id, "revoked");
+    assert.strictEqual(revoked.design_state, "revoked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-REPORT-61: report counts states", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    saveUploadPackageDesign(design);
+    const report = getUploadPackageDesignReport({ project_id: design.project_id, platform: design.platform });
+    assert.ok(report.total >= 1);
+    assert.ok(report.approved_for_upload_request_design >= 1);
+    assert.strictEqual(report.ready_for_upload, 0);
+    assert.strictEqual(report.upload_allowed, 0);
+    assert.strictEqual(report.platform_api_calls_allowed, 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-REPORT-62: legacy unsafe runtime data does not leak", () => {
+  const report = getUploadPackageDesignReport();
+  assert.strictEqual(hasForbiddenStrings(report), false);
+});
+
+test("VO-7C-REPORT-63: JSON.stringify(report) contains no forbidden strings", () => {
+  const report = getUploadPackageDesignReport();
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(report)), false);
+});
+
+test("VO-7C-REPORT-64: report excludes raw paths URLs raw account ids commands process output media payloads upload payloads", () => {
+  const report = getUploadPackageDesignReport();
+  const text = JSON.stringify(report);
+  assert.strictEqual(/\/Users\/|https?:\/\/|stdout|stderr|ffmpeg -i|data=|videos.insert|youtube.videos\(\)\.insert|access_token|refresh_token|client_secret|Bearer /i.test(text), false);
+});
+
+test("VO-7C-REPORT-65: upload api counters remain 0", () => {
+  const report = getUploadPackageDesignReport();
+  assert.strictEqual(report.ready_for_upload, 0);
+  assert.strictEqual(report.upload_allowed, 0);
+  assert.strictEqual(report.platform_api_calls_allowed, 0);
+});
+
+test("VO-7C-CREATE-12: approved decision requires platform target acknowledgement", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    assert.throws(() => createUploadPackageDesign({ localOutputReview: review, spikeResult: spike, decision: "approved_for_upload_request_design", checklist_acknowledged: true, metadata_quality_acknowledged: true, platform_target_acknowledged: false, understands_no_upload_enabled: true, dryRun: true }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-13: approved decision requires understands_no_upload_enabled", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    assert.throws(() => createUploadPackageDesign({ localOutputReview: review, spikeResult: spike, decision: "approved_for_upload_request_design", checklist_acknowledged: true, metadata_quality_acknowledged: true, platform_target_acknowledged: true, understands_no_upload_enabled: false, dryRun: true }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-14: upload_allowed remains false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    assert.strictEqual(design.upload_constraints.upload_allowed, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-15: platform_api_calls_allowed remains false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    assert.strictEqual(design.upload_constraints.platform_api_calls_allowed, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-16: credentials token env access remain false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    assert.strictEqual(design.upload_constraints.credentials_required, false);
+    assert.strictEqual(design.upload_constraints.credentials_accessed, false);
+    assert.strictEqual(design.upload_constraints.token_accessed, false);
+    assert.strictEqual(design.upload_constraints.env_access_allowed, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-17: metadata and platform payload flags remain false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    assert.strictEqual(design.metadata_plan.metadata_payload_created, false);
+    assert.strictEqual(design.metadata_plan.raw_platform_payload_stored, false);
+    assert.strictEqual(design.platform_target.platform_api_payload_created, false);
+    assert.strictEqual(design.platform_target.raw_account_ids_stored, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-18: output file modify copy move delete upload remain false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    assert.strictEqual(design.media_artifact_summary.output_file_modified, false);
+    assert.strictEqual(design.media_artifact_summary.output_file_copied, false);
+    assert.strictEqual(design.media_artifact_summary.output_file_moved, false);
+    assert.strictEqual(design.media_artifact_summary.output_file_deleted, false);
+    assert.strictEqual(design.media_artifact_summary.output_file_uploaded, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-19: unsafe metadata and label fields block without echo", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    assert.throws(() => createUploadPackageDesign({
+      localOutputReview: review,
+      spikeResult: spike,
+      decision: "draft",
+      reviewed_by_label: "Bearer fake-token",
+      title_summary: "https://example.com/title",
+      description_summary: "/Users/office/private",
+      tags_summary: ["tag1"],
+      visibility_summary: "public",
+      dryRun: true,
+    }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-20: no files are moved copied deleted or modified", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const before = fs.existsSync(tempDir) ? fs.readdirSync(tempDir, { recursive: true as never }).length : 0;
+    createSafeUploadPackageDesign(review, spike, "draft");
+    const after = fs.existsSync(tempDir) ? fs.readdirSync(tempDir, { recursive: true as never }).length : 0;
+    assert.strictEqual(after, before);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-CREATE-21: no upload api execution", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(design.upload_constraints.upload_allowed, false);
+    assert.strictEqual(design.upload_constraints.platform_api_calls_allowed, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-27: output_file_copied true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, output_file_copied: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-28: output_file_moved true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, output_file_moved: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-29: output_file_deleted true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, output_file_deleted: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-30: output_file_uploaded true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, output_file_uploaded: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-32: platform_api_payload_created true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, platform_target: { ...design.platform_target, platform_api_payload_created: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-33: metadata_payload_created true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, metadata_plan: { ...design.metadata_plan, metadata_payload_created: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-34: raw_platform_payload_stored true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, metadata_plan: { ...design.metadata_plan, raw_platform_payload_stored: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-35: upload allowed true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, upload_constraints: { ...design.upload_constraints, upload_allowed: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-36: platform api calls allowed true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, upload_constraints: { ...design.upload_constraints, platform_api_calls_allowed: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-37: credentials token env true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, upload_constraints: { ...design.upload_constraints, credentials_required: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-38: max_upload_attempts greater than 0 blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, upload_constraints: { ...design.upload_constraints, max_upload_attempts: 1 as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-39: ready_for_upload true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, validation: { ...design.validation, ready_for_upload: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-40: forbidden key blocks without echo", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, credentialReference: "value" } as never).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-41: forbidden string blocks without echo", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, metadata_plan: { ...design.metadata_plan, title_summary: "Bearer fake-token" } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-42: raw path blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, metadata_plan: { ...design.metadata_plan, description_summary: "/Users/office/private" } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-43: URL blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, metadata_plan: { ...design.metadata_plan, thumbnail_summary: "https://example.com/thumb" } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-44: raw account id looking payload blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, platform_target: { ...design.platform_target, account_reference_summary: "UC1234567890ABCDEF" } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-45: command-line-like payload blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, metadata_plan: { ...design.metadata_plan, description_summary: "ffmpeg -i input -c copy" } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-46: process-output-like payload blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, validation: { ...design.validation, warnings: ["stdout: boom"] } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-47: env-var-like payload blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, metadata_plan: { ...design.metadata_plan, title_summary: "process.env.SECRET" } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-48: media payload blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, metadata_plan: { ...design.metadata_plan, description_summary: "video/mp4;base64,AAAA" } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-VALIDATE-49: upload API payload blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.strictEqual(validateUploadPackageDesign({ ...design, platform_target: { ...design.platform_target, platform_api_payload_created: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-51: filters work", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    saveUploadPackageDesign(design);
+    assert.ok(listUploadPackageDesigns({ project_id: design.project_id }).some((item) => item.upload_package_design_id === design.upload_package_design_id));
+    assert.strictEqual(listUploadPackageDesigns({ platform: "x" }).length, 0);
+    assert.strictEqual(listUploadPackageDesigns({ design_state: "revoked" }).length, 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-52: store rejects unsafe design", () => {
+  assert.throws(() => saveUploadPackageDesign({} as never));
+});
+
+test("VO-7C-STORE-53: store rejects raw path account ids true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.throws(() => saveUploadPackageDesign({ ...design, platform_target: { ...design.platform_target, raw_account_ids_stored: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-54: store rejects output file mutation flags true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.throws(() => saveUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, output_file_modified: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-55B: store rejects output file copy move delete upload flags true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.throws(() => saveUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, output_file_copied: true as never } } as never));
+    assert.throws(() => saveUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, output_file_moved: true as never } } as never));
+    assert.throws(() => saveUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, output_file_deleted: true as never } } as never));
+    assert.throws(() => saveUploadPackageDesign({ ...design, media_artifact_summary: { ...design.media_artifact_summary, output_file_uploaded: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-56B: store rejects credentials env token flags true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.throws(() => saveUploadPackageDesign({ ...design, upload_constraints: { ...design.upload_constraints, credentials_required: true as never } } as never));
+    assert.throws(() => saveUploadPackageDesign({ ...design, upload_constraints: { ...design.upload_constraints, credentials_accessed: true as never } } as never));
+    assert.throws(() => saveUploadPackageDesign({ ...design, upload_constraints: { ...design.upload_constraints, token_accessed: true as never } } as never));
+    assert.throws(() => saveUploadPackageDesign({ ...design, upload_constraints: { ...design.upload_constraints, env_access_allowed: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-58B: store rejects metadata and platform payload flags true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.throws(() => saveUploadPackageDesign({ ...design, metadata_plan: { ...design.metadata_plan, metadata_payload_created: true as never } } as never));
+    assert.throws(() => saveUploadPackageDesign({ ...design, metadata_plan: { ...design.metadata_plan, raw_platform_payload_stored: true as never } } as never));
+    assert.throws(() => saveUploadPackageDesign({ ...design, platform_target: { ...design.platform_target, platform_api_payload_created: true as never } } as never));
+    assert.throws(() => saveUploadPackageDesign({ ...design, platform_target: { ...design.platform_target, raw_account_ids_stored: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-58: store rejects ready_for_upload true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "draft");
+    assert.throws(() => saveUploadPackageDesign({ ...design, validation: { ...design.validation, ready_for_upload: true as never } } as never));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7C-STORE-60: revoke unsafe reason blocks or sanitizes without echo", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    saveUploadPackageDesign(design);
+    assert.throws(() => revokeUploadPackageDesign(design.upload_package_design_id, "Bearer fake-token"));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
 });

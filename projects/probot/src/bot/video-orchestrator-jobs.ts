@@ -9117,6 +9117,443 @@ export function getLocalOutputOperatorReviewReport(options?: {
   };
 }
 
+export type UploadPackageDesignMode = "metadata_package_design_only" | "operator_review_package_design";
+
+export type UploadPackageDesignState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_upload_request_design" | "rejected" | "revoked";
+
+export interface UploadPackageMediaArtifactSummary {
+  output_file_count: number;
+  media_files_created: boolean;
+  raw_output_paths_stored: false;
+  output_path_summaries: string[];
+  output_file_modified: false;
+  output_file_copied: false;
+  output_file_moved: false;
+  output_file_deleted: false;
+  output_file_uploaded: false;
+}
+
+export interface UploadPackagePlatformTarget {
+  platform: string;
+  account_reference_summary?: string;
+  channel_or_profile_reference_summary?: string;
+  raw_account_ids_stored: false;
+  platform_api_payload_created: false;
+}
+
+export interface UploadPackageMetadataPlan {
+  title_summary: string;
+  description_summary: string;
+  tags_summary: string[];
+  category_summary?: string;
+  visibility_summary: string;
+  thumbnail_summary?: string;
+  metadata_payload_created: false;
+  raw_platform_payload_stored: false;
+}
+
+export interface UploadPackageConstraints {
+  upload_allowed: false;
+  platform_api_calls_allowed: false;
+  resumable_upload_allowed: false;
+  direct_upload_allowed: false;
+  credentials_required: false;
+  credentials_accessed: false;
+  token_accessed: false;
+  env_access_allowed: false;
+  max_upload_attempts: 0;
+}
+
+export interface UploadPackageOperatorReview {
+  reviewed_by_label?: string;
+  checklist_acknowledged: boolean;
+  metadata_quality_acknowledged: boolean;
+  platform_target_acknowledged: boolean;
+  understands_no_upload_enabled: boolean;
+  decision_note_summary?: string;
+}
+
+export interface UploadPackageDesignValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface UploadPackageDesign {
+  schema_version: "1.0";
+  upload_package_design_id: string;
+  local_output_review_id: string;
+  production_render_spike_result_id: string;
+  final_render_execution_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  design_state: UploadPackageDesignState;
+  created_at: string;
+  package_mode: UploadPackageDesignMode;
+  media_artifact_summary: UploadPackageMediaArtifactSummary;
+  platform_target: UploadPackagePlatformTarget;
+  metadata_plan: UploadPackageMetadataPlan;
+  upload_constraints: UploadPackageConstraints;
+  operator_review: UploadPackageOperatorReview;
+  validation: {
+    ready_for_upload_request_design: boolean;
+    ready_for_upload: false;
+    upload_allowed: false;
+    platform_api_calls_allowed: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createUploadPackageDesign" | "revokeUploadPackageDesign";
+    source_local_output_review_id: string;
+    source_production_render_spike_result_id: string;
+    source_final_render_execution_request_id: string;
+    source_render_plan_id: string;
+  };
+}
+
+interface UploadPackageDesignsStore {
+  schema_version: "1.0";
+  created_at: string;
+  designs: UploadPackageDesign[];
+}
+
+function getUploadPackageDesignsPath(): string {
+  return path.join(getRuntimeDir(), "upload-package-designs.json");
+}
+
+function loadUploadPackageDesignsStore(): UploadPackageDesignsStore {
+  try {
+    const filePath = getUploadPackageDesignsPath();
+    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as UploadPackageDesignsStore;
+  } catch {
+    // start fresh
+  }
+  return { schema_version: "1.0", created_at: new Date().toISOString(), designs: [] };
+}
+
+function saveUploadPackageDesignsStore(store: UploadPackageDesignsStore): void {
+  const filePath = getUploadPackageDesignsPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  store.designs.sort((a, b) => {
+    const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return compare !== 0 ? compare : a.upload_package_design_id.localeCompare(b.upload_package_design_id);
+  });
+  fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8");
+}
+
+function safeUploadPackageDesignString(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const lower = value.toLowerCase();
+  if (value.length === 0 || value.length > 120 || isForbiddenStringPattern(value) || lower.includes("://") || lower.startsWith("/users/") || lower.startsWith("/") || lower.includes("..") || lower.includes("stdout") || lower.includes("stderr") || lower.includes("ffmpeg") || lower.includes("videos.insert") || lower.includes("bearer ")) return fallback;
+  return value;
+}
+
+function looksLikeRawUploadPlatformId(value: unknown): boolean {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{11,}$/.test(value) && !value.startsWith("[") && !value.endsWith("]");
+}
+
+function validateUploadPackageDesignShape(design: unknown): UploadPackageDesignValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof design !== "object" || design === null) return { ok: false, blocking_reasons: ["Upload package design must be an object"], warnings };
+  const d = design as Record<string, unknown>;
+  const required = ["schema_version", "upload_package_design_id", "local_output_review_id", "production_render_spike_result_id", "final_render_execution_request_id", "render_plan_id", "project_id", "platform", "design_state", "created_at", "package_mode", "media_artifact_summary", "platform_target", "metadata_plan", "upload_constraints", "operator_review", "validation", "provenance"];
+  for (const key of required) if (!(key in d)) blocking_reasons.push("Upload package design is missing a required field");
+  if (d.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (d.package_mode !== "metadata_package_design_only" && d.package_mode !== "operator_review_package_design") blocking_reasons.push("package_mode is unsafe");
+  if (!["draft", "blocked", "ready_for_operator_review", "approved_for_upload_request_design", "rejected", "revoked"].includes(String(d.design_state))) blocking_reasons.push("design_state is unsafe");
+  const allowedForbiddenKeySubstrings = new Set(["token_accessed"]);
+  const scan = (value: unknown): void => {
+    if (typeof value === "string") {
+      const lower = value.toLowerCase();
+      if (isForbiddenStringPattern(value) || lower.includes("process.env") || lower.includes("stdout") || lower.includes("stderr") || lower.includes("base64,") || lower.startsWith("data:")) blocking_reasons.push("Upload package design contains unsafe string content");
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) scan(item);
+      return;
+    }
+    if (typeof value === "object" && value !== null) {
+      for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+        if (isForbiddenStringPattern(key) && !allowedForbiddenKeySubstrings.has(key)) blocking_reasons.push("Upload package design contains unsafe key content");
+        scan(nested);
+      }
+    }
+  };
+  scan(design);
+  const text = JSON.stringify(design);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env[") || text.includes("\"stdout\":") || text.includes("\"stderr\":") || text.includes("ffmpeg -i") || text.includes(" -i ") || text.includes("Bearer ") || text.includes("data=") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../")) {
+    blocking_reasons.push("Upload package design contains forbidden payload content");
+  }
+  const media = d.media_artifact_summary as Record<string, unknown> | undefined;
+  if (!media || media.raw_output_paths_stored !== false || media.output_file_modified !== false || media.output_file_copied !== false || media.output_file_moved !== false || media.output_file_deleted !== false || media.output_file_uploaded !== false) {
+    blocking_reasons.push("Media artifact summary is unsafe");
+  }
+  if (typeof media?.output_file_count === "number" && media.output_file_count > 1) blocking_reasons.push("output_file_count exceeds limit");
+  const platformTarget = d.platform_target as Record<string, unknown> | undefined;
+  if (!platformTarget || platformTarget.raw_account_ids_stored !== false || platformTarget.platform_api_payload_created !== false) blocking_reasons.push("Platform target is unsafe");
+  if (looksLikeRawUploadPlatformId(platformTarget?.account_reference_summary) || looksLikeRawUploadPlatformId(platformTarget?.channel_or_profile_reference_summary)) blocking_reasons.push("Platform target contains unsafe account identifiers");
+  const metadataPlan = d.metadata_plan as Record<string, unknown> | undefined;
+  if (!metadataPlan || metadataPlan.metadata_payload_created !== false || metadataPlan.raw_platform_payload_stored !== false) blocking_reasons.push("Metadata plan is unsafe");
+  const constraints = d.upload_constraints as Record<string, unknown> | undefined;
+  if (!constraints || constraints.upload_allowed !== false || constraints.platform_api_calls_allowed !== false || constraints.resumable_upload_allowed !== false || constraints.direct_upload_allowed !== false || constraints.credentials_required !== false || constraints.credentials_accessed !== false || constraints.token_accessed !== false || constraints.env_access_allowed !== false || constraints.max_upload_attempts !== 0) {
+    blocking_reasons.push("Upload constraints are unsafe");
+  }
+  const review = d.operator_review as Record<string, unknown> | undefined;
+  if (!review || review.checklist_acknowledged !== true || review.metadata_quality_acknowledged !== true || review.platform_target_acknowledged !== true || review.understands_no_upload_enabled !== true) blocking_reasons.push("Operator review is unsafe");
+  const validation = d.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_upload !== false || validation.upload_allowed !== false || validation.platform_api_calls_allowed !== false) blocking_reasons.push("Validation state is unsafe");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createUploadPackageDesign(input: {
+  localOutputReview: LocalOutputOperatorReview;
+  spikeResult: ControlledProductionRenderSpikeResult;
+  decision?: "draft" | "approved_for_upload_request_design" | "rejected";
+  platform_target_summary?: string;
+  account_reference_summary?: string;
+  channel_or_profile_reference_summary?: string;
+  title_summary?: string;
+  description_summary?: string;
+  tags_summary?: string[];
+  category_summary?: string;
+  visibility_summary?: string;
+  thumbnail_summary?: string;
+  reviewed_by_label?: string;
+  checklist_acknowledged?: boolean;
+  metadata_quality_acknowledged?: boolean;
+  platform_target_acknowledged?: boolean;
+  understands_no_upload_enabled?: boolean;
+  decision_note_summary?: string;
+  dryRun: true;
+}): UploadPackageDesign {
+  if (input.dryRun !== true) throw new Error("dryRun must be true");
+  if (!validateLocalOutputOperatorReview(input.localOutputReview).ok) throw new Error("localOutputReview must validate");
+  if (!validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("spikeResult must validate");
+  if (input.localOutputReview.review_state !== "approved_for_upload_design") throw new Error("localOutputReview must be approved_for_upload_design");
+  if (input.localOutputReview.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.localOutputReview.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.localOutputReview.render_plan_id !== input.spikeResult.render_plan_id || input.localOutputReview.project_id !== input.spikeResult.project_id || input.localOutputReview.platform !== input.spikeResult.platform) {
+    throw new Error("Upload package design IDs must match");
+  }
+  const decision = input.decision ?? "draft";
+  const approved = decision === "approved_for_upload_request_design";
+  const reviewedBy = safeUploadPackageDesignString(input.reviewed_by_label ?? "", "[unsafe-reviewer]");
+  const note = safeUploadPackageDesignString(input.decision_note_summary ?? "", "[unsafe-review-note]");
+  const platformTargetSummary = safeUploadPackageDesignString(input.platform_target_summary ?? "", "[platform-target]");
+  const accountReferenceSummary = safeUploadPackageDesignString(input.account_reference_summary ?? "", "[account-reference]");
+  const channelReferenceSummary = safeUploadPackageDesignString(input.channel_or_profile_reference_summary ?? "", "[channel-reference]");
+  const titleSummary = safeUploadPackageDesignString(input.title_summary ?? "", "[title]");
+  const descriptionSummary = safeUploadPackageDesignString(input.description_summary ?? "", "[description]");
+  const categorySummary = input.category_summary ? safeUploadPackageDesignString(input.category_summary, "[category]") : undefined;
+  const visibilitySummary = safeUploadPackageDesignString(input.visibility_summary ?? "", "[visibility]");
+  const thumbnailSummary = input.thumbnail_summary ? safeUploadPackageDesignString(input.thumbnail_summary, "[thumbnail]") : undefined;
+  if (approved && (!input.checklist_acknowledged || !input.metadata_quality_acknowledged || !input.platform_target_acknowledged || !input.understands_no_upload_enabled)) {
+    throw new Error("approved_for_upload_request_design requires acknowledgements");
+  }
+  const design: UploadPackageDesign = {
+    schema_version: "1.0",
+    upload_package_design_id: `upload-package-design-${crypto.randomUUID()}`,
+    local_output_review_id: input.localOutputReview.local_output_review_id,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.spikeResult.project_id,
+    platform: input.spikeResult.platform,
+    design_state: approved ? "approved_for_upload_request_design" : "ready_for_operator_review",
+    created_at: new Date().toISOString(),
+    package_mode: "metadata_package_design_only",
+    media_artifact_summary: {
+      output_file_count: input.spikeResult.output_summary.output_file_count,
+      media_files_created: input.spikeResult.output_summary.media_files_created,
+      raw_output_paths_stored: false,
+      output_path_summaries: input.spikeResult.output_summary.output_path_summaries.map((item) => sanitizeRenderPlanString(item, "[unsafe-output-artifact]")),
+      output_file_modified: false,
+      output_file_copied: false,
+      output_file_moved: false,
+      output_file_deleted: false,
+      output_file_uploaded: false,
+    },
+    platform_target: {
+      platform: input.spikeResult.platform,
+      ...(accountReferenceSummary !== "" ? { account_reference_summary: accountReferenceSummary } : {}),
+      ...(channelReferenceSummary !== "" ? { channel_or_profile_reference_summary: channelReferenceSummary } : {}),
+      raw_account_ids_stored: false,
+      platform_api_payload_created: false,
+    },
+    metadata_plan: {
+      title_summary: titleSummary || "[title]",
+      description_summary: descriptionSummary || "[description]",
+      tags_summary: (input.tags_summary ?? []).map((item) => safeUploadPackageDesignString(item, "[tag]")),
+      ...(categorySummary ? { category_summary: categorySummary } : {}),
+      visibility_summary: visibilitySummary || "[visibility]",
+      ...(thumbnailSummary ? { thumbnail_summary: thumbnailSummary } : {}),
+      metadata_payload_created: false,
+      raw_platform_payload_stored: false,
+    },
+    upload_constraints: {
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      resumable_upload_allowed: false,
+      direct_upload_allowed: false,
+      credentials_required: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      env_access_allowed: false,
+      max_upload_attempts: 0,
+    },
+    operator_review: {
+      ...(reviewedBy ? { reviewed_by_label: reviewedBy } : {}),
+      checklist_acknowledged: input.checklist_acknowledged === true,
+      metadata_quality_acknowledged: input.metadata_quality_acknowledged === true,
+      platform_target_acknowledged: input.platform_target_acknowledged === true,
+      understands_no_upload_enabled: input.understands_no_upload_enabled === true,
+      ...(note ? { decision_note_summary: note } : {}),
+    },
+    validation: {
+      ready_for_upload_request_design: approved && input.localOutputReview.review_state === "approved_for_upload_design" && input.spikeResult.validation.spike_passed,
+      ready_for_upload: false,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      blocking_reasons: [],
+      warnings: approved ? ["No upload or platform API calls are enabled."] : [],
+    },
+    provenance: {
+      generated_by: "createUploadPackageDesign",
+      source_local_output_review_id: input.localOutputReview.local_output_review_id,
+      source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+      source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+      source_render_plan_id: input.spikeResult.render_plan_id,
+    },
+  };
+  if (!validateUploadPackageDesign(design).ok) throw new Error("Unsafe upload package design cannot be created.");
+  return design;
+}
+
+export function validateUploadPackageDesign(design: unknown): UploadPackageDesignValidationResult {
+  return validateUploadPackageDesignShape(design);
+}
+
+export function saveUploadPackageDesign(design: UploadPackageDesign): void {
+  const validation = validateUploadPackageDesign(design);
+  if (!validation.ok) throw new Error("Unsafe upload package design cannot be stored.");
+  const store = loadUploadPackageDesignsStore();
+  const existing = store.designs.findIndex((item) => item.upload_package_design_id === design.upload_package_design_id);
+  if (existing >= 0) store.designs[existing] = design;
+  else store.designs.push(design);
+  saveUploadPackageDesignsStore(store);
+}
+
+export function listUploadPackageDesigns(options?: {
+  project_id?: string;
+  platform?: string;
+  design_state?: string;
+  local_output_review_id?: string;
+  production_render_spike_result_id?: string;
+}): UploadPackageDesign[] {
+  const store = loadUploadPackageDesignsStore();
+  return store.designs.filter((design) => {
+    if (options?.project_id && design.project_id !== options.project_id) return false;
+    if (options?.platform && design.platform !== options.platform) return false;
+    if (options?.design_state && design.design_state !== options.design_state) return false;
+    if (options?.local_output_review_id && design.local_output_review_id !== options.local_output_review_id) return false;
+    if (options?.production_render_spike_result_id && design.production_render_spike_result_id !== options.production_render_spike_result_id) return false;
+    return true;
+  }).sort((a, b) => {
+    const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return compare !== 0 ? compare : a.upload_package_design_id.localeCompare(b.upload_package_design_id);
+  });
+}
+
+export function getUploadPackageDesign(upload_package_design_id: string): UploadPackageDesign | null {
+  const store = loadUploadPackageDesignsStore();
+  return store.designs.find((design) => design.upload_package_design_id === upload_package_design_id) ?? null;
+}
+
+export function revokeUploadPackageDesign(upload_package_design_id: string, reason: string): UploadPackageDesign {
+  const design = getUploadPackageDesign(upload_package_design_id);
+  if (!design) throw new Error("Upload package design not found");
+  const safeReason = safeUploadPackageDesignString(reason, "[unsafe-reason]");
+  if (safeReason === "[unsafe-reason]") throw new Error("Unsafe upload package design reason cannot be stored.");
+  const revoked: UploadPackageDesign = {
+    ...design,
+    design_state: "revoked",
+    validation: {
+      ...design.validation,
+      blocking_reasons: [...design.validation.blocking_reasons, safeReason],
+      warnings: [...design.validation.warnings, "Design revoked."],
+    },
+    provenance: { ...design.provenance, generated_by: "revokeUploadPackageDesign" },
+  };
+  saveUploadPackageDesign(revoked);
+  return revoked;
+}
+
+export function getUploadPackageDesignReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  ready_for_operator_review: number;
+  approved_for_upload_request_design: number;
+  rejected: number;
+  revoked: number;
+  ready_for_upload_request_design: number;
+  ready_for_upload: 0;
+  upload_allowed: 0;
+  platform_api_calls_allowed: 0;
+  designs: Array<{
+    upload_package_design_id: string;
+    project_id: string;
+    platform: string;
+    design_state: string;
+    output_file_count: number;
+    created_at: string;
+  }>;
+} {
+  const designs = listUploadPackageDesigns(options);
+  const byState: Record<string, number> = {};
+  let blocked = 0;
+  let ready = 0;
+  let approved = 0;
+  let rejected = 0;
+  let revoked = 0;
+  let readyDesign = 0;
+  const summaries = designs.map((design) => {
+    byState[design.design_state] = (byState[design.design_state] ?? 0) + 1;
+    if (design.design_state === "blocked") blocked++;
+    if (design.design_state === "ready_for_operator_review") ready++;
+    if (design.design_state === "approved_for_upload_request_design") approved++;
+    if (design.design_state === "rejected") rejected++;
+    if (design.design_state === "revoked") revoked++;
+    if (design.validation.ready_for_upload_request_design) readyDesign++;
+    return {
+      upload_package_design_id: sanitizeRenderPlanString(design.upload_package_design_id, "[unsafe-id]"),
+      project_id: sanitizeRenderPlanString(design.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(design.platform, "[unsafe-platform]"),
+      design_state: design.design_state,
+      output_file_count: design.media_artifact_summary.output_file_count,
+      created_at: design.created_at,
+    };
+  });
+  return {
+    total: designs.length,
+    by_state: byState,
+    blocked,
+    ready_for_operator_review: ready,
+    approved_for_upload_request_design: approved,
+    rejected,
+    revoked,
+    ready_for_upload_request_design: readyDesign,
+    ready_for_upload: 0,
+    upload_allowed: 0,
+    platform_api_calls_allowed: 0,
+    designs: summaries,
+  };
+}
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {

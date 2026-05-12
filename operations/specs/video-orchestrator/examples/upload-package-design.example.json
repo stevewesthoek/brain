@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "upload_package_design_id": "upload-package-design-001",
+  "local_output_review_id": "local-output-review-001",
+  "production_render_spike_result_id": "production-render-spike-001",
+  "final_render_execution_request_id": "final-render-execution-request-001",
+  "render_plan_id": "render-plan-control-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "design_state": "ready_for_operator_review",
+  "created_at": "2026-05-12T20:00:00Z",
+  "package_mode": "metadata_package_design_only",
+  "media_artifact_summary": {
+    "output_file_count": 1,
+    "media_files_created": true,
+    "raw_output_paths_stored": false,
+    "output_path_summaries": ["[production-render-spike-output]"],
+    "output_file_modified": false,
+    "output_file_copied": false,
+    "output_file_moved": false,
+    "output_file_deleted": false,
+    "output_file_uploaded": false
+  },
+  "platform_target": {
+    "platform": "youtube",
+    "account_reference_summary": "[platform-account]",
+    "channel_or_profile_reference_summary": "[platform-channel]",
+    "raw_account_ids_stored": false,
+    "platform_api_payload_created": false
+  },
+  "metadata_plan": {
+    "title_summary": "Safe upload package design title",
+    "description_summary": "Safe upload package design description",
+    "tags_summary": ["tag1", "tag2"],
+    "category_summary": "education",
+    "visibility_summary": "private",
+    "thumbnail_summary": "[thumbnail-design]",
+    "metadata_payload_created": false,
+    "raw_platform_payload_stored": false
+  },
+  "upload_constraints": {
+    "upload_allowed": false,
+    "platform_api_calls_allowed": false,
+    "resumable_upload_allowed": false,
+    "direct_upload_allowed": false,
+    "credentials_required": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "env_access_allowed": false,
+    "max_upload_attempts": 0
+  },
+  "operator_review": {
+    "reviewed_by_label": "operator-001",
+    "checklist_acknowledged": true,
+    "metadata_quality_acknowledged": true,
+    "platform_target_acknowledged": true,
+    "understands_no_upload_enabled": true,
+    "decision_note_summary": "[upload-package-design-review]"
+  },
+  "validation": {
+    "ready_for_upload_request_design": true,
+    "ready_for_upload": false,
+    "upload_allowed": false,
+    "platform_api_calls_allowed": false,
+    "blocking_reasons": [],
+    "warnings": ["No upload or platform API calls are enabled."]
+  },
+  "provenance": {
+    "generated_by": "createUploadPackageDesign",
+    "source_local_output_review_id": "local-output-review-001",
+    "source_production_render_spike_result_id": "production-render-spike-001",
+    "source_final_render_execution_request_id": "final-render-execution-request-001",
+    "source_render_plan_id": "render-plan-control-001"
+  }
+}
