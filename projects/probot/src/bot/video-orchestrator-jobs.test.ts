@@ -238,6 +238,13 @@ import {
   getRealUploadReadinessAssessment,
   revokeRealUploadReadinessAssessment,
   getRealUploadReadinessAssessmentReport,
+  createRealUploadExecutionRequest,
+  validateRealUploadExecutionRequest,
+  saveRealUploadExecutionRequest,
+  listRealUploadExecutionRequests,
+  getRealUploadExecutionRequest,
+  revokeRealUploadExecutionRequest,
+  getRealUploadExecutionRequestReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -259,6 +266,7 @@ import {
   type UploadExecutionDesign,
   type DryRunUploadSpikeResult,
   type RealUploadReadinessAssessment,
+  type RealUploadExecutionRequest,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -872,6 +880,60 @@ function createSafeRealUploadReadinessAssessment(
     localOutputReview,
     spikeResult,
     dryRun: true,
+  });
+}
+
+function createSafeRealUploadExecutionRequest(
+  readinessAssessment: RealUploadReadinessAssessment,
+  dryRunUploadSpikeResult: DryRunUploadSpikeResult,
+  uploadExecutionDesign: UploadExecutionDesign,
+  uploadExecutionApproval: UploadExecutionApproval,
+  platformUploadRequest: PlatformUploadRequest,
+  uploadPackageDesign: UploadPackageDesign,
+  localOutputReview: LocalOutputOperatorReview,
+  spikeResult: ControlledProductionRenderSpikeResult,
+  decision: "draft" | "approved_for_future_real_upload_design" | "rejected" = "draft",
+  overrides: Partial<{
+    reviewed_by_label: string;
+    checklist_acknowledged: boolean;
+    readiness_assessment_acknowledged: boolean;
+    remaining_gates_acknowledged: boolean;
+    upload_risk_acknowledged: boolean;
+    credential_risk_acknowledged: boolean;
+    network_risk_acknowledged: boolean;
+    platform_api_risk_acknowledged: boolean;
+    understands_no_upload_enabled: boolean;
+    understands_no_credentials_accessed: boolean;
+    understands_no_network_calls: boolean;
+    understands_future_design_phase_only: boolean;
+    decision_note_summary: string;
+  }> = {}
+): RealUploadExecutionRequest {
+  return createRealUploadExecutionRequest({
+    readinessAssessment,
+    dryRunUploadSpikeResult,
+    uploadExecutionDesign,
+    uploadExecutionApproval,
+    platformUploadRequest,
+    uploadPackageDesign,
+    localOutputReview,
+    spikeResult,
+    decision,
+    dryRun: true,
+    reviewed_by_label: "operator-001",
+    checklist_acknowledged: true,
+    readiness_assessment_acknowledged: true,
+    remaining_gates_acknowledged: true,
+    upload_risk_acknowledged: true,
+    credential_risk_acknowledged: true,
+    network_risk_acknowledged: true,
+    platform_api_risk_acknowledged: true,
+    understands_no_upload_enabled: true,
+    understands_no_credentials_accessed: true,
+    understands_no_network_calls: true,
+    understands_future_design_phase_only: true,
+    decision_note_summary: "[real-upload-execution-request]",
+    ...overrides,
   });
 }
 
@@ -19806,6 +19868,156 @@ test("VO-7H-REPORT-182: report counts states and gates", () => {
 
 test("VO-7H-REPORT-183: JSON.stringify(report) contains no forbidden strings", () => {
   const report = getRealUploadReadinessAssessmentReport();
+  const text = JSON.stringify(report);
+  assert.strictEqual(text.includes("keychain://") || text.includes("access_token") || text.includes("refresh_token") || text.includes("client_secret") || text.includes("Bearer ") || text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("stdout") || text.includes("stderr") || text.includes("process.env"), false);
+});
+
+test("VO-7I-SCHEMA-184: real upload execution request schema parses", () => {
+  const schema = JSON.parse(fs.readFileSync(path.join(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/real-upload-execution-request.schema.json"), "utf8"));
+  assert.ok(schema);
+});
+
+test("VO-7I-SCHEMA-185: example parses and stays safe", () => {
+  const examplePath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/examples/real-upload-execution-request.example.json");
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+  const text = fs.readFileSync(examplePath, "utf8");
+  assert.ok(example);
+  assert.strictEqual(text.includes("keychain://") || text.includes("access_token") || text.includes("refresh_token") || text.includes("client_secret") || text.includes("code_verifier") || text.includes("authorization_code") || text.includes("Bearer ") || text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("stdout") || text.includes("stderr") || text.includes("process.env"), false);
+});
+
+test("VO-7I-CREATE-186: dryRun false blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    assert.throws(() => createRealUploadExecutionRequest({
+      readinessAssessment,
+      dryRunUploadSpikeResult: dryRunSpike,
+      uploadExecutionDesign: design,
+      uploadExecutionApproval: approval,
+      platformUploadRequest: request,
+      uploadPackageDesign: packageDesign,
+      localOutputReview: review,
+      spikeResult: spike,
+      dryRun: false as never,
+    }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7I-CREATE-187: safe request can be created from safe artifacts", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+    assert.strictEqual(executionRequest.validation.ready_for_real_upload, false);
+    assert.strictEqual(executionRequest.validation.ready_for_future_real_upload_design, true);
+    assert.strictEqual(executionRequest.upload_execution_boundary.real_upload_execution_allowed, false);
+    assert.strictEqual(executionRequest.request_state, "approved_for_future_real_upload_design");
+    assert.ok(executionRequest.requested_future_capabilities.requests_future_real_upload_design);
+    assert.strictEqual(executionRequest.requested_future_capabilities.requests_current_upload_execution, false);
+    assert.strictEqual(executionRequest.requested_future_capabilities.requests_current_network_calls, false);
+    assert.strictEqual(executionRequest.requested_future_capabilities.requests_current_platform_api_calls, false);
+    assert.strictEqual(executionRequest.requested_future_capabilities.requests_current_credential_access, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7I-VALIDATE-188: safe request validates", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+    assert.strictEqual(validateRealUploadExecutionRequest(executionRequest).ok, true);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7I-VALIDATE-189: ready_for_real_upload true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+    assert.strictEqual(validateRealUploadExecutionRequest({ ...executionRequest, validation: { ...executionRequest.validation, ready_for_real_upload: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7I-STORE-190: save list get upsert works", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const requestPath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/examples/real-upload-execution-request.example.json");
+    const request = JSON.parse(fs.readFileSync(requestPath, "utf8")) as RealUploadExecutionRequest;
+    saveRealUploadExecutionRequest(request);
+    assert.ok(listRealUploadExecutionRequests({ project_id: request.project_id }).some((item) => item.real_upload_execution_request_id === request.real_upload_execution_request_id));
+    assert.strictEqual(getRealUploadExecutionRequest(request.real_upload_execution_request_id)?.real_upload_execution_request_id, request.real_upload_execution_request_id);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7I-STORE-191: revoke changes request_state to revoked safely", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const requestPath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/examples/real-upload-execution-request.example.json");
+    const request = JSON.parse(fs.readFileSync(requestPath, "utf8")) as RealUploadExecutionRequest;
+    saveRealUploadExecutionRequest(request);
+    const revoked = revokeRealUploadExecutionRequest(request.real_upload_execution_request_id, "operator paused");
+    assert.strictEqual(revoked.request_state, "revoked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7I-REPORT-192: report counts states", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const requestPath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/examples/real-upload-execution-request.example.json");
+    const request = JSON.parse(fs.readFileSync(requestPath, "utf8")) as RealUploadExecutionRequest;
+    saveRealUploadExecutionRequest(request);
+    const report = getRealUploadExecutionRequestReport({ project_id: request.project_id });
+    assert.ok(report.total >= 1);
+    assert.ok((report.by_state.approved_for_future_real_upload_design ?? 0) >= 1);
+    assert.strictEqual(report.ready_for_real_upload, 0);
+    assert.ok(report.requests.length >= 1);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7I-REPORT-193: JSON.stringify(report) contains no forbidden strings", () => {
+  const report = getRealUploadExecutionRequestReport();
   const text = JSON.stringify(report);
   assert.strictEqual(text.includes("keychain://") || text.includes("access_token") || text.includes("refresh_token") || text.includes("client_secret") || text.includes("Bearer ") || text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("stdout") || text.includes("stderr") || text.includes("process.env"), false);
 });
