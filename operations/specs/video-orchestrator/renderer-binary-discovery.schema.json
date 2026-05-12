@@ -1,0 +1,216 @@
+{
+  "schema_version": "1.0",
+  "title": "Renderer Binary Discovery Manifest",
+  "description": "Explicitly gated binary discovery planning artifact. Declares which renderer binaries are available for use, but does not execute or check binaries. Pure planning and validation only. No child_process, spawn, execSync, or executable path checks.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "discovery_id",
+    "preflight_id",
+    "command_manifest_id",
+    "project_id",
+    "platform",
+    "dry_run",
+    "discovery_state",
+    "created_at",
+    "discovery_mode",
+    "binary_checks",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version (immutable)"
+    },
+    "discovery_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Unique identifier for this discovery artifact"
+    },
+    "preflight_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source preflight artifact ID"
+    },
+    "command_manifest_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source command manifest ID"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Project identifier"
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"],
+      "description": "Target platform"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "enum": [true],
+      "description": "Must be true. Binary discovery is planning only, no execution."
+    },
+    "discovery_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "declared"],
+      "description": "Discovery artifact state"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "discovery_mode": {
+      "type": "string",
+      "enum": ["declared_only"],
+      "description": "Discovery mode (declared_only: no execution, no version checks, no path checks)"
+    },
+    "binary_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tool_label",
+          "expected_tool_kind",
+          "binary_label",
+          "binary_path_summary",
+          "path_checked",
+          "executable_invoked",
+          "version_checked",
+          "declared_available",
+          "blocking_reasons",
+          "warnings"
+        ],
+        "properties": {
+          "tool_label": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$",
+            "description": "Tool label from preflight (e.g., 'ffmpeg', 'custom')"
+          },
+          "expected_tool_kind": {
+            "type": "string",
+            "enum": ["ffmpeg", "imagemagick", "placeholder", "custom"],
+            "description": "Expected tool kind (declared only, not verified)"
+          },
+          "binary_label": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$",
+            "description": "Binary identifier for this check"
+          },
+          "binary_path_summary": {
+            "type": "string",
+            "description": "Safe placeholder (e.g., '[not-checked]', '[declared]'). Never contains actual paths."
+          },
+          "path_checked": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. No executable path checks performed."
+          },
+          "executable_invoked": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. Binary not executed."
+          },
+          "version_checked": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Must be false. No version command executed."
+          },
+          "declared_available": {
+            "type": "boolean",
+            "description": "Whether binary is declared available by operator"
+          },
+          "blocking_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Safe blocking reason descriptions (no echo of paths/commands/env vars)"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Safe warning descriptions"
+          }
+        }
+      },
+      "description": "Binary discovery checks derived from preflight tool labels"
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ready_for_execution",
+        "ready_for_render",
+        "ready_for_upload",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "ready_for_execution": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Binary discovery does not enable execution."
+        },
+        "ready_for_render": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Binary discovery does not enable rendering."
+        },
+        "ready_for_upload": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Binary discovery does not enable upload."
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Safe blocking reason descriptions"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Safe warning descriptions"
+        }
+      },
+      "description": "Validation results"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by", "source_preflight_id", "source_manifest_id"],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "const": "createRendererBinaryDiscovery",
+          "description": "Function that created this artifact"
+        },
+        "source_preflight_id": {
+          "type": "string",
+          "description": "Source preflight ID"
+        },
+        "source_manifest_id": {
+          "type": "string",
+          "description": "Source command manifest ID"
+        }
+      },
+      "description": "Provenance information"
+    }
+  }
+}

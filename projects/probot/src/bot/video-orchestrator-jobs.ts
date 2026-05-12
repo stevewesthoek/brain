@@ -4888,6 +4888,358 @@ export function getRendererPreflightReport(options?: {
   };
 }
 
+// ─── VO-4C: Renderer Binary Discovery Manifests ────────────────────────────
+
+export type RendererBinaryDiscoveryState = "draft" | "blocked" | "declared";
+export type RendererBinaryDiscoveryMode = "declared_only";
+
+export interface RendererBinaryCheck {
+  tool_label: string;
+  expected_tool_kind: "ffmpeg" | "imagemagick" | "placeholder" | "custom";
+  binary_label: string;
+  binary_path_summary: string;
+  path_checked: false;
+  executable_invoked: false;
+  version_checked: false;
+  declared_available: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RendererBinaryDiscovery {
+  schema_version: "1.0";
+  discovery_id: string;
+  preflight_id: string;
+  command_manifest_id: string;
+  project_id: string;
+  platform: string;
+  dry_run: true;
+  discovery_state: RendererBinaryDiscoveryState;
+  created_at: string;
+  discovery_mode: RendererBinaryDiscoveryMode;
+  binary_checks: RendererBinaryCheck[];
+  validation: {
+    ready_for_execution: false;
+    ready_for_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRendererBinaryDiscovery";
+    source_preflight_id: string;
+    source_manifest_id: string;
+  };
+}
+
+export interface RendererBinaryDiscoveryValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+interface RendererBinaryDiscoveriesStore {
+  discoveries: RendererBinaryDiscovery[];
+}
+
+function getRendererBinaryDiscoveriesPath(): string {
+  return path.join(getRuntimeDir(), "renderer-binary-discoveries.json");
+}
+
+function loadRendererBinaryDiscoveriesStore(): RendererBinaryDiscoveriesStore {
+  const storePath = getRendererBinaryDiscoveriesPath();
+  if (!fs.existsSync(storePath)) {
+    return { discoveries: [] };
+  }
+  try {
+    const content = fs.readFileSync(storePath, "utf8");
+    return JSON.parse(content);
+  } catch (err) {
+    console.warn("Failed to parse renderer binary discoveries store:", err);
+    return { discoveries: [] };
+  }
+}
+
+function saveRendererBinaryDiscoveriesStore(store: RendererBinaryDiscoveriesStore): void {
+  const storePath = getRendererBinaryDiscoveriesPath();
+  fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+}
+
+export function createRendererBinaryDiscovery(input: {
+  preflight: RendererPreflight;
+  dryRun: true;
+  discoveryMode: "declared_only";
+}): RendererBinaryDiscovery {
+  if (!input.dryRun) {
+    throw new Error("Binary discovery only supports dryRun=true");
+  }
+
+  if (input.discoveryMode !== "declared_only") {
+    throw new Error("Binary discovery only supports discoveryMode=declared_only");
+  }
+
+  if (!input.preflight.dry_run) {
+    throw new Error("Preflight must have dry_run=true");
+  }
+
+  // Verify all preflight tool checks are safe
+  for (const check of input.preflight.tool_checks) {
+    if (check.executable_invoked !== false) {
+      throw new Error("Preflight tool check must have executable_invoked=false");
+    }
+    if (check.version_checked !== false) {
+      throw new Error("Preflight tool check must have version_checked=false");
+    }
+  }
+
+  // Derive binary checks from preflight tool labels
+  // Map RenderExecutorKind to VO-4C safe subset
+  const binaryChecks: RendererBinaryCheck[] = input.preflight.tool_checks.map((tc) => {
+    let binaryToolKind: "ffmpeg" | "imagemagick" | "placeholder" | "custom" = "custom";
+    if (tc.expected_tool_kind === "ffmpeg") {
+      binaryToolKind = "ffmpeg";
+    } else if (tc.expected_tool_kind === "local_renderer") {
+      binaryToolKind = "imagemagick";
+    } else if (tc.expected_tool_kind === "manual_renderer") {
+      binaryToolKind = "placeholder";
+    }
+    return {
+      tool_label: tc.tool_label,
+      expected_tool_kind: binaryToolKind,
+      binary_label: `${tc.tool_label}-binary`,
+      binary_path_summary: "[not-checked]",
+      path_checked: false,
+      executable_invoked: false,
+      version_checked: false,
+      declared_available: tc.declared_available,
+      blocking_reasons: [],
+      warnings: [],
+    };
+  });
+
+  // Validate preflight for blocking reasons
+  const preflight_validation = validateRendererPreflight(input.preflight);
+  const discovery_state: RendererBinaryDiscoveryState = preflight_validation.ok ? "declared" : "blocked";
+
+  const discovery: RendererBinaryDiscovery = {
+    schema_version: "1.0",
+    discovery_id: `rbd-${crypto.randomBytes(8).toString("hex")}`,
+    preflight_id: input.preflight.preflight_id,
+    command_manifest_id: input.preflight.command_manifest_id,
+    project_id: input.preflight.project_id,
+    platform: input.preflight.platform,
+    dry_run: true,
+    discovery_state,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only",
+    binary_checks: binaryChecks,
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: preflight_validation.blocking_reasons,
+      warnings: preflight_validation.warnings,
+    },
+    provenance: {
+      generated_by: "createRendererBinaryDiscovery",
+      source_preflight_id: input.preflight.preflight_id,
+      source_manifest_id: input.preflight.command_manifest_id,
+    },
+  };
+
+  return discovery;
+}
+
+export function validateRendererBinaryDiscovery(discovery: unknown): RendererBinaryDiscoveryValidationResult {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  if (typeof discovery !== "object" || discovery === null) {
+    blockingReasons.push("Discovery must be an object");
+    return { ok: false, blocking_reasons: blockingReasons, warnings };
+  }
+
+  const d = discovery as Record<string, unknown>;
+
+  // Required fields
+  if (d.schema_version !== "1.0") {
+    blockingReasons.push("schema_version must be '1.0'");
+  }
+  if (d.dry_run !== true) {
+    blockingReasons.push("dry_run must be true");
+  }
+  if (d.discovery_mode !== "declared_only") {
+    blockingReasons.push("discovery_mode must be 'declared_only'");
+  }
+
+  // Validation structure
+  if (typeof d.validation !== "object" || d.validation === null) {
+    blockingReasons.push("validation is required");
+  } else {
+    const v = d.validation as Record<string, unknown>;
+    if (v.ready_for_execution !== false) {
+      blockingReasons.push("validation.ready_for_execution must be false");
+    }
+    if (v.ready_for_render !== false) {
+      blockingReasons.push("validation.ready_for_render must be false");
+    }
+    if (v.ready_for_upload !== false) {
+      blockingReasons.push("validation.ready_for_upload must be false");
+    }
+  }
+
+  // Binary checks validation
+  if (!Array.isArray(d.binary_checks)) {
+    blockingReasons.push("binary_checks must be an array");
+  } else {
+    for (const check of d.binary_checks) {
+      if (typeof check !== "object" || check === null) continue;
+      const c = check as Record<string, unknown>;
+      if (c.path_checked !== false) {
+        blockingReasons.push("Binary check must have path_checked=false");
+      }
+      if (c.executable_invoked !== false) {
+        blockingReasons.push("Binary check must have executable_invoked=false");
+      }
+      if (c.version_checked !== false) {
+        blockingReasons.push("Binary check must have version_checked=false");
+      }
+    }
+  }
+
+  // Check for forbidden patterns in the entire structure
+  const forbiddenPatternReasons = recursivelyCheckForForbiddenPatterns(d);
+  blockingReasons.push(...forbiddenPatternReasons);
+
+  const ok = blockingReasons.length === 0;
+  return { ok, blocking_reasons: blockingReasons, warnings };
+}
+
+export function saveRendererBinaryDiscovery(discovery: RendererBinaryDiscovery): void {
+  if (discovery.dry_run !== true) {
+    throw new Error("Cannot save binary discovery with dry_run=false");
+  }
+
+  if (discovery.discovery_mode !== "declared_only") {
+    throw new Error("Cannot save binary discovery with discovery_mode other than declared_only");
+  }
+
+  for (const check of discovery.binary_checks) {
+    if (check.path_checked !== false) {
+      throw new Error("Cannot save discovery with path_checked=true");
+    }
+    if (check.executable_invoked !== false) {
+      throw new Error("Cannot save discovery with executable_invoked=true");
+    }
+    if (check.version_checked !== false) {
+      throw new Error("Cannot save discovery with version_checked=true");
+    }
+  }
+
+  if (discovery.validation.ready_for_execution !== false) {
+    throw new Error("Cannot save discovery with ready_for_execution=true");
+  }
+  if (discovery.validation.ready_for_render !== false) {
+    throw new Error("Cannot save discovery with ready_for_render=true");
+  }
+  if (discovery.validation.ready_for_upload !== false) {
+    throw new Error("Cannot save discovery with ready_for_upload=true");
+  }
+
+  const validation = validateRendererBinaryDiscovery(discovery);
+  if (!validation.ok) {
+    throw new Error(`Cannot save invalid discovery: ${validation.blocking_reasons[0]}`);
+  }
+
+  const store = loadRendererBinaryDiscoveriesStore();
+  const idx = store.discoveries.findIndex((d) => d.discovery_id === discovery.discovery_id);
+
+  if (idx >= 0) {
+    store.discoveries[idx] = discovery;
+  } else {
+    store.discoveries.push(discovery);
+  }
+
+  // Sort by created_at then discovery_id for stability
+  store.discoveries.sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.discovery_id.localeCompare(b.discovery_id);
+  });
+
+  saveRendererBinaryDiscoveriesStore(store);
+}
+
+export function listRendererBinaryDiscoveries(options?: {
+  project_id?: string;
+  platform?: string;
+  discovery_state?: string;
+  preflight_id?: string;
+  command_manifest_id?: string;
+}): RendererBinaryDiscovery[] {
+  const store = loadRendererBinaryDiscoveriesStore();
+  return store.discoveries.filter((d) => {
+    if (options?.project_id && d.project_id !== options.project_id) return false;
+    if (options?.platform && d.platform !== options.platform) return false;
+    if (options?.discovery_state && d.discovery_state !== options.discovery_state) return false;
+    if (options?.preflight_id && d.preflight_id !== options.preflight_id) return false;
+    if (options?.command_manifest_id && d.command_manifest_id !== options.command_manifest_id) return false;
+    return true;
+  });
+}
+
+export function getRendererBinaryDiscovery(discovery_id: string): RendererBinaryDiscovery | null {
+  const store = loadRendererBinaryDiscoveriesStore();
+  return store.discoveries.find((d) => d.discovery_id === discovery_id) || null;
+}
+
+export function getRendererBinaryDiscoveryReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  declared: number;
+  ready_for_execution: 0;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  discoveries: Array<{
+    discovery_id: string;
+    preflight_id: string;
+    command_manifest_id: string;
+    platform: string;
+    project_id: string;
+    discovery_state: string;
+    binary_count: number;
+  }>;
+} {
+  const discoveries = listRendererBinaryDiscoveries(options);
+  const byState: Record<string, number> = {};
+
+  for (const d of discoveries) {
+    byState[d.discovery_state] = (byState[d.discovery_state] || 0) + 1;
+  }
+
+  return {
+    total: discoveries.length,
+    by_state: byState,
+    blocked: byState.blocked || 0,
+    declared: byState.declared || 0,
+    ready_for_execution: 0,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    discoveries: discoveries.map((d) => ({
+      discovery_id: sanitizeRenderPlanString(d.discovery_id, "[unsafe-id]"),
+      preflight_id: sanitizeRenderPlanString(d.preflight_id, "[unsafe-id]"),
+      command_manifest_id: sanitizeRenderPlanString(d.command_manifest_id, "[unsafe-id]"),
+      platform: sanitizeRenderPlanString(d.platform, "[unsafe-platform]"),
+      project_id: sanitizeRenderPlanString(d.project_id, "[unsafe-project]"),
+      discovery_state: d.discovery_state,
+      binary_count: d.binary_checks.length,
+    })),
+  };
+}
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;

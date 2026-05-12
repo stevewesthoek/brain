@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
-**Date:** 2026-05-12 (VO-4A Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest); detailed guide for phases 3B+  
+**Date:** 2026-05-12 (VO-4C Complete)  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -2550,7 +2550,85 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 - `projects/probot/src/bot/video-orchestrator-jobs.ts` — Added VO-4B types, functions, stores (+750 lines)
 - `projects/probot/src/bot/video-orchestrator-jobs.test.ts` — Added 38 VO-4B tests (+1,350 lines)
 
-### Safety Constraints: Immutable and Verified
+---
+
+## Phase VO-4C: Renderer Binary Discovery Manifests ✅ (DONE)
+
+**What VO-4C Does:**
+- Creates explicit binary availability planning artifacts (declared-only, no execution)
+- Derives binary checks from preflight tool labels
+- Tracks binary availability declarations without checking filesystem or executing tools
+- Validates immutable constraints (dry_run=true, discovery_mode="declared_only", no execution flags)
+- Stores and queries binary discoveries with filters
+- Reports binary discovery status and state summaries
+
+**What VO-4C Does NOT Do:**
+- Does NOT execute binaries or version checks
+- Does NOT resolve filesystem paths
+- Does NOT invoke child_process, spawn, or execSync
+- Does NOT run FFmpeg commands
+- Does NOT read environment variables
+- Does NOT create files or directories
+- Does NOT capture process output
+- Does NOT render media
+- Does NOT call platform APIs
+- Does NOT enable any rendering or execution capability
+
+**Immutable Safety Constraints:**
+- `dry_run = true` (const in schema and types)
+- `discovery_mode = "declared_only"` (only allowed mode)
+- `path_checked = false` (const in all binary checks)
+- `executable_invoked = false` (const in all binary checks)
+- `version_checked = false` (const in all binary checks)
+- `ready_for_execution = false` (const in validation)
+- `ready_for_render = false` (const in validation)
+- `ready_for_upload = false` (const in validation)
+
+**Key Design:**
+- Binary discovery is a **pure planning artifact** (no execution)
+- Derives from preflight tool labels (ffmpeg, imagemagick, placeholder, custom)
+- Maps RenderExecutorKind to VO-4C safe enum (local_renderer→imagemagick, manual_renderer→placeholder)
+- Validates and blocks execution patterns (child_process, spawn, execSync, ffmpeg, youtube.videos().insert, etc.)
+- Sanitizes all output (no raw paths, commands, env vars, process output)
+- Report counts discovery_state distribution with hardcoded readiness=0
+
+**Deliverables:**
+
+1. **Schema Files**
+   - `operations/specs/video-orchestrator/renderer-binary-discovery.schema.json` — JSON schema v7 with immutable constraints
+   - `operations/specs/video-orchestrator/examples/renderer-binary-discovery.example.json` — Safe example with placeholder and ffmpeg tool checks
+
+2. **TypeScript Types** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `type RendererBinaryDiscoveryState = "draft" | "blocked" | "declared"`
+   - `type RendererBinaryDiscoveryMode = "declared_only"`
+   - `interface RendererBinaryCheck` — tool_label, expected_tool_kind, binary_label, binary_path_summary, path_checked (false), executable_invoked (false), version_checked (false), declared_available, blocking_reasons, warnings
+   - `interface RendererBinaryDiscovery` — full manifest structure with all immutable constraints
+   - `interface RendererBinaryDiscoveryValidationResult` — ok, blocking_reasons, warnings
+
+3. **Core Functions** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `createRendererBinaryDiscovery(input: {preflight: RendererPreflight; dryRun: true; discoveryMode: "declared_only"}): RendererBinaryDiscovery` — Derives binary_checks from preflight tool labels with RenderExecutorKind normalization
+   - `validateRendererBinaryDiscovery(discovery: unknown): RendererBinaryDiscoveryValidationResult` — Enforces schema_version, dry_run, discovery_mode, immutable flags, forbidden patterns
+   - `saveRendererBinaryDiscovery(discovery: RendererBinaryDiscovery): void` — Persists to JSON-backed local store with constraint validation
+   - `listRendererBinaryDiscoveries(options?: {project_id?, platform?, discovery_state?, preflight_id?, command_manifest_id?}): RendererBinaryDiscovery[]` — Queries with filtering and sorting
+   - `getRendererBinaryDiscovery(discovery_id: string): RendererBinaryDiscovery | null` — Single lookup
+   - `getRendererBinaryDiscoveryReport(options?: {project_id?, platform?}): {total, by_state, ready_for_execution, ready_for_render, ready_for_upload}` — Aggregates state counts with hardcoded readiness=0
+
+4. **Tests** (27 VO-4C tests in `projects/probot/src/bot/video-orchestrator-jobs.test.ts`)
+   - **VO-4C-SCHEMA-1 to 4:** Schema validation, example parsing, forbidden strings, no raw paths/commands/env vars
+   - **VO-4C-CREATE-5 to 15:** Creation constraints, binary derivation, flag enforcement, file creation blocking, output safety
+   - **VO-4C-VALIDATION-16 to 23:** Validation enforcement, immutable flag checks, ready flags false
+   - **VO-4C-STORE-24 to 25:** Persistence, filtering (project_id, platform, discovery_state, preflight_id, command_manifest_id)
+   - **VO-4C-REPORT-26 to 27:** State counting, readiness hardcoded to 0
+
+**Files Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts` — Added VO-4C types, functions, stores (+352 lines)
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts` — Added 27 VO-4C tests (+754 lines)
+
+**New Files Created:**
+- `operations/specs/video-orchestrator/renderer-binary-discovery.schema.json` (created)
+- `operations/specs/video-orchestrator/examples/renderer-binary-discovery.example.json` (created)
+
+### Safety Constraints: Immutable and Verified (VO-4B + VO-4C)
 
 ✅ dry_run must be true (const in types and validation)
 ✅ executable_invoked must be false (const in types)
@@ -2571,13 +2649,18 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 
 ### Next Phase Context
 
-**VO-4B is complete. Future phases will add:**
-- **VO-4C/VO-3G: Real Render Execution** (requires explicit separate approval)
+**VO-4A, VO-4B, and VO-4C are complete** (render executor contract, preflight environment checks, binary discovery manifests). Future phases will add:
+- **VO-3G: Real Render Execution** (requires explicit separate approval)
   - Operator explicitly approves and triggers actual rendering
   - FFmpeg execution only when explicitly approved
   - File creation only when explicitly approved
   - Upload queuing only when explicitly approved
-  - Requires separate gating mechanism beyond VO-4B preflights
+  - Requires separate gating mechanism beyond VO-4C binary discovery
+  
+- **VO-4D: Operator-Approved Version-Check Planning** (optional next phase)
+  - Explicit operator approval for version-check contracts (separate from binary discovery)
+  - Still no rendering capability; version checks remain planning-only artifacts
+  - No execution unless separately approved in VO-3G
 
 ---
 

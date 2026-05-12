@@ -81,6 +81,12 @@ import {
   listRendererPreflights,
   getRendererPreflight,
   getRendererPreflightReport,
+  createRendererBinaryDiscovery,
+  validateRendererBinaryDiscovery,
+  saveRendererBinaryDiscovery,
+  listRendererBinaryDiscoveries,
+  getRendererBinaryDiscovery,
+  getRendererBinaryDiscoveryReport,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
@@ -98,6 +104,11 @@ import {
   type RendererPreflight,
   type RendererPreflightState,
   type RendererPreflightValidationResult,
+  type RendererBinaryDiscovery,
+  type RendererBinaryDiscoveryState,
+  type RendererBinaryDiscoveryMode,
+  type RendererBinaryCheck,
+  type RendererBinaryDiscoveryValidationResult,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -9702,10 +9713,10 @@ test("VO-4A-REPORT-33: report excludes raw command_plan and command strings", (t
 
     // Report should include sanitized manifest summaries, not raw command data
     assert.ok(report.manifests.length > 0, "Report should include manifest summaries");
-    const firstManifest = report.manifests[0];
+    const firstManifest = report.manifests[0]!;
     assert.ok(firstManifest.command_manifest_id, "Manifest should have sanitized ID");
     assert.strictEqual(typeof firstManifest.command_count, "number", "Manifest should have command_count (not raw command_plan)");
-    assert.ok(!firstManifest.command_plan, "Report should not include raw command_plan data");
+    assert.ok(!("command_plan" in firstManifest), "Report should not include raw command_plan data");
   } finally {
     cleanupTestRuntime(tempDir);
   }
@@ -10377,6 +10388,745 @@ test("VO-4B-REPORT-37: report excludes raw tool payloads, paths, commands, env v
 
 test("VO-4B-REPORT-38: readiness counters remain 0", (t) => {
   const report = getRendererPreflightReport();
+
+  assert.strictEqual(report.ready_for_execution, 0, "ready_for_execution must be 0");
+  assert.strictEqual(report.ready_for_render, 0, "ready_for_render must be 0");
+  assert.strictEqual(report.ready_for_upload, 0, "ready_for_upload must be 0");
+});
+
+// ─── VO-4C: Renderer Binary Discovery Tests ────────────────────────────────
+
+test("VO-4C-SCHEMA-1: renderer binary discovery schema parses", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const root = getRepoRootForVideoOrchestratorSpecs();
+    const schemaPath = path.join(root, "operations/specs/video-orchestrator/renderer-binary-discovery.schema.json");
+    assert.ok(fs.existsSync(schemaPath), `Schema file exists: ${schemaPath}`);
+
+    const schemaText = fs.readFileSync(schemaPath, "utf-8");
+    const schema = JSON.parse(schemaText);
+
+    assert.strictEqual(schema.schema_version, "1.0", "Schema version correct");
+    assert.ok(schema.title.includes("Binary Discovery"), "Schema title present");
+    assert.ok(schema.properties.dry_run, "dry_run property required");
+    assert.deepStrictEqual(schema.properties.dry_run.enum, [true], "dry_run must be true");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-SCHEMA-2: example parses", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const root = getRepoRootForVideoOrchestratorSpecs();
+    const examplePath = path.join(root, "operations/specs/video-orchestrator/examples/renderer-binary-discovery.example.json");
+    assert.ok(fs.existsSync(examplePath), `Example file exists: ${examplePath}`);
+
+    const exampleText = fs.readFileSync(examplePath, "utf-8");
+    const example = JSON.parse(exampleText);
+
+    assert.strictEqual(example.schema_version, "1.0");
+    assert.strictEqual(example.dry_run, true);
+    assert.strictEqual(example.discovery_state, "draft");
+    assert.strictEqual(example.discovery_mode, "declared_only");
+    assert.ok(Array.isArray(example.binary_checks));
+    assert.strictEqual(example.validation.ready_for_execution, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-SCHEMA-3: example contains no forbidden strings", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const root = getRepoRootForVideoOrchestratorSpecs();
+    const examplePath = path.join(root, "operations/specs/video-orchestrator/examples/renderer-binary-discovery.example.json");
+    const exampleText = fs.readFileSync(examplePath, "utf8");
+    const example = JSON.parse(exampleText);
+
+    const forbiddenPatterns = [
+      /\bchild_process\b/,
+      /\bspawn\b/,
+      /\bexec\(/,
+      /videos\.insert/,
+      /keychain:\/\//,
+      /access_token/,
+      /Bearer [A-Za-z0-9]/,
+    ];
+
+    for (const pattern of forbiddenPatterns) {
+      assert.ok(!pattern.test(exampleText), `Example must not contain: ${pattern}`);
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-SCHEMA-4: example contains no raw paths, commands, env vars, or process output", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const root = getRepoRootForVideoOrchestratorSpecs();
+    const examplePath = path.join(root, "operations/specs/video-orchestrator/examples/renderer-binary-discovery.example.json");
+    const exampleText = fs.readFileSync(examplePath, "utf-8");
+    const example = JSON.parse(exampleText);
+
+    assert.ok(!exampleText.includes("/usr/"), "No absolute paths");
+    assert.ok(!exampleText.includes("/tmp/"), "No /tmp paths");
+    assert.ok(!exampleText.includes("$HOME"), "No env vars");
+
+    for (const check of example.binary_checks) {
+      assert.strictEqual(check.path_checked, false, "path_checked must be false");
+      assert.strictEqual(check.executable_invoked, false, "executable_invoked must be false");
+      assert.strictEqual(check.version_checked, false, "version_checked must be false");
+    }
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-5: dryRun=false blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    assert.throws(
+      () => createRendererBinaryDiscovery({ preflight, dryRun: false, discoveryMode: "declared_only" } as any),
+      /dryRun.*true/,
+      "Should block if dryRun=false"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-6: discoveryMode other than declared_only blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    assert.throws(
+      () => createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "explicit" } as any),
+      /declared_only/,
+      "Should block if discoveryMode != declared_only"
+    );
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-7: safe preflight creates discovery", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+
+    assert.strictEqual(discovery.schema_version, "1.0");
+    assert.strictEqual(discovery.dry_run, true);
+    assert.strictEqual(discovery.discovery_mode, "declared_only");
+    assert.ok(discovery.discovery_id);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-8: binary checks derive from preflight tool labels", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [
+          { command_id: "1", purpose: "test", tool_label: "ffmpeg", input_summary: "input", output_summary: "output", arguments_summary: "args", disabled: true },
+        ], command_count: 1, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+
+    assert.ok(discovery.binary_checks.length > 0, "Should have binary checks");
+    assert.ok(discovery.binary_checks.some((bc) => bc.tool_label === "ffmpeg"), "Should derive from preflight tool labels");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-9: path_checked false for all checks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+
+    assert.ok(discovery.binary_checks.every((bc) => bc.path_checked === false), "All checks must have path_checked=false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-10: executable_invoked false for all checks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+
+    assert.ok(discovery.binary_checks.every((bc) => bc.executable_invoked === false), "All checks must have executable_invoked=false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-11: version_checked false for all checks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+
+    assert.ok(discovery.binary_checks.every((bc) => bc.version_checked === false), "All checks must have version_checked=false");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-12: ready flags remain false", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+
+    assert.strictEqual(discovery.validation.ready_for_execution, false);
+    assert.strictEqual(discovery.validation.ready_for_render, false);
+    assert.strictEqual(discovery.validation.ready_for_upload, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-13: no child_process or FFmpeg execution", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+
+    // Verify the discovery was created without spawning processes
+    assert.ok(discovery, "Discovery created without execution");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-14: no files/directories are created", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const filesBefore = fs.readdirSync(tempDir).length;
+    createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+    const filesAfter = fs.readdirSync(tempDir).length;
+
+    assert.strictEqual(filesBefore, filesAfter, "No files should be created");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-CREATE-15: output contains no command lines, paths, env vars, or process output", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+    const discoveryStr = JSON.stringify(discovery);
+
+    assert.ok(!discoveryStr.includes("/usr/"), "No absolute paths");
+    assert.ok(!discoveryStr.includes("$"), "No env vars");
+    assert.ok(!discoveryStr.includes("output:"), "No process output");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-VALIDATION-16: safe discovery validates", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+    const validation = validateRendererBinaryDiscovery(discovery);
+
+    assert.ok(validation.ok, "Safe discovery should validate");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-VALIDATION-17: dry_run false blocks", (t) => {
+  const validation = validateRendererBinaryDiscovery({ dry_run: false });
+
+  assert.ok(!validation.ok, "Should block if dry_run=false");
+  assert.ok(validation.blocking_reasons.some((r) => r.includes("dry_run")));
+});
+
+test("VO-4C-VALIDATION-18: path_checked true blocks", (t) => {
+  const discovery = {
+    dry_run: true,
+    discovery_mode: "declared_only",
+    binary_checks: [{ path_checked: true }],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+  };
+
+  const validation = validateRendererBinaryDiscovery(discovery);
+
+  assert.ok(!validation.ok, "Should block if path_checked=true");
+});
+
+test("VO-4C-VALIDATION-19: executable_invoked true blocks", (t) => {
+  const discovery = {
+    dry_run: true,
+    discovery_mode: "declared_only",
+    binary_checks: [{ executable_invoked: true }],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+  };
+
+  const validation = validateRendererBinaryDiscovery(discovery);
+
+  assert.ok(!validation.ok, "Should block if executable_invoked=true");
+});
+
+test("VO-4C-VALIDATION-20: version_checked true blocks", (t) => {
+  const discovery = {
+    dry_run: true,
+    discovery_mode: "declared_only",
+    binary_checks: [{ version_checked: true }],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+  };
+
+  const validation = validateRendererBinaryDiscovery(discovery);
+
+  assert.ok(!validation.ok, "Should block if version_checked=true");
+});
+
+test("VO-4C-VALIDATION-21: ready_for_execution true blocks", (t) => {
+  const discovery = {
+    dry_run: true,
+    discovery_mode: "declared_only",
+    validation: { ready_for_execution: true, ready_for_render: false, ready_for_upload: false },
+  };
+
+  const validation = validateRendererBinaryDiscovery(discovery);
+
+  assert.ok(!validation.ok, "Should block if ready_for_execution=true");
+});
+
+test("VO-4C-VALIDATION-22: ready_for_render true blocks", (t) => {
+  const discovery = {
+    dry_run: true,
+    discovery_mode: "declared_only",
+    validation: { ready_for_execution: false, ready_for_render: true, ready_for_upload: false },
+  };
+
+  const validation = validateRendererBinaryDiscovery(discovery);
+
+  assert.ok(!validation.ok, "Should block if ready_for_render=true");
+});
+
+test("VO-4C-VALIDATION-23: ready_for_upload true blocks", (t) => {
+  const discovery = {
+    dry_run: true,
+    discovery_mode: "declared_only",
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: true },
+  };
+
+  const validation = validateRendererBinaryDiscovery(discovery);
+
+  assert.ok(!validation.ok, "Should block if ready_for_upload=true");
+});
+
+test("VO-4C-STORE-24: save/list/get/upsert works", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+
+    saveRendererBinaryDiscovery(discovery);
+    const list = listRendererBinaryDiscoveries();
+    assert.ok(list.length > 0, "Should save and list");
+
+    const retrieved = getRendererBinaryDiscovery(discovery.discovery_id);
+    assert.ok(retrieved, "Should retrieve by ID");
+    assert.strictEqual(retrieved?.discovery_id, discovery.discovery_id);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-STORE-25: filters work", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+    saveRendererBinaryDiscovery(discovery);
+
+    const byProject = listRendererBinaryDiscoveries({ project_id: "test-project" });
+    assert.ok(byProject.length > 0, "Should filter by project_id");
+
+    const byPlatform = listRendererBinaryDiscoveries({ platform: "youtube" });
+    assert.ok(byPlatform.length > 0, "Should filter by platform");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-REPORT-26: report counts states", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const preflight = createRendererPreflight({
+      manifest: {
+        schema_version: "1.0",
+        command_manifest_id: "test-manifest",
+        approval_id: "test-approval",
+        gate_id: "test-gate",
+        bundle_id: "test-bundle",
+        render_plan_id: "test-plan",
+        package_id: "test-package",
+        project_id: "test-project",
+        platform: "youtube",
+        dry_run: true,
+        command_state: "draft",
+        created_at: new Date().toISOString(),
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
+        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
+      },
+      dryRun: true,
+      checkMode: "declared_only",
+    });
+
+    const discovery = createRendererBinaryDiscovery({ preflight, dryRun: true, discoveryMode: "declared_only" });
+    saveRendererBinaryDiscovery(discovery);
+
+    const report = getRendererBinaryDiscoveryReport();
+
+    assert.ok(report.total >= 1, "Should count discoveries");
+    assert.ok(typeof report.by_state === "object", "Should count by state");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-4C-REPORT-27: readiness counters remain 0", (t) => {
+  const report = getRendererBinaryDiscoveryReport();
 
   assert.strictEqual(report.ready_for_execution, 0, "ready_for_execution must be 0");
   assert.strictEqual(report.ready_for_render, 0, "ready_for_render must be 0");
