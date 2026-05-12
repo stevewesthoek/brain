@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
 **Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B complete (operator review of generated local output). VO-7C complete (upload package design). VO-7D complete (platform upload request artifact). VO-7E complete (upload execution approval); detailed guide for phases 3B+  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B complete (operator review of generated local output). VO-7C complete (upload package design). VO-7D complete (platform upload request artifact). VO-7E complete (upload execution approval). VO-7F complete (upload execution design); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -207,6 +207,28 @@ This phase creates a final platform-specific upload request artifact only. It is
 
 **Next phase guidance**
 - If approved later, the next step may add upload execution approval, still without API calls.
+
+### VO-7F: Upload Execution Design
+
+This phase defines the dry-run upload execution envelope only. It keeps upload execution, network calls, platform APIs, credentials, tokens, keychain, and env access disabled.
+
+**What it does**
+- Designs the upload execution boundary and reporting model only.
+- Keeps upload, network calls, platform APIs, credentials, tokens, keychain, and env access disabled.
+- Records only safe summaries for future dry-run upload spike design review.
+- Keeps file move, copy, delete, and modify operations disabled.
+
+**What it does not do**
+- Does not upload.
+- Does not call platform APIs.
+- Does not make network calls.
+- Does not access credentials, tokens, keychain, or env vars.
+- Does not store raw output paths, raw account IDs, or raw platform payloads.
+- Does not move, copy, delete, or modify generated output files.
+- Does not enable real upload capability.
+
+**Next phase guidance**
+- If approved later, the next step may be a dry-run upload spike simulation, still without network/API/credential access.
 
 ---
 

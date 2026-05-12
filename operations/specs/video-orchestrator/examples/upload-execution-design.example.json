@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "upload_execution_design_id": "upload-execution-design-001",
+  "upload_execution_approval_id": "upload-execution-approval-001",
+  "platform_upload_request_id": "platform-upload-request-001",
+  "upload_package_design_id": "upload-package-design-001",
+  "local_output_review_id": "local-output-review-001",
+  "production_render_spike_result_id": "production-render-spike-001",
+  "final_render_execution_request_id": "final-render-execution-request-001",
+  "render_plan_id": "render-plan-control-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "design_state": "ready_for_operator_review",
+  "created_at": "2026-05-12T20:55:00Z",
+  "design_mode": "dry_run_upload_execution_design_only",
+  "required_artifacts": {
+    "upload_execution_approval_validated": true,
+    "platform_upload_request_validated": true,
+    "upload_package_design_validated": true,
+    "local_output_review_validated": true,
+    "spike_result_validated": true
+  },
+  "upload_execution_plan": {
+    "upload_requested": false,
+    "upload_allowed": false,
+    "upload_execution_enabled": false,
+    "dry_run_upload_spike_allowed": false,
+    "platform_api_calls_allowed": false,
+    "resumable_upload_allowed": false,
+    "direct_upload_allowed": false,
+    "max_upload_attempts": 0,
+    "media_file_reference_summary": "[media-file-reference]",
+    "metadata_reference_summary": "[metadata-reference]",
+    "raw_media_path_stored": false,
+    "raw_platform_payload_created": false,
+    "raw_platform_payload_stored": false
+  },
+  "dry_run_boundary": {
+    "dry_run_only": true,
+    "network_calls_allowed": false,
+    "platform_api_calls_allowed": false,
+    "credential_access_allowed": false,
+    "token_access_allowed": false,
+    "keychain_access_allowed": false,
+    "env_access_allowed": false,
+    "upload_side_effects_allowed": false,
+    "external_side_effects_allowed": false
+  },
+  "credential_boundary": {
+    "credentials_required": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "keychain_accessed": false,
+    "env_access_allowed": false,
+    "credential_reference_stored": false,
+    "token_reference_stored": false
+  },
+  "platform_boundary": {
+    "platform_endpoint_selected": false,
+    "platform_api_payload_created": false,
+    "platform_api_payload_stored": false,
+    "raw_account_ids_stored": false,
+    "account_reference_summary": "[account-reference]",
+    "channel_or_profile_reference_summary": "[channel-reference]"
+  },
+  "operator_review": {
+    "reviewed_by_label": "operator-001",
+    "checklist_acknowledged": true,
+    "upload_design_acknowledged": true,
+    "dry_run_boundary_acknowledged": true,
+    "credential_boundary_acknowledged": true,
+    "platform_boundary_acknowledged": true,
+    "understands_no_upload_enabled": true,
+    "understands_no_network_calls": true,
+    "understands_future_separate_real_upload_phase_required": true,
+    "decision_note_summary": "[upload-execution-design-review]"
+  },
+  "validation": {
+    "ready_for_dry_run_upload_spike": true,
+    "ready_for_real_upload": false,
+    "upload_allowed": false,
+    "platform_api_calls_allowed": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "network_calls_allowed": false,
+    "blocking_reasons": [],
+    "warnings": ["No upload, network, or platform API calls are enabled."]
+  },
+  "provenance": {
+    "generated_by": "createUploadExecutionDesign",
+    "source_upload_execution_approval_id": "upload-execution-approval-001",
+    "source_platform_upload_request_id": "platform-upload-request-001",
+    "source_upload_package_design_id": "upload-package-design-001",
+    "source_local_output_review_id": "local-output-review-001",
+    "source_production_render_spike_result_id": "production-render-spike-001",
+    "source_final_render_execution_request_id": "final-render-execution-request-001",
+    "source_render_plan_id": "render-plan-control-001"
+  }
+}

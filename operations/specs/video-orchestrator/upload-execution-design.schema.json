@@ -1,0 +1,170 @@
+{
+  "schema_version": "1.0",
+  "title": "Upload Execution Design",
+  "description": "Upload execution design artifact only. This is not an upload execution result and does not permit or call real upload, network, platform APIs, credentials, tokens, keychain, or env access. It records safe summaries for a future dry-run upload spike design only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "upload_execution_design_id",
+    "upload_execution_approval_id",
+    "platform_upload_request_id",
+    "upload_package_design_id",
+    "local_output_review_id",
+    "production_render_spike_result_id",
+    "final_render_execution_request_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "design_state",
+    "created_at",
+    "design_mode",
+    "required_artifacts",
+    "upload_execution_plan",
+    "dry_run_boundary",
+    "credential_boundary",
+    "platform_boundary",
+    "operator_review",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["1.0"] },
+    "upload_execution_design_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "upload_execution_approval_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "platform_upload_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "upload_package_design_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "local_output_review_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "production_render_spike_result_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "final_render_execution_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "render_plan_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "project_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "platform": { "type": "string", "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"] },
+    "design_state": { "type": "string", "enum": ["draft", "blocked", "ready_for_operator_review", "approved_for_future_dry_run_upload_spike", "rejected", "revoked"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "design_mode": { "type": "string", "enum": ["dry_run_upload_execution_design_only", "operator_review_upload_execution_design"] },
+    "required_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["upload_execution_approval_validated", "platform_upload_request_validated", "upload_package_design_validated", "local_output_review_validated", "spike_result_validated"],
+      "properties": {
+        "upload_execution_approval_validated": { "type": "boolean" },
+        "platform_upload_request_validated": { "type": "boolean" },
+        "upload_package_design_validated": { "type": "boolean" },
+        "local_output_review_validated": { "type": "boolean" },
+        "spike_result_validated": { "type": "boolean" }
+      }
+    },
+    "upload_execution_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["upload_requested", "upload_allowed", "upload_execution_enabled", "dry_run_upload_spike_allowed", "platform_api_calls_allowed", "resumable_upload_allowed", "direct_upload_allowed", "max_upload_attempts", "media_file_reference_summary", "metadata_reference_summary", "raw_media_path_stored", "raw_platform_payload_created", "raw_platform_payload_stored"],
+      "properties": {
+        "upload_requested": { "type": "boolean", "enum": [false] },
+        "upload_allowed": { "type": "boolean", "enum": [false] },
+        "upload_execution_enabled": { "type": "boolean", "enum": [false] },
+        "dry_run_upload_spike_allowed": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] },
+        "resumable_upload_allowed": { "type": "boolean", "enum": [false] },
+        "direct_upload_allowed": { "type": "boolean", "enum": [false] },
+        "max_upload_attempts": { "type": "integer", "minimum": 0, "maximum": 0 },
+        "media_file_reference_summary": { "type": "string" },
+        "metadata_reference_summary": { "type": "string" },
+        "raw_media_path_stored": { "type": "boolean", "enum": [false] },
+        "raw_platform_payload_created": { "type": "boolean", "enum": [false] },
+        "raw_platform_payload_stored": { "type": "boolean", "enum": [false] }
+      }
+    },
+    "dry_run_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dry_run_only", "network_calls_allowed", "platform_api_calls_allowed", "credential_access_allowed", "token_access_allowed", "keychain_access_allowed", "env_access_allowed", "upload_side_effects_allowed", "external_side_effects_allowed"],
+      "properties": {
+        "dry_run_only": { "type": "boolean", "enum": [true] },
+        "network_calls_allowed": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] },
+        "credential_access_allowed": { "type": "boolean", "enum": [false] },
+        "token_access_allowed": { "type": "boolean", "enum": [false] },
+        "keychain_access_allowed": { "type": "boolean", "enum": [false] },
+        "env_access_allowed": { "type": "boolean", "enum": [false] },
+        "upload_side_effects_allowed": { "type": "boolean", "enum": [false] },
+        "external_side_effects_allowed": { "type": "boolean", "enum": [false] }
+      }
+    },
+    "credential_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["credentials_required", "credentials_accessed", "token_accessed", "keychain_accessed", "env_access_allowed", "credential_reference_stored", "token_reference_stored"],
+      "properties": {
+        "credentials_required": { "type": "boolean", "enum": [false] },
+        "credentials_accessed": { "type": "boolean", "enum": [false] },
+        "token_accessed": { "type": "boolean", "enum": [false] },
+        "keychain_accessed": { "type": "boolean", "enum": [false] },
+        "env_access_allowed": { "type": "boolean", "enum": [false] },
+        "credential_reference_stored": { "type": "boolean", "enum": [false] },
+        "token_reference_stored": { "type": "boolean", "enum": [false] }
+      }
+    },
+    "platform_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform_endpoint_selected", "platform_api_payload_created", "platform_api_payload_stored", "raw_account_ids_stored"],
+      "properties": {
+        "platform_endpoint_selected": { "type": "boolean", "enum": [false] },
+        "platform_api_payload_created": { "type": "boolean", "enum": [false] },
+        "platform_api_payload_stored": { "type": "boolean", "enum": [false] },
+        "raw_account_ids_stored": { "type": "boolean", "enum": [false] },
+        "account_reference_summary": { "type": "string" },
+        "channel_or_profile_reference_summary": { "type": "string" }
+      }
+    },
+    "operator_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checklist_acknowledged", "upload_design_acknowledged", "dry_run_boundary_acknowledged", "credential_boundary_acknowledged", "platform_boundary_acknowledged", "understands_no_upload_enabled", "understands_no_network_calls", "understands_future_separate_real_upload_phase_required"],
+      "properties": {
+        "reviewed_by_label": { "type": "string" },
+        "checklist_acknowledged": { "type": "boolean" },
+        "upload_design_acknowledged": { "type": "boolean" },
+        "dry_run_boundary_acknowledged": { "type": "boolean" },
+        "credential_boundary_acknowledged": { "type": "boolean" },
+        "platform_boundary_acknowledged": { "type": "boolean" },
+        "understands_no_upload_enabled": { "type": "boolean" },
+        "understands_no_network_calls": { "type": "boolean" },
+        "understands_future_separate_real_upload_phase_required": { "type": "boolean" },
+        "decision_note_summary": { "type": "string" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ready_for_dry_run_upload_spike", "ready_for_real_upload", "upload_allowed", "platform_api_calls_allowed", "credentials_accessed", "token_accessed", "network_calls_allowed", "blocking_reasons", "warnings"],
+      "properties": {
+        "ready_for_dry_run_upload_spike": { "type": "boolean" },
+        "ready_for_real_upload": { "type": "boolean", "enum": [false] },
+        "upload_allowed": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] },
+        "credentials_accessed": { "type": "boolean", "enum": [false] },
+        "token_accessed": { "type": "boolean", "enum": [false] },
+        "network_calls_allowed": { "type": "boolean", "enum": [false] },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by", "source_upload_execution_approval_id", "source_platform_upload_request_id", "source_upload_package_design_id", "source_local_output_review_id", "source_production_render_spike_result_id", "source_final_render_execution_request_id", "source_render_plan_id"],
+      "properties": {
+        "generated_by": { "type": "string", "enum": ["createUploadExecutionDesign", "revokeUploadExecutionDesign"] },
+        "source_upload_execution_approval_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_platform_upload_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_upload_package_design_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_local_output_review_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_production_render_spike_result_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_final_render_execution_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_render_plan_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" }
+      }
+    }
+  }
+}
