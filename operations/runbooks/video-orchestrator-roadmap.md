@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
 **Date Updated:** 2026-05-12 (VO-5B Complete)  
-**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) complete. Phase 5F—Final Production Render Execution Request (VO-6E) complete. Phase 5G—Controlled Production Render Spike (VO-7A) complete. Phase 5H—Operator Review of Generated Local Output (VO-7B) complete. Phase 5I—Upload Package Design (VO-7C) in progress.  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) complete. Phase 5F—Final Production Render Execution Request (VO-6E) complete. Phase 5G—Controlled Production Render Spike (VO-7A) complete. Phase 5H—Operator Review of Generated Local Output (VO-7B) complete. Phase 5I—Upload Package Design (VO-7C) complete. Phase 5J—Platform Upload Request Artifact (VO-7D) in progress.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Architecture:** Local-first production + platform adapters (not fully local publishing)
 
@@ -256,6 +256,27 @@ This phase adds an upload package design artifact only. It prepares safe metadat
 
 **Next phase guidance**
 - If approved later, the next step may add a platform upload-request artifact, still without API calls.
+
+### VO-7D: Platform Upload Request Artifact
+
+This phase creates a platform-specific upload request artifact only. It prepares a final future upload-execution review record, but it still does not upload or call platform APIs.
+
+**What it does**
+- Creates a platform upload request artifact only.
+- Records safe platform target and metadata request summaries.
+- Keeps upload execution, credentials, tokens, keychain access, env access, and API calls disabled.
+- Keeps file move, copy, delete, and modify operations disabled.
+
+**What it does not do**
+- Does not upload.
+- Does not call platform APIs.
+- Does not access credentials, tokens, keychain, or env vars.
+- Does not store raw output paths, raw account IDs, or raw platform payloads.
+- Does not move, copy, delete, or modify generated output files.
+- Does not enable upload capability.
+
+**Next phase guidance**
+- If approved later, the next step may add upload execution approval, still without API calls.
 
 **Total Timeline:** 6 months  
 **Total Resource Estimate:** 50 hours Claude Code (revised for adapter complexity)  
