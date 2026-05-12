@@ -6637,6 +6637,355 @@ export interface RealRendererExecutionApprovalValidationResult {
   warnings: string[];
 }
 
+export type ControlledProductionRenderRequestState = "draft" | "blocked" | "ready_for_operator_review" | "rejected";
+
+export type ControlledProductionRenderExecutionMode = "controlled_production_render_request";
+
+export interface ControlledProductionScope {
+  production_project_allowed: true;
+  user_media_allowed: true;
+  test_only: false;
+  upload_allowed: false;
+  platform_api_calls_allowed: false;
+  automatic_execution_allowed: false;
+}
+
+export interface ControlledProductionSourceMediaPolicy {
+  source_media_access_requested: true;
+  source_media_mutation_allowed: false;
+  allowed_source_reference_summary: string;
+  source_inventory_required: true;
+  source_checks_required: true;
+}
+
+export interface ControlledProductionOutputPolicy {
+  output_directory_approval_required: true;
+  allowed_output_directory_summary: string;
+  output_file_count_limit: 1;
+  overwrite_allowed: false;
+  cleanup_required: true;
+}
+
+export interface ControlledProductionExecutionPermissions {
+  real_execution_requested: false;
+  execution_enabled: false;
+  child_process_allowed: false;
+  ffmpeg_execution_allowed: false;
+  renderer_execution_allowed: false;
+  media_creation_allowed: false;
+  upload_allowed: false;
+  platform_api_calls_allowed: false;
+  env_access_allowed: false;
+  process_output_capture_allowed: false;
+}
+
+export interface ControlledProductionRenderRequestValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface ControlledProductionRenderRequest {
+  schema_version: "1.0";
+  production_render_request_id: string;
+  real_execution_approval_id: string;
+  real_execution_gate_id: string;
+  render_plan_id: string;
+  command_manifest_id: string;
+  project_id: string;
+  platform: string;
+  request_state: ControlledProductionRenderRequestState;
+  created_at: string;
+  execution_mode: ControlledProductionRenderExecutionMode;
+  production_scope: ControlledProductionScope;
+  source_media_policy: ControlledProductionSourceMediaPolicy;
+  output_policy: ControlledProductionOutputPolicy;
+  execution_permissions: ControlledProductionExecutionPermissions;
+  validation: {
+    ready_for_production_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createControlledProductionRenderRequest";
+    source_approval_id: string;
+    source_gate_id: string;
+    source_render_plan_id: string;
+    source_manifest_id: string;
+  };
+}
+
+interface ControlledProductionRenderRequestsStore {
+  schema_version: "1.0";
+  created_at: string;
+  requests: ControlledProductionRenderRequest[];
+}
+
+function getControlledProductionRenderRequestsPath(): string {
+  return path.join(getRuntimeDir(), "controlled-production-render-requests.json");
+}
+
+function loadControlledProductionRenderRequestsStore(): ControlledProductionRenderRequestsStore {
+  try {
+    const filePath = getControlledProductionRenderRequestsPath();
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, "utf8");
+      return JSON.parse(content) as ControlledProductionRenderRequestsStore;
+    }
+  } catch {
+    // Continue with empty store
+  }
+  return { schema_version: "1.0", created_at: new Date().toISOString(), requests: [] };
+}
+
+function saveControlledProductionRenderRequestsStore(store: ControlledProductionRenderRequestsStore): void {
+  const filePath = getControlledProductionRenderRequestsPath();
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  store.requests.sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.production_render_request_id.localeCompare(b.production_render_request_id);
+  });
+  fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8");
+}
+
+function validateControlledProductionRenderRequestShape(request: unknown): ControlledProductionRenderRequestValidationResult {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+  if (!request || typeof request !== "object") {
+    return { ok: false, blocking_reasons: ["Controlled production render request must be an object"], warnings };
+  }
+  const r = request as Record<string, unknown>;
+  const required = ["schema_version", "production_render_request_id", "real_execution_approval_id", "real_execution_gate_id", "render_plan_id", "command_manifest_id", "project_id", "platform", "request_state", "created_at", "execution_mode", "production_scope", "source_media_policy", "output_policy", "execution_permissions", "validation", "provenance"];
+  for (const key of required) {
+    if (!(key in r)) blockingReasons.push("Controlled production render request is missing a required field");
+  }
+  if (r.schema_version !== "1.0") blockingReasons.push("schema_version must be 1.0");
+  if (r.execution_mode !== "controlled_production_render_request") blockingReasons.push("execution_mode must be controlled_production_render_request");
+  if (!["draft", "blocked", "ready_for_operator_review", "rejected"].includes(String(r.request_state))) blockingReasons.push("request_state is invalid");
+  const forbidden = recursivelyCheckForForbiddenPatterns(request);
+  blockingReasons.push(...forbidden);
+  const scope = r.production_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.production_project_allowed !== true || scope.user_media_allowed !== true || scope.test_only !== false || scope.upload_allowed !== false || scope.platform_api_calls_allowed !== false || scope.automatic_execution_allowed !== false) {
+    blockingReasons.push("Production scope is unsafe");
+  }
+  const source = r.source_media_policy as Record<string, unknown> | undefined;
+  if (!source || source.source_media_access_requested !== true || source.source_media_mutation_allowed !== false || source.source_inventory_required !== true || source.source_checks_required !== true) {
+    blockingReasons.push("Source media policy is unsafe");
+  }
+  if (typeof source?.allowed_source_reference_summary !== "string" || source.allowed_source_reference_summary.includes("://") || source.allowed_source_reference_summary.includes("/")) {
+    blockingReasons.push("Source media summary is unsafe");
+  }
+  const output = r.output_policy as Record<string, unknown> | undefined;
+  if (!output || output.output_directory_approval_required !== true || output.overwrite_allowed !== false || output.cleanup_required !== true || output.output_file_count_limit !== 1) {
+    blockingReasons.push("Output policy is unsafe");
+  }
+  if (typeof output?.allowed_output_directory_summary !== "string" || output.allowed_output_directory_summary !== "[not-approved]") {
+    blockingReasons.push("Output directory summary is unsafe");
+  }
+  const perms = r.execution_permissions as Record<string, unknown> | undefined;
+  if (!perms || perms.real_execution_requested !== false || perms.execution_enabled !== false || perms.child_process_allowed !== false || perms.ffmpeg_execution_allowed !== false || perms.renderer_execution_allowed !== false || perms.media_creation_allowed !== false || perms.upload_allowed !== false || perms.platform_api_calls_allowed !== false || perms.env_access_allowed !== false || perms.process_output_capture_allowed !== false) {
+    blockingReasons.push("Execution permissions are unsafe");
+  }
+  const validation = r.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_production_render !== false || validation.ready_for_upload !== false) {
+    blockingReasons.push("Validation readiness must remain false");
+  }
+  const requestText = JSON.stringify(request);
+  const explicitForbiddenPatterns = ["process.env[", "stdout", "stderr", "videos.insert", "youtube.videos().insert", "Bearer "];
+  if (typeof requestText === "string" && explicitForbiddenPatterns.some((pattern) => requestText.includes(pattern))) {
+    blockingReasons.push("Request contains forbidden execution, output, or upload content");
+  }
+  return { ok: blockingReasons.length === 0, blocking_reasons: blockingReasons, warnings };
+}
+
+export function validateControlledProductionRenderRequest(request: unknown): ControlledProductionRenderRequestValidationResult {
+  return validateControlledProductionRenderRequestShape(request);
+}
+
+export function createControlledProductionRenderRequest(input: {
+  approval: RealRendererExecutionApproval;
+  plan: RenderPlan;
+  commandManifest: RenderCommandManifest;
+  dryRun: true;
+}): ControlledProductionRenderRequest {
+  if (input.dryRun !== true) {
+    throw new Error("createControlledProductionRenderRequest: dryRun=true required");
+  }
+  if (input.approval.dry_run !== true || input.approval.approval_state !== "approved_for_future_real_execution_request") {
+    throw new Error("createControlledProductionRenderRequest: approval must be an approved dry-run approval");
+  }
+  if (input.approval.execution_permissions.real_execution_requested !== false || input.approval.execution_permissions.execution_enabled !== false || input.approval.execution_permissions.upload_allowed !== false) {
+    throw new Error("createControlledProductionRenderRequest: approval execution permissions must remain false");
+  }
+  if (input.plan.dry_run !== true) {
+    throw new Error("createControlledProductionRenderRequest: plan.dry_run=true required");
+  }
+  if (input.commandManifest.dry_run !== true || input.commandManifest.executor.execution_enabled !== false) {
+    throw new Error("createControlledProductionRenderRequest: command manifest must be dry-run only");
+  }
+  if (input.approval.real_execution_gate_id !== input.commandManifest.gate_id || input.approval.command_manifest_id !== input.commandManifest.command_manifest_id || input.approval.project_id !== input.commandManifest.project_id || input.approval.platform !== input.commandManifest.platform || input.plan.render_plan_id !== input.commandManifest.render_plan_id || input.plan.project_id !== input.commandManifest.project_id || input.plan.platform !== input.commandManifest.platform) {
+    throw new Error("createControlledProductionRenderRequest: IDs must match across approval, plan, and command manifest");
+  }
+  const request: ControlledProductionRenderRequest = {
+    schema_version: "1.0",
+    production_render_request_id: `production-render-request-${crypto.randomUUID()}`,
+    real_execution_approval_id: input.approval.real_execution_approval_id,
+    real_execution_gate_id: input.approval.real_execution_gate_id,
+    render_plan_id: input.plan.render_plan_id,
+    command_manifest_id: input.commandManifest.command_manifest_id,
+    project_id: input.plan.project_id,
+    platform: input.plan.platform,
+    request_state: "ready_for_operator_review",
+    created_at: new Date().toISOString(),
+    execution_mode: "controlled_production_render_request",
+    production_scope: {
+      production_project_allowed: true,
+      user_media_allowed: true,
+      test_only: false,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      automatic_execution_allowed: false,
+    },
+    source_media_policy: {
+      source_media_access_requested: true,
+      source_media_mutation_allowed: false,
+      allowed_source_reference_summary: "[source-reference-summary-only]",
+      source_inventory_required: true,
+      source_checks_required: true,
+    },
+    output_policy: {
+      output_directory_approval_required: true,
+      allowed_output_directory_summary: "[not-approved]",
+      output_file_count_limit: 1,
+      overwrite_allowed: false,
+      cleanup_required: true,
+    },
+    execution_permissions: {
+      real_execution_requested: false,
+      execution_enabled: false,
+      child_process_allowed: false,
+      ffmpeg_execution_allowed: false,
+      renderer_execution_allowed: false,
+      media_creation_allowed: false,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      env_access_allowed: false,
+      process_output_capture_allowed: false,
+    },
+    validation: {
+      ready_for_production_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createControlledProductionRenderRequest",
+      source_approval_id: input.approval.real_execution_approval_id,
+      source_gate_id: input.approval.real_execution_gate_id,
+      source_render_plan_id: input.plan.render_plan_id,
+      source_manifest_id: input.commandManifest.command_manifest_id,
+    },
+  };
+
+  const requestValidation = validateControlledProductionRenderRequest(request);
+  if (!requestValidation.ok) {
+    request.request_state = "blocked";
+    request.validation.blocking_reasons = requestValidation.blocking_reasons;
+    request.validation.warnings = requestValidation.warnings;
+  }
+  return request;
+}
+
+export function saveControlledProductionRenderRequest(request: ControlledProductionRenderRequest): void {
+  const validation = validateControlledProductionRenderRequest(request);
+  if (!validation.ok) {
+    throw new Error("Unsafe controlled production render request cannot be stored.");
+  }
+  const store = loadControlledProductionRenderRequestsStore();
+  const existingIndex = store.requests.findIndex((r) => r.production_render_request_id === request.production_render_request_id);
+  if (existingIndex >= 0) store.requests[existingIndex] = request;
+  else store.requests.push(request);
+  saveControlledProductionRenderRequestsStore(store);
+}
+
+export function listControlledProductionRenderRequests(options?: {
+  project_id?: string;
+  platform?: string;
+  request_state?: string;
+  render_plan_id?: string;
+  command_manifest_id?: string;
+}): ControlledProductionRenderRequest[] {
+  const store = loadControlledProductionRenderRequestsStore();
+  return store.requests.filter((request) => {
+    if (options?.project_id && request.project_id !== options.project_id) return false;
+    if (options?.platform && request.platform !== options.platform) return false;
+    if (options?.request_state && request.request_state !== options.request_state) return false;
+    if (options?.render_plan_id && request.render_plan_id !== options.render_plan_id) return false;
+    if (options?.command_manifest_id && request.command_manifest_id !== options.command_manifest_id) return false;
+    return true;
+  }).sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.production_render_request_id.localeCompare(b.production_render_request_id);
+  });
+}
+
+export function getControlledProductionRenderRequest(production_render_request_id: string): ControlledProductionRenderRequest | null {
+  const store = loadControlledProductionRenderRequestsStore();
+  return store.requests.find((request) => request.production_render_request_id === production_render_request_id) ?? null;
+}
+
+export function getControlledProductionRenderRequestReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  ready_for_operator_review: number;
+  rejected: number;
+  ready_for_production_render: 0;
+  ready_for_upload: 0;
+  execution_enabled: 0;
+  upload_allowed: 0;
+  requests: Array<{
+    production_render_request_id: string;
+    project_id: string;
+    platform: string;
+    request_state: string;
+    render_plan_id: string;
+    command_manifest_id: string;
+    created_at: string;
+  }>;
+} {
+  const requests = listControlledProductionRenderRequests(options);
+  const byState: Record<string, number> = {};
+  for (const request of requests) {
+    byState[request.request_state] = (byState[request.request_state] || 0) + 1;
+  }
+  return {
+    total: requests.length,
+    by_state: byState,
+    blocked: byState.blocked || 0,
+    ready_for_operator_review: byState.ready_for_operator_review || 0,
+    rejected: byState.rejected || 0,
+    ready_for_production_render: 0,
+    ready_for_upload: 0,
+    execution_enabled: 0,
+    upload_allowed: 0,
+    requests: requests.map((request) => ({
+      production_render_request_id: sanitizeRenderPlanString(request.production_render_request_id, "[unsafe-id]"),
+      project_id: sanitizeRenderPlanString(request.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(request.platform, "[unsafe-platform]"),
+      request_state: request.request_state,
+      render_plan_id: sanitizeRenderPlanString(request.render_plan_id, "[unsafe-render-plan-id]"),
+      command_manifest_id: sanitizeRenderPlanString(request.command_manifest_id, "[unsafe-command-manifest-id]"),
+      created_at: request.created_at,
+    })),
+  };
+}
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {

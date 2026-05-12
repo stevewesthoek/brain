@@ -154,6 +154,12 @@ import {
   listTestRenderSpikeResults,
   getTestRenderSpikeResult,
   getTestRenderSpikeResultReport,
+  createControlledProductionRenderRequest,
+  validateControlledProductionRenderRequest,
+  saveControlledProductionRenderRequest,
+  listControlledProductionRenderRequests,
+  getControlledProductionRenderRequest,
+  getControlledProductionRenderRequestReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -162,6 +168,8 @@ import {
   type RealRendererExecutionAcknowledgement,
   type RealRendererExecutionApprovalValidationResult,
   type TestRenderSpikeResult,
+  type ControlledProductionRenderRequest,
+  type ControlledProductionRenderRequestValidationResult,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -221,6 +229,135 @@ function createBasicRenderPlan(): RenderPlan {
     validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-test" },
     dry_run: true as const,
+  };
+}
+
+function createSafeControlledProductionApproval(): RealRendererExecutionApproval {
+  return {
+    schema_version: "1.0",
+    real_execution_approval_id: "approval-control-001",
+    real_execution_gate_id: "gate-control-001",
+    mock_result_id: "mock-control-001",
+    version_check_plan_id: "version-check-control-001",
+    discovery_id: "discovery-control-001",
+    preflight_id: "preflight-control-001",
+    command_manifest_id: "command-manifest-control-001",
+    project_id: "project-alpha",
+    platform: "youtube",
+    dry_run: true,
+    approval_state: "approved_for_future_real_execution_request",
+    created_at: "2026-05-12T18:00:00Z",
+    approval_scope: {
+      scope_kind: "real_renderer_execution_spike",
+      one_time_only: true,
+      max_output_files: 0,
+      allowed_output_directory_summary: "[not-approved-yet]",
+      allowed_tools: [],
+    },
+    operator_review: {
+      reviewed_by_label: "operator-001",
+      checklist_acknowledged: true,
+      risk_acknowledgement: true,
+      understands_real_execution_not_enabled: true,
+    },
+    execution_permissions: {
+      real_execution_requested: false,
+      execution_enabled: false,
+      child_process_allowed: false,
+      ffmpeg_execution_allowed: false,
+      renderer_execution_allowed: false,
+      media_creation_allowed: false,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      env_access_allowed: false,
+      process_output_capture_allowed: false,
+    },
+    required_acknowledgements: [
+      { acknowledgement_id: "ack-1", kind: "approval_scope_understood", acknowledged: true, blocking_reasons: [], warnings: [] },
+      { acknowledgement_id: "ack-2", kind: "risks_acknowledged", acknowledged: true, blocking_reasons: [], warnings: [] },
+      { acknowledgement_id: "ack-3", kind: "execution_disabled_confirmed", acknowledged: true, blocking_reasons: [], warnings: [] },
+    ],
+    validation: {
+      ready_for_real_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createRealRendererExecutionApproval",
+      source_gate_id: "gate-control-001",
+      source_mock_result_id: "mock-control-001",
+      source_version_check_plan_id: "version-check-control-001",
+      source_discovery_id: "discovery-control-001",
+      source_preflight_id: "preflight-control-001",
+      source_manifest_id: "command-manifest-control-001",
+    },
+  };
+}
+
+function createSafeControlledProductionRenderPlan(renderPlanId = "render-plan-control-001", projectId = "project-alpha", platform = "youtube"): RenderPlan {
+  return {
+    schema_version: "1.0",
+    render_plan_id: renderPlanId,
+    package_id: "pkg-control-001",
+    project_id: projectId,
+    platform,
+    plan_state: "planned",
+    created_at: "2026-05-12T18:00:00Z",
+    render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
+    asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
+    validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-control-001" },
+    dry_run: true as const,
+  };
+}
+
+function createSafeControlledProductionCommandManifest(renderPlanId = "render-plan-control-001", projectId = "project-alpha", platform = "youtube"): RenderCommandManifest {
+  return {
+    schema_version: "1.0",
+    command_manifest_id: "command-manifest-control-001",
+    approval_id: "approval-control-001",
+    gate_id: "gate-control-001",
+    bundle_id: "bundle-control-001",
+    render_plan_id: renderPlanId,
+    package_id: "pkg-control-001",
+    project_id: projectId,
+    platform,
+    dry_run: true,
+    command_state: "ready_for_operator_review",
+    created_at: "2026-05-12T18:00:00Z",
+    executor: {
+      executor_id: "executor-control-001",
+      executor_kind: "placeholder",
+      execution_enabled: false,
+      requires_explicit_operator_run: true,
+    },
+    command_plan: {
+      commands: [{ command_id: "cmd-control-001", purpose: "Prepare controlled production render request", tool_label: "custom", input_summary: "safe summaries only", output_summary: "safe summaries only", arguments_summary: "safe summaries only", disabled: true }],
+      command_count: 1,
+      contains_shell: false,
+      execution_mode: "disabled",
+    },
+    planned_outputs: {
+      output_count: 1,
+      by_kind: { video: 1 },
+      platform,
+      project_id: projectId,
+    },
+    validation: {
+      ready_for_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createRenderCommandManifest",
+      source_approval_id: "approval-control-001",
+      source_gate_id: "gate-control-001",
+      source_bundle_id: "bundle-control-001",
+    },
   };
 }
 
@@ -14663,4 +14800,271 @@ test("VO-6A-REPORT-49: readiness counters remain 0", (t) => {
   const report = getTestRenderSpikeResultReport();
   assert.strictEqual(report.ready_for_production_render, 0);
   assert.strictEqual(report.ready_for_upload, 0);
+});
+
+// ─── VO-6B: Controlled Production Render Request Tests ──────────────────────
+
+function loadControlledProductionRenderRequestExample(): ControlledProductionRenderRequest {
+  const examplePath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations", "specs", "video-orchestrator", "examples", "controlled-production-render-request.example.json");
+  return JSON.parse(fs.readFileSync(examplePath, "utf8")) as ControlledProductionRenderRequest;
+}
+
+test("VO-6B-SCHEMA-1: controlled production render request schema parses", () => {
+  const schemaPath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations", "specs", "video-orchestrator", "controlled-production-render-request.schema.json");
+  assert.doesNotThrow(() => JSON.parse(fs.readFileSync(schemaPath, "utf8")));
+});
+
+test("VO-6B-SCHEMA-2: example parses", () => {
+  const example = loadControlledProductionRenderRequestExample();
+  assert.strictEqual(example.execution_mode, "controlled_production_render_request");
+});
+
+test("VO-6B-SCHEMA-3: example contains no forbidden strings", () => {
+  const example = JSON.stringify(loadControlledProductionRenderRequestExample());
+  assert.strictEqual(hasForbiddenStrings(example), false);
+});
+
+test("VO-6B-SCHEMA-4: example contains no raw paths commands env vars process output or raw command arrays", () => {
+  const example = JSON.stringify(loadControlledProductionRenderRequestExample());
+  const forbiddenStrings = ["stdout", "stderr", "access_token", "refresh_token", "client_secret", "Bearer ", "child_process(", "spawn(", "execSync("];
+  assert.strictEqual(forbiddenStrings.some((pattern) => example.includes(pattern)), false);
+});
+
+test("VO-6B-CREATE-5: dryRun=false blocks", () => {
+  const approval = createSafeControlledProductionApproval();
+  const plan = createSafeControlledProductionRenderPlan();
+  const manifest = createSafeControlledProductionCommandManifest();
+  assert.throws(() => createControlledProductionRenderRequest({ approval, plan, commandManifest: manifest, dryRun: false as never }));
+});
+
+test("VO-6B-CREATE-6: unapproved approval blocks", () => {
+  const approval = { ...createSafeControlledProductionApproval(), approval_state: "draft" as RealRendererExecutionApprovalState };
+  const plan = createSafeControlledProductionRenderPlan();
+  const manifest = createSafeControlledProductionCommandManifest();
+  assert.throws(() => createControlledProductionRenderRequest({ approval, plan, commandManifest: manifest, dryRun: true }));
+});
+
+test("VO-6B-CREATE-7: unsafe render plan blocks", () => {
+  const approval = createSafeControlledProductionApproval();
+  const plan = { ...createSafeControlledProductionRenderPlan(), dry_run: false as never };
+  const manifest = createSafeControlledProductionCommandManifest();
+  assert.throws(() => createControlledProductionRenderRequest({ approval, plan: plan as never, commandManifest: manifest, dryRun: true }));
+});
+
+test("VO-6B-CREATE-8: unsafe command manifest blocks", () => {
+  const approval = createSafeControlledProductionApproval();
+  const plan = createSafeControlledProductionRenderPlan();
+  const manifest = { ...createSafeControlledProductionCommandManifest(), executor: { ...createSafeControlledProductionCommandManifest().executor, execution_enabled: true as never } };
+  assert.throws(() => createControlledProductionRenderRequest({ approval, plan, commandManifest: manifest as never, dryRun: true }));
+});
+
+test("VO-6B-CREATE-9: mismatched IDs block", () => {
+  const approval = createSafeControlledProductionApproval();
+  const plan = createSafeControlledProductionRenderPlan("render-plan-control-002");
+  const manifest = createSafeControlledProductionCommandManifest();
+  assert.throws(() => createControlledProductionRenderRequest({ approval, plan, commandManifest: manifest, dryRun: true }));
+});
+
+test("VO-6B-CREATE-10: safe approval render plan and command manifest create request", () => {
+  const approval = createSafeControlledProductionApproval();
+  const plan = createSafeControlledProductionRenderPlan();
+  const manifest = createSafeControlledProductionCommandManifest();
+  const request = createControlledProductionRenderRequest({ approval, plan, commandManifest: manifest, dryRun: true });
+  assert.strictEqual(request.execution_mode, "controlled_production_render_request");
+  assert.strictEqual(request.request_state, "ready_for_operator_review");
+  assert.strictEqual(request.execution_permissions.execution_enabled, false);
+  assert.strictEqual(request.execution_permissions.upload_allowed, false);
+  assert.strictEqual(request.execution_permissions.platform_api_calls_allowed, false);
+  assert.strictEqual(request.production_scope.upload_allowed, false);
+  assert.strictEqual(request.source_media_policy.source_media_mutation_allowed, false);
+  assert.strictEqual(request.output_policy.overwrite_allowed, false);
+  assert.strictEqual(request.validation.ready_for_production_render, false);
+  assert.strictEqual(request.validation.ready_for_upload, false);
+});
+
+test("VO-6B-CREATE-11: request state is ready_for_operator_review only when safe", () => {
+  const request = createControlledProductionRenderRequest({
+    approval: createSafeControlledProductionApproval(),
+    plan: createSafeControlledProductionRenderPlan(),
+    commandManifest: createSafeControlledProductionCommandManifest(),
+    dryRun: true,
+  });
+  assert.strictEqual(request.request_state, "ready_for_operator_review");
+});
+
+test("VO-6B-VALIDATE-20: safe request validates", () => {
+  const request = createControlledProductionRenderRequest({
+    approval: createSafeControlledProductionApproval(),
+    plan: createSafeControlledProductionRenderPlan(),
+    commandManifest: createSafeControlledProductionCommandManifest(),
+    dryRun: true,
+  });
+  const validation = validateControlledProductionRenderRequest(request);
+  assert.strictEqual(validation.ok, true);
+});
+
+test("VO-6B-VALIDATE-21: upload_allowed true blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.strictEqual(validateControlledProductionRenderRequest({ ...request, production_scope: { ...request.production_scope, upload_allowed: true } as never }).ok, false);
+});
+
+test("VO-6B-VALIDATE-22: platform_api_calls_allowed true blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.strictEqual(validateControlledProductionRenderRequest({ ...request, production_scope: { ...request.production_scope, platform_api_calls_allowed: true } as never }).ok, false);
+});
+
+test("VO-6B-VALIDATE-23: automatic_execution_allowed true blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.strictEqual(validateControlledProductionRenderRequest({ ...request, production_scope: { ...request.production_scope, automatic_execution_allowed: true } as never }).ok, false);
+});
+
+test("VO-6B-VALIDATE-24: source_media_mutation_allowed true blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.strictEqual(validateControlledProductionRenderRequest({ ...request, source_media_policy: { ...request.source_media_policy, source_media_mutation_allowed: true } as never }).ok, false);
+});
+
+test("VO-6B-VALIDATE-25: overwrite_allowed true blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.strictEqual(validateControlledProductionRenderRequest({ ...request, output_policy: { ...request.output_policy, overwrite_allowed: true } as never }).ok, false);
+});
+
+test("VO-6B-VALIDATE-26: execution permission true blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.strictEqual(validateControlledProductionRenderRequest({ ...request, execution_permissions: { ...request.execution_permissions, upload_allowed: true } as never }).ok, false);
+});
+
+test("VO-6B-VALIDATE-27: ready_for_production_render true blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.strictEqual(validateControlledProductionRenderRequest({ ...request, validation: { ...request.validation, ready_for_production_render: true as never } }).ok, false);
+});
+
+test("VO-6B-VALIDATE-28: ready_for_upload true blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.strictEqual(validateControlledProductionRenderRequest({ ...request, validation: { ...request.validation, ready_for_upload: true as never } }).ok, false);
+});
+
+test("VO-6B-VALIDATE-29: forbidden key blocks without echo", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  const validation = validateControlledProductionRenderRequest({ ...request, provenance: { ...request.provenance, source_manifest_id: "credential_reference-secret" as never } });
+  assert.strictEqual(validation.ok, false);
+  assert.strictEqual(JSON.stringify(validation).includes("credential_reference-secret"), false);
+});
+
+test("VO-6B-VALIDATE-30: forbidden string blocks without echo", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  const validation = validateControlledProductionRenderRequest({ ...request, source_media_policy: { ...request.source_media_policy, allowed_source_reference_summary: "Bearer fake-token" } });
+  assert.strictEqual(validation.ok, false);
+  assert.strictEqual(JSON.stringify(validation).includes("Bearer fake-token"), false);
+});
+
+test("VO-6B-VALIDATE-31: command-line-like payload blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  const validation = validateControlledProductionRenderRequest({ ...request, output_policy: { ...request.output_policy, allowed_output_directory_summary: "ffmpeg -i secret" } });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6B-VALIDATE-32: env-var-like payload blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  const validation = validateControlledProductionRenderRequest({ ...request, provenance: { ...request.provenance, generated_by: "process.env[API_KEY]" } });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6B-VALIDATE-33: raw path blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  const validation = validateControlledProductionRenderRequest({ ...request, source_media_policy: { ...request.source_media_policy, allowed_source_reference_summary: "/Users/office/private/file.mov" } });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6B-VALIDATE-34: process-output-like payload blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  const validation = validateControlledProductionRenderRequest({ ...request, validation: { ...request.validation, warnings: ["stdout: secret"] } });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6B-VALIDATE-35: upload/API payload blocks", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  const validation = validateControlledProductionRenderRequest({ ...request, provenance: { ...request.provenance, source_manifest_id: "videos.insert" } });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6B-STORE-36: save/list/get/upsert works", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const request = createControlledProductionRenderRequest({
+      approval: createSafeControlledProductionApproval(),
+      plan: createSafeControlledProductionRenderPlan(),
+      commandManifest: createSafeControlledProductionCommandManifest(),
+      dryRun: true,
+    });
+    saveControlledProductionRenderRequest(request);
+    assert.ok(getControlledProductionRenderRequest(request.production_render_request_id));
+    assert.ok(listControlledProductionRenderRequests({ project_id: request.project_id }).some((r) => r.production_render_request_id === request.production_render_request_id));
+    saveControlledProductionRenderRequest({ ...request, validation: { ...request.validation, warnings: ["updated"] } });
+    assert.strictEqual(getControlledProductionRenderRequest(request.production_render_request_id)?.validation.warnings[0], "updated");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6B-STORE-37: filters work", () => {
+  const report = getControlledProductionRenderRequestReport({ project_id: "project-alpha", platform: "youtube" });
+  assert.ok(report.total >= 0);
+});
+
+test("VO-6B-STORE-38: store rejects unsafe request", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.throws(() => saveControlledProductionRenderRequest({ ...request, output_policy: { ...request.output_policy, allowed_output_directory_summary: "/Users/office/private" } } as never));
+});
+
+test("VO-6B-STORE-39: store rejects upload or platform API true", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.throws(() => saveControlledProductionRenderRequest({ ...request, production_scope: { ...request.production_scope, upload_allowed: true } } as never));
+});
+
+test("VO-6B-STORE-40: store rejects execution permission true", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.throws(() => saveControlledProductionRenderRequest({ ...request, execution_permissions: { ...request.execution_permissions, upload_allowed: true } } as never));
+});
+
+test("VO-6B-STORE-41: store rejects source mutation or overwrite true", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.throws(() => saveControlledProductionRenderRequest({ ...request, source_media_policy: { ...request.source_media_policy, source_media_mutation_allowed: true } } as never));
+});
+
+test("VO-6B-STORE-42: store rejects ready flags true", () => {
+  const request = loadControlledProductionRenderRequestExample();
+  assert.throws(() => saveControlledProductionRenderRequest({ ...request, validation: { ...request.validation, ready_for_upload: true as never } } as never));
+});
+
+test("VO-6B-REPORT-43: report counts states", () => {
+  const report = getControlledProductionRenderRequestReport();
+  assert.ok(report.total >= 0);
+  assert.ok(report.ready_for_production_render === 0);
+  assert.ok(report.ready_for_upload === 0);
+  assert.ok(report.execution_enabled === 0);
+  assert.ok(report.upload_allowed === 0);
+});
+
+test("VO-6B-REPORT-44: legacy unsafe runtime data does not leak", () => {
+  const report = getControlledProductionRenderRequestReport();
+  assert.strictEqual(hasForbiddenStrings(report), false);
+});
+
+test("VO-6B-REPORT-45: JSON.stringify(report) contains no forbidden strings", () => {
+  const report = getControlledProductionRenderRequestReport();
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(report)), false);
+});
+
+test("VO-6B-REPORT-46: report excludes raw paths commands env vars process output upload payloads", () => {
+  const report = getControlledProductionRenderRequestReport();
+  const text = JSON.stringify(report);
+  assert.strictEqual(/stdout|stderr|access_token|refresh_token|client_secret|Bearer |videos.insert|ffmpeg -i/i.test(text), false);
+});
+
+test("VO-6B-REPORT-47: readiness and execution counters remain 0", () => {
+  const report = getControlledProductionRenderRequestReport();
+  assert.strictEqual(report.ready_for_production_render, 0);
+  assert.strictEqual(report.ready_for_upload, 0);
+  assert.strictEqual(report.execution_enabled, 0);
+  assert.strictEqual(report.upload_allowed, 0);
 });

@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
 **Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A in progress (explicit local render spike, test-only asset, operator-gated); detailed guide for phases 3B+  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B in progress (controlled production render design); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -39,6 +39,25 @@ This is the first phase that can execute FFmpeg locally, but only under explicit
 
 **Next phase guidance**
 - If this spike is approved and useful, the next design phase should be a controlled production-render design, not an upload path.
+
+### VO-6B: Controlled Production Render Design
+
+This phase defines the future production-render request contract and safety envelope without enabling production rendering yet.
+
+**What it does**
+- Introduces a controlled production render request artifact for operator review only.
+- Keeps source-media access and output-directory approval as explicit future gates.
+- Stores only safe summaries and immutable false execution permissions.
+
+**What it does not do**
+- Does not execute FFmpeg.
+- Does not touch project, user, or customer media.
+- Does not create production output files.
+- Does not upload.
+- Does not call platform APIs.
+
+**Next phase guidance**
+- If approved, the next step may add read-only source inventory and media validation, still without enabling production rendering.
 
 ---
 

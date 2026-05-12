@@ -1,0 +1,160 @@
+{
+  "schema_version": "1.0",
+  "title": "Controlled Production Render Request",
+  "description": "Operator-review request for future controlled production rendering. This is not execution, not an output artifact, and not an upload artifact. It does not execute FFmpeg, does not touch source media, does not create production output files, and does not call platform APIs. It records only a safe request envelope for future review. No raw source paths, raw output paths, raw commands, raw command arguments, process output, env vars, credentials, or tokens may be stored.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "production_render_request_id",
+    "real_execution_approval_id",
+    "real_execution_gate_id",
+    "render_plan_id",
+    "command_manifest_id",
+    "project_id",
+    "platform",
+    "request_state",
+    "created_at",
+    "execution_mode",
+    "production_scope",
+    "source_media_policy",
+    "output_policy",
+    "execution_permissions",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["1.0"] },
+    "production_render_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "real_execution_approval_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "real_execution_gate_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "render_plan_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "command_manifest_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "project_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"]
+    },
+    "request_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "ready_for_operator_review", "rejected"]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "execution_mode": {
+      "type": "string",
+      "enum": ["controlled_production_render_request"]
+    },
+    "production_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_project_allowed",
+        "user_media_allowed",
+        "test_only",
+        "upload_allowed",
+        "platform_api_calls_allowed",
+        "automatic_execution_allowed"
+      ],
+      "properties": {
+        "production_project_allowed": { "type": "boolean", "enum": [true] },
+        "user_media_allowed": { "type": "boolean", "enum": [true] },
+        "test_only": { "type": "boolean", "enum": [false] },
+        "upload_allowed": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] },
+        "automatic_execution_allowed": { "type": "boolean", "enum": [false] }
+      }
+    },
+    "source_media_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_media_access_requested",
+        "source_media_mutation_allowed",
+        "allowed_source_reference_summary",
+        "source_inventory_required",
+        "source_checks_required"
+      ],
+      "properties": {
+        "source_media_access_requested": { "type": "boolean", "enum": [true] },
+        "source_media_mutation_allowed": { "type": "boolean", "enum": [false] },
+        "allowed_source_reference_summary": { "type": "string" },
+        "source_inventory_required": { "type": "boolean", "enum": [true] },
+        "source_checks_required": { "type": "boolean", "enum": [true] }
+      }
+    },
+    "output_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_directory_approval_required",
+        "allowed_output_directory_summary",
+        "output_file_count_limit",
+        "overwrite_allowed",
+        "cleanup_required"
+      ],
+      "properties": {
+        "output_directory_approval_required": { "type": "boolean", "enum": [true] },
+        "allowed_output_directory_summary": { "type": "string" },
+        "output_file_count_limit": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "overwrite_allowed": { "type": "boolean", "enum": [false] },
+        "cleanup_required": { "type": "boolean", "enum": [true] }
+      }
+    },
+    "execution_permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "real_execution_requested",
+        "execution_enabled",
+        "child_process_allowed",
+        "ffmpeg_execution_allowed",
+        "renderer_execution_allowed",
+        "media_creation_allowed",
+        "upload_allowed",
+        "platform_api_calls_allowed",
+        "env_access_allowed",
+        "process_output_capture_allowed"
+      ],
+      "properties": {
+        "real_execution_requested": { "type": "boolean", "enum": [false] },
+        "execution_enabled": { "type": "boolean", "enum": [false] },
+        "child_process_allowed": { "type": "boolean", "enum": [false] },
+        "ffmpeg_execution_allowed": { "type": "boolean", "enum": [false] },
+        "renderer_execution_allowed": { "type": "boolean", "enum": [false] },
+        "media_creation_allowed": { "type": "boolean", "enum": [false] },
+        "upload_allowed": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] },
+        "env_access_allowed": { "type": "boolean", "enum": [false] },
+        "process_output_capture_allowed": { "type": "boolean", "enum": [false] }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ready_for_production_render",
+        "ready_for_upload",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "ready_for_production_render": { "type": "boolean", "enum": [false] },
+        "ready_for_upload": { "type": "boolean", "enum": [false] },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by"],
+      "properties": {
+        "generated_by": { "type": "string" },
+        "source_approval_id": { "type": "string" },
+        "source_gate_id": { "type": "string" },
+        "source_render_plan_id": { "type": "string" },
+        "source_manifest_id": { "type": "string" }
+      }
+    }
+  }
+}
