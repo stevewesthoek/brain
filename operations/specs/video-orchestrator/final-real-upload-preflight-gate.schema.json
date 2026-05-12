@@ -1,0 +1,436 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Final Real Upload Preflight Gate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "final_real_upload_preflight_gate_id",
+    "real_upload_dry_run_execution_result_id",
+    "real_upload_execution_plan_id",
+    "real_upload_strategy_design_id",
+    "real_upload_execution_request_id",
+    "real_upload_readiness_assessment_id",
+    "dry_run_upload_spike_result_id",
+    "upload_execution_design_id",
+    "upload_execution_approval_id",
+    "platform_upload_request_id",
+    "upload_package_design_id",
+    "local_output_review_id",
+    "production_render_spike_result_id",
+    "final_render_execution_request_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "gate_state",
+    "created_at",
+    "gate_mode",
+    "required_artifacts",
+    "preflight_scope",
+    "artifact_chain_assessment",
+    "critical_risk_acknowledgements",
+    "unresolved_execution_requirements",
+    "operator_preflight_review",
+    "credential_boundary",
+    "network_boundary",
+    "platform_api_boundary",
+    "media_boundary",
+    "execution_boundary",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "final_real_upload_preflight_gate_id": { "type": "string", "minLength": 1 },
+    "real_upload_dry_run_execution_result_id": { "type": "string", "minLength": 1 },
+    "real_upload_execution_plan_id": { "type": "string", "minLength": 1 },
+    "real_upload_strategy_design_id": { "type": "string", "minLength": 1 },
+    "real_upload_execution_request_id": { "type": "string", "minLength": 1 },
+    "real_upload_readiness_assessment_id": { "type": "string", "minLength": 1 },
+    "dry_run_upload_spike_result_id": { "type": "string", "minLength": 1 },
+    "upload_execution_design_id": { "type": "string", "minLength": 1 },
+    "upload_execution_approval_id": { "type": "string", "minLength": 1 },
+    "platform_upload_request_id": { "type": "string", "minLength": 1 },
+    "upload_package_design_id": { "type": "string", "minLength": 1 },
+    "local_output_review_id": { "type": "string", "minLength": 1 },
+    "production_render_spike_result_id": { "type": "string", "minLength": 1 },
+    "final_render_execution_request_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "gate_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "ready_for_operator_review", "approved_for_future_real_upload_implementation_design", "rejected", "revoked"]
+    },
+    "created_at": { "type": "string", "minLength": 1 },
+    "gate_mode": {
+      "type": "string",
+      "enum": ["final_real_upload_preflight_gate_only", "operator_review_final_real_upload_preflight_gate"]
+    },
+    "required_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "real_upload_dry_run_execution_result_validated",
+        "real_upload_execution_plan_validated",
+        "real_upload_strategy_design_validated",
+        "real_upload_execution_request_validated",
+        "real_upload_readiness_assessment_validated",
+        "dry_run_upload_spike_result_validated",
+        "upload_execution_design_validated",
+        "upload_execution_approval_validated",
+        "platform_upload_request_validated",
+        "upload_package_design_validated",
+        "local_output_review_validated",
+        "spike_result_validated"
+      ],
+      "properties": {
+        "real_upload_dry_run_execution_result_validated": { "type": "boolean", "const": true },
+        "real_upload_execution_plan_validated": { "type": "boolean", "const": true },
+        "real_upload_strategy_design_validated": { "type": "boolean", "const": true },
+        "real_upload_execution_request_validated": { "type": "boolean", "const": true },
+        "real_upload_readiness_assessment_validated": { "type": "boolean", "const": true },
+        "dry_run_upload_spike_result_validated": { "type": "boolean", "const": true },
+        "upload_execution_design_validated": { "type": "boolean", "const": true },
+        "upload_execution_approval_validated": { "type": "boolean", "const": true },
+        "platform_upload_request_validated": { "type": "boolean", "const": true },
+        "upload_package_design_validated": { "type": "boolean", "const": true },
+        "local_output_review_validated": { "type": "boolean", "const": true },
+        "spike_result_validated": { "type": "boolean", "const": true }
+      }
+    },
+    "preflight_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "future_real_upload_implementation_design_requested",
+        "current_real_upload_requested",
+        "current_network_calls_requested",
+        "current_platform_api_calls_requested",
+        "current_credential_access_requested",
+        "current_media_read_requested",
+        "preflight_gate_only"
+      ],
+      "properties": {
+        "future_real_upload_implementation_design_requested": { "type": "boolean" },
+        "current_real_upload_requested": { "type": "boolean", "const": false },
+        "current_network_calls_requested": { "type": "boolean", "const": false },
+        "current_platform_api_calls_requested": { "type": "boolean", "const": false },
+        "current_credential_access_requested": { "type": "boolean", "const": false },
+        "current_media_read_requested": { "type": "boolean", "const": false },
+        "preflight_gate_only": { "type": "boolean", "const": true }
+      }
+    },
+    "artifact_chain_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "all_required_artifacts_present",
+        "all_required_artifacts_validated",
+        "dry_run_execution_passed",
+        "prior_ready_for_real_upload_flags_false",
+        "prior_upload_allowed_flags_false",
+        "prior_network_api_credential_flags_false",
+        "prior_media_read_flags_false",
+        "chain_safe_for_future_implementation_design",
+        "chain_safe_for_real_upload_now",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "all_required_artifacts_present": { "type": "boolean" },
+        "all_required_artifacts_validated": { "type": "boolean" },
+        "dry_run_execution_passed": { "type": "boolean" },
+        "prior_ready_for_real_upload_flags_false": { "type": "boolean" },
+        "prior_upload_allowed_flags_false": { "type": "boolean" },
+        "prior_network_api_credential_flags_false": { "type": "boolean" },
+        "prior_media_read_flags_false": { "type": "boolean" },
+        "chain_safe_for_future_implementation_design": { "type": "boolean" },
+        "chain_safe_for_real_upload_now": { "type": "boolean", "const": false },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "critical_risk_acknowledgements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "upload_side_effect_risk_acknowledged",
+        "platform_policy_risk_acknowledged",
+        "credential_handling_risk_acknowledged",
+        "token_scope_risk_acknowledged",
+        "network_side_effect_risk_acknowledged",
+        "media_access_risk_acknowledged",
+        "retry_idempotency_risk_acknowledged",
+        "rollback_limitations_acknowledged",
+        "post_upload_visibility_risk_acknowledged",
+        "operator_accountability_acknowledged"
+      ],
+      "properties": {
+        "upload_side_effect_risk_acknowledged": { "type": "boolean" },
+        "platform_policy_risk_acknowledged": { "type": "boolean" },
+        "credential_handling_risk_acknowledged": { "type": "boolean" },
+        "token_scope_risk_acknowledged": { "type": "boolean" },
+        "network_side_effect_risk_acknowledged": { "type": "boolean" },
+        "media_access_risk_acknowledged": { "type": "boolean" },
+        "retry_idempotency_risk_acknowledged": { "type": "boolean" },
+        "rollback_limitations_acknowledged": { "type": "boolean" },
+        "post_upload_visibility_risk_acknowledged": { "type": "boolean" },
+        "operator_accountability_acknowledged": { "type": "boolean" }
+      }
+    },
+    "unresolved_execution_requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requirement_id", "requirement_kind", "requirement_state", "safe_summary", "blocking_reasons", "warnings"],
+        "properties": {
+          "requirement_id": { "type": "string", "minLength": 1 },
+          "requirement_kind": {
+            "type": "string",
+            "enum": [
+              "credential_storage_policy",
+              "credential_scope_policy",
+              "platform_api_endpoint_policy",
+              "platform_api_payload_policy",
+              "network_execution_policy",
+              "media_path_access_policy",
+              "upload_retry_policy",
+              "idempotency_policy",
+              "rollback_policy",
+              "post_upload_verification_policy",
+              "audit_logging_policy",
+              "operator_runbook_policy",
+              "emergency_stop_policy",
+              "manual_final_confirmation_policy"
+            ]
+          },
+          "requirement_state": { "type": "string", "enum": ["required", "deferred", "blocked", "acknowledged"] },
+          "safe_summary": { "type": "string", "minLength": 1 },
+          "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+          "warnings": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "operator_preflight_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checklist_acknowledged",
+        "artifact_chain_acknowledged",
+        "unresolved_requirements_acknowledged",
+        "critical_risks_acknowledged",
+        "understands_preflight_gate_only",
+        "understands_no_upload_enabled",
+        "understands_no_credentials_accessed",
+        "understands_no_network_calls",
+        "understands_no_media_reads",
+        "understands_future_implementation_design_required"
+      ],
+      "properties": {
+        "reviewed_by_label": { "type": "string" },
+        "checklist_acknowledged": { "type": "boolean" },
+        "artifact_chain_acknowledged": { "type": "boolean" },
+        "unresolved_requirements_acknowledged": { "type": "boolean" },
+        "critical_risks_acknowledged": { "type": "boolean" },
+        "understands_preflight_gate_only": { "type": "boolean" },
+        "understands_no_upload_enabled": { "type": "boolean" },
+        "understands_no_credentials_accessed": { "type": "boolean" },
+        "understands_no_network_calls": { "type": "boolean" },
+        "understands_no_media_reads": { "type": "boolean" },
+        "understands_future_implementation_design_required": { "type": "boolean" },
+        "decision_note_summary": { "type": "string" }
+      }
+    },
+    "credential_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "credentials_required",
+        "credentials_accessed",
+        "token_accessed",
+        "keychain_accessed",
+        "env_accessed",
+        "credential_reference_stored",
+        "token_reference_stored",
+        "secret_material_stored"
+      ],
+      "properties": {
+        "credentials_required": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "keychain_accessed": { "type": "boolean", "const": false },
+        "env_accessed": { "type": "boolean", "const": false },
+        "credential_reference_stored": { "type": "boolean", "const": false },
+        "token_reference_stored": { "type": "boolean", "const": false },
+        "secret_material_stored": { "type": "boolean", "const": false }
+      }
+    },
+    "network_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "network_calls_allowed",
+        "network_calls_made",
+        "external_side_effects_allowed",
+        "external_side_effects_observed"
+      ],
+      "properties": {
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_made": { "type": "boolean", "const": false },
+        "external_side_effects_allowed": { "type": "boolean", "const": false },
+        "external_side_effects_observed": { "type": "boolean", "const": false }
+      }
+    },
+    "platform_api_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "platform_api_calls_allowed",
+        "platform_api_calls_made",
+        "platform_endpoint_selected",
+        "platform_api_payload_created",
+        "platform_api_payload_stored",
+        "raw_account_ids_stored",
+        "upload_payload_created",
+        "response_received",
+        "raw_response_stored"
+      ],
+      "properties": {
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "platform_api_calls_made": { "type": "boolean", "const": false },
+        "platform_endpoint_selected": { "type": "boolean", "const": false },
+        "platform_api_payload_created": { "type": "boolean", "const": false },
+        "platform_api_payload_stored": { "type": "boolean", "const": false },
+        "raw_account_ids_stored": { "type": "boolean", "const": false },
+        "upload_payload_created": { "type": "boolean", "const": false },
+        "response_received": { "type": "boolean", "const": false },
+        "raw_response_stored": { "type": "boolean", "const": false }
+      }
+    },
+    "media_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "media_file_read",
+        "raw_media_path_stored",
+        "media_file_modified",
+        "media_file_copied",
+        "media_file_moved",
+        "media_file_deleted"
+      ],
+      "properties": {
+        "media_file_read": { "type": "boolean", "const": false },
+        "raw_media_path_stored": { "type": "boolean", "const": false },
+        "media_file_modified": { "type": "boolean", "const": false },
+        "media_file_copied": { "type": "boolean", "const": false },
+        "media_file_moved": { "type": "boolean", "const": false },
+        "media_file_deleted": { "type": "boolean", "const": false }
+      }
+    },
+    "execution_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "upload_allowed",
+        "upload_execution_enabled",
+        "real_upload_execution_allowed",
+        "platform_api_calls_allowed",
+        "network_calls_allowed",
+        "credentials_accessed",
+        "token_accessed",
+        "keychain_accessed",
+        "env_accessed",
+        "media_file_read",
+        "ready_for_real_upload"
+      ],
+      "properties": {
+        "upload_allowed": { "type": "boolean", "const": false },
+        "upload_execution_enabled": { "type": "boolean", "const": false },
+        "real_upload_execution_allowed": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "keychain_accessed": { "type": "boolean", "const": false },
+        "env_accessed": { "type": "boolean", "const": false },
+        "media_file_read": { "type": "boolean", "const": false },
+        "ready_for_real_upload": { "type": "boolean", "const": false }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "final_real_upload_preflight_passed",
+        "ready_for_future_real_upload_implementation_design",
+        "ready_for_real_upload",
+        "upload_allowed",
+        "upload_execution_enabled",
+        "platform_api_calls_allowed",
+        "network_calls_allowed",
+        "credentials_accessed",
+        "token_accessed",
+        "media_file_read",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "final_real_upload_preflight_passed": { "type": "boolean" },
+        "ready_for_future_real_upload_implementation_design": { "type": "boolean" },
+        "ready_for_real_upload": { "type": "boolean", "const": false },
+        "upload_allowed": { "type": "boolean", "const": false },
+        "upload_execution_enabled": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "media_file_read": { "type": "boolean", "const": false },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generated_by",
+        "source_real_upload_dry_run_execution_result_id",
+        "source_real_upload_execution_plan_id",
+        "source_real_upload_strategy_design_id",
+        "source_real_upload_execution_request_id",
+        "source_real_upload_readiness_assessment_id",
+        "source_dry_run_upload_spike_result_id",
+        "source_upload_execution_design_id",
+        "source_upload_execution_approval_id",
+        "source_platform_upload_request_id",
+        "source_upload_package_design_id",
+        "source_local_output_review_id",
+        "source_production_render_spike_result_id",
+        "source_final_render_execution_request_id",
+        "source_render_plan_id"
+      ],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "enum": ["createFinalRealUploadPreflightGate", "revokeFinalRealUploadPreflightGate"]
+        },
+        "source_real_upload_dry_run_execution_result_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_execution_plan_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_strategy_design_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_execution_request_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_readiness_assessment_id": { "type": "string", "minLength": 1 },
+        "source_dry_run_upload_spike_result_id": { "type": "string", "minLength": 1 },
+        "source_upload_execution_design_id": { "type": "string", "minLength": 1 },
+        "source_upload_execution_approval_id": { "type": "string", "minLength": 1 },
+        "source_platform_upload_request_id": { "type": "string", "minLength": 1 },
+        "source_upload_package_design_id": { "type": "string", "minLength": 1 },
+        "source_local_output_review_id": { "type": "string", "minLength": 1 },
+        "source_production_render_spike_result_id": { "type": "string", "minLength": 1 },
+        "source_final_render_execution_request_id": { "type": "string", "minLength": 1 },
+        "source_render_plan_id": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

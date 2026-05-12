@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Real Upload Scaffold Design",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "real_upload_scaffold_design_id",
+    "real_upload_implementation_design_id",
+    "final_real_upload_preflight_gate_id",
+    "real_upload_dry_run_execution_result_id",
+    "real_upload_execution_plan_id",
+    "real_upload_strategy_design_id",
+    "real_upload_execution_request_id",
+    "real_upload_readiness_assessment_id",
+    "dry_run_upload_spike_result_id",
+    "upload_execution_design_id",
+    "upload_execution_approval_id",
+    "platform_upload_request_id",
+    "upload_package_design_id",
+    "local_output_review_id",
+    "production_render_spike_result_id",
+    "final_render_execution_request_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "scaffold_design_state",
+    "created_at",
+    "scaffold_design_mode",
+    "required_artifacts",
+    "scaffold_scope",
+    "proposed_modules",
+    "proposed_interfaces",
+    "proposed_file_boundaries",
+    "credential_scaffold_boundary",
+    "media_scaffold_boundary",
+    "platform_adapter_scaffold_boundary",
+    "payload_scaffold_boundary",
+    "network_scaffold_boundary",
+    "runtime_config_scaffold_boundary",
+    "test_scaffold_boundary",
+    "operator_review",
+    "scaffold_boundary",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "real_upload_scaffold_design_id": { "type": "string", "minLength": 1 },
+    "real_upload_implementation_design_id": { "type": "string", "minLength": 1 },
+    "final_real_upload_preflight_gate_id": { "type": "string", "minLength": 1 },
+    "real_upload_dry_run_execution_result_id": { "type": "string", "minLength": 1 },
+    "real_upload_execution_plan_id": { "type": "string", "minLength": 1 },
+    "real_upload_strategy_design_id": { "type": "string", "minLength": 1 },
+    "real_upload_execution_request_id": { "type": "string", "minLength": 1 },
+    "real_upload_readiness_assessment_id": { "type": "string", "minLength": 1 },
+    "dry_run_upload_spike_result_id": { "type": "string", "minLength": 1 },
+    "upload_execution_design_id": { "type": "string", "minLength": 1 },
+    "upload_execution_approval_id": { "type": "string", "minLength": 1 },
+    "platform_upload_request_id": { "type": "string", "minLength": 1 },
+    "upload_package_design_id": { "type": "string", "minLength": 1 },
+    "local_output_review_id": { "type": "string", "minLength": 1 },
+    "production_render_spike_result_id": { "type": "string", "minLength": 1 },
+    "final_render_execution_request_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "scaffold_design_state": { "type": "string", "enum": ["draft", "blocked", "ready_for_operator_review", "approved_for_future_scaffold_contracts", "rejected", "revoked"] },
+    "created_at": { "type": "string", "minLength": 1 },
+    "scaffold_design_mode": { "type": "string", "enum": ["real_upload_scaffold_design_only", "operator_review_real_upload_scaffold_design"] },
+    "required_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["real_upload_implementation_design_validated","final_real_upload_preflight_gate_validated","real_upload_dry_run_execution_result_validated","real_upload_execution_plan_validated","real_upload_strategy_design_validated","real_upload_execution_request_validated","real_upload_readiness_assessment_validated","dry_run_upload_spike_result_validated","upload_execution_design_validated","upload_execution_approval_validated","platform_upload_request_validated","upload_package_design_validated","local_output_review_validated","spike_result_validated"],
+      "properties": {
+        "real_upload_implementation_design_validated": { "type": "boolean", "const": true },
+        "final_real_upload_preflight_gate_validated": { "type": "boolean", "const": true },
+        "real_upload_dry_run_execution_result_validated": { "type": "boolean", "const": true },
+        "real_upload_execution_plan_validated": { "type": "boolean", "const": true },
+        "real_upload_strategy_design_validated": { "type": "boolean", "const": true },
+        "real_upload_execution_request_validated": { "type": "boolean", "const": true },
+        "real_upload_readiness_assessment_validated": { "type": "boolean", "const": true },
+        "dry_run_upload_spike_result_validated": { "type": "boolean", "const": true },
+        "upload_execution_design_validated": { "type": "boolean", "const": true },
+        "upload_execution_approval_validated": { "type": "boolean", "const": true },
+        "platform_upload_request_validated": { "type": "boolean", "const": true },
+        "upload_package_design_validated": { "type": "boolean", "const": true },
+        "local_output_review_validated": { "type": "boolean", "const": true },
+        "spike_result_validated": { "type": "boolean", "const": true }
+      }
+    },
+    "scaffold_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["future_scaffold_contracts_requested","scaffold_design_only","scaffold_code_created","implementation_files_created","current_real_upload_requested","current_network_calls_requested","current_platform_api_calls_requested","current_credential_access_requested","current_media_read_requested","dependencies_requested"],
+      "properties": {
+        "future_scaffold_contracts_requested": { "type": "boolean" },
+        "scaffold_design_only": { "type": "boolean", "const": true },
+        "scaffold_code_created": { "type": "boolean", "const": false },
+        "implementation_files_created": { "type": "boolean", "const": false },
+        "current_real_upload_requested": { "type": "boolean", "const": false },
+        "current_network_calls_requested": { "type": "boolean", "const": false },
+        "current_platform_api_calls_requested": { "type": "boolean", "const": false },
+        "current_credential_access_requested": { "type": "boolean", "const": false },
+        "current_media_read_requested": { "type": "boolean", "const": false },
+        "dependencies_requested": { "type": "boolean", "const": false }
+      }
+    },
+    "proposed_modules": {
+      "type": "array",
+      "minItems": 14,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["module_id","module_kind","module_state","safe_summary","file_created","code_created","execution_enabled","network_enabled","platform_api_enabled","credential_access_enabled","media_read_enabled","file_mutation_enabled","blocking_reasons","warnings"],
+        "properties": {
+          "module_id": { "type": "string", "minLength": 1 },
+          "module_kind": { "type": "string", "enum": ["credential_provider_contract","media_reference_resolver_contract","platform_adapter_contract","payload_builder_contract","network_client_contract","upload_executor_contract","retry_idempotency_contract","rollback_contract","post_upload_verification_contract","audit_event_contract","operator_confirmation_contract","emergency_stop_contract","status_reporter_contract","upload_scaffold_index_contract"] },
+          "module_state": { "type": "string", "enum": ["proposed","blocked","deferred","ready_for_future_contract"] },
+          "safe_summary": { "type": "string", "minLength": 1 },
+          "file_created": { "type": "boolean", "const": false },
+          "code_created": { "type": "boolean", "const": false },
+          "execution_enabled": { "type": "boolean", "const": false },
+          "network_enabled": { "type": "boolean", "const": false },
+          "platform_api_enabled": { "type": "boolean", "const": false },
+          "credential_access_enabled": { "type": "boolean", "const": false },
+          "media_read_enabled": { "type": "boolean", "const": false },
+          "file_mutation_enabled": { "type": "boolean", "const": false },
+          "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+          "warnings": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "allOf": [
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "credential_provider_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "media_reference_resolver_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "platform_adapter_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "payload_builder_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "network_client_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "upload_executor_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "retry_idempotency_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "rollback_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "post_upload_verification_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "audit_event_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "operator_confirmation_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "emergency_stop_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "status_reporter_contract" } }, "required": ["module_kind"], "additionalProperties": true } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "upload_scaffold_index_contract" } }, "required": ["module_kind"], "additionalProperties": true } }
+      ]
+    },
+    "proposed_interfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["interface_id","interface_kind","interface_state","safe_summary","runtime_enabled","external_effects_allowed","blocking_reasons","warnings"],
+        "properties": {
+          "interface_id": { "type": "string", "minLength": 1 },
+          "interface_kind": { "type": "string", "minLength": 1 },
+          "interface_state": { "type": "string", "enum": ["proposed","blocked","deferred","ready_for_future_contract"] },
+          "safe_summary": { "type": "string", "minLength": 1 },
+          "runtime_enabled": { "type": "boolean", "const": false },
+          "external_effects_allowed": { "type": "boolean", "const": false },
+          "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+          "warnings": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "proposed_file_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files_may_be_created_now","implementation_files_allowed","scaffold_files_allowed","package_files_allowed","dependency_files_allowed","runtime_files_allowed","safe_summary","blocking_reasons","warnings"],
+      "properties": {
+        "files_may_be_created_now": { "type": "boolean", "const": false },
+        "implementation_files_allowed": { "type": "boolean", "const": false },
+        "scaffold_files_allowed": { "type": "boolean", "const": false },
+        "package_files_allowed": { "type": "boolean", "const": false },
+        "dependency_files_allowed": { "type": "boolean", "const": false },
+        "runtime_files_allowed": { "type": "boolean", "const": false },
+        "safe_summary": { "type": "string", "minLength": 1 },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "credential_scaffold_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["credential_contract_designed","credentials_required","credentials_accessed","token_accessed","keychain_accessed","env_accessed","credential_reference_stored","token_reference_stored","secret_material_stored"],
+      "properties": {
+        "credential_contract_designed": { "type": "boolean" },
+        "credentials_required": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "keychain_accessed": { "type": "boolean", "const": false },
+        "env_accessed": { "type": "boolean", "const": false },
+        "credential_reference_stored": { "type": "boolean", "const": false },
+        "token_reference_stored": { "type": "boolean", "const": false },
+        "secret_material_stored": { "type": "boolean", "const": false }
+      }
+    },
+    "media_scaffold_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["media_contract_designed","media_file_read","raw_media_path_stored","media_file_modified","media_file_copied","media_file_moved","media_file_deleted"],
+      "properties": {
+        "media_contract_designed": { "type": "boolean" },
+        "media_file_read": { "type": "boolean", "const": false },
+        "raw_media_path_stored": { "type": "boolean", "const": false },
+        "media_file_modified": { "type": "boolean", "const": false },
+        "media_file_copied": { "type": "boolean", "const": false },
+        "media_file_moved": { "type": "boolean", "const": false },
+        "media_file_deleted": { "type": "boolean", "const": false }
+      }
+    },
+    "platform_adapter_scaffold_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter_contract_designed","platform_adapter_implemented","platform_endpoint_selected","platform_api_calls_allowed","platform_api_calls_made","raw_account_ids_stored"],
+      "properties": {
+        "adapter_contract_designed": { "type": "boolean" },
+        "platform_adapter_implemented": { "type": "boolean", "const": false },
+        "platform_endpoint_selected": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "platform_api_calls_made": { "type": "boolean", "const": false },
+        "raw_account_ids_stored": { "type": "boolean", "const": false }
+      }
+    },
+    "payload_scaffold_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["payload_contract_designed","platform_api_payload_created","platform_api_payload_stored","upload_payload_created","raw_payload_stored"],
+      "properties": {
+        "payload_contract_designed": { "type": "boolean" },
+        "platform_api_payload_created": { "type": "boolean", "const": false },
+        "platform_api_payload_stored": { "type": "boolean", "const": false },
+        "upload_payload_created": { "type": "boolean", "const": false },
+        "raw_payload_stored": { "type": "boolean", "const": false }
+      }
+    },
+    "network_scaffold_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["network_contract_designed","network_client_implemented","network_calls_allowed","network_calls_made","external_side_effects_allowed","external_side_effects_observed"],
+      "properties": {
+        "network_contract_designed": { "type": "boolean" },
+        "network_client_implemented": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_made": { "type": "boolean", "const": false },
+        "external_side_effects_allowed": { "type": "boolean", "const": false },
+        "external_side_effects_observed": { "type": "boolean", "const": false }
+      }
+    },
+    "runtime_config_scaffold_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime_config_contract_designed","runtime_config_created","env_files_created","secrets_config_created","credential_config_created","package_dependency_changes"],
+      "properties": {
+        "runtime_config_contract_designed": { "type": "boolean" },
+        "runtime_config_created": { "type": "boolean", "const": false },
+        "env_files_created": { "type": "boolean", "const": false },
+        "secrets_config_created": { "type": "boolean", "const": false },
+        "credential_config_created": { "type": "boolean", "const": false },
+        "package_dependency_changes": { "type": "boolean", "const": false }
+      }
+    },
+    "test_scaffold_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["test_contract_designed","test_files_created","network_tests_enabled","credential_tests_enabled","media_read_tests_enabled","upload_tests_enabled"],
+      "properties": {
+        "test_contract_designed": { "type": "boolean" },
+        "test_files_created": { "type": "boolean", "const": false },
+        "network_tests_enabled": { "type": "boolean", "const": false },
+        "credential_tests_enabled": { "type": "boolean", "const": false },
+        "media_read_tests_enabled": { "type": "boolean", "const": false },
+        "upload_tests_enabled": { "type": "boolean", "const": false }
+      }
+    },
+    "operator_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checklist_acknowledged","understands_scaffold_design_only","understands_no_scaffold_code_created","understands_no_upload_enabled","understands_no_credentials_accessed","understands_no_network_calls","understands_no_media_reads","understands_no_dependencies_added","understands_future_contract_phase_required"],
+      "properties": {
+        "reviewed_by_label": { "type": "string" },
+        "checklist_acknowledged": { "type": "boolean" },
+        "understands_scaffold_design_only": { "type": "boolean" },
+        "understands_no_scaffold_code_created": { "type": "boolean" },
+        "understands_no_upload_enabled": { "type": "boolean" },
+        "understands_no_credentials_accessed": { "type": "boolean" },
+        "understands_no_network_calls": { "type": "boolean" },
+        "understands_no_media_reads": { "type": "boolean" },
+        "understands_no_dependencies_added": { "type": "boolean" },
+        "understands_future_contract_phase_required": { "type": "boolean" },
+        "decision_note_summary": { "type": "string" }
+      }
+    },
+    "scaffold_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scaffold_code_allowed","scaffold_code_created","implementation_files_created","dependencies_added","upload_allowed","upload_execution_enabled","real_upload_execution_allowed","platform_api_calls_allowed","network_calls_allowed","credentials_accessed","token_accessed","keychain_accessed","env_accessed","media_file_read","file_mutation_allowed","ready_for_real_upload"],
+      "properties": {
+        "scaffold_code_allowed": { "type": "boolean", "const": false },
+        "scaffold_code_created": { "type": "boolean", "const": false },
+        "implementation_files_created": { "type": "boolean", "const": false },
+        "dependencies_added": { "type": "boolean", "const": false },
+        "upload_allowed": { "type": "boolean", "const": false },
+        "upload_execution_enabled": { "type": "boolean", "const": false },
+        "real_upload_execution_allowed": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "keychain_accessed": { "type": "boolean", "const": false },
+        "env_accessed": { "type": "boolean", "const": false },
+        "media_file_read": { "type": "boolean", "const": false },
+        "file_mutation_allowed": { "type": "boolean", "const": false },
+        "ready_for_real_upload": { "type": "boolean", "const": false }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scaffold_design_complete","ready_for_future_scaffold_contracts","ready_for_real_upload","scaffold_code_created","dependencies_added","upload_allowed","upload_execution_enabled","platform_api_calls_allowed","network_calls_allowed","credentials_accessed","token_accessed","media_file_read","blocking_reasons","warnings"],
+      "properties": {
+        "scaffold_design_complete": { "type": "boolean" },
+        "ready_for_future_scaffold_contracts": { "type": "boolean" },
+        "ready_for_real_upload": { "type": "boolean", "const": false },
+        "scaffold_code_created": { "type": "boolean", "const": false },
+        "dependencies_added": { "type": "boolean", "const": false },
+        "upload_allowed": { "type": "boolean", "const": false },
+        "upload_execution_enabled": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "media_file_read": { "type": "boolean", "const": false },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by","source_real_upload_implementation_design_id","source_final_real_upload_preflight_gate_id","source_real_upload_dry_run_execution_result_id","source_real_upload_execution_plan_id","source_real_upload_strategy_design_id","source_real_upload_execution_request_id","source_real_upload_readiness_assessment_id","source_dry_run_upload_spike_result_id","source_upload_execution_design_id","source_upload_execution_approval_id","source_platform_upload_request_id","source_upload_package_design_id","source_local_output_review_id","source_production_render_spike_result_id","source_final_render_execution_request_id","source_render_plan_id"],
+      "properties": {
+        "generated_by": { "type": "string", "enum": ["createRealUploadScaffoldDesign", "revokeRealUploadScaffoldDesign"] },
+        "source_real_upload_implementation_design_id": { "type": "string", "minLength": 1 },
+        "source_final_real_upload_preflight_gate_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_dry_run_execution_result_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_execution_plan_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_strategy_design_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_execution_request_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_readiness_assessment_id": { "type": "string", "minLength": 1 },
+        "source_dry_run_upload_spike_result_id": { "type": "string", "minLength": 1 },
+        "source_upload_execution_design_id": { "type": "string", "minLength": 1 },
+        "source_upload_execution_approval_id": { "type": "string", "minLength": 1 },
+        "source_platform_upload_request_id": { "type": "string", "minLength": 1 },
+        "source_upload_package_design_id": { "type": "string", "minLength": 1 },
+        "source_local_output_review_id": { "type": "string", "minLength": 1 },
+        "source_production_render_spike_result_id": { "type": "string", "minLength": 1 },
+        "source_final_render_execution_request_id": { "type": "string", "minLength": 1 },
+        "source_render_plan_id": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

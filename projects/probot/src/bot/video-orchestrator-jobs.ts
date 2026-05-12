@@ -13187,6 +13187,726 @@ export function getRealUploadDryRunExecutionResult(real_upload_dry_run_execution
 export function revokeRealUploadDryRunExecutionResult(real_upload_dry_run_execution_result_id: string, reason: string): RealUploadDryRunExecutionResult { const result = getRealUploadDryRunExecutionResult(real_upload_dry_run_execution_result_id); if (!result) throw new Error("Real upload dry-run execution result not found"); const safeReason = safeRealUploadDryRunExecutionResultString(reason, "[unsafe-reason]"); if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload dry-run execution result reason cannot be stored."); const revoked: RealUploadDryRunExecutionResult = { ...result, result_state: "revoked", validation: { ...result.validation, blocking_reasons: [...result.validation.blocking_reasons, safeReason], warnings: [...result.validation.warnings, "Real upload dry-run execution result revoked."] }, provenance: { ...result.provenance, generated_by: "revokeRealUploadDryRunExecutionResult" } }; saveRealUploadDryRunExecutionResult(revoked); return revoked; }
 export function getRealUploadDryRunExecutionResultReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; simulated: number; failed: number; ready_for_operator_review: number; approved_for_future_real_upload_preflight: number; rejected: number; revoked: number; real_upload_dry_run_execution_passed: number; ready_for_future_real_upload_preflight: number; ready_for_real_upload: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; simulated_steps_total: number; simulated_steps_with_blockers: number; results: Array<RealUploadDryRunExecutionResultsStoreSummaryItem>; } { const results = listRealUploadDryRunExecutionResults(options); const by_state: Record<string, number> = {}; let blocked = 0, simulated = 0, failed = 0, ready = 0, approved = 0, rejected = 0, revoked = 0, passed = 0, stepsTotal = 0, stepsBlocked = 0; const summaries = results.map((result) => { by_state[result.result_state] = (by_state[result.result_state] ?? 0) + 1; if (result.result_state === "blocked") blocked++; if (result.result_state === "simulated") simulated++; if (result.result_state === "failed") failed++; if (result.result_state === "ready_for_operator_review") ready++; if (result.result_state === "approved_for_future_real_upload_preflight") approved++; if (result.result_state === "rejected") rejected++; if (result.result_state === "revoked") revoked++; if (result.validation.real_upload_dry_run_execution_passed) passed++; stepsTotal += result.simulated_step_results.length; stepsBlocked += result.simulated_step_results.filter((step) => step.blocking_reasons.length > 0).length; return safeRealUploadDryRunExecutionResultSummary(result); }); return { total: summaries.length, by_state, blocked, simulated, failed, ready_for_operator_review: ready, approved_for_future_real_upload_preflight: approved, rejected, revoked, real_upload_dry_run_execution_passed: passed, ready_for_future_real_upload_preflight: passed, ready_for_real_upload: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, media_file_read: 0, simulated_steps_total: stepsTotal, simulated_steps_with_blockers: stepsBlocked, results: summaries }; }
 
+export type FinalRealUploadPreflightGateMode = "final_real_upload_preflight_gate_only" | "operator_review_final_real_upload_preflight_gate";
+export type FinalRealUploadPreflightGateState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_real_upload_implementation_design" | "rejected" | "revoked";
+
+export interface FinalRealUploadPreflightRequiredArtifacts {
+  real_upload_dry_run_execution_result_validated: boolean;
+  real_upload_execution_plan_validated: boolean;
+  real_upload_strategy_design_validated: boolean;
+  real_upload_execution_request_validated: boolean;
+  real_upload_readiness_assessment_validated: boolean;
+  dry_run_upload_spike_result_validated: boolean;
+  upload_execution_design_validated: boolean;
+  upload_execution_approval_validated: boolean;
+  platform_upload_request_validated: boolean;
+  upload_package_design_validated: boolean;
+  local_output_review_validated: boolean;
+  spike_result_validated: boolean;
+}
+
+export interface FinalRealUploadPreflightScope { future_real_upload_implementation_design_requested: boolean; current_real_upload_requested: false; current_network_calls_requested: false; current_platform_api_calls_requested: false; current_credential_access_requested: false; current_media_read_requested: false; preflight_gate_only: true; }
+export interface FinalRealUploadArtifactChainAssessment { all_required_artifacts_present: boolean; all_required_artifacts_validated: boolean; dry_run_execution_passed: boolean; prior_ready_for_real_upload_flags_false: boolean; prior_upload_allowed_flags_false: boolean; prior_network_api_credential_flags_false: boolean; prior_media_read_flags_false: boolean; chain_safe_for_future_implementation_design: boolean; chain_safe_for_real_upload_now: false; blocking_reasons: string[]; warnings: string[]; }
+export interface FinalRealUploadCriticalRiskAcknowledgements { upload_side_effect_risk_acknowledged: boolean; platform_policy_risk_acknowledged: boolean; credential_handling_risk_acknowledged: boolean; token_scope_risk_acknowledged: boolean; network_side_effect_risk_acknowledged: boolean; media_access_risk_acknowledged: boolean; retry_idempotency_risk_acknowledged: boolean; rollback_limitations_acknowledged: boolean; post_upload_visibility_risk_acknowledged: boolean; operator_accountability_acknowledged: boolean; }
+export interface FinalRealUploadUnresolvedExecutionRequirement { requirement_id: string; requirement_kind: "credential_storage_policy" | "credential_scope_policy" | "platform_api_endpoint_policy" | "platform_api_payload_policy" | "network_execution_policy" | "media_path_access_policy" | "upload_retry_policy" | "idempotency_policy" | "rollback_policy" | "post_upload_verification_policy" | "audit_logging_policy" | "operator_runbook_policy" | "emergency_stop_policy" | "manual_final_confirmation_policy"; requirement_state: "required" | "deferred" | "blocked" | "acknowledged"; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface FinalRealUploadOperatorPreflightReview { reviewed_by_label?: string; checklist_acknowledged: boolean; artifact_chain_acknowledged: boolean; unresolved_requirements_acknowledged: boolean; critical_risks_acknowledged: boolean; understands_preflight_gate_only: boolean; understands_no_upload_enabled: boolean; understands_no_credentials_accessed: boolean; understands_no_network_calls: boolean; understands_no_media_reads: boolean; understands_future_implementation_design_required: boolean; decision_note_summary?: string; }
+export interface FinalRealUploadPreflightCredentialBoundary { credentials_required: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; credential_reference_stored: false; token_reference_stored: false; secret_material_stored: false; }
+export interface FinalRealUploadPreflightNetworkBoundary { network_calls_allowed: false; network_calls_made: false; external_side_effects_allowed: false; external_side_effects_observed: false; }
+export interface FinalRealUploadPreflightPlatformApiBoundary { platform_api_calls_allowed: false; platform_api_calls_made: false; platform_endpoint_selected: false; platform_api_payload_created: false; platform_api_payload_stored: false; raw_account_ids_stored: false; upload_payload_created: false; response_received: false; raw_response_stored: false; }
+export interface FinalRealUploadPreflightMediaBoundary { media_file_read: false; raw_media_path_stored: false; media_file_modified: false; media_file_copied: false; media_file_moved: false; media_file_deleted: false; }
+export interface FinalRealUploadPreflightExecutionBoundary { upload_allowed: false; upload_execution_enabled: false; real_upload_execution_allowed: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; media_file_read: false; ready_for_real_upload: false; }
+export interface FinalRealUploadPreflightGateValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[]; }
+export interface FinalRealUploadPreflightGate {
+  schema_version: "1.0";
+  final_real_upload_preflight_gate_id: string;
+  real_upload_dry_run_execution_result_id: string;
+  real_upload_execution_plan_id: string;
+  real_upload_strategy_design_id: string;
+  real_upload_execution_request_id: string;
+  real_upload_readiness_assessment_id: string;
+  dry_run_upload_spike_result_id: string;
+  upload_execution_design_id: string;
+  upload_execution_approval_id: string;
+  platform_upload_request_id: string;
+  upload_package_design_id: string;
+  local_output_review_id: string;
+  production_render_spike_result_id: string;
+  final_render_execution_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  gate_state: FinalRealUploadPreflightGateState;
+  created_at: string;
+  gate_mode: FinalRealUploadPreflightGateMode;
+  required_artifacts: FinalRealUploadPreflightRequiredArtifacts;
+  preflight_scope: FinalRealUploadPreflightScope;
+  artifact_chain_assessment: FinalRealUploadArtifactChainAssessment;
+  critical_risk_acknowledgements: FinalRealUploadCriticalRiskAcknowledgements;
+  unresolved_execution_requirements: FinalRealUploadUnresolvedExecutionRequirement[];
+  operator_preflight_review: FinalRealUploadOperatorPreflightReview;
+  credential_boundary: FinalRealUploadPreflightCredentialBoundary;
+  network_boundary: FinalRealUploadPreflightNetworkBoundary;
+  platform_api_boundary: FinalRealUploadPreflightPlatformApiBoundary;
+  media_boundary: FinalRealUploadPreflightMediaBoundary;
+  execution_boundary: FinalRealUploadPreflightExecutionBoundary;
+  validation: {
+    final_real_upload_preflight_passed: boolean;
+    ready_for_future_real_upload_implementation_design: boolean;
+    ready_for_real_upload: false;
+    upload_allowed: false;
+    upload_execution_enabled: false;
+    platform_api_calls_allowed: false;
+    network_calls_allowed: false;
+    credentials_accessed: false;
+    token_accessed: false;
+    media_file_read: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createFinalRealUploadPreflightGate" | "revokeFinalRealUploadPreflightGate";
+    source_real_upload_dry_run_execution_result_id: string;
+    source_real_upload_execution_plan_id: string;
+    source_real_upload_strategy_design_id: string;
+    source_real_upload_execution_request_id: string;
+    source_real_upload_readiness_assessment_id: string;
+    source_dry_run_upload_spike_result_id: string;
+    source_upload_execution_design_id: string;
+    source_upload_execution_approval_id: string;
+    source_platform_upload_request_id: string;
+    source_upload_package_design_id: string;
+    source_local_output_review_id: string;
+    source_production_render_spike_result_id: string;
+    source_final_render_execution_request_id: string;
+    source_render_plan_id: string;
+  };
+}
+interface FinalRealUploadPreflightGatesStore { schema_version: "1.0"; created_at: string; gates: FinalRealUploadPreflightGate[]; }
+function getFinalRealUploadPreflightGatesPath(): string { return path.join(getRuntimeDir(), "final-real-upload-preflight-gates.json"); }
+function loadFinalRealUploadPreflightGatesStore(): FinalRealUploadPreflightGatesStore { try { const filePath = getFinalRealUploadPreflightGatesPath(); if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as FinalRealUploadPreflightGatesStore; } catch {} return { schema_version: "1.0", created_at: new Date().toISOString(), gates: [] }; }
+function saveFinalRealUploadPreflightGatesStore(store: FinalRealUploadPreflightGatesStore): void { const filePath = getFinalRealUploadPreflightGatesPath(); fs.mkdirSync(path.dirname(filePath), { recursive: true }); store.gates.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.final_real_upload_preflight_gate_id.localeCompare(b.final_real_upload_preflight_gate_id)); fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8"); }
+function safeFinalRealUploadPreflightString(value: unknown, fallback: string): string { return safeRealUploadExecutionPlanString(value, fallback); }
+function validateFinalRealUploadPreflightGateShape(gate: unknown): FinalRealUploadPreflightGateValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof gate !== "object" || gate === null) return { ok: false, blocking_reasons: ["Final real upload preflight gate must be an object"], warnings };
+  const g = gate as Record<string, unknown>;
+  const required = ["schema_version","final_real_upload_preflight_gate_id","real_upload_dry_run_execution_result_id","real_upload_execution_plan_id","real_upload_strategy_design_id","real_upload_execution_request_id","real_upload_readiness_assessment_id","dry_run_upload_spike_result_id","upload_execution_design_id","upload_execution_approval_id","platform_upload_request_id","upload_package_design_id","local_output_review_id","production_render_spike_result_id","final_render_execution_request_id","render_plan_id","project_id","platform","gate_state","created_at","gate_mode","required_artifacts","preflight_scope","artifact_chain_assessment","critical_risk_acknowledgements","unresolved_execution_requirements","operator_preflight_review","credential_boundary","network_boundary","platform_api_boundary","media_boundary","execution_boundary","validation","provenance"];
+  for (const key of required) if (!(key in g)) blocking_reasons.push("Final real upload preflight gate is missing a required field");
+  if (g.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["final_real_upload_preflight_gate_only","operator_review_final_real_upload_preflight_gate"].includes(String(g.gate_mode))) blocking_reasons.push("gate_mode is invalid");
+  if (!["draft","blocked","ready_for_operator_review","approved_for_future_real_upload_implementation_design","rejected","revoked"].includes(String(g.gate_state))) blocking_reasons.push("gate_state is invalid");
+  const text = JSON.stringify(gate);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env") || text.includes("keychain://") || text.includes("stdout") || text.includes("stderr") || text.includes("ffmpeg -i") || text.includes("Bearer ") || text.includes("data:") || text.includes("base64,") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../")) blocking_reasons.push("Final real upload preflight gate contains forbidden payload content");
+  const requiredArtifacts = g.required_artifacts as Record<string, unknown> | undefined;
+  if (!requiredArtifacts || requiredArtifacts.real_upload_dry_run_execution_result_validated !== true || requiredArtifacts.real_upload_execution_plan_validated !== true || requiredArtifacts.real_upload_strategy_design_validated !== true || requiredArtifacts.real_upload_execution_request_validated !== true || requiredArtifacts.real_upload_readiness_assessment_validated !== true || requiredArtifacts.dry_run_upload_spike_result_validated !== true || requiredArtifacts.upload_execution_design_validated !== true || requiredArtifacts.upload_execution_approval_validated !== true || requiredArtifacts.platform_upload_request_validated !== true || requiredArtifacts.upload_package_design_validated !== true || requiredArtifacts.local_output_review_validated !== true || requiredArtifacts.spike_result_validated !== true) blocking_reasons.push("Required artifacts are unsafe");
+  const scope = g.preflight_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.future_real_upload_implementation_design_requested !== true || scope.current_real_upload_requested !== false || scope.current_network_calls_requested !== false || scope.current_platform_api_calls_requested !== false || scope.current_credential_access_requested !== false || scope.current_media_read_requested !== false || scope.preflight_gate_only !== true) blocking_reasons.push("Preflight scope is unsafe");
+  const requiredKinds = new Set(["credential_storage_policy","credential_scope_policy","platform_api_endpoint_policy","platform_api_payload_policy","network_execution_policy","media_path_access_policy","upload_retry_policy","idempotency_policy","rollback_policy","post_upload_verification_policy","audit_logging_policy","operator_runbook_policy","emergency_stop_policy","manual_final_confirmation_policy"]);
+  const requirements = g.unresolved_execution_requirements as Record<string, unknown>[] | undefined;
+  if (!Array.isArray(requirements) || requirements.length < requiredKinds.size) blocking_reasons.push("Unresolved execution requirements are unsafe");
+  else {
+    const seen = new Set<string>();
+    for (const requirement of requirements) {
+      if (!requirement || typeof requirement.requirement_id !== "string" || typeof requirement.requirement_kind !== "string" || !["required","deferred","blocked","acknowledged"].includes(String(requirement.requirement_state)) || typeof requirement.safe_summary !== "string" || !Array.isArray(requirement.blocking_reasons) || !Array.isArray(requirement.warnings)) { blocking_reasons.push("Unresolved execution requirement is unsafe"); continue; }
+      seen.add(String(requirement.requirement_kind));
+      const summary = requirement.safe_summary.toLowerCase();
+      if (summary.length === 0 || summary.length > 200 || summary.includes("://") || summary.includes("stdout") || summary.includes("stderr") || summary.includes("process.env") || summary.includes("keychain://") || summary.includes("access_token") || summary.includes("refresh_token") || summary.includes("client_secret") || summary.includes("authorization_code") || summary.includes("code_verifier") || summary.includes("bearer") || summary.includes("/users/") || summary.includes("../")) blocking_reasons.push("Unresolved execution requirement summary is unsafe");
+    }
+    for (const kind of requiredKinds) if (!seen.has(kind)) blocking_reasons.push("Missing required unresolved execution requirement kind");
+  }
+  const chain = g.artifact_chain_assessment as Record<string, unknown> | undefined;
+  if (!chain || chain.all_required_artifacts_present !== true || chain.all_required_artifacts_validated !== true || chain.dry_run_execution_passed !== true || chain.prior_ready_for_real_upload_flags_false !== true || chain.prior_upload_allowed_flags_false !== true || chain.prior_network_api_credential_flags_false !== true || chain.prior_media_read_flags_false !== true || chain.chain_safe_for_future_implementation_design !== true || chain.chain_safe_for_real_upload_now !== false || !Array.isArray(chain.blocking_reasons) || !Array.isArray(chain.warnings)) blocking_reasons.push("Artifact chain assessment is unsafe");
+  const risks = g.critical_risk_acknowledgements as Record<string, unknown> | undefined;
+  if (!risks || risks.upload_side_effect_risk_acknowledged !== true || risks.platform_policy_risk_acknowledged !== true || risks.credential_handling_risk_acknowledged !== true || risks.token_scope_risk_acknowledged !== true || risks.network_side_effect_risk_acknowledged !== true || risks.media_access_risk_acknowledged !== true || risks.retry_idempotency_risk_acknowledged !== true || risks.rollback_limitations_acknowledged !== true || risks.post_upload_visibility_risk_acknowledged !== true || risks.operator_accountability_acknowledged !== true) blocking_reasons.push("Critical risk acknowledgements are unsafe");
+  const review = g.operator_preflight_review as Record<string, unknown> | undefined;
+  if (!review || review.checklist_acknowledged !== true || review.artifact_chain_acknowledged !== true || review.unresolved_requirements_acknowledged !== true || review.critical_risks_acknowledged !== true || review.understands_preflight_gate_only !== true || review.understands_no_upload_enabled !== true || review.understands_no_credentials_accessed !== true || review.understands_no_network_calls !== true || review.understands_no_media_reads !== true || review.understands_future_implementation_design_required !== true) blocking_reasons.push("Operator preflight review is unsafe");
+  const credential = g.credential_boundary as Record<string, unknown> | undefined; if (!credential || credential.credentials_required !== false || credential.credentials_accessed !== false || credential.token_accessed !== false || credential.keychain_accessed !== false || credential.env_accessed !== false || credential.credential_reference_stored !== false || credential.token_reference_stored !== false || credential.secret_material_stored !== false) blocking_reasons.push("Credential boundary is unsafe");
+  const network = g.network_boundary as Record<string, unknown> | undefined; if (!network || network.network_calls_allowed !== false || network.network_calls_made !== false || network.external_side_effects_allowed !== false || network.external_side_effects_observed !== false) blocking_reasons.push("Network boundary is unsafe");
+  const platform = g.platform_api_boundary as Record<string, unknown> | undefined; if (!platform || platform.platform_api_calls_allowed !== false || platform.platform_api_calls_made !== false || platform.platform_endpoint_selected !== false || platform.platform_api_payload_created !== false || platform.platform_api_payload_stored !== false || platform.raw_account_ids_stored !== false || platform.upload_payload_created !== false || platform.response_received !== false || platform.raw_response_stored !== false) blocking_reasons.push("Platform API boundary is unsafe");
+  const media = g.media_boundary as Record<string, unknown> | undefined; if (!media || media.media_file_read !== false || media.raw_media_path_stored !== false || media.media_file_modified !== false || media.media_file_copied !== false || media.media_file_moved !== false || media.media_file_deleted !== false) blocking_reasons.push("Media boundary is unsafe");
+  const execution = g.execution_boundary as Record<string, unknown> | undefined; if (!execution || execution.upload_allowed !== false || execution.upload_execution_enabled !== false || execution.real_upload_execution_allowed !== false || execution.platform_api_calls_allowed !== false || execution.network_calls_allowed !== false || execution.credentials_accessed !== false || execution.token_accessed !== false || execution.keychain_accessed !== false || execution.env_accessed !== false || execution.media_file_read !== false || execution.ready_for_real_upload !== false) blocking_reasons.push("Execution boundary is unsafe");
+  const validation = g.validation as Record<string, unknown> | undefined; if (!validation || validation.final_real_upload_preflight_passed !== false && validation.final_real_upload_preflight_passed !== true || validation.ready_for_future_real_upload_implementation_design !== false && validation.ready_for_future_real_upload_implementation_design !== true || validation.ready_for_real_upload !== false || validation.upload_allowed !== false || validation.upload_execution_enabled !== false || validation.platform_api_calls_allowed !== false || validation.network_calls_allowed !== false || validation.credentials_accessed !== false || validation.token_accessed !== false || validation.media_file_read !== false) blocking_reasons.push("Validation is unsafe");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+export function createFinalRealUploadPreflightGate(input: {
+  dryRunExecutionResult: RealUploadDryRunExecutionResult;
+  executionPlan: RealUploadExecutionPlan;
+  strategyDesign: RealUploadStrategyDesign;
+  realUploadExecutionRequest: RealUploadExecutionRequest;
+  readinessAssessment: RealUploadReadinessAssessment;
+  dryRunUploadSpikeResult: DryRunUploadSpikeResult;
+  uploadExecutionDesign: UploadExecutionDesign;
+  uploadExecutionApproval: UploadExecutionApproval;
+  platformUploadRequest: PlatformUploadRequest;
+  uploadPackageDesign: UploadPackageDesign;
+  localOutputReview: LocalOutputOperatorReview;
+  spikeResult: ControlledProductionRenderSpikeResult;
+  decision?: "draft" | "approved_for_future_real_upload_implementation_design" | "rejected";
+  reviewed_by_label?: string;
+  checklist_acknowledged?: boolean;
+  artifact_chain_acknowledged?: boolean;
+  unresolved_requirements_acknowledged?: boolean;
+  critical_risks_acknowledged?: boolean;
+  upload_side_effect_risk_acknowledged?: boolean;
+  platform_policy_risk_acknowledged?: boolean;
+  credential_handling_risk_acknowledged?: boolean;
+  token_scope_risk_acknowledged?: boolean;
+  network_side_effect_risk_acknowledged?: boolean;
+  media_access_risk_acknowledged?: boolean;
+  retry_idempotency_risk_acknowledged?: boolean;
+  rollback_limitations_acknowledged?: boolean;
+  post_upload_visibility_risk_acknowledged?: boolean;
+  operator_accountability_acknowledged?: boolean;
+  understands_preflight_gate_only?: boolean;
+  understands_no_upload_enabled?: boolean;
+  understands_no_credentials_accessed?: boolean;
+  understands_no_network_calls?: boolean;
+  understands_no_media_reads?: boolean;
+  understands_future_implementation_design_required?: boolean;
+  decision_note_summary?: string;
+  dryRun: true;
+}): FinalRealUploadPreflightGate {
+  if (input.dryRun !== true) throw new Error("createFinalRealUploadPreflightGate: dryRun=true required");
+  if (!validateRealUploadDryRunExecutionResult(input.dryRunExecutionResult).ok) throw new Error("createFinalRealUploadPreflightGate: dryRunExecutionResult must validate");
+  if (!validateRealUploadExecutionPlan(input.executionPlan).ok) throw new Error("createFinalRealUploadPreflightGate: executionPlan must validate");
+  if (!validateRealUploadStrategyDesign(input.strategyDesign).ok) throw new Error("createFinalRealUploadPreflightGate: strategyDesign must validate");
+  if (!validateRealUploadExecutionRequest(input.realUploadExecutionRequest).ok) throw new Error("createFinalRealUploadPreflightGate: realUploadExecutionRequest must validate");
+  if (!validateRealUploadReadinessAssessment(input.readinessAssessment).ok) throw new Error("createFinalRealUploadPreflightGate: readinessAssessment must validate");
+  if (!validateDryRunUploadSpikeResult(input.dryRunUploadSpikeResult).ok) throw new Error("createFinalRealUploadPreflightGate: dryRunUploadSpikeResult must validate");
+  if (!validateUploadExecutionDesign(input.uploadExecutionDesign).ok) throw new Error("createFinalRealUploadPreflightGate: uploadExecutionDesign must validate");
+  if (!validateUploadExecutionApproval(input.uploadExecutionApproval).ok) throw new Error("createFinalRealUploadPreflightGate: uploadExecutionApproval must validate");
+  if (!validatePlatformUploadRequest(input.platformUploadRequest).ok) throw new Error("createFinalRealUploadPreflightGate: platformUploadRequest must validate");
+  if (!validateUploadPackageDesign(input.uploadPackageDesign).ok) throw new Error("createFinalRealUploadPreflightGate: uploadPackageDesign must validate");
+  if (!validateLocalOutputOperatorReview(input.localOutputReview).ok) throw new Error("createFinalRealUploadPreflightGate: localOutputReview must validate");
+  if (!validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("createFinalRealUploadPreflightGate: spikeResult must validate");
+  if (input.dryRunExecutionResult.validation.ready_for_real_upload !== false || input.executionPlan.validation.ready_for_real_upload !== false || input.strategyDesign.validation.ready_for_real_upload !== false || input.realUploadExecutionRequest.validation.ready_for_real_upload !== false || input.readinessAssessment.validation.ready_for_real_upload !== false) throw new Error("createFinalRealUploadPreflightGate: ready_for_real_upload must remain false");
+  if (input.dryRunExecutionResult.validation.real_upload_dry_run_execution_passed !== true || input.dryRunExecutionResult.validation.ready_for_future_real_upload_preflight !== true) throw new Error("createFinalRealUploadPreflightGate: dry-run execution must have passed");
+  if (input.dryRunExecutionResult.dry_run_upload_spike_result_id !== input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id) throw new Error("createFinalRealUploadPreflightGate: dry-run execution result must match dry-run spike");
+  if (input.executionPlan.real_upload_strategy_design_id !== input.strategyDesign.real_upload_strategy_design_id || input.executionPlan.real_upload_execution_request_id !== input.realUploadExecutionRequest.real_upload_execution_request_id || input.executionPlan.real_upload_readiness_assessment_id !== input.readinessAssessment.real_upload_readiness_assessment_id || input.executionPlan.dry_run_upload_spike_result_id !== input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id || input.executionPlan.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.executionPlan.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.executionPlan.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.executionPlan.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.executionPlan.local_output_review_id !== input.localOutputReview.local_output_review_id || input.executionPlan.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.executionPlan.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.executionPlan.render_plan_id !== input.spikeResult.render_plan_id || input.executionPlan.project_id !== input.spikeResult.project_id || input.executionPlan.platform !== input.spikeResult.platform) throw new Error("createFinalRealUploadPreflightGate: executionPlan inputs must match");
+  if (input.strategyDesign.real_upload_execution_request_id !== input.realUploadExecutionRequest.real_upload_execution_request_id || input.strategyDesign.real_upload_readiness_assessment_id !== input.readinessAssessment.real_upload_readiness_assessment_id || input.strategyDesign.dry_run_upload_spike_result_id !== input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id || input.strategyDesign.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.strategyDesign.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.strategyDesign.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.strategyDesign.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.strategyDesign.local_output_review_id !== input.localOutputReview.local_output_review_id || input.strategyDesign.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.strategyDesign.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.strategyDesign.render_plan_id !== input.spikeResult.render_plan_id || input.strategyDesign.project_id !== input.spikeResult.project_id || input.strategyDesign.platform !== input.spikeResult.platform) throw new Error("createFinalRealUploadPreflightGate: strategyDesign inputs must match");
+  if (input.realUploadExecutionRequest.real_upload_readiness_assessment_id !== input.readinessAssessment.real_upload_readiness_assessment_id || input.realUploadExecutionRequest.dry_run_upload_spike_result_id !== input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id || input.realUploadExecutionRequest.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.realUploadExecutionRequest.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.realUploadExecutionRequest.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.realUploadExecutionRequest.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.realUploadExecutionRequest.local_output_review_id !== input.localOutputReview.local_output_review_id || input.realUploadExecutionRequest.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.realUploadExecutionRequest.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.realUploadExecutionRequest.render_plan_id !== input.spikeResult.render_plan_id || input.realUploadExecutionRequest.project_id !== input.spikeResult.project_id || input.realUploadExecutionRequest.platform !== input.spikeResult.platform) throw new Error("createFinalRealUploadPreflightGate: request inputs must match");
+  if (input.readinessAssessment.dry_run_upload_spike_result_id !== input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id || input.readinessAssessment.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.readinessAssessment.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.readinessAssessment.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.readinessAssessment.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.readinessAssessment.local_output_review_id !== input.localOutputReview.local_output_review_id || input.readinessAssessment.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.readinessAssessment.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.readinessAssessment.render_plan_id !== input.spikeResult.render_plan_id || input.readinessAssessment.project_id !== input.spikeResult.project_id || input.readinessAssessment.platform !== input.spikeResult.platform) throw new Error("createFinalRealUploadPreflightGate: assessment inputs must match");
+  if (input.dryRunUploadSpikeResult.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.dryRunUploadSpikeResult.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.dryRunUploadSpikeResult.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.dryRunUploadSpikeResult.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.dryRunUploadSpikeResult.local_output_review_id !== input.localOutputReview.local_output_review_id || input.dryRunUploadSpikeResult.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.dryRunUploadSpikeResult.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.dryRunUploadSpikeResult.render_plan_id !== input.spikeResult.render_plan_id || input.dryRunUploadSpikeResult.project_id !== input.spikeResult.project_id || input.dryRunUploadSpikeResult.platform !== input.spikeResult.platform) throw new Error("createFinalRealUploadPreflightGate: dryRunUploadSpikeResult inputs must match");
+  if (input.spikeResult.production_render_spike_result_id !== input.uploadExecutionDesign.production_render_spike_result_id || input.spikeResult.final_render_execution_request_id !== input.uploadExecutionDesign.final_render_execution_request_id || input.spikeResult.render_plan_id !== input.uploadExecutionDesign.render_plan_id || input.spikeResult.project_id !== input.uploadExecutionDesign.project_id || input.spikeResult.platform !== input.uploadExecutionDesign.platform) throw new Error("createFinalRealUploadPreflightGate: uploadExecutionDesign inputs must match");
+  if (input.spikeResult.production_render_spike_result_id !== input.uploadExecutionApproval.production_render_spike_result_id || input.spikeResult.final_render_execution_request_id !== input.uploadExecutionApproval.final_render_execution_request_id || input.spikeResult.render_plan_id !== input.uploadExecutionApproval.render_plan_id || input.spikeResult.project_id !== input.uploadExecutionApproval.project_id || input.spikeResult.platform !== input.uploadExecutionApproval.platform) throw new Error("createFinalRealUploadPreflightGate: uploadExecutionApproval inputs must match");
+  if (input.spikeResult.production_render_spike_result_id !== input.platformUploadRequest.production_render_spike_result_id || input.spikeResult.final_render_execution_request_id !== input.platformUploadRequest.final_render_execution_request_id || input.spikeResult.render_plan_id !== input.platformUploadRequest.render_plan_id || input.spikeResult.project_id !== input.platformUploadRequest.project_id || input.spikeResult.platform !== input.platformUploadRequest.platform) throw new Error("createFinalRealUploadPreflightGate: platformUploadRequest inputs must match");
+  if (input.spikeResult.production_render_spike_result_id !== input.uploadPackageDesign.production_render_spike_result_id || input.spikeResult.final_render_execution_request_id !== input.uploadPackageDesign.final_render_execution_request_id || input.spikeResult.render_plan_id !== input.uploadPackageDesign.render_plan_id || input.spikeResult.project_id !== input.uploadPackageDesign.project_id || input.spikeResult.platform !== input.uploadPackageDesign.platform) throw new Error("createFinalRealUploadPreflightGate: uploadPackageDesign inputs must match");
+  if (input.spikeResult.production_render_spike_result_id !== input.localOutputReview.production_render_spike_result_id || input.spikeResult.final_render_execution_request_id !== input.localOutputReview.final_render_execution_request_id || input.spikeResult.render_plan_id !== input.localOutputReview.render_plan_id || input.spikeResult.project_id !== input.localOutputReview.project_id || input.spikeResult.platform !== input.localOutputReview.platform) throw new Error("createFinalRealUploadPreflightGate: localOutputReview inputs must match");
+  if (input.strategyDesign.validation.ready_for_real_upload !== false || input.realUploadExecutionRequest.validation.ready_for_real_upload !== false || input.readinessAssessment.validation.ready_for_real_upload !== false || input.executionPlan.validation.ready_for_real_upload !== false) throw new Error("createFinalRealUploadPreflightGate: prior ready_for_real_upload flags must remain false");
+  if (input.executionPlan.plan_state !== "approved_for_future_upload_execution_dry_run" || input.strategyDesign.strategy_state !== "approved_for_future_upload_execution_plan" || input.realUploadExecutionRequest.request_state !== "approved_for_future_real_upload_design" || !["assessed","ready_for_operator_review"].includes(input.readinessAssessment.assessment_state)) throw new Error("createFinalRealUploadPreflightGate: prior approvals are required");
+  const requiredKinds: FinalRealUploadUnresolvedExecutionRequirement["requirement_kind"][] = ["credential_storage_policy","credential_scope_policy","platform_api_endpoint_policy","platform_api_payload_policy","network_execution_policy","media_path_access_policy","upload_retry_policy","idempotency_policy","rollback_policy","post_upload_verification_policy","audit_logging_policy","operator_runbook_policy","emergency_stop_policy","manual_final_confirmation_policy"];
+  const requirements: FinalRealUploadUnresolvedExecutionRequirement[] = requiredKinds.map((kind, index) => ({ requirement_id: `final-real-upload-preflight-gate-requirement-${index + 1}`, requirement_kind: kind, requirement_state: "required", safe_summary: `Future ${kind.replace(/_/g, " ")} is required.`, blocking_reasons: ["Future implementation design is still required."], warnings: [] }));
+  const approved = input.dryRunExecutionResult.validation.real_upload_dry_run_execution_passed === true && input.dryRunExecutionResult.validation.ready_for_future_real_upload_preflight === true;
+  const chainSafe = approved && requirements.length === requiredKinds.length;
+  const reviewedBy = safeFinalRealUploadPreflightString(input.reviewed_by_label ?? "", "[unsafe-reviewer]");
+  const note = safeFinalRealUploadPreflightString(input.decision_note_summary ?? "", "[unsafe-preflight-note]");
+  const decision = input.decision ?? "draft";
+  if (decision === "approved_for_future_real_upload_implementation_design" && (!approved || input.checklist_acknowledged !== true || input.artifact_chain_acknowledged !== true || input.unresolved_requirements_acknowledged !== true || input.critical_risks_acknowledged !== true || input.upload_side_effect_risk_acknowledged !== true || input.platform_policy_risk_acknowledged !== true || input.credential_handling_risk_acknowledged !== true || input.token_scope_risk_acknowledged !== true || input.network_side_effect_risk_acknowledged !== true || input.media_access_risk_acknowledged !== true || input.retry_idempotency_risk_acknowledged !== true || input.rollback_limitations_acknowledged !== true || input.post_upload_visibility_risk_acknowledged !== true || input.operator_accountability_acknowledged !== true || input.understands_preflight_gate_only !== true || input.understands_no_upload_enabled !== true || input.understands_no_credentials_accessed !== true || input.understands_no_network_calls !== true || input.understands_no_media_reads !== true || input.understands_future_implementation_design_required !== true)) throw new Error("createFinalRealUploadPreflightGate: approved decision requires acknowledgements");
+  const gate: FinalRealUploadPreflightGate = {
+    schema_version: "1.0",
+    final_real_upload_preflight_gate_id: `final-real-upload-preflight-gate-${crypto.randomUUID()}`,
+    real_upload_dry_run_execution_result_id: input.dryRunExecutionResult.real_upload_dry_run_execution_result_id,
+    real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id,
+    real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id,
+    real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id,
+    real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id,
+    dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+    upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+    upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+    platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+    upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+    local_output_review_id: input.localOutputReview.local_output_review_id,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.spikeResult.project_id,
+    platform: input.spikeResult.platform,
+    gate_state: decision === "approved_for_future_real_upload_implementation_design" ? "approved_for_future_real_upload_implementation_design" : decision === "rejected" ? "rejected" : "draft",
+    created_at: new Date().toISOString(),
+    gate_mode: "final_real_upload_preflight_gate_only",
+    required_artifacts: { real_upload_dry_run_execution_result_validated: true, real_upload_execution_plan_validated: true, real_upload_strategy_design_validated: true, real_upload_execution_request_validated: true, real_upload_readiness_assessment_validated: true, dry_run_upload_spike_result_validated: true, upload_execution_design_validated: true, upload_execution_approval_validated: true, platform_upload_request_validated: true, upload_package_design_validated: true, local_output_review_validated: true, spike_result_validated: true },
+    preflight_scope: { future_real_upload_implementation_design_requested: true, current_real_upload_requested: false, current_network_calls_requested: false, current_platform_api_calls_requested: false, current_credential_access_requested: false, current_media_read_requested: false, preflight_gate_only: true },
+    artifact_chain_assessment: { all_required_artifacts_present: true, all_required_artifacts_validated: true, dry_run_execution_passed: approved, prior_ready_for_real_upload_flags_false: true, prior_upload_allowed_flags_false: true, prior_network_api_credential_flags_false: true, prior_media_read_flags_false: true, chain_safe_for_future_implementation_design: chainSafe, chain_safe_for_real_upload_now: false, blocking_reasons: approved ? [] : ["Dry-run execution did not fully pass."], warnings: approved ? ["All prior artifacts validated; future implementation design may proceed safely."] : ["Dry-run execution did not fully pass."] },
+    critical_risk_acknowledgements: { upload_side_effect_risk_acknowledged: input.upload_side_effect_risk_acknowledged === true, platform_policy_risk_acknowledged: input.platform_policy_risk_acknowledged === true, credential_handling_risk_acknowledged: input.credential_handling_risk_acknowledged === true, token_scope_risk_acknowledged: input.token_scope_risk_acknowledged === true, network_side_effect_risk_acknowledged: input.network_side_effect_risk_acknowledged === true, media_access_risk_acknowledged: input.media_access_risk_acknowledged === true, retry_idempotency_risk_acknowledged: input.retry_idempotency_risk_acknowledged === true, rollback_limitations_acknowledged: input.rollback_limitations_acknowledged === true, post_upload_visibility_risk_acknowledged: input.post_upload_visibility_risk_acknowledged === true, operator_accountability_acknowledged: input.operator_accountability_acknowledged === true },
+    unresolved_execution_requirements: requirements,
+    operator_preflight_review: { reviewed_by_label: reviewedBy, checklist_acknowledged: input.checklist_acknowledged === true, artifact_chain_acknowledged: input.artifact_chain_acknowledged === true, unresolved_requirements_acknowledged: input.unresolved_requirements_acknowledged === true, critical_risks_acknowledged: input.critical_risks_acknowledged === true, understands_preflight_gate_only: input.understands_preflight_gate_only === true, understands_no_upload_enabled: input.understands_no_upload_enabled === true, understands_no_credentials_accessed: input.understands_no_credentials_accessed === true, understands_no_network_calls: input.understands_no_network_calls === true, understands_no_media_reads: input.understands_no_media_reads === true, understands_future_implementation_design_required: input.understands_future_implementation_design_required === true, decision_note_summary: note },
+    credential_boundary: { credentials_required: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, credential_reference_stored: false, token_reference_stored: false, secret_material_stored: false },
+    network_boundary: { network_calls_allowed: false, network_calls_made: false, external_side_effects_allowed: false, external_side_effects_observed: false },
+    platform_api_boundary: { platform_api_calls_allowed: false, platform_api_calls_made: false, platform_endpoint_selected: false, platform_api_payload_created: false, platform_api_payload_stored: false, raw_account_ids_stored: false, upload_payload_created: false, response_received: false, raw_response_stored: false },
+    media_boundary: { media_file_read: false, raw_media_path_stored: false, media_file_modified: false, media_file_copied: false, media_file_moved: false, media_file_deleted: false },
+    execution_boundary: { upload_allowed: false, upload_execution_enabled: false, real_upload_execution_allowed: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, media_file_read: false, ready_for_real_upload: false },
+    validation: { final_real_upload_preflight_passed: approved && input.checklist_acknowledged === true && input.artifact_chain_acknowledged === true && input.unresolved_requirements_acknowledged === true && input.critical_risks_acknowledged === true && input.upload_side_effect_risk_acknowledged === true && input.platform_policy_risk_acknowledged === true && input.credential_handling_risk_acknowledged === true && input.token_scope_risk_acknowledged === true && input.network_side_effect_risk_acknowledged === true && input.media_access_risk_acknowledged === true && input.retry_idempotency_risk_acknowledged === true && input.rollback_limitations_acknowledged === true && input.post_upload_visibility_risk_acknowledged === true && input.operator_accountability_acknowledged === true && input.understands_preflight_gate_only === true && input.understands_no_upload_enabled === true && input.understands_no_credentials_accessed === true && input.understands_no_network_calls === true && input.understands_no_media_reads === true && input.understands_future_implementation_design_required === true, ready_for_future_real_upload_implementation_design: approved && input.checklist_acknowledged === true && input.artifact_chain_acknowledged === true && input.unresolved_requirements_acknowledged === true && input.critical_risks_acknowledged === true && input.upload_side_effect_risk_acknowledged === true && input.platform_policy_risk_acknowledged === true && input.credential_handling_risk_acknowledged === true && input.token_scope_risk_acknowledged === true && input.network_side_effect_risk_acknowledged === true && input.media_access_risk_acknowledged === true && input.retry_idempotency_risk_acknowledged === true && input.rollback_limitations_acknowledged === true && input.post_upload_visibility_risk_acknowledged === true && input.operator_accountability_acknowledged === true && input.understands_preflight_gate_only === true && input.understands_no_upload_enabled === true && input.understands_no_credentials_accessed === true && input.understands_no_network_calls === true && input.understands_no_media_reads === true && input.understands_future_implementation_design_required === true, ready_for_real_upload: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, media_file_read: false, blocking_reasons: approved ? [] : ["Preflight gate requires a passed dry-run execution result."], warnings: approved ? ["Final preflight gate is ready for future implementation design review only."] : ["Dry-run execution has not yet passed."] },
+    provenance: { generated_by: "createFinalRealUploadPreflightGate", source_real_upload_dry_run_execution_result_id: input.dryRunExecutionResult.real_upload_dry_run_execution_result_id, source_real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id, source_real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id, source_real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id, source_real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id, source_dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id, source_upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id, source_upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id, source_platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id, source_upload_package_design_id: input.uploadPackageDesign.upload_package_design_id, source_local_output_review_id: input.localOutputReview.local_output_review_id, source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id, source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id, source_render_plan_id: input.spikeResult.render_plan_id },
+  };
+  if (!validateFinalRealUploadPreflightGate(gate).ok) throw new Error("Unsafe final real upload preflight gate cannot be created.");
+  return gate;
+}
+export function validateFinalRealUploadPreflightGate(gate: unknown): FinalRealUploadPreflightGateValidationResult { return validateFinalRealUploadPreflightGateShape(gate); }
+interface FinalRealUploadPreflightGatesStoreSummaryItem { final_real_upload_preflight_gate_id: string; project_id: string; platform: string; gate_state: string; created_at: string; }
+function safeFinalRealUploadPreflightGateSummary(gate: FinalRealUploadPreflightGate): FinalRealUploadPreflightGatesStoreSummaryItem { return { final_real_upload_preflight_gate_id: safeFinalRealUploadPreflightString(gate.final_real_upload_preflight_gate_id, "[unsafe-id]"), project_id: safeFinalRealUploadPreflightString(gate.project_id, "[unsafe-project]"), platform: safeFinalRealUploadPreflightString(gate.platform, "[unsafe-platform]"), gate_state: gate.gate_state, created_at: gate.created_at }; }
+export function saveFinalRealUploadPreflightGate(gate: FinalRealUploadPreflightGate): void { if (!validateFinalRealUploadPreflightGate(gate).ok) throw new Error("Unsafe final real upload preflight gate cannot be stored."); const store = loadFinalRealUploadPreflightGatesStore(); const existing = store.gates.findIndex((item) => item.final_real_upload_preflight_gate_id === gate.final_real_upload_preflight_gate_id); if (existing >= 0) store.gates[existing] = gate; else store.gates.push(gate); saveFinalRealUploadPreflightGatesStore(store); }
+export function listFinalRealUploadPreflightGates(options?: { project_id?: string; platform?: string; gate_state?: string; real_upload_dry_run_execution_result_id?: string; real_upload_execution_plan_id?: string }): FinalRealUploadPreflightGate[] { const store = loadFinalRealUploadPreflightGatesStore(); return store.gates.filter((gate) => (!options?.project_id || gate.project_id === options.project_id) && (!options?.platform || gate.platform === options.platform) && (!options?.gate_state || gate.gate_state === options.gate_state) && (!options?.real_upload_dry_run_execution_result_id || gate.real_upload_dry_run_execution_result_id === options.real_upload_dry_run_execution_result_id) && (!options?.real_upload_execution_plan_id || gate.real_upload_execution_plan_id === options.real_upload_execution_plan_id)).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.final_real_upload_preflight_gate_id.localeCompare(b.final_real_upload_preflight_gate_id)); }
+export function getFinalRealUploadPreflightGate(final_real_upload_preflight_gate_id: string): FinalRealUploadPreflightGate | null { return loadFinalRealUploadPreflightGatesStore().gates.find((gate) => gate.final_real_upload_preflight_gate_id === final_real_upload_preflight_gate_id) ?? null; }
+export function revokeFinalRealUploadPreflightGate(final_real_upload_preflight_gate_id: string, reason: string): FinalRealUploadPreflightGate { const gate = getFinalRealUploadPreflightGate(final_real_upload_preflight_gate_id); if (!gate) throw new Error("Final real upload preflight gate not found"); const safeReason = safeFinalRealUploadPreflightString(reason, "[unsafe-reason]"); if (safeReason === "[unsafe-reason]") throw new Error("Unsafe final real upload preflight gate reason cannot be stored."); const revoked: FinalRealUploadPreflightGate = { ...gate, gate_state: "revoked", validation: { ...gate.validation, blocking_reasons: [...gate.validation.blocking_reasons, safeReason], warnings: [...gate.validation.warnings, "Final real upload preflight gate revoked."] }, provenance: { ...gate.provenance, generated_by: "revokeFinalRealUploadPreflightGate" } }; saveFinalRealUploadPreflightGate(revoked); return revoked; }
+export function getFinalRealUploadPreflightGateReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_real_upload_implementation_design: number; rejected: number; revoked: number; final_real_upload_preflight_passed: number; ready_for_future_real_upload_implementation_design: number; ready_for_real_upload: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; unresolved_requirements_total: number; unresolved_requirements_blocking: number; gates: Array<FinalRealUploadPreflightGatesStoreSummaryItem>; } { const gates = listFinalRealUploadPreflightGates(options); const by_state: Record<string, number> = {}; let blocked = 0, ready = 0, approved = 0, rejected = 0, revoked = 0, passed = 0, reqTotal = 0, reqBlocking = 0; const summaries = gates.map((gate) => { by_state[gate.gate_state] = (by_state[gate.gate_state] ?? 0) + 1; if (gate.gate_state === "blocked") blocked++; if (gate.gate_state === "ready_for_operator_review") ready++; if (gate.gate_state === "approved_for_future_real_upload_implementation_design") approved++; if (gate.gate_state === "rejected") rejected++; if (gate.gate_state === "revoked") revoked++; if (gate.validation.final_real_upload_preflight_passed) passed++; reqTotal += gate.unresolved_execution_requirements.length; reqBlocking += gate.unresolved_execution_requirements.filter((req) => req.blocking_reasons.length > 0).length; return safeFinalRealUploadPreflightGateSummary(gate); }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_real_upload_implementation_design: approved, rejected, revoked, final_real_upload_preflight_passed: passed, ready_for_future_real_upload_implementation_design: passed, ready_for_real_upload: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, media_file_read: 0, unresolved_requirements_total: reqTotal, unresolved_requirements_blocking: reqBlocking, gates: summaries }; }
+
+// ─── VO-7N: Real Upload Implementation Design ────────────────────────────
+
+export type RealUploadImplementationDesignMode = "real_upload_implementation_design_only" | "operator_review_real_upload_implementation_design";
+export type RealUploadImplementationDesignState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_scaffold_design" | "rejected" | "revoked";
+
+export interface RealUploadImplementationRequiredArtifacts {
+  final_real_upload_preflight_gate_validated: boolean;
+  real_upload_dry_run_execution_result_validated: boolean;
+  real_upload_execution_plan_validated: boolean;
+  real_upload_strategy_design_validated: boolean;
+  real_upload_execution_request_validated: boolean;
+  real_upload_readiness_assessment_validated: boolean;
+  dry_run_upload_spike_result_validated: boolean;
+  upload_execution_design_validated: boolean;
+  upload_execution_approval_validated: boolean;
+  platform_upload_request_validated: boolean;
+  upload_package_design_validated: boolean;
+  local_output_review_validated: boolean;
+  spike_result_validated: boolean;
+}
+
+export interface RealUploadImplementationScope {
+  future_scaffold_design_requested: boolean;
+  current_real_upload_requested: false;
+  current_network_calls_requested: false;
+  current_platform_api_calls_requested: false;
+  current_credential_access_requested: false;
+  current_media_read_requested: false;
+  implementation_design_only: true;
+}
+
+export type RealUploadImplementationComponentState = "planned" | "blocked" | "deferred" | "ready_for_future_scaffold";
+
+export interface RealUploadImplementationComponentDesign {
+  component_id: string;
+  component_kind:
+    | "credential_provider_boundary"
+    | "media_reference_resolver"
+    | "platform_adapter_interface"
+    | "payload_builder_boundary"
+    | "network_client_boundary"
+    | "upload_executor_boundary"
+    | "retry_idempotency_controller"
+    | "rollback_controller"
+    | "post_upload_verifier"
+    | "audit_event_writer"
+    | "operator_confirmation_gate"
+    | "emergency_stop_controller"
+    | "status_reporter";
+  component_state: RealUploadImplementationComponentState;
+  safe_summary: string;
+  execution_enabled: false;
+  network_enabled: false;
+  platform_api_enabled: false;
+  credential_access_enabled: false;
+  media_read_enabled: false;
+  file_mutation_enabled: false;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadCredentialHandlingDesign {
+  design_required: true;
+  credentials_required: false;
+  credentials_accessed: false;
+  token_accessed: false;
+  keychain_accessed: false;
+  env_accessed: false;
+  credential_reference_stored: false;
+  token_reference_stored: false;
+  secret_material_stored: false;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadMediaResolutionDesign {
+  design_required: true;
+  media_file_read: false;
+  raw_media_path_stored: false;
+  media_file_modified: false;
+  media_file_copied: false;
+  media_file_moved: false;
+  media_file_deleted: false;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadPlatformAdapterDesign {
+  design_required: true;
+  platform_adapter_implemented: false;
+  platform_endpoint_selected: false;
+  platform_api_calls_allowed: false;
+  platform_api_calls_made: false;
+  raw_account_ids_stored: false;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadPayloadConstructionDesign {
+  design_required: true;
+  platform_api_payload_created: false;
+  platform_api_payload_stored: false;
+  upload_payload_created: false;
+  raw_payload_stored: false;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadNetworkExecutionDesign {
+  design_required: true;
+  network_client_implemented: false;
+  network_calls_allowed: false;
+  network_calls_made: false;
+  external_side_effects_allowed: false;
+  external_side_effects_observed: false;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadRetryIdempotencyDesign {
+  design_required: true;
+  retry_execution_enabled: false;
+  max_upload_attempts: 0;
+  idempotency_design_defined: boolean;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadRollbackDesign {
+  design_required: true;
+  rollback_execution_enabled: false;
+  destructive_action_allowed: false;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadPostUploadVerificationDesign {
+  design_required: true;
+  verification_execution_enabled: false;
+  platform_api_calls_allowed: false;
+  network_calls_allowed: false;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadAuditLoggingDesign {
+  design_required: true;
+  audit_log_write_enabled: false;
+  raw_payload_logging_allowed: false;
+  raw_response_logging_allowed: false;
+  secret_logging_allowed: false;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadOperatorControlDesign {
+  design_required: true;
+  operator_confirmation_required: true;
+  automatic_execution_enabled: false;
+  manual_go_no_go_required: true;
+  reviewed_by_label?: string;
+  checklist_acknowledged: boolean;
+  understands_implementation_design_only: boolean;
+  understands_no_upload_enabled: boolean;
+  understands_no_credentials_accessed: boolean;
+  understands_no_network_calls: boolean;
+  understands_no_media_reads: boolean;
+  understands_future_scaffold_phase_required: boolean;
+  decision_note_summary?: string;
+}
+
+export interface RealUploadEmergencyStopDesign {
+  design_required: true;
+  emergency_stop_required: true;
+  emergency_stop_implemented: false;
+  automatic_kill_switch_enabled: false;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadImplementationBoundary {
+  upload_allowed: false;
+  upload_execution_enabled: false;
+  real_upload_execution_allowed: false;
+  scaffold_code_allowed: false;
+  platform_api_calls_allowed: false;
+  network_calls_allowed: false;
+  credentials_accessed: false;
+  token_accessed: false;
+  keychain_accessed: false;
+  env_accessed: false;
+  media_file_read: false;
+  file_mutation_allowed: false;
+  ready_for_real_upload: false;
+}
+
+export interface RealUploadImplementationDesignValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[]; }
+
+export interface RealUploadImplementationDesign {
+  schema_version: "1.0";
+  real_upload_implementation_design_id: string;
+  final_real_upload_preflight_gate_id: string;
+  real_upload_dry_run_execution_result_id: string;
+  real_upload_execution_plan_id: string;
+  real_upload_strategy_design_id: string;
+  real_upload_execution_request_id: string;
+  real_upload_readiness_assessment_id: string;
+  dry_run_upload_spike_result_id: string;
+  upload_execution_design_id: string;
+  upload_execution_approval_id: string;
+  platform_upload_request_id: string;
+  upload_package_design_id: string;
+  local_output_review_id: string;
+  production_render_spike_result_id: string;
+  final_render_execution_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  design_state: RealUploadImplementationDesignState;
+  created_at: string;
+  design_mode: RealUploadImplementationDesignMode;
+  required_artifacts: RealUploadImplementationRequiredArtifacts;
+  implementation_scope: RealUploadImplementationScope;
+  component_designs: RealUploadImplementationComponentDesign[];
+  credential_handling_design: RealUploadCredentialHandlingDesign;
+  media_resolution_design: RealUploadMediaResolutionDesign;
+  platform_adapter_design: RealUploadPlatformAdapterDesign;
+  payload_construction_design: RealUploadPayloadConstructionDesign;
+  network_execution_design: RealUploadNetworkExecutionDesign;
+  retry_idempotency_design: RealUploadRetryIdempotencyDesign;
+  rollback_design: RealUploadRollbackDesign;
+  post_upload_verification_design: RealUploadPostUploadVerificationDesign;
+  audit_logging_design: RealUploadAuditLoggingDesign;
+  operator_control_design: RealUploadOperatorControlDesign;
+  emergency_stop_design: RealUploadEmergencyStopDesign;
+  implementation_boundary: RealUploadImplementationBoundary;
+  validation: {
+    implementation_design_complete: boolean;
+    ready_for_future_scaffold_design: boolean;
+    ready_for_real_upload: false;
+    upload_allowed: false;
+    upload_execution_enabled: false;
+    platform_api_calls_allowed: false;
+    network_calls_allowed: false;
+    credentials_accessed: false;
+    token_accessed: false;
+    media_file_read: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRealUploadImplementationDesign" | "revokeRealUploadImplementationDesign";
+    source_final_real_upload_preflight_gate_id: string;
+    source_real_upload_dry_run_execution_result_id: string;
+    source_real_upload_execution_plan_id: string;
+    source_real_upload_strategy_design_id: string;
+    source_real_upload_execution_request_id: string;
+    source_real_upload_readiness_assessment_id: string;
+    source_dry_run_upload_spike_result_id: string;
+    source_upload_execution_design_id: string;
+    source_upload_execution_approval_id: string;
+    source_platform_upload_request_id: string;
+    source_upload_package_design_id: string;
+    source_local_output_review_id: string;
+    source_production_render_spike_result_id: string;
+    source_final_render_execution_request_id: string;
+    source_render_plan_id: string;
+  };
+}
+
+interface RealUploadImplementationDesignsStore { schema_version: "1.0"; created_at: string; designs: RealUploadImplementationDesign[]; }
+function getRealUploadImplementationDesignsPath(): string { return path.join(getRuntimeDir(), "real-upload-implementation-designs.json"); }
+function loadRealUploadImplementationDesignsStore(): RealUploadImplementationDesignsStore { try { const filePath = getRealUploadImplementationDesignsPath(); if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as RealUploadImplementationDesignsStore; } catch {} return { schema_version: "1.0", created_at: new Date().toISOString(), designs: [] }; }
+function saveRealUploadImplementationDesignsStore(store: RealUploadImplementationDesignsStore): void { const filePath = getRealUploadImplementationDesignsPath(); fs.mkdirSync(path.dirname(filePath), { recursive: true }); store.designs.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_implementation_design_id.localeCompare(b.real_upload_implementation_design_id)); fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8"); }
+function safeRealUploadImplementationDesignString(value: unknown, fallback: string): string { return safeRealUploadDryRunExecutionResultString(value, fallback); }
+function validateRealUploadImplementationDesignShape(design: unknown): RealUploadImplementationDesignValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!design || typeof design !== "object" || Array.isArray(design)) {
+    return { ok: false, blocking_reasons: ["Design must be an object"], warnings };
+  }
+  const a = design as Record<string, unknown>;
+  const requiredFields = ["schema_version","real_upload_implementation_design_id","final_real_upload_preflight_gate_id","real_upload_dry_run_execution_result_id","real_upload_execution_plan_id","real_upload_strategy_design_id","real_upload_execution_request_id","real_upload_readiness_assessment_id","dry_run_upload_spike_result_id","upload_execution_design_id","upload_execution_approval_id","platform_upload_request_id","upload_package_design_id","local_output_review_id","production_render_spike_result_id","final_render_execution_request_id","render_plan_id","project_id","platform","design_state","created_at","design_mode","required_artifacts","implementation_scope","component_designs","credential_handling_design","media_resolution_design","platform_adapter_design","payload_construction_design","network_execution_design","retry_idempotency_design","rollback_design","post_upload_verification_design","audit_logging_design","operator_control_design","emergency_stop_design","implementation_boundary","validation","provenance"];
+  for (const key of requiredFields) {
+    if (!(key in a)) blocking_reasons.push(`Missing required field: ${key}`);
+  }
+  const json = JSON.stringify(a);
+  if (json.includes("videos.insert") || json.includes("youtube.videos().insert") || json.includes("fetch(") || json.includes("process.env") || json.includes("keychain://") || json.includes("stdout") || json.includes("stderr") || json.includes("ffmpeg") || json.includes("Bearer ") || json.includes("data:") || json.includes("base64,") || json.includes("/Users/") || json.includes("https://") || json.includes("http://") || json.includes("../")) blocking_reasons.push("Real upload implementation design contains forbidden payload content");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function validateRealUploadImplementationDesign(design: unknown): RealUploadImplementationDesignValidationResult {
+  const validation = validateRealUploadImplementationDesignShape(design);
+  if (!validation.ok) return validation;
+  const d = design as RealUploadImplementationDesign;
+  const requiredKinds: RealUploadImplementationDesign["component_designs"][number]["component_kind"][] = [
+    "credential_provider_boundary",
+    "media_reference_resolver",
+    "platform_adapter_interface",
+    "payload_builder_boundary",
+    "network_client_boundary",
+    "upload_executor_boundary",
+    "retry_idempotency_controller",
+    "rollback_controller",
+    "post_upload_verifier",
+    "audit_event_writer",
+    "operator_confirmation_gate",
+    "emergency_stop_controller",
+    "status_reporter",
+  ];
+  if (d.schema_version !== "1.0") validation.blocking_reasons.push("schema_version must be 1.0");
+  if (d.design_mode !== "real_upload_implementation_design_only" && d.design_mode !== "operator_review_real_upload_implementation_design") validation.blocking_reasons.push("Invalid design_mode");
+  if (d.design_state === "approved_for_future_scaffold_design") {
+    // allowed
+  } else if (!["draft", "blocked", "ready_for_operator_review", "approved_for_future_scaffold_design", "rejected", "revoked"].includes(d.design_state)) {
+    validation.blocking_reasons.push("Invalid design_state");
+  }
+  const scope = d.implementation_scope;
+  if (!scope || scope.implementation_design_only !== true || scope.current_real_upload_requested !== false || scope.current_network_calls_requested !== false || scope.current_platform_api_calls_requested !== false || scope.current_credential_access_requested !== false || scope.current_media_read_requested !== false) validation.blocking_reasons.push("Implementation scope is unsafe");
+  const componentKinds = new Set(d.component_designs.map((component) => component.component_kind));
+  for (const kind of requiredKinds) if (!componentKinds.has(kind)) validation.blocking_reasons.push(`Missing component kind: ${kind}`);
+  for (const component of d.component_designs) {
+    if (component.execution_enabled !== false || component.network_enabled !== false || component.platform_api_enabled !== false || component.credential_access_enabled !== false || component.media_read_enabled !== false || component.file_mutation_enabled !== false) validation.blocking_reasons.push("Component design is unsafe");
+  }
+  const boundary = d.implementation_boundary;
+  if (!boundary || boundary.upload_allowed !== false || boundary.upload_execution_enabled !== false || boundary.real_upload_execution_allowed !== false || boundary.scaffold_code_allowed !== false || boundary.platform_api_calls_allowed !== false || boundary.network_calls_allowed !== false || boundary.credentials_accessed !== false || boundary.token_accessed !== false || boundary.keychain_accessed !== false || boundary.env_accessed !== false || boundary.media_file_read !== false || boundary.file_mutation_allowed !== false || boundary.ready_for_real_upload !== false) validation.blocking_reasons.push("Implementation boundary is unsafe");
+  if (d.credential_handling_design.credentials_required !== false || d.credential_handling_design.credentials_accessed !== false || d.credential_handling_design.token_accessed !== false || d.credential_handling_design.keychain_accessed !== false || d.credential_handling_design.env_accessed !== false || d.credential_handling_design.credential_reference_stored !== false || d.credential_handling_design.token_reference_stored !== false || d.credential_handling_design.secret_material_stored !== false) validation.blocking_reasons.push("Credential handling design is unsafe");
+  if (d.media_resolution_design.media_file_read !== false || d.media_resolution_design.raw_media_path_stored !== false || d.media_resolution_design.media_file_modified !== false || d.media_resolution_design.media_file_copied !== false || d.media_resolution_design.media_file_moved !== false || d.media_resolution_design.media_file_deleted !== false) validation.blocking_reasons.push("Media resolution design is unsafe");
+  if (d.platform_adapter_design.platform_adapter_implemented !== false || d.platform_adapter_design.platform_endpoint_selected !== false || d.platform_adapter_design.platform_api_calls_allowed !== false || d.platform_adapter_design.platform_api_calls_made !== false || d.platform_adapter_design.raw_account_ids_stored !== false) validation.blocking_reasons.push("Platform adapter design is unsafe");
+  if (d.payload_construction_design.platform_api_payload_created !== false || d.payload_construction_design.platform_api_payload_stored !== false || d.payload_construction_design.upload_payload_created !== false || d.payload_construction_design.raw_payload_stored !== false) validation.blocking_reasons.push("Payload construction design is unsafe");
+  if (d.network_execution_design.network_client_implemented !== false || d.network_execution_design.network_calls_allowed !== false || d.network_execution_design.network_calls_made !== false || d.network_execution_design.external_side_effects_allowed !== false || d.network_execution_design.external_side_effects_observed !== false) validation.blocking_reasons.push("Network execution design is unsafe");
+  if (d.retry_idempotency_design.retry_execution_enabled !== false || d.retry_idempotency_design.max_upload_attempts !== 0) validation.blocking_reasons.push("Retry design is unsafe");
+  if (d.rollback_design.rollback_execution_enabled !== false || d.rollback_design.destructive_action_allowed !== false) validation.blocking_reasons.push("Rollback design is unsafe");
+  if (d.post_upload_verification_design.verification_execution_enabled !== false || d.post_upload_verification_design.platform_api_calls_allowed !== false || d.post_upload_verification_design.network_calls_allowed !== false) validation.blocking_reasons.push("Verification design is unsafe");
+  if (d.audit_logging_design.audit_log_write_enabled !== false || d.audit_logging_design.raw_payload_logging_allowed !== false || d.audit_logging_design.raw_response_logging_allowed !== false || d.audit_logging_design.secret_logging_allowed !== false) validation.blocking_reasons.push("Audit logging design is unsafe");
+  if (d.operator_control_design.operator_confirmation_required !== true || d.operator_control_design.automatic_execution_enabled !== false || d.operator_control_design.manual_go_no_go_required !== true) validation.blocking_reasons.push("Operator control design is unsafe");
+  if (d.emergency_stop_design.emergency_stop_required !== true || d.emergency_stop_design.emergency_stop_implemented !== false || d.emergency_stop_design.automatic_kill_switch_enabled !== false) validation.blocking_reasons.push("Emergency stop design is unsafe");
+  if (d.validation.ready_for_real_upload !== false || d.validation.upload_allowed !== false || d.validation.upload_execution_enabled !== false || d.validation.platform_api_calls_allowed !== false || d.validation.network_calls_allowed !== false || d.validation.credentials_accessed !== false || d.validation.token_accessed !== false || d.validation.media_file_read !== false) validation.blocking_reasons.push("Validation flags are unsafe");
+  if (d.required_artifacts.final_real_upload_preflight_gate_validated !== true || d.required_artifacts.real_upload_dry_run_execution_result_validated !== true || d.required_artifacts.real_upload_execution_plan_validated !== true || d.required_artifacts.real_upload_strategy_design_validated !== true || d.required_artifacts.real_upload_execution_request_validated !== true || d.required_artifacts.real_upload_readiness_assessment_validated !== true || d.required_artifacts.dry_run_upload_spike_result_validated !== true || d.required_artifacts.upload_execution_design_validated !== true || d.required_artifacts.upload_execution_approval_validated !== true || d.required_artifacts.platform_upload_request_validated !== true || d.required_artifacts.upload_package_design_validated !== true || d.required_artifacts.local_output_review_validated !== true || d.required_artifacts.spike_result_validated !== true) validation.blocking_reasons.push("Required artifacts are unsafe");
+  if (d.implementation_scope.future_scaffold_design_requested !== true) validation.blocking_reasons.push("future_scaffold_design_requested must be true");
+  if (validation.blocking_reasons.length === 0) validation.warnings.push("Design is future-scaffold only.");
+  return { ok: validation.blocking_reasons.length === 0, blocking_reasons: validation.blocking_reasons, warnings: validation.warnings };
+}
+
+export function createRealUploadImplementationDesign(input: {
+  finalPreflightGate: FinalRealUploadPreflightGate;
+  dryRunExecutionResult: RealUploadDryRunExecutionResult;
+  executionPlan: RealUploadExecutionPlan;
+  strategyDesign: RealUploadStrategyDesign;
+  realUploadExecutionRequest: RealUploadExecutionRequest;
+  readinessAssessment: RealUploadReadinessAssessment;
+  dryRunUploadSpikeResult: DryRunUploadSpikeResult;
+  uploadExecutionDesign: UploadExecutionDesign;
+  uploadExecutionApproval: UploadExecutionApproval;
+  platformUploadRequest: PlatformUploadRequest;
+  uploadPackageDesign: UploadPackageDesign;
+  localOutputReview: LocalOutputOperatorReview;
+  spikeResult: ControlledProductionRenderSpikeResult;
+  decision?: "draft" | "approved_for_future_scaffold_design" | "rejected";
+  reviewed_by_label?: string;
+  checklist_acknowledged?: boolean;
+  understands_implementation_design_only?: boolean;
+  understands_no_upload_enabled?: boolean;
+  understands_no_credentials_accessed?: boolean;
+  understands_no_network_calls?: boolean;
+  understands_no_media_reads?: boolean;
+  understands_future_scaffold_phase_required?: boolean;
+  decision_note_summary?: string;
+  dryRun: true;
+}): RealUploadImplementationDesign {
+  if (input.dryRun !== true) throw new Error("createRealUploadImplementationDesign: dryRun=true required");
+  if (!validateFinalRealUploadPreflightGate(input.finalPreflightGate).ok) throw new Error("createRealUploadImplementationDesign: finalPreflightGate must validate");
+  if (!validateRealUploadDryRunExecutionResult(input.dryRunExecutionResult).ok) throw new Error("createRealUploadImplementationDesign: dryRunExecutionResult must validate");
+  if (!validateRealUploadExecutionPlan(input.executionPlan).ok) throw new Error("createRealUploadImplementationDesign: executionPlan must validate");
+  if (!validateRealUploadStrategyDesign(input.strategyDesign).ok) throw new Error("createRealUploadImplementationDesign: strategyDesign must validate");
+  if (!validateRealUploadExecutionRequest(input.realUploadExecutionRequest).ok) throw new Error("createRealUploadImplementationDesign: realUploadExecutionRequest must validate");
+  if (!validateRealUploadReadinessAssessment(input.readinessAssessment).ok) throw new Error("createRealUploadImplementationDesign: readinessAssessment must validate");
+  if (!validateDryRunUploadSpikeResult(input.dryRunUploadSpikeResult).ok) throw new Error("createRealUploadImplementationDesign: dryRunUploadSpikeResult must validate");
+  if (!validateUploadExecutionDesign(input.uploadExecutionDesign).ok) throw new Error("createRealUploadImplementationDesign: uploadExecutionDesign must validate");
+  if (!validateUploadExecutionApproval(input.uploadExecutionApproval).ok) throw new Error("createRealUploadImplementationDesign: uploadExecutionApproval must validate");
+  if (!validatePlatformUploadRequest(input.platformUploadRequest).ok) throw new Error("createRealUploadImplementationDesign: platformUploadRequest must validate");
+  if (!validateUploadPackageDesign(input.uploadPackageDesign).ok) throw new Error("createRealUploadImplementationDesign: uploadPackageDesign must validate");
+  if (!validateLocalOutputOperatorReview(input.localOutputReview).ok) throw new Error("createRealUploadImplementationDesign: localOutputReview must validate");
+  if (!validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("createRealUploadImplementationDesign: spikeResult must validate");
+  if (input.finalPreflightGate.gate_state !== "approved_for_future_real_upload_implementation_design") throw new Error("createRealUploadImplementationDesign: finalPreflightGate must be approved_for_future_real_upload_implementation_design");
+  if (input.finalPreflightGate.validation.ready_for_real_upload !== false || input.dryRunExecutionResult.validation.ready_for_real_upload !== false || input.executionPlan.validation.ready_for_real_upload !== false) throw new Error("createRealUploadImplementationDesign: ready_for_real_upload must remain false");
+  if (input.finalPreflightGate.validation.ready_for_future_real_upload_implementation_design !== true || input.dryRunExecutionResult.validation.ready_for_future_real_upload_preflight !== true) throw new Error("createRealUploadImplementationDesign: future design prerequisites must be ready");
+  if (input.finalPreflightGate.real_upload_dry_run_execution_result_id !== input.dryRunExecutionResult.real_upload_dry_run_execution_result_id || input.finalPreflightGate.real_upload_execution_plan_id !== input.executionPlan.real_upload_execution_plan_id || input.finalPreflightGate.real_upload_strategy_design_id !== input.strategyDesign.real_upload_strategy_design_id || input.finalPreflightGate.real_upload_execution_request_id !== input.realUploadExecutionRequest.real_upload_execution_request_id || input.finalPreflightGate.real_upload_readiness_assessment_id !== input.readinessAssessment.real_upload_readiness_assessment_id || input.finalPreflightGate.dry_run_upload_spike_result_id !== input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id || input.finalPreflightGate.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.finalPreflightGate.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.finalPreflightGate.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.finalPreflightGate.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.finalPreflightGate.local_output_review_id !== input.localOutputReview.local_output_review_id || input.finalPreflightGate.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.finalPreflightGate.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.finalPreflightGate.render_plan_id !== input.spikeResult.render_plan_id || input.finalPreflightGate.project_id !== input.spikeResult.project_id || input.finalPreflightGate.platform !== input.spikeResult.platform) throw new Error("createRealUploadImplementationDesign: finalPreflightGate inputs must match");
+  if (input.executionPlan.plan_state !== "approved_for_future_upload_execution_dry_run" || input.strategyDesign.strategy_state !== "approved_for_future_upload_execution_plan" || input.realUploadExecutionRequest.request_state !== "approved_for_future_real_upload_design" || !["assessed", "ready_for_operator_review"].includes(input.readinessAssessment.assessment_state) || input.finalPreflightGate.gate_state !== "approved_for_future_real_upload_implementation_design") throw new Error("createRealUploadImplementationDesign: prior approvals are required");
+  const requiredKinds: RealUploadImplementationComponentDesign["component_kind"][] = ["credential_provider_boundary","media_reference_resolver","platform_adapter_interface","payload_builder_boundary","network_client_boundary","upload_executor_boundary","retry_idempotency_controller","rollback_controller","post_upload_verifier","audit_event_writer","operator_confirmation_gate","emergency_stop_controller","status_reporter"];
+  const components: RealUploadImplementationComponentDesign[] = requiredKinds.map((kind, index) => ({ component_id: `real-upload-implementation-design-component-${index + 1}`, component_kind: kind, component_state: "planned", safe_summary: `Future ${kind.replace(/_/g, " ")} design only.`, execution_enabled: false, network_enabled: false, platform_api_enabled: false, credential_access_enabled: false, media_read_enabled: false, file_mutation_enabled: false, blocking_reasons: ["Future scaffold design only."], warnings: [] }));
+  const reviewedBy = safeRealUploadImplementationDesignString(input.reviewed_by_label ?? "", "[unsafe-reviewer]");
+  const note = safeRealUploadImplementationDesignString(input.decision_note_summary ?? "", "[unsafe-implementation-note]");
+  const decision = input.decision ?? "draft";
+  if (decision === "approved_for_future_scaffold_design" && (!input.checklist_acknowledged || input.understands_implementation_design_only !== true || input.understands_no_upload_enabled !== true || input.understands_no_credentials_accessed !== true || input.understands_no_network_calls !== true || input.understands_no_media_reads !== true || input.understands_future_scaffold_phase_required !== true)) throw new Error("createRealUploadImplementationDesign: approved decision requires acknowledgements");
+  const design: RealUploadImplementationDesign = {
+    schema_version: "1.0",
+    real_upload_implementation_design_id: `real-upload-implementation-design-${crypto.randomUUID()}`,
+    final_real_upload_preflight_gate_id: input.finalPreflightGate.final_real_upload_preflight_gate_id,
+    real_upload_dry_run_execution_result_id: input.dryRunExecutionResult.real_upload_dry_run_execution_result_id,
+    real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id,
+    real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id,
+    real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id,
+    real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id,
+    dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+    upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+    upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+    platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+    upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+    local_output_review_id: input.localOutputReview.local_output_review_id,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.spikeResult.project_id,
+    platform: input.spikeResult.platform,
+    design_state: decision === "approved_for_future_scaffold_design" ? "approved_for_future_scaffold_design" : decision === "rejected" ? "rejected" : "draft",
+    created_at: new Date().toISOString(),
+    design_mode: "real_upload_implementation_design_only",
+    required_artifacts: { final_real_upload_preflight_gate_validated: true, real_upload_dry_run_execution_result_validated: true, real_upload_execution_plan_validated: true, real_upload_strategy_design_validated: true, real_upload_execution_request_validated: true, real_upload_readiness_assessment_validated: true, dry_run_upload_spike_result_validated: true, upload_execution_design_validated: true, upload_execution_approval_validated: true, platform_upload_request_validated: true, upload_package_design_validated: true, local_output_review_validated: true, spike_result_validated: true },
+    implementation_scope: { future_scaffold_design_requested: true, current_real_upload_requested: false, current_network_calls_requested: false, current_platform_api_calls_requested: false, current_credential_access_requested: false, current_media_read_requested: false, implementation_design_only: true },
+    component_designs: components,
+    credential_handling_design: { design_required: true, credentials_required: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, credential_reference_stored: false, token_reference_stored: false, secret_material_stored: false, safe_summary: "Credential handling design is future scaffold only.", blocking_reasons: ["Credential access remains disabled."], warnings: [] },
+    media_resolution_design: { design_required: true, media_file_read: false, raw_media_path_stored: false, media_file_modified: false, media_file_copied: false, media_file_moved: false, media_file_deleted: false, safe_summary: "Media resolution design is future scaffold only.", blocking_reasons: ["Media reads remain disabled."], warnings: [] },
+    platform_adapter_design: { design_required: true, platform_adapter_implemented: false, platform_endpoint_selected: false, platform_api_calls_allowed: false, platform_api_calls_made: false, raw_account_ids_stored: false, safe_summary: "Platform adapter design is future scaffold only.", blocking_reasons: ["Platform APIs remain disabled."], warnings: [] },
+    payload_construction_design: { design_required: true, platform_api_payload_created: false, platform_api_payload_stored: false, upload_payload_created: false, raw_payload_stored: false, safe_summary: "Payload construction design is future scaffold only.", blocking_reasons: ["Payload construction remains disabled."], warnings: [] },
+    network_execution_design: { design_required: true, network_client_implemented: false, network_calls_allowed: false, network_calls_made: false, external_side_effects_allowed: false, external_side_effects_observed: false, safe_summary: "Network execution design is future scaffold only.", blocking_reasons: ["Network execution remains disabled."], warnings: [] },
+    retry_idempotency_design: { design_required: true, retry_execution_enabled: false, max_upload_attempts: 0, idempotency_design_defined: true, safe_summary: "Retry design is future scaffold only.", blocking_reasons: ["Retry execution remains disabled."], warnings: [] },
+    rollback_design: { design_required: true, rollback_execution_enabled: false, destructive_action_allowed: false, safe_summary: "Rollback design is future scaffold only.", blocking_reasons: ["Rollback execution remains disabled."], warnings: [] },
+    post_upload_verification_design: { design_required: true, verification_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, safe_summary: "Verification design is future scaffold only.", blocking_reasons: ["Verification execution remains disabled."], warnings: [] },
+    audit_logging_design: { design_required: true, audit_log_write_enabled: false, raw_payload_logging_allowed: false, raw_response_logging_allowed: false, secret_logging_allowed: false, safe_summary: "Audit logging design is future scaffold only.", blocking_reasons: ["Raw logging remains disabled."], warnings: [] },
+    operator_control_design: { design_required: true, operator_confirmation_required: true, automatic_execution_enabled: false, manual_go_no_go_required: true, reviewed_by_label: reviewedBy, checklist_acknowledged: input.checklist_acknowledged === true, understands_implementation_design_only: input.understands_implementation_design_only === true, understands_no_upload_enabled: input.understands_no_upload_enabled === true, understands_no_credentials_accessed: input.understands_no_credentials_accessed === true, understands_no_network_calls: input.understands_no_network_calls === true, understands_no_media_reads: input.understands_no_media_reads === true, understands_future_scaffold_phase_required: input.understands_future_scaffold_phase_required === true, decision_note_summary: note },
+    emergency_stop_design: { design_required: true, emergency_stop_required: true, emergency_stop_implemented: false, automatic_kill_switch_enabled: false, safe_summary: "Emergency stop design is future scaffold only.", blocking_reasons: ["Emergency stop remains a design-only boundary."], warnings: [] },
+    implementation_boundary: { upload_allowed: false, upload_execution_enabled: false, real_upload_execution_allowed: false, scaffold_code_allowed: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, media_file_read: false, file_mutation_allowed: false, ready_for_real_upload: false },
+    validation: { implementation_design_complete: decision === "approved_for_future_scaffold_design" && input.checklist_acknowledged === true && input.understands_implementation_design_only === true && input.understands_no_upload_enabled === true && input.understands_no_credentials_accessed === true && input.understands_no_network_calls === true && input.understands_no_media_reads === true && input.understands_future_scaffold_phase_required === true, ready_for_future_scaffold_design: decision === "approved_for_future_scaffold_design" && input.checklist_acknowledged === true && input.understands_implementation_design_only === true && input.understands_no_upload_enabled === true && input.understands_no_credentials_accessed === true && input.understands_no_network_calls === true && input.understands_no_media_reads === true && input.understands_future_scaffold_phase_required === true, ready_for_real_upload: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadImplementationDesign", source_final_real_upload_preflight_gate_id: input.finalPreflightGate.final_real_upload_preflight_gate_id, source_real_upload_dry_run_execution_result_id: input.dryRunExecutionResult.real_upload_dry_run_execution_result_id, source_real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id, source_real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id, source_real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id, source_real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id, source_dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id, source_upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id, source_upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id, source_platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id, source_upload_package_design_id: input.uploadPackageDesign.upload_package_design_id, source_local_output_review_id: input.localOutputReview.local_output_review_id, source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id, source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id, source_render_plan_id: input.spikeResult.render_plan_id },
+  };
+  if (!validateRealUploadImplementationDesign(design).ok) throw new Error("Unsafe real upload implementation design cannot be created.");
+  return design;
+}
+
+export function saveRealUploadImplementationDesign(design: RealUploadImplementationDesign): void { if (!validateRealUploadImplementationDesign(design).ok) throw new Error("Unsafe real upload implementation design cannot be stored."); const store = loadRealUploadImplementationDesignsStore(); const existingIndex = store.designs.findIndex((item) => item.real_upload_implementation_design_id === design.real_upload_implementation_design_id); if (existingIndex >= 0) store.designs[existingIndex] = design; else store.designs.push(design); saveRealUploadImplementationDesignsStore(store); }
+export function listRealUploadImplementationDesigns(options?: { project_id?: string; platform?: string; design_state?: string; final_real_upload_preflight_gate_id?: string; real_upload_dry_run_execution_result_id?: string }): RealUploadImplementationDesign[] { const store = loadRealUploadImplementationDesignsStore(); return store.designs.filter((design) => (!options?.project_id || design.project_id === options.project_id) && (!options?.platform || design.platform === options.platform) && (!options?.design_state || design.design_state === options.design_state) && (!options?.final_real_upload_preflight_gate_id || design.final_real_upload_preflight_gate_id === options.final_real_upload_preflight_gate_id) && (!options?.real_upload_dry_run_execution_result_id || design.real_upload_dry_run_execution_result_id === options.real_upload_dry_run_execution_result_id)).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_implementation_design_id.localeCompare(b.real_upload_implementation_design_id)); }
+export function getRealUploadImplementationDesign(real_upload_implementation_design_id: string): RealUploadImplementationDesign | null { return loadRealUploadImplementationDesignsStore().designs.find((design) => design.real_upload_implementation_design_id === real_upload_implementation_design_id) ?? null; }
+export function revokeRealUploadImplementationDesign(real_upload_implementation_design_id: string, reason: string): RealUploadImplementationDesign { const design = getRealUploadImplementationDesign(real_upload_implementation_design_id); if (!design) throw new Error("Real upload implementation design not found"); const safeReason = safeRealUploadImplementationDesignString(reason, "[unsafe-reason]"); if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload implementation design reason cannot be stored."); const revoked: RealUploadImplementationDesign = { ...design, design_state: "revoked", validation: { ...design.validation, blocking_reasons: [...design.validation.blocking_reasons, safeReason], warnings: [...design.validation.warnings, "Real upload implementation design revoked."] }, provenance: { ...design.provenance, generated_by: "revokeRealUploadImplementationDesign" } }; saveRealUploadImplementationDesign(revoked); return revoked; }
+export function getRealUploadImplementationDesignReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_scaffold_design: number; rejected: number; revoked: number; implementation_design_complete: number; ready_for_future_scaffold_design: number; ready_for_real_upload: 0; upload_allowed: 0; upload_execution_enabled: 0; scaffold_code_allowed: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; file_mutation_allowed: 0; components_total: number; components_with_blockers: number; designs: Array<{ real_upload_implementation_design_id: string; project_id: string; platform: string; design_state: string; created_at: string; }>; } { const designs = listRealUploadImplementationDesigns(options); const by_state: Record<string, number> = {}; let blocked = 0, ready = 0, approved = 0, rejected = 0, revoked = 0, complete = 0, readyFuture = 0, componentsTotal = 0, componentsBlocked = 0; const summaries = designs.map((design) => { by_state[design.design_state] = (by_state[design.design_state] ?? 0) + 1; if (design.design_state === "blocked") blocked++; if (design.design_state === "ready_for_operator_review") ready++; if (design.design_state === "approved_for_future_scaffold_design") approved++; if (design.design_state === "rejected") rejected++; if (design.design_state === "revoked") revoked++; if (design.validation.implementation_design_complete) complete++; if (design.validation.ready_for_future_scaffold_design) readyFuture++; componentsTotal += design.component_designs.length; componentsBlocked += design.component_designs.filter((component) => component.blocking_reasons.length > 0).length; return { real_upload_implementation_design_id: safeRealUploadImplementationDesignString(design.real_upload_implementation_design_id, "[unsafe-id]"), project_id: safeRealUploadImplementationDesignString(design.project_id, "[unsafe-project]"), platform: safeRealUploadImplementationDesignString(design.platform, "[unsafe-platform]"), design_state: design.design_state, created_at: design.created_at }; }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_scaffold_design: approved, rejected, revoked, implementation_design_complete: complete, ready_for_future_scaffold_design: readyFuture, ready_for_real_upload: 0, upload_allowed: 0, upload_execution_enabled: 0, scaffold_code_allowed: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, media_file_read: 0, file_mutation_allowed: 0, components_total: componentsTotal, components_with_blockers: componentsBlocked, designs: summaries }; }
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {
@@ -14158,6 +14878,43 @@ export function getRealRendererExecutionApprovalReport(options?: {
     })),
   };
 }
+
+// ─── VO-7O: Real Upload Scaffold Design ───────────────────────────────────
+
+export type RealUploadScaffoldDesignMode = "real_upload_scaffold_design_only" | "operator_review_real_upload_scaffold_design";
+export type RealUploadScaffoldDesignState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_scaffold_contracts" | "rejected" | "revoked";
+export interface RealUploadScaffoldRequiredArtifacts { real_upload_implementation_design_validated: boolean; final_real_upload_preflight_gate_validated: boolean; real_upload_dry_run_execution_result_validated: boolean; real_upload_execution_plan_validated: boolean; real_upload_strategy_design_validated: boolean; real_upload_execution_request_validated: boolean; real_upload_readiness_assessment_validated: boolean; dry_run_upload_spike_result_validated: boolean; upload_execution_design_validated: boolean; upload_execution_approval_validated: boolean; platform_upload_request_validated: boolean; upload_package_design_validated: boolean; local_output_review_validated: boolean; spike_result_validated: boolean; }
+export interface RealUploadScaffoldScope { future_scaffold_contracts_requested: boolean; scaffold_design_only: true; scaffold_code_created: false; implementation_files_created: false; current_real_upload_requested: false; current_network_calls_requested: false; current_platform_api_calls_requested: false; current_credential_access_requested: false; current_media_read_requested: false; dependencies_requested: false; }
+export interface RealUploadScaffoldProposedModule { module_id: string; module_kind: "credential_provider_contract" | "media_reference_resolver_contract" | "platform_adapter_contract" | "payload_builder_contract" | "network_client_contract" | "upload_executor_contract" | "retry_idempotency_contract" | "rollback_contract" | "post_upload_verification_contract" | "audit_event_contract" | "operator_confirmation_contract" | "emergency_stop_contract" | "status_reporter_contract" | "upload_scaffold_index_contract"; module_state: "proposed" | "blocked" | "deferred" | "ready_for_future_contract"; safe_summary: string; file_created: false; code_created: false; execution_enabled: false; network_enabled: false; platform_api_enabled: false; credential_access_enabled: false; media_read_enabled: false; file_mutation_enabled: false; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadScaffoldProposedInterface { interface_id: string; interface_kind: string; interface_state: "proposed" | "blocked" | "deferred" | "ready_for_future_contract"; safe_summary: string; runtime_enabled: false; external_effects_allowed: false; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadScaffoldProposedFileBoundaries { files_may_be_created_now: false; implementation_files_allowed: false; scaffold_files_allowed: false; package_files_allowed: false; dependency_files_allowed: false; runtime_files_allowed: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadCredentialScaffoldBoundary { credential_contract_designed: boolean; credentials_required: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; credential_reference_stored: false; token_reference_stored: false; secret_material_stored: false; }
+export interface RealUploadMediaScaffoldBoundary { media_contract_designed: boolean; media_file_read: false; raw_media_path_stored: false; media_file_modified: false; media_file_copied: false; media_file_moved: false; media_file_deleted: false; }
+export interface RealUploadPlatformAdapterScaffoldBoundary { adapter_contract_designed: boolean; platform_adapter_implemented: false; platform_endpoint_selected: false; platform_api_calls_allowed: false; platform_api_calls_made: false; raw_account_ids_stored: false; }
+export interface RealUploadPayloadScaffoldBoundary { payload_contract_designed: boolean; platform_api_payload_created: false; platform_api_payload_stored: false; upload_payload_created: false; raw_payload_stored: false; }
+export interface RealUploadNetworkScaffoldBoundary { network_contract_designed: boolean; network_client_implemented: false; network_calls_allowed: false; network_calls_made: false; external_side_effects_allowed: false; external_side_effects_observed: false; }
+export interface RealUploadRuntimeConfigScaffoldBoundary { runtime_config_contract_designed: boolean; runtime_config_created: false; env_files_created: false; secrets_config_created: false; credential_config_created: false; package_dependency_changes: false; }
+export interface RealUploadTestScaffoldBoundary { test_contract_designed: boolean; test_files_created: false; network_tests_enabled: false; credential_tests_enabled: false; media_read_tests_enabled: false; upload_tests_enabled: false; }
+export interface RealUploadScaffoldOperatorReview { reviewed_by_label?: string | undefined; checklist_acknowledged: boolean; understands_scaffold_design_only: boolean; understands_no_scaffold_code_created: boolean; understands_no_upload_enabled: boolean; understands_no_credentials_accessed: boolean; understands_no_network_calls: boolean; understands_no_media_reads: boolean; understands_no_dependencies_added: boolean; understands_future_contract_phase_required: boolean; decision_note_summary?: string | undefined; }
+export interface RealUploadScaffoldBoundary { scaffold_code_allowed: false; scaffold_code_created: false; implementation_files_created: false; dependencies_added: false; upload_allowed: false; upload_execution_enabled: false; real_upload_execution_allowed: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; media_file_read: false; file_mutation_allowed: false; ready_for_real_upload: false; }
+export interface RealUploadScaffoldDesignValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadScaffoldDesign { schema_version: "1.0"; real_upload_scaffold_design_id: string; real_upload_implementation_design_id: string; final_real_upload_preflight_gate_id: string; real_upload_dry_run_execution_result_id: string; real_upload_execution_plan_id: string; real_upload_strategy_design_id: string; real_upload_execution_request_id: string; real_upload_readiness_assessment_id: string; dry_run_upload_spike_result_id: string; upload_execution_design_id: string; upload_execution_approval_id: string; platform_upload_request_id: string; upload_package_design_id: string; local_output_review_id: string; production_render_spike_result_id: string; final_render_execution_request_id: string; render_plan_id: string; project_id: string; platform: string; scaffold_design_state: RealUploadScaffoldDesignState; created_at: string; scaffold_design_mode: RealUploadScaffoldDesignMode; required_artifacts: RealUploadScaffoldRequiredArtifacts; scaffold_scope: RealUploadScaffoldScope; proposed_modules: RealUploadScaffoldProposedModule[]; proposed_interfaces: RealUploadScaffoldProposedInterface[]; proposed_file_boundaries: RealUploadScaffoldProposedFileBoundaries; credential_scaffold_boundary: RealUploadCredentialScaffoldBoundary; media_scaffold_boundary: RealUploadMediaScaffoldBoundary; platform_adapter_scaffold_boundary: RealUploadPlatformAdapterScaffoldBoundary; payload_scaffold_boundary: RealUploadPayloadScaffoldBoundary; network_scaffold_boundary: RealUploadNetworkScaffoldBoundary; runtime_config_scaffold_boundary: RealUploadRuntimeConfigScaffoldBoundary; test_scaffold_boundary: RealUploadTestScaffoldBoundary; operator_review: RealUploadScaffoldOperatorReview; scaffold_boundary: RealUploadScaffoldBoundary; validation: { scaffold_design_complete: boolean; ready_for_future_scaffold_contracts: boolean; ready_for_real_upload: false; scaffold_code_created: false; dependencies_added: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; media_file_read: false; blocking_reasons: string[]; warnings: string[]; }; provenance: { generated_by: "createRealUploadScaffoldDesign" | "revokeRealUploadScaffoldDesign"; source_real_upload_implementation_design_id: string; source_final_real_upload_preflight_gate_id: string; source_real_upload_dry_run_execution_result_id: string; source_real_upload_execution_plan_id: string; source_real_upload_strategy_design_id: string; source_real_upload_execution_request_id: string; source_real_upload_readiness_assessment_id: string; source_dry_run_upload_spike_result_id: string; source_upload_execution_design_id: string; source_upload_execution_approval_id: string; source_platform_upload_request_id: string; source_upload_package_design_id: string; source_local_output_review_id: string; source_production_render_spike_result_id: string; source_final_render_execution_request_id: string; source_render_plan_id: string; }; }
+
+function safeRealUploadScaffoldDesignString(value: unknown, fallback: string): string { return safeRealUploadImplementationDesignString(value, fallback); }
+interface RealUploadScaffoldDesignsStore { schema_version: "1.0"; created_at: string; designs: RealUploadScaffoldDesign[]; }
+function getRealUploadScaffoldDesignsPath(): string { return path.join(getRuntimeDir(), "real-upload-scaffold-designs.json"); }
+function loadRealUploadScaffoldDesignsStore(): RealUploadScaffoldDesignsStore { try { const filePath = getRealUploadScaffoldDesignsPath(); if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as RealUploadScaffoldDesignsStore; } catch {} return { schema_version: "1.0", created_at: new Date().toISOString(), designs: [] }; }
+function saveRealUploadScaffoldDesignsStore(store: RealUploadScaffoldDesignsStore): void { const filePath = getRealUploadScaffoldDesignsPath(); fs.mkdirSync(path.dirname(filePath), { recursive: true }); store.designs.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_scaffold_design_id.localeCompare(b.real_upload_scaffold_design_id)); fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8"); }
+function validateRealUploadScaffoldDesignShape(design: unknown): RealUploadScaffoldDesignValidationResult { const blocking_reasons: string[] = []; const warnings: string[] = []; const fail = (reason: string) => blocking_reasons.push(reason); if (!design || typeof design !== "object" || Array.isArray(design)) return { ok: false, blocking_reasons: ["Invalid scaffold design"], warnings }; const d = design as RealUploadScaffoldDesign; if (d.schema_version !== "1.0") fail("Invalid schema version"); if (d.scaffold_design_mode !== "real_upload_scaffold_design_only" && d.scaffold_design_mode !== "operator_review_real_upload_scaffold_design") fail("Invalid scaffold design mode"); if (d.scaffold_scope?.scaffold_design_only !== true || d.scaffold_scope?.scaffold_code_created !== false || d.scaffold_scope?.implementation_files_created !== false || d.scaffold_scope?.current_real_upload_requested !== false || d.scaffold_scope?.current_network_calls_requested !== false || d.scaffold_scope?.current_platform_api_calls_requested !== false || d.scaffold_scope?.current_credential_access_requested !== false || d.scaffold_scope?.current_media_read_requested !== false || d.scaffold_scope?.dependencies_requested !== false) fail("Unsafe scaffold scope"); const requiredKinds = ["credential_provider_contract","media_reference_resolver_contract","platform_adapter_contract","payload_builder_contract","network_client_contract","upload_executor_contract","retry_idempotency_contract","rollback_contract","post_upload_verification_contract","audit_event_contract","operator_confirmation_contract","emergency_stop_contract","status_reporter_contract","upload_scaffold_index_contract"] as const; if (!Array.isArray(d.proposed_modules) || requiredKinds.some((kind) => !d.proposed_modules.some((module) => module.module_kind === kind))) fail("Missing required proposed modules"); if (Array.isArray(d.proposed_modules)) { const kinds = d.proposed_modules.map((module) => module.module_kind); if (new Set(kinds).size !== kinds.length) fail("Duplicate proposed module kinds"); if (requiredKinds.some((kind) => !kinds.includes(kind))) fail("Missing required proposed modules"); if (d.proposed_modules.some((module) => module.file_created !== false || module.code_created !== false || module.execution_enabled !== false || module.network_enabled !== false || module.platform_api_enabled !== false || module.credential_access_enabled !== false || module.media_read_enabled !== false || module.file_mutation_enabled !== false)) fail("Unsafe proposed module flags"); } if (!d.required_artifacts || d.required_artifacts.real_upload_implementation_design_validated !== true || d.required_artifacts.final_real_upload_preflight_gate_validated !== true || d.required_artifacts.real_upload_dry_run_execution_result_validated !== true || d.required_artifacts.real_upload_execution_plan_validated !== true || d.required_artifacts.real_upload_strategy_design_validated !== true || d.required_artifacts.real_upload_execution_request_validated !== true || d.required_artifacts.real_upload_readiness_assessment_validated !== true || d.required_artifacts.dry_run_upload_spike_result_validated !== true || d.required_artifacts.upload_execution_design_validated !== true || d.required_artifacts.upload_execution_approval_validated !== true || d.required_artifacts.platform_upload_request_validated !== true || d.required_artifacts.upload_package_design_validated !== true || d.required_artifacts.local_output_review_validated !== true || d.required_artifacts.spike_result_validated !== true) fail("Unsafe required artifacts"); if (!d.proposed_file_boundaries || d.proposed_file_boundaries.files_may_be_created_now !== false || d.proposed_file_boundaries.implementation_files_allowed !== false || d.proposed_file_boundaries.scaffold_files_allowed !== false || d.proposed_file_boundaries.package_files_allowed !== false || d.proposed_file_boundaries.dependency_files_allowed !== false || d.proposed_file_boundaries.runtime_files_allowed !== false) fail("Unsafe file boundaries"); if (!d.credential_scaffold_boundary || d.credential_scaffold_boundary.credentials_required !== false || d.credential_scaffold_boundary.credentials_accessed !== false || d.credential_scaffold_boundary.token_accessed !== false || d.credential_scaffold_boundary.keychain_accessed !== false || d.credential_scaffold_boundary.env_accessed !== false || d.credential_scaffold_boundary.credential_reference_stored !== false || d.credential_scaffold_boundary.token_reference_stored !== false || d.credential_scaffold_boundary.secret_material_stored !== false) fail("Unsafe credential boundary"); if (!d.media_scaffold_boundary || d.media_scaffold_boundary.media_file_read !== false || d.media_scaffold_boundary.raw_media_path_stored !== false || d.media_scaffold_boundary.media_file_modified !== false || d.media_scaffold_boundary.media_file_copied !== false || d.media_scaffold_boundary.media_file_moved !== false || d.media_scaffold_boundary.media_file_deleted !== false) fail("Unsafe media boundary"); if (!d.platform_adapter_scaffold_boundary || d.platform_adapter_scaffold_boundary.platform_adapter_implemented !== false || d.platform_adapter_scaffold_boundary.platform_endpoint_selected !== false || d.platform_adapter_scaffold_boundary.platform_api_calls_allowed !== false || d.platform_adapter_scaffold_boundary.platform_api_calls_made !== false || d.platform_adapter_scaffold_boundary.raw_account_ids_stored !== false) fail("Unsafe platform adapter boundary"); if (!d.payload_scaffold_boundary || d.payload_scaffold_boundary.platform_api_payload_created !== false || d.payload_scaffold_boundary.platform_api_payload_stored !== false || d.payload_scaffold_boundary.upload_payload_created !== false || d.payload_scaffold_boundary.raw_payload_stored !== false) fail("Unsafe payload boundary"); if (!d.network_scaffold_boundary || d.network_scaffold_boundary.network_client_implemented !== false || d.network_scaffold_boundary.network_calls_allowed !== false || d.network_scaffold_boundary.network_calls_made !== false || d.network_scaffold_boundary.external_side_effects_allowed !== false || d.network_scaffold_boundary.external_side_effects_observed !== false) fail("Unsafe network boundary"); if (!d.runtime_config_scaffold_boundary || d.runtime_config_scaffold_boundary.runtime_config_created !== false || d.runtime_config_scaffold_boundary.env_files_created !== false || d.runtime_config_scaffold_boundary.secrets_config_created !== false || d.runtime_config_scaffold_boundary.credential_config_created !== false || d.runtime_config_scaffold_boundary.package_dependency_changes !== false) fail("Unsafe runtime config boundary"); if (!d.test_scaffold_boundary || d.test_scaffold_boundary.test_files_created !== false || d.test_scaffold_boundary.network_tests_enabled !== false || d.test_scaffold_boundary.credential_tests_enabled !== false || d.test_scaffold_boundary.media_read_tests_enabled !== false || d.test_scaffold_boundary.upload_tests_enabled !== false) fail("Unsafe test boundary"); if (!d.scaffold_boundary || d.scaffold_boundary.scaffold_code_allowed !== false || d.scaffold_boundary.scaffold_code_created !== false || d.scaffold_boundary.implementation_files_created !== false || d.scaffold_boundary.dependencies_added !== false || d.scaffold_boundary.upload_allowed !== false || d.scaffold_boundary.upload_execution_enabled !== false || d.scaffold_boundary.real_upload_execution_allowed !== false || d.scaffold_boundary.platform_api_calls_allowed !== false || d.scaffold_boundary.network_calls_allowed !== false || d.scaffold_boundary.credentials_accessed !== false || d.scaffold_boundary.token_accessed !== false || d.scaffold_boundary.keychain_accessed !== false || d.scaffold_boundary.env_accessed !== false || d.scaffold_boundary.media_file_read !== false || d.scaffold_boundary.file_mutation_allowed !== false || d.scaffold_boundary.ready_for_real_upload !== false) fail("Unsafe scaffold boundary"); if (!d.validation || d.validation.ready_for_real_upload !== false || d.validation.scaffold_code_created !== false || d.validation.dependencies_added !== false || d.validation.upload_allowed !== false || d.validation.upload_execution_enabled !== false || d.validation.platform_api_calls_allowed !== false || d.validation.network_calls_allowed !== false || d.validation.credentials_accessed !== false || d.validation.token_accessed !== false || d.validation.media_file_read !== false) fail("Unsafe validation"); const text = JSON.stringify(design); if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("Bearer ") || text.includes("access_token") || text.includes("refresh_token") || text.includes("client_secret") || text.includes("keychain://") || text.includes("/Users/") || text.includes("http://") || text.includes("https://") || text.includes("../") || text.includes("stdout") || text.includes("stderr")) fail("Unsafe text content"); return { ok: blocking_reasons.length === 0, blocking_reasons, warnings }; }
+export function validateRealUploadScaffoldDesign(design: unknown): RealUploadScaffoldDesignValidationResult { return validateRealUploadScaffoldDesignShape(design); }
+export function createRealUploadScaffoldDesign(input: { implementationDesign: RealUploadImplementationDesign; finalPreflightGate: FinalRealUploadPreflightGate; dryRunExecutionResult: RealUploadDryRunExecutionResult; executionPlan: RealUploadExecutionPlan; strategyDesign: RealUploadStrategyDesign; realUploadExecutionRequest: RealUploadExecutionRequest; readinessAssessment: RealUploadReadinessAssessment; dryRunUploadSpikeResult: DryRunUploadSpikeResult; uploadExecutionDesign: UploadExecutionDesign; uploadExecutionApproval: UploadExecutionApproval; platformUploadRequest: PlatformUploadRequest; uploadPackageDesign: UploadPackageDesign; localOutputReview: LocalOutputOperatorReview; spikeResult: ControlledProductionRenderSpikeResult; decision?: "draft" | "approved_for_future_scaffold_contracts" | "rejected"; reviewed_by_label?: string; checklist_acknowledged?: boolean; understands_scaffold_design_only?: boolean; understands_no_scaffold_code_created?: boolean; understands_no_upload_enabled?: boolean; understands_no_credentials_accessed?: boolean; understands_no_network_calls?: boolean; understands_no_media_reads?: boolean; understands_no_dependencies_added?: boolean; understands_future_contract_phase_required?: boolean; decision_note_summary?: string; dryRun: true; }): RealUploadScaffoldDesign { if (input.dryRun !== true) throw new Error("createRealUploadScaffoldDesign: dryRun=true required"); if (!validateRealUploadImplementationDesign(input.implementationDesign).ok || !validateFinalRealUploadPreflightGate(input.finalPreflightGate).ok || !validateRealUploadDryRunExecutionResult(input.dryRunExecutionResult).ok || !validateRealUploadExecutionPlan(input.executionPlan).ok || !validateRealUploadStrategyDesign(input.strategyDesign).ok || !validateRealUploadExecutionRequest(input.realUploadExecutionRequest).ok || !validateRealUploadReadinessAssessment(input.readinessAssessment).ok || !validateDryRunUploadSpikeResult(input.dryRunUploadSpikeResult).ok || !validateUploadExecutionDesign(input.uploadExecutionDesign).ok || !validateUploadExecutionApproval(input.uploadExecutionApproval).ok || !validatePlatformUploadRequest(input.platformUploadRequest).ok || !validateUploadPackageDesign(input.uploadPackageDesign).ok || !validateLocalOutputOperatorReview(input.localOutputReview).ok || !validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("createRealUploadScaffoldDesign: all input artifacts must validate"); if (input.implementationDesign.design_state !== "approved_for_future_scaffold_design") throw new Error("createRealUploadScaffoldDesign: implementationDesign must be approved_for_future_scaffold_design"); if (input.implementationDesign.validation.ready_for_real_upload !== false || input.implementationDesign.validation.ready_for_future_scaffold_design !== true) throw new Error("createRealUploadScaffoldDesign: implementationDesign readiness must remain safe"); const approved = input.decision === "approved_for_future_scaffold_contracts"; if (approved && (!input.checklist_acknowledged || !input.understands_scaffold_design_only || !input.understands_no_scaffold_code_created || !input.understands_no_upload_enabled || !input.understands_no_credentials_accessed || !input.understands_no_network_calls || !input.understands_no_media_reads || !input.understands_no_dependencies_added || !input.understands_future_contract_phase_required)) throw new Error("createRealUploadScaffoldDesign: acknowledgements required"); const scaffold: RealUploadScaffoldDesign = { schema_version: "1.0", real_upload_scaffold_design_id: crypto.randomUUID(), real_upload_implementation_design_id: input.implementationDesign.real_upload_implementation_design_id, final_real_upload_preflight_gate_id: input.finalPreflightGate.final_real_upload_preflight_gate_id, real_upload_dry_run_execution_result_id: input.dryRunExecutionResult.real_upload_dry_run_execution_result_id, real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id, real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id, real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id, real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id, dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id, upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id, upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id, platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id, upload_package_design_id: input.uploadPackageDesign.upload_package_design_id, local_output_review_id: input.localOutputReview.local_output_review_id, production_render_spike_result_id: input.spikeResult.production_render_spike_result_id, final_render_execution_request_id: input.spikeResult.final_render_execution_request_id, render_plan_id: input.spikeResult.render_plan_id, project_id: input.implementationDesign.project_id, platform: input.implementationDesign.platform, scaffold_design_state: input.decision === "rejected" ? "rejected" : approved ? "approved_for_future_scaffold_contracts" : "draft", created_at: new Date().toISOString(), scaffold_design_mode: approved ? "operator_review_real_upload_scaffold_design" : "real_upload_scaffold_design_only", required_artifacts: { real_upload_implementation_design_validated: true, final_real_upload_preflight_gate_validated: true, real_upload_dry_run_execution_result_validated: true, real_upload_execution_plan_validated: true, real_upload_strategy_design_validated: true, real_upload_execution_request_validated: true, real_upload_readiness_assessment_validated: true, dry_run_upload_spike_result_validated: true, upload_execution_design_validated: true, upload_execution_approval_validated: true, platform_upload_request_validated: true, upload_package_design_validated: true, local_output_review_validated: true, spike_result_validated: true }, scaffold_scope: { future_scaffold_contracts_requested: true, scaffold_design_only: true, scaffold_code_created: false, implementation_files_created: false, current_real_upload_requested: false, current_network_calls_requested: false, current_platform_api_calls_requested: false, current_credential_access_requested: false, current_media_read_requested: false, dependencies_requested: false }, proposed_modules: ["credential_provider_contract","media_reference_resolver_contract","platform_adapter_contract","payload_builder_contract","network_client_contract","upload_executor_contract","retry_idempotency_contract","rollback_contract","post_upload_verification_contract","audit_event_contract","operator_confirmation_contract","emergency_stop_contract","status_reporter_contract","upload_scaffold_index_contract"].map((kind, index) => ({ module_id: `module-${index + 1}`, module_kind: kind as RealUploadScaffoldProposedModule["module_kind"], module_state: kind === "operator_confirmation_contract" ? "ready_for_future_contract" : "proposed", safe_summary: `Future ${kind.replaceAll("_", " ")} only.`, file_created: false, code_created: false, execution_enabled: false, network_enabled: false, platform_api_enabled: false, credential_access_enabled: false, media_read_enabled: false, file_mutation_enabled: false, blocking_reasons: [kind === "credential_provider_contract" ? "Credential access remains disabled." : kind === "media_reference_resolver_contract" ? "Media reads remain disabled." : kind === "platform_adapter_contract" ? "Platform APIs remain disabled." : kind === "payload_builder_contract" ? "Payload construction remains disabled." : kind === "network_client_contract" ? "Network calls remain disabled." : kind === "upload_executor_contract" ? "Upload execution remains disabled." : kind === "retry_idempotency_contract" ? "Retry execution remains disabled." : kind === "rollback_contract" ? "Rollback execution remains disabled." : kind === "post_upload_verification_contract" ? "Verification execution remains disabled." : kind === "audit_event_contract" ? "Raw logging remains disabled." : kind === "operator_confirmation_contract" ? "Operator approval remains required." : kind === "emergency_stop_contract" ? "Emergency stop is design-only." : "Contract remains safe and local-only."], warnings: [] })), proposed_interfaces: [{ interface_id: "interface-1", interface_kind: "credential-provider", interface_state: "proposed", safe_summary: "Credential provider interface only.", runtime_enabled: false, external_effects_allowed: false, blocking_reasons: ["Credential access remains disabled."], warnings: [] }], proposed_file_boundaries: { files_may_be_created_now: false, implementation_files_allowed: false, scaffold_files_allowed: false, package_files_allowed: false, dependency_files_allowed: false, runtime_files_allowed: false, safe_summary: "No files may be created now.", blocking_reasons: ["File creation remains disabled."], warnings: [] }, credential_scaffold_boundary: { credential_contract_designed: true, credentials_required: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, credential_reference_stored: false, token_reference_stored: false, secret_material_stored: false }, media_scaffold_boundary: { media_contract_designed: true, media_file_read: false, raw_media_path_stored: false, media_file_modified: false, media_file_copied: false, media_file_moved: false, media_file_deleted: false }, platform_adapter_scaffold_boundary: { adapter_contract_designed: true, platform_adapter_implemented: false, platform_endpoint_selected: false, platform_api_calls_allowed: false, platform_api_calls_made: false, raw_account_ids_stored: false }, payload_scaffold_boundary: { payload_contract_designed: true, platform_api_payload_created: false, platform_api_payload_stored: false, upload_payload_created: false, raw_payload_stored: false }, network_scaffold_boundary: { network_contract_designed: true, network_client_implemented: false, network_calls_allowed: false, network_calls_made: false, external_side_effects_allowed: false, external_side_effects_observed: false }, runtime_config_scaffold_boundary: { runtime_config_contract_designed: true, runtime_config_created: false, env_files_created: false, secrets_config_created: false, credential_config_created: false, package_dependency_changes: false }, test_scaffold_boundary: { test_contract_designed: true, test_files_created: false, network_tests_enabled: false, credential_tests_enabled: false, media_read_tests_enabled: false, upload_tests_enabled: false }, operator_review: { reviewed_by_label: input.reviewed_by_label, checklist_acknowledged: !!input.checklist_acknowledged, understands_scaffold_design_only: !!input.understands_scaffold_design_only, understands_no_scaffold_code_created: !!input.understands_no_scaffold_code_created, understands_no_upload_enabled: !!input.understands_no_upload_enabled, understands_no_credentials_accessed: !!input.understands_no_credentials_accessed, understands_no_network_calls: !!input.understands_no_network_calls, understands_no_media_reads: !!input.understands_no_media_reads, understands_no_dependencies_added: !!input.understands_no_dependencies_added, understands_future_contract_phase_required: !!input.understands_future_contract_phase_required, decision_note_summary: input.decision_note_summary }, scaffold_boundary: { scaffold_code_allowed: false, scaffold_code_created: false, implementation_files_created: false, dependencies_added: false, upload_allowed: false, upload_execution_enabled: false, real_upload_execution_allowed: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, media_file_read: false, file_mutation_allowed: false, ready_for_real_upload: false }, validation: { scaffold_design_complete: true, ready_for_future_scaffold_contracts: approved, ready_for_real_upload: false, scaffold_code_created: false, dependencies_added: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] }, provenance: { generated_by: "createRealUploadScaffoldDesign", source_real_upload_implementation_design_id: input.implementationDesign.real_upload_implementation_design_id, source_final_real_upload_preflight_gate_id: input.finalPreflightGate.final_real_upload_preflight_gate_id, source_real_upload_dry_run_execution_result_id: input.dryRunExecutionResult.real_upload_dry_run_execution_result_id, source_real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id, source_real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id, source_real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id, source_real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id, source_dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id, source_upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id, source_upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id, source_platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id, source_upload_package_design_id: input.uploadPackageDesign.upload_package_design_id, source_local_output_review_id: input.localOutputReview.local_output_review_id, source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id, source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id, source_render_plan_id: input.spikeResult.render_plan_id } }; if (!validateRealUploadScaffoldDesign(scaffold).ok) throw new Error("Unsafe real upload scaffold design cannot be created."); return scaffold; }
+interface RealUploadScaffoldDesignsStoreSummaryItem { real_upload_scaffold_design_id: string; project_id: string; platform: string; scaffold_design_state: string; created_at: string; }
+function safeRealUploadScaffoldDesignSummary(design: RealUploadScaffoldDesign): RealUploadScaffoldDesignsStoreSummaryItem { return { real_upload_scaffold_design_id: safeRealUploadScaffoldDesignString(design.real_upload_scaffold_design_id, "[unsafe-id]"), project_id: safeRealUploadScaffoldDesignString(design.project_id, "[unsafe-project]"), platform: safeRealUploadScaffoldDesignString(design.platform, "[unsafe-platform]"), scaffold_design_state: design.scaffold_design_state, created_at: design.created_at }; }
+export function saveRealUploadScaffoldDesign(design: RealUploadScaffoldDesign): void { if (!validateRealUploadScaffoldDesign(design).ok) throw new Error("Unsafe real upload scaffold design cannot be stored."); const store = loadRealUploadScaffoldDesignsStore(); const index = store.designs.findIndex((item) => item.real_upload_scaffold_design_id === design.real_upload_scaffold_design_id); if (index >= 0) store.designs[index] = design; else store.designs.push(design); saveRealUploadScaffoldDesignsStore(store); }
+export function listRealUploadScaffoldDesigns(options?: { project_id?: string; platform?: string; scaffold_design_state?: string; real_upload_implementation_design_id?: string; final_real_upload_preflight_gate_id?: string }): RealUploadScaffoldDesign[] { return loadRealUploadScaffoldDesignsStore().designs.filter((design) => (!options?.project_id || design.project_id === options.project_id) && (!options?.platform || design.platform === options.platform) && (!options?.scaffold_design_state || design.scaffold_design_state === options.scaffold_design_state) && (!options?.real_upload_implementation_design_id || design.real_upload_implementation_design_id === options.real_upload_implementation_design_id) && (!options?.final_real_upload_preflight_gate_id || design.final_real_upload_preflight_gate_id === options.final_real_upload_preflight_gate_id)).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_scaffold_design_id.localeCompare(b.real_upload_scaffold_design_id)); }
+export function getRealUploadScaffoldDesign(real_upload_scaffold_design_id: string): RealUploadScaffoldDesign | null { return loadRealUploadScaffoldDesignsStore().designs.find((design) => design.real_upload_scaffold_design_id === real_upload_scaffold_design_id) ?? null; }
+export function revokeRealUploadScaffoldDesign(real_upload_scaffold_design_id: string, reason: string): RealUploadScaffoldDesign { const design = getRealUploadScaffoldDesign(real_upload_scaffold_design_id); if (!design) throw new Error("Real upload scaffold design not found"); const safeReason = safeRealUploadScaffoldDesignString(reason, "[unsafe-reason]"); if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload scaffold design reason cannot be stored."); const revoked: RealUploadScaffoldDesign = { ...design, scaffold_design_state: "revoked", validation: { ...design.validation, blocking_reasons: [...design.validation.blocking_reasons, safeReason], warnings: [...design.validation.warnings, "Real upload scaffold design revoked."] }, provenance: { ...design.provenance, generated_by: "revokeRealUploadScaffoldDesign" } }; saveRealUploadScaffoldDesign(revoked); return revoked; }
+export function getRealUploadScaffoldDesignReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_scaffold_contracts: number; rejected: number; revoked: number; scaffold_design_complete: number; ready_for_future_scaffold_contracts: number; ready_for_real_upload: 0; scaffold_code_created: 0; implementation_files_created: 0; dependencies_added: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; file_mutation_allowed: 0; modules_total: number; modules_with_blockers: number; designs: Array<RealUploadScaffoldDesignsStoreSummaryItem>; } { const designs = listRealUploadScaffoldDesigns(options); const by_state: Record<string, number> = {}; let blocked = 0, ready = 0, approved = 0, rejected = 0, revoked = 0, complete = 0, readyFuture = 0, modulesTotal = 0, modulesBlocked = 0; const summaries = designs.map((design) => { by_state[design.scaffold_design_state] = (by_state[design.scaffold_design_state] ?? 0) + 1; if (design.scaffold_design_state === "blocked") blocked++; if (design.scaffold_design_state === "ready_for_operator_review") ready++; if (design.scaffold_design_state === "approved_for_future_scaffold_contracts") approved++; if (design.scaffold_design_state === "rejected") rejected++; if (design.scaffold_design_state === "revoked") revoked++; if (design.validation.scaffold_design_complete) complete++; if (design.validation.ready_for_future_scaffold_contracts) readyFuture++; modulesTotal += design.proposed_modules.length; modulesBlocked += design.proposed_modules.filter((module) => module.blocking_reasons.length > 0).length; return safeRealUploadScaffoldDesignSummary(design); }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_scaffold_contracts: approved, rejected, revoked, scaffold_design_complete: complete, ready_for_future_scaffold_contracts: readyFuture, ready_for_real_upload: 0, scaffold_code_created: 0, implementation_files_created: 0, dependencies_added: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, media_file_read: 0, file_mutation_allowed: 0, modules_total: modulesTotal, modules_with_blockers: modulesBlocked, designs: summaries }; }
 
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 

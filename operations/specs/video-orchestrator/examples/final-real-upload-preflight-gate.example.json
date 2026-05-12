@@ -1,0 +1,308 @@
+{
+  "schema_version": "1.0",
+  "final_real_upload_preflight_gate_id": "final-real-upload-preflight-gate-001",
+  "real_upload_dry_run_execution_result_id": "real-upload-dry-run-execution-result-001",
+  "real_upload_execution_plan_id": "real-upload-execution-plan-001",
+  "real_upload_strategy_design_id": "real-upload-strategy-design-001",
+  "real_upload_execution_request_id": "real-upload-execution-request-001",
+  "real_upload_readiness_assessment_id": "real-upload-readiness-assessment-001",
+  "dry_run_upload_spike_result_id": "dry-run-upload-spike-result-001",
+  "upload_execution_design_id": "upload-execution-design-001",
+  "upload_execution_approval_id": "upload-execution-approval-001",
+  "platform_upload_request_id": "platform-upload-request-001",
+  "upload_package_design_id": "upload-package-design-001",
+  "local_output_review_id": "local-output-review-001",
+  "production_render_spike_result_id": "production-render-spike-result-001",
+  "final_render_execution_request_id": "final-render-execution-request-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "project-001",
+  "platform": "youtube",
+  "gate_state": "approved_for_future_real_upload_implementation_design",
+  "created_at": "2026-05-12T00:00:00.000Z",
+  "gate_mode": "operator_review_final_real_upload_preflight_gate",
+  "required_artifacts": {
+    "real_upload_dry_run_execution_result_validated": true,
+    "real_upload_execution_plan_validated": true,
+    "real_upload_strategy_design_validated": true,
+    "real_upload_execution_request_validated": true,
+    "real_upload_readiness_assessment_validated": true,
+    "dry_run_upload_spike_result_validated": true,
+    "upload_execution_design_validated": true,
+    "upload_execution_approval_validated": true,
+    "platform_upload_request_validated": true,
+    "upload_package_design_validated": true,
+    "local_output_review_validated": true,
+    "spike_result_validated": true
+  },
+  "preflight_scope": {
+    "future_real_upload_implementation_design_requested": true,
+    "current_real_upload_requested": false,
+    "current_network_calls_requested": false,
+    "current_platform_api_calls_requested": false,
+    "current_credential_access_requested": false,
+    "current_media_read_requested": false,
+    "preflight_gate_only": true
+  },
+  "artifact_chain_assessment": {
+    "all_required_artifacts_present": true,
+    "all_required_artifacts_validated": true,
+    "dry_run_execution_passed": true,
+    "prior_ready_for_real_upload_flags_false": true,
+    "prior_upload_allowed_flags_false": true,
+    "prior_network_api_credential_flags_false": true,
+    "prior_media_read_flags_false": true,
+    "chain_safe_for_future_implementation_design": true,
+    "chain_safe_for_real_upload_now": false,
+    "blocking_reasons": [],
+    "warnings": [
+      "Final preflight gate is future-design-only."
+    ]
+  },
+  "critical_risk_acknowledgements": {
+    "upload_side_effect_risk_acknowledged": true,
+    "platform_policy_risk_acknowledged": true,
+    "credential_handling_risk_acknowledged": true,
+    "token_scope_risk_acknowledged": true,
+    "network_side_effect_risk_acknowledged": true,
+    "media_access_risk_acknowledged": true,
+    "retry_idempotency_risk_acknowledged": true,
+    "rollback_limitations_acknowledged": true,
+    "post_upload_visibility_risk_acknowledged": true,
+    "operator_accountability_acknowledged": true
+  },
+  "unresolved_execution_requirements": [
+    {
+      "requirement_id": "requirement-credential-storage-policy",
+      "requirement_kind": "credential_storage_policy",
+      "requirement_state": "required",
+      "safe_summary": "Credential storage policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-manual-final-confirmation",
+      "requirement_kind": "manual_final_confirmation_policy",
+      "requirement_state": "acknowledged",
+      "safe_summary": "Manual final confirmation is acknowledged.",
+      "blocking_reasons": [],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-credential-scope-policy",
+      "requirement_kind": "credential_scope_policy",
+      "requirement_state": "required",
+      "safe_summary": "Credential scope policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-platform-api-endpoint-policy",
+      "requirement_kind": "platform_api_endpoint_policy",
+      "requirement_state": "required",
+      "safe_summary": "Platform endpoint policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-platform-api-payload-policy",
+      "requirement_kind": "platform_api_payload_policy",
+      "requirement_state": "required",
+      "safe_summary": "Platform payload policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-network-execution-policy",
+      "requirement_kind": "network_execution_policy",
+      "requirement_state": "required",
+      "safe_summary": "Network execution policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-media-path-access-policy",
+      "requirement_kind": "media_path_access_policy",
+      "requirement_state": "required",
+      "safe_summary": "Media path access policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-upload-retry-policy",
+      "requirement_kind": "upload_retry_policy",
+      "requirement_state": "required",
+      "safe_summary": "Upload retry policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-idempotency-policy",
+      "requirement_kind": "idempotency_policy",
+      "requirement_state": "required",
+      "safe_summary": "Idempotency policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-rollback-policy",
+      "requirement_kind": "rollback_policy",
+      "requirement_state": "required",
+      "safe_summary": "Rollback policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-post-upload-verification-policy",
+      "requirement_kind": "post_upload_verification_policy",
+      "requirement_state": "required",
+      "safe_summary": "Post upload verification policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-audit-logging-policy",
+      "requirement_kind": "audit_logging_policy",
+      "requirement_state": "required",
+      "safe_summary": "Audit logging policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-operator-runbook-policy",
+      "requirement_kind": "operator_runbook_policy",
+      "requirement_state": "required",
+      "safe_summary": "Operator runbook policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    },
+    {
+      "requirement_id": "requirement-emergency-stop-policy",
+      "requirement_kind": "emergency_stop_policy",
+      "requirement_state": "required",
+      "safe_summary": "Emergency stop policy remains future work.",
+      "blocking_reasons": [
+        "Future implementation design is required."
+      ],
+      "warnings": []
+    }
+  ],
+  "operator_preflight_review": {
+    "reviewed_by_label": "operator-001",
+    "checklist_acknowledged": true,
+    "artifact_chain_acknowledged": true,
+    "unresolved_requirements_acknowledged": true,
+    "critical_risks_acknowledged": true,
+    "understands_preflight_gate_only": true,
+    "understands_no_upload_enabled": true,
+    "understands_no_credentials_accessed": true,
+    "understands_no_network_calls": true,
+    "understands_no_media_reads": true,
+    "understands_future_implementation_design_required": true,
+    "decision_note_summary": "Final preflight gate remains future-design-only."
+  },
+  "credential_boundary": {
+    "credentials_required": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "keychain_accessed": false,
+    "env_accessed": false,
+    "credential_reference_stored": false,
+    "token_reference_stored": false,
+    "secret_material_stored": false
+  },
+  "network_boundary": {
+    "network_calls_allowed": false,
+    "network_calls_made": false,
+    "external_side_effects_allowed": false,
+    "external_side_effects_observed": false
+  },
+  "platform_api_boundary": {
+    "platform_api_calls_allowed": false,
+    "platform_api_calls_made": false,
+    "platform_endpoint_selected": false,
+    "platform_api_payload_created": false,
+    "platform_api_payload_stored": false,
+    "raw_account_ids_stored": false,
+    "upload_payload_created": false,
+    "response_received": false,
+    "raw_response_stored": false
+  },
+  "media_boundary": {
+    "media_file_read": false,
+    "raw_media_path_stored": false,
+    "media_file_modified": false,
+    "media_file_copied": false,
+    "media_file_moved": false,
+    "media_file_deleted": false
+  },
+  "execution_boundary": {
+    "upload_allowed": false,
+    "upload_execution_enabled": false,
+    "real_upload_execution_allowed": false,
+    "platform_api_calls_allowed": false,
+    "network_calls_allowed": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "keychain_accessed": false,
+    "env_accessed": false,
+    "media_file_read": false,
+    "ready_for_real_upload": false
+  },
+  "validation": {
+    "final_real_upload_preflight_passed": true,
+    "ready_for_future_real_upload_implementation_design": true,
+    "ready_for_real_upload": false,
+    "upload_allowed": false,
+    "upload_execution_enabled": false,
+    "platform_api_calls_allowed": false,
+    "network_calls_allowed": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "media_file_read": false,
+    "blocking_reasons": [],
+    "warnings": [
+      "Final preflight gate is future-design-only."
+    ]
+  },
+  "provenance": {
+    "generated_by": "createFinalRealUploadPreflightGate",
+    "source_real_upload_dry_run_execution_result_id": "real-upload-dry-run-execution-result-001",
+    "source_real_upload_execution_plan_id": "real-upload-execution-plan-001",
+    "source_real_upload_strategy_design_id": "real-upload-strategy-design-001",
+    "source_real_upload_execution_request_id": "real-upload-execution-request-001",
+    "source_real_upload_readiness_assessment_id": "real-upload-readiness-assessment-001",
+    "source_dry_run_upload_spike_result_id": "dry-run-upload-spike-result-001",
+    "source_upload_execution_design_id": "upload-execution-design-001",
+    "source_upload_execution_approval_id": "upload-execution-approval-001",
+    "source_platform_upload_request_id": "platform-upload-request-001",
+    "source_upload_package_design_id": "upload-package-design-001",
+    "source_local_output_review_id": "local-output-review-001",
+    "source_production_render_spike_result_id": "production-render-spike-result-001",
+    "source_final_render_execution_request_id": "final-render-execution-request-001",
+    "source_render_plan_id": "render-plan-001"
+  }
+}
