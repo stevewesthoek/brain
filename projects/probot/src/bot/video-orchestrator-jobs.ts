@@ -12857,6 +12857,336 @@ export function getRealUploadExecutionPlan(real_upload_execution_plan_id: string
 export function revokeRealUploadExecutionPlan(real_upload_execution_plan_id: string, reason: string): RealUploadExecutionPlan { const plan = getRealUploadExecutionPlan(real_upload_execution_plan_id); if (!plan) throw new Error("Real upload execution plan not found"); const safeReason = safeRealUploadExecutionPlanString(reason, "[unsafe-reason]"); if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload execution plan reason cannot be stored."); const revoked: RealUploadExecutionPlan = { ...plan, plan_state: "revoked", validation: { ...plan.validation, blocking_reasons: [...plan.validation.blocking_reasons, safeReason], warnings: [...plan.validation.warnings, "Real upload execution plan revoked."] }, provenance: { ...plan.provenance, generated_by: "revokeRealUploadExecutionPlan" } }; saveRealUploadExecutionPlan(revoked); return revoked; }
 export function getRealUploadExecutionPlanReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_upload_execution_dry_run: number; rejected: number; revoked: number; ready_for_future_upload_execution_dry_run: number; ready_for_real_upload: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; planned_steps_total: number; planned_steps_with_blockers: number; plans: Array<RealUploadExecutionPlansStoreSummaryItem>; } { const plans = listRealUploadExecutionPlans(options); const by_state: Record<string, number> = {}; let blocked = 0, ready = 0, approved = 0, rejected = 0, revoked = 0, readyFuture = 0, stepsTotal = 0, stepsBlocked = 0; const summaries = plans.map((plan) => { by_state[plan.plan_state] = (by_state[plan.plan_state] ?? 0) + 1; if (plan.plan_state === "blocked") blocked++; if (plan.plan_state === "ready_for_operator_review") ready++; if (plan.plan_state === "approved_for_future_upload_execution_dry_run") approved++; if (plan.plan_state === "rejected") rejected++; if (plan.plan_state === "revoked") revoked++; if (plan.validation.ready_for_future_upload_execution_dry_run) readyFuture++; stepsTotal += plan.planned_steps.length; stepsBlocked += plan.planned_steps.filter((step) => step.blocking_reasons.length > 0).length; return safeRealUploadExecutionPlanSummary(plan); }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_upload_execution_dry_run: approved, rejected, revoked, ready_for_future_upload_execution_dry_run: readyFuture, ready_for_real_upload: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, planned_steps_total: stepsTotal, planned_steps_with_blockers: stepsBlocked, plans: summaries }; }
 
+export type RealUploadDryRunExecutionResultMode = "real_upload_dry_run_execution_simulation_only" | "operator_review_real_upload_dry_run_execution_result";
+export type RealUploadDryRunExecutionResultState = "draft" | "blocked" | "simulated" | "failed" | "ready_for_operator_review" | "approved_for_future_real_upload_preflight" | "rejected" | "revoked";
+
+export interface RealUploadDryRunRequiredArtifacts {
+  real_upload_execution_plan_validated: boolean;
+  real_upload_strategy_design_validated: boolean;
+  real_upload_execution_request_validated: boolean;
+  real_upload_readiness_assessment_validated: boolean;
+  dry_run_upload_spike_result_validated: boolean;
+  upload_execution_design_validated: boolean;
+  upload_execution_approval_validated: boolean;
+  platform_upload_request_validated: boolean;
+  upload_package_design_validated: boolean;
+  local_output_review_validated: boolean;
+  spike_result_validated: boolean;
+}
+
+export interface RealUploadDryRunSimulatedStepResult {
+  step_id: string;
+  step_kind: RealUploadExecutionPlannedStep["step_kind"];
+  step_order: number;
+  simulation_state: "skipped" | "simulated" | "blocked" | "failed";
+  safe_summary: string;
+  execution_performed: false;
+  upload_side_effect_observed: false;
+  network_side_effect_observed: false;
+  credential_access_observed: false;
+  platform_api_call_observed: false;
+  media_read_observed: false;
+  raw_payload_created: false;
+  raw_response_stored: false;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadDryRunSimulationSummary {
+  simulation_steps_total: number;
+  simulation_steps_simulated: number;
+  simulation_steps_blocked: number;
+  simulation_steps_failed: number;
+  required_artifacts_validated: boolean;
+  plan_approved_for_future_upload_execution_dry_run: boolean;
+  dry_run_execution_passed: boolean;
+  ready_for_real_upload: false;
+  real_upload_requires_separate_preflight: true;
+  human_operator_required: true;
+  blockers_remaining: boolean;
+}
+
+export interface RealUploadDryRunCredentialBoundary { credentials_required: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; credential_reference_stored: false; token_reference_stored: false; secret_material_stored: false; }
+export interface RealUploadDryRunNetworkBoundary { network_calls_allowed: false; network_calls_made: false; external_side_effects_allowed: false; external_side_effects_observed: false; }
+export interface RealUploadDryRunPlatformApiBoundary { platform_api_calls_allowed: false; platform_api_calls_made: false; platform_endpoint_selected: false; platform_api_payload_created: false; platform_api_payload_stored: false; raw_account_ids_stored: false; upload_payload_created: false; response_received: false; raw_response_stored: false; }
+export interface RealUploadDryRunMediaBoundary { media_file_read: false; raw_media_path_stored: false; media_file_modified: false; media_file_copied: false; media_file_moved: false; media_file_deleted: false; }
+export interface RealUploadDryRunExecutionBoundary { upload_allowed: false; upload_execution_enabled: false; real_upload_execution_allowed: false; dry_run_execution_only: true; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; ready_for_real_upload: false; }
+export interface RealUploadDryRunExecutionResultValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadDryRunExecutionResult {
+  schema_version: "1.0";
+  real_upload_dry_run_execution_result_id: string;
+  real_upload_execution_plan_id: string;
+  real_upload_strategy_design_id: string;
+  real_upload_execution_request_id: string;
+  real_upload_readiness_assessment_id: string;
+  dry_run_upload_spike_result_id: string;
+  upload_execution_design_id: string;
+  upload_execution_approval_id: string;
+  platform_upload_request_id: string;
+  upload_package_design_id: string;
+  local_output_review_id: string;
+  production_render_spike_result_id: string;
+  final_render_execution_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  result_state: RealUploadDryRunExecutionResultState;
+  created_at: string;
+  completed_at?: string;
+  result_mode: RealUploadDryRunExecutionResultMode;
+  required_artifacts: RealUploadDryRunRequiredArtifacts;
+  simulated_step_results: RealUploadDryRunSimulatedStepResult[];
+  simulation_summary: RealUploadDryRunSimulationSummary;
+  credential_boundary: RealUploadDryRunCredentialBoundary;
+  network_boundary: RealUploadDryRunNetworkBoundary;
+  platform_api_boundary: RealUploadDryRunPlatformApiBoundary;
+  media_boundary: RealUploadDryRunMediaBoundary;
+  execution_boundary: RealUploadDryRunExecutionBoundary;
+  validation: {
+    real_upload_dry_run_execution_passed: boolean;
+    ready_for_future_real_upload_preflight: boolean;
+    ready_for_real_upload: false;
+    upload_allowed: false;
+    upload_execution_enabled: false;
+    platform_api_calls_allowed: false;
+    network_calls_allowed: false;
+    credentials_accessed: false;
+    token_accessed: false;
+    media_file_read: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRealUploadDryRunExecutionResult" | "revokeRealUploadDryRunExecutionResult";
+    source_real_upload_execution_plan_id: string;
+    source_real_upload_strategy_design_id: string;
+    source_real_upload_execution_request_id: string;
+    source_real_upload_readiness_assessment_id: string;
+    source_dry_run_upload_spike_result_id: string;
+    source_upload_execution_design_id: string;
+    source_upload_execution_approval_id: string;
+    source_platform_upload_request_id: string;
+    source_upload_package_design_id: string;
+    source_local_output_review_id: string;
+    source_production_render_spike_result_id: string;
+    source_final_render_execution_request_id: string;
+    source_render_plan_id: string;
+  };
+}
+
+interface RealUploadDryRunExecutionResultsStore { schema_version: "1.0"; created_at: string; results: RealUploadDryRunExecutionResult[]; }
+function getRealUploadDryRunExecutionResultsPath(): string { return path.join(getRuntimeDir(), "real-upload-dry-run-execution-results.json"); }
+function loadRealUploadDryRunExecutionResultsStore(): RealUploadDryRunExecutionResultsStore { try { const filePath = getRealUploadDryRunExecutionResultsPath(); if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as RealUploadDryRunExecutionResultsStore; } catch {} return { schema_version: "1.0", created_at: new Date().toISOString(), results: [] }; }
+function saveRealUploadDryRunExecutionResultsStore(store: RealUploadDryRunExecutionResultsStore): void { const filePath = getRealUploadDryRunExecutionResultsPath(); fs.mkdirSync(path.dirname(filePath), { recursive: true }); store.results.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_dry_run_execution_result_id.localeCompare(b.real_upload_dry_run_execution_result_id)); fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8"); }
+function safeRealUploadDryRunExecutionResultString(value: unknown, fallback: string): string { return safeRealUploadExecutionPlanString(value, fallback); }
+function validateRealUploadDryRunExecutionResultShape(result: unknown): RealUploadDryRunExecutionResultValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof result !== "object" || result === null) return { ok: false, blocking_reasons: ["Real upload dry-run execution result must be an object"], warnings };
+  const r = result as Record<string, unknown>;
+  const required = ["schema_version","real_upload_dry_run_execution_result_id","real_upload_execution_plan_id","real_upload_strategy_design_id","real_upload_execution_request_id","real_upload_readiness_assessment_id","dry_run_upload_spike_result_id","upload_execution_design_id","upload_execution_approval_id","platform_upload_request_id","upload_package_design_id","local_output_review_id","production_render_spike_result_id","final_render_execution_request_id","render_plan_id","project_id","platform","result_state","created_at","result_mode","required_artifacts","simulated_step_results","simulation_summary","credential_boundary","network_boundary","platform_api_boundary","media_boundary","execution_boundary","validation","provenance"];
+  for (const key of required) if (!(key in r)) blocking_reasons.push("Real upload dry-run execution result is missing a required field");
+  if (r.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["real_upload_dry_run_execution_simulation_only","operator_review_real_upload_dry_run_execution_result"].includes(String(r.result_mode))) blocking_reasons.push("result_mode is invalid");
+  if (!["draft","blocked","simulated","failed","ready_for_operator_review","approved_for_future_real_upload_preflight","rejected","revoked"].includes(String(r.result_state))) blocking_reasons.push("result_state is invalid");
+  const text = JSON.stringify(result);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env") || text.includes("keychain://") || text.includes("stdout") || text.includes("stderr") || text.includes("ffmpeg -i") || text.includes("Bearer ") || text.includes("data:") || text.includes("base64,") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../")) blocking_reasons.push("Real upload dry-run execution result contains forbidden payload content");
+  const requiredArtifacts = r.required_artifacts as Record<string, unknown> | undefined;
+  if (!requiredArtifacts || requiredArtifacts.real_upload_execution_plan_validated !== true || requiredArtifacts.real_upload_strategy_design_validated !== true || requiredArtifacts.real_upload_execution_request_validated !== true || requiredArtifacts.real_upload_readiness_assessment_validated !== true || requiredArtifacts.dry_run_upload_spike_result_validated !== true || requiredArtifacts.upload_execution_design_validated !== true || requiredArtifacts.upload_execution_approval_validated !== true || requiredArtifacts.platform_upload_request_validated !== true || requiredArtifacts.upload_package_design_validated !== true || requiredArtifacts.local_output_review_validated !== true || requiredArtifacts.spike_result_validated !== true) blocking_reasons.push("Required artifacts are unsafe");
+  const steps = r.simulated_step_results as Record<string, unknown>[] | undefined;
+  const requiredKinds = new Set(["operator_preflight_confirmation","artifact_validation","credential_boundary_check","media_reference_resolution_strategy","metadata_payload_strategy","platform_endpoint_strategy","network_boundary_check","upload_attempt_strategy","retry_idempotency_strategy","post_upload_verification_strategy","failure_handling_strategy","rollback_strategy","final_operator_go_no_go"]);
+  if (!Array.isArray(steps) || steps.length < requiredKinds.size) blocking_reasons.push("Simulated step results are unsafe");
+  else {
+    const seen = new Set<string>();
+    for (const step of steps) {
+      if (!step || typeof step.step_id !== "string" || typeof step.step_kind !== "string" || typeof step.step_order !== "number" || !["skipped","simulated","blocked","failed"].includes(String(step.simulation_state)) || typeof step.safe_summary !== "string" || step.execution_performed !== false || step.upload_side_effect_observed !== false || step.network_side_effect_observed !== false || step.credential_access_observed !== false || step.platform_api_call_observed !== false || step.media_read_observed !== false || step.raw_payload_created !== false || step.raw_response_stored !== false || !Array.isArray(step.blocking_reasons) || !Array.isArray(step.warnings)) {
+        blocking_reasons.push("Simulated step result is unsafe");
+        continue;
+      }
+      seen.add(String(step.step_kind));
+      const safe = step.safe_summary.toLowerCase();
+      if (safe.length === 0 || safe.length > 200 || safe.includes("://") || safe.includes("stdout") || safe.includes("stderr") || safe.includes("process.env") || safe.includes("keychain://") || safe.includes("access_token") || safe.includes("refresh_token") || safe.includes("client_secret") || safe.includes("authorization_code") || safe.includes("code_verifier") || safe.includes("bearer") || safe.includes("/users/") || safe.includes("../")) blocking_reasons.push("Simulated step summary is unsafe");
+    }
+    for (const kind of requiredKinds) if (!seen.has(kind)) blocking_reasons.push("Missing required simulated step kind");
+  }
+  const summary = r.simulation_summary as Record<string, unknown> | undefined;
+  if (!summary || typeof summary.simulation_steps_total !== "number" || summary.simulation_steps_total !== steps?.length || typeof summary.simulation_steps_simulated !== "number" || typeof summary.simulation_steps_blocked !== "number" || typeof summary.simulation_steps_failed !== "number" || summary.required_artifacts_validated !== true || typeof summary.plan_approved_for_future_upload_execution_dry_run !== "boolean" || typeof summary.dry_run_execution_passed !== "boolean" || summary.ready_for_real_upload !== false || summary.real_upload_requires_separate_preflight !== true || summary.human_operator_required !== true || typeof summary.blockers_remaining !== "boolean") blocking_reasons.push("Simulation summary is unsafe");
+  const credential = r.credential_boundary as Record<string, unknown> | undefined;
+  if (!credential || credential.credentials_required !== false || credential.credentials_accessed !== false || credential.token_accessed !== false || credential.keychain_accessed !== false || credential.env_accessed !== false || credential.credential_reference_stored !== false || credential.token_reference_stored !== false || credential.secret_material_stored !== false) blocking_reasons.push("Credential boundary is unsafe");
+  const network = r.network_boundary as Record<string, unknown> | undefined;
+  if (!network || network.network_calls_allowed !== false || network.network_calls_made !== false || network.external_side_effects_allowed !== false || network.external_side_effects_observed !== false) blocking_reasons.push("Network boundary is unsafe");
+  const platform = r.platform_api_boundary as Record<string, unknown> | undefined;
+  if (!platform || platform.platform_api_calls_allowed !== false || platform.platform_api_calls_made !== false || platform.platform_endpoint_selected !== false || platform.platform_api_payload_created !== false || platform.platform_api_payload_stored !== false || platform.raw_account_ids_stored !== false || platform.upload_payload_created !== false || platform.response_received !== false || platform.raw_response_stored !== false) blocking_reasons.push("Platform API boundary is unsafe");
+  const media = r.media_boundary as Record<string, unknown> | undefined;
+  if (!media || media.media_file_read !== false || media.raw_media_path_stored !== false || media.media_file_modified !== false || media.media_file_copied !== false || media.media_file_moved !== false || media.media_file_deleted !== false) blocking_reasons.push("Media boundary is unsafe");
+  const execution = r.execution_boundary as Record<string, unknown> | undefined;
+  if (!execution || execution.upload_allowed !== false || execution.upload_execution_enabled !== false || execution.real_upload_execution_allowed !== false || execution.dry_run_execution_only !== true || execution.platform_api_calls_allowed !== false || execution.network_calls_allowed !== false || execution.credentials_accessed !== false || execution.token_accessed !== false || execution.keychain_accessed !== false || execution.env_accessed !== false || execution.ready_for_real_upload !== false) blocking_reasons.push("Execution boundary is unsafe");
+  const validation = r.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.real_upload_dry_run_execution_passed !== false && validation.real_upload_dry_run_execution_passed !== true || validation.ready_for_future_real_upload_preflight !== false && validation.ready_for_future_real_upload_preflight !== true || validation.ready_for_real_upload !== false || validation.upload_allowed !== false || validation.upload_execution_enabled !== false || validation.platform_api_calls_allowed !== false || validation.network_calls_allowed !== false || validation.credentials_accessed !== false || validation.token_accessed !== false || validation.media_file_read !== false) blocking_reasons.push("Validation is unsafe");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadDryRunExecutionResult(input: {
+  executionPlan: RealUploadExecutionPlan;
+  strategyDesign: RealUploadStrategyDesign;
+  realUploadExecutionRequest: RealUploadExecutionRequest;
+  readinessAssessment: RealUploadReadinessAssessment;
+  dryRunUploadSpikeResult: DryRunUploadSpikeResult;
+  uploadExecutionDesign: UploadExecutionDesign;
+  uploadExecutionApproval: UploadExecutionApproval;
+  platformUploadRequest: PlatformUploadRequest;
+  uploadPackageDesign: UploadPackageDesign;
+  localOutputReview: LocalOutputOperatorReview;
+  spikeResult: ControlledProductionRenderSpikeResult;
+  simulatePass?: boolean;
+  decision?: "draft" | "approved_for_future_real_upload_preflight" | "rejected";
+  reviewed_by_label?: string;
+  dryRun: true;
+}): RealUploadDryRunExecutionResult {
+  if (input.dryRun !== true) throw new Error("createRealUploadDryRunExecutionResult: dryRun=true required");
+  if (!validateRealUploadExecutionPlan(input.executionPlan).ok) throw new Error("createRealUploadDryRunExecutionResult: executionPlan must validate");
+  if (!validateRealUploadStrategyDesign(input.strategyDesign).ok) throw new Error("createRealUploadDryRunExecutionResult: strategyDesign must validate");
+  if (!validateRealUploadExecutionRequest(input.realUploadExecutionRequest).ok) throw new Error("createRealUploadDryRunExecutionResult: realUploadExecutionRequest must validate");
+  if (!validateRealUploadReadinessAssessment(input.readinessAssessment).ok) throw new Error("createRealUploadDryRunExecutionResult: readinessAssessment must validate");
+  if (!validateDryRunUploadSpikeResult(input.dryRunUploadSpikeResult).ok) throw new Error("createRealUploadDryRunExecutionResult: dryRunUploadSpikeResult must validate");
+  if (!validateUploadExecutionDesign(input.uploadExecutionDesign).ok) throw new Error("createRealUploadDryRunExecutionResult: uploadExecutionDesign must validate");
+  if (!validateUploadExecutionApproval(input.uploadExecutionApproval).ok) throw new Error("createRealUploadDryRunExecutionResult: uploadExecutionApproval must validate");
+  if (!validatePlatformUploadRequest(input.platformUploadRequest).ok) throw new Error("createRealUploadDryRunExecutionResult: platformUploadRequest must validate");
+  if (!validateUploadPackageDesign(input.uploadPackageDesign).ok) throw new Error("createRealUploadDryRunExecutionResult: uploadPackageDesign must validate");
+  if (!validateLocalOutputOperatorReview(input.localOutputReview).ok) throw new Error("createRealUploadDryRunExecutionResult: localOutputReview must validate");
+  if (!validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("createRealUploadDryRunExecutionResult: spikeResult must validate");
+  if (input.executionPlan.plan_state !== "approved_for_future_upload_execution_dry_run") throw new Error("createRealUploadDryRunExecutionResult: executionPlan must be approved_for_future_upload_execution_dry_run");
+  if (input.executionPlan.validation.ready_for_real_upload !== false || input.strategyDesign.validation.ready_for_real_upload !== false || input.realUploadExecutionRequest.validation.ready_for_real_upload !== false || input.readinessAssessment.validation.ready_for_real_upload !== false) throw new Error("createRealUploadDryRunExecutionResult: ready_for_real_upload must remain false");
+  if (input.executionPlan.real_upload_strategy_design_id !== input.strategyDesign.real_upload_strategy_design_id || input.executionPlan.real_upload_execution_request_id !== input.realUploadExecutionRequest.real_upload_execution_request_id || input.executionPlan.real_upload_readiness_assessment_id !== input.readinessAssessment.real_upload_readiness_assessment_id || input.executionPlan.dry_run_upload_spike_result_id !== input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id || input.executionPlan.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.executionPlan.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.executionPlan.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.executionPlan.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.executionPlan.local_output_review_id !== input.localOutputReview.local_output_review_id || input.executionPlan.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.executionPlan.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.executionPlan.render_plan_id !== input.spikeResult.render_plan_id || input.executionPlan.project_id !== input.spikeResult.project_id || input.executionPlan.platform !== input.spikeResult.platform) throw new Error("createRealUploadDryRunExecutionResult: executionPlan inputs must match");
+  const planSteps = input.executionPlan.planned_steps;
+  const stepKinds = new Set(planSteps.map((step) => step.step_kind));
+  const requiredKinds: RealUploadExecutionPlannedStep["step_kind"][] = ["operator_preflight_confirmation","artifact_validation","credential_boundary_check","media_reference_resolution_strategy","metadata_payload_strategy","platform_endpoint_strategy","network_boundary_check","upload_attempt_strategy","retry_idempotency_strategy","post_upload_verification_strategy","failure_handling_strategy","rollback_strategy","final_operator_go_no_go"];
+  const simulatePass = input.simulatePass === true;
+  const resultState: RealUploadDryRunExecutionResultState = simulatePass ? "simulated" : "blocked";
+  const simulatedSteps: RealUploadDryRunSimulatedStepResult[] = requiredKinds.map((kind, index) => {
+    const source = planSteps.find((step) => step.step_kind === kind);
+    const safeSummary = safeRealUploadDryRunExecutionResultString(source?.safe_summary ?? `Simulation for ${kind}.`, "[unsafe-step-summary]");
+    const missing = !source;
+    const blocked = missing || source.blocking_reasons.length > 0;
+    const simulationState: RealUploadDryRunSimulatedStepResult["simulation_state"] = simulatePass ? (missing ? "blocked" : "simulated") : blocked ? "blocked" : "skipped";
+    return {
+      step_id: source?.step_id ?? `step-${index + 1}`,
+      step_kind: kind,
+      step_order: source?.step_order ?? index + 1,
+      simulation_state: simulationState,
+      safe_summary: safeSummary,
+      execution_performed: false,
+      upload_side_effect_observed: false,
+      network_side_effect_observed: false,
+      credential_access_observed: false,
+      platform_api_call_observed: false,
+      media_read_observed: false,
+      raw_payload_created: false,
+      raw_response_stored: false,
+      blocking_reasons: source?.blocking_reasons ?? ["Planned step was not available for simulation."],
+      warnings: source?.warnings ?? [],
+    };
+  });
+  const passed = simulatePass && requiredKinds.every((kind) => stepKinds.has(kind)) && simulatedSteps.every((step) => step.simulation_state !== "blocked" && step.simulation_state !== "failed");
+  const reviewedBy = safeRealUploadDryRunExecutionResultString(input.reviewed_by_label ?? "", "[unsafe-reviewer]");
+  const result: RealUploadDryRunExecutionResult = {
+    schema_version: "1.0",
+    real_upload_dry_run_execution_result_id: `real-upload-dry-run-execution-result-${crypto.randomUUID()}`,
+    real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id,
+    real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id,
+    real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id,
+    real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id,
+    dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+    upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+    upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+    platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+    upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+    local_output_review_id: input.localOutputReview.local_output_review_id,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.spikeResult.project_id,
+    platform: input.spikeResult.platform,
+    result_state: resultState,
+    created_at: new Date().toISOString(),
+    result_mode: "real_upload_dry_run_execution_simulation_only",
+    required_artifacts: {
+      real_upload_execution_plan_validated: true,
+      real_upload_strategy_design_validated: true,
+      real_upload_execution_request_validated: true,
+      real_upload_readiness_assessment_validated: true,
+      dry_run_upload_spike_result_validated: true,
+      upload_execution_design_validated: true,
+      upload_execution_approval_validated: true,
+      platform_upload_request_validated: true,
+      upload_package_design_validated: true,
+      local_output_review_validated: true,
+      spike_result_validated: true,
+    },
+    simulated_step_results: simulatedSteps,
+    simulation_summary: {
+      simulation_steps_total: simulatedSteps.length,
+      simulation_steps_simulated: simulatedSteps.filter((step) => step.simulation_state === "simulated").length,
+      simulation_steps_blocked: simulatedSteps.filter((step) => step.simulation_state === "blocked").length,
+      simulation_steps_failed: simulatedSteps.filter((step) => step.simulation_state === "failed").length,
+      required_artifacts_validated: true,
+      plan_approved_for_future_upload_execution_dry_run: input.executionPlan.plan_state === "approved_for_future_upload_execution_dry_run",
+      dry_run_execution_passed: passed,
+      ready_for_real_upload: false,
+      real_upload_requires_separate_preflight: true,
+      human_operator_required: true,
+      blockers_remaining: !passed,
+    },
+    credential_boundary: { credentials_required: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, credential_reference_stored: false, token_reference_stored: false, secret_material_stored: false },
+    network_boundary: { network_calls_allowed: false, network_calls_made: false, external_side_effects_allowed: false, external_side_effects_observed: false },
+    platform_api_boundary: { platform_api_calls_allowed: false, platform_api_calls_made: false, platform_endpoint_selected: false, platform_api_payload_created: false, platform_api_payload_stored: false, raw_account_ids_stored: false, upload_payload_created: false, response_received: false, raw_response_stored: false },
+    media_boundary: { media_file_read: false, raw_media_path_stored: false, media_file_modified: false, media_file_copied: false, media_file_moved: false, media_file_deleted: false },
+    execution_boundary: { upload_allowed: false, upload_execution_enabled: false, real_upload_execution_allowed: false, dry_run_execution_only: true, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, ready_for_real_upload: false },
+    validation: {
+      real_upload_dry_run_execution_passed: passed,
+      ready_for_future_real_upload_preflight: passed,
+      ready_for_real_upload: false,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      media_file_read: false,
+      blocking_reasons: passed ? [] : ["Dry-run execution did not fully pass."],
+      warnings: passed ? ["Dry-run execution completed safely without upload, network, credential, or media access."] : ["Dry-run execution remained blocked or partial."],
+    },
+    provenance: {
+      generated_by: "createRealUploadDryRunExecutionResult",
+      source_real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id,
+      source_real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id,
+      source_real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id,
+      source_real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id,
+      source_dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+      source_upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+      source_upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+      source_platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+      source_upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+      source_local_output_review_id: input.localOutputReview.local_output_review_id,
+      source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+      source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+      source_render_plan_id: input.spikeResult.render_plan_id,
+    },
+  };
+  if (!validateRealUploadDryRunExecutionResult(result).ok) throw new Error("Unsafe real upload dry-run execution result cannot be created.");
+  return result;
+}
+
+export function validateRealUploadDryRunExecutionResult(result: unknown): RealUploadDryRunExecutionResultValidationResult { return validateRealUploadDryRunExecutionResultShape(result); }
+
+interface RealUploadDryRunExecutionResultsStoreSummaryItem { real_upload_dry_run_execution_result_id: string; project_id: string; platform: string; result_state: string; created_at: string; }
+function safeRealUploadDryRunExecutionResultSummary(result: RealUploadDryRunExecutionResult): RealUploadDryRunExecutionResultsStoreSummaryItem { return { real_upload_dry_run_execution_result_id: safeRealUploadDryRunExecutionResultString(result.real_upload_dry_run_execution_result_id, "[unsafe-id]"), project_id: safeRealUploadDryRunExecutionResultString(result.project_id, "[unsafe-project]"), platform: safeRealUploadDryRunExecutionResultString(result.platform, "[unsafe-platform]"), result_state: result.result_state, created_at: result.created_at }; }
+export function saveRealUploadDryRunExecutionResult(result: RealUploadDryRunExecutionResult): void { if (!validateRealUploadDryRunExecutionResult(result).ok) throw new Error("Unsafe real upload dry-run execution result cannot be stored."); const store = loadRealUploadDryRunExecutionResultsStore(); const existing = store.results.findIndex((item) => item.real_upload_dry_run_execution_result_id === result.real_upload_dry_run_execution_result_id); if (existing >= 0) store.results[existing] = result; else store.results.push(result); saveRealUploadDryRunExecutionResultsStore(store); }
+export function listRealUploadDryRunExecutionResults(options?: { project_id?: string; platform?: string; result_state?: string; real_upload_execution_plan_id?: string; real_upload_strategy_design_id?: string }): RealUploadDryRunExecutionResult[] { const store = loadRealUploadDryRunExecutionResultsStore(); return store.results.filter((result) => (!options?.project_id || result.project_id === options.project_id) && (!options?.platform || result.platform === options.platform) && (!options?.result_state || result.result_state === options.result_state) && (!options?.real_upload_execution_plan_id || result.real_upload_execution_plan_id === options.real_upload_execution_plan_id) && (!options?.real_upload_strategy_design_id || result.real_upload_strategy_design_id === options.real_upload_strategy_design_id)).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_dry_run_execution_result_id.localeCompare(b.real_upload_dry_run_execution_result_id)); }
+export function getRealUploadDryRunExecutionResult(real_upload_dry_run_execution_result_id: string): RealUploadDryRunExecutionResult | null { return loadRealUploadDryRunExecutionResultsStore().results.find((result) => result.real_upload_dry_run_execution_result_id === real_upload_dry_run_execution_result_id) ?? null; }
+export function revokeRealUploadDryRunExecutionResult(real_upload_dry_run_execution_result_id: string, reason: string): RealUploadDryRunExecutionResult { const result = getRealUploadDryRunExecutionResult(real_upload_dry_run_execution_result_id); if (!result) throw new Error("Real upload dry-run execution result not found"); const safeReason = safeRealUploadDryRunExecutionResultString(reason, "[unsafe-reason]"); if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload dry-run execution result reason cannot be stored."); const revoked: RealUploadDryRunExecutionResult = { ...result, result_state: "revoked", validation: { ...result.validation, blocking_reasons: [...result.validation.blocking_reasons, safeReason], warnings: [...result.validation.warnings, "Real upload dry-run execution result revoked."] }, provenance: { ...result.provenance, generated_by: "revokeRealUploadDryRunExecutionResult" } }; saveRealUploadDryRunExecutionResult(revoked); return revoked; }
+export function getRealUploadDryRunExecutionResultReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; simulated: number; failed: number; ready_for_operator_review: number; approved_for_future_real_upload_preflight: number; rejected: number; revoked: number; real_upload_dry_run_execution_passed: number; ready_for_future_real_upload_preflight: number; ready_for_real_upload: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; simulated_steps_total: number; simulated_steps_with_blockers: number; results: Array<RealUploadDryRunExecutionResultsStoreSummaryItem>; } { const results = listRealUploadDryRunExecutionResults(options); const by_state: Record<string, number> = {}; let blocked = 0, simulated = 0, failed = 0, ready = 0, approved = 0, rejected = 0, revoked = 0, passed = 0, stepsTotal = 0, stepsBlocked = 0; const summaries = results.map((result) => { by_state[result.result_state] = (by_state[result.result_state] ?? 0) + 1; if (result.result_state === "blocked") blocked++; if (result.result_state === "simulated") simulated++; if (result.result_state === "failed") failed++; if (result.result_state === "ready_for_operator_review") ready++; if (result.result_state === "approved_for_future_real_upload_preflight") approved++; if (result.result_state === "rejected") rejected++; if (result.result_state === "revoked") revoked++; if (result.validation.real_upload_dry_run_execution_passed) passed++; stepsTotal += result.simulated_step_results.length; stepsBlocked += result.simulated_step_results.filter((step) => step.blocking_reasons.length > 0).length; return safeRealUploadDryRunExecutionResultSummary(result); }); return { total: summaries.length, by_state, blocked, simulated, failed, ready_for_operator_review: ready, approved_for_future_real_upload_preflight: approved, rejected, revoked, real_upload_dry_run_execution_passed: passed, ready_for_future_real_upload_preflight: passed, ready_for_real_upload: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, media_file_read: 0, simulated_steps_total: stepsTotal, simulated_steps_with_blockers: stepsBlocked, results: summaries }; }
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {

@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
 **Date Updated:** 2026-05-12 (VO-5B Complete)  
-**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) complete. Phase 5F—Final Production Render Execution Request (VO-6E) complete. Phase 5G—Controlled Production Render Spike (VO-7A) complete. Phase 5H—Operator Review of Generated Local Output (VO-7B) complete. Phase 5I—Upload Package Design (VO-7C) complete. Phase 5J—Platform Upload Request Artifact (VO-7D) complete. Phase 5K—Upload Execution Approval (VO-7E) complete. Phase 5L—Upload Execution Design (VO-7F) complete. Phase 5M—Dry-Run Upload Spike Simulation (VO-7G) complete. Phase 5N—Real Upload Readiness Assessment (VO-7H) complete. Phase 5O—Real Upload Execution Request (VO-7I) complete. Phase 5P—Real Upload Strategy Design (VO-7J) complete.  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) complete. Phase 5F—Final Production Render Execution Request (VO-6E) complete. Phase 5G—Controlled Production Render Spike (VO-7A) complete. Phase 5H—Operator Review of Generated Local Output (VO-7B) complete. Phase 5I—Upload Package Design (VO-7C) complete. Phase 5J—Platform Upload Request Artifact (VO-7D) complete. Phase 5K—Upload Execution Approval (VO-7E) complete. Phase 5L—Upload Execution Design (VO-7F) complete. Phase 5M—Dry-Run Upload Spike Simulation (VO-7G) complete. Phase 5N—Real Upload Readiness Assessment (VO-7H) complete. Phase 5O—Real Upload Execution Request (VO-7I) complete. Phase 5P—Real Upload Strategy Design (VO-7J) complete. Phase 5Q—Real Upload Execution Plan (VO-7K) complete. Phase 5R—Real Upload Dry-Run Execution Simulator (VO-7L) complete.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Architecture:** Local-first production + platform adapters (not fully local publishing)
 
@@ -413,6 +413,29 @@ This phase adds a plan artifact only for a future dry-run upload execution phase
 
 **Next phase guidance**
 - If approved later, the next step may add a dry-run real upload execution simulator, still without API, network, or credential access.
+
+### VO-7L: Real Upload Dry-Run Execution Simulator
+
+This phase adds a local-only simulation result artifact for the real upload execution plan. It stays simulation-only and keeps all real upload, network, API, credential, token, keychain, env, and media-file access disabled.
+
+**What it does**
+- Simulates each planned step as a local-only dry run.
+- Keeps upload, network calls, platform APIs, credentials, tokens, keychain, and env access disabled.
+- Records only safe summaries for each simulated step and overall simulation status.
+- Keeps file move, copy, delete, modify, and media-file read operations disabled.
+
+**What it does not do**
+- Does not upload.
+- Does not call platform APIs.
+- Does not make network calls.
+- Does not access credentials, tokens, keychain, or env vars.
+- Does not read media files.
+- Does not store raw output paths, raw account IDs, raw platform payloads, upload payloads, or response payloads.
+- Does not move, copy, delete, or modify generated output files.
+- Does not make ready_for_real_upload true.
+
+**Next phase guidance**
+- If approved later, the next step may add a final real upload preflight gate, still without API calls.
 
 **Total Timeline:** 6 months  
 **Total Resource Estimate:** 50 hours Claude Code (revised for adapter complexity)  
