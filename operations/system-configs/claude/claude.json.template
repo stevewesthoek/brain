@@ -1,10 +1,5 @@
 {
   "mcpServers": {
-    "notebooklm": {
-      "type": "stdio",
-      "command": "/Users/Office/.local/bin/notebooklm-mcp",
-      "args": []
-    },
     "context-mode": {
       "type": "stdio",
       "command": "/Users/Office/.local/bin/context-mode-mcp",
@@ -25,9 +20,11 @@
 // Notes for machine restore:
 // - Copy this file to ~/.claude.json and fill in any secrets
 // - MCP binaries must be installed first:
-//     npm install -g @ahdev/notebooklm-mcp   → ln -sf $(which notebooklm-mcp) ~/.local/bin/notebooklm-mcp
 //     npm install -g @context-mode/mcp        → ln -sf $(which context-mode-mcp) ~/.local/bin/context-mode-mcp
 //     npx -y @_davideast/stitch-mcp init      → sets up gcloud ADC in ~/.stitch-mcp/
+// - NotebookLM: Use CLI v0.3.4 (installed via pipx at /Users/Office/.local/bin/notebooklm)
+//   - Not an MCP server — it's a direct CLI tool
+//   - Use /notebooklm skill for research, content generation, batch export
 // - STITCH_API_KEY = "gcloud-adc" is not a secret — it tells the proxy to use gcloud ADC
 // - After restoring, run: claude mcp list   to verify all servers are registered
 // - Real ~/.claude.json also contains numStartups, userID, and other runtime metadata

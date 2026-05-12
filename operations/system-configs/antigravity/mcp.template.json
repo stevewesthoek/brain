@@ -1,8 +1,5 @@
 {
   "servers": {
-    "notebooklm-mcp": {
-      "command": "/Users/Office/.local/bin/notebooklm-mcp"
-    },
     "stitch": {
       "serverUrl": "https://stitch.googleapis.com/mcp",
       "headers": {
@@ -11,5 +8,8 @@
       }
     }
   },
-  "inputs": []
+  "inputs": [],
+  "notes": {
+    "notebooklm": "NotebookLM v0.3.4 CLI is not an MCP server — use /notebooklm skill directly for research, content generation, batch export"
+  }
 }
