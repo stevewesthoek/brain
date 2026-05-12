@@ -6716,6 +6716,104 @@ export interface ControlledProductionRenderRequest {
   };
 }
 
+export type SourceMediaInventoryMode = "metadata_only" | "explicit_read_only_validation";
+
+export type SourceMediaInventoryState = "draft" | "blocked" | "checked" | "ready_for_operator_review";
+
+export interface SourceMediaPolicy {
+  source_media_access_requested: true;
+  source_media_read_only: true;
+  source_media_mutation_allowed: false;
+  source_media_copy_allowed: false;
+  source_media_transcode_allowed: false;
+  render_allowed: false;
+  upload_allowed: false;
+  platform_api_calls_allowed: false;
+}
+
+export interface SourceMediaInventoryItem {
+  source_item_id: string;
+  source_kind: "video" | "image" | "audio" | "caption" | "thumbnail" | "other";
+  source_reference_summary: string;
+  declared_required: boolean;
+  read_check_performed: boolean;
+  exists?: boolean;
+  file_type_summary?: string;
+  byte_size?: number;
+  duration_seconds?: number;
+  resolution_summary?: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface SourceMediaInventoryValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface SourceMediaInventory {
+  schema_version: "1.0";
+  source_media_inventory_id: string;
+  production_render_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  inventory_state: SourceMediaInventoryState;
+  created_at: string;
+  inventory_mode: SourceMediaInventoryMode;
+  source_media_policy: SourceMediaPolicy;
+  source_items: SourceMediaInventoryItem[];
+  validation: {
+    ready_for_production_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createSourceMediaInventory";
+    source_production_render_request_id: string;
+    source_render_plan_id: string;
+  };
+}
+
+interface SourceMediaInventoriesStore {
+  schema_version: "1.0";
+  created_at: string;
+  inventories: SourceMediaInventory[];
+}
+
+function getSourceMediaInventoriesPath(): string {
+  return path.join(getRuntimeDir(), "source-media-inventories.json");
+}
+
+function loadSourceMediaInventoriesStore(): SourceMediaInventoriesStore {
+  try {
+    const filePath = getSourceMediaInventoriesPath();
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, "utf8")) as SourceMediaInventoriesStore;
+    }
+  } catch {
+    // start fresh
+  }
+  return { schema_version: "1.0", created_at: new Date().toISOString(), inventories: [] };
+}
+
+function saveSourceMediaInventoriesStore(store: SourceMediaInventoriesStore): void {
+  const filePath = getSourceMediaInventoriesPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  store.inventories.sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.source_media_inventory_id.localeCompare(b.source_media_inventory_id);
+  });
+  fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8");
+}
+
+function safeSourceMediaSummary(reference: string, allowRelativePathSummary = true): string {
+  const summarized = summarizeSourceMediaReference({ reference, allowRelativePathSummary });
+  return summarized.ok ? summarized.summary : "[source-reference]";
+}
+
 interface ControlledProductionRenderRequestsStore {
   schema_version: "1.0";
   created_at: string;
@@ -6982,6 +7080,333 @@ export function getControlledProductionRenderRequestReport(options?: {
       render_plan_id: sanitizeRenderPlanString(request.render_plan_id, "[unsafe-render-plan-id]"),
       command_manifest_id: sanitizeRenderPlanString(request.command_manifest_id, "[unsafe-command-manifest-id]"),
       created_at: request.created_at,
+    })),
+  };
+}
+
+export function summarizeSourceMediaReference(input: {
+  reference: string;
+  allowRelativePathSummary?: boolean;
+}): {
+  ok: boolean;
+  summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+} {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof input.reference !== "string" || input.reference.length === 0) {
+    blocking_reasons.push("source reference must be a string");
+    return { ok: false, summary: "[source-reference]", blocking_reasons, warnings };
+  }
+  const ref = input.reference.trim();
+  if (isForbiddenStringPattern(ref)) {
+    blocking_reasons.push("source reference contains forbidden patterns");
+    return { ok: false, summary: "[source-reference]", blocking_reasons, warnings };
+  }
+  if (ref.includes("://") || /^https?:\/\//i.test(ref)) {
+    blocking_reasons.push("source reference URLs are not allowed");
+    return { ok: false, summary: "[source-reference]", blocking_reasons, warnings };
+  }
+  if (ref.includes("..")) {
+    blocking_reasons.push("source reference traversal is not allowed");
+    return { ok: false, summary: "[source-reference]", blocking_reasons, warnings };
+  }
+  if (path.isAbsolute(ref)) {
+    blocking_reasons.push("source reference absolute paths are not allowed");
+    return { ok: false, summary: "[source-reference]", blocking_reasons, warnings };
+  }
+  if (input.allowRelativePathSummary === false) {
+    return { ok: true, summary: "[relative-source-reference]", blocking_reasons, warnings };
+  }
+  return { ok: true, summary: "[source-reference]", blocking_reasons, warnings };
+}
+
+function resolveSafeSourceMediaReferencePath(reference: string, baseDir: string): { ok: boolean; absolutePath?: string; blocking_reasons: string[] } {
+  const summary = summarizeSourceMediaReference({ reference, allowRelativePathSummary: true });
+  if (!summary.ok) {
+    return { ok: false, blocking_reasons: summary.blocking_reasons };
+  }
+  if (path.isAbsolute(reference)) {
+    return { ok: false, blocking_reasons: ["source reference absolute paths are not allowed"] };
+  }
+  const resolved = path.resolve(baseDir, reference);
+  const safeBase = path.resolve(baseDir);
+  if (!resolved.startsWith(safeBase + path.sep) && resolved !== safeBase) {
+    return { ok: false, blocking_reasons: ["source reference must stay within baseDir"] };
+  }
+  return { ok: true, absolutePath: resolved, blocking_reasons: [] };
+}
+
+function collectDeclaredSourceReferences(renderPlan: RenderPlan): Array<{ source_kind: SourceMediaInventoryItem["source_kind"]; reference: string; declared_required: boolean }> {
+  const refs: Array<{ source_kind: SourceMediaInventoryItem["source_kind"]; reference: string; declared_required: boolean }> = [];
+  for (const target of renderPlan.render_targets) {
+    refs.push({
+      source_kind: target.kind === "thumbnail" ? "thumbnail" : target.kind === "caption" ? "caption" : target.kind === "metadata" ? "other" : "video",
+      reference: target.planned_output_path || `${renderPlan.provenance.source_package_id}:${target.kind}:${target.format_key}`,
+      declared_required: true,
+    });
+  }
+  return refs;
+}
+
+export function createSourceMediaInventory(input: {
+  request: ControlledProductionRenderRequest;
+  renderPlan: RenderPlan;
+  inventoryMode: "metadata_only" | "explicit_read_only_validation";
+  baseDir?: string;
+}): SourceMediaInventory {
+  const requestValidation = validateControlledProductionRenderRequest(input.request);
+  if (!requestValidation.ok) {
+    throw new Error("createSourceMediaInventory: request must validate");
+  }
+  if (input.request.validation.ready_for_production_render !== false) {
+    throw new Error("createSourceMediaInventory: request must not be ready for production render");
+  }
+  if (input.renderPlan.dry_run !== true) {
+    throw new Error("createSourceMediaInventory: renderPlan.dry_run must be true");
+  }
+  const planValidation = validateRenderPlan(input.renderPlan);
+  if (!planValidation.ok) {
+    throw new Error("createSourceMediaInventory: renderPlan must validate");
+  }
+
+  const inventoryId = `source-media-inventory-${crypto.randomUUID()}`;
+  const declaredRefs = collectDeclaredSourceReferences(input.renderPlan);
+  const sourceItems: SourceMediaInventoryItem[] = [];
+  const blockers: string[] = [];
+  const warnings: string[] = [];
+
+  for (let i = 0; i < declaredRefs.length; i += 1) {
+    const ref = declaredRefs[i]!;
+    const summarized = summarizeSourceMediaReference({ reference: ref.reference, allowRelativePathSummary: false });
+    const item: SourceMediaInventoryItem = {
+      source_item_id: `source-item-${i + 1}`,
+      source_kind: ref.source_kind,
+      source_reference_summary: summarized.summary,
+      declared_required: ref.declared_required,
+      read_check_performed: false,
+      blocking_reasons: [...summarized.blocking_reasons],
+      warnings: [...summarized.warnings],
+    };
+    if (input.inventoryMode === "explicit_read_only_validation") {
+      item.read_check_performed = true;
+      const baseDir = input.baseDir ?? getRuntimeDir();
+      const safePath = resolveSafeSourceMediaReferencePath(ref.reference, baseDir);
+      if (!safePath.ok || !safePath.absolutePath) {
+        item.blocking_reasons.push(...safePath.blocking_reasons);
+      } else {
+        item.exists = fs.existsSync(safePath.absolutePath);
+        try {
+          const stat = fs.statSync(safePath.absolutePath);
+          item.file_type_summary = stat.isDirectory() ? "directory" : stat.isFile() ? "file" : "other";
+          item.byte_size = stat.size;
+        } catch {
+          item.blocking_reasons.push("source reference could not be stat'd safely");
+        }
+      }
+    }
+    if (item.blocking_reasons.length > 0) {
+      blockers.push(...item.blocking_reasons);
+    }
+    sourceItems.push(item);
+  }
+
+  const inventoryState: SourceMediaInventoryState = blockers.length > 0 ? "blocked" : input.inventoryMode === "explicit_read_only_validation" ? "checked" : "ready_for_operator_review";
+  if (inventoryState === "ready_for_operator_review" && input.inventoryMode === "metadata_only") {
+    warnings.push("Metadata-only inventory; no filesystem checks performed.");
+  }
+
+  return {
+    schema_version: "1.0",
+    source_media_inventory_id: inventoryId,
+    production_render_request_id: input.request.production_render_request_id,
+    render_plan_id: input.renderPlan.render_plan_id,
+    project_id: input.request.project_id,
+    platform: input.request.platform,
+    inventory_state: inventoryState,
+    created_at: new Date().toISOString(),
+    inventory_mode: input.inventoryMode,
+    source_media_policy: {
+      source_media_access_requested: true,
+      source_media_read_only: true,
+      source_media_mutation_allowed: false,
+      source_media_copy_allowed: false,
+      source_media_transcode_allowed: false,
+      render_allowed: false,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+    },
+    source_items: sourceItems,
+    validation: {
+      ready_for_production_render: false,
+      ready_for_upload: false,
+      blocking_reasons: blockers,
+      warnings,
+    },
+    provenance: {
+      generated_by: "createSourceMediaInventory",
+      source_production_render_request_id: input.request.production_render_request_id,
+      source_render_plan_id: input.renderPlan.render_plan_id,
+    },
+  };
+}
+
+export function validateSourceMediaInventory(inventory: unknown): SourceMediaInventoryValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!inventory || typeof inventory !== "object") {
+    return { ok: false, blocking_reasons: ["Source media inventory must be an object"], warnings };
+  }
+  const inv = inventory as Record<string, unknown>;
+  const required = ["schema_version", "source_media_inventory_id", "production_render_request_id", "render_plan_id", "project_id", "platform", "inventory_state", "created_at", "inventory_mode", "source_media_policy", "source_items", "validation", "provenance"];
+  for (const key of required) {
+    if (!(key in inv)) blocking_reasons.push("Source media inventory is missing a required field");
+  }
+  if (inv.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (inv.inventory_mode !== "metadata_only" && inv.inventory_mode !== "explicit_read_only_validation") blocking_reasons.push("inventory_mode is invalid");
+  if (!["draft", "blocked", "checked", "ready_for_operator_review"].includes(String(inv.inventory_state))) blocking_reasons.push("inventory_state is invalid");
+  const forbidden = recursivelyCheckForForbiddenPatterns(inventory);
+  blocking_reasons.push(...forbidden);
+  const inventoryText = JSON.stringify(inventory);
+  if (inventoryText.includes("videos.insert") || inventoryText.includes("youtube.videos().insert") || inventoryText.includes("fetch(")) {
+    blocking_reasons.push("Inventory contains forbidden upload/API content");
+  }
+  const policy = inv.source_media_policy as Record<string, unknown> | undefined;
+  if (!policy || policy.source_media_read_only !== true || policy.source_media_mutation_allowed !== false || policy.source_media_copy_allowed !== false || policy.source_media_transcode_allowed !== false || policy.render_allowed !== false || policy.upload_allowed !== false || policy.platform_api_calls_allowed !== false) {
+    blocking_reasons.push("Source media policy is unsafe");
+  }
+  const validation = inv.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_production_render !== false || validation.ready_for_upload !== false) {
+    blocking_reasons.push("Validation readiness must remain false");
+  }
+  const items = inv.source_items as unknown[];
+  if (!Array.isArray(items)) {
+    blocking_reasons.push("source_items must be an array");
+  } else {
+    for (const item of items) {
+      if (!item || typeof item !== "object") {
+        blocking_reasons.push("source item must be an object");
+        continue;
+      }
+      const s = item as Record<string, unknown>;
+      if (typeof s.source_item_id !== "string" || typeof s.source_kind !== "string" || typeof s.source_reference_summary !== "string") {
+        blocking_reasons.push("source item summary is incomplete");
+      }
+      if (typeof s.source_reference_summary === "string" && (s.source_reference_summary.includes("://") || s.source_reference_summary.startsWith("/") || s.source_reference_summary.includes(".."))) {
+        blocking_reasons.push("source item summary is unsafe");
+      }
+      if (s.read_check_performed !== true && s.read_check_performed !== false) {
+        blocking_reasons.push("source item read_check_performed must be boolean");
+      }
+      if (s.exists !== undefined && typeof s.exists !== "boolean") blocking_reasons.push("source item exists must be boolean");
+      if (s.file_type_summary !== undefined && typeof s.file_type_summary !== "string") blocking_reasons.push("source item file_type_summary must be a string");
+      if (typeof s.file_type_summary === "string" && (s.file_type_summary.includes("raw") || s.file_type_summary.includes("data=") || s.file_type_summary.includes("payload"))) {
+        blocking_reasons.push("source item file_type_summary contains unsafe media payload content");
+      }
+      if (s.blocking_reasons !== undefined && !Array.isArray(s.blocking_reasons)) blocking_reasons.push("source item blocking_reasons must be an array");
+      if (s.warnings !== undefined && !Array.isArray(s.warnings)) blocking_reasons.push("source item warnings must be an array");
+    }
+  }
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function saveSourceMediaInventory(inventory: SourceMediaInventory): void {
+  const validation = validateSourceMediaInventory(inventory);
+  if (!validation.ok) {
+    throw new Error("Unsafe source media inventory cannot be stored.");
+  }
+  const store = loadSourceMediaInventoriesStore();
+  const existingIndex = store.inventories.findIndex((item) => item.source_media_inventory_id === inventory.source_media_inventory_id);
+  if (existingIndex >= 0) store.inventories[existingIndex] = inventory;
+  else store.inventories.push(inventory);
+  saveSourceMediaInventoriesStore(store);
+}
+
+export function listSourceMediaInventories(options?: {
+  project_id?: string;
+  platform?: string;
+  inventory_state?: string;
+  production_render_request_id?: string;
+  render_plan_id?: string;
+}): SourceMediaInventory[] {
+  const store = loadSourceMediaInventoriesStore();
+  return store.inventories.filter((inventory) => {
+    if (options?.project_id && inventory.project_id !== options.project_id) return false;
+    if (options?.platform && inventory.platform !== options.platform) return false;
+    if (options?.inventory_state && inventory.inventory_state !== options.inventory_state) return false;
+    if (options?.production_render_request_id && inventory.production_render_request_id !== options.production_render_request_id) return false;
+    if (options?.render_plan_id && inventory.render_plan_id !== options.render_plan_id) return false;
+    return true;
+  }).sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.source_media_inventory_id.localeCompare(b.source_media_inventory_id);
+  });
+}
+
+export function getSourceMediaInventory(source_media_inventory_id: string): SourceMediaInventory | null {
+  const store = loadSourceMediaInventoriesStore();
+  return store.inventories.find((inventory) => inventory.source_media_inventory_id === source_media_inventory_id) ?? null;
+}
+
+export function getSourceMediaInventoryReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  checked: number;
+  ready_for_operator_review: number;
+  source_items_total: number;
+  source_items_checked: number;
+  source_items_missing: number;
+  ready_for_production_render: 0;
+  ready_for_upload: 0;
+  inventories: Array<{
+    source_media_inventory_id: string;
+    project_id: string;
+    platform: string;
+    inventory_state: string;
+    inventory_mode: string;
+    source_items_total: number;
+    source_items_checked: number;
+    source_items_missing: number;
+    created_at: string;
+  }>;
+} {
+  const inventories = listSourceMediaInventories(options);
+  const byState: Record<string, number> = {};
+  let sourceItemsTotal = 0;
+  let sourceItemsChecked = 0;
+  let sourceItemsMissing = 0;
+  for (const inventory of inventories) {
+    byState[inventory.inventory_state] = (byState[inventory.inventory_state] || 0) + 1;
+    sourceItemsTotal += inventory.source_items.length;
+    sourceItemsChecked += inventory.source_items.filter((item) => item.read_check_performed).length;
+    sourceItemsMissing += inventory.source_items.filter((item) => item.exists === false).length;
+  }
+  return {
+    total: inventories.length,
+    by_state: byState,
+    blocked: byState.blocked || 0,
+    checked: byState.checked || 0,
+    ready_for_operator_review: byState.ready_for_operator_review || 0,
+    source_items_total: sourceItemsTotal,
+    source_items_checked: sourceItemsChecked,
+    source_items_missing: sourceItemsMissing,
+    ready_for_production_render: 0,
+    ready_for_upload: 0,
+    inventories: inventories.map((inventory) => ({
+      source_media_inventory_id: sanitizeRenderPlanString(inventory.source_media_inventory_id, "[unsafe-id]"),
+      project_id: sanitizeRenderPlanString(inventory.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(inventory.platform, "[unsafe-platform]"),
+      inventory_state: inventory.inventory_state,
+      inventory_mode: inventory.inventory_mode,
+      source_items_total: inventory.source_items.length,
+      source_items_checked: inventory.source_items.filter((item) => item.read_check_performed).length,
+      source_items_missing: inventory.source_items.filter((item) => item.exists === false).length,
+      created_at: inventory.created_at,
     })),
   };
 }

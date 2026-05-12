@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0",
+  "title": "Source Media Inventory",
+  "description": "Read-only source media inventory metadata. This is not a copy, transcode, render, or upload artifact. It records only declared source reference summaries and safe validation metadata. No raw absolute paths, URLs, file contents, hashes, commands, process output, env vars, credentials, or tokens may be stored.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_media_inventory_id",
+    "production_render_request_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "inventory_state",
+    "created_at",
+    "inventory_mode",
+    "source_media_policy",
+    "source_items",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["1.0"] },
+    "source_media_inventory_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "production_render_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "render_plan_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "project_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"]
+    },
+    "inventory_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "checked", "ready_for_operator_review"]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "inventory_mode": {
+      "type": "string",
+      "enum": ["metadata_only", "explicit_read_only_validation"]
+    },
+    "source_media_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_media_access_requested",
+        "source_media_read_only",
+        "source_media_mutation_allowed",
+        "source_media_copy_allowed",
+        "source_media_transcode_allowed",
+        "render_allowed",
+        "upload_allowed",
+        "platform_api_calls_allowed"
+      ],
+      "properties": {
+        "source_media_access_requested": { "type": "boolean", "enum": [true] },
+        "source_media_read_only": { "type": "boolean", "enum": [true] },
+        "source_media_mutation_allowed": { "type": "boolean", "enum": [false] },
+        "source_media_copy_allowed": { "type": "boolean", "enum": [false] },
+        "source_media_transcode_allowed": { "type": "boolean", "enum": [false] },
+        "render_allowed": { "type": "boolean", "enum": [false] },
+        "upload_allowed": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] }
+      }
+    },
+    "source_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_item_id",
+          "source_kind",
+          "source_reference_summary",
+          "declared_required",
+          "read_check_performed",
+          "blocking_reasons",
+          "warnings"
+        ],
+        "properties": {
+          "source_item_id": { "type": "string" },
+          "source_kind": { "type": "string", "enum": ["video", "image", "audio", "caption", "thumbnail", "other"] },
+          "source_reference_summary": { "type": "string" },
+          "declared_required": { "type": "boolean" },
+          "read_check_performed": { "type": "boolean" },
+          "exists": { "type": "boolean" },
+          "file_type_summary": { "type": "string" },
+          "byte_size": { "type": "number", "minimum": 0 },
+          "duration_seconds": { "type": "number", "minimum": 0 },
+          "resolution_summary": { "type": "string" },
+          "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+          "warnings": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ready_for_production_render", "ready_for_upload", "blocking_reasons", "warnings"],
+      "properties": {
+        "ready_for_production_render": { "type": "boolean", "enum": [false] },
+        "ready_for_upload": { "type": "boolean", "enum": [false] },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by"],
+      "properties": {
+        "generated_by": { "type": "string" },
+        "source_production_render_request_id": { "type": "string" },
+        "source_render_plan_id": { "type": "string" }
+      }
+    }
+  }
+}

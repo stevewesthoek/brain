@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
 **Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B in progress (controlled production render design); detailed guide for phases 3B+  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C in progress (source media inventory and read-only validation); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -58,6 +58,28 @@ This phase defines the future production-render request contract and safety enve
 
 **Next phase guidance**
 - If approved, the next step may add read-only source inventory and media validation, still without enabling production rendering.
+
+### VO-6C: Source Media Inventory and Read-Only Validation
+
+This phase adds a metadata-only inventory layer and an explicit read-only validation path for declared source references.
+
+**What it does**
+- Introduces a source media inventory request/result artifact for operator review only.
+- Defaults to metadata-only inventory.
+- Allows explicit read-only validation that may stat safe local references under a safe base directory.
+- Stores only safe summaries and immutable false execution permissions.
+
+**What it does not do**
+- Does not mutate source media.
+- Does not copy source media.
+- Does not transcode.
+- Does not render.
+- Does not create output files.
+- Does not upload.
+- Does not call platform APIs.
+
+**Next phase guidance**
+- If approved later, the next step may add output directory approval, still without enabling production rendering.
 
 ---
 

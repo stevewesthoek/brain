@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "source_media_inventory_id": "source-media-inventory-001",
+  "production_render_request_id": "production-render-request-001",
+  "render_plan_id": "render-plan-example-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "inventory_state": "ready_for_operator_review",
+  "created_at": "2026-05-12T18:30:00Z",
+  "inventory_mode": "metadata_only",
+  "source_media_policy": {
+    "source_media_access_requested": true,
+    "source_media_read_only": true,
+    "source_media_mutation_allowed": false,
+    "source_media_copy_allowed": false,
+    "source_media_transcode_allowed": false,
+    "render_allowed": false,
+    "upload_allowed": false,
+    "platform_api_calls_allowed": false
+  },
+  "source_items": [
+    {
+      "source_item_id": "source-item-video-001",
+      "source_kind": "video",
+      "source_reference_summary": "[source-reference]",
+      "declared_required": true,
+      "read_check_performed": false,
+      "blocking_reasons": [],
+      "warnings": [
+        "Metadata-only inventory; no filesystem checks performed."
+      ]
+    }
+  ],
+  "validation": {
+    "ready_for_production_render": false,
+    "ready_for_upload": false,
+    "blocking_reasons": [],
+    "warnings": [
+      "Read-only inventory only; no media copied or transcoded."
+    ]
+  },
+  "provenance": {
+    "generated_by": "createSourceMediaInventory",
+    "source_production_render_request_id": "production-render-request-001",
+    "source_render_plan_id": "render-plan-example-001"
+  }
+}

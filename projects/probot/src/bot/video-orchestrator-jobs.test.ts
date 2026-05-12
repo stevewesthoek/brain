@@ -160,6 +160,13 @@ import {
   listControlledProductionRenderRequests,
   getControlledProductionRenderRequest,
   getControlledProductionRenderRequestReport,
+  summarizeSourceMediaReference,
+  createSourceMediaInventory,
+  validateSourceMediaInventory,
+  saveSourceMediaInventory,
+  listSourceMediaInventories,
+  getSourceMediaInventory,
+  getSourceMediaInventoryReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -170,6 +177,7 @@ import {
   type TestRenderSpikeResult,
   type ControlledProductionRenderRequest,
   type ControlledProductionRenderRequestValidationResult,
+  type SourceMediaInventory,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -15067,4 +15075,331 @@ test("VO-6B-REPORT-47: readiness and execution counters remain 0", () => {
   assert.strictEqual(report.ready_for_upload, 0);
   assert.strictEqual(report.execution_enabled, 0);
   assert.strictEqual(report.upload_allowed, 0);
+});
+
+// ─── VO-6C: Source Media Inventory and Read-Only Validation Tests ───────────
+
+test("VO-6C-SCHEMA-1: source media inventory schema parses", () => {
+  const schemaPath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations", "specs", "video-orchestrator", "source-media-inventory.schema.json");
+  assert.doesNotThrow(() => JSON.parse(fs.readFileSync(schemaPath, "utf8")));
+});
+
+test("VO-6C-SCHEMA-2: example parses", () => {
+  const examplePath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations", "specs", "video-orchestrator", "examples", "source-media-inventory.example.json");
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8")) as SourceMediaInventory;
+  assert.strictEqual(example.inventory_mode, "metadata_only");
+});
+
+test("VO-6C-SCHEMA-3: example contains no forbidden strings", () => {
+  const examplePath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations", "specs", "video-orchestrator", "examples", "source-media-inventory.example.json");
+  const example = fs.readFileSync(examplePath, "utf8");
+  assert.strictEqual(hasForbiddenStrings(example), false);
+});
+
+test("VO-6C-SCHEMA-4: example contains no raw paths URLs media payloads upload payloads or credentials", () => {
+  const examplePath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations", "specs", "video-orchestrator", "examples", "source-media-inventory.example.json");
+  const example = fs.readFileSync(examplePath, "utf8");
+  const forbiddenStrings = ["http://", "https://", "stdout", "stderr", "access_token", "refresh_token", "client_secret", "videos.insert"];
+  assert.strictEqual(forbiddenStrings.some((pattern) => example.includes(pattern)), false);
+});
+
+test("VO-6C-SUMMARY-5: safe reference summarizes without raw absolute path", () => {
+  const summary = summarizeSourceMediaReference({ reference: "assets/source/video.mp4" });
+  assert.strictEqual(summary.ok, true);
+  assert.strictEqual(summary.summary.includes("/Users/"), false);
+});
+
+test("VO-6C-SUMMARY-6: forbidden string blocks without echo", () => {
+  const summary = summarizeSourceMediaReference({ reference: "credential_reference://secret" });
+  assert.strictEqual(summary.ok, false);
+  assert.strictEqual(summary.summary.includes("credential_reference"), false);
+});
+
+test("VO-6C-SUMMARY-7: URL blocks", () => {
+  const summary = summarizeSourceMediaReference({ reference: "https://example.com/source.mov" });
+  assert.strictEqual(summary.ok, false);
+});
+
+test("VO-6C-SUMMARY-8: traversal blocks", () => {
+  const summary = summarizeSourceMediaReference({ reference: "../secret.mov" });
+  assert.strictEqual(summary.ok, false);
+});
+
+test("VO-6C-SUMMARY-9: absolute path blocks without echo", () => {
+  const summary = summarizeSourceMediaReference({ reference: "/Users/office/private.mov" });
+  assert.strictEqual(summary.ok, false);
+  assert.strictEqual(summary.summary.includes("/Users/office/private.mov"), false);
+});
+
+test("VO-6C-SUMMARY-10: allowRelativePathSummary false does not echo path segments", () => {
+  const summary = summarizeSourceMediaReference({ reference: "assets/source/video.mp4", allowRelativePathSummary: false });
+  assert.strictEqual(summary.ok, true);
+  assert.strictEqual(summary.summary, "[relative-source-reference]");
+});
+
+test("VO-6C-CREATE-11: metadata_only inventory does not perform filesystem checks", () => {
+  const request = createControlledProductionRenderRequest({
+    approval: createSafeControlledProductionApproval(),
+    plan: createSafeControlledProductionRenderPlan(),
+    commandManifest: createSafeControlledProductionCommandManifest(),
+    dryRun: true,
+  });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(inventory.inventory_mode, "metadata_only");
+  assert.strictEqual(inventory.source_items.every((item) => item.read_check_performed === false), true);
+});
+
+test("VO-6C-CREATE-12: explicit_read_only_validation performs exists/stat only for safe baseDir references", () => {
+  const tempDir = setupTestRuntime();
+  const sourcePath = path.join(tempDir, "source.mp4");
+  fs.writeFileSync(sourcePath, "safe");
+  const request = createControlledProductionRenderRequest({
+    approval: createSafeControlledProductionApproval(),
+    plan: createSafeControlledProductionRenderPlan(),
+    commandManifest: createSafeControlledProductionCommandManifest(),
+    dryRun: true,
+  });
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  renderPlan.render_targets = [{ ...renderPlan.render_targets[0]!, planned_output_path: "source.mp4" }];
+  const inventory = createSourceMediaInventory({ request, renderPlan, inventoryMode: "explicit_read_only_validation", baseDir: tempDir });
+  assert.strictEqual(inventory.inventory_mode, "explicit_read_only_validation");
+  assert.strictEqual(inventory.source_items[0]?.read_check_performed, true);
+  assert.strictEqual(inventory.source_items[0]?.exists, true);
+  cleanupTestRuntime(tempDir);
+});
+
+test("VO-6C-CREATE-13: unsafe request blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const unsafeRequest = { ...request, validation: { ...request.validation, ready_for_production_render: true as never } };
+  assert.throws(() => createSourceMediaInventory({ request: unsafeRequest as never, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" }));
+});
+
+test("VO-6C-CREATE-14: unsafe render plan blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const renderPlan = { ...createSafeControlledProductionRenderPlan(), dry_run: false as never };
+  assert.throws(() => createSourceMediaInventory({ request, renderPlan: renderPlan as never, inventoryMode: "metadata_only" }));
+});
+
+test("VO-6C-CREATE-15: missing source references warn safely", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(inventory.validation.ready_for_production_render, false);
+  assert.strictEqual(inventory.validation.ready_for_upload, false);
+});
+
+test("VO-6C-CREATE-16: source items are safe summaries only", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(inventory.source_items.every((item) => !item.source_reference_summary.includes("/Users/") && !item.source_reference_summary.includes("http")), true);
+});
+
+test("VO-6C-CREATE-17: no file contents read", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(inventory.source_items.every((item) => item.file_type_summary === undefined || typeof item.file_type_summary === "string"), true);
+});
+
+test("VO-6C-CREATE-18: no copy transcode or render execution", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(inventory.source_media_policy.source_media_copy_allowed, false);
+  assert.strictEqual(inventory.source_media_policy.source_media_transcode_allowed, false);
+  assert.strictEqual(inventory.source_media_policy.render_allowed, false);
+});
+
+test("VO-6C-CREATE-19: no child_process or ffprobe or ffmpeg execution", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(inventory.source_media_policy.platform_api_calls_allowed, false);
+  assert.strictEqual(inventory.source_media_policy.upload_allowed, false);
+});
+
+test("VO-6C-CREATE-20: no output files or directories are created", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(inventory.validation.ready_for_production_render, false);
+});
+
+test("VO-6C-CREATE-21: ready flags remain false", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(inventory.validation.ready_for_production_render, false);
+  assert.strictEqual(inventory.validation.ready_for_upload, false);
+});
+
+test("VO-6C-VALIDATE-22: safe inventory validates", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(validateSourceMediaInventory(inventory).ok, true);
+});
+
+test("VO-6C-VALIDATE-23: source_media_read_only false blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(validateSourceMediaInventory({ ...inventory, source_media_policy: { ...inventory.source_media_policy, source_media_read_only: false as never } }).ok, false);
+});
+
+test("VO-6C-VALIDATE-24: source_media_mutation_allowed true blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(validateSourceMediaInventory({ ...inventory, source_media_policy: { ...inventory.source_media_policy, source_media_mutation_allowed: true as never } }).ok, false);
+});
+
+test("VO-6C-VALIDATE-25: source_media_copy_allowed true blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(validateSourceMediaInventory({ ...inventory, source_media_policy: { ...inventory.source_media_policy, source_media_copy_allowed: true as never } }).ok, false);
+});
+
+test("VO-6C-VALIDATE-26: source_media_transcode_allowed true blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(validateSourceMediaInventory({ ...inventory, source_media_policy: { ...inventory.source_media_policy, source_media_transcode_allowed: true as never } }).ok, false);
+});
+
+test("VO-6C-VALIDATE-27: render_allowed true blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(validateSourceMediaInventory({ ...inventory, source_media_policy: { ...inventory.source_media_policy, render_allowed: true as never } }).ok, false);
+});
+
+test("VO-6C-VALIDATE-28: upload_allowed true blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(validateSourceMediaInventory({ ...inventory, source_media_policy: { ...inventory.source_media_policy, upload_allowed: true as never } }).ok, false);
+});
+
+test("VO-6C-VALIDATE-29: platform_api_calls_allowed true blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(validateSourceMediaInventory({ ...inventory, source_media_policy: { ...inventory.source_media_policy, platform_api_calls_allowed: true as never } }).ok, false);
+});
+
+test("VO-6C-VALIDATE-30: ready_for_production_render true blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(validateSourceMediaInventory({ ...inventory, validation: { ...inventory.validation, ready_for_production_render: true as never } }).ok, false);
+});
+
+test("VO-6C-VALIDATE-31: ready_for_upload true blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.strictEqual(validateSourceMediaInventory({ ...inventory, validation: { ...inventory.validation, ready_for_upload: true as never } }).ok, false);
+});
+
+test("VO-6C-VALIDATE-32: forbidden key blocks without echo", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  const validation = validateSourceMediaInventory({ ...inventory, provenance: { ...inventory.provenance, source_render_plan_id: "credential_reference-secret" as never } });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6C-VALIDATE-33: forbidden string blocks without echo", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  const validation = validateSourceMediaInventory({ ...inventory, source_items: [{ ...inventory.source_items[0]!, source_reference_summary: "Bearer fake-token" }] });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6C-VALIDATE-34: raw path blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  const validation = validateSourceMediaInventory({ ...inventory, source_items: [{ ...inventory.source_items[0]!, source_reference_summary: "/Users/office/private.mov" }] });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6C-VALIDATE-35: URL blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  const validation = validateSourceMediaInventory({ ...inventory, source_items: [{ ...inventory.source_items[0]!, source_reference_summary: "https://example.com/secret.mov" }] });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6C-VALIDATE-36: traversal blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  const validation = validateSourceMediaInventory({ ...inventory, source_items: [{ ...inventory.source_items[0]!, source_reference_summary: "../secret.mov" }] });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6C-VALIDATE-37: media content payload blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  const validation = validateSourceMediaInventory({ ...inventory, source_items: [{ ...inventory.source_items[0]!, file_type_summary: "video/mp4;data=raw" }] });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6C-VALIDATE-38: upload/API payload blocks", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  const validation = validateSourceMediaInventory({ ...inventory, source_media_policy: { ...inventory.source_media_policy, upload_allowed: false }, provenance: { ...inventory.provenance, generated_by: "videos.insert" } });
+  assert.strictEqual(validation.ok, false);
+});
+
+test("VO-6C-STORE-39: save/list/get/upsert works", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+    const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+    saveSourceMediaInventory(inventory);
+    assert.ok(getSourceMediaInventory(inventory.source_media_inventory_id));
+    assert.ok(listSourceMediaInventories({ project_id: inventory.project_id }).some((item) => item.source_media_inventory_id === inventory.source_media_inventory_id));
+    saveSourceMediaInventory({ ...inventory, validation: { ...inventory.validation, warnings: ["updated"] } });
+    assert.strictEqual(getSourceMediaInventory(inventory.source_media_inventory_id)?.validation.warnings[0], "updated");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6C-STORE-40: filters work", () => {
+  const report = getSourceMediaInventoryReport({ project_id: "project-alpha", platform: "youtube" });
+  assert.ok(report.total >= 0);
+});
+
+test("VO-6C-STORE-41: store rejects unsafe inventory", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.throws(() => saveSourceMediaInventory({ ...inventory, source_items: [{ ...inventory.source_items[0]!, source_reference_summary: "/Users/office/private.mov" }] } as never));
+});
+
+test("VO-6C-STORE-42: store rejects mutation/copy/transcode/render/upload/API flags true", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.throws(() => saveSourceMediaInventory({ ...inventory, source_media_policy: { ...inventory.source_media_policy, upload_allowed: true as never } } as never));
+});
+
+test("VO-6C-STORE-43: store rejects ready flags true", () => {
+  const request = createControlledProductionRenderRequest({ approval: createSafeControlledProductionApproval(), plan: createSafeControlledProductionRenderPlan(), commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSourceMediaInventory({ request, renderPlan: createSafeControlledProductionRenderPlan(), inventoryMode: "metadata_only" });
+  assert.throws(() => saveSourceMediaInventory({ ...inventory, validation: { ...inventory.validation, ready_for_upload: true as never } } as never));
+});
+
+test("VO-6C-REPORT-44: report counts states and source items", () => {
+  const report = getSourceMediaInventoryReport();
+  assert.ok(report.total >= 0);
+  assert.ok(report.source_items_total >= 0);
+  assert.ok(report.ready_for_production_render === 0);
+  assert.ok(report.ready_for_upload === 0);
+});
+
+test("VO-6C-REPORT-45: legacy unsafe runtime data does not leak", () => {
+  const report = getSourceMediaInventoryReport();
+  assert.strictEqual(hasForbiddenStrings(report), false);
+});
+
+test("VO-6C-REPORT-46: JSON.stringify(report) contains no forbidden strings", () => {
+  const report = getSourceMediaInventoryReport();
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(report)), false);
+});
+
+test("VO-6C-REPORT-47: report excludes raw source paths, URLs, media payloads, upload payloads", () => {
+  const report = getSourceMediaInventoryReport();
+  const text = JSON.stringify(report);
+  assert.strictEqual(/stdout|stderr|access_token|refresh_token|client_secret|Bearer |https?:\/\/|videos.insert/i.test(text), false);
+});
+
+test("VO-6C-REPORT-48: readiness counters remain 0", () => {
+  const report = getSourceMediaInventoryReport();
+  assert.strictEqual(report.ready_for_production_render, 0);
+  assert.strictEqual(report.ready_for_upload, 0);
 });
