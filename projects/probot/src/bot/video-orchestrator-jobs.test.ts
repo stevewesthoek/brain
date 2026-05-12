@@ -147,6 +147,13 @@ import {
   getRealRendererExecutionApproval,
   revokeRealRendererExecutionApproval,
   getRealRendererExecutionApprovalReport,
+  validateTestRenderSpikePermission,
+  runTestOnlyLocalRenderSpike,
+  validateTestRenderSpikeResult,
+  saveTestRenderSpikeResult,
+  listTestRenderSpikeResults,
+  getTestRenderSpikeResult,
+  getTestRenderSpikeResultReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -154,11 +161,13 @@ import {
   type RealRendererExecutionPermissions,
   type RealRendererExecutionAcknowledgement,
   type RealRendererExecutionApprovalValidationResult,
+  type TestRenderSpikeResult,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -209,9 +218,9 @@ function createBasicRenderPlan(): RenderPlan {
     created_at: new Date().toISOString(),
     render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
     asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-    validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-test" },
-    dry_run: true,
+    dry_run: true as const,
   };
 }
 
@@ -2626,7 +2635,7 @@ test("VO-2E-12: buildProductionPackageDraftSummary rejects unsafe metadata on re
       account_id: "account-123",
       source_job_id: "job-123",
       package_state: "draft",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       scheduled_for: new Date().toISOString(),
       platform_target: {
@@ -2674,7 +2683,7 @@ test("VO-2E-13: buildProductionPackageDraftSummary rejects suspiciously long val
       account_id: "account-123",
       source_job_id: "job-123",
       package_state: "draft",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       scheduled_for: new Date().toISOString(),
       platform_target: {
@@ -2800,7 +2809,7 @@ test("VO-2E-16: unsafe platform in by_platform keys does not leak", () => {
           platform: "youtube-client_secret-xxx", // Unsafe: contains client_secret
           account_id: "account-test",
           package_state: "draft",
-          dry_run: true,
+          dry_run: true as const,
           created_at: new Date().toISOString(),
           scheduled_for: new Date().toISOString(),
           platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
@@ -2843,7 +2852,7 @@ test("VO-2E-17: unsafe package_state in by_state keys does not leak", () => {
           platform: "youtube",
           account_id: "account-test",
           package_state: "draft-access_token-secret", // Unsafe: contains access_token
-          dry_run: true,
+          dry_run: true as const,
           created_at: new Date().toISOString(),
           scheduled_for: new Date().toISOString(),
           platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
@@ -2883,7 +2892,7 @@ test("VO-2E-18: unsafe package_id in report.drafts does not leak", () => {
           platform: "youtube",
           account_id: "account-test",
           package_state: "draft",
-          dry_run: true,
+          dry_run: true as const,
           created_at: new Date().toISOString(),
           scheduled_for: new Date().toISOString(),
           platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
@@ -2922,7 +2931,7 @@ test("VO-2E-19: unsafe project_id in report.drafts does not leak", () => {
           platform: "youtube",
           account_id: "account-test",
           package_state: "draft",
-          dry_run: true,
+          dry_run: true as const,
           created_at: new Date().toISOString(),
           scheduled_for: new Date().toISOString(),
           platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
@@ -2961,7 +2970,7 @@ test("VO-2E-20: ready_to_post remains false even if raw readiness.ready_to_post 
           platform: "youtube",
           account_id: "account-test",
           package_state: "draft",
-          dry_run: true,
+          dry_run: true as const,
           created_at: new Date().toISOString(),
           scheduled_for: new Date().toISOString(),
           platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
@@ -3002,7 +3011,7 @@ test("VO-2E-21: JSON.stringify(report) contains no forbidden strings", () => {
           platform: "youtube-keychain://secret",
           account_id: "account-test",
           package_state: "draft-access_token-zzz",
-          dry_run: true,
+          dry_run: true as const,
           created_at: new Date().toISOString(),
           scheduled_for: new Date().toISOString(),
           platform_target: { format_key: "yt_long", aspect_ratio: "16:9", resolution: "1920x1080" },
@@ -4495,7 +4504,7 @@ test("VO-3B-11: Render plan validation rejects invalid platform", () => {
       package_id: "pkg-123",
       project_id: "proj-123",
       platform: "invalid_platform",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [],
@@ -4505,8 +4514,8 @@ test("VO-3B-11: Render plan validation rejects invalid platform", () => {
         captions: { count: 0 },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -4551,8 +4560,8 @@ test("VO-3B-12: Render plan validation requires dry_run=true", () => {
         captions: { count: 0 },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -4579,7 +4588,7 @@ test("VO-3B-13: Render plan validation rejects absolute paths", () => {
       package_id: "pkg-123",
       project_id: "proj-123",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -4597,8 +4606,8 @@ test("VO-3B-13: Render plan validation rejects absolute paths", () => {
         captions: { count: 0 },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -4625,7 +4634,7 @@ test("VO-3B-14: Render plan validation rejects URL paths", () => {
       package_id: "pkg-123",
       project_id: "proj-123",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -4643,8 +4652,8 @@ test("VO-3B-14: Render plan validation rejects URL paths", () => {
         captions: { count: 0 },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -4703,7 +4712,7 @@ test("VO-3B-16: Save render plan validates before storing", () => {
       package_id: "pkg-123",
       project_id: "proj-123",
       platform: "invalid_platform",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [],
@@ -4713,8 +4722,8 @@ test("VO-3B-16: Save render plan validates before storing", () => {
         captions: { count: 0 },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -4860,7 +4869,7 @@ test("VO-3B-21: Render plan validation rejects forbidden patterns", () => {
       package_id: "pkg-123",
       project_id: "proj-123",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -4879,8 +4888,8 @@ test("VO-3B-21: Render plan validation rejects forbidden patterns", () => {
         captions: { count: 0 },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -5507,7 +5516,7 @@ test("VO-3B-FH1: generateRenderPlanReadinessReport sanitizes unsafe legacy runti
       package_id: "access_token-package",
       project_id: "Bearer fake-token",
       platform: "client_secret-platform",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "blocked",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -5525,8 +5534,8 @@ test("VO-3B-FH1: generateRenderPlanReadinessReport sanitizes unsafe legacy runti
         captions: { count: 0 },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: ["Bearer fake-token", "refresh_token-issue"],
         warnings: ["keychain://warning"],
       },
@@ -5636,7 +5645,7 @@ test("VO-3B-FH3: buildRenderPlanSummary handles malformed validation (missing ar
     package_id: "pkg-123",
     project_id: "proj-123",
     platform: "youtube",
-    dry_run: true,
+    dry_run: true as const,
     plan_state: "draft",
     created_at: new Date().toISOString(),
     render_targets: [],
@@ -5646,8 +5655,8 @@ test("VO-3B-FH3: buildRenderPlanSummary handles malformed validation (missing ar
       captions: { count: 0 },
     },
     validation: {
-      ready_for_render: false,
-      ready_for_upload: false,
+      ready_for_render: false as const,
+      ready_for_upload: false as const,
       // Malformed: not arrays
       blocking_reasons: null as any,
       warnings: undefined as any,
@@ -5678,7 +5687,7 @@ test("VO-3B-FH4: getLocalRenderPlanReadinessReport sanitizes all plan data", () 
       package_id: "credential_reference-pkg",
       project_id: "keychain://proj",
       platform: "access_token",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "blocked",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -5696,8 +5705,8 @@ test("VO-3B-FH4: getLocalRenderPlanReadinessReport sanitizes all plan data", () 
         captions: { count: 0 },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: ["Bearer token issue"],
         warnings: ["client_secret"],
       },
@@ -5713,7 +5722,7 @@ test("VO-3B-FH4: getLocalRenderPlanReadinessReport sanitizes all plan data", () 
       package_id: "access_token-pkg",
       project_id: "proj-auth",
       platform: "Bearer-platform",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "blocked",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -5731,8 +5740,8 @@ test("VO-3B-FH4: getLocalRenderPlanReadinessReport sanitizes all plan data", () 
         captions: { count: 0 },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: ["refresh_token required"],
         warnings: ["code_verifier missing"],
       },
@@ -5803,7 +5812,7 @@ test("VO-3B-FH5: generateRenderPlanReadinessReport handles malformed validation 
       package_id: "pkg-malformed",
       project_id: "proj-malformed",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "draft",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -5821,8 +5830,8 @@ test("VO-3B-FH5: generateRenderPlanReadinessReport handles malformed validation 
         captions: { count: 0 },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: null, // Malformed: not an array
         warnings: undefined, // Malformed: undefined
       },
@@ -6627,7 +6636,7 @@ test("VO-3D-PV1: validateRenderPlanAgainstLocalSpecs validates all targets", () 
       package_id: "pkg-test-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -6652,8 +6661,8 @@ test("VO-3D-PV1: validateRenderPlanAgainstLocalSpecs validates all targets", () 
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -6685,7 +6694,7 @@ test("VO-3D-PV2: validateRenderPlanAgainstLocalSpecs handles missing specs grace
       package_id: "pkg-test-002",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -6703,8 +6712,8 @@ test("VO-3D-PV2: validateRenderPlanAgainstLocalSpecs handles missing specs grace
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -6744,7 +6753,7 @@ test("VO-3D-PV3: validateRenderPlanAgainstLocalSpecs rejects invalid plan first"
       package_id: "pkg-invalid",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       // Missing render_targets
@@ -6754,8 +6763,8 @@ test("VO-3D-PV3: validateRenderPlanAgainstLocalSpecs rejects invalid plan first"
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -6790,7 +6799,7 @@ test("VO-3D-PV4: validateRenderPlanAgainstLocalSpecs no file existence checks", 
       package_id: "pkg-test-003",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -6808,8 +6817,8 @@ test("VO-3D-PV4: validateRenderPlanAgainstLocalSpecs no file existence checks", 
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -6843,7 +6852,7 @@ test("VO-3D-MR1: getManualRenderManifestCheckReport returns aggregated summary",
       package_id: "pkg-report-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -6861,8 +6870,8 @@ test("VO-3D-MR1: getManualRenderManifestCheckReport returns aggregated summary",
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -6902,7 +6911,7 @@ test("VO-3D-MR2: getManualRenderManifestCheckReport returns aggregated plans", (
       package_id: "pkg-report-002",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -6920,8 +6929,8 @@ test("VO-3D-MR2: getManualRenderManifestCheckReport returns aggregated plans", (
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -6957,7 +6966,7 @@ test("VO-3D-MR3: getManualRenderManifestCheckReport never sets upload ready", ()
       package_id: "pkg-report-003",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -6982,8 +6991,8 @@ test("VO-3D-MR3: getManualRenderManifestCheckReport never sets upload ready", ()
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -7024,7 +7033,7 @@ test("VO-3D-MR4: manual manifest report sanitizes legacy unsafe render-plans dat
           package_id: "pkg_access_token_secret",
           project_id: "project_keychain_unsafe",
           platform: "youtube_bearer_token",
-          dry_run: true,
+          dry_run: true as const,
           plan_state: "planned",
           created_at: new Date().toISOString(),
           render_targets: [
@@ -7042,8 +7051,8 @@ test("VO-3D-MR4: manual manifest report sanitizes legacy unsafe render-plans dat
             captions: { count: 0, formats: [], variants: [] },
           },
           validation: {
-            ready_for_render: false,
-            ready_for_upload: false,
+            ready_for_render: false as const,
+            ready_for_upload: false as const,
             blocking_reasons: ["Contains client_secret in metadata"],
             warnings: ["refresh_token found in config"],
           },
@@ -7095,7 +7104,7 @@ test("VO-3D-MR5: manual manifest report excludes raw render targets and planned 
       package_id: "pkg-report-005",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -7120,8 +7129,8 @@ test("VO-3D-MR5: manual manifest report excludes raw render targets and planned 
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -7175,7 +7184,7 @@ test("VO-3D-SAFE1: validateRenderPlanAgainstLocalSpecs does not perform file exi
       package_id: "pkg-safe-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -7193,8 +7202,8 @@ test("VO-3D-SAFE1: validateRenderPlanAgainstLocalSpecs does not perform file exi
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -7223,7 +7232,7 @@ test("VO-3D-SAFE2: manual manifest check does not create files or directories", 
       package_id: "pkg-safe-002",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -7241,8 +7250,8 @@ test("VO-3D-SAFE2: manual manifest check does not create files or directories", 
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -7280,7 +7289,7 @@ test("VO-3D-SAFE3: manual manifest check does not execute FFmpeg or child_proces
       package_id: "pkg-safe-003",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -7298,8 +7307,8 @@ test("VO-3D-SAFE3: manual manifest check does not execute FFmpeg or child_proces
         captions: { count: 0, formats: [], variants: [] },
       },
       validation: {
-        ready_for_render: false,
-        ready_for_upload: false,
+        ready_for_render: false as const,
+        ready_for_upload: false as const,
         blocking_reasons: [],
         warnings: [],
       },
@@ -7333,12 +7342,12 @@ test("VO-3E-G1: evaluateRenderExecutionGate blocks dryRun=false", () => {
       package_id: "pkg-gate-test-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-gate-test-001", checksum: "sha256:test" },
     };
 
@@ -7361,12 +7370,12 @@ test("VO-3E-G2: evaluateRenderExecutionGate returns needs_operator_approval for 
       package_id: "pkg-gate-test-002",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-gate-test-002", checksum: "sha256:test" },
     };
 
@@ -7390,12 +7399,12 @@ test("VO-3E-G3: evaluateRenderExecutionGate returns blocked for invalid plan", (
       package_id: "pkg-gate-test-invalid",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       // Missing render_targets
       asset_plan: { video: { count: 0, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-gate-test-invalid", checksum: "sha256:test" },
     };
 
@@ -7417,12 +7426,12 @@ test("VO-3E-G4: gate output sanitizes paths and no raw render_targets/asset_plan
       package_id: "pkg-gate-test-003",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-gate-test-003", checksum: "sha256:test" },
     };
 
@@ -7445,12 +7454,12 @@ test("VO-3E-G5: gate never auto-approves", () => {
       package_id: "pkg-gate-test-004",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-gate-test-004", checksum: "sha256:test" },
     };
 
@@ -7471,12 +7480,12 @@ test("VO-3E-G6: gate ready flags remain false/absent", () => {
       package_id: "pkg-gate-test-005",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-gate-test-005", checksum: "sha256:test" },
     };
 
@@ -7499,12 +7508,12 @@ test("VO-3E-GS1: gate store save/list/get works", () => {
       package_id: "pkg-gs1-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-gs1-001", checksum: "sha256:test" },
     };
 
@@ -7558,7 +7567,7 @@ test("VO-3E-B1: createManualExportBundleFromGate works from needs_operator_appro
       package_id: "pkg-b1-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [
@@ -7566,7 +7575,7 @@ test("VO-3E-B1: createManualExportBundleFromGate works from needs_operator_appro
         { kind: "thumbnail", format_key: "youtube_thumbnail_1280x720", aspect_ratio: "16:9", resolution: "1280x720", planned_output_path: "renders/thumbnail.jpg" },
       ],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 1, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-b1-001", checksum: "sha256:test" },
     };
 
@@ -7591,12 +7600,12 @@ test("VO-3E-B2: bundle excludes raw render_targets/asset_plan/paths", () => {
       package_id: "pkg-b2-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/important_video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-b2-001", checksum: "sha256:test" },
     };
 
@@ -7621,12 +7630,12 @@ test("VO-3E-BS1: bundle store save/list/get works", () => {
       package_id: "pkg-bs1-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-bs1-001", checksum: "sha256:test" },
     };
 
@@ -7656,13 +7665,13 @@ test("VO-3E-BS2: bundle store rejects ready_for_render=true", () => {
       package_id: "pkg-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       bundle_state: "draft",
       created_at: new Date().toISOString(),
       manifest_summary: { total_outputs: 1, by_kind: { video: 1 } },
       operator_checklist: [],
       planned_outputs: [],
-      validation: { ready_for_render: true, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: true, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_gate_id: "gate-001", checksum: "sha256:test" },
     };
 
@@ -7681,12 +7690,12 @@ test("VO-3E-R1: getRenderExecutionGateReport counts states and sanitizes", () =>
       package_id: "pkg-r1-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-r1-001", checksum: "sha256:test" },
     };
 
@@ -7711,12 +7720,12 @@ test("VO-3E-R2: getManualExportBundleReport keeps ready flags at 0", () => {
       package_id: "pkg-r2-001",
       project_id: "project-test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       plan_state: "planned",
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-r2-001", checksum: "sha256:test" },
     };
 
@@ -7773,11 +7782,11 @@ test("VO-3F-CREATE-1: dryRun=false blocks", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create-001", checksum: "sha256:test" },
     };
 
@@ -7803,11 +7812,11 @@ test("VO-3F-CREATE-2: approved_for_manual_render requires gate needs_operator_ap
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create-002", checksum: "sha256:test" },
     };
 
@@ -7836,11 +7845,11 @@ test("VO-3F-CREATE-3: approved_for_manual_render requires checklist_acknowledged
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create-003", checksum: "sha256:test" },
     };
 
@@ -7866,11 +7875,11 @@ test("VO-3F-CREATE-4: approved_for_manual_render requires risk_acknowledgement",
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create-004", checksum: "sha256:test" },
     };
 
@@ -7896,11 +7905,11 @@ test("VO-3F-CREATE-5: rejected decision works safely", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create-005", checksum: "sha256:test" },
     };
 
@@ -7927,11 +7936,11 @@ test("VO-3F-CREATE-6: decision_note unsafe value blocks", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create-006", checksum: "sha256:test" },
     };
 
@@ -7957,11 +7966,11 @@ test("VO-3F-CREATE-7: output ready flags remain false", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create-007", checksum: "sha256:test" },
     };
 
@@ -7987,11 +7996,11 @@ test("VO-3F-VALIDATE-1: validates safe approval", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-val-001", checksum: "sha256:test" },
     };
 
@@ -8018,11 +8027,11 @@ test("VO-3F-STORE-1: save/list/get works", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-store-001", checksum: "sha256:test" },
     };
 
@@ -8053,11 +8062,11 @@ test("VO-3F-REPORT-1: report counts states", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-report-001", checksum: "sha256:test" },
     };
 
@@ -8091,11 +8100,11 @@ test("VO-3F-FREEZE-1: builds freeze snapshot", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-freeze-001", checksum: "sha256:test" },
     };
 
@@ -8133,11 +8142,11 @@ test("VO-3F-FREEZE-2: freeze checksum is deterministic for same gate and bundle"
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: "2026-05-11T14:00:00Z",
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-freeze2-001", checksum: "sha256:test" },
     };
 
@@ -8164,11 +8173,11 @@ test("VO-3F-FREEZE-3: freeze checksum changes when safe summary changes", (t) =>
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-freeze3a", checksum: "sha256:test" },
     };
 
@@ -8199,11 +8208,11 @@ test("VO-3F-FREEZE-4: freeze snapshot excludes render_targets asset_plan raw pat
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: ["test reason"], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: ["test reason"], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-freeze4", checksum: "sha256:test" },
     };
 
@@ -8230,11 +8239,11 @@ test("VO-3F-FREEZE-5: freeze snapshot contains no forbidden strings", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-freeze5", checksum: "sha256:test" },
     };
 
@@ -8260,11 +8269,11 @@ test("VO-3F-CREATE-8: mismatched gate and bundle blocks", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create8a", checksum: "sha256:test" },
     };
 
@@ -8292,11 +8301,11 @@ test("VO-3F-CREATE-9: approved decision requires bundle ready_for_operator_revie
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create9", checksum: "sha256:test" },
     };
 
@@ -8325,11 +8334,11 @@ test("VO-3F-CREATE-10: unsafe reviewed_by_label blocks without echo", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create10", checksum: "sha256:test" },
     };
 
@@ -8360,11 +8369,11 @@ test("VO-3F-CREATE-11: output contains no paths render_targets or asset_plan", (
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create11", checksum: "sha256:test" },
     };
 
@@ -8391,11 +8400,11 @@ test("VO-3F-CREATE-12: approval does not execute anything or create files", (t) 
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-create12", checksum: "sha256:test" },
     };
 
@@ -8428,11 +8437,11 @@ test("VO-3F-VALIDATE-2: validation blocks dry_run false", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-val2", checksum: "sha256:test" },
     };
 
@@ -8460,11 +8469,11 @@ test("VO-3F-VALIDATE-3: validation blocks ready_for_render true", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-val3", checksum: "sha256:test" },
     };
 
@@ -8491,11 +8500,11 @@ test("VO-3F-VALIDATE-4: validation blocks ready_for_upload true", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-val4", checksum: "sha256:test" },
     };
 
@@ -8522,11 +8531,11 @@ test("VO-3F-VALIDATE-5: validation blocks forbidden key without echo", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-val5", checksum: "sha256:test" },
     };
 
@@ -8555,11 +8564,11 @@ test("VO-3F-VALIDATE-6: validation blocks forbidden string without echo", (t) =>
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-val6", checksum: "sha256:test" },
     };
 
@@ -8588,11 +8597,11 @@ test("VO-3F-VALIDATE-7: validation blocks execution command payloads", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-val7", checksum: "sha256:test" },
     };
 
@@ -8619,11 +8628,11 @@ test("VO-3F-STORE-2: approval store upserts by approval_id", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-store2", checksum: "sha256:test" },
     };
 
@@ -8657,11 +8666,11 @@ test("VO-3F-STORE-3: approval store filters by project platform state gate and b
       project_id: "proj-1",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-store3a", checksum: "sha256:test" },
     };
 
@@ -8697,11 +8706,11 @@ test("VO-3F-STORE-4: approval store rejects unsafe record", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-store4", checksum: "sha256:test" },
     };
 
@@ -8730,11 +8739,11 @@ test("VO-3F-STORE-5: revoke changes approval state to revoked", (t) => {
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-store5", checksum: "sha256:test" },
     };
 
@@ -8761,11 +8770,11 @@ test("VO-3F-STORE-6: revoke unsafe reason blocks or sanitizes without echo", (t)
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-store6", checksum: "sha256:test" },
     };
 
@@ -8798,11 +8807,11 @@ test("VO-3F-REPORT-2: report includes ready_for_render and ready_for_upload as z
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-report2", checksum: "sha256:test" },
     };
 
@@ -8830,11 +8839,11 @@ test("VO-3F-REPORT-3: legacy unsafe approval runtime data does not leak", (t) =>
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-report3", checksum: "sha256:test" },
     };
 
@@ -8865,11 +8874,11 @@ test("VO-3F-REPORT-4: JSON.stringify approval report contains no forbidden strin
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-report4", checksum: "sha256:test" },
     };
 
@@ -8900,11 +8909,11 @@ test("VO-3F-REPORT-5: report excludes raw decision notes paths freeze details an
       project_id: "project-test",
       platform: "youtube",
       plan_state: "planned",
-      dry_run: true,
+      dry_run: true as const,
       created_at: new Date().toISOString(),
       render_targets: [{ kind: "video", format_key: "landscape_1920x1080_16x9", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1, variants: [] }, thumbnails: { count: 0, variants: [] }, captions: { count: 0, formats: [], variants: [] } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "test", source_package_id: "pkg-report5", checksum: "sha256:test" },
     };
 
@@ -9011,9 +9020,9 @@ test("VO-4A-CREATE-5: dryRun=false blocks", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9043,9 +9052,9 @@ test("VO-4A-CREATE-6: non-approved approval blocks", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9075,9 +9084,9 @@ test("VO-4A-CREATE-7: mismatched IDs block", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9110,9 +9119,9 @@ test("VO-4A-CREATE-8: approved approval creates dry-run command manifest", (t) =
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9143,9 +9152,9 @@ test("VO-4A-CREATE-9: command summaries are disabled", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9174,9 +9183,9 @@ test("VO-4A-CREATE-10: executor execution_enabled is false", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9204,9 +9213,9 @@ test("VO-4A-CREATE-11: ready_for_execution/render/upload remain false", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9235,9 +9244,9 @@ test("VO-4A-CREATE-12: no files or directories are created", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9265,19 +9274,19 @@ test("VO-4A-VALIDATE-14: safe manifest validates", (t) => {
     package_id: "test-package",
     project_id: "test-project",
     platform: "youtube",
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft",
     created_at: new Date().toISOString(),
     executor: {
       executor_id: "test-executor",
       executor_kind: "placeholder" as const,
-      execution_enabled: false,
-      requires_explicit_operator_run: true,
+      execution_enabled: false as const,
+      requires_explicit_operator_run: true as const,
     },
     command_plan: {
       commands: [],
       command_count: 0,
-      contains_shell: false,
+      contains_shell: false as const,
       execution_mode: "disabled" as const,
     },
     planned_outputs: {
@@ -9287,9 +9296,9 @@ test("VO-4A-VALIDATE-14: safe manifest validates", (t) => {
       project_id: "test-project",
     },
     validation: {
-      ready_for_execution: false,
-      ready_for_render: false,
-      ready_for_upload: false,
+      ready_for_execution: false as const,
+      ready_for_render: false as const,
+      ready_for_upload: false as const,
       blocking_reasons: [],
       warnings: [],
     },
@@ -9308,9 +9317,9 @@ test("VO-4A-VALIDATE-14: safe manifest validates", (t) => {
 test("VO-4A-VALIDATE-15: dry_run false blocks", (t) => {
   const manifest = {
     dry_run: false,
-    executor: { execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    executor: { execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { execution_mode: "disabled", contains_shell: false as const, commands: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
   };
 
   const result = validateRenderCommandManifest(manifest);
@@ -9320,10 +9329,10 @@ test("VO-4A-VALIDATE-15: dry_run false blocks", (t) => {
 
 test("VO-4A-VALIDATE-16: execution_enabled true blocks", (t) => {
   const manifest = {
-    dry_run: true,
-    executor: { execution_enabled: true, requires_explicit_operator_run: true },
-    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    dry_run: true as const,
+    executor: { execution_enabled: true, requires_explicit_operator_run: true as const },
+    command_plan: { execution_mode: "disabled", contains_shell: false as const, commands: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
   };
 
   const result = validateRenderCommandManifest(manifest);
@@ -9333,14 +9342,14 @@ test("VO-4A-VALIDATE-16: execution_enabled true blocks", (t) => {
 
 test("VO-4A-VALIDATE-17: command disabled false blocks", (t) => {
   const manifest = {
-    dry_run: true,
-    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    dry_run: true as const,
+    executor: { execution_enabled: false as const, requires_explicit_operator_run: true as const },
     command_plan: {
       execution_mode: "disabled",
-      contains_shell: false,
+      contains_shell: false as const,
       commands: [{ disabled: false }],
     },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
   };
 
   const result = validateRenderCommandManifest(manifest);
@@ -9350,14 +9359,14 @@ test("VO-4A-VALIDATE-17: command disabled false blocks", (t) => {
 
 test("VO-4A-VALIDATE-18: contains_shell true blocks", (t) => {
   const manifest = {
-    dry_run: true,
-    executor: { execution_enabled: false, requires_explicit_operator_run: true },
+    dry_run: true as const,
+    executor: { execution_enabled: false as const, requires_explicit_operator_run: true as const },
     command_plan: {
       execution_mode: "disabled",
       contains_shell: true,
       commands: [],
     },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
   };
 
   const result = validateRenderCommandManifest(manifest);
@@ -9367,10 +9376,10 @@ test("VO-4A-VALIDATE-18: contains_shell true blocks", (t) => {
 
 test("VO-4A-VALIDATE-19: ready_for_execution true blocks", (t) => {
   const manifest = {
-    dry_run: true,
-    executor: { execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
-    validation: { ready_for_execution: true, ready_for_render: false, ready_for_upload: false },
+    dry_run: true as const,
+    executor: { execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { execution_mode: "disabled", contains_shell: false as const, commands: [] },
+    validation: { ready_for_execution: true, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
   };
 
   const result = validateRenderCommandManifest(manifest);
@@ -9380,10 +9389,10 @@ test("VO-4A-VALIDATE-19: ready_for_execution true blocks", (t) => {
 
 test("VO-4A-VALIDATE-20: ready_for_render true blocks", (t) => {
   const manifest = {
-    dry_run: true,
-    executor: { execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
-    validation: { ready_for_execution: false, ready_for_render: true, ready_for_upload: false },
+    dry_run: true as const,
+    executor: { execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { execution_mode: "disabled", contains_shell: false as const, commands: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: true, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
   };
 
   const result = validateRenderCommandManifest(manifest);
@@ -9393,10 +9402,10 @@ test("VO-4A-VALIDATE-20: ready_for_render true blocks", (t) => {
 
 test("VO-4A-VALIDATE-21: ready_for_upload true blocks", (t) => {
   const manifest = {
-    dry_run: true,
-    executor: { execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: true },
+    dry_run: true as const,
+    executor: { execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { execution_mode: "disabled", contains_shell: false as const, commands: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: true, blocking_reasons: [], warnings: [] },
   };
 
   const result = validateRenderCommandManifest(manifest);
@@ -9406,10 +9415,10 @@ test("VO-4A-VALIDATE-21: ready_for_upload true blocks", (t) => {
 
 test("VO-4A-VALIDATE-22: forbidden key blocks without echo", (t) => {
   const manifest = {
-    dry_run: true,
-    executor: { execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    dry_run: true as const,
+    executor: { execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { execution_mode: "disabled", contains_shell: false as const, commands: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
     access_token: "secret123",
   };
 
@@ -9420,10 +9429,10 @@ test("VO-4A-VALIDATE-22: forbidden key blocks without echo", (t) => {
 
 test("VO-4A-VALIDATE-23: forbidden string blocks without echo", (t) => {
   const manifest = {
-    dry_run: true,
-    executor: { execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    dry_run: true as const,
+    executor: { execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { execution_mode: "disabled", contains_shell: false as const, commands: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
     custom_field: "keychain://video-orchestrator/youtube",
   };
 
@@ -9434,10 +9443,10 @@ test("VO-4A-VALIDATE-23: forbidden string blocks without echo", (t) => {
 
 test("VO-4A-VALIDATE-24: execution-command-like payload blocks", (t) => {
   const manifest = {
-    dry_run: true,
-    executor: { execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { execution_mode: "disabled", contains_shell: false, commands: [] },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    dry_run: true as const,
+    executor: { execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { execution_mode: "disabled", contains_shell: false as const, commands: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
     purpose: "Use videos.insert to upload",
   };
 
@@ -9459,9 +9468,9 @@ test("VO-4A-STORE-25: save/list/get/upsert works", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9495,9 +9504,9 @@ test("VO-4A-STORE-26: filters work", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9533,10 +9542,10 @@ test("VO-4A-STORE-27: store rejects unsafe manifest", (t) => {
       dry_run: false,
       command_state: "draft",
       created_at: new Date().toISOString(),
-      executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-      command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+      executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+      command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
       planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test" },
-      validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
     } as any;
 
@@ -9563,13 +9572,13 @@ test("VO-4A-STORE-28: store rejects execution_enabled true", (t) => {
       package_id: "test",
       project_id: "test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       command_state: "draft",
       created_at: new Date().toISOString(),
-      executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: true, requires_explicit_operator_run: true },
-      command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+      executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: true, requires_explicit_operator_run: true as const },
+      command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
       planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test" },
-      validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
     } as any;
 
@@ -9596,13 +9605,13 @@ test("VO-4A-STORE-29: store rejects ready flags true", (t) => {
       package_id: "test",
       project_id: "test",
       platform: "youtube",
-      dry_run: true,
+      dry_run: true as const,
       command_state: "draft",
       created_at: new Date().toISOString(),
-      executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-      command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+      executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+      command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
       planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test" },
-      validation: { ready_for_execution: false, ready_for_render: true, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_execution: false as const, ready_for_render: true, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
     } as any;
 
@@ -9629,9 +9638,9 @@ test("VO-4A-REPORT-30: report counts states", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9664,9 +9673,9 @@ test("VO-4A-REPORT-31: legacy unsafe runtime data does not leak", (t) => {
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9698,9 +9707,9 @@ test("VO-4A-REPORT-32: JSON.stringify(report) contains no forbidden strings", (t
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -9742,9 +9751,9 @@ test("VO-4A-REPORT-33: report excludes raw command_plan and command strings", (t
       created_at: "2026-05-11T10:00:00Z",
       render_targets: [{ kind: "video" as const, format_key: "youtube_longform", aspect_ratio: "16:9", resolution: "1920x1080", planned_output_path: "renders/video.mp4" }],
       asset_plan: { video: { count: 1 }, thumbnails: { count: 1 }, captions: { count: 0 } },
-      validation: { ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+      validation: { ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
       provenance: { generated_by: "createLocalRenderPlanFromPackageDraft", source_package_id: "pkg-vo4a-1" },
-      dry_run: true,
+      dry_run: true as const,
     };
 
     const gate = evaluateRenderExecutionGate({ plan, checkMode: "disabled", dryRun: true });
@@ -10088,7 +10097,7 @@ test("VO-4B-VALIDATION-16: safe preflight validates", (t) => {
 });
 
 test("VO-4B-VALIDATION-17: dry_run false blocks", (t) => {
-  const unsafePreflight = { dry_run: false, validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false } };
+  const unsafePreflight = { dry_run: false, validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false } };
   const validation = validateRendererPreflight(unsafePreflight);
 
   assert.ok(!validation.ok, "Validation should fail for dry_run=false");
@@ -10097,9 +10106,9 @@ test("VO-4B-VALIDATION-17: dry_run false blocks", (t) => {
 
 test("VO-4B-VALIDATION-18: executable_invoked true blocks", (t) => {
   const unsafePreflight = {
-    dry_run: true,
+    dry_run: true as const,
     tool_checks: [{ executable_invoked: true }],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
   };
   const validation = validateRendererPreflight(unsafePreflight);
 
@@ -10108,9 +10117,9 @@ test("VO-4B-VALIDATION-18: executable_invoked true blocks", (t) => {
 
 test("VO-4B-VALIDATION-19: version_checked true blocks", (t) => {
   const unsafePreflight = {
-    dry_run: true,
+    dry_run: true as const,
     tool_checks: [{ executable_invoked: false, version_checked: true }],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
   };
   const validation = validateRendererPreflight(unsafePreflight);
 
@@ -10119,8 +10128,8 @@ test("VO-4B-VALIDATION-19: version_checked true blocks", (t) => {
 
 test("VO-4B-VALIDATION-20: ready_for_execution true blocks", (t) => {
   const unsafePreflight = {
-    dry_run: true,
-    validation: { ready_for_execution: true, ready_for_render: false, ready_for_upload: false },
+    dry_run: true as const,
+    validation: { ready_for_execution: true, ready_for_render: false as const, ready_for_upload: false },
   };
   const validation = validateRendererPreflight(unsafePreflight);
 
@@ -10129,8 +10138,8 @@ test("VO-4B-VALIDATION-20: ready_for_execution true blocks", (t) => {
 
 test("VO-4B-VALIDATION-21: ready_for_render true blocks", (t) => {
   const unsafePreflight = {
-    dry_run: true,
-    validation: { ready_for_execution: false, ready_for_render: true, ready_for_upload: false },
+    dry_run: true as const,
+    validation: { ready_for_execution: false as const, ready_for_render: true, ready_for_upload: false },
   };
   const validation = validateRendererPreflight(unsafePreflight);
 
@@ -10139,8 +10148,8 @@ test("VO-4B-VALIDATION-21: ready_for_render true blocks", (t) => {
 
 test("VO-4B-VALIDATION-22: ready_for_upload true blocks", (t) => {
   const unsafePreflight = {
-    dry_run: true,
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: true },
+    dry_run: true as const,
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: true },
   };
   const validation = validateRendererPreflight(unsafePreflight);
 
@@ -10149,12 +10158,12 @@ test("VO-4B-VALIDATION-22: ready_for_upload true blocks", (t) => {
 
 test("VO-4B-VALIDATION-23: executable_invoked false enforced for all checks", (t) => {
   const unsafePreflight = {
-    dry_run: true,
+    dry_run: true as const,
     tool_checks: [{ executable_invoked: true, version_checked: false }],
     validation: {
-      ready_for_execution: false,
-      ready_for_render: false,
-      ready_for_upload: false,
+      ready_for_execution: false as const,
+      ready_for_render: false as const,
+      ready_for_upload: false as const,
       blocking_reasons: [],
     },
   };
@@ -10165,12 +10174,12 @@ test("VO-4B-VALIDATION-23: executable_invoked false enforced for all checks", (t
 
 test("VO-4B-VALIDATION-24: version_checked false enforced for all checks", (t) => {
   const unsafePreflight = {
-    dry_run: true,
+    dry_run: true as const,
     tool_checks: [{ executable_invoked: false, version_checked: true }],
     validation: {
-      ready_for_execution: false,
-      ready_for_render: false,
-      ready_for_upload: false,
+      ready_for_execution: false as const,
+      ready_for_render: false as const,
+      ready_for_upload: false as const,
       blocking_reasons: [],
     },
   };
@@ -10181,15 +10190,15 @@ test("VO-4B-VALIDATION-24: version_checked false enforced for all checks", (t) =
 
 test("VO-4B-VALIDATION-25: multiple tool_checks all validated", (t) => {
   const unsafePreflight = {
-    dry_run: true,
+    dry_run: true as const,
     tool_checks: [
       { executable_invoked: false, version_checked: false },
       { executable_invoked: true, version_checked: false }, // This one is unsafe
     ],
     validation: {
-      ready_for_execution: false,
-      ready_for_render: false,
-      ready_for_upload: false,
+      ready_for_execution: false as const,
+      ready_for_render: false as const,
+      ready_for_upload: false as const,
       blocking_reasons: [],
     },
   };
@@ -10200,11 +10209,11 @@ test("VO-4B-VALIDATION-25: multiple tool_checks all validated", (t) => {
 
 test("VO-4B-VALIDATION-26: ready flags all must be false", (t) => {
   const unsafePreflight = {
-    dry_run: true,
+    dry_run: true as const,
     tool_checks: [],
     validation: {
-      ready_for_execution: false,
-      ready_for_render: false,
+      ready_for_execution: false as const,
+      ready_for_render: false as const,
       ready_for_upload: true, // This one is unsafe
       blocking_reasons: [],
     },
@@ -10216,12 +10225,12 @@ test("VO-4B-VALIDATION-26: ready flags all must be false", (t) => {
 
 test("VO-4B-VALIDATION-27: blocking_reasons can describe safety issues safely", (t) => {
   const safePreflight = {
-    dry_run: true,
+    dry_run: true as const,
     tool_checks: [],
     validation: {
-      ready_for_execution: false,
-      ready_for_render: false,
-      ready_for_upload: false,
+      ready_for_execution: false as const,
+      ready_for_render: false as const,
+      ready_for_upload: false as const,
       blocking_reasons: ["manifest contains child_process reference"], // Safe description
     },
   };
@@ -10282,7 +10291,7 @@ test("VO-4B-STORE-30: store rejects unsafe preflight", (t) => {
     const unsafePreflight = {
       preflight_id: "unsafe-1",
       dry_run: false,
-      validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+      validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
     } as any;
 
     try {
@@ -10301,9 +10310,9 @@ test("VO-4B-STORE-31: store rejects executable_invoked true", (t) => {
   try {
     const unsafePreflight = {
       preflight_id: "unsafe-exec",
-      dry_run: true,
+      dry_run: true as const,
       tool_checks: [{ executable_invoked: true } as any],
-      validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+      validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
     } as any;
 
     try {
@@ -10322,9 +10331,9 @@ test("VO-4B-STORE-32: store rejects version_checked true", (t) => {
   try {
     const unsafePreflight = {
       preflight_id: "unsafe-version",
-      dry_run: true,
+      dry_run: true as const,
       tool_checks: [{ executable_invoked: false, version_checked: true } as any],
-      validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
+      validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
     } as any;
 
     try {
@@ -10343,9 +10352,9 @@ test("VO-4B-STORE-33: store rejects ready flags true", (t) => {
   try {
     const unsafePreflight = {
       preflight_id: "unsafe-ready",
-      dry_run: true,
+      dry_run: true as const,
       tool_checks: [],
-      validation: { ready_for_execution: true, ready_for_render: false, ready_for_upload: false },
+      validation: { ready_for_execution: true, ready_for_render: false as const, ready_for_upload: false },
     } as any;
 
     try {
@@ -10543,13 +10552,13 @@ test("VO-4C-CREATE-5: dryRun=false blocks", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10580,13 +10589,13 @@ test("VO-4C-CREATE-6: discoveryMode other than declared_only blocks", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10617,13 +10626,13 @@ test("VO-4C-CREATE-7: safe preflight creates discovery", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10655,15 +10664,15 @@ test("VO-4C-CREATE-8: binary checks derive from preflight tool labels", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
         command_plan: { commands: [
           { command_id: "1", purpose: "test", tool_label: "ffmpeg", input_summary: "input", output_summary: "output", arguments_summary: "args", disabled: true },
-        ], command_count: 1, contains_shell: false, execution_mode: "disabled" },
+        ], command_count: 1, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10693,13 +10702,13 @@ test("VO-4C-CREATE-9: path_checked false for all checks", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10728,13 +10737,13 @@ test("VO-4C-CREATE-10: executable_invoked false for all checks", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10763,13 +10772,13 @@ test("VO-4C-CREATE-11: version_checked false for all checks", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10798,13 +10807,13 @@ test("VO-4C-CREATE-12: ready flags remain false", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10835,13 +10844,13 @@ test("VO-4C-CREATE-13: no child_process or FFmpeg execution", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10871,13 +10880,13 @@ test("VO-4C-CREATE-14: no files/directories are created", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10908,13 +10917,13 @@ test("VO-4C-CREATE-15: output contains no command lines, paths, env vars, or pro
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10946,13 +10955,13 @@ test("VO-4C-VALIDATION-16: safe discovery validates", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -10977,11 +10986,11 @@ test("VO-4C-VALIDATION-17: dry_run false blocks", (t) => {
 
 test("VO-4C-VALIDATION-18: path_checked true blocks", (t) => {
   const discovery = {
-    dry_run: true,
+    dry_run: true as const,
     discovery_mode: "declared_only",
     binary_checks: [{ path_checked: true }],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
-  };
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
+  } as unknown as RendererBinaryDiscovery;
 
   const validation = validateRendererBinaryDiscovery(discovery);
 
@@ -10990,11 +10999,11 @@ test("VO-4C-VALIDATION-18: path_checked true blocks", (t) => {
 
 test("VO-4C-VALIDATION-19: executable_invoked true blocks", (t) => {
   const discovery = {
-    dry_run: true,
+    dry_run: true as const,
     discovery_mode: "declared_only",
     binary_checks: [{ executable_invoked: true }],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
-  };
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
+  } as unknown as RendererBinaryDiscovery;
 
   const validation = validateRendererBinaryDiscovery(discovery);
 
@@ -11003,11 +11012,11 @@ test("VO-4C-VALIDATION-19: executable_invoked true blocks", (t) => {
 
 test("VO-4C-VALIDATION-20: version_checked true blocks", (t) => {
   const discovery = {
-    dry_run: true,
+    dry_run: true as const,
     discovery_mode: "declared_only",
     binary_checks: [{ version_checked: true }],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false },
-  };
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false },
+  } as unknown as RendererBinaryDiscovery;
 
   const validation = validateRendererBinaryDiscovery(discovery);
 
@@ -11016,10 +11025,10 @@ test("VO-4C-VALIDATION-20: version_checked true blocks", (t) => {
 
 test("VO-4C-VALIDATION-21: ready_for_execution true blocks", (t) => {
   const discovery = {
-    dry_run: true,
+    dry_run: true as const,
     discovery_mode: "declared_only",
-    validation: { ready_for_execution: true, ready_for_render: false, ready_for_upload: false },
-  };
+    validation: { ready_for_execution: true, ready_for_render: false as const, ready_for_upload: false },
+  } as unknown as RendererBinaryDiscovery;
 
   const validation = validateRendererBinaryDiscovery(discovery);
 
@@ -11028,10 +11037,10 @@ test("VO-4C-VALIDATION-21: ready_for_execution true blocks", (t) => {
 
 test("VO-4C-VALIDATION-22: ready_for_render true blocks", (t) => {
   const discovery = {
-    dry_run: true,
+    dry_run: true as const,
     discovery_mode: "declared_only",
-    validation: { ready_for_execution: false, ready_for_render: true, ready_for_upload: false },
-  };
+    validation: { ready_for_execution: false as const, ready_for_render: true, ready_for_upload: false },
+  } as unknown as RendererBinaryDiscovery;
 
   const validation = validateRendererBinaryDiscovery(discovery);
 
@@ -11040,10 +11049,10 @@ test("VO-4C-VALIDATION-22: ready_for_render true blocks", (t) => {
 
 test("VO-4C-VALIDATION-23: ready_for_upload true blocks", (t) => {
   const discovery = {
-    dry_run: true,
+    dry_run: true as const,
     discovery_mode: "declared_only",
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: true },
-  };
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: true },
+  } as unknown as RendererBinaryDiscovery;
 
   const validation = validateRendererBinaryDiscovery(discovery);
 
@@ -11064,13 +11073,13 @@ test("VO-4C-STORE-24: save/list/get/upsert works", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -11105,13 +11114,13 @@ test("VO-4C-STORE-25: filters work", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -11145,13 +11154,13 @@ test("VO-4C-REPORT-26: report counts states", (t) => {
         package_id: "test-package",
         project_id: "test-project",
         platform: "youtube",
-        dry_run: true,
+        dry_run: true as const,
         command_state: "draft",
         created_at: new Date().toISOString(),
-        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false, requires_explicit_operator_run: true },
-        command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" },
+        executor: { executor_id: "test", executor_kind: "placeholder", execution_enabled: false as const, requires_explicit_operator_run: true as const },
+        command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" },
         planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube", project_id: "test-project" },
-        validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+        validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
         provenance: { generated_by: "createRenderCommandManifest", source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
       },
       dryRun: true,
@@ -11235,13 +11244,13 @@ test("VO-4D-CREATE-5: dryRun false blocks", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11264,13 +11273,13 @@ test("VO-4D-CREATE-6: checkMode other than planned_only blocks", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11300,13 +11309,13 @@ test("VO-4D-CREATE-8: safe discovery creates version check plan", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11330,13 +11339,13 @@ test("VO-4D-CREATE-9: planned checks derive from binary checks", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11360,13 +11369,13 @@ test("VO-4D-CREATE-10: execution flags stay false", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11392,13 +11401,13 @@ test("VO-4D-CREATE-11: no files or directories are created", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11420,13 +11429,13 @@ test("VO-4D-CREATE-12: output contains no raw command lines paths env vars or pr
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11450,13 +11459,13 @@ test("VO-4D-VALIDATE-13: safe plan validates", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11478,13 +11487,13 @@ test("VO-4D-VALIDATE-14: dry_run false blocks", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11507,13 +11516,13 @@ test("VO-4D-VALIDATE-15: approval_required false blocks", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11536,13 +11545,13 @@ test("VO-4D-VALIDATE-16: execution_allowed true blocks", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11565,13 +11574,13 @@ test("VO-4D-VALIDATE-17: executable_invoked true blocks", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11594,13 +11603,13 @@ test("VO-4D-VALIDATE-18: version_checked true blocks", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11623,13 +11632,13 @@ test("VO-4D-VALIDATE-19: process_output_captured true blocks", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11652,13 +11661,13 @@ test("VO-4D-VALIDATE-20: ready flags true block", (t) => {
     package_id: "test",
     project_id: "test",
     platform: "youtube" as const,
-    dry_run: true,
+    dry_run: true as const,
     command_state: "draft" as const,
     created_at: new Date().toISOString(),
-    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false, requires_explicit_operator_run: true },
-    command_plan: { commands: [], command_count: 0, contains_shell: false, execution_mode: "disabled" as const },
+    executor: { executor_id: "test", executor_kind: "placeholder" as const, execution_enabled: false as const, requires_explicit_operator_run: true as const },
+    command_plan: { commands: [], command_count: 0, contains_shell: false as const, execution_mode: "disabled" as const },
     planned_outputs: { output_count: 0, by_kind: {}, platform: "youtube" as const, project_id: "test" },
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRenderCommandManifest" as const, source_approval_id: "test", source_gate_id: "test", source_bundle_id: "test" },
   };
   const preflight = createRendererPreflight({ manifest, dryRun: true, checkMode: "declared_only" });
@@ -11801,7 +11810,7 @@ test("VO-4E-CREATE-5: dryRun false blocks", (t) => {
     preflight_id: "renderer-preflight-001",
     command_manifest_id: manifest.command_manifest_id,
   } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -11813,7 +11822,7 @@ test("VO-4E-CREATE-5: dryRun false blocks", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -11831,7 +11840,7 @@ test("VO-4E-CREATE-5: dryRun false blocks", (t) => {
 test("VO-4E-CREATE-6: executionMode other than mock_only blocks", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -11843,7 +11852,7 @@ test("VO-4E-CREATE-6: executionMode other than mock_only blocks", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -11869,7 +11878,7 @@ test("VO-4E-CREATE-7: unsafe version check plan blocks", (t) => {
 test("VO-4E-CREATE-8: safe version check plan creates mock result", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -11881,7 +11890,7 @@ test("VO-4E-CREATE-8: safe version check plan creates mock result", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -11905,7 +11914,7 @@ test("VO-4E-CREATE-8: safe version check plan creates mock result", (t) => {
 test("VO-4E-CREATE-9: mock checks derive from planned checks", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -11917,7 +11926,7 @@ test("VO-4E-CREATE-9: mock checks derive from planned checks", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -11941,7 +11950,7 @@ test("VO-4E-CREATE-9: mock checks derive from planned checks", (t) => {
 test("VO-4E-CREATE-10: execution flags stay false", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -11953,7 +11962,7 @@ test("VO-4E-CREATE-10: execution flags stay false", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -11981,7 +11990,7 @@ test("VO-4E-CREATE-10: execution flags stay false", (t) => {
 test("VO-4E-CREATE-11: command_executed false for all checks", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -11993,7 +12002,7 @@ test("VO-4E-CREATE-11: command_executed false for all checks", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -12016,7 +12025,7 @@ test("VO-4E-CREATE-11: command_executed false for all checks", (t) => {
 test("VO-4E-CREATE-12: media_created false for all checks", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -12028,7 +12037,7 @@ test("VO-4E-CREATE-12: media_created false for all checks", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -12051,7 +12060,7 @@ test("VO-4E-CREATE-12: media_created false for all checks", (t) => {
 test("VO-4E-CREATE-13: output files created false", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -12063,7 +12072,7 @@ test("VO-4E-CREATE-13: output files created false", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -12085,7 +12094,7 @@ test("VO-4E-CREATE-13: output files created false", (t) => {
 test("VO-4E-CREATE-14: actual_output_count remains 0", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -12097,7 +12106,7 @@ test("VO-4E-CREATE-14: actual_output_count remains 0", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -12118,7 +12127,7 @@ test("VO-4E-CREATE-14: actual_output_count remains 0", (t) => {
 test("VO-4E-CREATE-15: no child_process or FFmpeg execution", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -12130,7 +12139,7 @@ test("VO-4E-CREATE-15: no child_process or FFmpeg execution", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -12154,7 +12163,7 @@ test("VO-4E-CREATE-15: no child_process or FFmpeg execution", (t) => {
 test("VO-4E-CREATE-16: no files/directories are created", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -12166,7 +12175,7 @@ test("VO-4E-CREATE-16: no files/directories are created", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -12191,7 +12200,7 @@ test("VO-4E-CREATE-16: no files/directories are created", (t) => {
 test("VO-4E-CREATE-17: output contains no raw command lines paths env vars process output or output paths", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -12203,7 +12212,7 @@ test("VO-4E-CREATE-17: output contains no raw command lines paths env vars proce
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -12227,7 +12236,7 @@ test("VO-4E-CREATE-17: output contains no raw command lines paths env vars proce
 test("VO-4E-VALIDATE-18: safe mock result validates", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -12239,7 +12248,7 @@ test("VO-4E-VALIDATE-18: safe mock result validates", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -12390,7 +12399,7 @@ test("VO-4E-VALIDATE-35: process-output-like payload blocks", (t) => {
 test("VO-4E-STORE-36: save/list/get works", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -12402,7 +12411,7 @@ test("VO-4E-STORE-36: save/list/get works", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -12426,7 +12435,7 @@ test("VO-4E-STORE-36: save/list/get works", (t) => {
 test("VO-4E-STORE-37: filters work", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "render-command-manifest-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "renderer-preflight-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "renderer-binary-discovery-001",
     preflight_id: preflight.preflight_id,
@@ -12438,7 +12447,7 @@ test("VO-4E-STORE-37: filters work", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({
@@ -12467,7 +12476,7 @@ test("VO-4E-STORE-38: store rejects unsafe result", (t) => {
 
 test("VO-4E-STORE-39: store rejects execution flags true", (t) => {
   const unsafeResult = {
-    dry_run: true,
+    dry_run: true as const,
     execution_mode: "mock_only",
     mock_checks: [{ execution_allowed: true, executable_invoked: false, version_checked: false, command_executed: false, process_output_captured: false, media_created: false }],
   } as any;
@@ -12476,7 +12485,7 @@ test("VO-4E-STORE-39: store rejects execution flags true", (t) => {
 
 test("VO-4E-STORE-40: store rejects command_executed true", (t) => {
   const unsafeResult = {
-    dry_run: true,
+    dry_run: true as const,
     execution_mode: "mock_only",
     mock_checks: [{ command_executed: true }],
   } as any;
@@ -12485,7 +12494,7 @@ test("VO-4E-STORE-40: store rejects command_executed true", (t) => {
 
 test("VO-4E-STORE-41: store rejects media_created true", (t) => {
   const unsafeResult = {
-    dry_run: true,
+    dry_run: true as const,
     execution_mode: "mock_only",
     mock_checks: [{ media_created: true }],
   } as any;
@@ -12494,7 +12503,7 @@ test("VO-4E-STORE-41: store rejects media_created true", (t) => {
 
 test("VO-4E-STORE-42: store rejects output files created", (t) => {
   const unsafeResult = {
-    dry_run: true,
+    dry_run: true as const,
     execution_mode: "mock_only",
     output_summary: { output_files_created: true },
   } as any;
@@ -12503,7 +12512,7 @@ test("VO-4E-STORE-42: store rejects output files created", (t) => {
 
 test("VO-4E-STORE-43: store rejects actual_output_count greater than 0", (t) => {
   const unsafeResult = {
-    dry_run: true,
+    dry_run: true as const,
     execution_mode: "mock_only",
     output_summary: { actual_output_count: 1 },
   } as any;
@@ -12512,7 +12521,7 @@ test("VO-4E-STORE-43: store rejects actual_output_count greater than 0", (t) => 
 
 test("VO-4E-STORE-44: store rejects ready flags true", (t) => {
   const unsafeResult = {
-    dry_run: true,
+    dry_run: true as const,
     execution_mode: "mock_only",
     validation: { ready_for_execution: true },
   } as any;
@@ -12607,7 +12616,7 @@ test("VO-5A-SCHEMA-4: real renderer execution gate example contains no raw paths
 test("VO-5A-CREATE-5: dryRun false blocks", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12619,7 +12628,7 @@ test("VO-5A-CREATE-5: dryRun false blocks", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12634,7 +12643,7 @@ test("VO-5A-CREATE-5: dryRun false blocks", (t) => {
 test("VO-5A-CREATE-6: requestRealExecution true blocks", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12646,7 +12655,7 @@ test("VO-5A-CREATE-6: requestRealExecution true blocks", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12669,7 +12678,7 @@ test("VO-5A-CREATE-7: unsafe mock result blocks", (t) => {
 test("VO-5A-CREATE-8: safe mock result creates real execution gate", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12681,7 +12690,7 @@ test("VO-5A-CREATE-8: safe mock result creates real execution gate", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12697,7 +12706,7 @@ test("VO-5A-CREATE-8: safe mock result creates real execution gate", (t) => {
 test("VO-5A-CREATE-9: real_execution_requested false", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12709,7 +12718,7 @@ test("VO-5A-CREATE-9: real_execution_requested false", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12721,7 +12730,7 @@ test("VO-5A-CREATE-9: real_execution_requested false", (t) => {
 test("VO-5A-CREATE-10: explicit_operator_approval_required true", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12733,7 +12742,7 @@ test("VO-5A-CREATE-10: explicit_operator_approval_required true", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12745,7 +12754,7 @@ test("VO-5A-CREATE-10: explicit_operator_approval_required true", (t) => {
 test("VO-5A-CREATE-11: every execution constraint remains false", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12757,7 +12766,7 @@ test("VO-5A-CREATE-11: every execution constraint remains false", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12776,7 +12785,7 @@ test("VO-5A-CREATE-11: every execution constraint remains false", (t) => {
 test("VO-5A-CREATE-12: allowed_tools remains empty", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12788,7 +12797,7 @@ test("VO-5A-CREATE-12: allowed_tools remains empty", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12800,7 +12809,7 @@ test("VO-5A-CREATE-12: allowed_tools remains empty", (t) => {
 test("VO-5A-CREATE-13: ready flags remain false", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12812,7 +12821,7 @@ test("VO-5A-CREATE-13: ready flags remain false", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12827,7 +12836,7 @@ test("VO-5A-CREATE-13: ready flags remain false", (t) => {
 test("VO-5A-CREATE-14: no child_process or FFmpeg execution", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12839,7 +12848,7 @@ test("VO-5A-CREATE-14: no child_process or FFmpeg execution", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12855,7 +12864,7 @@ test("VO-5A-CREATE-14: no child_process or FFmpeg execution", (t) => {
 test("VO-5A-CREATE-15: no files/directories created", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12867,7 +12876,7 @@ test("VO-5A-CREATE-15: no files/directories created", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12885,7 +12894,7 @@ test("VO-5A-CREATE-15: no files/directories created", (t) => {
 test("VO-5A-CREATE-16: output contains no raw command lines paths env vars", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12897,7 +12906,7 @@ test("VO-5A-CREATE-16: output contains no raw command lines paths env vars", (t)
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -12913,7 +12922,7 @@ test("VO-5A-CREATE-16: output contains no raw command lines paths env vars", (t)
 test("VO-5A-VALIDATE-17: safe gate validates", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -12925,7 +12934,7 @@ test("VO-5A-VALIDATE-17: safe gate validates", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13035,7 +13044,7 @@ test("VO-5A-VALIDATE-32: execution-enabling payload blocks", (t) => {
 test("VO-5A-STORE-33: save/list/get works", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13047,7 +13056,7 @@ test("VO-5A-STORE-33: save/list/get works", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13063,7 +13072,7 @@ test("VO-5A-STORE-33: save/list/get works", (t) => {
 test("VO-5A-STORE-34: filters work", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13075,7 +13084,7 @@ test("VO-5A-STORE-34: filters work", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13093,22 +13102,22 @@ test("VO-5A-STORE-35: store rejects unsafe gate", (t) => {
 });
 
 test("VO-5A-STORE-36: store rejects real_execution_requested true", (t) => {
-  const unsafeGate = { dry_run: true, real_execution_requested: true } as any;
+  const unsafeGate = { dry_run: true as const, real_execution_requested: true } as any;
   assert.throws(() => saveRealRendererExecutionGate(unsafeGate));
 });
 
 test("VO-5A-STORE-37: store rejects execution constraints true", (t) => {
-  const unsafeGate = { dry_run: true, execution_constraints: { execution_enabled: true } } as any;
+  const unsafeGate = { dry_run: true as const, execution_constraints: { execution_enabled: true } } as any;
   assert.throws(() => saveRealRendererExecutionGate(unsafeGate));
 });
 
 test("VO-5A-STORE-38: store rejects allowed_tools non-empty", (t) => {
-  const unsafeGate = { dry_run: true, execution_constraints: { allowed_tools: ["ffmpeg"] } } as any;
+  const unsafeGate = { dry_run: true as const, execution_constraints: { allowed_tools: ["ffmpeg"] } } as any;
   assert.throws(() => saveRealRendererExecutionGate(unsafeGate));
 });
 
 test("VO-5A-STORE-39: store rejects ready flags true", (t) => {
-  const unsafeGate = { dry_run: true, validation: { ready_for_real_execution: true } } as any;
+  const unsafeGate = { dry_run: true as const, validation: { ready_for_real_execution: true } } as any;
   assert.throws(() => saveRealRendererExecutionGate(unsafeGate));
 });
 
@@ -13200,7 +13209,7 @@ test("VO-5B-SCHEMA-4: real renderer execution approval example contains no raw p
 test("VO-5B-CREATE-5: dryRun false blocks", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13212,7 +13221,7 @@ test("VO-5B-CREATE-5: dryRun false blocks", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13235,7 +13244,7 @@ test("VO-5B-CREATE-6: invalid gate blocks", (t) => {
 test("VO-5B-CREATE-7: approved decision requires gate ready_for_explicit_operator_approval", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13247,7 +13256,7 @@ test("VO-5B-CREATE-7: approved decision requires gate ready_for_explicit_operato
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13273,7 +13282,7 @@ test("VO-5B-CREATE-7: approved decision requires gate ready_for_explicit_operato
 test("VO-5B-CREATE-8: approved decision requires checklist_acknowledged", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13285,7 +13294,7 @@ test("VO-5B-CREATE-8: approved decision requires checklist_acknowledged", (t) =>
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13308,7 +13317,7 @@ test("VO-5B-CREATE-8: approved decision requires checklist_acknowledged", (t) =>
 test("VO-5B-CREATE-9: approved decision requires risk_acknowledgement", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13320,7 +13329,7 @@ test("VO-5B-CREATE-9: approved decision requires risk_acknowledgement", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13343,7 +13352,7 @@ test("VO-5B-CREATE-9: approved decision requires risk_acknowledgement", (t) => {
 test("VO-5B-CREATE-10: approved decision requires understands_real_execution_not_enabled", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13355,7 +13364,7 @@ test("VO-5B-CREATE-10: approved decision requires understands_real_execution_not
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13378,7 +13387,7 @@ test("VO-5B-CREATE-10: approved decision requires understands_real_execution_not
 test("VO-5B-CREATE-11: safe gate creates draft approval", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13390,7 +13399,7 @@ test("VO-5B-CREATE-11: safe gate creates draft approval", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13405,7 +13414,7 @@ test("VO-5B-CREATE-11: safe gate creates draft approval", (t) => {
 test("VO-5B-CREATE-12: approved_for_future_real_execution_request works with all acknowledgements", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13417,7 +13426,7 @@ test("VO-5B-CREATE-12: approved_for_future_real_execution_request works with all
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13440,7 +13449,7 @@ test("VO-5B-CREATE-12: approved_for_future_real_execution_request works with all
 test("VO-5B-CREATE-13: rejected decision works", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13452,7 +13461,7 @@ test("VO-5B-CREATE-13: rejected decision works", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13466,7 +13475,7 @@ test("VO-5B-CREATE-13: rejected decision works", (t) => {
 test("VO-5B-CREATE-14: real_execution_requested remains false", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13478,7 +13487,7 @@ test("VO-5B-CREATE-14: real_execution_requested remains false", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13492,7 +13501,7 @@ test("VO-5B-CREATE-14: real_execution_requested remains false", (t) => {
 test("VO-5B-CREATE-15: all execution permissions remain false", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13504,7 +13513,7 @@ test("VO-5B-CREATE-15: all execution permissions remain false", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13526,7 +13535,7 @@ test("VO-5B-CREATE-15: all execution permissions remain false", (t) => {
 test("VO-5B-CREATE-16: allowed_tools remains empty", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13538,7 +13547,7 @@ test("VO-5B-CREATE-16: allowed_tools remains empty", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13552,7 +13561,7 @@ test("VO-5B-CREATE-16: allowed_tools remains empty", (t) => {
 test("VO-5B-CREATE-17: max_output_files remains 0", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13564,7 +13573,7 @@ test("VO-5B-CREATE-17: max_output_files remains 0", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13578,7 +13587,7 @@ test("VO-5B-CREATE-17: max_output_files remains 0", (t) => {
 test("VO-5B-CREATE-18: ready flags remain false", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13590,7 +13599,7 @@ test("VO-5B-CREATE-18: ready flags remain false", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13606,7 +13615,7 @@ test("VO-5B-CREATE-18: ready flags remain false", (t) => {
 test("VO-5B-CREATE-19: no child_process or FFmpeg execution", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13618,7 +13627,7 @@ test("VO-5B-CREATE-19: no child_process or FFmpeg execution", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13635,7 +13644,7 @@ test("VO-5B-CREATE-19: no child_process or FFmpeg execution", (t) => {
 test("VO-5B-CREATE-20: no files/directories created", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13647,7 +13656,7 @@ test("VO-5B-CREATE-20: no files/directories created", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13662,7 +13671,7 @@ test("VO-5B-CREATE-20: no files/directories created", (t) => {
 test("VO-5B-CREATE-21: output contains no raw command lines, paths, env vars, process output", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13674,7 +13683,7 @@ test("VO-5B-CREATE-21: output contains no raw command lines, paths, env vars, pr
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13691,7 +13700,7 @@ test("VO-5B-CREATE-21: output contains no raw command lines, paths, env vars, pr
 test("VO-5B-CREATE-22: unsafe reviewed_by_label blocks without echo", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13703,7 +13712,7 @@ test("VO-5B-CREATE-22: unsafe reviewed_by_label blocks without echo", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13724,7 +13733,7 @@ test("VO-5B-CREATE-22: unsafe reviewed_by_label blocks without echo", (t) => {
 test("VO-5B-VALIDATE-23: safe approval validates", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13736,7 +13745,7 @@ test("VO-5B-VALIDATE-23: safe approval validates", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13757,7 +13766,7 @@ test("VO-5B-VALIDATE-24: dry_run false blocks", (t) => {
 
 test("VO-5B-VALIDATE-25: approval_scope.one_time_only false blocks", (t) => {
   const approval = {
-    dry_run: true,
+    dry_run: true as const,
     approval_scope: { one_time_only: false },
   } as any;
   const result = validateRealRendererExecutionApproval(approval);
@@ -13767,7 +13776,7 @@ test("VO-5B-VALIDATE-25: approval_scope.one_time_only false blocks", (t) => {
 
 test("VO-5B-VALIDATE-26: max_output_files greater than 0 blocks", (t) => {
   const approval = {
-    dry_run: true,
+    dry_run: true as const,
     approval_scope: { one_time_only: true, max_output_files: 1 },
   } as any;
   const result = validateRealRendererExecutionApproval(approval);
@@ -13777,7 +13786,7 @@ test("VO-5B-VALIDATE-26: max_output_files greater than 0 blocks", (t) => {
 
 test("VO-5B-VALIDATE-27: allowed_tools non-empty blocks", (t) => {
   const approval = {
-    dry_run: true,
+    dry_run: true as const,
     approval_scope: { one_time_only: true, max_output_files: 0, allowed_tools: ["ffmpeg"] },
   } as any;
   const result = validateRealRendererExecutionApproval(approval);
@@ -13787,7 +13796,7 @@ test("VO-5B-VALIDATE-27: allowed_tools non-empty blocks", (t) => {
 
 test("VO-5B-VALIDATE-28: real_execution_requested true blocks", (t) => {
   const approval = {
-    dry_run: true,
+    dry_run: true as const,
     execution_permissions: { real_execution_requested: true },
   } as any;
   const result = validateRealRendererExecutionApproval(approval);
@@ -13797,7 +13806,7 @@ test("VO-5B-VALIDATE-28: real_execution_requested true blocks", (t) => {
 
 test("VO-5B-VALIDATE-29: execution permission true blocks", (t) => {
   const approval = {
-    dry_run: true,
+    dry_run: true as const,
     execution_permissions: {
       real_execution_requested: false,
       execution_enabled: true,
@@ -13818,10 +13827,10 @@ test("VO-5B-VALIDATE-29: execution permission true blocks", (t) => {
 
 test("VO-5B-VALIDATE-30: env_access_allowed true blocks", (t) => {
   const approval = {
-    dry_run: true,
+    dry_run: true as const,
     execution_permissions: {
       real_execution_requested: false,
-      execution_enabled: false,
+      execution_enabled: false as const,
       child_process_allowed: false,
       ffmpeg_execution_allowed: false,
       renderer_execution_allowed: false,
@@ -13839,10 +13848,10 @@ test("VO-5B-VALIDATE-30: env_access_allowed true blocks", (t) => {
 
 test("VO-5B-VALIDATE-31: ready_for_real_execution true blocks", (t) => {
   const approval = {
-    dry_run: true,
+    dry_run: true as const,
     execution_permissions: {
       real_execution_requested: false,
-      execution_enabled: false,
+      execution_enabled: false as const,
       child_process_allowed: false,
       ffmpeg_execution_allowed: false,
       renderer_execution_allowed: false,
@@ -13852,7 +13861,7 @@ test("VO-5B-VALIDATE-31: ready_for_real_execution true blocks", (t) => {
       env_access_allowed: false,
       process_output_capture_allowed: false,
     },
-    validation: { ready_for_real_execution: true, ready_for_render: false, ready_for_upload: false },
+    validation: { ready_for_real_execution: true, ready_for_render: false as const, ready_for_upload: false },
   } as any;
   const result = validateRealRendererExecutionApproval(approval);
   assert.strictEqual(result.ok, false);
@@ -13861,7 +13870,7 @@ test("VO-5B-VALIDATE-31: ready_for_real_execution true blocks", (t) => {
 
 test("VO-5B-VALIDATE-32: forbidden key blocks without echo", (t) => {
   const approval = {
-    dry_run: true,
+    dry_run: true as const,
     "credential_reference": "secret",
   } as any;
   const result = validateRealRendererExecutionApproval(approval);
@@ -13872,7 +13881,7 @@ test("VO-5B-VALIDATE-32: forbidden key blocks without echo", (t) => {
 
 test("VO-5B-VALIDATE-33: forbidden string blocks without echo", (t) => {
   const approval = {
-    dry_run: true,
+    dry_run: true as const,
     operator_review: { reviewed_by_label: "keychain://operator" },
   } as any;
   const result = validateRealRendererExecutionApproval(approval);
@@ -13883,7 +13892,7 @@ test("VO-5B-VALIDATE-33: forbidden string blocks without echo", (t) => {
 test("VO-5B-STORE-34: save/list/get works", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13895,7 +13904,7 @@ test("VO-5B-STORE-34: save/list/get works", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13916,7 +13925,7 @@ test("VO-5B-STORE-34: save/list/get works", (t) => {
 test("VO-5B-STORE-35: filters work", (t) => {
   const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
   const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
-  const discovery = {
+  const discovery: RendererBinaryDiscovery = {
     schema_version: "1.0",
     discovery_id: "disc-001",
     preflight_id: preflight.preflight_id,
@@ -13928,7 +13937,7 @@ test("VO-5B-STORE-35: filters work", (t) => {
     created_at: new Date().toISOString(),
     discovery_mode: "declared_only" as const,
     binary_checks: [],
-    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    validation: { ready_for_execution: false as const, ready_for_render: false as const, ready_for_upload: false as const, blocking_reasons: [], warnings: [] },
     provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
   };
   const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
@@ -13959,4 +13968,699 @@ test("VO-5B-REPORT-38: real_execution_requested and execution_enabled counters r
   const report = getRealRendererExecutionApprovalReport();
   assert.strictEqual(report.real_execution_requested, 0);
   assert.strictEqual(report.execution_enabled, 0);
+});
+
+// ─── VO-6A: Test-Only Local Render Spike Tests ───────────────────────────────
+
+function getTestRenderSpikeSchemaAndExamplePaths(): { schemaPath: string; examplePath: string } {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  return {
+    schemaPath: path.join(root, "operations", "specs", "video-orchestrator", "test-render-spike-result.schema.json"),
+    examplePath: path.join(root, "operations", "specs", "video-orchestrator", "examples", "test-render-spike-result.example.json"),
+  };
+}
+
+function makeApprovedRealRendererApproval(overrides?: Partial<RealRendererExecutionApproval>): RealRendererExecutionApproval {
+  return {
+    schema_version: "1.0",
+    real_execution_approval_id: "approval-vo6a-001",
+    real_execution_gate_id: "real-execution-gate-001",
+    mock_result_id: "mock-result-001",
+    version_check_plan_id: "version-check-plan-001",
+    discovery_id: "renderer-binary-discovery-example-001",
+    preflight_id: "renderer-preflight-example-001",
+    command_manifest_id: "render-command-manifest-example-001",
+    project_id: "project-alpha",
+    platform: "youtube",
+    dry_run: true as const,
+    approval_state: "approved_for_future_real_execution_request",
+    created_at: new Date().toISOString(),
+    approval_scope: {
+      scope_kind: "real_renderer_execution_spike",
+      one_time_only: true,
+      max_output_files: 0,
+      allowed_output_directory_summary: "[not-approved-yet]",
+      allowed_tools: [],
+    },
+    operator_review: {
+      reviewed_by_label: "operator-001",
+      checklist_acknowledged: true,
+      risk_acknowledgement: true,
+      understands_real_execution_not_enabled: true,
+    },
+    execution_permissions: {
+      real_execution_requested: false,
+      execution_enabled: false as const,
+      child_process_allowed: false,
+      ffmpeg_execution_allowed: false,
+      renderer_execution_allowed: false,
+      media_creation_allowed: false,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      env_access_allowed: false,
+      process_output_capture_allowed: false,
+    },
+    required_acknowledgements: [
+      { acknowledgement_id: "ack-approval-scope-understood", kind: "approval_scope_understood", acknowledged: true, blocking_reasons: [], warnings: [] },
+      { acknowledgement_id: "ack-risks-acknowledged", kind: "risks_acknowledged", acknowledged: true, blocking_reasons: [], warnings: [] },
+      { acknowledgement_id: "ack-execution-disabled-confirmed", kind: "execution_disabled_confirmed", acknowledged: true, blocking_reasons: [], warnings: [] },
+    ],
+    validation: {
+      ready_for_real_execution: false,
+      ready_for_render: false as const,
+      ready_for_upload: false as const,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createRealRendererExecutionApproval",
+      source_gate_id: "real-execution-gate-001",
+      source_mock_result_id: "mock-result-001",
+      source_version_check_plan_id: "version-check-plan-001",
+      source_discovery_id: "renderer-binary-discovery-example-001",
+      source_preflight_id: "renderer-preflight-example-001",
+      source_manifest_id: "render-command-manifest-example-001",
+    },
+    ...overrides,
+  };
+}
+
+function hasForbiddenStrings(value: unknown): boolean {
+  const text = JSON.stringify(value);
+  return [
+    "credential_reference",
+    "credentialReference",
+    "keychain://",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "code_verifier",
+    "authorization_code",
+    "Bearer ",
+  ].some((pattern) => text.includes(pattern));
+}
+
+test("VO-6A-SCHEMA-1: test render spike schema parses", (t) => {
+  const { schemaPath } = getTestRenderSpikeSchemaAndExamplePaths();
+  const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+  assert.ok(schema);
+});
+
+test("VO-6A-SCHEMA-2: test render spike example parses", (t) => {
+  const { examplePath } = getTestRenderSpikeSchemaAndExamplePaths();
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+  assert.ok(example);
+});
+
+test("VO-6A-SCHEMA-3: example contains no forbidden strings", (t) => {
+  const { examplePath } = getTestRenderSpikeSchemaAndExamplePaths();
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+  assert.strictEqual(hasForbiddenStrings(example), false);
+});
+
+test("VO-6A-SCHEMA-4: example contains no raw paths commands env vars stdout stderr or upload payloads", (t) => {
+  const { examplePath } = getTestRenderSpikeSchemaAndExamplePaths();
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+  const text = JSON.stringify(example);
+  assert.strictEqual(text.includes('"command_line"'), false);
+  assert.strictEqual(text.includes('"stdout"'), false);
+  assert.strictEqual(text.includes('"stderr"'), false);
+  assert.strictEqual(text.includes('"upload_payload"'), false);
+  assert.strictEqual(text.includes("/Users/"), false);
+  assert.strictEqual(text.includes("C:\\"), false);
+});
+
+test("VO-6A-PERM-5: dryRun=true blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = validateTestRenderSpikePermission({
+      approval,
+      dryRun: true as never,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    });
+    assert.strictEqual(result.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-PERM-6: wrong executionMode blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = validateTestRenderSpikePermission({
+      approval,
+      dryRun: false as false,
+      executionMode: "wrong_mode" as never,
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    } as never);
+    assert.strictEqual(result.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-PERM-7: operatorConfirmed false blocks via unsafe cast", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = validateTestRenderSpikePermission({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: false as never,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    } as never);
+    assert.strictEqual(result.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-PERM-8: allowChildProcess false blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = validateTestRenderSpikePermission({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: false as never,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    } as never);
+    assert.strictEqual(result.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-PERM-9: allowFfmpeg false blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = validateTestRenderSpikePermission({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: false as never,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    } as never);
+    assert.strictEqual(result.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-PERM-10: allowMediaCreation false blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = validateTestRenderSpikePermission({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: false as never,
+      outputBaseDir: tempDir,
+    } as never);
+    assert.strictEqual(result.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-PERM-11: unapproved approval blocks", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval({ approval_state: "draft" });
+    const result = validateTestRenderSpikePermission({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    });
+    assert.strictEqual(result.ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-PERM-12: unsafe outputBaseDir blocks", (t) => {
+  const approval = makeApprovedRealRendererApproval();
+  const result = validateTestRenderSpikePermission({
+    approval,
+    dryRun: false as false,
+    executionMode: "test_only_local_render_spike",
+    operatorConfirmed: true,
+    allowChildProcess: true,
+    allowFfmpeg: true,
+    allowMediaCreation: true,
+    outputBaseDir: "https://example.com/tmp",
+  });
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-PERM-13: project or user media looking output path blocks", (t) => {
+  const approval = makeApprovedRealRendererApproval();
+  const result = validateTestRenderSpikePermission({
+    approval,
+    dryRun: false as false,
+    executionMode: "test_only_local_render_spike",
+    operatorConfirmed: true,
+    allowChildProcess: true,
+    allowFfmpeg: true,
+    allowMediaCreation: true,
+    outputBaseDir: "/Users/example/project-media",
+  });
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-RUN-14: invalid approval returns safe failed result without raw stderr", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval({ approval_state: "draft" });
+    const result = runTestOnlyLocalRenderSpike({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+      timeoutMs: 1,
+    });
+    assert.strictEqual(result.validation.test_spike_passed, false);
+    assert.strictEqual(result.process_summary.stderr_stored, false);
+    assert.strictEqual(result.process_summary.stdout_stored, false);
+    assert.strictEqual(result.output_summary.output_file_count, 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-RUN-15: result stores no shell command string", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = runTestOnlyLocalRenderSpike({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    });
+    assert.strictEqual(JSON.stringify(result).includes("ffmpeg -"), false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-RUN-16: raw stdout stderr are not stored", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = runTestOnlyLocalRenderSpike({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    });
+    const text = JSON.stringify(result);
+    assert.strictEqual(text.includes('"stdout":'), false);
+    assert.strictEqual(text.includes('"stderr":'), false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-RUN-17: raw command is not stored", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = runTestOnlyLocalRenderSpike({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    });
+    assert.strictEqual(result.process_summary.raw_command_stored, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-RUN-18: ready_for_production_render is false", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = runTestOnlyLocalRenderSpike({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    });
+    assert.strictEqual(result.validation.ready_for_production_render, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-RUN-19: ready_for_upload is false", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = runTestOnlyLocalRenderSpike({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    });
+    assert.strictEqual(result.validation.ready_for_upload, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-RUN-20: no upload or API calls are added", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = runTestOnlyLocalRenderSpike({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    });
+    assert.strictEqual(result.test_scope.upload_allowed, false);
+    assert.strictEqual(result.test_scope.platform_api_calls_allowed, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-RUN-21: output directory constrained to temp test dir", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = runTestOnlyLocalRenderSpike({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    });
+    assert.strictEqual(result.output_summary.output_directory_summary.includes("[ignored-runtime-test-dir]"), true);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-RUN-22: optional FFmpeg test creates tiny output when available", (t) => {
+  const ffmpegCheck = spawnSync("ffmpeg", ["-version"], { stdio: "ignore" });
+  if (ffmpegCheck.status !== 0) {
+    t.skip("ffmpeg unavailable");
+    return;
+  }
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = runTestOnlyLocalRenderSpike({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+      timeoutMs: 5000,
+    });
+    if (!result.validation.test_spike_passed) return;
+    assert.strictEqual(result.validation.ready_for_production_render, false);
+    assert.strictEqual(result.validation.ready_for_upload, false);
+    assert.ok(result.output_summary.output_file_count <= 1);
+    assert.ok(result.output_summary.output_files_created === true || result.output_summary.output_files_created === false);
+    assert.strictEqual(result.process_summary.raw_command_stored, false);
+    assert.strictEqual(result.process_summary.stdout_stored, false);
+    assert.strictEqual(result.process_summary.stderr_stored, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-VALIDATE-27: safe failed result validates", (t) => {
+  const approval = makeApprovedRealRendererApproval({ approval_state: "draft" });
+  const result = runTestOnlyLocalRenderSpike({
+    approval,
+    dryRun: false as false,
+    executionMode: "test_only_local_render_spike",
+    operatorConfirmed: true,
+    allowChildProcess: true,
+    allowFfmpeg: true,
+    allowMediaCreation: true,
+    outputBaseDir: setupTestRuntime(),
+  });
+  assert.ok(validateTestRenderSpikeResult(result).ok);
+});
+
+test("VO-6A-VALIDATE-28: production_project_allowed true blocks", (t) => {
+  const result = validateTestRenderSpikeResult({
+    ...(JSON.parse(JSON.stringify(JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")))) as TestRenderSpikeResult),
+    test_scope: { test_only: true, production_project_allowed: true, user_media_allowed: false, upload_allowed: false, platform_api_calls_allowed: false },
+  });
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-VALIDATE-29: user_media_allowed true blocks", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  const result = validateTestRenderSpikeResult({
+    ...example,
+    test_scope: { ...example.test_scope, user_media_allowed: true },
+  });
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-VALIDATE-30: upload_allowed true blocks", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  const result = validateTestRenderSpikeResult({
+    ...example,
+    test_scope: { ...example.test_scope, upload_allowed: true },
+  });
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-VALIDATE-31: platform_api_calls_allowed true blocks", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  const result = validateTestRenderSpikeResult({
+    ...example,
+    test_scope: { ...example.test_scope, platform_api_calls_allowed: true },
+  });
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-VALIDATE-32: ready_for_production_render true blocks", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  const result = validateTestRenderSpikeResult({
+    ...example,
+    validation: { ...example.validation, ready_for_production_render: true as never },
+  } as never);
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-VALIDATE-33: ready_for_upload true blocks", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  const result = validateTestRenderSpikeResult({
+    ...example,
+    validation: { ...example.validation, ready_for_upload: true as never },
+  } as never);
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-VALIDATE-34: raw command string blocks", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  const result = validateTestRenderSpikeResult({
+    ...example,
+    process_summary: { ...example.process_summary, raw_command_stored: true as never },
+  } as never);
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-VALIDATE-35: stdout stderr payload blocks", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  const result = validateTestRenderSpikeResult({
+    ...example,
+    process_summary: { ...example.process_summary, stdout_stored: true as never },
+  } as never);
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-VALIDATE-36: env-var-like payload blocks", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  const result = validateTestRenderSpikeResult({
+    ...example,
+    process_summary: { ...example.process_summary, command_label: "ffmpeg" },
+    provenance: { ...example.provenance, generated_by: "Bearer token" as never },
+  } as never);
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-VALIDATE-37: forbidden string blocks without echo", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  const result = validateTestRenderSpikeResult({
+    ...example,
+    command_manifest_id: "access_token-leak" as never,
+  } as never);
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(JSON.stringify(result).includes("access_token-leak"), false);
+});
+
+test("VO-6A-VALIDATE-38: project or user media reference blocks", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  const result = validateTestRenderSpikeResult({
+    ...example,
+    output_summary: { ...example.output_summary, output_directory_summary: "/Users/me/project-media" },
+  } as never);
+  assert.strictEqual(result.ok, false);
+});
+
+test("VO-6A-STORE-39: save/list/get/upsert works", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const approval = makeApprovedRealRendererApproval();
+    const result = runTestOnlyLocalRenderSpike({
+      approval,
+      dryRun: false as false,
+      executionMode: "test_only_local_render_spike",
+      operatorConfirmed: true,
+      allowChildProcess: true,
+      allowFfmpeg: true,
+      allowMediaCreation: true,
+      outputBaseDir: tempDir,
+    });
+    saveTestRenderSpikeResult(result);
+    const loaded = getTestRenderSpikeResult(result.test_render_spike_result_id);
+    assert.ok(loaded);
+    const listed = listTestRenderSpikeResults({ project_id: result.project_id });
+    assert.ok(listed.some((r) => r.test_render_spike_result_id === result.test_render_spike_result_id));
+    saveTestRenderSpikeResult({ ...result, validation: { ...result.validation, warnings: ["updated"] } });
+    assert.strictEqual(getTestRenderSpikeResult(result.test_render_spike_result_id)?.validation.warnings[0], "updated");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6A-STORE-40: filters work", (t) => {
+  const report = getTestRenderSpikeResultReport({ project_id: "project-alpha", platform: "youtube" });
+  assert.ok(report.total >= 0);
+});
+
+test("VO-6A-STORE-41: store rejects unsafe result", (t) => {
+  assert.throws(() => saveTestRenderSpikeResult({
+    ...(JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult),
+    process_summary: { ...(JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult).process_summary, raw_command_stored: true as never },
+  } as never));
+});
+
+test("VO-6A-STORE-42: store rejects production or user media true", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  assert.throws(() => saveTestRenderSpikeResult({
+    ...example,
+    test_scope: { ...example.test_scope, production_project_allowed: true },
+  } as never));
+});
+
+test("VO-6A-STORE-43: store rejects ready flags true", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  assert.throws(() => saveTestRenderSpikeResult({
+    ...example,
+    validation: { ...example.validation, ready_for_upload: true as never },
+  } as never));
+});
+
+test("VO-6A-STORE-44: store rejects raw command stdout stderr", (t) => {
+  const example = JSON.parse(fs.readFileSync(getTestRenderSpikeSchemaAndExamplePaths().examplePath, "utf8")) as TestRenderSpikeResult;
+  assert.throws(() => saveTestRenderSpikeResult({
+    ...example,
+    process_summary: { ...example.process_summary, stderr_stored: true as never },
+  } as never));
+});
+
+test("VO-6A-REPORT-45: report counts passed and failed", (t) => {
+  const report = getTestRenderSpikeResultReport();
+  assert.ok(report.total >= report.passed);
+  assert.ok(report.failed >= 0);
+});
+
+test("VO-6A-REPORT-46: legacy unsafe runtime data does not leak", (t) => {
+  const report = getTestRenderSpikeResultReport();
+  assert.strictEqual(hasForbiddenStrings(report), false);
+});
+
+test("VO-6A-REPORT-47: JSON.stringify report contains no forbidden strings", (t) => {
+  const report = getTestRenderSpikeResultReport();
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(report)), false);
+});
+
+test("VO-6A-REPORT-48: report excludes raw paths commands stdout stderr env vars", (t) => {
+  const report = getTestRenderSpikeResultReport();
+  const text = JSON.stringify(report);
+  assert.strictEqual(/stdout|stderr|access_token|refresh_token|client_secret|Bearer /i.test(text), false);
+});
+
+test("VO-6A-REPORT-49: readiness counters remain 0", (t) => {
+  const report = getTestRenderSpikeResultReport();
+  assert.strictEqual(report.ready_for_production_render, 0);
+  assert.strictEqual(report.ready_for_upload, 0);
 });

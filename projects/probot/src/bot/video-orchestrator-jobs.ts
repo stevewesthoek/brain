@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import os from "node:os";
 
 // ─── Runtime Storage ────────────────────────────────────────────────────────
@@ -6636,6 +6637,456 @@ export interface RealRendererExecutionApprovalValidationResult {
   warnings: string[];
 }
 
+export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
+
+export interface TestRenderSpikeScope {
+  test_only: true;
+  production_project_allowed: false;
+  user_media_allowed: false;
+  upload_allowed: false;
+  platform_api_calls_allowed: false;
+}
+
+export interface TestRenderSpikeSyntheticInput {
+  input_kind: "lavfi_color" | "generated_test_pattern";
+  duration_seconds: number;
+  resolution: "320x240" | "160x90";
+  source_is_user_media: false;
+}
+
+export interface TestRenderSpikeOutputSummary {
+  output_directory_summary: string;
+  output_file_count: number;
+  output_files_created: boolean;
+  media_files_created: boolean;
+  output_path_summaries: string[];
+  bytes_written?: number;
+  duration_seconds: number;
+}
+
+export interface TestRenderSpikeProcessSummary {
+  command_invoked: true;
+  command_label: "ffmpeg";
+  raw_command_stored: false;
+  stdout_stored: false;
+  stderr_stored: false;
+  exit_code?: number;
+  timed_out: boolean;
+  runtime_ms?: number;
+}
+
+export interface TestRenderSpikeResultValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface ValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface TestRenderSpikeResult {
+  schema_version: "1.0";
+  test_render_spike_result_id: string;
+  real_execution_approval_id: string;
+  real_execution_gate_id: string;
+  command_manifest_id: string;
+  project_id: string;
+  platform: string;
+  execution_mode: TestRenderSpikeExecutionMode;
+  created_at: string;
+  completed_at?: string;
+  test_scope: TestRenderSpikeScope;
+  execution_permissions: {
+    operator_confirmed: true;
+    child_process_allowed: true;
+    ffmpeg_execution_allowed: true;
+    renderer_execution_allowed: false;
+    media_creation_allowed: true;
+    env_access_allowed: false;
+    process_output_capture_allowed: false | "redacted_summary_only";
+  };
+  synthetic_input: TestRenderSpikeSyntheticInput;
+  output_summary: TestRenderSpikeOutputSummary;
+  process_summary: TestRenderSpikeProcessSummary;
+  validation: {
+    test_spike_passed: boolean;
+    ready_for_production_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "runTestOnlyLocalRenderSpike";
+    source_gate_id: string;
+    source_approval_id: string;
+    source_manifest_id: string;
+  };
+}
+
+interface TestRenderSpikeResultsStore {
+  schema_version: "1.0";
+  created_at: string;
+  results: TestRenderSpikeResult[];
+}
+
+function isSafeRuntimeRoot(candidate: string): boolean {
+  const runtimeDir = path.resolve(getRuntimeDir());
+  const tempRoot = path.resolve(os.tmpdir());
+  const resolved = path.resolve(candidate);
+  return resolved === runtimeDir || resolved.startsWith(runtimeDir + path.sep) || resolved === tempRoot || resolved.startsWith(tempRoot + path.sep);
+}
+
+function resolveSafeTestRenderSpikeOutputBaseDir(outputBaseDir: string): { ok: boolean; absolutePath?: string; blocking_reasons: string[] } {
+  const blocking_reasons: string[] = [];
+  if (typeof outputBaseDir !== "string" || outputBaseDir.length === 0) {
+    blocking_reasons.push("outputBaseDir must be a string");
+    return { ok: false, blocking_reasons };
+  }
+  if (outputBaseDir.includes("://") || outputBaseDir.startsWith("http") || outputBaseDir.startsWith("https")) {
+    blocking_reasons.push("outputBaseDir URLs are not allowed");
+    return { ok: false, blocking_reasons };
+  }
+  if (outputBaseDir.includes("..")) {
+    blocking_reasons.push("outputBaseDir traversal is not allowed");
+    return { ok: false, blocking_reasons };
+  }
+  if (isForbiddenStringPattern(outputBaseDir)) {
+    blocking_reasons.push("outputBaseDir contains forbidden patterns");
+    return { ok: false, blocking_reasons };
+  }
+  const resolved = path.isAbsolute(outputBaseDir) ? outputBaseDir : path.resolve(getRuntimeDir(), outputBaseDir);
+  if (!isSafeRuntimeRoot(resolved)) {
+    blocking_reasons.push("outputBaseDir must be inside a safe runtime or temp directory");
+    return { ok: false, blocking_reasons };
+  }
+  return { ok: true, absolutePath: resolved, blocking_reasons: [] };
+}
+
+function getTestRenderSpikeResultsPath(): string {
+  return path.join(getRuntimeDir(), "test-render-spike-results.json");
+}
+
+function loadTestRenderSpikeResultsStore(): TestRenderSpikeResultsStore {
+  try {
+    const storePath = getTestRenderSpikeResultsPath();
+    if (fs.existsSync(storePath)) {
+      return JSON.parse(fs.readFileSync(storePath, "utf8")) as TestRenderSpikeResultsStore;
+    }
+  } catch {
+    // start fresh
+  }
+  return { schema_version: "1.0", created_at: new Date().toISOString(), results: [] };
+}
+
+function saveTestRenderSpikeResultsStore(store: TestRenderSpikeResultsStore): void {
+  const storePath = getTestRenderSpikeResultsPath();
+  fs.mkdirSync(path.dirname(storePath), { recursive: true });
+  store.results.sort((a, b) => {
+    const t = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return t !== 0 ? t : a.test_render_spike_result_id.localeCompare(b.test_render_spike_result_id);
+  });
+  fs.writeFileSync(storePath, JSON.stringify(store, null, 2), "utf8");
+}
+
+function validateTestRenderSpikeResultShape(result: unknown): TestRenderSpikeResultValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof result !== "object" || result === null) {
+    return { ok: false, blocking_reasons: ["Test render spike result must be an object"], warnings };
+  }
+  const r = result as Record<string, unknown>;
+  const required = ["schema_version", "test_render_spike_result_id", "real_execution_approval_id", "real_execution_gate_id", "command_manifest_id", "project_id", "platform", "execution_mode", "created_at", "test_scope", "execution_permissions", "synthetic_input", "output_summary", "process_summary", "validation", "provenance"];
+  for (const key of required) {
+    if (!(key in r)) blocking_reasons.push("Test render spike result is missing a required field");
+  }
+  if (r.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (r.execution_mode !== "test_only_local_render_spike") blocking_reasons.push("execution_mode must be test_only_local_render_spike");
+  const forbidden = recursivelyCheckForForbiddenPatterns(result);
+  blocking_reasons.push(...forbidden);
+  const testScope = r.test_scope as Record<string, unknown> | undefined;
+  if (!testScope || testScope.test_only !== true || testScope.production_project_allowed !== false || testScope.user_media_allowed !== false || testScope.upload_allowed !== false || testScope.platform_api_calls_allowed !== false) {
+    blocking_reasons.push("Test scope is unsafe");
+  }
+  const perms = r.execution_permissions as Record<string, unknown> | undefined;
+  if (!perms || perms.operator_confirmed !== true || perms.child_process_allowed !== true || perms.ffmpeg_execution_allowed !== true || perms.renderer_execution_allowed !== false || perms.media_creation_allowed !== true || perms.env_access_allowed !== false) {
+    blocking_reasons.push("Execution permissions are unsafe");
+  }
+  const capture = perms?.process_output_capture_allowed;
+  if (!(capture === false || capture === "redacted_summary_only")) blocking_reasons.push("process_output_capture_allowed must be false or redacted_summary_only");
+  const synthetic = r.synthetic_input as Record<string, unknown> | undefined;
+  if (!synthetic || synthetic.source_is_user_media !== false || (synthetic.duration_seconds as number) > 3 || !["lavfi_color", "generated_test_pattern"].includes(String(synthetic.input_kind)) || !["320x240", "160x90"].includes(String(synthetic.resolution))) {
+    blocking_reasons.push("Synthetic input is unsafe");
+  }
+  const output = r.output_summary as Record<string, any> | undefined;
+  if (!output) blocking_reasons.push("Output summary is required");
+  if (output?.output_file_count > 1) blocking_reasons.push("output_file_count exceeds limit");
+  if (output?.duration_seconds > 3) blocking_reasons.push("duration_seconds exceeds limit");
+  if (output && typeof output.output_directory_summary === "string") {
+    const summary = output.output_directory_summary.toLowerCase();
+    if (
+      isForbiddenStringPattern(summary) ||
+      summary.includes("/users/") ||
+      summary.includes("/projects/") ||
+      summary.includes("project-media") ||
+      summary.includes("user-media") ||
+      summary.includes("upload")
+    ) {
+      blocking_reasons.push("Output directory summary is unsafe");
+    }
+  }
+  const process = r.process_summary as Record<string, any> | undefined;
+  if (!process || process.command_invoked !== true || process.command_label !== "ffmpeg" || process.raw_command_stored !== false || process.stdout_stored !== false || process.stderr_stored !== false) {
+    blocking_reasons.push("Process summary is unsafe");
+  }
+  if (r.validation && typeof r.validation === "object") {
+    const validation = r.validation as Record<string, unknown>;
+    if (validation.ready_for_production_render !== false || validation.ready_for_upload !== false) blocking_reasons.push("Ready flags must remain false");
+  }
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function validateTestRenderSpikePermission(input: {
+  approval: RealRendererExecutionApproval;
+  dryRun: false;
+  executionMode: "test_only_local_render_spike";
+  operatorConfirmed: true;
+  allowChildProcess: true;
+  allowFfmpeg: true;
+  allowMediaCreation: true;
+  outputBaseDir: string;
+}): ValidationResult {
+  const blockingReasons: string[] = [];
+  const approval = input.approval;
+  if (approval.dry_run !== true) blockingReasons.push("Approval must be dry_run true");
+  if (approval.approval_state !== "approved_for_future_real_execution_request") blockingReasons.push("Approval must be approved_for_future_real_execution_request");
+  if (approval.execution_permissions.real_execution_requested !== false || approval.execution_permissions.execution_enabled !== false) blockingReasons.push("Approval must remain non-executing");
+  if (input.dryRun !== false) blockingReasons.push("dryRun must be false");
+  if (input.executionMode !== "test_only_local_render_spike") blockingReasons.push("executionMode must be test_only_local_render_spike");
+  if (input.operatorConfirmed !== true || input.allowChildProcess !== true || input.allowFfmpeg !== true || input.allowMediaCreation !== true) blockingReasons.push("Explicit operator permissions are required");
+  const resolved = resolveSafeTestRenderSpikeOutputBaseDir(input.outputBaseDir);
+  blockingReasons.push(...resolved.blocking_reasons);
+  return { ok: blockingReasons.length === 0, blocking_reasons: blockingReasons, warnings: [] };
+}
+
+export function runTestOnlyLocalRenderSpike(input: {
+  approval: RealRendererExecutionApproval;
+  dryRun: false;
+  executionMode: "test_only_local_render_spike";
+  operatorConfirmed: true;
+  allowChildProcess: true;
+  allowFfmpeg: true;
+  allowMediaCreation: true;
+  outputBaseDir: string;
+  timeoutMs?: number;
+}): TestRenderSpikeResult {
+  const permission = validateTestRenderSpikePermission(input);
+  if (!permission.ok) {
+    return {
+      schema_version: "1.0",
+      test_render_spike_result_id: crypto.randomUUID(),
+      real_execution_approval_id: input.approval.real_execution_approval_id,
+      real_execution_gate_id: input.approval.real_execution_gate_id,
+      command_manifest_id: input.approval.command_manifest_id,
+      project_id: input.approval.project_id,
+      platform: input.approval.platform,
+      execution_mode: "test_only_local_render_spike",
+      created_at: new Date().toISOString(),
+      test_scope: { test_only: true, production_project_allowed: false, user_media_allowed: false, upload_allowed: false, platform_api_calls_allowed: false },
+      execution_permissions: { operator_confirmed: true, child_process_allowed: true, ffmpeg_execution_allowed: true, renderer_execution_allowed: false, media_creation_allowed: true, env_access_allowed: false, process_output_capture_allowed: "redacted_summary_only" },
+      synthetic_input: { input_kind: "lavfi_color", duration_seconds: 1, resolution: "160x90", source_is_user_media: false },
+      output_summary: { output_directory_summary: "[blocked]", output_file_count: 0, output_files_created: false, media_files_created: false, output_path_summaries: [], duration_seconds: 0 },
+      process_summary: { command_invoked: true, command_label: "ffmpeg", raw_command_stored: false, stdout_stored: false, stderr_stored: false, exit_code: 1, timed_out: false, runtime_ms: 0 },
+      validation: { test_spike_passed: false, ready_for_production_render: false, ready_for_upload: false, blocking_reasons: permission.blocking_reasons, warnings: [] },
+      provenance: { generated_by: "runTestOnlyLocalRenderSpike", source_gate_id: input.approval.real_execution_gate_id, source_approval_id: input.approval.real_execution_approval_id, source_manifest_id: input.approval.command_manifest_id },
+    };
+  }
+
+  const resolvedBase = resolveSafeTestRenderSpikeOutputBaseDir(input.outputBaseDir);
+  if (!resolvedBase.ok || !resolvedBase.absolutePath) {
+    return {
+      schema_version: "1.0",
+      test_render_spike_result_id: crypto.randomUUID(),
+      real_execution_approval_id: input.approval.real_execution_approval_id,
+      real_execution_gate_id: input.approval.real_execution_gate_id,
+      command_manifest_id: input.approval.command_manifest_id,
+      project_id: input.approval.project_id,
+      platform: input.approval.platform,
+      execution_mode: "test_only_local_render_spike",
+      created_at: new Date().toISOString(),
+      test_scope: { test_only: true, production_project_allowed: false, user_media_allowed: false, upload_allowed: false, platform_api_calls_allowed: false },
+      execution_permissions: { operator_confirmed: true, child_process_allowed: true, ffmpeg_execution_allowed: true, renderer_execution_allowed: false, media_creation_allowed: true, env_access_allowed: false, process_output_capture_allowed: "redacted_summary_only" },
+      synthetic_input: { input_kind: "lavfi_color", duration_seconds: 1, resolution: "160x90", source_is_user_media: false },
+      output_summary: { output_directory_summary: "[blocked]", output_file_count: 0, output_files_created: false, media_files_created: false, output_path_summaries: [], duration_seconds: 0 },
+      process_summary: { command_invoked: true, command_label: "ffmpeg", raw_command_stored: false, stdout_stored: false, stderr_stored: false, exit_code: 1, timed_out: false, runtime_ms: 0 },
+      validation: { test_spike_passed: false, ready_for_production_render: false, ready_for_upload: false, blocking_reasons: resolvedBase.blocking_reasons, warnings: [] },
+      provenance: { generated_by: "runTestOnlyLocalRenderSpike", source_gate_id: input.approval.real_execution_gate_id, source_approval_id: input.approval.real_execution_approval_id, source_manifest_id: input.approval.command_manifest_id },
+    };
+  }
+
+  const require = createRequire(import.meta.url);
+  const { spawnSync } = require("node:child_process") as typeof import("node:child_process");
+  const resultId = `test-render-spike-${crypto.randomUUID()}`;
+  const spikeDir = path.join(resolvedBase.absolutePath, "test-render-spike", resultId);
+  fs.mkdirSync(spikeDir, { recursive: true });
+  const outputPath = path.join(spikeDir, "test-pattern.png");
+  const startedAt = Date.now();
+  const timeoutMs = Math.min(input.timeoutMs ?? 5000, 10000);
+  const ffmpegResult = spawnSync(
+    "ffmpeg",
+    ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=black:s=160x90:d=1", "-frames:v", "1", "-y", outputPath],
+    { timeout: timeoutMs, stdio: "ignore" }
+  );
+  const runtimeMs = Date.now() - startedAt;
+  const outputExists = fs.existsSync(outputPath);
+  const bytesWritten = outputExists ? fs.statSync(outputPath).size : 0;
+  const passed = ffmpegResult.status === 0 && outputExists && bytesWritten > 0;
+  const completion = new Date().toISOString();
+  const safeSummary = `[ignored-runtime-test-dir]/test-render-spike/${resultId}`;
+  return {
+    schema_version: "1.0",
+    test_render_spike_result_id: resultId,
+    real_execution_approval_id: input.approval.real_execution_approval_id,
+    real_execution_gate_id: input.approval.real_execution_gate_id,
+    command_manifest_id: input.approval.command_manifest_id,
+    project_id: input.approval.project_id,
+    platform: input.approval.platform,
+    execution_mode: "test_only_local_render_spike",
+    created_at: new Date(startedAt).toISOString(),
+    completed_at: completion,
+    test_scope: { test_only: true, production_project_allowed: false, user_media_allowed: false, upload_allowed: false, platform_api_calls_allowed: false },
+    execution_permissions: { operator_confirmed: true, child_process_allowed: true, ffmpeg_execution_allowed: true, renderer_execution_allowed: false, media_creation_allowed: true, env_access_allowed: false, process_output_capture_allowed: "redacted_summary_only" },
+    synthetic_input: { input_kind: "lavfi_color", duration_seconds: 1, resolution: "160x90", source_is_user_media: false },
+    output_summary: {
+      output_directory_summary: safeSummary,
+      output_file_count: outputExists ? 1 : 0,
+      output_files_created: outputExists,
+      media_files_created: outputExists,
+      output_path_summaries: outputExists ? ["[test-output-image]"] : [],
+      ...(bytesWritten > 0 ? { bytes_written: bytesWritten } : {}),
+      duration_seconds: 1,
+    },
+    process_summary: {
+      command_invoked: true,
+      command_label: "ffmpeg",
+      raw_command_stored: false,
+      stdout_stored: false,
+      stderr_stored: false,
+      exit_code: typeof ffmpegResult.status === "number" ? ffmpegResult.status : 1,
+      timed_out: Boolean(ffmpegResult.error && ffmpegResult.error.name === "Error" && String(ffmpegResult.error.message).includes("timed out")),
+      runtime_ms: runtimeMs,
+    },
+    validation: {
+      test_spike_passed: passed,
+      ready_for_production_render: false,
+      ready_for_upload: false,
+      blocking_reasons: passed ? [] : ["FFmpeg test-only spike did not complete successfully"],
+      warnings: passed ? ["Test-only spike; no project media touched."] : ["FFmpeg unavailable or test-only spike failed."],
+    },
+    provenance: {
+      generated_by: "runTestOnlyLocalRenderSpike",
+      source_gate_id: input.approval.real_execution_gate_id,
+      source_approval_id: input.approval.real_execution_approval_id,
+      source_manifest_id: input.approval.command_manifest_id,
+    },
+  };
+}
+
+export function validateTestRenderSpikeResult(result: unknown): TestRenderSpikeResultValidationResult {
+  return validateTestRenderSpikeResultShape(result);
+}
+
+export function saveTestRenderSpikeResult(result: TestRenderSpikeResult): void {
+  const validation = validateTestRenderSpikeResult(result);
+  if (!validation.ok) {
+    throw new Error("Unsafe test render spike result cannot be stored.");
+  }
+  const store = loadTestRenderSpikeResultsStore();
+  const existing = store.results.findIndex((r) => r.test_render_spike_result_id === result.test_render_spike_result_id);
+  if (existing >= 0) store.results[existing] = result;
+  else store.results.push(result);
+  saveTestRenderSpikeResultsStore(store);
+}
+
+export function listTestRenderSpikeResults(options?: {
+  project_id?: string;
+  platform?: string;
+  execution_mode?: string;
+  test_spike_passed?: boolean;
+}): TestRenderSpikeResult[] {
+  const store = loadTestRenderSpikeResultsStore();
+  return store.results.filter((r) => {
+    if (options?.project_id && r.project_id !== options.project_id) return false;
+    if (options?.platform && r.platform !== options.platform) return false;
+    if (options?.execution_mode && r.execution_mode !== options.execution_mode) return false;
+    if (typeof options?.test_spike_passed === "boolean" && r.validation.test_spike_passed !== options.test_spike_passed) return false;
+    return true;
+  }).sort((a, b) => {
+    const t = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return t !== 0 ? t : a.test_render_spike_result_id.localeCompare(b.test_render_spike_result_id);
+  });
+}
+
+export function getTestRenderSpikeResult(test_render_spike_result_id: string): TestRenderSpikeResult | null {
+  const store = loadTestRenderSpikeResultsStore();
+  return store.results.find((r) => r.test_render_spike_result_id === test_render_spike_result_id) ?? null;
+}
+
+export function getTestRenderSpikeResultReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  passed: number;
+  failed: number;
+  ready_for_production_render: 0;
+  ready_for_upload: 0;
+  media_files_created: number;
+  output_file_count: number;
+  results: Array<{
+    test_render_spike_result_id: string;
+    project_id: string;
+    platform: string;
+    execution_mode: string;
+    test_spike_passed: boolean;
+    output_file_count: number;
+    media_files_created: boolean;
+    created_at: string;
+  }>;
+} {
+  const results = listTestRenderSpikeResults(options);
+  let passed = 0;
+  let mediaFilesCreated = 0;
+  let outputFileCount = 0;
+  const summaries = results.map((r) => {
+    if (r.validation.test_spike_passed) passed++;
+    if (r.output_summary.media_files_created) mediaFilesCreated++;
+    outputFileCount += r.output_summary.output_file_count;
+    return {
+      test_render_spike_result_id: sanitizeRenderPlanString(r.test_render_spike_result_id, "[unsafe-id]"),
+      project_id: sanitizeRenderPlanString(r.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(r.platform, "[unsafe-platform]"),
+      execution_mode: r.execution_mode,
+      test_spike_passed: r.validation.test_spike_passed,
+      output_file_count: r.output_summary.output_file_count,
+      media_files_created: r.output_summary.media_files_created,
+      created_at: r.created_at,
+    };
+  });
+  return {
+    total: results.length,
+    passed,
+    failed: results.length - passed,
+    ready_for_production_render: 0,
+    ready_for_upload: 0,
+    media_files_created: mediaFilesCreated,
+    output_file_count: outputFileCount,
+    results: summaries,
+  };
+}
+
 interface RealRendererExecutionApprovalsStore {
   approvals: RealRendererExecutionApproval[];
 }
@@ -6786,8 +7237,8 @@ export function createRealRendererExecutionApproval(input: {
     },
     operator_review: {
       reviewed_by_label: input.reviewed_by_label || "[not-reviewed]",
-      reviewed_at: input.decision !== "draft" ? new Date().toISOString() : undefined,
-      decision_note_summary: input.decision_note_summary || undefined,
+      ...(input.decision !== "draft" ? { reviewed_at: new Date().toISOString() } : {}),
+      ...(input.decision_note_summary ? { decision_note_summary: input.decision_note_summary } : {}),
       checklist_acknowledged: input.checklist_acknowledged ?? false,
       risk_acknowledgement: input.risk_acknowledgement ?? false,
       understands_real_execution_not_enabled: input.understands_real_execution_not_enabled ?? false,

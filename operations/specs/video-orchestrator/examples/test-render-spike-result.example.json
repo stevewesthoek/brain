@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "test_render_spike_result_id": "test-render-spike-001",
+  "real_execution_approval_id": "approval-001",
+  "real_execution_gate_id": "real-execution-gate-001",
+  "command_manifest_id": "render-command-manifest-example-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "execution_mode": "test_only_local_render_spike",
+  "created_at": "2026-05-12T16:00:00Z",
+  "completed_at": "2026-05-12T16:00:01Z",
+  "test_scope": {
+    "test_only": true,
+    "production_project_allowed": false,
+    "user_media_allowed": false,
+    "upload_allowed": false,
+    "platform_api_calls_allowed": false
+  },
+  "execution_permissions": {
+    "operator_confirmed": true,
+    "child_process_allowed": true,
+    "ffmpeg_execution_allowed": true,
+    "renderer_execution_allowed": false,
+    "media_creation_allowed": true,
+    "env_access_allowed": false,
+    "process_output_capture_allowed": "redacted_summary_only"
+  },
+  "synthetic_input": {
+    "input_kind": "lavfi_color",
+    "duration_seconds": 1,
+    "resolution": "160x90",
+    "source_is_user_media": false
+  },
+  "output_summary": {
+    "output_directory_summary": "[ignored-runtime-test-dir]/test-render-spike/test-render-spike-001",
+    "output_file_count": 1,
+    "output_files_created": true,
+    "media_files_created": true,
+    "output_path_summaries": [
+      "[test-output-image]"
+    ],
+    "bytes_written": 1024,
+    "duration_seconds": 1
+  },
+  "process_summary": {
+    "command_invoked": true,
+    "command_label": "ffmpeg",
+    "raw_command_stored": false,
+    "stdout_stored": false,
+    "stderr_stored": false,
+    "exit_code": 0,
+    "timed_out": false,
+    "runtime_ms": 480
+  },
+  "validation": {
+    "test_spike_passed": true,
+    "ready_for_production_render": false,
+    "ready_for_upload": false,
+    "blocking_reasons": [],
+    "warnings": [
+      "Test-only spike; no project media touched."
+    ]
+  },
+  "provenance": {
+    "generated_by": "runTestOnlyLocalRenderSpike",
+    "source_gate_id": "real-execution-gate-001",
+    "source_approval_id": "approval-001",
+    "source_manifest_id": "render-command-manifest-example-001"
+  }
+}

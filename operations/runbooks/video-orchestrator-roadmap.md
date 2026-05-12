@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
 **Date Updated:** 2026-05-12 (VO-5B Complete)  
-**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete.  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) in progress.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Architecture:** Local-first production + platform adapters (not fully local publishing)
 
@@ -95,6 +95,24 @@ The `/video` orchestrator will evolve into a **local production control center**
 | **3Y** | Jun 20–Jul 15 | MacBook oMLX Sidecar Worker | Add an opt-in trusted Thunderbolt/LAN worker-node path for low-risk text tasks |
 | **4** | Jul 15–Aug 15 | Multi-Account Scheduler | Safe distribution across accounts with duplicate-content prevention |
 | **5** | Aug 15–Sep 15 | Optimization + Optional LoRA | Metrics snapshots; optional LoRA experiments (does not block production) |
+
+### VO-6A: Explicit Local Render Spike, Test-Only Asset, Operator-Gated
+
+**Goal:** Introduce the first real local FFmpeg execution path, but only as a test-only spike with synthetic input and disposable ignored output directories.
+
+**Hard boundaries:**
+- Only `executionMode: "test_only_local_render_spike"` is allowed.
+- Requires explicit operator confirmation plus test-only permissions.
+- Uses synthetic input only, preferably FFmpeg `lavfi` color source or generated pattern.
+- Never touches project, user, or customer media.
+- Never uploads.
+- Never calls platform APIs.
+- Writes only under disposable ignored runtime/test directories.
+- Stores only safe summaries, never raw stdout, stderr, commands, env vars, or tokens.
+- Does not enable production rendering.
+
+**Expected follow-up:**
+- If a future phase is approved, design production rendering separately and keep upload capability out of scope.
 
 **Total Timeline:** 6 months  
 **Total Resource Estimate:** 50 hours Claude Code (revised for adapter complexity)  

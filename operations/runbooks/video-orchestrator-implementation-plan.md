@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
 **Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record); detailed guide for phases 3B+  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A in progress (explicit local render spike, test-only asset, operator-gated); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -19,6 +19,26 @@ Revised implementation plan for a local-first video production studio. The syste
 **Key change from previous plan:** Separate production (local) from publishing (adapter-dependent). Phases 2A–2B deliver complete production packages; Phases 3–5 add adapters and multi-account support.
 
 **Local infrastructure cost:** $0 (excluding electricity, storage, optional paid APIs)
+
+### VO-6A: Explicit Local Render Spike, Test-Only Asset, Operator-Gated
+
+This is the first phase that can execute FFmpeg locally, but only under explicit test-only flags and only against synthetic input.
+
+**What it does**
+- Accepts an explicit `test_only_local_render_spike` execution mode.
+- Requires operator confirmation and test-only permissions.
+- Generates a tiny disposable output in an ignored runtime/test directory.
+- Stores only safe process summaries and validation state.
+
+**What it does not do**
+- Does not render project, user, or customer media.
+- Does not upload.
+- Does not call platform APIs.
+- Does not store raw stdout, stderr, commands, env vars, or tokens.
+- Does not enable production rendering.
+
+**Next phase guidance**
+- If this spike is approved and useful, the next design phase should be a controlled production-render design, not an upload path.
 
 ---
 

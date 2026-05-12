@@ -1,0 +1,217 @@
+{
+  "schema_version": "1.0",
+  "title": "Test Render Spike Result",
+  "description": "Test-only local render spike result for a disposable FFmpeg execution against synthetic input. This is not a production render result, not an upload artifact, and not a platform API artifact. It exists only for explicitly gated local spike execution using generated test input. No project/user media may be used. No uploads. No platform APIs. No raw stdout/stderr, raw commands, or environment variables may be stored.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "test_render_spike_result_id",
+    "real_execution_approval_id",
+    "real_execution_gate_id",
+    "command_manifest_id",
+    "project_id",
+    "platform",
+    "execution_mode",
+    "created_at",
+    "test_scope",
+    "execution_permissions",
+    "synthetic_input",
+    "output_summary",
+    "process_summary",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"]
+    },
+    "test_render_spike_result_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "real_execution_approval_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "real_execution_gate_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "command_manifest_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"]
+    },
+    "execution_mode": {
+      "type": "string",
+      "enum": ["test_only_local_render_spike"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "test_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "test_only",
+        "production_project_allowed",
+        "user_media_allowed",
+        "upload_allowed",
+        "platform_api_calls_allowed"
+      ],
+      "properties": {
+        "test_only": { "type": "boolean", "enum": [true] },
+        "production_project_allowed": { "type": "boolean", "enum": [false] },
+        "user_media_allowed": { "type": "boolean", "enum": [false] },
+        "upload_allowed": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] }
+      }
+    },
+    "execution_permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operator_confirmed",
+        "child_process_allowed",
+        "ffmpeg_execution_allowed",
+        "renderer_execution_allowed",
+        "media_creation_allowed",
+        "env_access_allowed",
+        "process_output_capture_allowed"
+      ],
+      "properties": {
+        "operator_confirmed": { "type": "boolean", "enum": [true] },
+        "child_process_allowed": { "type": "boolean", "enum": [true] },
+        "ffmpeg_execution_allowed": { "type": "boolean", "enum": [true] },
+        "renderer_execution_allowed": { "type": "boolean", "enum": [false] },
+        "media_creation_allowed": { "type": "boolean", "enum": [true] },
+        "env_access_allowed": { "type": "boolean", "enum": [false] },
+        "process_output_capture_allowed": {
+          "oneOf": [
+            { "type": "boolean", "enum": [false] },
+            { "type": "string", "enum": ["redacted_summary_only"] }
+          ]
+        }
+      }
+    },
+    "synthetic_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_kind",
+        "duration_seconds",
+        "resolution",
+        "source_is_user_media"
+      ],
+      "properties": {
+        "input_kind": {
+          "type": "string",
+          "enum": ["lavfi_color", "generated_test_pattern"]
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "resolution": {
+          "type": "string",
+          "enum": ["320x240", "160x90"]
+        },
+        "source_is_user_media": {
+          "type": "boolean",
+          "enum": [false]
+        }
+      }
+    },
+    "output_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_directory_summary",
+        "output_file_count",
+        "output_files_created",
+        "media_files_created",
+        "output_path_summaries",
+        "duration_seconds"
+      ],
+      "properties": {
+        "output_directory_summary": { "type": "string" },
+        "output_file_count": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "output_files_created": { "type": "boolean" },
+        "media_files_created": { "type": "boolean" },
+        "output_path_summaries": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 1
+        },
+        "bytes_written": { "type": "integer", "minimum": 0 },
+        "duration_seconds": { "type": "number", "minimum": 0, "maximum": 3 }
+      }
+    },
+    "process_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command_invoked",
+        "command_label",
+        "raw_command_stored",
+        "stdout_stored",
+        "stderr_stored",
+        "timed_out"
+      ],
+      "properties": {
+        "command_invoked": { "type": "boolean", "enum": [true] },
+        "command_label": { "type": "string", "enum": ["ffmpeg"] },
+        "raw_command_stored": { "type": "boolean", "enum": [false] },
+        "stdout_stored": { "type": "boolean", "enum": [false] },
+        "stderr_stored": { "type": "boolean", "enum": [false] },
+        "exit_code": { "type": "integer" },
+        "timed_out": { "type": "boolean" },
+        "runtime_ms": { "type": "integer", "minimum": 0, "maximum": 10000 }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "test_spike_passed",
+        "ready_for_production_render",
+        "ready_for_upload",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "test_spike_passed": { "type": "boolean" },
+        "ready_for_production_render": { "type": "boolean", "enum": [false] },
+        "ready_for_upload": { "type": "boolean", "enum": [false] },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by"],
+      "properties": {
+        "generated_by": { "type": "string" },
+        "source_gate_id": { "type": "string" },
+        "source_approval_id": { "type": "string" },
+        "source_manifest_id": { "type": "string" }
+      }
+    }
+  }
+}
