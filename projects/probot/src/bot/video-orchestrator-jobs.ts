@@ -12315,6 +12315,249 @@ export function getRealUploadExecutionRequestReport(options?: { project_id?: str
   };
 }
 
+export type RealUploadStrategyDesignMode = "real_upload_strategy_design_only" | "operator_review_real_upload_strategy_design";
+export type RealUploadStrategyDesignState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_upload_execution_plan" | "rejected" | "revoked";
+
+export interface RealUploadStrategyRequiredArtifacts {
+  real_upload_execution_request_validated: boolean;
+  real_upload_readiness_assessment_validated: boolean;
+  dry_run_upload_spike_result_validated: boolean;
+  upload_execution_design_validated: boolean;
+  upload_execution_approval_validated: boolean;
+  platform_upload_request_validated: boolean;
+  upload_package_design_validated: boolean;
+  local_output_review_validated: boolean;
+  spike_result_validated: boolean;
+}
+
+export interface RealUploadStrategyScope {
+  future_real_upload_design_requested: boolean;
+  current_upload_execution_requested: false;
+  current_network_calls_requested: false;
+  current_platform_api_calls_requested: false;
+  current_credential_access_requested: false;
+  strategy_only: true;
+}
+
+export interface RealUploadCredentialStrategy {
+  strategy_required: true;
+  credentials_accessed: false;
+  token_accessed: false;
+  keychain_accessed: false;
+  env_accessed: false;
+  credential_reference_stored: false;
+  token_reference_stored: false;
+  secret_material_stored: false;
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+export interface RealUploadNetworkStrategy { strategy_required: true; network_calls_allowed: false; network_calls_made: false; external_side_effects_allowed: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadPlatformApiStrategy { strategy_required: true; platform_endpoint_selected: false; platform_api_payload_created: false; platform_api_payload_stored: false; raw_account_ids_stored: false; upload_payload_created: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadMediaAccessStrategy { strategy_required: true; media_file_read: false; raw_media_path_stored: false; media_file_modified: false; media_file_copied: false; media_file_moved: false; media_file_deleted: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadRetryStrategy { strategy_required: true; max_upload_attempts: 0; retry_execution_enabled: false; idempotency_strategy_defined: boolean; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadRollbackStrategy { strategy_required: true; rollback_execution_enabled: false; destructive_action_allowed: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadPostUploadVerificationStrategy { strategy_required: true; verification_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadFailureHandlingStrategy { strategy_required: true; failure_handling_execution_enabled: false; alerting_execution_enabled: false; safe_summary: string; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadOperatorExecutionChecklist { checklist_required: true; checklist_acknowledged: boolean; understands_strategy_only: boolean; understands_no_upload_enabled: boolean; understands_no_credentials_accessed: boolean; understands_no_network_calls: boolean; understands_future_execution_plan_required: boolean; reviewed_by_label?: string; decision_note_summary?: string; }
+export interface RealUploadStrategyExecutionBoundary { upload_allowed: false; upload_execution_enabled: false; real_upload_execution_allowed: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; ready_for_real_upload: false; }
+export interface RealUploadStrategyDesignValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadStrategyDesign {
+  schema_version: "1.0";
+  real_upload_strategy_design_id: string;
+  real_upload_execution_request_id: string;
+  real_upload_readiness_assessment_id: string;
+  dry_run_upload_spike_result_id: string;
+  upload_execution_design_id: string;
+  upload_execution_approval_id: string;
+  platform_upload_request_id: string;
+  upload_package_design_id: string;
+  local_output_review_id: string;
+  production_render_spike_result_id: string;
+  final_render_execution_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  strategy_state: RealUploadStrategyDesignState;
+  created_at: string;
+  strategy_mode: RealUploadStrategyDesignMode;
+  required_artifacts: RealUploadStrategyRequiredArtifacts;
+  strategy_scope: RealUploadStrategyScope;
+  credential_strategy: RealUploadCredentialStrategy;
+  network_strategy: RealUploadNetworkStrategy;
+  platform_api_strategy: RealUploadPlatformApiStrategy;
+  media_access_strategy: RealUploadMediaAccessStrategy;
+  upload_retry_strategy: RealUploadRetryStrategy;
+  rollback_strategy: RealUploadRollbackStrategy;
+  post_upload_verification_strategy: RealUploadPostUploadVerificationStrategy;
+  failure_handling_strategy: RealUploadFailureHandlingStrategy;
+  operator_execution_checklist: RealUploadOperatorExecutionChecklist;
+  execution_boundary: RealUploadStrategyExecutionBoundary;
+  validation: {
+    ready_for_future_upload_execution_plan: boolean;
+    ready_for_real_upload: false;
+    upload_allowed: false;
+    upload_execution_enabled: false;
+    platform_api_calls_allowed: false;
+    network_calls_allowed: false;
+    credentials_accessed: false;
+    token_accessed: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRealUploadStrategyDesign" | "revokeRealUploadStrategyDesign";
+    source_real_upload_execution_request_id: string;
+    source_real_upload_readiness_assessment_id: string;
+    source_dry_run_upload_spike_result_id: string;
+    source_upload_execution_design_id: string;
+    source_upload_execution_approval_id: string;
+    source_platform_upload_request_id: string;
+    source_upload_package_design_id: string;
+    source_local_output_review_id: string;
+    source_production_render_spike_result_id: string;
+    source_final_render_execution_request_id: string;
+    source_render_plan_id: string;
+  };
+}
+
+interface RealUploadStrategyDesignsStore { schema_version: "1.0"; created_at: string; designs: RealUploadStrategyDesign[]; }
+function getRealUploadStrategyDesignsPath(): string { return path.join(getRuntimeDir(), "real-upload-strategy-designs.json"); }
+function loadRealUploadStrategyDesignsStore(): RealUploadStrategyDesignsStore { try { const filePath = getRealUploadStrategyDesignsPath(); if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as RealUploadStrategyDesignsStore; } catch {} return { schema_version: "1.0", created_at: new Date().toISOString(), designs: [] }; }
+function saveRealUploadStrategyDesignsStore(store: RealUploadStrategyDesignsStore): void { const filePath = getRealUploadStrategyDesignsPath(); fs.mkdirSync(path.dirname(filePath), { recursive: true }); store.designs.sort((a, b) => { const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); return compare !== 0 ? compare : a.real_upload_strategy_design_id.localeCompare(b.real_upload_strategy_design_id); }); fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8"); }
+function safeRealUploadStrategyString(value: unknown, fallback: string): string { return safeRealUploadExecutionRequestString(value, fallback); }
+function validateRealUploadStrategyDesignShape(design: unknown): RealUploadStrategyDesignValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof design !== "object" || design === null) return { ok: false, blocking_reasons: ["Real upload strategy design must be an object"], warnings };
+  const d = design as Record<string, unknown>;
+  const required = ["schema_version","real_upload_strategy_design_id","real_upload_execution_request_id","real_upload_readiness_assessment_id","dry_run_upload_spike_result_id","upload_execution_design_id","upload_execution_approval_id","platform_upload_request_id","upload_package_design_id","local_output_review_id","production_render_spike_result_id","final_render_execution_request_id","render_plan_id","project_id","platform","strategy_state","created_at","strategy_mode","required_artifacts","strategy_scope","credential_strategy","network_strategy","platform_api_strategy","media_access_strategy","upload_retry_strategy","rollback_strategy","post_upload_verification_strategy","failure_handling_strategy","operator_execution_checklist","execution_boundary","validation","provenance"];
+  for (const key of required) if (!(key in d)) blocking_reasons.push("Real upload strategy design is missing a required field");
+  if (d.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["real_upload_strategy_design_only","operator_review_real_upload_strategy_design"].includes(String(d.strategy_mode))) blocking_reasons.push("strategy_mode is invalid");
+  if (!["draft","blocked","ready_for_operator_review","approved_for_future_upload_execution_plan","rejected","revoked"].includes(String(d.strategy_state))) blocking_reasons.push("strategy_state is invalid");
+  const text = JSON.stringify(design);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env") || text.includes("keychain://") || text.includes("stdout") || text.includes("stderr") || text.includes("ffmpeg -i") || text.includes("Bearer ") || text.includes("data:") || text.includes("base64,") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../")) blocking_reasons.push("Real upload strategy design contains forbidden payload content");
+  const scope = d.strategy_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.strategy_only !== true || scope.future_real_upload_design_requested !== true || scope.current_upload_execution_requested !== false || scope.current_network_calls_requested !== false || scope.current_platform_api_calls_requested !== false || scope.current_credential_access_requested !== false) blocking_reasons.push("Strategy scope is unsafe");
+  const credential = d.credential_strategy as Record<string, unknown> | undefined;
+  if (!credential || credential.strategy_required !== true || credential.credentials_accessed !== false || credential.token_accessed !== false || credential.keychain_accessed !== false || credential.env_accessed !== false || credential.credential_reference_stored !== false || credential.token_reference_stored !== false || credential.secret_material_stored !== false) blocking_reasons.push("Credential strategy is unsafe");
+  const network = d.network_strategy as Record<string, unknown> | undefined;
+  if (!network || network.strategy_required !== true || network.network_calls_allowed !== false || network.network_calls_made !== false || network.external_side_effects_allowed !== false) blocking_reasons.push("Network strategy is unsafe");
+  const platform = d.platform_api_strategy as Record<string, unknown> | undefined;
+  if (!platform || platform.strategy_required !== true || platform.platform_endpoint_selected !== false || platform.platform_api_payload_created !== false || platform.platform_api_payload_stored !== false || platform.raw_account_ids_stored !== false || platform.upload_payload_created !== false) blocking_reasons.push("Platform API strategy is unsafe");
+  const media = d.media_access_strategy as Record<string, unknown> | undefined;
+  if (!media || media.strategy_required !== true || media.media_file_read !== false || media.raw_media_path_stored !== false || media.media_file_modified !== false || media.media_file_copied !== false || media.media_file_moved !== false || media.media_file_deleted !== false) blocking_reasons.push("Media access strategy is unsafe");
+  const retry = d.upload_retry_strategy as Record<string, unknown> | undefined;
+  if (!retry || retry.strategy_required !== true || retry.max_upload_attempts !== 0 || retry.retry_execution_enabled !== false) blocking_reasons.push("Retry strategy is unsafe");
+  const rollback = d.rollback_strategy as Record<string, unknown> | undefined;
+  if (!rollback || rollback.strategy_required !== true || rollback.rollback_execution_enabled !== false || rollback.destructive_action_allowed !== false) blocking_reasons.push("Rollback strategy is unsafe");
+  const verification = d.post_upload_verification_strategy as Record<string, unknown> | undefined;
+  if (!verification || verification.strategy_required !== true || verification.verification_execution_enabled !== false || verification.platform_api_calls_allowed !== false || verification.network_calls_allowed !== false) blocking_reasons.push("Verification strategy is unsafe");
+  const failure = d.failure_handling_strategy as Record<string, unknown> | undefined;
+  if (!failure || failure.strategy_required !== true || failure.failure_handling_execution_enabled !== false || failure.alerting_execution_enabled !== false) blocking_reasons.push("Failure handling strategy is unsafe");
+  const checklist = d.operator_execution_checklist as Record<string, unknown> | undefined;
+  if (!checklist || checklist.checklist_required !== true || checklist.checklist_acknowledged !== true || checklist.understands_strategy_only !== true || checklist.understands_no_upload_enabled !== true || checklist.understands_no_credentials_accessed !== true || checklist.understands_no_network_calls !== true || checklist.understands_future_execution_plan_required !== true) blocking_reasons.push("Operator execution checklist is unsafe");
+  const boundary = d.execution_boundary as Record<string, unknown> | undefined;
+  if (!boundary || boundary.upload_allowed !== false || boundary.upload_execution_enabled !== false || boundary.real_upload_execution_allowed !== false || boundary.platform_api_calls_allowed !== false || boundary.network_calls_allowed !== false || boundary.credentials_accessed !== false || boundary.token_accessed !== false || boundary.keychain_accessed !== false || boundary.env_accessed !== false || boundary.ready_for_real_upload !== false) blocking_reasons.push("Execution boundary is unsafe");
+  const validation = d.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_future_upload_execution_plan !== false && validation.ready_for_future_upload_execution_plan !== true || validation.ready_for_real_upload !== false || validation.upload_allowed !== false || validation.upload_execution_enabled !== false || validation.platform_api_calls_allowed !== false || validation.network_calls_allowed !== false || validation.credentials_accessed !== false || validation.token_accessed !== false) blocking_reasons.push("Validation is unsafe");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+export function createRealUploadStrategyDesign(input: {
+  realUploadExecutionRequest: RealUploadExecutionRequest;
+  readinessAssessment: RealUploadReadinessAssessment;
+  dryRunUploadSpikeResult: DryRunUploadSpikeResult;
+  uploadExecutionDesign: UploadExecutionDesign;
+  uploadExecutionApproval: UploadExecutionApproval;
+  platformUploadRequest: PlatformUploadRequest;
+  uploadPackageDesign: UploadPackageDesign;
+  localOutputReview: LocalOutputOperatorReview;
+  spikeResult: ControlledProductionRenderSpikeResult;
+  decision?: "draft" | "approved_for_future_upload_execution_plan" | "rejected";
+  reviewed_by_label?: string;
+  checklist_acknowledged?: boolean;
+  understands_strategy_only?: boolean;
+  understands_no_upload_enabled?: boolean;
+  understands_no_credentials_accessed?: boolean;
+  understands_no_network_calls?: boolean;
+  understands_future_execution_plan_required?: boolean;
+  decision_note_summary?: string;
+  dryRun: true;
+}): RealUploadStrategyDesign {
+  if (input.dryRun !== true) throw new Error("dryRun must be true");
+  if (!validateRealUploadExecutionRequest(input.realUploadExecutionRequest).ok) throw new Error("realUploadExecutionRequest must validate");
+  if (!validateRealUploadReadinessAssessment(input.readinessAssessment).ok) throw new Error("readinessAssessment must validate");
+  if (!validateDryRunUploadSpikeResult(input.dryRunUploadSpikeResult).ok) throw new Error("dryRunUploadSpikeResult must validate");
+  if (!validateUploadExecutionDesign(input.uploadExecutionDesign).ok) throw new Error("uploadExecutionDesign must validate");
+  if (!validateUploadExecutionApproval(input.uploadExecutionApproval).ok) throw new Error("uploadExecutionApproval must validate");
+  if (!validatePlatformUploadRequest(input.platformUploadRequest).ok) throw new Error("platformUploadRequest must validate");
+  if (!validateUploadPackageDesign(input.uploadPackageDesign).ok) throw new Error("uploadPackageDesign must validate");
+  if (!validateLocalOutputOperatorReview(input.localOutputReview).ok) throw new Error("localOutputReview must validate");
+  if (!validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("spikeResult must validate");
+  if (input.realUploadExecutionRequest.request_state !== "approved_for_future_real_upload_design") throw new Error("realUploadExecutionRequest must be approved");
+  if (input.realUploadExecutionRequest.validation.ready_for_real_upload !== false || input.readinessAssessment.validation.ready_for_real_upload !== false) throw new Error("ready_for_real_upload must remain false");
+  if (input.realUploadExecutionRequest.real_upload_execution_request_id !== input.realUploadExecutionRequest.real_upload_execution_request_id || input.realUploadExecutionRequest.real_upload_readiness_assessment_id !== input.readinessAssessment.real_upload_readiness_assessment_id || input.realUploadExecutionRequest.dry_run_upload_spike_result_id !== input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id || input.realUploadExecutionRequest.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.realUploadExecutionRequest.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.realUploadExecutionRequest.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.realUploadExecutionRequest.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.realUploadExecutionRequest.local_output_review_id !== input.localOutputReview.local_output_review_id || input.realUploadExecutionRequest.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.realUploadExecutionRequest.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.realUploadExecutionRequest.render_plan_id !== input.spikeResult.render_plan_id || input.realUploadExecutionRequest.project_id !== input.spikeResult.project_id || input.realUploadExecutionRequest.platform !== input.spikeResult.platform) throw new Error("strategy inputs must match");
+  const decision = input.decision ?? "draft";
+  const approved = decision === "approved_for_future_upload_execution_plan";
+  if (approved && (!input.checklist_acknowledged || !input.understands_strategy_only || !input.understands_no_upload_enabled || !input.understands_no_credentials_accessed || !input.understands_no_network_calls || !input.understands_future_execution_plan_required)) throw new Error("approved strategy design requires acknowledgements");
+  const summary = safeRealUploadStrategyString(input.decision_note_summary ?? "", "[unsafe-strategy-note]");
+  const reviewedBy = safeRealUploadStrategyString(input.reviewed_by_label ?? "", "[unsafe-reviewer]");
+  const design: RealUploadStrategyDesign = {
+    schema_version: "1.0",
+    real_upload_strategy_design_id: `real-upload-strategy-design-${crypto.randomUUID()}`,
+    real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id,
+    real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id,
+    dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+    upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+    upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+    platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+    upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+    local_output_review_id: input.localOutputReview.local_output_review_id,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.spikeResult.project_id,
+    platform: input.spikeResult.platform,
+    strategy_state: approved ? "approved_for_future_upload_execution_plan" : "ready_for_operator_review",
+    created_at: new Date().toISOString(),
+    strategy_mode: "real_upload_strategy_design_only",
+    required_artifacts: {
+      real_upload_execution_request_validated: true,
+      real_upload_readiness_assessment_validated: true,
+      dry_run_upload_spike_result_validated: true,
+      upload_execution_design_validated: true,
+      upload_execution_approval_validated: true,
+      platform_upload_request_validated: true,
+      upload_package_design_validated: true,
+      local_output_review_validated: true,
+      spike_result_validated: true,
+    },
+    strategy_scope: { future_real_upload_design_requested: true, current_upload_execution_requested: false, current_network_calls_requested: false, current_platform_api_calls_requested: false, current_credential_access_requested: false, strategy_only: true },
+    credential_strategy: { strategy_required: true, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, credential_reference_stored: false, token_reference_stored: false, secret_material_stored: false, safe_summary: "Future credential strategy only.", blocking_reasons: ["Credential access remains disabled."], warnings: [] },
+    network_strategy: { strategy_required: true, network_calls_allowed: false, network_calls_made: false, external_side_effects_allowed: false, safe_summary: "Future network strategy only.", blocking_reasons: ["Network calls remain disabled."], warnings: [] },
+    platform_api_strategy: { strategy_required: true, platform_endpoint_selected: false, platform_api_payload_created: false, platform_api_payload_stored: false, raw_account_ids_stored: false, upload_payload_created: false, safe_summary: "Future platform API strategy only.", blocking_reasons: ["Platform API payloads remain disabled."], warnings: [] },
+    media_access_strategy: { strategy_required: true, media_file_read: false, raw_media_path_stored: false, media_file_modified: false, media_file_copied: false, media_file_moved: false, media_file_deleted: false, safe_summary: "Future media access strategy only.", blocking_reasons: ["Media reads remain disabled."], warnings: [] },
+    upload_retry_strategy: { strategy_required: true, max_upload_attempts: 0, retry_execution_enabled: false, idempotency_strategy_defined: true, safe_summary: "Retry strategy is summary only.", blocking_reasons: ["Retry execution remains disabled."], warnings: [] },
+    rollback_strategy: { strategy_required: true, rollback_execution_enabled: false, destructive_action_allowed: false, safe_summary: "Rollback strategy is summary only.", blocking_reasons: ["Rollback execution remains disabled."], warnings: [] },
+    post_upload_verification_strategy: { strategy_required: true, verification_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, safe_summary: "Verification strategy is summary only.", blocking_reasons: ["Verification execution remains disabled."], warnings: [] },
+    failure_handling_strategy: { strategy_required: true, failure_handling_execution_enabled: false, alerting_execution_enabled: false, safe_summary: "Failure handling strategy is summary only.", blocking_reasons: ["Failure handling execution remains disabled."], warnings: [] },
+    operator_execution_checklist: { checklist_required: true, checklist_acknowledged: input.checklist_acknowledged === true, understands_strategy_only: input.understands_strategy_only === true, understands_no_upload_enabled: input.understands_no_upload_enabled === true, understands_no_credentials_accessed: input.understands_no_credentials_accessed === true, understands_no_network_calls: input.understands_no_network_calls === true, understands_future_execution_plan_required: input.understands_future_execution_plan_required === true, ...(reviewedBy ? { reviewed_by_label: reviewedBy } : {}), ...(summary ? { decision_note_summary: summary } : {}) },
+    execution_boundary: { upload_allowed: false, upload_execution_enabled: false, real_upload_execution_allowed: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, ready_for_real_upload: false },
+    validation: { ready_for_future_upload_execution_plan: approved, ready_for_real_upload: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, blocking_reasons: [], warnings: approved ? ["Strategy design remains dry-run only."] : [] },
+    provenance: { generated_by: "createRealUploadStrategyDesign", source_real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id, source_real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id, source_dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id, source_upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id, source_upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id, source_platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id, source_upload_package_design_id: input.uploadPackageDesign.upload_package_design_id, source_local_output_review_id: input.localOutputReview.local_output_review_id, source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id, source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id, source_render_plan_id: input.spikeResult.render_plan_id },
+  };
+  return design;
+}
+export function validateRealUploadStrategyDesign(design: unknown): RealUploadStrategyDesignValidationResult { return validateRealUploadStrategyDesignShape(design); }
+interface RealUploadStrategyDesignsStoreSummaryItem { real_upload_strategy_design_id: string; project_id: string; platform: string; strategy_state: string; created_at: string; }
+function safeRealUploadStrategySummary(design: RealUploadStrategyDesign): RealUploadStrategyDesignsStoreSummaryItem { return { real_upload_strategy_design_id: safeRealUploadStrategyString(design.real_upload_strategy_design_id, "[unsafe-id]"), project_id: safeRealUploadStrategyString(design.project_id, "[unsafe-project]"), platform: safeRealUploadStrategyString(design.platform, "[unsafe-platform]"), strategy_state: design.strategy_state, created_at: design.created_at }; }
+export function saveRealUploadStrategyDesign(design: RealUploadStrategyDesign): void { if (!validateRealUploadStrategyDesign(design).ok) throw new Error("Unsafe real upload strategy design cannot be stored."); const store = loadRealUploadStrategyDesignsStore(); const i = store.designs.findIndex((item) => item.real_upload_strategy_design_id === design.real_upload_strategy_design_id); if (i >= 0) store.designs[i] = design; else store.designs.push(design); saveRealUploadStrategyDesignsStore(store); }
+export function listRealUploadStrategyDesigns(options?: { project_id?: string; platform?: string; strategy_state?: string; real_upload_execution_request_id?: string; real_upload_readiness_assessment_id?: string }): RealUploadStrategyDesign[] { const store = loadRealUploadStrategyDesignsStore(); return store.designs.filter((design) => (!options?.project_id || design.project_id === options.project_id) && (!options?.platform || design.platform === options.platform) && (!options?.strategy_state || design.strategy_state === options.strategy_state) && (!options?.real_upload_execution_request_id || design.real_upload_execution_request_id === options.real_upload_execution_request_id) && (!options?.real_upload_readiness_assessment_id || design.real_upload_readiness_assessment_id === options.real_upload_readiness_assessment_id)).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_strategy_design_id.localeCompare(b.real_upload_strategy_design_id)); }
+export function getRealUploadStrategyDesign(real_upload_strategy_design_id: string): RealUploadStrategyDesign | null { return loadRealUploadStrategyDesignsStore().designs.find((design) => design.real_upload_strategy_design_id === real_upload_strategy_design_id) ?? null; }
+export function revokeRealUploadStrategyDesign(real_upload_strategy_design_id: string, reason: string): RealUploadStrategyDesign { const design = getRealUploadStrategyDesign(real_upload_strategy_design_id); if (!design) throw new Error("Real upload strategy design not found"); const safeReason = safeRealUploadStrategyString(reason, "[unsafe-reason]"); if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload strategy design reason cannot be stored."); const revoked: RealUploadStrategyDesign = { ...design, strategy_state: "revoked", validation: { ...design.validation, blocking_reasons: [...design.validation.blocking_reasons, safeReason], warnings: [...design.validation.warnings, "Real upload strategy design revoked."] }, provenance: { ...design.provenance, generated_by: "revokeRealUploadStrategyDesign" } }; saveRealUploadStrategyDesign(revoked); return revoked; }
+export function getRealUploadStrategyDesignReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_upload_execution_plan: number; rejected: number; revoked: number; ready_for_future_upload_execution_plan: number; ready_for_real_upload: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; strategy_sections_total: number; strategy_sections_with_blockers: number; designs: Array<RealUploadStrategyDesignsStoreSummaryItem>; } { const designs = listRealUploadStrategyDesigns(options); const by_state: Record<string, number> = {}; let blocked = 0, ready = 0, approved = 0, rejected = 0, revoked = 0, readyPlan = 0, sectionsTotal = 0, sectionsBlocked = 0; const summaries = designs.map((design) => { by_state[design.strategy_state] = (by_state[design.strategy_state] ?? 0) + 1; if (design.strategy_state === "blocked") blocked++; if (design.strategy_state === "ready_for_operator_review") ready++; if (design.strategy_state === "approved_for_future_upload_execution_plan") approved++; if (design.strategy_state === "rejected") rejected++; if (design.strategy_state === "revoked") revoked++; if (design.validation.ready_for_future_upload_execution_plan) readyPlan++; const sections = [design.credential_strategy, design.network_strategy, design.platform_api_strategy, design.media_access_strategy, design.upload_retry_strategy, design.rollback_strategy, design.post_upload_verification_strategy, design.failure_handling_strategy]; sectionsTotal += sections.length; sectionsBlocked += sections.filter((s) => s.blocking_reasons.length > 0).length; return safeRealUploadStrategySummary(design); }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_upload_execution_plan: approved, rejected, revoked, ready_for_future_upload_execution_plan: readyPlan, ready_for_real_upload: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, strategy_sections_total: sectionsTotal, strategy_sections_with_blockers: sectionsBlocked, designs: summaries }; }
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {

@@ -245,6 +245,13 @@ import {
   getRealUploadExecutionRequest,
   revokeRealUploadExecutionRequest,
   getRealUploadExecutionRequestReport,
+  createRealUploadStrategyDesign,
+  validateRealUploadStrategyDesign,
+  saveRealUploadStrategyDesign,
+  listRealUploadStrategyDesigns,
+  getRealUploadStrategyDesign,
+  revokeRealUploadStrategyDesign,
+  getRealUploadStrategyDesignReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -267,6 +274,7 @@ import {
   type DryRunUploadSpikeResult,
   type RealUploadReadinessAssessment,
   type RealUploadExecutionRequest,
+  type RealUploadStrategyDesign,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -933,6 +941,52 @@ function createSafeRealUploadExecutionRequest(
     understands_no_network_calls: true,
     understands_future_design_phase_only: true,
     decision_note_summary: "[real-upload-execution-request]",
+    ...overrides,
+  });
+}
+
+function createSafeRealUploadStrategyDesign(
+  realUploadExecutionRequest: RealUploadExecutionRequest,
+  readinessAssessment: RealUploadReadinessAssessment,
+  dryRunUploadSpikeResult: DryRunUploadSpikeResult,
+  uploadExecutionDesign: UploadExecutionDesign,
+  uploadExecutionApproval: UploadExecutionApproval,
+  platformUploadRequest: PlatformUploadRequest,
+  uploadPackageDesign: UploadPackageDesign,
+  localOutputReview: LocalOutputOperatorReview,
+  spikeResult: ControlledProductionRenderSpikeResult,
+  decision: "draft" | "approved_for_future_upload_execution_plan" | "rejected" = "draft",
+  overrides: Partial<{
+    reviewed_by_label: string;
+    checklist_acknowledged: boolean;
+    understands_strategy_only: boolean;
+    understands_no_upload_enabled: boolean;
+    understands_no_credentials_accessed: boolean;
+    understands_no_network_calls: boolean;
+    understands_future_execution_plan_required: boolean;
+    decision_note_summary: string;
+  }> = {}
+): RealUploadStrategyDesign {
+  return createRealUploadStrategyDesign({
+    realUploadExecutionRequest,
+    readinessAssessment,
+    dryRunUploadSpikeResult,
+    uploadExecutionDesign,
+    uploadExecutionApproval,
+    platformUploadRequest,
+    uploadPackageDesign,
+    localOutputReview,
+    spikeResult,
+    decision,
+    dryRun: true,
+    reviewed_by_label: "operator-001",
+    checklist_acknowledged: true,
+    understands_strategy_only: true,
+    understands_no_upload_enabled: true,
+    understands_no_credentials_accessed: true,
+    understands_no_network_calls: true,
+    understands_future_execution_plan_required: true,
+    decision_note_summary: "[real-upload-strategy-design]",
     ...overrides,
   });
 }
@@ -20018,6 +20072,145 @@ test("VO-7I-REPORT-192: report counts states", () => {
 
 test("VO-7I-REPORT-193: JSON.stringify(report) contains no forbidden strings", () => {
   const report = getRealUploadExecutionRequestReport();
+  const text = JSON.stringify(report);
+  assert.strictEqual(text.includes("keychain://") || text.includes("access_token") || text.includes("refresh_token") || text.includes("client_secret") || text.includes("Bearer ") || text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("stdout") || text.includes("stderr") || text.includes("process.env"), false);
+});
+
+test("VO-7J-SCHEMA-194: real upload strategy design schema parses", () => {
+  const schema = JSON.parse(fs.readFileSync(path.join(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/real-upload-strategy-design.schema.json"), "utf8"));
+  assert.ok(schema);
+});
+
+test("VO-7J-SCHEMA-195: example parses and stays safe", () => {
+  const examplePath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/examples/real-upload-strategy-design.example.json");
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+  const text = fs.readFileSync(examplePath, "utf8");
+  assert.ok(example);
+  assert.strictEqual(text.includes("keychain://") || text.includes("access_token") || text.includes("refresh_token") || text.includes("client_secret") || text.includes("code_verifier") || text.includes("authorization_code") || text.includes("Bearer ") || text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("stdout") || text.includes("stderr") || text.includes("process.env"), false);
+});
+
+test("VO-7J-CREATE-196: dryRun false blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+    assert.throws(() => createRealUploadStrategyDesign({ realUploadExecutionRequest: executionRequest, readinessAssessment, dryRunUploadSpikeResult: dryRunSpike, uploadExecutionDesign: design, uploadExecutionApproval: approval, platformUploadRequest: request, uploadPackageDesign: packageDesign, localOutputReview: review, spikeResult: spike, dryRun: false as never }));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7J-CREATE-197: safe strategy can be created from safe artifacts", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+    const strategy = createSafeRealUploadStrategyDesign(executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_plan");
+    assert.strictEqual(strategy.validation.ready_for_real_upload, false);
+    assert.strictEqual(strategy.validation.ready_for_future_upload_execution_plan, true);
+    assert.strictEqual(strategy.strategy_scope.strategy_only, true);
+    assert.strictEqual(strategy.execution_boundary.ready_for_real_upload, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7J-VALIDATE-198: safe strategy validates", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+    const strategy = createSafeRealUploadStrategyDesign(executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_plan");
+    assert.strictEqual(validateRealUploadStrategyDesign(strategy).ok, true);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7J-VALIDATE-199: ready_for_real_upload true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+    const strategy = createSafeRealUploadStrategyDesign(executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_plan");
+    assert.strictEqual(validateRealUploadStrategyDesign({ ...strategy, validation: { ...strategy.validation, ready_for_real_upload: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7J-STORE-200: save list get upsert works", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const examplePath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/examples/real-upload-strategy-design.example.json");
+    const strategy = JSON.parse(fs.readFileSync(examplePath, "utf8")) as RealUploadStrategyDesign;
+    saveRealUploadStrategyDesign(strategy);
+    assert.ok(listRealUploadStrategyDesigns({ project_id: strategy.project_id }).some((item) => item.real_upload_strategy_design_id === strategy.real_upload_strategy_design_id));
+    assert.strictEqual(getRealUploadStrategyDesign(strategy.real_upload_strategy_design_id)?.real_upload_strategy_design_id, strategy.real_upload_strategy_design_id);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7J-STORE-201: revoke changes strategy_state to revoked safely", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const examplePath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/examples/real-upload-strategy-design.example.json");
+    const strategy = JSON.parse(fs.readFileSync(examplePath, "utf8")) as RealUploadStrategyDesign;
+    saveRealUploadStrategyDesign(strategy);
+    const revoked = revokeRealUploadStrategyDesign(strategy.real_upload_strategy_design_id, "strategy paused");
+    assert.strictEqual(revoked.strategy_state, "revoked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7J-REPORT-202: report counts states and sections", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const examplePath = path.join(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/examples/real-upload-strategy-design.example.json");
+    const strategy = JSON.parse(fs.readFileSync(examplePath, "utf8")) as RealUploadStrategyDesign;
+    saveRealUploadStrategyDesign(strategy);
+    const report = getRealUploadStrategyDesignReport({ project_id: strategy.project_id });
+    assert.ok(report.total >= 1);
+    assert.ok((report.by_state.approved_for_future_upload_execution_plan ?? 0) >= 1);
+    assert.ok(report.strategy_sections_total >= 1);
+    assert.strictEqual(report.ready_for_real_upload, 0);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7J-REPORT-203: JSON.stringify(report) contains no forbidden strings", () => {
+  const report = getRealUploadStrategyDesignReport();
   const text = JSON.stringify(report);
   assert.strictEqual(text.includes("keychain://") || text.includes("access_token") || text.includes("refresh_token") || text.includes("client_secret") || text.includes("Bearer ") || text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("stdout") || text.includes("stderr") || text.includes("process.env"), false);
 });
