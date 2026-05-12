@@ -96,6 +96,12 @@ import {
   listMockRendererExecutionResults,
   getMockRendererExecutionResult,
   getMockRendererExecutionResultReport,
+  createRealRendererExecutionGate,
+  validateRealRendererExecutionGate,
+  saveRealRendererExecutionGate,
+  listRealRendererExecutionGates,
+  getRealRendererExecutionGate,
+  getRealRendererExecutionGateReport,
   type ProjectDistribution,
   type ProjectPlanResult,
   type ProductionPackageDraft,
@@ -129,6 +135,11 @@ import {
   type MockRendererExecutionCheck,
   type MockRendererExecutionOutputSummary,
   type MockRendererExecutionResultValidationResult,
+  type RealRendererExecutionGate,
+  type RealRendererExecutionGateState,
+  type RealExecutionConstraintSummary,
+  type RealExecutionPrecondition,
+  type RealRendererExecutionGateValidationResult,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -12536,4 +12547,597 @@ test("VO-4E-REPORT-50: actual output and media created counters remain 0", (t) =
   const report = getMockRendererExecutionResultReport();
   assert.strictEqual(report.actual_output_count, 0);
   assert.strictEqual(report.media_files_created, 0);
+});
+
+// ─── VO-5A: Real Renderer Execution Spike Gate Tests ───────────────────────
+
+test("VO-5A-SCHEMA-1: real renderer execution gate schema parses", (t) => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schemaPath = path.join(root, "operations", "specs", "video-orchestrator", "real-renderer-execution-gate.schema.json");
+  const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+  assert.strictEqual(schema.schema_version, "1.0");
+  assert.ok(schema.properties.dry_run);
+  assert.ok(schema.properties.execution_constraints);
+});
+
+test("VO-5A-SCHEMA-2: real renderer execution gate example parses", (t) => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const examplePath = path.join(root, "operations", "specs", "video-orchestrator", "examples", "real-renderer-execution-gate.example.json");
+  const example = JSON.parse(fs.readFileSync(examplePath, "utf8")) as RealRendererExecutionGate;
+  assert.strictEqual(example.schema_version, "1.0");
+  assert.strictEqual(example.dry_run, true);
+  assert.strictEqual(example.real_execution_requested, false);
+  assert.ok(example.execution_constraints);
+});
+
+test("VO-5A-SCHEMA-3: real renderer execution gate example contains no forbidden strings", (t) => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const examplePath = path.join(root, "operations", "specs", "video-orchestrator", "examples", "real-renderer-execution-gate.example.json");
+  const exampleContent = fs.readFileSync(examplePath, "utf8");
+  assert.ok(!exampleContent.includes("credential_reference"));
+  // field name "child_process_allowed" is allowed; forbidden values like "child_process(" are blocked by VO-5A-CREATE-14
+  assert.ok(!exampleContent.includes("child_process("));
+  assert.ok(!exampleContent.includes("ffmpeg -version"));
+  assert.ok(!exampleContent.includes("process.env["));
+});
+
+test("VO-5A-SCHEMA-4: real renderer execution gate example contains no raw paths command lines env vars", (t) => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const examplePath = path.join(root, "operations", "specs", "video-orchestrator", "examples", "real-renderer-execution-gate.example.json");
+  const exampleContent = fs.readFileSync(examplePath, "utf8");
+  assert.ok(!exampleContent.includes("/usr/bin"));
+  assert.ok(!exampleContent.includes("/home/"));
+  assert.ok(!exampleContent.includes("~/"));
+});
+
+test("VO-5A-CREATE-5: dryRun false blocks", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+
+  assert.throws(
+    () => createRealRendererExecutionGate({ mockResult, dryRun: false as any, requestRealExecution: false }),
+    /dryRun=true/
+  );
+});
+
+test("VO-5A-CREATE-6: requestRealExecution true blocks", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+
+  assert.throws(
+    () => createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: true as any }),
+    /requestRealExecution=false/
+  );
+});
+
+test("VO-5A-CREATE-7: unsafe mock result blocks", (t) => {
+  const unsafeMockResult = { dry_run: false } as any;
+  assert.throws(
+    () => createRealRendererExecutionGate({ mockResult: unsafeMockResult, dryRun: true, requestRealExecution: false }),
+    /dry_run=true/
+  );
+});
+
+test("VO-5A-CREATE-8: safe mock result creates real execution gate", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+  assert.strictEqual(gate.schema_version, "1.0");
+  assert.strictEqual(gate.dry_run, true);
+  assert.strictEqual(gate.real_execution_requested, false);
+  assert.ok(gate.real_execution_gate_id.startsWith("real-execution-gate-"));
+});
+
+test("VO-5A-CREATE-9: real_execution_requested false", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+  assert.strictEqual(gate.real_execution_requested, false);
+});
+
+test("VO-5A-CREATE-10: explicit_operator_approval_required true", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+  assert.strictEqual(gate.explicit_operator_approval_required, true);
+});
+
+test("VO-5A-CREATE-11: every execution constraint remains false", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+
+  assert.strictEqual(gate.execution_constraints.execution_enabled, false);
+  assert.strictEqual(gate.execution_constraints.child_process_allowed, false);
+  assert.strictEqual(gate.execution_constraints.ffmpeg_execution_allowed, false);
+  assert.strictEqual(gate.execution_constraints.renderer_execution_allowed, false);
+  assert.strictEqual(gate.execution_constraints.media_creation_allowed, false);
+  assert.strictEqual(gate.execution_constraints.upload_allowed, false);
+  assert.strictEqual(gate.execution_constraints.platform_api_calls_allowed, false);
+});
+
+test("VO-5A-CREATE-12: allowed_tools remains empty", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+  assert.strictEqual(gate.execution_constraints.allowed_tools.length, 0);
+});
+
+test("VO-5A-CREATE-13: ready flags remain false", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+
+  assert.strictEqual(gate.validation.ready_for_real_execution, false);
+  assert.strictEqual(gate.validation.ready_for_render, false);
+  assert.strictEqual(gate.validation.ready_for_upload, false);
+});
+
+test("VO-5A-CREATE-14: no child_process or FFmpeg execution", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+  const gateStr = JSON.stringify(gate);
+  // field names "child_process_allowed" etc. are allowed; forbidden INVOCATIONS would be "child_process(", "spawn(", "execSync("
+  assert.ok(!gateStr.includes("child_process("));
+  assert.ok(!gateStr.includes("spawn("));
+  assert.ok(!gateStr.includes("execSync("));
+});
+
+test("VO-5A-CREATE-15: no files/directories created", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+
+  const testDir = os.tmpdir();
+  const filesBefore = fs.readdirSync(testDir).length;
+
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+
+  const filesAfter = fs.readdirSync(testDir).length;
+  assert.strictEqual(filesBefore, filesAfter, "No files should be created");
+});
+
+test("VO-5A-CREATE-16: output contains no raw command lines paths env vars", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+
+  const gateStr = JSON.stringify(gate);
+  assert.ok(!gateStr.includes("/usr/bin"));
+  assert.ok(!gateStr.includes("ffmpeg -version"));
+  assert.ok(!gateStr.includes("process.env"));
+});
+
+test("VO-5A-VALIDATE-17: safe gate validates", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+
+  const validation = validateRealRendererExecutionGate(gate);
+  assert.ok(validation.ok);
+});
+
+test("VO-5A-VALIDATE-18: dry_run false blocks", (t) => {
+  const unsafeGate = { dry_run: false } as any;
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-19: real_execution_requested true blocks", (t) => {
+  const unsafeGate = { real_execution_requested: true } as any;
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-20: explicit_operator_approval_required false blocks", (t) => {
+  const unsafeGate = { explicit_operator_approval_required: false } as any;
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-21: execution constraint true blocks", (t) => {
+  const unsafeGate = { execution_constraints: { execution_enabled: true } } as any;
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-22: allowed_tools non-empty blocks", (t) => {
+  const unsafeGate = { execution_constraints: { allowed_tools: ["ffmpeg"] } } as any;
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-23: ready_for_real_execution true blocks", (t) => {
+  const unsafeGate = { validation: { ready_for_real_execution: true } } as any;
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-24: ready_for_render true blocks", (t) => {
+  const unsafeGate = { validation: { ready_for_render: true } } as any;
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-25: ready_for_upload true blocks", (t) => {
+  const unsafeGate = { validation: { ready_for_upload: true } } as any;
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-26: forbidden key blocks without echo", (t) => {
+  const unsafeGate = { credentialReference: "secret-key" };
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+  for (const reason of result.blocking_reasons) {
+    assert.ok(!reason.includes("secret-key"), "Should not echo raw secret");
+  }
+});
+
+test("VO-5A-VALIDATE-27: forbidden string blocks without echo", (t) => {
+  const unsafeGate = { metadata: "client_secret=abc123" };
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+  for (const reason of result.blocking_reasons) {
+    assert.ok(!reason.includes("abc123"), "Should not echo raw secret");
+  }
+});
+
+test("VO-5A-VALIDATE-28: command-line-like payload blocks", (t) => {
+  const unsafeGate = { command_line: "ffmpeg -version" };
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-29: env-var-like payload blocks", (t) => {
+  const unsafeGate = { env_var: "PATH=/usr/bin" };
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-30: raw executable path blocks", (t) => {
+  const unsafeGate = { binary_path: "/usr/local/bin/ffmpeg" };
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-31: process-output-like payload blocks", (t) => {
+  const unsafeGate = { version_output: "ffmpeg version 5.0" };
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-VALIDATE-32: execution-enabling payload blocks", (t) => {
+  const unsafeGate = { execution_constraints: { execution_enabled: true } };
+  const result = validateRealRendererExecutionGate(unsafeGate);
+  assert.ok(!result.ok);
+});
+
+test("VO-5A-STORE-33: save/list/get works", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+
+  saveRealRendererExecutionGate(gate);
+  const retrieved = getRealRendererExecutionGate(gate.real_execution_gate_id);
+  assert.ok(retrieved);
+  assert.strictEqual(retrieved!.real_execution_gate_id, gate.real_execution_gate_id);
+});
+
+test("VO-5A-STORE-34: filters work", (t) => {
+  const manifest = { schema_version: "1.0", command_manifest_id: "cmd-001" } as const;
+  const preflight = { schema_version: "1.0", preflight_id: "pf-001", command_manifest_id: manifest.command_manifest_id } as const;
+  const discovery = {
+    schema_version: "1.0",
+    discovery_id: "disc-001",
+    preflight_id: preflight.preflight_id,
+    command_manifest_id: manifest.command_manifest_id,
+    project_id: "proj-001",
+    platform: "youtube" as const,
+    dry_run: true as const,
+    discovery_state: "declared" as const,
+    created_at: new Date().toISOString(),
+    discovery_mode: "declared_only" as const,
+    binary_checks: [],
+    validation: { ready_for_execution: false, ready_for_render: false, ready_for_upload: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRendererBinaryDiscovery", source_preflight_id: preflight.preflight_id, source_manifest_id: manifest.command_manifest_id },
+  };
+  const plan = createRendererVersionCheckPlan({ discovery, dryRun: true, checkMode: "planned_only" });
+  const mockResult = createMockRendererExecutionResult({ plan, dryRun: true, executionMode: "mock_only" });
+  const gate = createRealRendererExecutionGate({ mockResult, dryRun: true, requestRealExecution: false });
+
+  saveRealRendererExecutionGate(gate);
+  const filtered = listRealRendererExecutionGates({ project_id: "proj-001" });
+  assert.ok(filtered.length > 0);
+});
+
+test("VO-5A-STORE-35: store rejects unsafe gate", (t) => {
+  const unsafeGate = { dry_run: false } as any;
+  assert.throws(() => saveRealRendererExecutionGate(unsafeGate), /Cannot save gate/);
+});
+
+test("VO-5A-STORE-36: store rejects real_execution_requested true", (t) => {
+  const unsafeGate = { dry_run: true, real_execution_requested: true } as any;
+  assert.throws(() => saveRealRendererExecutionGate(unsafeGate));
+});
+
+test("VO-5A-STORE-37: store rejects execution constraints true", (t) => {
+  const unsafeGate = { dry_run: true, execution_constraints: { execution_enabled: true } } as any;
+  assert.throws(() => saveRealRendererExecutionGate(unsafeGate));
+});
+
+test("VO-5A-STORE-38: store rejects allowed_tools non-empty", (t) => {
+  const unsafeGate = { dry_run: true, execution_constraints: { allowed_tools: ["ffmpeg"] } } as any;
+  assert.throws(() => saveRealRendererExecutionGate(unsafeGate));
+});
+
+test("VO-5A-STORE-39: store rejects ready flags true", (t) => {
+  const unsafeGate = { dry_run: true, validation: { ready_for_real_execution: true } } as any;
+  assert.throws(() => saveRealRendererExecutionGate(unsafeGate));
+});
+
+test("VO-5A-REPORT-40: report counts states", (t) => {
+  const report = getRealRendererExecutionGateReport();
+  assert.ok(typeof report.total === "number");
+  assert.ok(typeof report.by_state === "object");
+  assert.ok(typeof report.blocked === "number");
+  assert.ok(typeof report.ready_for_explicit_operator_approval === "number");
+});
+
+test("VO-5A-REPORT-41: legacy unsafe runtime data does not leak", (t) => {
+  const report = getRealRendererExecutionGateReport();
+  for (const g of report.gates) {
+    assert.ok(!g.real_execution_gate_id.includes("token"));
+    assert.ok(!g.real_execution_gate_id.includes("secret"));
+  }
+});
+
+test("VO-5A-REPORT-42: JSON.stringify report contains no forbidden strings", (t) => {
+  const report = getRealRendererExecutionGateReport();
+  const reportStr = JSON.stringify(report);
+  assert.ok(!reportStr.includes("access_token"));
+  assert.ok(!reportStr.includes("client_secret"));
+});
+
+test("VO-5A-REPORT-43: report excludes raw paths commands env vars", (t) => {
+  const report = getRealRendererExecutionGateReport();
+  const reportStr = JSON.stringify(report);
+  assert.ok(!reportStr.includes("/usr/bin"));
+  assert.ok(!reportStr.includes("ffmpeg -version"));
+  assert.ok(!reportStr.includes("process.env"));
+});
+
+test("VO-5A-REPORT-44: readiness counters remain 0", (t) => {
+  const report = getRealRendererExecutionGateReport();
+  assert.strictEqual(report.ready_for_real_execution, 0);
+  assert.strictEqual(report.ready_for_render, 0);
+  assert.strictEqual(report.ready_for_upload, 0);
+});
+
+test("VO-5A-REPORT-45: real_execution_requested and execution_enabled counters remain 0", (t) => {
+  const report = getRealRendererExecutionGateReport();
+  assert.strictEqual(report.real_execution_requested, 0);
+  assert.strictEqual(report.execution_enabled, 0);
 });

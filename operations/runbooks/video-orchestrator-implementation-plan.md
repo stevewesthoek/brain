@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
-**Date:** 2026-05-12 (VO-4D Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan); detailed guide for phases 3B+  
+**Date:** 2026-05-12 (VO-5A Complete)  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -2844,6 +2844,105 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
   - File creation only when explicitly approved
   - Upload queuing only when explicitly approved
   - Requires separate gating mechanism beyond VO-4E mock execution results
+
+---
+
+## VO-5A: Real Renderer Execution Spike Gate
+
+**Purpose:** Define an explicit approval gate for hypothetical future real rendering. The gate validates preconditions from mock execution results and signals when real rendering *could* be approved if operator explicitly authorizes it. This is a planning/approval artifact only — it does NOT enable rendering; it remains behind `dry_run=true` and `real_execution_requested=false` constraints.
+
+**What it does:**
+- Defines real execution gate schema and TypeScript types
+- Creates execution gates from validated mock results
+- Checks preconditions (mock result valid, version checks safe, no credentials leaked)
+- Returns gate state indicating readiness for explicit operator approval
+- Stores and reports execution gates with safe summaries
+- Prepares explicit approval checkpoint for hypothetical future real rendering
+
+**What it does NOT do:**
+- Does NOT execute FFmpeg or any renderers
+- Does NOT run version commands or child processes
+- Does NOT create files or directories
+- Does NOT capture process output or read environment variables
+- Does NOT call platform APIs or upload
+- Does NOT enable rendering (dry_run=true, real_execution_requested=false, all execution_constraints false)
+- Does NOT approve real execution (gate_state remains "ready_for_explicit_operator_approval", not "approved")
+
+### Deliverables
+
+1. **Schema and Example** (in `operations/specs/video-orchestrator/`)
+   - `real-renderer-execution-gate.schema.json` — JSON Schema v7 with immutable constraints (dry_run=true enum, real_execution_requested=false enum, explicit_operator_approval_required=true enum, all execution_constraints false enum, all ready_for_* false enum)
+   - `examples/real-renderer-execution-gate.example.json` — Safe example showing gate_state="ready_for_explicit_operator_approval" with preconditions satisfied
+
+2. **TypeScript Types** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `type RealRendererExecutionGateState = "draft" | "blocked" | "ready_for_explicit_operator_approval" | "rejected"`
+   - `interface RealExecutionConstraintSummary` — 7 boolean fields (execution_enabled, child_process_allowed, ffmpeg_execution_allowed, renderer_execution_allowed, media_creation_allowed, upload_allowed, platform_api_calls_allowed) all false const, plus allowed_output_directory_summary and allowed_tools
+   - `interface RealExecutionPrecondition` — precondition_id, kind, satisfied, blocking_reasons, warnings
+   - `interface RealRendererExecutionGate` — full gate structure with gate_id, mock_result_id, version_check_plan_id, discovery_id, preflight_id, command_manifest_id, project_id, platform, dry_run=true, gate_state, created_at, real_execution_requested=false, explicit_operator_approval_required=true, execution_constraints, required_preconditions, validation, provenance
+   - `interface RealRendererExecutionGateValidationResult` — ok, blocking_reasons, warnings
+
+3. **Core Functions** (in `projects/probot/src/bot/video-orchestrator-jobs.ts`)
+   - `createRealRendererExecutionGate(input: {mockResult: MockRendererExecutionResult; dryRun: true; requestRealExecution: false}): RealRendererExecutionGate` — Validates mock result constraints, derives preconditions (mock_result_valid, version_checks_safe, no_credentials_leaked), returns gate with state "ready_for_explicit_operator_approval" or "blocked"
+   - `validateRealRendererExecutionGate(gate: unknown): RealRendererExecutionGateValidationResult` — Enforces schema_version, dry_run=true, real_execution_requested=false, all execution_constraints false, allowed_tools empty, all ready_for_* false, blocks execution-enabling payloads and forbidden patterns
+   - `saveRealRendererExecutionGate(gate: RealRendererExecutionGate): void` — Persists to JSON-backed local store with constraint validation
+   - `listRealRendererExecutionGates(options?: {project_id?, platform?, gate_state?, mock_result_id?, command_manifest_id?}): RealRendererExecutionGate[]` — Queries with filtering and sorting
+   - `getRealRendererExecutionGate(gate_id: string): RealRendererExecutionGate | null` — Single lookup
+   - `getRealRendererExecutionGateReport(options?: {project_id?, platform?}): {total, by_state, blocked, ready_for_approval, readiness=0, results}` — Aggregates state counts with hardcoded readiness/execution counters=0
+
+4. **Tests** (45 VO-5A tests in `projects/probot/src/bot/video-orchestrator-jobs.test.ts`)
+   - **VO-5A-SCHEMA-1 to 4:** Schema validation, example parsing, forbidden strings, no raw paths/commands/env vars/process output
+   - **VO-5A-CREATE-5 to 16:** Creation constraints (dryRun=false blocks, requestRealExecution=true blocks, unsafe mock blocks), gate derivation, flag enforcement, output safety, precondition checking
+   - **VO-5A-VALIDATE-17 to 32:** Validation enforcement, immutable flag checks (dry_run=true, real_execution_requested=false, all constraints false, allowed_tools empty, ready flags false), blocks execution-enabling payloads and forbidden patterns
+   - **VO-5A-STORE-33 to 39:** Persistence, filtering (project_id, platform, gate_state, mock_result_id, command_manifest_id), constraint enforcement, rejection of unsafe gates
+   - **VO-5A-REPORT-40 to 45:** State counting, data sanitization, hardcoded readiness counters, no raw data in output
+
+**Files Modified:**
+- `projects/probot/src/bot/video-orchestrator-jobs.ts` — Added VO-5A types, functions, stores (~650 lines)
+- `projects/probot/src/bot/video-orchestrator-jobs.test.ts` — Added 45 VO-5A tests (~1,300 lines)
+
+**New Files Created:**
+- `operations/specs/video-orchestrator/real-renderer-execution-gate.schema.json` (created)
+- `operations/specs/video-orchestrator/examples/real-renderer-execution-gate.example.json` (created)
+
+### Safety Constraints: Immutable and Verified (VO-4E + VO-5A)
+
+✅ dry_run must be true (const in types and validation)
+✅ real_execution_requested must be false (const in types and validation)
+✅ explicit_operator_approval_required must be true (const in types and validation)
+✅ execution_enabled must be false (enum in schema, const in types)
+✅ child_process_allowed must be false (enum in schema, const in types)
+✅ ffmpeg_execution_allowed must be false (enum in schema, const in types)
+✅ renderer_execution_allowed must be false (enum in schema, const in types)
+✅ media_creation_allowed must be false (enum in schema, const in types)
+✅ upload_allowed must be false (enum in schema, const in types)
+✅ platform_api_calls_allowed must be false (enum in schema, const in types)
+✅ allowed_tools must be empty (const in types)
+✅ all ready_for_* flags hardcoded to false (const in types)
+✅ No child_process execution (validation blocks it)
+✅ No FFmpeg execution
+✅ No rendering
+✅ No version command execution
+✅ No environment variable reading
+✅ No file creation
+✅ No process output capture
+✅ Validation blocks execution-enabling payloads without echoing values
+✅ Validation blocks credential patterns without echoing values
+✅ Gate remains planning-only; does not approve real execution
+
+### Backward Compatibility
+
+✅ No breaking changes to VO-3A/3B/3C/3D/3E/3F or VO-4A/4B/4C/4D/4E functions or types
+
+### Next Phase Context
+
+**VO-4E (mock results) and VO-5A (real execution gate) are complete** (mock execution results contract, real execution spike gate). Future phases will add:
+- **VO-5B: Operator Real Execution Approval** (if and when approved to proceed)
+  - Operator explicitly approves and requests real rendering
+  - Sets real_execution_requested=true in a separate approval artifact (not in this gate)
+  - FFmpeg execution only when explicitly approved and execution_constraints approved
+  - File creation only when explicitly approved
+  - Upload queuing only when explicitly approved
+  - Requires separate explicit approval beyond this gate and all prior gates
 
 ---
 

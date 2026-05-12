@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "real_execution_gate_id": "real-execution-gate-001",
+  "mock_result_id": "mock-result-001",
+  "version_check_plan_id": "version-check-plan-001",
+  "discovery_id": "renderer-binary-discovery-example-001",
+  "preflight_id": "renderer-preflight-example-001",
+  "command_manifest_id": "render-command-manifest-example-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "dry_run": true,
+  "gate_state": "ready_for_explicit_operator_approval",
+  "created_at": "2026-05-12T15:00:00Z",
+  "real_execution_requested": false,
+  "explicit_operator_approval_required": true,
+  "execution_constraints": {
+    "execution_enabled": false,
+    "child_process_allowed": false,
+    "ffmpeg_execution_allowed": false,
+    "renderer_execution_allowed": false,
+    "media_creation_allowed": false,
+    "upload_allowed": false,
+    "platform_api_calls_allowed": false,
+    "allowed_output_directory_summary": "[not-approved-yet]",
+    "allowed_tools": []
+  },
+  "required_preconditions": [
+    {
+      "precondition_id": "precondition-mock-result-valid",
+      "kind": "mock_result_valid",
+      "satisfied": true,
+      "blocking_reasons": [],
+      "warnings": []
+    },
+    {
+      "precondition_id": "precondition-version-checks-safe",
+      "kind": "version_checks_safe",
+      "satisfied": true,
+      "blocking_reasons": [],
+      "warnings": []
+    },
+    {
+      "precondition_id": "precondition-no-credentials",
+      "kind": "no_credentials_leaked",
+      "satisfied": true,
+      "blocking_reasons": [],
+      "warnings": []
+    }
+  ],
+  "validation": {
+    "ready_for_real_execution": false,
+    "ready_for_render": false,
+    "ready_for_upload": false,
+    "blocking_reasons": [],
+    "warnings": []
+  },
+  "provenance": {
+    "generated_by": "createRealRendererExecutionGate",
+    "source_mock_result_id": "mock-result-001",
+    "source_version_check_plan_id": "version-check-plan-001",
+    "source_discovery_id": "renderer-binary-discovery-example-001",
+    "source_preflight_id": "renderer-preflight-example-001",
+    "source_manifest_id": "render-command-manifest-example-001"
+  }
+}

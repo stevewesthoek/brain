@@ -6082,6 +6082,474 @@ export function getMockRendererExecutionResultReport(options?: {
   };
 }
 
+// ─── VO-5A: Real Renderer Execution Spike Gate ──────────────────────────
+
+export type RealRendererExecutionGateState = "draft" | "blocked" | "ready_for_explicit_operator_approval" | "rejected";
+
+export interface RealExecutionConstraintSummary {
+  execution_enabled: false;
+  child_process_allowed: false;
+  ffmpeg_execution_allowed: false;
+  renderer_execution_allowed: false;
+  media_creation_allowed: false;
+  upload_allowed: false;
+  platform_api_calls_allowed: false;
+  max_runtime_seconds?: number;
+  allowed_output_directory_summary: string;
+  allowed_tools: string[];
+}
+
+export interface RealExecutionPrecondition {
+  precondition_id: string;
+  kind: string;
+  satisfied: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealRendererExecutionGate {
+  schema_version: "1.0";
+  real_execution_gate_id: string;
+  mock_result_id: string;
+  version_check_plan_id: string;
+  discovery_id: string;
+  preflight_id: string;
+  command_manifest_id: string;
+  project_id: string;
+  platform: string;
+  dry_run: true;
+  gate_state: RealRendererExecutionGateState;
+  created_at: string;
+  real_execution_requested: false;
+  explicit_operator_approval_required: true;
+  execution_constraints: RealExecutionConstraintSummary;
+  required_preconditions: RealExecutionPrecondition[];
+  validation: {
+    ready_for_real_execution: false;
+    ready_for_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRealRendererExecutionGate";
+    source_mock_result_id: string;
+    source_version_check_plan_id: string;
+    source_discovery_id: string;
+    source_preflight_id: string;
+    source_manifest_id: string;
+  };
+}
+
+export interface RealRendererExecutionGateValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+interface RealRendererExecutionGatesStore {
+  gates: RealRendererExecutionGate[];
+}
+
+function getRealRendererExecutionGatesPath(): string {
+  return path.join(getRuntimeDir(), "real-renderer-execution-gates.json");
+}
+
+function loadRealRendererExecutionGatesStore(): RealRendererExecutionGatesStore {
+  const storePath = getRealRendererExecutionGatesPath();
+  if (!fs.existsSync(storePath)) {
+    return { gates: [] };
+  }
+  try {
+    const content = fs.readFileSync(storePath, "utf8");
+    return JSON.parse(content);
+  } catch (err) {
+    console.warn("Failed to parse real renderer execution gates store:", err);
+    return { gates: [] };
+  }
+}
+
+function saveRealRendererExecutionGatesStore(store: RealRendererExecutionGatesStore): void {
+  const storePath = getRealRendererExecutionGatesPath();
+  fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+}
+
+export function createRealRendererExecutionGate(input: {
+  mockResult: MockRendererExecutionResult;
+  dryRun: true;
+  requestRealExecution: false;
+}): RealRendererExecutionGate {
+  if (!input.dryRun) {
+    throw new Error("Real execution gate only supports dryRun=true");
+  }
+
+  if (input.requestRealExecution !== false) {
+    throw new Error("Real execution gate requires requestRealExecution=false");
+  }
+
+  if (!input.mockResult.dry_run) {
+    throw new Error("Mock result must have dry_run=true");
+  }
+
+  if (input.mockResult.execution_mode !== "mock_only") {
+    throw new Error("Mock result must have execution_mode=mock_only");
+  }
+
+  if (input.mockResult.output_summary.actual_output_count !== 0) {
+    throw new Error("Mock result must have actual_output_count=0");
+  }
+
+  if (input.mockResult.output_summary.output_files_created !== false) {
+    throw new Error("Mock result must have output_files_created=false");
+  }
+
+  if (input.mockResult.output_summary.media_files_created !== false) {
+    throw new Error("Mock result must have media_files_created=false");
+  }
+
+  // Verify all mock checks have correct flags
+  for (const check of input.mockResult.mock_checks) {
+    if (check.execution_allowed !== false) {
+      throw new Error("Mock check must have execution_allowed=false");
+    }
+    if (check.executable_invoked !== false) {
+      throw new Error("Mock check must have executable_invoked=false");
+    }
+    if (check.command_executed !== false) {
+      throw new Error("Mock check must have command_executed=false");
+    }
+    if (check.version_checked !== false) {
+      throw new Error("Mock check must have version_checked=false");
+    }
+    if (check.process_output_captured !== false) {
+      throw new Error("Mock check must have process_output_captured=false");
+    }
+    if (check.media_created !== false) {
+      throw new Error("Mock check must have media_created=false");
+    }
+  }
+
+  // Build preconditions from mock result
+  const preconditions: RealExecutionPrecondition[] = [
+    {
+      precondition_id: `precondition-${crypto.randomBytes(4).toString("hex")}`,
+      kind: "mock_result_valid",
+      satisfied: input.mockResult.result_state === "mock_passed",
+      blocking_reasons: input.mockResult.result_state !== "mock_passed" ? ["Mock result not in mock_passed state"] : [],
+      warnings: [],
+    },
+    {
+      precondition_id: `precondition-${crypto.randomBytes(4).toString("hex")}`,
+      kind: "version_checks_safe",
+      satisfied: input.mockResult.mock_checks.every((c) => c.blocking_reasons.length === 0),
+      blocking_reasons: input.mockResult.mock_checks.some((c) => c.blocking_reasons.length > 0)
+        ? ["Mock checks have blocking reasons"]
+        : [],
+      warnings: [],
+    },
+    {
+      precondition_id: `precondition-${crypto.randomBytes(4).toString("hex")}`,
+      kind: "no_credentials_leaked",
+      satisfied: !JSON.stringify(input.mockResult).includes("credential"),
+      blocking_reasons: JSON.stringify(input.mockResult).includes("credential")
+        ? ["Potential credential leak detected"]
+        : [],
+      warnings: [],
+    },
+  ];
+
+  // Determine gate state
+  const gate_state: RealRendererExecutionGateState = preconditions.every((p) => p.satisfied)
+    ? "ready_for_explicit_operator_approval"
+    : "blocked";
+
+  const gate: RealRendererExecutionGate = {
+    schema_version: "1.0",
+    real_execution_gate_id: `real-execution-gate-${crypto.randomBytes(8).toString("hex")}`,
+    mock_result_id: input.mockResult.mock_result_id,
+    version_check_plan_id: input.mockResult.version_check_plan_id,
+    discovery_id: input.mockResult.discovery_id,
+    preflight_id: input.mockResult.preflight_id,
+    command_manifest_id: input.mockResult.command_manifest_id,
+    project_id: input.mockResult.project_id,
+    platform: input.mockResult.platform,
+    dry_run: true,
+    gate_state,
+    created_at: new Date().toISOString(),
+    real_execution_requested: false,
+    explicit_operator_approval_required: true,
+    execution_constraints: {
+      execution_enabled: false,
+      child_process_allowed: false,
+      ffmpeg_execution_allowed: false,
+      renderer_execution_allowed: false,
+      media_creation_allowed: false,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      allowed_output_directory_summary: "[not-approved-yet]",
+      allowed_tools: [],
+    },
+    required_preconditions: preconditions,
+    validation: {
+      ready_for_real_execution: false,
+      ready_for_render: false,
+      ready_for_upload: false,
+      blocking_reasons: input.mockResult.validation.blocking_reasons,
+      warnings: input.mockResult.validation.warnings,
+    },
+    provenance: {
+      generated_by: "createRealRendererExecutionGate",
+      source_mock_result_id: input.mockResult.mock_result_id,
+      source_version_check_plan_id: input.mockResult.version_check_plan_id,
+      source_discovery_id: input.mockResult.discovery_id,
+      source_preflight_id: input.mockResult.preflight_id,
+      source_manifest_id: input.mockResult.command_manifest_id,
+    },
+  };
+
+  return gate;
+}
+
+export function validateRealRendererExecutionGate(gate: unknown): RealRendererExecutionGateValidationResult {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  if (typeof gate !== "object" || gate === null) {
+    blockingReasons.push("Gate must be an object");
+    return { ok: false, blocking_reasons: blockingReasons, warnings };
+  }
+
+  const g = gate as Record<string, unknown>;
+
+  // Required fields
+  if (g.schema_version !== "1.0") {
+    blockingReasons.push("schema_version must be '1.0'");
+  }
+  if (g.dry_run !== true) {
+    blockingReasons.push("dry_run must be true");
+  }
+  if (g.real_execution_requested !== false) {
+    blockingReasons.push("real_execution_requested must be false");
+  }
+  if (g.explicit_operator_approval_required !== true) {
+    blockingReasons.push("explicit_operator_approval_required must be true");
+  }
+
+  // Verify execution constraints all disabled
+  if (typeof g.execution_constraints === "object" && g.execution_constraints !== null) {
+    const constraints = g.execution_constraints as Record<string, unknown>;
+    if (constraints.execution_enabled !== false) blockingReasons.push("execution_enabled must be false");
+    if (constraints.child_process_allowed !== false) blockingReasons.push("child_process_allowed must be false");
+    if (constraints.ffmpeg_execution_allowed !== false) blockingReasons.push("ffmpeg_execution_allowed must be false");
+    if (constraints.renderer_execution_allowed !== false) blockingReasons.push("renderer_execution_allowed must be false");
+    if (constraints.media_creation_allowed !== false) blockingReasons.push("media_creation_allowed must be false");
+    if (constraints.upload_allowed !== false) blockingReasons.push("upload_allowed must be false");
+    if (constraints.platform_api_calls_allowed !== false) blockingReasons.push("platform_api_calls_allowed must be false");
+    if (Array.isArray(constraints.allowed_tools) && constraints.allowed_tools.length > 0) {
+      blockingReasons.push("allowed_tools must be empty");
+    }
+  }
+
+  // Verify validation flags
+  if (typeof g.validation === "object" && g.validation !== null) {
+    const val = g.validation as Record<string, unknown>;
+    if (val.ready_for_real_execution !== false) blockingReasons.push("ready_for_real_execution must be false");
+    if (val.ready_for_render !== false) blockingReasons.push("ready_for_render must be false");
+    if (val.ready_for_upload !== false) blockingReasons.push("ready_for_upload must be false");
+  }
+
+  // Forbidden patterns check
+  const forbiddenPatterns = [
+    "credential_reference",
+    "credential_reference_id",
+    "credentialReference",
+    "credentialReferenceId",
+    "keychain://",
+    "videos.insert",
+    "youtube.videos",
+    "child_process",
+    "execSync",
+    "spawn",
+    "ffmpeg -version",
+    "ffprobe",
+    "process.env",
+    "/Users/",
+    "/home/",
+    "~",
+  ];
+
+  function checkValue(val: unknown): boolean {
+    if (typeof val === "string") {
+      for (const pattern of forbiddenPatterns) {
+        if (val.includes(pattern)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    if (typeof val === "object" && val !== null) {
+      for (const key of Object.keys(val as Record<string, unknown>)) {
+        if (forbiddenPatterns.includes(key)) {
+          blockingReasons.push("Contains forbidden key");
+          return true;
+        }
+        if (checkValue((val as Record<string, unknown>)[key])) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return false;
+  }
+
+  checkValue(g);
+  if (blockingReasons.length > 0 && blockingReasons[blockingReasons.length - 1] === "Contains forbidden key") {
+    // Already added
+  } else if (checkValue(g)) {
+    blockingReasons.push("Contains forbidden patterns or values");
+  }
+
+  return {
+    ok: blockingReasons.length === 0,
+    blocking_reasons: blockingReasons,
+    warnings,
+  };
+}
+
+export function saveRealRendererExecutionGate(gate: RealRendererExecutionGate): void {
+  const validation = validateRealRendererExecutionGate(gate);
+  if (!validation.ok) {
+    throw new Error(`Cannot save gate: ${validation.blocking_reasons.join(", ")}`);
+  }
+
+  // Additional safety checks before storage
+  if (gate.dry_run !== true) {
+    throw new Error("Cannot save gate with dry_run=false");
+  }
+  if (gate.real_execution_requested !== false) {
+    throw new Error("Cannot save gate with real_execution_requested=true");
+  }
+  if (gate.execution_constraints.execution_enabled !== false) {
+    throw new Error("Cannot save gate with execution_enabled=true");
+  }
+  if (gate.validation.ready_for_real_execution !== false) {
+    throw new Error("Cannot save gate with ready_for_real_execution=true");
+  }
+
+  const store = loadRealRendererExecutionGatesStore();
+  const existingIndex = store.gates.findIndex((g) => g.real_execution_gate_id === gate.real_execution_gate_id);
+  if (existingIndex >= 0) {
+    store.gates[existingIndex] = gate;
+  } else {
+    store.gates.push(gate);
+  }
+
+  store.gates.sort((a, b) => {
+    const dateCompare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dateCompare !== 0 ? dateCompare : a.real_execution_gate_id.localeCompare(b.real_execution_gate_id);
+  });
+
+  saveRealRendererExecutionGatesStore(store);
+}
+
+export function listRealRendererExecutionGates(options?: {
+  project_id?: string;
+  platform?: string;
+  gate_state?: string;
+  mock_result_id?: string;
+  command_manifest_id?: string;
+}): RealRendererExecutionGate[] {
+  const store = loadRealRendererExecutionGatesStore();
+  let result = [...store.gates];
+
+  if (options?.project_id) {
+    result = result.filter((g) => g.project_id === options.project_id);
+  }
+
+  if (options?.platform) {
+    result = result.filter((g) => g.platform === options.platform);
+  }
+
+  if (options?.gate_state) {
+    result = result.filter((g) => g.gate_state === options.gate_state);
+  }
+
+  if (options?.mock_result_id) {
+    result = result.filter((g) => g.mock_result_id === options.mock_result_id);
+  }
+
+  if (options?.command_manifest_id) {
+    result = result.filter((g) => g.command_manifest_id === options.command_manifest_id);
+  }
+
+  return result;
+}
+
+export function getRealRendererExecutionGate(real_execution_gate_id: string): RealRendererExecutionGate | null {
+  const store = loadRealRendererExecutionGatesStore();
+  return store.gates.find((g) => g.real_execution_gate_id === real_execution_gate_id) || null;
+}
+
+export function getRealRendererExecutionGateReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  ready_for_explicit_operator_approval: number;
+  rejected: number;
+  ready_for_real_execution: 0;
+  ready_for_render: 0;
+  ready_for_upload: 0;
+  real_execution_requested: 0;
+  execution_enabled: 0;
+  gates: Array<{
+    real_execution_gate_id: string;
+    mock_result_id: string;
+    version_check_plan_id: string;
+    discovery_id: string;
+    preflight_id: string;
+    command_manifest_id: string;
+    platform: string;
+    project_id: string;
+    gate_state: string;
+    precondition_count: number;
+  }>;
+} {
+  const gates = listRealRendererExecutionGates(options);
+  const byState: Record<string, number> = {};
+
+  for (const g of gates) {
+    byState[g.gate_state] = (byState[g.gate_state] || 0) + 1;
+  }
+
+  return {
+    total: gates.length,
+    by_state: byState,
+    blocked: byState.blocked || 0,
+    ready_for_explicit_operator_approval: byState.ready_for_explicit_operator_approval || 0,
+    rejected: byState.rejected || 0,
+    ready_for_real_execution: 0,
+    ready_for_render: 0,
+    ready_for_upload: 0,
+    real_execution_requested: 0,
+    execution_enabled: 0,
+    gates: gates.map((g) => ({
+      real_execution_gate_id: sanitizeRenderPlanString(g.real_execution_gate_id, "[unsafe-id]"),
+      mock_result_id: sanitizeRenderPlanString(g.mock_result_id, "[unsafe-id]"),
+      version_check_plan_id: sanitizeRenderPlanString(g.version_check_plan_id, "[unsafe-id]"),
+      discovery_id: sanitizeRenderPlanString(g.discovery_id, "[unsafe-id]"),
+      preflight_id: sanitizeRenderPlanString(g.preflight_id, "[unsafe-id]"),
+      command_manifest_id: sanitizeRenderPlanString(g.command_manifest_id, "[unsafe-id]"),
+      platform: sanitizeRenderPlanString(g.platform, "[unsafe-platform]"),
+      project_id: sanitizeRenderPlanString(g.project_id, "[unsafe-project]"),
+      gate_state: g.gate_state,
+      precondition_count: g.required_preconditions.length,
+    })),
+  };
+}
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;

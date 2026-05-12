@@ -1,0 +1,293 @@
+{
+  "schema_version": "1.0",
+  "title": "Real Renderer Execution Spike Gate",
+  "description": "Explicit approval gate for real renderer execution. Defines the safety constraints that must be enforced if real rendering is ever approved in a future phase. This is NOT a real execution artifact — it is a planning/approval gate only. No child_process, spawn, execSync, FFmpeg execution, file creation, or process output capture. No media files created. No platform API calls. Requires explicit user approval before any real rendering can occur.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "real_execution_gate_id",
+    "mock_result_id",
+    "version_check_plan_id",
+    "discovery_id",
+    "preflight_id",
+    "command_manifest_id",
+    "project_id",
+    "platform",
+    "dry_run",
+    "gate_state",
+    "created_at",
+    "real_execution_requested",
+    "explicit_operator_approval_required",
+    "execution_constraints",
+    "required_preconditions",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version (immutable)"
+    },
+    "real_execution_gate_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Unique identifier for this real execution gate"
+    },
+    "mock_result_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source mock execution result ID"
+    },
+    "version_check_plan_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source version check plan ID"
+    },
+    "discovery_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source binary discovery artifact ID"
+    },
+    "preflight_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source preflight artifact ID"
+    },
+    "command_manifest_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Source command manifest ID"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Project identifier"
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"],
+      "description": "Target platform"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "enum": [true],
+      "description": "Must be true. Real execution gate is planning/approval only, no actual execution yet."
+    },
+    "gate_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "ready_for_explicit_operator_approval", "rejected"],
+      "description": "Real execution gate state"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "real_execution_requested": {
+      "type": "boolean",
+      "enum": [false],
+      "description": "Must be false. Gate is approval-ready, but real execution not yet requested."
+    },
+    "explicit_operator_approval_required": {
+      "type": "boolean",
+      "enum": [true],
+      "description": "Must be true. Real execution requires explicit user approval."
+    },
+    "execution_constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_enabled",
+        "child_process_allowed",
+        "ffmpeg_execution_allowed",
+        "renderer_execution_allowed",
+        "media_creation_allowed",
+        "upload_allowed",
+        "platform_api_calls_allowed",
+        "allowed_output_directory_summary",
+        "allowed_tools"
+      ],
+      "properties": {
+        "execution_enabled": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Execution not enabled until separately approved."
+        },
+        "child_process_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. child_process/spawn/execSync not allowed yet."
+        },
+        "ffmpeg_execution_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. FFmpeg execution not allowed yet."
+        },
+        "renderer_execution_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Renderer execution not allowed yet."
+        },
+        "media_creation_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Media file creation not allowed yet."
+        },
+        "upload_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Upload not allowed yet."
+        },
+        "platform_api_calls_allowed": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Platform API calls not allowed yet."
+        },
+        "max_runtime_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional maximum runtime in seconds (if set, always safe number, no configuration injection)"
+        },
+        "allowed_output_directory_summary": {
+          "type": "string",
+          "description": "Safe placeholder (never raw path). Example: '[not-approved-yet]'"
+        },
+        "allowed_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 0,
+          "description": "Must be empty. No tools enabled until separately approved."
+        }
+      },
+      "description": "Execution constraints (all disabled until separately approved)"
+    },
+    "required_preconditions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "precondition_id",
+          "kind",
+          "satisfied",
+          "blocking_reasons",
+          "warnings"
+        ],
+        "properties": {
+          "precondition_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$",
+            "description": "Unique identifier for this precondition"
+          },
+          "kind": {
+            "type": "string",
+            "description": "Kind of precondition (e.g., 'mock_result_valid', 'version_checks_safe', 'no_credentials_leaked')"
+          },
+          "satisfied": {
+            "type": "boolean",
+            "description": "Whether precondition is satisfied"
+          },
+          "blocking_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Safe blocking reason descriptions (no echo of paths/commands/env vars)"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Safe warning descriptions"
+          }
+        }
+      },
+      "description": "Preconditions that must be satisfied for real execution to be approved"
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ready_for_real_execution",
+        "ready_for_render",
+        "ready_for_upload",
+        "blocking_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "ready_for_real_execution": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Gate does not enable real execution."
+        },
+        "ready_for_render": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Gate does not enable rendering."
+        },
+        "ready_for_upload": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Must be false. Gate does not enable upload."
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Safe blocking reason descriptions"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "Safe warning descriptions"
+        }
+      },
+      "description": "Validation results"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by", "source_mock_result_id", "source_version_check_plan_id", "source_discovery_id", "source_preflight_id", "source_manifest_id"],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "const": "createRealRendererExecutionGate",
+          "description": "Function that created this artifact"
+        },
+        "source_mock_result_id": {
+          "type": "string",
+          "description": "Source mock result ID"
+        },
+        "source_version_check_plan_id": {
+          "type": "string",
+          "description": "Source version check plan ID"
+        },
+        "source_discovery_id": {
+          "type": "string",
+          "description": "Source binary discovery ID"
+        },
+        "source_preflight_id": {
+          "type": "string",
+          "description": "Source preflight ID"
+        },
+        "source_manifest_id": {
+          "type": "string",
+          "description": "Source command manifest ID"
+        }
+      },
+      "description": "Provenance information"
+    }
+  }
+}
