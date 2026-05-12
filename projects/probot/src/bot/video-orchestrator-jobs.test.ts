@@ -210,6 +210,13 @@ import {
   getPlatformUploadRequest,
   revokePlatformUploadRequest,
   getPlatformUploadRequestReport,
+  createUploadExecutionApproval,
+  validateUploadExecutionApproval,
+  saveUploadExecutionApproval,
+  listUploadExecutionApprovals,
+  getUploadExecutionApproval,
+  revokeUploadExecutionApproval,
+  getUploadExecutionApprovalReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -227,6 +234,7 @@ import {
   type LocalOutputOperatorReview,
   type UploadPackageDesign,
   type PlatformUploadRequest,
+  type UploadExecutionApproval,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -715,6 +723,46 @@ function createSafePlatformUploadRequest(
     category_summary: "education",
     visibility_summary: "unlisted",
     thumbnail_summary: "[thumbnail-design]",
+    ...overrides,
+  });
+}
+
+function createSafeUploadExecutionApproval(
+  platformUploadRequest: PlatformUploadRequest,
+  uploadPackageDesign: UploadPackageDesign,
+  localOutputReview: LocalOutputOperatorReview,
+  spikeResult: ControlledProductionRenderSpikeResult,
+  decision: "draft" | "approved_for_future_upload_execution_design" | "rejected" = "draft",
+  overrides: Partial<{
+    reviewed_by_label: string;
+    checklist_acknowledged: boolean;
+    upload_risk_acknowledged: boolean;
+    platform_request_acknowledged: boolean;
+    metadata_acknowledged: boolean;
+    output_review_acknowledged: boolean;
+    understands_no_upload_enabled: boolean;
+    understands_no_credentials_accessed: boolean;
+    understands_future_separate_execution_phase_required: boolean;
+    decision_note_summary: string;
+  }> = {}
+): UploadExecutionApproval {
+  return createUploadExecutionApproval({
+    platformUploadRequest,
+    uploadPackageDesign,
+    localOutputReview,
+    spikeResult,
+    decision,
+    dryRun: true,
+    reviewed_by_label: "operator-001",
+    checklist_acknowledged: true,
+    upload_risk_acknowledged: true,
+    platform_request_acknowledged: true,
+    metadata_acknowledged: true,
+    output_review_acknowledged: true,
+    understands_no_upload_enabled: true,
+    understands_no_credentials_accessed: true,
+    understands_future_separate_execution_phase_required: true,
+    decision_note_summary: "[upload-execution-approval]",
     ...overrides,
   });
 }
@@ -17894,6 +17942,289 @@ test("VO-7D-REPORT-90: report excludes raw paths urls account ids commands proce
 
 test("VO-7D-REPORT-91: upload api credential counters remain 0", () => {
   const report = getPlatformUploadRequestReport();
+  assert.strictEqual(report.ready_for_upload, 0);
+  assert.strictEqual(report.upload_allowed, 0);
+  assert.strictEqual(report.upload_execution_enabled, 0);
+  assert.strictEqual(report.platform_api_calls_allowed, 0);
+  assert.strictEqual(report.credentials_accessed, 0);
+  assert.strictEqual(report.token_accessed, 0);
+});
+
+test("VO-7E-SCHEMA-92: upload execution approval schema parses", () => {
+  const repo = getRepoRootForVideoOrchestratorSpecs();
+  const schemaPath = path.join(repo, "operations", "specs", "video-orchestrator", "upload-execution-approval.schema.json");
+  assert.ok(JSON.parse(fs.readFileSync(schemaPath, "utf8")));
+});
+
+test("VO-7E-SCHEMA-93: upload execution approval example parses", () => {
+  const repo = getRepoRootForVideoOrchestratorSpecs();
+  const examplePath = path.join(repo, "operations", "specs", "video-orchestrator", "examples", "upload-execution-approval.example.json");
+  assert.ok(JSON.parse(fs.readFileSync(examplePath, "utf8")));
+});
+
+test("VO-7E-SCHEMA-94: example contains no forbidden strings", () => {
+  const repo = getRepoRootForVideoOrchestratorSpecs();
+  const examplePath = path.join(repo, "operations", "specs", "video-orchestrator", "examples", "upload-execution-approval.example.json");
+  assert.strictEqual(hasForbiddenStrings(fs.readFileSync(examplePath, "utf8")), false);
+});
+
+test("VO-7E-SCHEMA-95: example contains no raw paths urls account ids commands env vars keychain refs process output media payloads upload payloads or credentials", () => {
+  const repo = getRepoRootForVideoOrchestratorSpecs();
+  const examplePath = path.join(repo, "operations", "specs", "video-orchestrator", "examples", "upload-execution-approval.example.json");
+  const text = fs.readFileSync(examplePath, "utf8");
+  assert.strictEqual(/\/Users\/|https?:\/\/|ffmpeg -i|stdout|stderr|process\.env|access_token|refresh_token|client_secret|keychain:\/\/|Bearer |videos\.insert|youtube\.videos\(\)\.insert/i.test(text), false);
+});
+
+test("VO-7E-CREATE-96: dryRun false blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    assert.throws(() => createUploadExecutionApproval({ platformUploadRequest: request, uploadPackageDesign: design, localOutputReview: review, spikeResult: spike, dryRun: false as never }));
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-CREATE-97: unsafe platform upload request blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    assert.throws(() => createUploadExecutionApproval({ platformUploadRequest: { ...request, platform_target: { ...request.platform_target, account_reference_summary: "Bearer fake-token" } } as never, uploadPackageDesign: design, localOutputReview: review, spikeResult: spike, dryRun: true }));
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-CREATE-98: draft approval can be created from safe artifacts", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "draft");
+    assert.strictEqual(approval.approval_state, "ready_for_operator_review");
+    assert.strictEqual(approval.validation.ready_for_upload, false);
+    assert.strictEqual(approval.validation.upload_allowed, false);
+    assert.strictEqual(approval.validation.platform_api_calls_allowed, false);
+    assert.strictEqual(approval.upload_execution_boundary.upload_requested, false);
+    assert.strictEqual(approval.upload_execution_boundary.upload_allowed, false);
+    assert.strictEqual(approval.upload_execution_boundary.upload_execution_enabled, false);
+    assert.strictEqual(approval.upload_execution_boundary.platform_api_calls_allowed, false);
+    assert.strictEqual(approval.upload_execution_boundary.platform_endpoint_selected, false);
+    assert.strictEqual(approval.upload_execution_boundary.raw_platform_payload_created, false);
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-CREATE-99: approved decision requires platform upload request approval", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "draft");
+    assert.throws(() => createUploadExecutionApproval({ platformUploadRequest: request, uploadPackageDesign: design, localOutputReview: review, spikeResult: spike, decision: "approved_for_future_upload_execution_design", checklist_acknowledged: true, upload_risk_acknowledged: true, platform_request_acknowledged: true, metadata_acknowledged: true, output_review_acknowledged: true, understands_no_upload_enabled: true, understands_no_credentials_accessed: true, understands_future_separate_execution_phase_required: true, dryRun: true }));
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-CREATE-100: approved decision requires acknowledgements", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    assert.throws(() => createUploadExecutionApproval({ platformUploadRequest: request, uploadPackageDesign: design, localOutputReview: review, spikeResult: spike, decision: "approved_for_future_upload_execution_design", checklist_acknowledged: true, upload_risk_acknowledged: true, platform_request_acknowledged: true, metadata_acknowledged: false, output_review_acknowledged: true, understands_no_upload_enabled: true, understands_no_credentials_accessed: true, understands_future_separate_execution_phase_required: true, dryRun: true }));
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-CREATE-101: approved decision keeps upload flags false", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "approved_for_future_upload_execution_design");
+    assert.strictEqual(approval.validation.ready_for_upload_execution_design, true);
+    assert.strictEqual(approval.validation.ready_for_upload, false);
+    assert.strictEqual(approval.validation.upload_allowed, false);
+    assert.strictEqual(approval.validation.platform_api_calls_allowed, false);
+    assert.strictEqual(approval.validation.credentials_accessed, false);
+    assert.strictEqual(approval.validation.token_accessed, false);
+    assert.strictEqual(approval.upload_execution_boundary.upload_requested, false);
+    assert.strictEqual(approval.upload_execution_boundary.upload_allowed, false);
+    assert.strictEqual(approval.upload_execution_boundary.upload_execution_enabled, false);
+    assert.strictEqual(approval.upload_execution_boundary.platform_api_calls_allowed, false);
+    assert.strictEqual(approval.upload_execution_boundary.credentials_accessed, false);
+    assert.strictEqual(approval.upload_execution_boundary.token_accessed, false);
+    assert.strictEqual(approval.upload_execution_boundary.keychain_accessed, false);
+    assert.strictEqual(approval.upload_execution_boundary.env_access_allowed, false);
+    assert.strictEqual(approval.upload_execution_boundary.platform_endpoint_selected, false);
+    assert.strictEqual(approval.upload_execution_boundary.raw_platform_payload_created, false);
+    assert.strictEqual(approval.upload_execution_boundary.max_upload_attempts, 0);
+    assert.strictEqual(approval.upload_execution_boundary.dry_run_only, true);
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-VALIDATE-102: safe approval validates", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "approved_for_future_upload_execution_design");
+    assert.ok(validateUploadExecutionApproval(approval).ok);
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-VALIDATE-103: upload_requested true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "draft");
+    assert.strictEqual(validateUploadExecutionApproval({ ...approval, upload_execution_boundary: { ...approval.upload_execution_boundary, upload_requested: true as never } }).ok, false);
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-VALIDATE-104: platform endpoint selected true blocks", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "draft");
+    assert.strictEqual(validateUploadExecutionApproval({ ...approval, upload_execution_boundary: { ...approval.upload_execution_boundary, platform_endpoint_selected: true as never } }).ok, false);
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-VALIDATE-105: raw account ids and payloads block without echo", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "draft");
+    const result = validateUploadExecutionApproval({ ...approval, operator_review: { ...approval.operator_review, decision_note_summary: "Bearer fake-token" } });
+    assert.strictEqual(result.ok, false);
+    assert.strictEqual(JSON.stringify(result).includes("Bearer fake-token"), false);
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-STORE-106: save list get upsert works", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "approved_for_future_upload_execution_design");
+    saveUploadExecutionApproval(approval);
+    assert.strictEqual(getUploadExecutionApproval(approval.upload_execution_approval_id)?.approval_state, "approved_for_future_upload_execution_design");
+    saveUploadExecutionApproval({ ...approval, approval_state: "blocked" as never });
+    assert.strictEqual(getUploadExecutionApproval(approval.upload_execution_approval_id)?.approval_state, "blocked");
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-STORE-107: filters work", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "draft");
+    saveUploadExecutionApproval(approval);
+    assert.strictEqual(listUploadExecutionApprovals({ project_id: approval.project_id }).length, 1);
+    assert.strictEqual(listUploadExecutionApprovals({ platform: approval.platform }).length, 1);
+    assert.strictEqual(listUploadExecutionApprovals({ approval_state: "ready_for_operator_review" }).length, 1);
+    assert.strictEqual(listUploadExecutionApprovals({ platform_upload_request_id: approval.platform_upload_request_id }).length, 1);
+    assert.strictEqual(listUploadExecutionApprovals({ upload_package_design_id: approval.upload_package_design_id }).length, 1);
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-STORE-108: store rejects unsafe approval", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "draft");
+    assert.throws(() => saveUploadExecutionApproval({ ...approval, operator_review: { ...approval.operator_review, reviewed_by_label: "Bearer fake-token" } } as never));
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-STORE-109: store rejects upload api credential flags true", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "draft");
+    assert.throws(() => saveUploadExecutionApproval({ ...approval, upload_execution_boundary: { ...approval.upload_execution_boundary, credentials_accessed: true as never } } as never));
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-STORE-110: revoke changes approval_state to revoked safely", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "approved_for_future_upload_execution_design");
+    saveUploadExecutionApproval(approval);
+    const revoked = revokeUploadExecutionApproval(approval.upload_execution_approval_id, "revoked safely");
+    assert.strictEqual(revoked.approval_state, "revoked");
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-REPORT-111: report counts states", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const design = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(design, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, design, review, spike, "approved_for_future_upload_execution_design");
+    saveUploadExecutionApproval(approval);
+    const report = getUploadExecutionApprovalReport({ project_id: approval.project_id, platform: approval.platform });
+    assert.ok(report.total >= 1);
+    assert.ok(report.approved_for_future_upload_execution_design >= 1);
+    assert.strictEqual(report.ready_for_upload, 0);
+    assert.strictEqual(report.upload_allowed, 0);
+    assert.strictEqual(report.upload_execution_enabled, 0);
+    assert.strictEqual(report.platform_api_calls_allowed, 0);
+    assert.strictEqual(report.credentials_accessed, 0);
+    assert.strictEqual(report.token_accessed, 0);
+  } finally { cleanupTestRuntime(tempDir); }
+});
+
+test("VO-7E-REPORT-112: legacy unsafe runtime data does not leak", () => {
+  assert.strictEqual(hasForbiddenStrings(getUploadExecutionApprovalReport()), false);
+});
+
+test("VO-7E-REPORT-113: JSON.stringify(report) contains no forbidden strings", () => {
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(getUploadExecutionApprovalReport())), false);
+});
+
+test("VO-7E-REPORT-114: report excludes raw paths urls account ids commands process output media payloads upload payloads credentials", () => {
+  const text = JSON.stringify(getUploadExecutionApprovalReport());
+  assert.strictEqual(/\/Users\/|https?:\/\/|ffmpeg -i|stdout|stderr|process\.env|access_token|refresh_token|client_secret|keychain:\/\/|Bearer |videos\.insert|youtube\.videos\(\)\.insert/i.test(text), false);
+});
+
+test("VO-7E-REPORT-115: upload api credential counters remain 0", () => {
+  const report = getUploadExecutionApprovalReport();
   assert.strictEqual(report.ready_for_upload, 0);
   assert.strictEqual(report.upload_allowed, 0);
   assert.strictEqual(report.upload_execution_enabled, 0);

@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "upload_execution_approval_id": "upload-execution-approval-001",
+  "platform_upload_request_id": "platform-upload-request-001",
+  "upload_package_design_id": "upload-package-design-001",
+  "local_output_review_id": "local-output-review-001",
+  "production_render_spike_result_id": "production-render-spike-001",
+  "final_render_execution_request_id": "final-render-execution-request-001",
+  "render_plan_id": "render-plan-control-001",
+  "project_id": "project-alpha",
+  "platform": "youtube",
+  "approval_state": "ready_for_operator_review",
+  "created_at": "2026-05-12T20:45:00Z",
+  "approval_mode": "upload_execution_approval_only",
+  "required_artifacts": {
+    "platform_upload_request_validated": true,
+    "upload_package_design_validated": true,
+    "local_output_review_validated": true,
+    "spike_result_validated": true
+  },
+  "upload_execution_boundary": {
+    "upload_requested": false,
+    "upload_allowed": false,
+    "upload_execution_enabled": false,
+    "platform_api_calls_allowed": false,
+    "resumable_upload_allowed": false,
+    "direct_upload_allowed": false,
+    "credentials_required": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "keychain_accessed": false,
+    "env_access_allowed": false,
+    "platform_endpoint_selected": false,
+    "raw_platform_payload_created": false,
+    "max_upload_attempts": 0,
+    "dry_run_only": true
+  },
+  "operator_review": {
+    "reviewed_by_label": "operator-001",
+    "checklist_acknowledged": true,
+    "upload_risk_acknowledged": true,
+    "platform_request_acknowledged": true,
+    "metadata_acknowledged": true,
+    "output_review_acknowledged": true,
+    "understands_no_upload_enabled": true,
+    "understands_no_credentials_accessed": true,
+    "understands_future_separate_execution_phase_required": true,
+    "decision_note_summary": "[upload-execution-approval-review]"
+  },
+  "validation": {
+    "ready_for_upload_execution_design": true,
+    "ready_for_upload": false,
+    "upload_allowed": false,
+    "platform_api_calls_allowed": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "blocking_reasons": [],
+    "warnings": ["No upload or platform API calls are enabled."]
+  },
+  "provenance": {
+    "generated_by": "createUploadExecutionApproval",
+    "source_platform_upload_request_id": "platform-upload-request-001",
+    "source_upload_package_design_id": "upload-package-design-001",
+    "source_local_output_review_id": "local-output-review-001",
+    "source_production_render_spike_result_id": "production-render-spike-001",
+    "source_final_render_execution_request_id": "final-render-execution-request-001",
+    "source_render_plan_id": "render-plan-control-001"
+  }
+}

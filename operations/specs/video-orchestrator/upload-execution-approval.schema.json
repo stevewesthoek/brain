@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0",
+  "title": "Upload Execution Approval",
+  "description": "Upload execution approval artifact only. This is not an upload execution result and does not permit real upload yet. It records safe summaries for future upload execution design only and does not move, copy, delete, modify, upload, or access credentials/tokens/env vars/keychain.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "upload_execution_approval_id",
+    "platform_upload_request_id",
+    "upload_package_design_id",
+    "local_output_review_id",
+    "production_render_spike_result_id",
+    "final_render_execution_request_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "approval_state",
+    "created_at",
+    "approval_mode",
+    "required_artifacts",
+    "upload_execution_boundary",
+    "operator_review",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["1.0"] },
+    "upload_execution_approval_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "platform_upload_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "upload_package_design_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "local_output_review_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "production_render_spike_result_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "final_render_execution_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "render_plan_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "project_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "platform": { "type": "string", "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"] },
+    "approval_state": { "type": "string", "enum": ["draft", "blocked", "ready_for_operator_review", "approved_for_future_upload_execution_design", "rejected", "revoked"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "approval_mode": { "type": "string", "enum": ["upload_execution_approval_only", "operator_review_upload_execution_approval"] },
+    "required_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform_upload_request_validated", "upload_package_design_validated", "local_output_review_validated", "spike_result_validated"],
+      "properties": {
+        "platform_upload_request_validated": { "type": "boolean" },
+        "upload_package_design_validated": { "type": "boolean" },
+        "local_output_review_validated": { "type": "boolean" },
+        "spike_result_validated": { "type": "boolean" }
+      }
+    },
+    "upload_execution_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["upload_requested", "upload_allowed", "upload_execution_enabled", "platform_api_calls_allowed", "resumable_upload_allowed", "direct_upload_allowed", "credentials_required", "credentials_accessed", "token_accessed", "keychain_accessed", "env_access_allowed", "platform_endpoint_selected", "raw_platform_payload_created", "max_upload_attempts", "dry_run_only"],
+      "properties": {
+        "upload_requested": { "type": "boolean", "enum": [false] },
+        "upload_allowed": { "type": "boolean", "enum": [false] },
+        "upload_execution_enabled": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] },
+        "resumable_upload_allowed": { "type": "boolean", "enum": [false] },
+        "direct_upload_allowed": { "type": "boolean", "enum": [false] },
+        "credentials_required": { "type": "boolean", "enum": [false] },
+        "credentials_accessed": { "type": "boolean", "enum": [false] },
+        "token_accessed": { "type": "boolean", "enum": [false] },
+        "keychain_accessed": { "type": "boolean", "enum": [false] },
+        "env_access_allowed": { "type": "boolean", "enum": [false] },
+        "platform_endpoint_selected": { "type": "boolean", "enum": [false] },
+        "raw_platform_payload_created": { "type": "boolean", "enum": [false] },
+        "max_upload_attempts": { "type": "integer", "minimum": 0, "maximum": 0 },
+        "dry_run_only": { "type": "boolean", "enum": [true] }
+      }
+    },
+    "operator_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checklist_acknowledged", "upload_risk_acknowledged", "platform_request_acknowledged", "metadata_acknowledged", "output_review_acknowledged", "understands_no_upload_enabled", "understands_no_credentials_accessed", "understands_future_separate_execution_phase_required"],
+      "properties": {
+        "reviewed_by_label": { "type": "string" },
+        "checklist_acknowledged": { "type": "boolean" },
+        "upload_risk_acknowledged": { "type": "boolean" },
+        "platform_request_acknowledged": { "type": "boolean" },
+        "metadata_acknowledged": { "type": "boolean" },
+        "output_review_acknowledged": { "type": "boolean" },
+        "understands_no_upload_enabled": { "type": "boolean" },
+        "understands_no_credentials_accessed": { "type": "boolean" },
+        "understands_future_separate_execution_phase_required": { "type": "boolean" },
+        "decision_note_summary": { "type": "string" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ready_for_upload_execution_design", "ready_for_upload", "upload_allowed", "platform_api_calls_allowed", "credentials_accessed", "token_accessed", "blocking_reasons", "warnings"],
+      "properties": {
+        "ready_for_upload_execution_design": { "type": "boolean" },
+        "ready_for_upload": { "type": "boolean", "enum": [false] },
+        "upload_allowed": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] },
+        "credentials_accessed": { "type": "boolean", "enum": [false] },
+        "token_accessed": { "type": "boolean", "enum": [false] },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by", "source_platform_upload_request_id", "source_upload_package_design_id", "source_local_output_review_id", "source_production_render_spike_result_id", "source_final_render_execution_request_id", "source_render_plan_id"],
+      "properties": {
+        "generated_by": { "type": "string", "enum": ["createUploadExecutionApproval", "revokeUploadExecutionApproval"] },
+        "source_platform_upload_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_upload_package_design_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_local_output_review_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_production_render_spike_result_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_final_render_execution_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "source_render_plan_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" }
+      }
+    }
+  }
+}
