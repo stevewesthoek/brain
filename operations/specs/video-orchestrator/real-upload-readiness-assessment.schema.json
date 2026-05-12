@@ -1,0 +1,224 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Video Orchestrator Real Upload Readiness Assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "real_upload_readiness_assessment_id",
+    "dry_run_upload_spike_result_id",
+    "upload_execution_design_id",
+    "upload_execution_approval_id",
+    "platform_upload_request_id",
+    "upload_package_design_id",
+    "local_output_review_id",
+    "production_render_spike_result_id",
+    "final_render_execution_request_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "assessment_state",
+    "created_at",
+    "assessment_mode",
+    "required_artifacts",
+    "readiness_summary",
+    "remaining_gates",
+    "upload_execution_boundary",
+    "credential_boundary",
+    "network_boundary",
+    "platform_boundary",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "real_upload_readiness_assessment_id": { "type": "string", "minLength": 1 },
+    "dry_run_upload_spike_result_id": { "type": "string", "minLength": 1 },
+    "upload_execution_design_id": { "type": "string", "minLength": 1 },
+    "upload_execution_approval_id": { "type": "string", "minLength": 1 },
+    "platform_upload_request_id": { "type": "string", "minLength": 1 },
+    "upload_package_design_id": { "type": "string", "minLength": 1 },
+    "local_output_review_id": { "type": "string", "minLength": 1 },
+    "production_render_spike_result_id": { "type": "string", "minLength": 1 },
+    "final_render_execution_request_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "assessment_state": { "type": "string", "enum": ["draft", "blocked", "assessed", "ready_for_operator_review", "rejected", "revoked"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "assessment_mode": { "type": "string", "enum": ["real_upload_readiness_assessment_only", "operator_review_readiness_assessment"] },
+    "required_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dry_run_upload_spike_result_validated",
+        "upload_execution_design_validated",
+        "upload_execution_approval_validated",
+        "platform_upload_request_validated",
+        "upload_package_design_validated",
+        "local_output_review_validated",
+        "spike_result_validated"
+      ],
+      "properties": {
+        "dry_run_upload_spike_result_validated": { "type": "boolean" },
+        "upload_execution_design_validated": { "type": "boolean" },
+        "upload_execution_approval_validated": { "type": "boolean" },
+        "platform_upload_request_validated": { "type": "boolean" },
+        "upload_package_design_validated": { "type": "boolean" },
+        "local_output_review_validated": { "type": "boolean" },
+        "spike_result_validated": { "type": "boolean" }
+      }
+    },
+    "readiness_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dry_run_upload_spike_passed",
+        "prior_artifacts_validated",
+        "blockers_remaining",
+        "ready_for_real_upload",
+        "ready_for_real_upload_execution_design_review",
+        "real_upload_requires_separate_explicit_phase",
+        "human_operator_required",
+        "credential_strategy_required",
+        "platform_api_strategy_required",
+        "network_execution_strategy_required",
+        "raw_media_path_strategy_required",
+        "rollback_strategy_required"
+      ],
+      "properties": {
+        "dry_run_upload_spike_passed": { "type": "boolean" },
+        "prior_artifacts_validated": { "type": "boolean" },
+        "blockers_remaining": { "type": "boolean" },
+        "ready_for_real_upload": { "type": "boolean", "const": false },
+        "ready_for_real_upload_execution_design_review": { "type": "boolean" },
+        "real_upload_requires_separate_explicit_phase": { "type": "boolean", "const": true },
+        "human_operator_required": { "type": "boolean", "const": true },
+        "credential_strategy_required": { "type": "boolean", "const": true },
+        "platform_api_strategy_required": { "type": "boolean", "const": true },
+        "network_execution_strategy_required": { "type": "boolean", "const": true },
+        "raw_media_path_strategy_required": { "type": "boolean", "const": true },
+        "rollback_strategy_required": { "type": "boolean", "const": true }
+      }
+    },
+    "remaining_gates": {
+      "type": "array",
+      "minItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["gate_id", "gate_kind", "gate_state", "safe_summary", "blocking_reasons", "warnings"],
+        "properties": {
+          "gate_id": { "type": "string", "minLength": 1 },
+          "gate_kind": { "type": "string", "minLength": 1 },
+          "gate_state": { "type": "string", "enum": ["blocked", "required", "deferred", "satisfied"] },
+          "safe_summary": { "type": "string", "minLength": 1 },
+          "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+          "warnings": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "upload_execution_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["upload_requested", "upload_allowed", "upload_execution_enabled", "real_upload_execution_allowed", "platform_api_calls_allowed", "network_calls_allowed", "resumable_upload_allowed", "direct_upload_allowed", "max_upload_attempts"],
+      "properties": {
+        "upload_requested": { "type": "boolean", "const": false },
+        "upload_allowed": { "type": "boolean", "const": false },
+        "upload_execution_enabled": { "type": "boolean", "const": false },
+        "real_upload_execution_allowed": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "resumable_upload_allowed": { "type": "boolean", "const": false },
+        "direct_upload_allowed": { "type": "boolean", "const": false },
+        "max_upload_attempts": { "type": "integer", "const": 0 }
+      }
+    },
+    "credential_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["credentials_required", "credentials_accessed", "token_accessed", "keychain_accessed", "env_accessed", "credential_reference_stored", "token_reference_stored"],
+      "properties": {
+        "credentials_required": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "keychain_accessed": { "type": "boolean", "const": false },
+        "env_accessed": { "type": "boolean", "const": false },
+        "credential_reference_stored": { "type": "boolean", "const": false },
+        "token_reference_stored": { "type": "boolean", "const": false }
+      }
+    },
+    "network_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["network_calls_allowed", "network_calls_made", "platform_api_calls_allowed", "platform_api_calls_made", "external_side_effects_allowed", "external_side_effects_observed"],
+      "properties": {
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_made": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "platform_api_calls_made": { "type": "boolean", "const": false },
+        "external_side_effects_allowed": { "type": "boolean", "const": false },
+        "external_side_effects_observed": { "type": "boolean", "const": false }
+      }
+    },
+    "platform_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform_endpoint_selected", "platform_api_payload_created", "platform_api_payload_stored", "raw_account_ids_stored"],
+      "properties": {
+        "platform_endpoint_selected": { "type": "boolean", "const": false },
+        "platform_api_payload_created": { "type": "boolean", "const": false },
+        "platform_api_payload_stored": { "type": "boolean", "const": false },
+        "raw_account_ids_stored": { "type": "boolean", "const": false },
+        "account_reference_summary": { "type": "string" },
+        "channel_or_profile_reference_summary": { "type": "string" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["real_upload_readiness_assessed", "ready_for_real_upload", "ready_for_real_upload_execution_design_review", "upload_allowed", "upload_execution_enabled", "platform_api_calls_allowed", "network_calls_allowed", "credentials_accessed", "token_accessed", "blocking_reasons", "warnings"],
+      "properties": {
+        "real_upload_readiness_assessed": { "type": "boolean" },
+        "ready_for_real_upload": { "type": "boolean", "const": false },
+        "ready_for_real_upload_execution_design_review": { "type": "boolean" },
+        "upload_allowed": { "type": "boolean", "const": false },
+        "upload_execution_enabled": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generated_by",
+        "source_dry_run_upload_spike_result_id",
+        "source_upload_execution_design_id",
+        "source_upload_execution_approval_id",
+        "source_platform_upload_request_id",
+        "source_upload_package_design_id",
+        "source_local_output_review_id",
+        "source_production_render_spike_result_id",
+        "source_final_render_execution_request_id",
+        "source_render_plan_id"
+      ],
+      "properties": {
+        "generated_by": { "type": "string" },
+        "source_dry_run_upload_spike_result_id": { "type": "string" },
+        "source_upload_execution_design_id": { "type": "string" },
+        "source_upload_execution_approval_id": { "type": "string" },
+        "source_platform_upload_request_id": { "type": "string" },
+        "source_upload_package_design_id": { "type": "string" },
+        "source_local_output_review_id": { "type": "string" },
+        "source_production_render_spike_result_id": { "type": "string" },
+        "source_final_render_execution_request_id": { "type": "string" },
+        "source_render_plan_id": { "type": "string" }
+      }
+    }
+  }
+}

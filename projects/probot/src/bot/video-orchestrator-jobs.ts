@@ -11308,6 +11308,501 @@ export function getDryRunUploadSpikeResultReport(options?: { project_id?: string
   };
 }
 
+export type RealUploadReadinessAssessmentMode = "real_upload_readiness_assessment_only" | "operator_review_readiness_assessment";
+export type RealUploadReadinessAssessmentState = "draft" | "blocked" | "assessed" | "ready_for_operator_review" | "rejected" | "revoked";
+
+export interface RealUploadReadinessRequiredArtifacts {
+  dry_run_upload_spike_result_validated: boolean;
+  upload_execution_design_validated: boolean;
+  upload_execution_approval_validated: boolean;
+  platform_upload_request_validated: boolean;
+  upload_package_design_validated: boolean;
+  local_output_review_validated: boolean;
+  spike_result_validated: boolean;
+}
+
+export interface RealUploadReadinessSummary {
+  dry_run_upload_spike_passed: boolean;
+  prior_artifacts_validated: boolean;
+  blockers_remaining: boolean;
+  ready_for_real_upload: false;
+  ready_for_real_upload_execution_design_review: boolean;
+  real_upload_requires_separate_explicit_phase: true;
+  human_operator_required: true;
+  credential_strategy_required: true;
+  platform_api_strategy_required: true;
+  network_execution_strategy_required: true;
+  raw_media_path_strategy_required: true;
+  rollback_strategy_required: true;
+}
+
+export interface RealUploadRemainingGate {
+  gate_id: string;
+  gate_kind: string;
+  gate_state: "blocked" | "required" | "deferred" | "satisfied";
+  safe_summary: string;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadExecutionBoundary {
+  upload_requested: false;
+  upload_allowed: false;
+  upload_execution_enabled: false;
+  real_upload_execution_allowed: false;
+  platform_api_calls_allowed: false;
+  network_calls_allowed: false;
+  resumable_upload_allowed: false;
+  direct_upload_allowed: false;
+  max_upload_attempts: 0;
+}
+
+export interface RealUploadReadinessCredentialBoundary {
+  credentials_required: false;
+  credentials_accessed: false;
+  token_accessed: false;
+  keychain_accessed: false;
+  env_accessed: false;
+  credential_reference_stored: false;
+  token_reference_stored: false;
+}
+
+export interface RealUploadReadinessNetworkBoundary {
+  network_calls_allowed: false;
+  network_calls_made: false;
+  platform_api_calls_allowed: false;
+  platform_api_calls_made: false;
+  external_side_effects_allowed: false;
+  external_side_effects_observed: false;
+}
+
+export interface RealUploadReadinessPlatformBoundary {
+  platform_endpoint_selected: false;
+  platform_api_payload_created: false;
+  platform_api_payload_stored: false;
+  raw_account_ids_stored: false;
+  account_reference_summary?: string;
+  channel_or_profile_reference_summary?: string;
+}
+
+export interface RealUploadReadinessAssessmentValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface RealUploadReadinessAssessment {
+  schema_version: "1.0";
+  real_upload_readiness_assessment_id: string;
+  dry_run_upload_spike_result_id: string;
+  upload_execution_design_id: string;
+  upload_execution_approval_id: string;
+  platform_upload_request_id: string;
+  upload_package_design_id: string;
+  local_output_review_id: string;
+  production_render_spike_result_id: string;
+  final_render_execution_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  assessment_state: RealUploadReadinessAssessmentState;
+  created_at: string;
+  assessment_mode: RealUploadReadinessAssessmentMode;
+  required_artifacts: RealUploadReadinessRequiredArtifacts;
+  readiness_summary: RealUploadReadinessSummary;
+  remaining_gates: RealUploadRemainingGate[];
+  upload_execution_boundary: RealUploadExecutionBoundary;
+  credential_boundary: RealUploadReadinessCredentialBoundary;
+  network_boundary: RealUploadReadinessNetworkBoundary;
+  platform_boundary: RealUploadReadinessPlatformBoundary;
+  validation: {
+    real_upload_readiness_assessed: boolean;
+    ready_for_real_upload: false;
+    ready_for_real_upload_execution_design_review: boolean;
+    upload_allowed: false;
+    upload_execution_enabled: false;
+    platform_api_calls_allowed: false;
+    network_calls_allowed: false;
+    credentials_accessed: false;
+    token_accessed: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRealUploadReadinessAssessment" | "revokeRealUploadReadinessAssessment";
+    source_dry_run_upload_spike_result_id: string;
+    source_upload_execution_design_id: string;
+    source_upload_execution_approval_id: string;
+    source_platform_upload_request_id: string;
+    source_upload_package_design_id: string;
+    source_local_output_review_id: string;
+    source_production_render_spike_result_id: string;
+    source_final_render_execution_request_id: string;
+    source_render_plan_id: string;
+  };
+}
+
+interface RealUploadReadinessAssessmentsStore {
+  schema_version: "1.0";
+  created_at: string;
+  assessments: RealUploadReadinessAssessment[];
+}
+
+function getRealUploadReadinessAssessmentsPath(): string {
+  return path.join(getRuntimeDir(), "real-upload-readiness-assessments.json");
+}
+
+function loadRealUploadReadinessAssessmentsStore(): RealUploadReadinessAssessmentsStore {
+  try {
+    const filePath = getRealUploadReadinessAssessmentsPath();
+    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as RealUploadReadinessAssessmentsStore;
+  } catch {
+    // start fresh
+  }
+  return { schema_version: "1.0", created_at: new Date().toISOString(), assessments: [] };
+}
+
+function saveRealUploadReadinessAssessmentsStore(store: RealUploadReadinessAssessmentsStore): void {
+  const filePath = getRealUploadReadinessAssessmentsPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  store.assessments.sort((a, b) => {
+    const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return compare !== 0 ? compare : a.real_upload_readiness_assessment_id.localeCompare(b.real_upload_readiness_assessment_id);
+  });
+  fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8");
+}
+
+function safeRealUploadReadinessString(value: unknown, fallback: string): string {
+  return safeUploadExecutionDesignString(value, fallback);
+}
+
+function validateRealUploadReadinessAssessmentShape(assessment: unknown): RealUploadReadinessAssessmentValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof assessment !== "object" || assessment === null) return { ok: false, blocking_reasons: ["Real upload readiness assessment must be an object"], warnings };
+  const a = assessment as Record<string, unknown>;
+  const required = ["schema_version","real_upload_readiness_assessment_id","dry_run_upload_spike_result_id","upload_execution_design_id","upload_execution_approval_id","platform_upload_request_id","upload_package_design_id","local_output_review_id","production_render_spike_result_id","final_render_execution_request_id","render_plan_id","project_id","platform","assessment_state","created_at","assessment_mode","required_artifacts","readiness_summary","remaining_gates","upload_execution_boundary","credential_boundary","network_boundary","platform_boundary","validation","provenance"];
+  for (const key of required) if (!(key in a)) blocking_reasons.push("Real upload readiness assessment is missing a required field");
+  if (a.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["real_upload_readiness_assessment_only","operator_review_readiness_assessment"].includes(String(a.assessment_mode))) blocking_reasons.push("assessment_mode is invalid");
+  if (!["draft","blocked","assessed","ready_for_operator_review","rejected","revoked"].includes(String(a.assessment_state))) blocking_reasons.push("assessment_state is invalid");
+  const text = JSON.stringify(assessment);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env") || text.includes("keychain://") || text.includes("stdout") || text.includes("stderr") || text.includes("ffmpeg -i") || text.includes("Bearer ") || text.includes("data:") || text.includes("base64,") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../")) blocking_reasons.push("Real upload readiness assessment contains forbidden payload content");
+  const requiredArtifacts = a.required_artifacts as Record<string, unknown> | undefined;
+  if (!requiredArtifacts || requiredArtifacts.dry_run_upload_spike_result_validated !== true || requiredArtifacts.upload_execution_design_validated !== true || requiredArtifacts.upload_execution_approval_validated !== true || requiredArtifacts.platform_upload_request_validated !== true || requiredArtifacts.upload_package_design_validated !== true || requiredArtifacts.local_output_review_validated !== true || requiredArtifacts.spike_result_validated !== true) blocking_reasons.push("Required artifacts are unsafe");
+  const summary = a.readiness_summary as Record<string, unknown> | undefined;
+  if (!summary || summary.dry_run_upload_spike_passed !== false && summary.dry_run_upload_spike_passed !== true || summary.prior_artifacts_validated !== false && summary.prior_artifacts_validated !== true || summary.blockers_remaining !== true || summary.ready_for_real_upload !== false || summary.ready_for_real_upload_execution_design_review !== false && summary.ready_for_real_upload_execution_design_review !== true || summary.real_upload_requires_separate_explicit_phase !== true || summary.human_operator_required !== true || summary.credential_strategy_required !== true || summary.platform_api_strategy_required !== true || summary.network_execution_strategy_required !== true || summary.raw_media_path_strategy_required !== true || summary.rollback_strategy_required !== true) blocking_reasons.push("Readiness summary is unsafe");
+  const gates = a.remaining_gates as Record<string, unknown>[] | undefined;
+  const requiredGateKinds = new Set([
+    "explicit_real_upload_execution_phase_approval",
+    "credential_access_strategy",
+    "token_keychain_env_handling_strategy",
+    "platform_api_endpoint_payload_strategy",
+    "network_call_strategy",
+    "raw_media_path_access_strategy",
+    "upload_retry_rollback_idempotency_strategy",
+    "post_upload_verification_strategy",
+    "failure_handling_strategy",
+    "manual_operator_confirmation",
+  ]);
+  if (!Array.isArray(gates) || gates.length < requiredGateKinds.size) blocking_reasons.push("Remaining gates are unsafe");
+  else {
+    const seen = new Set<string>();
+    for (const gate of gates) {
+      if (!gate || typeof gate.gate_id !== "string" || typeof gate.gate_kind !== "string" || !["blocked","required","deferred","satisfied"].includes(String(gate.gate_state)) || typeof gate.safe_summary !== "string" || !Array.isArray(gate.blocking_reasons) || !Array.isArray(gate.warnings)) {
+        blocking_reasons.push("Remaining gate is unsafe");
+        continue;
+      }
+      seen.add(String(gate.gate_kind));
+      const gateSummaryLower = gate.safe_summary.toLowerCase();
+      if (gate.safe_summary.length === 0 || gate.safe_summary.length > 160 || gateSummaryLower.includes("://") || gateSummaryLower.includes("stdout") || gateSummaryLower.includes("stderr") || gateSummaryLower.includes("process.env") || gateSummaryLower.includes("keychain://") || gateSummaryLower.includes("access_token") || gateSummaryLower.includes("refresh_token") || gateSummaryLower.includes("client_secret") || gateSummaryLower.includes("authorization_code") || gateSummaryLower.includes("code_verifier") || gateSummaryLower.includes("bearer") || gateSummaryLower.includes("../") || gateSummaryLower.includes("/users/")) blocking_reasons.push("Remaining gate summary is unsafe");
+    }
+    for (const kind of requiredGateKinds) if (!seen.has(kind)) blocking_reasons.push("Missing required remaining gate");
+  }
+  const execution = a.upload_execution_boundary as Record<string, unknown> | undefined;
+  if (!execution || execution.upload_requested !== false || execution.upload_allowed !== false || execution.upload_execution_enabled !== false || execution.real_upload_execution_allowed !== false || execution.platform_api_calls_allowed !== false || execution.network_calls_allowed !== false || execution.resumable_upload_allowed !== false || execution.direct_upload_allowed !== false || execution.max_upload_attempts !== 0) blocking_reasons.push("Upload execution boundary is unsafe");
+  const credential = a.credential_boundary as Record<string, unknown> | undefined;
+  if (!credential || credential.credentials_required !== false || credential.credentials_accessed !== false || credential.token_accessed !== false || credential.keychain_accessed !== false || credential.env_accessed !== false || credential.credential_reference_stored !== false || credential.token_reference_stored !== false) blocking_reasons.push("Credential boundary is unsafe");
+  const network = a.network_boundary as Record<string, unknown> | undefined;
+  if (!network || network.network_calls_allowed !== false || network.network_calls_made !== false || network.platform_api_calls_allowed !== false || network.platform_api_calls_made !== false || network.external_side_effects_allowed !== false || network.external_side_effects_observed !== false) blocking_reasons.push("Network boundary is unsafe");
+  const platform = a.platform_boundary as Record<string, unknown> | undefined;
+  if (!platform || platform.platform_endpoint_selected !== false || platform.platform_api_payload_created !== false || platform.platform_api_payload_stored !== false || platform.raw_account_ids_stored !== false) blocking_reasons.push("Platform boundary is unsafe");
+  if (looksLikeRawUploadPlatformId(platform?.account_reference_summary) || looksLikeRawUploadPlatformId(platform?.channel_or_profile_reference_summary)) blocking_reasons.push("Platform boundary contains unsafe account identifiers");
+  const validation = a.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.real_upload_readiness_assessed !== true && validation.real_upload_readiness_assessed !== false || validation.ready_for_real_upload !== false || validation.ready_for_real_upload_execution_design_review !== false && validation.ready_for_real_upload_execution_design_review !== true || validation.upload_allowed !== false || validation.upload_execution_enabled !== false || validation.platform_api_calls_allowed !== false || validation.network_calls_allowed !== false || validation.credentials_accessed !== false || validation.token_accessed !== false) blocking_reasons.push("Validation state is unsafe");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadReadinessAssessment(input: {
+  dryRunUploadSpikeResult: DryRunUploadSpikeResult;
+  uploadExecutionDesign: UploadExecutionDesign;
+  uploadExecutionApproval: UploadExecutionApproval;
+  platformUploadRequest: PlatformUploadRequest;
+  uploadPackageDesign: UploadPackageDesign;
+  localOutputReview: LocalOutputOperatorReview;
+  spikeResult: ControlledProductionRenderSpikeResult;
+  dryRun: true;
+}): RealUploadReadinessAssessment {
+  if (input.dryRun !== true) throw new Error("createRealUploadReadinessAssessment: dryRun=true required");
+  if (!validateDryRunUploadSpikeResult(input.dryRunUploadSpikeResult).ok) throw new Error("createRealUploadReadinessAssessment: dryRunUploadSpikeResult must validate");
+  if (!validateUploadExecutionDesign(input.uploadExecutionDesign).ok) throw new Error("createRealUploadReadinessAssessment: uploadExecutionDesign must validate");
+  if (!validateUploadExecutionApproval(input.uploadExecutionApproval).ok) throw new Error("createRealUploadReadinessAssessment: uploadExecutionApproval must validate");
+  if (!validatePlatformUploadRequest(input.platformUploadRequest).ok) throw new Error("createRealUploadReadinessAssessment: platformUploadRequest must validate");
+  if (!validateUploadPackageDesign(input.uploadPackageDesign).ok) throw new Error("createRealUploadReadinessAssessment: uploadPackageDesign must validate");
+  if (!validateLocalOutputOperatorReview(input.localOutputReview).ok) throw new Error("createRealUploadReadinessAssessment: localOutputReview must validate");
+  if (!validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("createRealUploadReadinessAssessment: spikeResult must validate");
+  if (input.uploadExecutionDesign.design_state !== "approved_for_future_dry_run_upload_spike") throw new Error("createRealUploadReadinessAssessment: uploadExecutionDesign must be approved_for_future_dry_run_upload_spike");
+  if (input.uploadExecutionApproval.approval_state !== "approved_for_future_upload_execution_design" || input.platformUploadRequest.request_state !== "approved_for_future_upload_execution" || input.uploadPackageDesign.design_state !== "approved_for_upload_request_design" || input.localOutputReview.review_state !== "approved_for_upload_design" || input.spikeResult.validation.spike_passed !== true) throw new Error("createRealUploadReadinessAssessment: source artifacts must be approved");
+  if (input.dryRunUploadSpikeResult.validation.dry_run_upload_spike_passed !== true) throw new Error("createRealUploadReadinessAssessment: dryRunUploadSpikeResult must have passed");
+  if (input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id.length === 0 || input.dryRunUploadSpikeResult.upload_execution_design_id !== input.uploadExecutionDesign.upload_execution_design_id || input.dryRunUploadSpikeResult.upload_execution_approval_id !== input.uploadExecutionApproval.upload_execution_approval_id || input.dryRunUploadSpikeResult.platform_upload_request_id !== input.platformUploadRequest.platform_upload_request_id || input.dryRunUploadSpikeResult.upload_package_design_id !== input.uploadPackageDesign.upload_package_design_id || input.dryRunUploadSpikeResult.local_output_review_id !== input.localOutputReview.local_output_review_id || input.dryRunUploadSpikeResult.production_render_spike_result_id !== input.spikeResult.production_render_spike_result_id || input.dryRunUploadSpikeResult.final_render_execution_request_id !== input.spikeResult.final_render_execution_request_id || input.dryRunUploadSpikeResult.render_plan_id !== input.spikeResult.render_plan_id || input.dryRunUploadSpikeResult.project_id !== input.spikeResult.project_id || input.dryRunUploadSpikeResult.platform !== input.spikeResult.platform) throw new Error("createRealUploadReadinessAssessment: artifacts must match");
+  const dryRunPassed = input.dryRunUploadSpikeResult.validation.dry_run_upload_spike_passed === true;
+  const readReview = dryRunPassed;
+  const gates: RealUploadRemainingGate[] = [
+    { gate_id: "real-upload-phase-approval", gate_kind: "explicit_real_upload_execution_phase_approval", gate_state: "required", safe_summary: "A separate explicit real upload execution phase must be approved before any real upload can exist.", blocking_reasons: ["Separate explicit real upload execution phase not approved."], warnings: [] },
+    { gate_id: "credential-strategy", gate_kind: "credential_access_strategy", gate_state: "required", safe_summary: "Credential access strategy is required.", blocking_reasons: ["Credential access strategy missing."], warnings: [] },
+    { gate_id: "token-keychain-env-strategy", gate_kind: "token_keychain_env_handling_strategy", gate_state: "required", safe_summary: "Token, keychain, and env handling strategy is required.", blocking_reasons: ["Token/keychain/env handling strategy missing."], warnings: [] },
+    { gate_id: "platform-api-strategy", gate_kind: "platform_api_endpoint_payload_strategy", gate_state: "required", safe_summary: "Platform API endpoint and payload strategy is required.", blocking_reasons: ["Platform API strategy missing."], warnings: [] },
+    { gate_id: "network-strategy", gate_kind: "network_call_strategy", gate_state: "required", safe_summary: "Network call strategy is required.", blocking_reasons: ["Network call strategy missing."], warnings: [] },
+    { gate_id: "raw-media-path-strategy", gate_kind: "raw_media_path_access_strategy", gate_state: "required", safe_summary: "Raw media path access strategy is required.", blocking_reasons: ["Raw media path access strategy missing."], warnings: [] },
+    { gate_id: "retry-rollback-strategy", gate_kind: "upload_retry_rollback_idempotency_strategy", gate_state: "required", safe_summary: "Upload retry, rollback, and idempotency strategy is required.", blocking_reasons: ["Retry/rollback/idempotency strategy missing."], warnings: [] },
+    { gate_id: "post-upload-verification", gate_kind: "post_upload_verification_strategy", gate_state: "required", safe_summary: "Post-upload verification strategy is required.", blocking_reasons: ["Post-upload verification strategy missing."], warnings: [] },
+    { gate_id: "failure-handling", gate_kind: "failure_handling_strategy", gate_state: "required", safe_summary: "Failure handling strategy is required.", blocking_reasons: ["Failure handling strategy missing."], warnings: [] },
+    { gate_id: "operator-confirmation", gate_kind: "manual_operator_confirmation", gate_state: "required", safe_summary: "Manual operator confirmation is required before any real upload execution can exist.", blocking_reasons: ["Manual operator confirmation missing."], warnings: [] },
+  ];
+  const assessment: RealUploadReadinessAssessment = {
+    schema_version: "1.0",
+    real_upload_readiness_assessment_id: `real-upload-readiness-${crypto.randomUUID()}`,
+    dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+    upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+    upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+    platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+    upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+    local_output_review_id: input.localOutputReview.local_output_review_id,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.spikeResult.project_id,
+    platform: input.spikeResult.platform,
+    assessment_state: dryRunPassed ? "assessed" : "blocked",
+    created_at: new Date().toISOString(),
+    assessment_mode: "real_upload_readiness_assessment_only",
+    required_artifacts: {
+      dry_run_upload_spike_result_validated: true,
+      upload_execution_design_validated: true,
+      upload_execution_approval_validated: true,
+      platform_upload_request_validated: true,
+      upload_package_design_validated: true,
+      local_output_review_validated: true,
+      spike_result_validated: true,
+    },
+    readiness_summary: {
+      dry_run_upload_spike_passed: dryRunPassed,
+      prior_artifacts_validated: true,
+      blockers_remaining: true,
+      ready_for_real_upload: false,
+      ready_for_real_upload_execution_design_review: readReview,
+      real_upload_requires_separate_explicit_phase: true,
+      human_operator_required: true,
+      credential_strategy_required: true,
+      platform_api_strategy_required: true,
+      network_execution_strategy_required: true,
+      raw_media_path_strategy_required: true,
+      rollback_strategy_required: true,
+    },
+    remaining_gates: gates,
+    upload_execution_boundary: {
+      upload_requested: false,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      real_upload_execution_allowed: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      resumable_upload_allowed: false,
+      direct_upload_allowed: false,
+      max_upload_attempts: 0,
+    },
+    credential_boundary: {
+      credentials_required: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      keychain_accessed: false,
+      env_accessed: false,
+      credential_reference_stored: false,
+      token_reference_stored: false,
+    },
+    network_boundary: {
+      network_calls_allowed: false,
+      network_calls_made: false,
+      platform_api_calls_allowed: false,
+      platform_api_calls_made: false,
+      external_side_effects_allowed: false,
+      external_side_effects_observed: false,
+    },
+    platform_boundary: {
+      platform_endpoint_selected: false,
+      platform_api_payload_created: false,
+      platform_api_payload_stored: false,
+      raw_account_ids_stored: false,
+    },
+    validation: {
+      real_upload_readiness_assessed: true,
+      ready_for_real_upload: false,
+      ready_for_real_upload_execution_design_review: readReview,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      blocking_reasons: dryRunPassed ? [] : ["Dry-run upload spike did not pass."],
+      warnings: dryRunPassed ? ["Real upload readiness assessment completed safely without upload, network, or credential access."] : ["Real upload readiness assessment blocked."],
+    },
+    provenance: {
+      generated_by: "createRealUploadReadinessAssessment",
+      source_dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+      source_upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+      source_upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+      source_platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+      source_upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+      source_local_output_review_id: input.localOutputReview.local_output_review_id,
+      source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+      source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+      source_render_plan_id: input.spikeResult.render_plan_id,
+    },
+  };
+  return assessment;
+}
+
+export function validateRealUploadReadinessAssessment(assessment: unknown): RealUploadReadinessAssessmentValidationResult {
+  const base = validateRealUploadReadinessAssessmentShape(assessment);
+  return base;
+}
+
+interface RealUploadReadinessAssessmentsStoreSummaryItem {
+  real_upload_readiness_assessment_id: string;
+  project_id: string;
+  platform: string;
+  assessment_state: string;
+  created_at: string;
+}
+
+function safeRealUploadReadinessSummary(assessment: RealUploadReadinessAssessment): RealUploadReadinessAssessmentsStoreSummaryItem {
+  return {
+    real_upload_readiness_assessment_id: safeRealUploadReadinessString(assessment.real_upload_readiness_assessment_id, "[unsafe-id]"),
+    project_id: safeRealUploadReadinessString(assessment.project_id, "[unsafe-project]"),
+    platform: safeRealUploadReadinessString(assessment.platform, "[unsafe-platform]"),
+    assessment_state: assessment.assessment_state,
+    created_at: assessment.created_at,
+  };
+}
+
+export function saveRealUploadReadinessAssessment(assessment: RealUploadReadinessAssessment): void {
+  const validation = validateRealUploadReadinessAssessment(assessment);
+  if (!validation.ok) throw new Error("Unsafe real upload readiness assessment cannot be stored.");
+  const store = loadRealUploadReadinessAssessmentsStore();
+  const existing = store.assessments.findIndex((item) => item.real_upload_readiness_assessment_id === assessment.real_upload_readiness_assessment_id);
+  if (existing >= 0) store.assessments[existing] = assessment;
+  else store.assessments.push(assessment);
+  saveRealUploadReadinessAssessmentsStore(store);
+}
+
+export function listRealUploadReadinessAssessments(options?: { project_id?: string; platform?: string; assessment_state?: string; dry_run_upload_spike_result_id?: string; upload_execution_design_id?: string }): RealUploadReadinessAssessment[] {
+  const store = loadRealUploadReadinessAssessmentsStore();
+  return store.assessments.filter((assessment) => {
+    if (options?.project_id && assessment.project_id !== options.project_id) return false;
+    if (options?.platform && assessment.platform !== options.platform) return false;
+    if (options?.assessment_state && assessment.assessment_state !== options.assessment_state) return false;
+    if (options?.dry_run_upload_spike_result_id && assessment.dry_run_upload_spike_result_id !== options.dry_run_upload_spike_result_id) return false;
+    if (options?.upload_execution_design_id && assessment.upload_execution_design_id !== options.upload_execution_design_id) return false;
+    return true;
+  }).sort((a, b) => {
+    const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return compare !== 0 ? compare : a.real_upload_readiness_assessment_id.localeCompare(b.real_upload_readiness_assessment_id);
+  });
+}
+
+export function getRealUploadReadinessAssessment(real_upload_readiness_assessment_id: string): RealUploadReadinessAssessment | null {
+  const store = loadRealUploadReadinessAssessmentsStore();
+  return store.assessments.find((assessment) => assessment.real_upload_readiness_assessment_id === real_upload_readiness_assessment_id) ?? null;
+}
+
+export function revokeRealUploadReadinessAssessment(real_upload_readiness_assessment_id: string, reason: string): RealUploadReadinessAssessment {
+  const assessment = getRealUploadReadinessAssessment(real_upload_readiness_assessment_id);
+  if (!assessment) throw new Error("Real upload readiness assessment not found");
+  const safeReason = safeRealUploadReadinessString(reason, "[unsafe-reason]");
+  if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload readiness reason cannot be stored.");
+  const revoked: RealUploadReadinessAssessment = {
+    ...assessment,
+    assessment_state: "revoked",
+    validation: { ...assessment.validation, blocking_reasons: [...assessment.validation.blocking_reasons, safeReason], warnings: [...assessment.validation.warnings, "Real upload readiness assessment revoked."] },
+    provenance: { ...assessment.provenance, generated_by: "revokeRealUploadReadinessAssessment" },
+  };
+  saveRealUploadReadinessAssessment(revoked);
+  return revoked;
+}
+
+export function getRealUploadReadinessAssessmentReport(options?: { project_id?: string; platform?: string }): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  assessed: number;
+  ready_for_operator_review: number;
+  rejected: number;
+  revoked: number;
+  ready_for_real_upload_execution_design_review: number;
+  ready_for_real_upload: 0;
+  upload_allowed: 0;
+  upload_execution_enabled: 0;
+  platform_api_calls_allowed: 0;
+  network_calls_allowed: 0;
+  credentials_accessed: 0;
+  token_accessed: 0;
+  remaining_gates_by_state: Record<string, number>;
+  assessments: Array<RealUploadReadinessAssessmentsStoreSummaryItem>;
+} {
+  const assessments = listRealUploadReadinessAssessments(options);
+  const by_state: Record<string, number> = {};
+  const remaining_gates_by_state: Record<string, number> = {};
+  let blocked = 0;
+  let assessed = 0;
+  let ready_for_operator_review = 0;
+  let rejected = 0;
+  let revoked = 0;
+  let ready_for_real_upload_execution_design_review = 0;
+  const summaries = assessments.map((assessment) => {
+    by_state[assessment.assessment_state] = (by_state[assessment.assessment_state] ?? 0) + 1;
+    if (assessment.assessment_state === "blocked") blocked++;
+    if (assessment.assessment_state === "assessed") assessed++;
+    if (assessment.assessment_state === "ready_for_operator_review") ready_for_operator_review++;
+    if (assessment.assessment_state === "rejected") rejected++;
+    if (assessment.assessment_state === "revoked") revoked++;
+    if (assessment.validation.ready_for_real_upload_execution_design_review) ready_for_real_upload_execution_design_review++;
+    for (const gate of assessment.remaining_gates) {
+      remaining_gates_by_state[gate.gate_state] = (remaining_gates_by_state[gate.gate_state] ?? 0) + 1;
+    }
+    return safeRealUploadReadinessSummary(assessment);
+  });
+  return {
+    total: summaries.length,
+    by_state,
+    blocked,
+    assessed,
+    ready_for_operator_review,
+    rejected,
+    revoked,
+    ready_for_real_upload_execution_design_review,
+    ready_for_real_upload: 0,
+    upload_allowed: 0,
+    upload_execution_enabled: 0,
+    platform_api_calls_allowed: 0,
+    network_calls_allowed: 0,
+    credentials_accessed: 0,
+    token_accessed: 0,
+    remaining_gates_by_state,
+    assessments: summaries,
+  };
+}
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {

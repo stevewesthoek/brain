@@ -1,0 +1,182 @@
+{
+  "schema_version": "1.0",
+  "real_upload_readiness_assessment_id": "real-upload-readiness-0001",
+  "dry_run_upload_spike_result_id": "dry-run-upload-spike-0001",
+  "upload_execution_design_id": "upload-execution-design-0001",
+  "upload_execution_approval_id": "upload-execution-approval-0001",
+  "platform_upload_request_id": "platform-upload-request-0001",
+  "upload_package_design_id": "upload-package-design-0001",
+  "local_output_review_id": "local-output-review-0001",
+  "production_render_spike_result_id": "production-render-spike-0001",
+  "final_render_execution_request_id": "final-render-execution-request-0001",
+  "render_plan_id": "render-plan-0001",
+  "project_id": "project-0001",
+  "platform": "youtube",
+  "assessment_state": "assessed",
+  "created_at": "2026-05-12T00:00:00.000Z",
+  "assessment_mode": "real_upload_readiness_assessment_only",
+  "required_artifacts": {
+    "dry_run_upload_spike_result_validated": true,
+    "upload_execution_design_validated": true,
+    "upload_execution_approval_validated": true,
+    "platform_upload_request_validated": true,
+    "upload_package_design_validated": true,
+    "local_output_review_validated": true,
+    "spike_result_validated": true
+  },
+  "readiness_summary": {
+    "dry_run_upload_spike_passed": true,
+    "prior_artifacts_validated": true,
+    "blockers_remaining": true,
+    "ready_for_real_upload": false,
+    "ready_for_real_upload_execution_design_review": true,
+    "real_upload_requires_separate_explicit_phase": true,
+    "human_operator_required": true,
+    "credential_strategy_required": true,
+    "platform_api_strategy_required": true,
+    "network_execution_strategy_required": true,
+    "raw_media_path_strategy_required": true,
+    "rollback_strategy_required": true
+  },
+  "remaining_gates": [
+    {
+      "gate_id": "real-upload-phase-approval",
+      "gate_kind": "explicit_real_upload_execution_phase_approval",
+      "gate_state": "required",
+      "safe_summary": "Separate explicit real upload execution phase required before any real upload can exist.",
+      "blocking_reasons": ["Not approved."],
+      "warnings": []
+    },
+    {
+      "gate_id": "credential-strategy",
+      "gate_kind": "credential_access_strategy",
+      "gate_state": "required",
+      "safe_summary": "Credential access strategy required.",
+      "blocking_reasons": ["Not defined."],
+      "warnings": []
+    },
+    {
+      "gate_id": "token-keychain-env-strategy",
+      "gate_kind": "token_keychain_env_handling_strategy",
+      "gate_state": "required",
+      "safe_summary": "Token, keychain, and env handling strategy required.",
+      "blocking_reasons": ["Not defined."],
+      "warnings": []
+    },
+    {
+      "gate_id": "platform-api-strategy",
+      "gate_kind": "platform_api_endpoint_payload_strategy",
+      "gate_state": "required",
+      "safe_summary": "Platform API endpoint and payload strategy required.",
+      "blocking_reasons": ["Not defined."],
+      "warnings": []
+    },
+    {
+      "gate_id": "network-strategy",
+      "gate_kind": "network_call_strategy",
+      "gate_state": "required",
+      "safe_summary": "Network call strategy required.",
+      "blocking_reasons": ["Not defined."],
+      "warnings": []
+    },
+    {
+      "gate_id": "raw-media-path-strategy",
+      "gate_kind": "raw_media_path_access_strategy",
+      "gate_state": "required",
+      "safe_summary": "Raw media path access strategy required.",
+      "blocking_reasons": ["Not defined."],
+      "warnings": []
+    },
+    {
+      "gate_id": "retry-rollback-strategy",
+      "gate_kind": "upload_retry_rollback_idempotency_strategy",
+      "gate_state": "required",
+      "safe_summary": "Retry, rollback, and idempotency strategy required.",
+      "blocking_reasons": ["Not defined."],
+      "warnings": []
+    },
+    {
+      "gate_id": "post-upload-verification",
+      "gate_kind": "post_upload_verification_strategy",
+      "gate_state": "required",
+      "safe_summary": "Post-upload verification strategy required.",
+      "blocking_reasons": ["Not defined."],
+      "warnings": []
+    },
+    {
+      "gate_id": "failure-handling",
+      "gate_kind": "failure_handling_strategy",
+      "gate_state": "required",
+      "safe_summary": "Failure handling strategy required.",
+      "blocking_reasons": ["Not defined."],
+      "warnings": []
+    },
+    {
+      "gate_id": "operator-confirmation",
+      "gate_kind": "manual_operator_confirmation",
+      "gate_state": "required",
+      "safe_summary": "Manual operator confirmation required.",
+      "blocking_reasons": ["Not defined."],
+      "warnings": []
+    }
+  ],
+  "upload_execution_boundary": {
+    "upload_requested": false,
+    "upload_allowed": false,
+    "upload_execution_enabled": false,
+    "real_upload_execution_allowed": false,
+    "platform_api_calls_allowed": false,
+    "network_calls_allowed": false,
+    "resumable_upload_allowed": false,
+    "direct_upload_allowed": false,
+    "max_upload_attempts": 0
+  },
+  "credential_boundary": {
+    "credentials_required": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "keychain_accessed": false,
+    "env_accessed": false,
+    "credential_reference_stored": false,
+    "token_reference_stored": false
+  },
+  "network_boundary": {
+    "network_calls_allowed": false,
+    "network_calls_made": false,
+    "platform_api_calls_allowed": false,
+    "platform_api_calls_made": false,
+    "external_side_effects_allowed": false,
+    "external_side_effects_observed": false
+  },
+  "platform_boundary": {
+    "platform_endpoint_selected": false,
+    "platform_api_payload_created": false,
+    "platform_api_payload_stored": false,
+    "raw_account_ids_stored": false
+  },
+  "validation": {
+    "real_upload_readiness_assessed": true,
+    "ready_for_real_upload": false,
+    "ready_for_real_upload_execution_design_review": true,
+    "upload_allowed": false,
+    "upload_execution_enabled": false,
+    "platform_api_calls_allowed": false,
+    "network_calls_allowed": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "blocking_reasons": [],
+    "warnings": ["Readiness assessment completed safely."]
+  },
+  "provenance": {
+    "generated_by": "createRealUploadReadinessAssessment",
+    "source_dry_run_upload_spike_result_id": "dry-run-upload-spike-0001",
+    "source_upload_execution_design_id": "upload-execution-design-0001",
+    "source_upload_execution_approval_id": "upload-execution-approval-0001",
+    "source_platform_upload_request_id": "platform-upload-request-0001",
+    "source_upload_package_design_id": "upload-package-design-0001",
+    "source_local_output_review_id": "local-output-review-0001",
+    "source_production_render_spike_result_id": "production-render-spike-0001",
+    "source_final_render_execution_request_id": "final-render-execution-request-0001",
+    "source_render_plan_id": "render-plan-0001"
+  }
+}
