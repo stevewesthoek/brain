@@ -175,6 +175,13 @@ import {
   getOutputDirectoryApproval,
   revokeOutputDirectoryApproval,
   getOutputDirectoryApprovalReport,
+  createFinalProductionRenderExecutionRequest,
+  validateFinalProductionRenderExecutionRequest,
+  saveFinalProductionRenderExecutionRequest,
+  listFinalProductionRenderExecutionRequests,
+  getFinalProductionRenderExecutionRequest,
+  revokeFinalProductionRenderExecutionRequest,
+  getFinalProductionRenderExecutionRequestReport,
   type RealRendererExecutionApproval,
   type RealRendererExecutionApprovalState,
   type RealRendererExecutionApprovalScope,
@@ -187,6 +194,7 @@ import {
   type ControlledProductionRenderRequestValidationResult,
   type SourceMediaInventory,
   type OutputDirectoryApproval,
+  type FinalProductionRenderExecutionRequest,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -396,6 +404,38 @@ function createSafeOutputDirectoryApproval(
   operatorApproved = false
 ): OutputDirectoryApproval {
   return createOutputDirectoryApproval({ request, inventory, outputDirectory, approvalMode, ...(baseDir ? { baseDir } : {}), operatorApproved });
+}
+
+function createSafeFinalProductionRenderExecutionRequest(
+  decision: "draft" | "approved_for_future_execution_spike" | "rejected" = "draft",
+  overrides: Partial<{
+    reviewed_by_label: string;
+    checklist_acknowledged: boolean;
+    risk_acknowledgement: boolean;
+    understands_no_execution_enabled: boolean;
+    understands_no_upload_enabled: boolean;
+    decision_note_summary: string;
+  }> = {}
+): FinalProductionRenderExecutionRequest {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  const realExecutionApproval = createSafeControlledProductionApproval();
+  const commandManifest = createSafeControlledProductionCommandManifest();
+  const approvedReviewLabel = decision === "approved_for_future_execution_spike" ? "operator-001" : undefined;
+  return createFinalProductionRenderExecutionRequest({
+    productionRequest: request,
+    sourceInventory: inventory,
+    outputApproval,
+    realExecutionApproval,
+    commandManifest,
+    decision,
+    reviewed_by_label: approvedReviewLabel,
+    dryRun: true,
+    ...overrides,
+  });
 }
 
 test("VO-J1: Create scheduled job", (t) => {
@@ -15775,4 +15815,405 @@ test("VO-6D-REPORT-53: readiness write media counters remain 0", () => {
   assert.strictEqual(report.ready_for_upload, 0);
   assert.strictEqual(report.output_write_allowed, 0);
   assert.strictEqual(report.media_creation_allowed, 0);
+});
+
+// ─── VO-6E: Final Production Render Execution Request Tests ─────────────────
+
+function loadFinalProductionRenderExecutionRequestExample(): FinalProductionRenderExecutionRequest {
+  const examplePath = path.resolve(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/examples/final-production-render-execution-request.example.json");
+  return JSON.parse(fs.readFileSync(examplePath, "utf8")) as FinalProductionRenderExecutionRequest;
+}
+
+test("VO-6E-SCHEMA-1: final request schema parses", () => {
+  const schemaPath = path.resolve(getRepoRootForVideoOrchestratorSpecs(), "operations/specs/video-orchestrator/final-production-render-execution-request.schema.json");
+  const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+  assert.ok(schema);
+});
+
+test("VO-6E-SCHEMA-2: example parses", () => {
+  const example = loadFinalProductionRenderExecutionRequestExample();
+  assert.strictEqual(example.schema_version, "1.0");
+});
+
+test("VO-6E-SCHEMA-3: example contains no forbidden strings", () => {
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(loadFinalProductionRenderExecutionRequestExample())), false);
+});
+
+test("VO-6E-SCHEMA-4: example contains no raw paths urls commands env vars process output media payloads upload payloads or credentials", () => {
+  const text = JSON.stringify(loadFinalProductionRenderExecutionRequestExample());
+  assert.strictEqual(/\/Users\/|https?:\/\/|stdout|stderr|ffmpeg -i|access_token|refresh_token|client_secret|videos.insert|youtube.videos\(\)\.insert|data=|payload/i.test(text), false);
+});
+
+test("VO-6E-CREATE-5: dryRun=false blocks", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest: request, sourceInventory: inventory, outputApproval, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "draft", dryRun: false as never }));
+});
+
+test("VO-6E-CREATE-6: unsafe production request blocks", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest: { ...request, validation: { ...request.validation, ready_for_production_render: true as never } }, sourceInventory: inventory, outputApproval, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "draft", dryRun: true }));
+});
+
+test("VO-6E-CREATE-7: unsafe source inventory blocks", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest: request, sourceInventory: { ...inventory, validation: { ...inventory.validation, ready_for_production_render: true as never } }, outputApproval, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "draft", dryRun: true }));
+});
+
+test("VO-6E-CREATE-8: unsafe output approval blocks", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest: request, sourceInventory: inventory, outputApproval: { ...outputApproval, approval_state: "blocked" as never }, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "draft", dryRun: true }));
+});
+
+test("VO-6E-CREATE-9: unsafe real execution approval blocks", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest: request, sourceInventory: inventory, outputApproval, realExecutionApproval: { ...approval, approval_state: "draft" as never }, commandManifest: createSafeControlledProductionCommandManifest(), decision: "draft", dryRun: true }));
+});
+
+test("VO-6E-CREATE-10: unsafe command manifest blocks", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest: request, sourceInventory: inventory, outputApproval, realExecutionApproval: approval, commandManifest: { ...createSafeControlledProductionCommandManifest(), command_manifest_id: "different" as never }, decision: "draft", dryRun: true }));
+});
+
+test("VO-6E-CREATE-11: mismatched IDs block", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest: request, sourceInventory: { ...inventory, render_plan_id: "other" as never }, outputApproval, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "draft", dryRun: true }));
+});
+
+test("VO-6E-CREATE-12: draft request can be created from safe artifacts", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest("draft");
+  assert.strictEqual(request.request_state, "draft");
+});
+
+test("VO-6E-CREATE-13: approved decision requires output approval approved_for_future_render_output", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: false });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest: request, sourceInventory: inventory, outputApproval, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "approved_for_future_execution_spike", checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, dryRun: true }));
+});
+
+test("VO-6E-CREATE-14: approved decision requires real execution approval approved_for_future_real_execution_request", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const request = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(request, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest: request, sourceInventory: inventory, outputApproval, realExecutionApproval: { ...approval, approval_state: "draft" as never }, commandManifest: createSafeControlledProductionCommandManifest(), decision: "approved_for_future_execution_spike", checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, dryRun: true }));
+});
+
+test("VO-6E-CREATE-15: approved decision requires checklist acknowledgement", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest("draft");
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const productionRequest = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(productionRequest, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request: productionRequest, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest, sourceInventory: inventory, outputApproval, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "approved_for_future_execution_spike", risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, dryRun: true }));
+  assert.strictEqual(request.request_state, "draft");
+});
+
+test("VO-6E-CREATE-16: approved decision requires risk acknowledgement", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const productionRequest = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(productionRequest, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request: productionRequest, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest, sourceInventory: inventory, outputApproval, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "approved_for_future_execution_spike", checklist_acknowledged: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, dryRun: true }));
+});
+
+test("VO-6E-CREATE-17: approved decision requires understands_no_execution_enabled", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const productionRequest = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(productionRequest, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request: productionRequest, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest, sourceInventory: inventory, outputApproval, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "approved_for_future_execution_spike", checklist_acknowledged: true, risk_acknowledgement: true, understands_no_upload_enabled: true, dryRun: true }));
+});
+
+test("VO-6E-CREATE-18: approved decision requires understands_no_upload_enabled", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const productionRequest = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(productionRequest, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request: productionRequest, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest, sourceInventory: inventory, outputApproval, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "approved_for_future_execution_spike", checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, dryRun: true }));
+});
+
+test("VO-6E-CREATE-19: approved_for_future_execution_spike keeps all execution write upload permissions false", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true });
+  assert.strictEqual(request.execution_boundary.execution_enabled, false);
+  assert.strictEqual(request.execution_boundary.output_directory_write_allowed, false);
+  assert.strictEqual(request.execution_boundary.upload_allowed, false);
+});
+
+test("VO-6E-CREATE-20: ready flags remain false", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(request.validation.ready_for_production_render, false);
+  assert.strictEqual(request.validation.ready_for_upload, false);
+});
+
+test("VO-6E-CREATE-21: no directory file media is created", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(request.execution_boundary.output_directory_write_allowed, false);
+});
+
+test("VO-6E-CREATE-22: no render copy transcode upload or API execution", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(request.execution_boundary.ffmpeg_execution_allowed, false);
+  assert.strictEqual(request.execution_boundary.upload_allowed, false);
+  assert.strictEqual(request.execution_boundary.platform_api_calls_allowed, false);
+});
+
+test("VO-6E-CREATE-23: unsafe review label or note blocks without echo", () => {
+  const approval = createSafeControlledProductionApproval();
+  const renderPlan = createSafeControlledProductionRenderPlan();
+  const productionRequest = createControlledProductionRenderRequest({ approval, plan: renderPlan, commandManifest: createSafeControlledProductionCommandManifest(), dryRun: true });
+  const inventory = createSafeSourceMediaInventory(productionRequest, renderPlan);
+  const outputApproval = createOutputDirectoryApproval({ request: productionRequest, inventory, outputDirectory: "renders/approved-output", approvalMode: "operator_review_only", operatorApproved: true });
+  assert.throws(() => createFinalProductionRenderExecutionRequest({ productionRequest, sourceInventory: inventory, outputApproval, realExecutionApproval: approval, commandManifest: createSafeControlledProductionCommandManifest(), decision: "approved_for_future_execution_spike", reviewed_by_label: "Bearer fake-token", checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true, decision_note_summary: "videos.insert", dryRun: true }));
+});
+
+test("VO-6E-VALIDATE-24: safe request validates", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest("approved_for_future_execution_spike", { checklist_acknowledged: true, risk_acknowledgement: true, understands_no_execution_enabled: true, understands_no_upload_enabled: true });
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest(request).ok, true);
+});
+
+test("VO-6E-VALIDATE-25: execution_enabled true blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, execution_enabled: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-26: child_process_allowed true blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, child_process_allowed: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-27: ffmpeg_execution_allowed true blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, ffmpeg_execution_allowed: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-28: output_directory_write_allowed true blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, output_directory_write_allowed: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-29: media_creation_allowed true blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, media_creation_allowed: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-30: upload_allowed true blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, upload_allowed: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-31: platform_api_calls_allowed true blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, platform_api_calls_allowed: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-32: source media mutation copy transcode true blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, source_media_mutation_allowed: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-33: ready_for_production_render true blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, validation: { ...request.validation, ready_for_production_render: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-34: ready_for_upload true blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, validation: { ...request.validation, ready_for_upload: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-35: forbidden key blocks without echo", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  const validation = validateFinalProductionRenderExecutionRequest({ ...request, provenance: { ...request.provenance, source_manifest_id: "credential_reference-secret" as never } });
+  assert.strictEqual(validation.ok, false);
+  assert.strictEqual(hasForbiddenStrings(validation.blocking_reasons.join(" ")), false);
+});
+
+test("VO-6E-VALIDATE-36: forbidden string blocks without echo", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, operator_review: { ...request.operator_review, decision_note_summary: "Bearer fake-token" } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-37: raw path blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, provenance: { ...request.provenance, source_output_directory_approval_id: "/Users/office/private-output" } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-38: URL blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, operator_review: { ...request.operator_review, decision_note_summary: "https://example.com" } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-39: traversal blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, provenance: { ...request.provenance, source_output_directory_approval_id: "../secret" } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-40: command-line-like payload blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, operator_review: { ...request.operator_review, decision_note_summary: "ffmpeg -i secret" } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-41: command argument array blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, provenance: { ...request.provenance, source_manifest_id: "[]" } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-42: process-output-like payload blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, operator_review: { ...request.operator_review, decision_note_summary: "stdout stderr" } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-43: env-var-like payload blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, operator_review: { ...request.operator_review, decision_note_summary: "process.env[SECRET]" } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-44: media payload blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, provenance: { ...request.provenance, source_manifest_id: "data=raw" } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-45: upload/API payload blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, provenance: { ...request.provenance, generated_by: "videos.insert" } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-46: write-enabled payload blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, output_directory_write_allowed: true as never } }).ok, false);
+});
+
+test("VO-6E-VALIDATE-47: execution-enabled payload blocks", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.strictEqual(validateFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, execution_enabled: true as never } }).ok, false);
+});
+
+test("VO-6E-STORE-48: save list get upsert works", (t) => {
+  const tempDir = setupTestRuntime();
+  try {
+    const request = createSafeFinalProductionRenderExecutionRequest();
+    saveFinalProductionRenderExecutionRequest(request);
+    assert.ok(getFinalProductionRenderExecutionRequest(request.final_render_execution_request_id));
+    saveFinalProductionRenderExecutionRequest({ ...request, request_state: "blocked" as FinalProductionRenderExecutionRequest["request_state"] });
+    assert.strictEqual(getFinalProductionRenderExecutionRequest(request.final_render_execution_request_id)?.request_state, "blocked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6E-STORE-49: filters work", () => {
+  const report = getFinalProductionRenderExecutionRequestReport({ project_id: "project-alpha", platform: "youtube" });
+  assert.ok(report.total >= 0);
+});
+
+test("VO-6E-STORE-50: store rejects unsafe request", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.throws(() => saveFinalProductionRenderExecutionRequest({ ...request, operator_review: { ...request.operator_review, decision_note_summary: "Bearer fake-token" } } as never));
+});
+
+test("VO-6E-STORE-51: store rejects execution write upload API flags true", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.throws(() => saveFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, upload_allowed: true as never } } as never));
+});
+
+test("VO-6E-STORE-52: store rejects source mutation copy transcode true", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.throws(() => saveFinalProductionRenderExecutionRequest({ ...request, execution_boundary: { ...request.execution_boundary, source_media_copy_allowed: true as never } } as never));
+});
+
+test("VO-6E-STORE-53: store rejects ready flags true", () => {
+  const request = createSafeFinalProductionRenderExecutionRequest();
+  assert.throws(() => saveFinalProductionRenderExecutionRequest({ ...request, validation: { ...request.validation, ready_for_upload: true as never } } as never));
+});
+
+test("VO-6E-STORE-54: revoke changes request_state to revoked safely", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const request = createSafeFinalProductionRenderExecutionRequest();
+    saveFinalProductionRenderExecutionRequest(request);
+    const revoked = revokeFinalProductionRenderExecutionRequest(request.final_render_execution_request_id, "operator revoked");
+    assert.strictEqual(revoked.request_state, "revoked");
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6E-STORE-55: revoke unsafe reason blocks or sanitizes without echo", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const request = createSafeFinalProductionRenderExecutionRequest();
+    saveFinalProductionRenderExecutionRequest(request);
+    assert.throws(() => revokeFinalProductionRenderExecutionRequest(request.final_render_execution_request_id, "Bearer fake-token"));
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-6E-REPORT-56: report counts states", () => {
+  const report = getFinalProductionRenderExecutionRequestReport();
+  assert.ok(report.total >= 0);
+  assert.ok(report.ready_for_production_render === 0);
+  assert.ok(report.ready_for_upload === 0);
+});
+
+test("VO-6E-REPORT-57: legacy unsafe runtime data does not leak", () => {
+  const report = getFinalProductionRenderExecutionRequestReport();
+  assert.strictEqual(hasForbiddenStrings(report), false);
+});
+
+test("VO-6E-REPORT-58: JSON.stringify(report) contains no forbidden strings", () => {
+  const report = getFinalProductionRenderExecutionRequestReport();
+  assert.strictEqual(hasForbiddenStrings(JSON.stringify(report)), false);
+});
+
+test("VO-6E-REPORT-59: report excludes raw paths urls commands process output media payloads upload payloads", () => {
+  const report = getFinalProductionRenderExecutionRequestReport();
+  const text = JSON.stringify(report);
+  assert.strictEqual(/\/Users\/|https?:\/\/|stdout|stderr|ffmpeg -i|data=|videos.insert|youtube.videos\(\)\.insert|access_token|refresh_token|client_secret/i.test(text), false);
+});
+
+test("VO-6E-REPORT-60: readiness execution write media upload counters remain 0", () => {
+  const report = getFinalProductionRenderExecutionRequestReport();
+  assert.strictEqual(report.ready_for_production_render, 0);
+  assert.strictEqual(report.ready_for_upload, 0);
+  assert.strictEqual(report.execution_enabled, 0);
+  assert.strictEqual(report.output_directory_write_allowed, 0);
+  assert.strictEqual(report.media_creation_allowed, 0);
+  assert.strictEqual(report.upload_allowed, 0);
 });

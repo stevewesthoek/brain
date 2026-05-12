@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
 **Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D in progress (output directory approval and write boundary); detailed guide for phases 3B+  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E in progress (final production render execution request); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -100,6 +100,26 @@ This phase approves a future output boundary only and keeps writing disabled.
 
 **Next phase guidance**
 - If approved, the next step may add a final production render execution request while keeping upload capability separate.
+
+### VO-6E: Final Production Render Execution Request
+
+This phase composes the final operator-reviewed request from all prior artifacts without enabling execution.
+
+**What it does**
+- Introduces a final execution-request artifact for operator review.
+- Ties together the production request, source inventory, output approval, command manifest, and real execution approval.
+- Stores only safe summaries with immutable false execution/write/upload flags.
+
+**What it does not do**
+- Does not create directories.
+- Does not write files.
+- Does not render.
+- Does not mutate, copy, or transcode source media.
+- Does not upload.
+- Does not call platform APIs.
+
+**Next phase guidance**
+- If approved later, the next step may be a narrowly scoped production render spike, but only after a separate explicit approval.
 
 ---
 

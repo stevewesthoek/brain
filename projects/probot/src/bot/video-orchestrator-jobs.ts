@@ -7820,6 +7820,378 @@ export function getOutputDirectoryApprovalReport(options?: {
   };
 }
 
+export type FinalProductionRenderExecutionRequestState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_execution_spike" | "rejected" | "revoked";
+
+export type FinalProductionRenderExecutionMode = "final_production_render_execution_request";
+
+export interface FinalRenderRequiredArtifacts {
+  production_render_request_validated: boolean;
+  source_media_inventory_validated: boolean;
+  output_directory_approval_validated: boolean;
+  real_execution_approval_validated: boolean;
+  command_manifest_validated: boolean;
+}
+
+export interface FinalRenderExecutionBoundary {
+  real_execution_requested: false;
+  execution_enabled: false;
+  child_process_allowed: false;
+  ffmpeg_execution_allowed: false;
+  renderer_execution_allowed: false;
+  source_media_read_allowed: true;
+  source_media_mutation_allowed: false;
+  source_media_copy_allowed: false;
+  source_media_transcode_allowed: false;
+  output_directory_write_allowed: false;
+  media_creation_allowed: false;
+  upload_allowed: false;
+  platform_api_calls_allowed: false;
+  env_access_allowed: false;
+  process_output_capture_allowed: false;
+  raw_command_storage_allowed: false;
+}
+
+export interface FinalRenderOperatorReview {
+  reviewed_by_label?: string;
+  checklist_acknowledged: boolean;
+  risk_acknowledgement: boolean;
+  understands_no_execution_enabled: boolean;
+  understands_no_upload_enabled: boolean;
+  decision_note_summary?: string;
+}
+
+export interface FinalProductionRenderExecutionRequestValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export interface FinalProductionRenderExecutionRequest {
+  schema_version: "1.0";
+  final_render_execution_request_id: string;
+  production_render_request_id: string;
+  source_media_inventory_id: string;
+  output_directory_approval_id: string;
+  real_execution_approval_id: string;
+  command_manifest_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  request_state: FinalProductionRenderExecutionRequestState;
+  created_at: string;
+  execution_mode: FinalProductionRenderExecutionMode;
+  required_artifacts: FinalRenderRequiredArtifacts;
+  execution_boundary: FinalRenderExecutionBoundary;
+  operator_review: FinalRenderOperatorReview;
+  validation: {
+    ready_for_production_render: false;
+    ready_for_upload: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createFinalProductionRenderExecutionRequest";
+    source_production_render_request_id: string;
+    source_source_media_inventory_id: string;
+    source_output_directory_approval_id: string;
+    source_real_execution_approval_id: string;
+    source_manifest_id: string;
+  };
+}
+
+interface FinalProductionRenderExecutionRequestsStore {
+  schema_version: "1.0";
+  created_at: string;
+  requests: FinalProductionRenderExecutionRequest[];
+}
+
+function getFinalProductionRenderExecutionRequestsPath(): string {
+  return path.join(getRuntimeDir(), "final-production-render-execution-requests.json");
+}
+
+function loadFinalProductionRenderExecutionRequestsStore(): FinalProductionRenderExecutionRequestsStore {
+  try {
+    const filePath = getFinalProductionRenderExecutionRequestsPath();
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, "utf8")) as FinalProductionRenderExecutionRequestsStore;
+    }
+  } catch {
+    // start fresh
+  }
+  return { schema_version: "1.0", created_at: new Date().toISOString(), requests: [] };
+}
+
+function saveFinalProductionRenderExecutionRequestsStore(store: FinalProductionRenderExecutionRequestsStore): void {
+  const filePath = getFinalProductionRenderExecutionRequestsPath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  store.requests.sort((a, b) => {
+    const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return compare !== 0 ? compare : a.final_render_execution_request_id.localeCompare(b.final_render_execution_request_id);
+  });
+  fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8");
+}
+
+function safeFinalReviewLabel(value: unknown): string {
+  if (typeof value !== "string" || value.length === 0 || value.length > 80 || isForbiddenStringPattern(value) || /[:/\\]/.test(value)) return "[unsafe-review-label]";
+  return /^[a-z0-9_-]+$/i.test(value) ? value : "[unsafe-review-label]";
+}
+
+function safeFinalReviewNote(value: unknown): string {
+  if (typeof value !== "string" || value.length === 0 || value.length > 200 || isForbiddenStringPattern(value)) return "[unsafe-review-note]";
+  if (value.includes("://") || value.includes("..") || path.isAbsolute(value) || value.includes("stdout") || value.includes("stderr") || value.includes("ffmpeg") || value.includes("videos.insert") || value.includes("Bearer ")) return "[unsafe-review-note]";
+  return value;
+}
+
+function validateFinalProductionRenderExecutionRequestShape(request: unknown): FinalProductionRenderExecutionRequestValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!request || typeof request !== "object") return { ok: false, blocking_reasons: ["Final production render execution request must be an object"], warnings };
+  const r = request as Record<string, unknown>;
+  const required = ["schema_version","final_render_execution_request_id","production_render_request_id","source_media_inventory_id","output_directory_approval_id","real_execution_approval_id","command_manifest_id","render_plan_id","project_id","platform","request_state","created_at","execution_mode","required_artifacts","execution_boundary","operator_review","validation","provenance"];
+  for (const key of required) if (!(key in r)) blocking_reasons.push("Final production render execution request is missing a required field");
+  if (r.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (r.execution_mode !== "final_production_render_execution_request") blocking_reasons.push("execution_mode must be final_production_render_execution_request");
+  if (!["draft","blocked","ready_for_operator_review","approved_for_future_execution_spike","rejected","revoked"].includes(String(r.request_state))) blocking_reasons.push("request_state is invalid");
+  const forbidden = recursivelyCheckForForbiddenPatterns(request);
+  blocking_reasons.push(...forbidden);
+  const text = JSON.stringify(request);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env[") || text.includes("stdout") || text.includes("stderr") || text.includes("ffmpeg -i") || text.includes(" -i ") || text.includes("Bearer ") || text.includes("data=") || text.includes("payload") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../") || text.includes("\"[]\"")) {
+    blocking_reasons.push("Final request contains forbidden payload content");
+  }
+  const boundary = r.execution_boundary as Record<string, unknown> | undefined;
+  if (!boundary || boundary.real_execution_requested !== false || boundary.execution_enabled !== false || boundary.child_process_allowed !== false || boundary.ffmpeg_execution_allowed !== false || boundary.renderer_execution_allowed !== false || boundary.source_media_read_allowed !== true || boundary.source_media_mutation_allowed !== false || boundary.source_media_copy_allowed !== false || boundary.source_media_transcode_allowed !== false || boundary.output_directory_write_allowed !== false || boundary.media_creation_allowed !== false || boundary.upload_allowed !== false || boundary.platform_api_calls_allowed !== false || boundary.env_access_allowed !== false || boundary.process_output_capture_allowed !== false || boundary.raw_command_storage_allowed !== false) {
+    blocking_reasons.push("Execution boundary is unsafe");
+  }
+  const artifacts = r.required_artifacts as Record<string, unknown> | undefined;
+  if (!artifacts || artifacts.production_render_request_validated !== true || artifacts.source_media_inventory_validated !== true || artifacts.output_directory_approval_validated !== true || artifacts.real_execution_approval_validated !== true || artifacts.command_manifest_validated !== true) blocking_reasons.push("Required artifacts are unsafe");
+  const validation = r.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_production_render !== false || validation.ready_for_upload !== false) blocking_reasons.push("Validation readiness must remain false");
+  const review = r.operator_review as Record<string, unknown> | undefined;
+  if (!review || review.checklist_acknowledged !== false && review.checklist_acknowledged !== true || review.risk_acknowledgement !== false && review.risk_acknowledgement !== true || review.understands_no_execution_enabled !== false && review.understands_no_execution_enabled !== true || review.understands_no_upload_enabled !== false && review.understands_no_upload_enabled !== true) blocking_reasons.push("Operator review is unsafe");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createFinalProductionRenderExecutionRequest(input: {
+  productionRequest: ControlledProductionRenderRequest;
+  sourceInventory: SourceMediaInventory;
+  outputApproval: OutputDirectoryApproval;
+  realExecutionApproval: RealRendererExecutionApproval;
+  commandManifest: RenderCommandManifest;
+  decision?: "draft" | "approved_for_future_execution_spike" | "rejected";
+  reviewed_by_label?: string;
+  checklist_acknowledged?: boolean;
+  risk_acknowledgement?: boolean;
+  understands_no_execution_enabled?: boolean;
+  understands_no_upload_enabled?: boolean;
+  decision_note_summary?: string;
+  dryRun: true;
+}): FinalProductionRenderExecutionRequest {
+  if (input.dryRun !== true) throw new Error("createFinalProductionRenderExecutionRequest: dryRun=true required");
+  const pr = validateControlledProductionRenderRequest(input.productionRequest);
+  const inv = validateSourceMediaInventory(input.sourceInventory);
+  const oa = validateOutputDirectoryApproval(input.outputApproval);
+  const rea = validateRealRendererExecutionApproval(input.realExecutionApproval);
+  const cm = validateRenderCommandManifest(input.commandManifest);
+  if (!pr.ok) throw new Error("createFinalProductionRenderExecutionRequest: production request must validate");
+  if (!inv.ok) throw new Error("createFinalProductionRenderExecutionRequest: source inventory must validate");
+  if (!oa.ok) throw new Error("createFinalProductionRenderExecutionRequest: output approval must validate");
+  if (!rea.ok) throw new Error("createFinalProductionRenderExecutionRequest: real execution approval must validate");
+  if (!cm.ok) throw new Error("createFinalProductionRenderExecutionRequest: command manifest must validate");
+  if (input.productionRequest.production_render_request_id !== input.sourceInventory.production_render_request_id || input.productionRequest.production_render_request_id !== input.outputApproval.production_render_request_id || input.productionRequest.real_execution_approval_id !== input.realExecutionApproval.real_execution_approval_id || input.productionRequest.command_manifest_id !== input.commandManifest.command_manifest_id || input.productionRequest.render_plan_id !== input.commandManifest.render_plan_id || input.sourceInventory.render_plan_id !== input.productionRequest.render_plan_id || input.productionRequest.project_id !== input.sourceInventory.project_id || input.productionRequest.platform !== input.sourceInventory.platform || input.outputApproval.project_id !== input.sourceInventory.project_id || input.outputApproval.platform !== input.sourceInventory.platform || input.realExecutionApproval.project_id !== input.sourceInventory.project_id || input.realExecutionApproval.platform !== input.sourceInventory.platform || input.commandManifest.project_id !== input.sourceInventory.project_id || input.commandManifest.platform !== input.sourceInventory.platform) {
+    throw new Error("createFinalProductionRenderExecutionRequest: IDs must match across artifacts");
+  }
+  if (input.outputApproval.approval_state !== "approved_for_future_render_output") throw new Error("createFinalProductionRenderExecutionRequest: output approval must be approved_for_future_render_output");
+  if (input.realExecutionApproval.approval_state !== "approved_for_future_real_execution_request") throw new Error("createFinalProductionRenderExecutionRequest: real execution approval must be approved_for_future_real_execution_request");
+  const decision = input.decision ?? "draft";
+  if (decision === "approved_for_future_execution_spike") {
+    if (input.checklist_acknowledged !== true || input.risk_acknowledgement !== true || input.understands_no_execution_enabled !== true || input.understands_no_upload_enabled !== true) {
+      throw new Error("createFinalProductionRenderExecutionRequest: operator acknowledgements required");
+    }
+  }
+  const review = {
+    reviewed_by_label: safeFinalReviewLabel(input.reviewed_by_label),
+    checklist_acknowledged: input.checklist_acknowledged === true,
+    risk_acknowledgement: input.risk_acknowledgement === true,
+    understands_no_execution_enabled: input.understands_no_execution_enabled === true,
+    understands_no_upload_enabled: input.understands_no_upload_enabled === true,
+    ...(input.decision_note_summary ? { decision_note_summary: safeFinalReviewNote(input.decision_note_summary) } : {}),
+  };
+  const request: FinalProductionRenderExecutionRequest = {
+    schema_version: "1.0",
+    final_render_execution_request_id: `final-render-execution-request-${crypto.randomUUID()}`,
+    production_render_request_id: input.productionRequest.production_render_request_id,
+    source_media_inventory_id: input.sourceInventory.source_media_inventory_id,
+    output_directory_approval_id: input.outputApproval.output_directory_approval_id,
+    real_execution_approval_id: input.realExecutionApproval.real_execution_approval_id,
+    command_manifest_id: input.commandManifest.command_manifest_id,
+    render_plan_id: input.productionRequest.render_plan_id,
+    project_id: input.productionRequest.project_id,
+    platform: input.productionRequest.platform,
+    request_state: decision,
+    created_at: new Date().toISOString(),
+    execution_mode: "final_production_render_execution_request",
+    required_artifacts: {
+      production_render_request_validated: true,
+      source_media_inventory_validated: true,
+      output_directory_approval_validated: true,
+      real_execution_approval_validated: true,
+      command_manifest_validated: true,
+    },
+    execution_boundary: {
+      real_execution_requested: false,
+      execution_enabled: false,
+      child_process_allowed: false,
+      ffmpeg_execution_allowed: false,
+      renderer_execution_allowed: false,
+      source_media_read_allowed: true,
+      source_media_mutation_allowed: false,
+      source_media_copy_allowed: false,
+      source_media_transcode_allowed: false,
+      output_directory_write_allowed: false,
+      media_creation_allowed: false,
+      upload_allowed: false,
+      platform_api_calls_allowed: false,
+      env_access_allowed: false,
+      process_output_capture_allowed: false,
+      raw_command_storage_allowed: false,
+    },
+    operator_review: {
+      ...review,
+    },
+    validation: {
+      ready_for_production_render: false,
+      ready_for_upload: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createFinalProductionRenderExecutionRequest",
+      source_production_render_request_id: input.productionRequest.production_render_request_id,
+      source_source_media_inventory_id: input.sourceInventory.source_media_inventory_id,
+      source_output_directory_approval_id: input.outputApproval.output_directory_approval_id,
+      source_real_execution_approval_id: input.realExecutionApproval.real_execution_approval_id,
+      source_manifest_id: input.commandManifest.command_manifest_id,
+    },
+  };
+  const validation = validateFinalProductionRenderExecutionRequest(request);
+  if (!validation.ok) {
+    throw new Error("createFinalProductionRenderExecutionRequest: request did not validate");
+  }
+  if (decision === "approved_for_future_execution_spike" && request.operator_review.reviewed_by_label === "[unsafe-review-label]") {
+    throw new Error("createFinalProductionRenderExecutionRequest: unsafe review label rejected");
+  }
+  return request;
+}
+
+export function validateFinalProductionRenderExecutionRequest(request: unknown): FinalProductionRenderExecutionRequestValidationResult {
+  return validateFinalProductionRenderExecutionRequestShape(request);
+}
+
+export function saveFinalProductionRenderExecutionRequest(request: FinalProductionRenderExecutionRequest): void {
+  const validation = validateFinalProductionRenderExecutionRequest(request);
+  if (!validation.ok) throw new Error("Unsafe final production render execution request cannot be stored.");
+  const store = loadFinalProductionRenderExecutionRequestsStore();
+  const existing = store.requests.findIndex((item) => item.final_render_execution_request_id === request.final_render_execution_request_id);
+  if (existing >= 0) store.requests[existing] = request;
+  else store.requests.push(request);
+  saveFinalProductionRenderExecutionRequestsStore(store);
+}
+
+export function listFinalProductionRenderExecutionRequests(options?: {
+  project_id?: string;
+  platform?: string;
+  request_state?: string;
+  production_render_request_id?: string;
+  render_plan_id?: string;
+}): FinalProductionRenderExecutionRequest[] {
+  const store = loadFinalProductionRenderExecutionRequestsStore();
+  return store.requests.filter((request) => {
+    if (options?.project_id && request.project_id !== options.project_id) return false;
+    if (options?.platform && request.platform !== options.platform) return false;
+    if (options?.request_state && request.request_state !== options.request_state) return false;
+    if (options?.production_render_request_id && request.production_render_request_id !== options.production_render_request_id) return false;
+    if (options?.render_plan_id && request.render_plan_id !== options.render_plan_id) return false;
+    return true;
+  }).sort((a, b) => {
+    const compare = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return compare !== 0 ? compare : a.final_render_execution_request_id.localeCompare(b.final_render_execution_request_id);
+  });
+}
+
+export function getFinalProductionRenderExecutionRequest(final_render_execution_request_id: string): FinalProductionRenderExecutionRequest | null {
+  const store = loadFinalProductionRenderExecutionRequestsStore();
+  return store.requests.find((request) => request.final_render_execution_request_id === final_render_execution_request_id) ?? null;
+}
+
+export function revokeFinalProductionRenderExecutionRequest(final_render_execution_request_id: string, reason: string): FinalProductionRenderExecutionRequest {
+  const store = loadFinalProductionRenderExecutionRequestsStore();
+  const request = store.requests.find((item) => item.final_render_execution_request_id === final_render_execution_request_id);
+  if (!request) throw new Error(`Final production render execution request not found: ${final_render_execution_request_id}`);
+  const summary = safeFinalReviewNote(reason);
+  if (summary === "[unsafe-review-note]") throw new Error("Revoke reason contains unsafe content");
+  request.request_state = "revoked";
+  request.operator_review = { ...request.operator_review, decision_note_summary: summary };
+  request.validation.warnings = [...request.validation.warnings, "[revoked-by-operator]"];
+  saveFinalProductionRenderExecutionRequest(request);
+  return request;
+}
+
+export function getFinalProductionRenderExecutionRequestReport(options?: {
+  project_id?: string;
+  platform?: string;
+}): {
+  total: number;
+  by_state: Record<string, number>;
+  blocked: number;
+  ready_for_operator_review: number;
+  approved_for_future_execution_spike: number;
+  rejected: number;
+  revoked: number;
+  ready_for_production_render: 0;
+  ready_for_upload: 0;
+  execution_enabled: 0;
+  output_directory_write_allowed: 0;
+  media_creation_allowed: 0;
+  upload_allowed: 0;
+  requests: Array<{
+    final_render_execution_request_id: string;
+    project_id: string;
+    platform: string;
+    request_state: string;
+    production_render_request_id: string;
+    render_plan_id: string;
+    created_at: string;
+  }>;
+} {
+  const requests = listFinalProductionRenderExecutionRequests(options);
+  const byState: Record<string, number> = {};
+  for (const request of requests) byState[request.request_state] = (byState[request.request_state] || 0) + 1;
+  return {
+    total: requests.length,
+    by_state: byState,
+    blocked: byState.blocked || 0,
+    ready_for_operator_review: byState.ready_for_operator_review || 0,
+    approved_for_future_execution_spike: byState.approved_for_future_execution_spike || 0,
+    rejected: byState.rejected || 0,
+    revoked: byState.revoked || 0,
+    ready_for_production_render: 0,
+    ready_for_upload: 0,
+    execution_enabled: 0,
+    output_directory_write_allowed: 0,
+    media_creation_allowed: 0,
+    upload_allowed: 0,
+    requests: requests.map((request) => ({
+      final_render_execution_request_id: sanitizeRenderPlanString(request.final_render_execution_request_id, "[unsafe-id]"),
+      project_id: sanitizeRenderPlanString(request.project_id, "[unsafe-project]"),
+      platform: sanitizeRenderPlanString(request.platform, "[unsafe-platform]"),
+      request_state: request.request_state,
+      production_render_request_id: sanitizeRenderPlanString(request.production_render_request_id, "[unsafe-id]"),
+      render_plan_id: sanitizeRenderPlanString(request.render_plan_id, "[unsafe-id]"),
+      created_at: request.created_at,
+    })),
+  };
+}
+
 export type TestRenderSpikeExecutionMode = "test_only_local_render_spike";
 
 export interface TestRenderSpikeScope {

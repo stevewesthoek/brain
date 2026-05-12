@@ -1,0 +1,151 @@
+{
+  "schema_version": "1.0",
+  "title": "Final Production Render Execution Request",
+  "description": "Final operator-reviewed request that composes the controlled production render request, source media inventory, output directory approval, render command manifest, and real execution approval into a future execution request artifact. This is not execution and does not enable rendering, writing, copying, transcoding, uploading, or platform API calls. No raw absolute paths, URLs, command lines, command argument arrays, process output, env vars, credentials, or tokens may be stored.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "final_render_execution_request_id",
+    "production_render_request_id",
+    "source_media_inventory_id",
+    "output_directory_approval_id",
+    "real_execution_approval_id",
+    "command_manifest_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "request_state",
+    "created_at",
+    "execution_mode",
+    "required_artifacts",
+    "execution_boundary",
+    "operator_review",
+    "validation",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["1.0"] },
+    "final_render_execution_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "production_render_request_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "source_media_inventory_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "output_directory_approval_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "real_execution_approval_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "command_manifest_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "render_plan_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "project_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "platform": {
+      "type": "string",
+      "enum": ["youtube", "youtube_shorts", "tiktok", "instagram", "facebook", "linkedin", "bluesky", "x"]
+    },
+    "request_state": {
+      "type": "string",
+      "enum": ["draft", "blocked", "ready_for_operator_review", "approved_for_future_execution_spike", "rejected", "revoked"]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "execution_mode": {
+      "type": "string",
+      "enum": ["final_production_render_execution_request"]
+    },
+    "required_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_render_request_validated",
+        "source_media_inventory_validated",
+        "output_directory_approval_validated",
+        "real_execution_approval_validated",
+        "command_manifest_validated"
+      ],
+      "properties": {
+        "production_render_request_validated": { "type": "boolean" },
+        "source_media_inventory_validated": { "type": "boolean" },
+        "output_directory_approval_validated": { "type": "boolean" },
+        "real_execution_approval_validated": { "type": "boolean" },
+        "command_manifest_validated": { "type": "boolean" }
+      }
+    },
+    "execution_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "real_execution_requested",
+        "execution_enabled",
+        "child_process_allowed",
+        "ffmpeg_execution_allowed",
+        "renderer_execution_allowed",
+        "source_media_read_allowed",
+        "source_media_mutation_allowed",
+        "source_media_copy_allowed",
+        "source_media_transcode_allowed",
+        "output_directory_write_allowed",
+        "media_creation_allowed",
+        "upload_allowed",
+        "platform_api_calls_allowed",
+        "env_access_allowed",
+        "process_output_capture_allowed",
+        "raw_command_storage_allowed"
+      ],
+      "properties": {
+        "real_execution_requested": { "type": "boolean", "enum": [false] },
+        "execution_enabled": { "type": "boolean", "enum": [false] },
+        "child_process_allowed": { "type": "boolean", "enum": [false] },
+        "ffmpeg_execution_allowed": { "type": "boolean", "enum": [false] },
+        "renderer_execution_allowed": { "type": "boolean", "enum": [false] },
+        "source_media_read_allowed": { "type": "boolean", "enum": [true] },
+        "source_media_mutation_allowed": { "type": "boolean", "enum": [false] },
+        "source_media_copy_allowed": { "type": "boolean", "enum": [false] },
+        "source_media_transcode_allowed": { "type": "boolean", "enum": [false] },
+        "output_directory_write_allowed": { "type": "boolean", "enum": [false] },
+        "media_creation_allowed": { "type": "boolean", "enum": [false] },
+        "upload_allowed": { "type": "boolean", "enum": [false] },
+        "platform_api_calls_allowed": { "type": "boolean", "enum": [false] },
+        "env_access_allowed": { "type": "boolean", "enum": [false] },
+        "process_output_capture_allowed": { "type": "boolean", "enum": [false] },
+        "raw_command_storage_allowed": { "type": "boolean", "enum": [false] }
+      }
+    },
+    "operator_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checklist_acknowledged",
+        "risk_acknowledgement",
+        "understands_no_execution_enabled",
+        "understands_no_upload_enabled"
+      ],
+      "properties": {
+        "reviewed_by_label": { "type": "string" },
+        "checklist_acknowledged": { "type": "boolean" },
+        "risk_acknowledgement": { "type": "boolean" },
+        "understands_no_execution_enabled": { "type": "boolean" },
+        "understands_no_upload_enabled": { "type": "boolean" },
+        "decision_note_summary": { "type": "string" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ready_for_production_render", "ready_for_upload", "blocking_reasons", "warnings"],
+      "properties": {
+        "ready_for_production_render": { "type": "boolean", "enum": [false] },
+        "ready_for_upload": { "type": "boolean", "enum": [false] },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by", "source_production_render_request_id", "source_source_media_inventory_id", "source_output_directory_approval_id", "source_real_execution_approval_id", "source_manifest_id"],
+      "properties": {
+        "generated_by": { "type": "string" },
+        "source_production_render_request_id": { "type": "string" },
+        "source_source_media_inventory_id": { "type": "string" },
+        "source_output_directory_approval_id": { "type": "string" },
+        "source_real_execution_approval_id": { "type": "string" },
+        "source_manifest_id": { "type": "string" }
+      }
+    }
+  }
+}
