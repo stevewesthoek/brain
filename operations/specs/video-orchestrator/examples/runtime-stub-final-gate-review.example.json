@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "runtime_stub_final_gate_review_id": "runtime-stub-final-gate-review-001",
+  "runtime_stub_final_gate_id": "runtime-stub-final-gate-001",
+  "runtime_stub_release_candidate_id": "runtime-stub-release-candidate-001",
+  "runtime_stub_manifest_id": "runtime-stub-manifest-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "final_gate_review_state": "approved_for_future_final_gate_safe_report",
+  "required_artifacts": { "runtime_stub_final_gate_validated": true, "runtime_stub_release_candidate_validated": true },
+  "review_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "review_controls": { "review_only": true, "final_gate_reviewed": true, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_raw_response": false, "contains_secret_material": false, "runtime_invocation_disabled": true, "real_upload_still_blocked": true },
+  "review_checks": [
+    { "check_id": "final-gate-review-candidate", "check_kind": "candidate", "review_state": "passed", "safe_summary": "Final gate review only.", "opened_now": false, "runtime_executed_now": false },
+    { "check_id": "final-gate-review-report", "check_kind": "safe_report", "review_state": "passed", "safe_summary": "Final gate review only.", "opened_now": false, "runtime_executed_now": false },
+    { "check_id": "final-gate-review-boundaries", "check_kind": "boundaries", "review_state": "passed", "safe_summary": "Runtime invocation remains disabled.", "opened_now": false, "runtime_executed_now": false },
+    { "check_id": "final-gate-review-status", "check_kind": "status", "review_state": "passed", "safe_summary": "Real upload remains disabled.", "opened_now": false, "runtime_executed_now": false }
+  ],
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createRuntimeStubFinalGateReview", "source_runtime_stub_final_gate_id": "runtime-stub-final-gate-001", "source_render_plan_id": "render-plan-001" }
+}

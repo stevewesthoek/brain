@@ -25091,3 +25091,60 @@ test("VO-7BY-VALIDATE: runtime stub release candidate safe report rejects raw ma
   const validation = validateRuntimeStubReleaseCandidateSafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7BZ/VO-7CA/VO-7CB: Runtime Stub Final Gate Layer ───────────────────
+
+test("VO-7BZ-SCHEMA: runtime stub final gate schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-final-gate.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-final-gate.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.gate_checks[0].opened_now, false);
+});
+
+test("VO-7BZ-VALIDATE: runtime stub final gate rejects opening now", async () => {
+  const { validateRuntimeStubFinalGate } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-final-gate.example.json"), "utf8"));
+  const unsafe = { ...example, gate_checks: [{ ...example.gate_checks[0], opened_now: true }] };
+  const validation = validateRuntimeStubFinalGate(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CA-SCHEMA: runtime stub final gate review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-final-gate-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-final-gate-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_checks[0].runtime_executed_now, false);
+});
+
+test("VO-7CA-VALIDATE: runtime stub final gate review rejects runtime execution", async () => {
+  const { validateRuntimeStubFinalGateReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-final-gate-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_checks: [{ ...example.review_checks[0], runtime_executed_now: true }] };
+  const validation = validateRuntimeStubFinalGateReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CB-SCHEMA: runtime stub final gate safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-final-gate-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-final-gate-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7CB-VALIDATE: runtime stub final gate safe report rejects raw material", async () => {
+  const { validateRuntimeStubFinalGateSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-final-gate-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateRuntimeStubFinalGateSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});
