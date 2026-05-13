@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "controlled-runtime-implementation-boundary-dry-run.schema.json",
+  "title": "Controlled Runtime Implementation Boundary Dry-Run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "controlled_runtime_implementation_boundary_dry_run_id", "controlled_runtime_implementation_boundary_safety_contract_id", "controlled_runtime_implementation_boundary_request_id", "render_plan_id", "project_id", "platform", "created_at", "dry_run_state", "required_artifacts", "dry_run_scope", "dry_run_checks", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "controlled_runtime_implementation_boundary_dry_run_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_implementation_boundary_safety_contract_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_implementation_boundary_request_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "dry_run_state": { "type": "string", "enum": ["draft", "passed", "failed", "blocked", "revoked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["controlled_runtime_implementation_boundary_safety_contract_validated", "controlled_runtime_implementation_boundary_request_validated"], "properties": { "controlled_runtime_implementation_boundary_safety_contract_validated": { "type": "boolean", "const": true }, "controlled_runtime_implementation_boundary_request_validated": { "type": "boolean", "const": true } } },
+    "dry_run_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "dry_run_checks": { "type": "array", "minItems": 5, "items": { "type": "object", "additionalProperties": false, "required": ["check_id", "check_kind", "check_state", "safe_summary", "implemented_now"], "properties": { "check_id": { "type": "string" }, "check_kind": { "type": "string" }, "check_state": { "type": "string", "enum": ["passed", "failed", "blocked", "deferred"] }, "safe_summary": { "type": "string" }, "implemented_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_controlled_runtime_implementation_boundary_safety_contract_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createControlledRuntimeImplementationBoundaryDryRun", "revokeControlledRuntimeImplementationBoundaryDryRun"] }, "source_controlled_runtime_implementation_boundary_safety_contract_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

@@ -19983,3 +19983,182 @@ export function createControlledRuntimeActivationBoundaryCompletionSummary(input
     provenance: { generated_by: "createControlledRuntimeActivationBoundaryCompletionSummary", source_controlled_runtime_activation_final_safe_report_id: input.finalSafeReport.controlled_runtime_activation_final_safe_report_id, source_render_plan_id: input.finalSafeReport.render_plan_id },
   };
 }
+
+
+// ─── VO-7BB/VO-7BC/VO-7BD: Runtime Implementation Boundary ────────────────
+
+export interface ControlledRuntimeImplementationBoundaryRequest {
+  schema_version: "1.0";
+  controlled_runtime_implementation_boundary_request_id: string;
+  controlled_runtime_activation_boundary_completion_summary_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  boundary_request_state: "draft" | "ready_for_operator_review" | "approved_for_future_boundary_safety_contract" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  boundary_scope: Record<string, unknown>;
+  implementation_controls: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeImplementationBoundarySafetyContract {
+  schema_version: "1.0";
+  controlled_runtime_implementation_boundary_safety_contract_id: string;
+  controlled_runtime_implementation_boundary_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safety_contract_state: "draft" | "ready_for_operator_review" | "approved_for_future_boundary_dry_run" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  contract_scope: Record<string, unknown>;
+  safety_controls: Record<string, unknown>;
+  implementation_contracts: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeImplementationBoundaryDryRun {
+  schema_version: "1.0";
+  controlled_runtime_implementation_boundary_dry_run_id: string;
+  controlled_runtime_implementation_boundary_safety_contract_id: string;
+  controlled_runtime_implementation_boundary_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  dry_run_state: "draft" | "passed" | "failed" | "blocked" | "revoked";
+  required_artifacts: Record<string, true>;
+  dry_run_scope: Record<string, unknown>;
+  dry_run_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeImplementationBoundaryArtifact(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.implementation_controls || artifact.safety_controls) as Record<string, unknown> | undefined;
+    if (controls && controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime implementation boundary must keep real upload blocked");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 5) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.implemented_now !== false) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} attempted implementation now`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateControlledRuntimeImplementationBoundaryRequest(request: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeImplementationBoundaryArtifact(request, "boundary_scope");
+}
+
+export function validateControlledRuntimeImplementationBoundarySafetyContract(contract: unknown): RealUploadEnablementArtifactValidationResult {
+  const result = validateRuntimeImplementationBoundaryArtifact(contract, "contract_scope", "implementation_contracts");
+  if (result.ok) {
+    const controls = (contract as Record<string, unknown>).safety_controls as Record<string, unknown> | undefined;
+    if (!controls || controls.raw_payload_storage_allowed !== false || controls.raw_response_storage_allowed !== false) {
+      result.ok = false;
+      result.blocking_reasons.push("Boundary safety contract raw storage controls are unsafe");
+    }
+  }
+  return result;
+}
+
+export function validateControlledRuntimeImplementationBoundaryDryRun(dryRun: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeImplementationBoundaryArtifact(dryRun, "dry_run_scope", "dry_run_checks");
+}
+
+export function createControlledRuntimeImplementationBoundaryRequest(input: { boundaryCompletionSummary: ControlledRuntimeActivationBoundaryCompletionSummary; decision?: "draft" | "approved_for_future_boundary_safety_contract" | "rejected"; dryRun: true }): ControlledRuntimeImplementationBoundaryRequest {
+  if (input.dryRun !== true) throw new Error("VO-7BB runtime implementation boundary request requires dryRun=true");
+  const summaryValidation = validateControlledRuntimeActivationBoundaryCompletionSummary(input.boundaryCompletionSummary);
+  if (!summaryValidation.ok) throw new Error("Boundary completion summary validation failed");
+  if (input.boundaryCompletionSummary.boundary_completion_state !== "approved_for_future_runtime_activation_implementation_boundary") throw new Error("Boundary request requires approved boundary completion summary");
+  const approved = input.decision === "approved_for_future_boundary_safety_contract";
+  return {
+    schema_version: "1.0",
+    controlled_runtime_implementation_boundary_request_id: `controlled-runtime-implementation-boundary-request-${crypto.randomUUID()}`,
+    controlled_runtime_activation_boundary_completion_summary_id: input.boundaryCompletionSummary.controlled_runtime_activation_boundary_completion_summary_id,
+    render_plan_id: input.boundaryCompletionSummary.render_plan_id,
+    project_id: input.boundaryCompletionSummary.project_id,
+    platform: input.boundaryCompletionSummary.platform,
+    created_at: new Date().toISOString(),
+    boundary_request_state: approved ? "approved_for_future_boundary_safety_contract" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_activation_boundary_completion_summary_validated: true },
+    boundary_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    implementation_controls: { boundary_request_only: true, safe_stub_only: true, single_upload_limit: 1, operator_kill_switch_required: true, real_upload_still_blocked: true },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeImplementationBoundaryRequest", source_controlled_runtime_activation_boundary_completion_summary_id: input.boundaryCompletionSummary.controlled_runtime_activation_boundary_completion_summary_id, source_render_plan_id: input.boundaryCompletionSummary.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeImplementationBoundarySafetyContract(input: { boundaryRequest: ControlledRuntimeImplementationBoundaryRequest; decision?: "draft" | "approved_for_future_boundary_dry_run" | "rejected"; dryRun: true }): ControlledRuntimeImplementationBoundarySafetyContract {
+  if (input.dryRun !== true) throw new Error("VO-7BC runtime implementation boundary safety contract requires dryRun=true");
+  const requestValidation = validateControlledRuntimeImplementationBoundaryRequest(input.boundaryRequest);
+  if (!requestValidation.ok) throw new Error("Boundary request validation failed");
+  if (input.boundaryRequest.boundary_request_state !== "approved_for_future_boundary_safety_contract") throw new Error("Boundary safety contract requires approved boundary request");
+  const approved = input.decision === "approved_for_future_boundary_dry_run";
+  const kinds = ["kill_switch", "single_upload_limit", "credential_boundary", "network_boundary", "media_boundary"];
+  return {
+    schema_version: "1.0",
+    controlled_runtime_implementation_boundary_safety_contract_id: `controlled-runtime-implementation-boundary-safety-contract-${crypto.randomUUID()}`,
+    controlled_runtime_implementation_boundary_request_id: input.boundaryRequest.controlled_runtime_implementation_boundary_request_id,
+    render_plan_id: input.boundaryRequest.render_plan_id,
+    project_id: input.boundaryRequest.project_id,
+    platform: input.boundaryRequest.platform,
+    created_at: new Date().toISOString(),
+    safety_contract_state: approved ? "approved_for_future_boundary_dry_run" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_implementation_boundary_request_validated: true },
+    contract_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    safety_controls: { safe_stub_only: true, single_upload_limit: 1, operator_kill_switch_required: true, raw_payload_storage_allowed: false, raw_response_storage_allowed: false, real_upload_still_blocked: true },
+    implementation_contracts: kinds.map((kind) => ({ contract_id: `boundary-contract-${kind}`, contract_kind: kind, safe_summary: "Runtime implementation boundary safety contract only.", implemented_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeImplementationBoundarySafetyContract", source_controlled_runtime_implementation_boundary_request_id: input.boundaryRequest.controlled_runtime_implementation_boundary_request_id, source_render_plan_id: input.boundaryRequest.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeImplementationBoundaryDryRun(input: { safetyContract: ControlledRuntimeImplementationBoundarySafetyContract; decision?: "draft" | "passed" | "failed" | "blocked"; dryRun: true }): ControlledRuntimeImplementationBoundaryDryRun {
+  if (input.dryRun !== true) throw new Error("VO-7BD runtime implementation boundary dry-run requires dryRun=true");
+  const contractValidation = validateControlledRuntimeImplementationBoundarySafetyContract(input.safetyContract);
+  if (!contractValidation.ok) throw new Error("Boundary safety contract validation failed");
+  if (input.safetyContract.safety_contract_state !== "approved_for_future_boundary_dry_run") throw new Error("Boundary dry-run requires approved safety contract");
+  const passed = input.decision === "passed";
+  const kinds = ["kill_switch", "single_upload_limit", "credential_boundary", "network_boundary", "media_boundary"];
+  return {
+    schema_version: "1.0",
+    controlled_runtime_implementation_boundary_dry_run_id: `controlled-runtime-implementation-boundary-dry-run-${crypto.randomUUID()}`,
+    controlled_runtime_implementation_boundary_safety_contract_id: input.safetyContract.controlled_runtime_implementation_boundary_safety_contract_id,
+    controlled_runtime_implementation_boundary_request_id: input.safetyContract.controlled_runtime_implementation_boundary_request_id,
+    render_plan_id: input.safetyContract.render_plan_id,
+    project_id: input.safetyContract.project_id,
+    platform: input.safetyContract.platform,
+    created_at: new Date().toISOString(),
+    dry_run_state: input.decision ?? "draft",
+    required_artifacts: { controlled_runtime_implementation_boundary_safety_contract_validated: true, controlled_runtime_implementation_boundary_request_validated: true },
+    dry_run_scope: { artifact_only: true, future_next_phase_requested: passed, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    dry_run_checks: kinds.map((kind) => ({ check_id: `boundary-dry-run-${kind}`, check_kind: kind, check_state: passed ? "passed" : "deferred", safe_summary: "Runtime implementation boundary dry-run only.", implemented_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: passed, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeImplementationBoundaryDryRun", source_controlled_runtime_implementation_boundary_safety_contract_id: input.safetyContract.controlled_runtime_implementation_boundary_safety_contract_id, source_render_plan_id: input.safetyContract.render_plan_id },
+  };
+}

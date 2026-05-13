@@ -1740,3 +1740,11 @@ Status: complete.
 VO-7AY adds an activation go/no-go artifact, VO-7AZ adds a final safe activation report, and VO-7BA adds a boundary completion summary. These phases remain artifact/report/summary only.
 
 They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+## Phase 5AT — Runtime Implementation Boundary Request, Safety Contract, and Dry-Run (VO-7BB/VO-7BC/VO-7BD)
+
+Status: complete.
+
+VO-7BB adds a runtime implementation boundary request, VO-7BC adds a boundary safety contract, and VO-7BD adds a boundary dry-run artifact. These phases remain boundary-request/contract/dry-run artifacts only.
+
+They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.

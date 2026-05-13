@@ -24635,3 +24635,60 @@ test("VO-7BA-VALIDATE: controlled runtime activation boundary summary rejects un
   const validation = validateControlledRuntimeActivationBoundaryCompletionSummary(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7BB/VO-7BC/VO-7BD: Runtime Implementation Boundary ────────────────
+
+test("VO-7BB-SCHEMA: runtime implementation boundary request schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-implementation-boundary-request.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-boundary-request.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.implementation_controls.real_upload_still_blocked, true);
+});
+
+test("VO-7BB-VALIDATE: runtime implementation boundary request rejects unsafe readiness", async () => {
+  const { validateControlledRuntimeImplementationBoundaryRequest } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-boundary-request.example.json"), "utf8"));
+  const unsafe = { ...example, boundary_scope: { ...example.boundary_scope, real_upload_enabled_now: true } };
+  const validation = validateControlledRuntimeImplementationBoundaryRequest(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BC-SCHEMA: runtime implementation boundary safety contract schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-implementation-boundary-safety-contract.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-boundary-safety-contract.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safety_controls.raw_payload_storage_allowed, false);
+});
+
+test("VO-7BC-VALIDATE: runtime implementation boundary safety contract rejects implementation", async () => {
+  const { validateControlledRuntimeImplementationBoundarySafetyContract } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-boundary-safety-contract.example.json"), "utf8"));
+  const unsafe = { ...example, implementation_contracts: [{ ...example.implementation_contracts[0], implemented_now: true }] };
+  const validation = validateControlledRuntimeImplementationBoundarySafetyContract(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BD-SCHEMA: runtime implementation boundary dry-run schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-implementation-boundary-dry-run.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-boundary-dry-run.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.dry_run_checks[0].implemented_now, false);
+});
+
+test("VO-7BD-VALIDATE: runtime implementation boundary dry-run rejects implementation", async () => {
+  const { validateControlledRuntimeImplementationBoundaryDryRun } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-boundary-dry-run.example.json"), "utf8"));
+  const unsafe = { ...example, dry_run_checks: [{ ...example.dry_run_checks[0], implemented_now: true }] };
+  const validation = validateControlledRuntimeImplementationBoundaryDryRun(unsafe);
+  assert.equal(validation.ok, false);
+});

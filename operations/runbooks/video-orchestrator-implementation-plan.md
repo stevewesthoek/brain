@@ -3692,3 +3692,9 @@ These artifacts establish the final candidate/review/rollback planning layer bef
 VO-7AY adds `controlled-runtime-activation-go-no-go`, VO-7AZ adds `controlled-runtime-activation-final-safe-report`, and VO-7BA adds `controlled-runtime-activation-boundary-completion-summary`.
 
 These artifacts complete the activation-boundary artifact chain while still requiring a future separate runtime implementation boundary. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7BB/VO-7BC/VO-7BD — Runtime Implementation Boundary Request, Safety Contract, and Dry-Run
+
+VO-7BB adds `controlled-runtime-implementation-boundary-request`, VO-7BC adds `controlled-runtime-implementation-boundary-safety-contract`, and VO-7BD adds `controlled-runtime-implementation-boundary-dry-run`.
+
+These artifacts create the separate runtime implementation boundary while still preventing implementation or activation. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
