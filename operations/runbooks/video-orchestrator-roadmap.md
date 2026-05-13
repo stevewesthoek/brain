@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
-**Date Updated:** 2026-05-13 (VO-7S Complete)  
-**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) complete. Phase 5F—Final Production Render Execution Request (VO-6E) complete. Phase 5G—Controlled Production Render Spike (VO-7A) complete. Phase 5H—Operator Review of Generated Local Output (VO-7B) complete. Phase 5I—Upload Package Design (VO-7C) complete. Phase 5J—Platform Upload Request Artifact (VO-7D) complete. Phase 5K—Upload Execution Approval (VO-7E) complete. Phase 5L—Upload Execution Design (VO-7F) complete. Phase 5M—Dry-Run Upload Spike Simulation (VO-7G) complete. Phase 5N—Real Upload Readiness Assessment (VO-7H) complete. Phase 5O—Real Upload Execution Request (VO-7I) complete. Phase 5P—Real Upload Strategy Design (VO-7J) complete. Phase 5Q—Real Upload Execution Plan (VO-7K) complete. Phase 5R—Real Upload Dry-Run Execution Simulator (VO-7L) complete. Phase 5S—Final Real Upload Preflight Gate (VO-7M) complete. Phase 5T—Real Upload Implementation Design (VO-7N) complete. Phase 5U—Real Upload Scaffold Design (VO-7O) complete. Phase 5V—Real Upload Scaffold Contracts (VO-7P) complete. Phase 5W—Real Upload Scaffold Contract Tests (VO-7Q) complete. Phase 5X—Real Upload Scaffold Stub Design (VO-7R) complete. Phase 5Y—Real Upload Stub Contracts (VO-7S) complete.  
+**Date Updated:** 2026-05-13 (VO-7T Complete)  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) complete. Phase 5F—Final Production Render Execution Request (VO-6E) complete. Phase 5G—Controlled Production Render Spike (VO-7A) complete. Phase 5H—Operator Review of Generated Local Output (VO-7B) complete. Phase 5I—Upload Package Design (VO-7C) complete. Phase 5J—Platform Upload Request Artifact (VO-7D) complete. Phase 5K—Upload Execution Approval (VO-7E) complete. Phase 5L—Upload Execution Design (VO-7F) complete. Phase 5M—Dry-Run Upload Spike Simulation (VO-7G) complete. Phase 5N—Real Upload Readiness Assessment (VO-7H) complete. Phase 5O—Real Upload Execution Request (VO-7I) complete. Phase 5P—Real Upload Strategy Design (VO-7J) complete. Phase 5Q—Real Upload Execution Plan (VO-7K) complete. Phase 5R—Real Upload Dry-Run Execution Simulator (VO-7L) complete. Phase 5S—Final Real Upload Preflight Gate (VO-7M) complete. Phase 5T—Real Upload Implementation Design (VO-7N) complete. Phase 5U—Real Upload Scaffold Design (VO-7O) complete. Phase 5V—Real Upload Scaffold Contracts (VO-7P) complete. Phase 5W—Real Upload Scaffold Contract Tests (VO-7Q) complete. Phase 5X—Real Upload Scaffold Stub Design (VO-7R) complete. Phase 5Y—Real Upload Stub Contracts (VO-7S) complete. Phase 5Z—Real Upload Stub Contract Tests (VO-7T) complete.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Architecture:** Local-first production + platform adapters (not fully local publishing)
 
@@ -256,6 +256,27 @@ This phase adds a no-op stub contract artifact only. It defines the future stub 
 
 **Next phase guidance**
 - If approved later, the next step may add more stub-test layering, still without implementation or upload capability.
+
+### VO-7T: Real Upload Stub Contract Tests
+
+This phase adds a no-op stub contract test artifact only. It defines future stub contract test metadata and no-op boundaries, but it does not execute runtime work or enable upload flows.
+
+**What it does**
+- Defines stub contract test metadata and no-op test boundaries only.
+- Keeps stub files, scaffold implementation files, runtime files, dependencies, package metadata changes, upload execution, platform APIs, credentials, tokens, env access, and media reads disabled.
+- Records only safe summaries for future review.
+
+**What it does not do**
+- Does not create stub implementation files.
+- Does not create scaffold implementation files.
+- Does not execute runtime or upload flows.
+- Does not call platform APIs.
+- Does not access credentials, tokens, env vars, or keychain entries.
+- Does not read media files.
+- Does not store raw paths, payloads, responses, or account IDs.
+
+**Next phase guidance**
+- If approved later, the next step may add future stub no-op implementation design work, still without implementation or upload capability.
 
 ### VO-7C: Upload Package Design
 

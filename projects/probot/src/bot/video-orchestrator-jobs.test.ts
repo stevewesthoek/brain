@@ -301,6 +301,13 @@ import {
   getRealUploadStubContracts,
   revokeRealUploadStubContracts,
   getRealUploadStubContractsReport,
+  createRealUploadStubContractTests,
+  validateRealUploadStubContractTests,
+  saveRealUploadStubContractTests,
+  listRealUploadStubContractTests,
+  getRealUploadStubContractTests,
+  revokeRealUploadStubContractTests,
+  getRealUploadStubContractTestsReport,
   createRealUploadScaffoldContractTests,
   validateRealUploadScaffoldContractTests,
   saveRealUploadScaffoldContractTests,
@@ -347,6 +354,7 @@ import {
   type RealUploadScaffoldContractTests,
   type RealUploadScaffoldStubDesign,
   type RealUploadStubContracts,
+  type RealUploadStubContractTests,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -22896,5 +22904,160 @@ test("VO-7S-REPORT-288: report counters remain zero and sanitize legacy data", (
     assert.strictEqual(JSON.stringify(report).includes("/Users/") || JSON.stringify(report).includes("https://") || JSON.stringify(report).includes("http://") || JSON.stringify(report).includes("../") || JSON.stringify(report).includes("stdout") || JSON.stringify(report).includes("stderr") || JSON.stringify(report).includes("access_token") || JSON.stringify(report).includes("refresh_token") || JSON.stringify(report).includes("client_secret"), false);
   } finally {
     cleanupTestRuntime(tempDir);
+  }
+});
+
+function createSafeRealUploadStubContractTestsFixture() {
+  const tempDir = setupTestRuntime();
+  const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+  const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+  const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+  const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+  const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+  const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+  const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+  const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+  const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+  const strategy = createSafeRealUploadStrategyDesign(executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_plan");
+  const plan = createSafeRealUploadExecutionPlan(strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_dry_run");
+  const dryRunResult = createSafeRealUploadDryRunExecutionResult(plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, true, "approved_for_future_real_upload_preflight");
+  const gate = createSafeFinalRealUploadPreflightGate(dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+  const implementation = createSafeRealUploadImplementationDesign(gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+  const scaffold = createSafeRealUploadScaffoldDesign(implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+  const scaffoldContracts = createSafeRealUploadScaffoldContracts(scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+  const scaffoldTests = createSafeRealUploadScaffoldContractTests(scaffoldContracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+  const stubDesign = createSafeRealUploadScaffoldStubDesign(scaffoldTests, scaffoldContracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+  const stubContracts = createSafeRealUploadStubContracts(stubDesign, scaffoldTests, scaffoldContracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+  return {
+    tempDir,
+    stubContracts,
+    stubDesign,
+    scaffoldContractTests: scaffoldTests,
+    scaffoldContracts,
+    scaffoldDesign: scaffold,
+    implementationDesign: implementation,
+    finalPreflightGate: gate,
+    dryRunExecutionResult: dryRunResult,
+    executionPlan: plan,
+    strategyDesign: strategy,
+    realUploadExecutionRequest: executionRequest,
+    readinessAssessment,
+    dryRunUploadSpikeResult: dryRunSpike,
+    uploadExecutionDesign: design,
+    uploadExecutionApproval: approval,
+    platformUploadRequest: request,
+    uploadPackageDesign: packageDesign,
+    localOutputReview: review,
+    spikeResult: spike,
+  };
+}
+
+test("VO-7T-SCHEMA-289: stub contract tests schema and example parse safely", () => {
+  const repoRootForSpecs = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/real-upload-stub-contract-tests.schema.json"), "utf8")) as Record<string, unknown>;
+  const example = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/examples/real-upload-stub-contract-tests.example.json"), "utf8")) as any;
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.schema_version, "1.0");
+  assert.equal(example.stub_contract_tests_mode, "real_upload_stub_contract_tests_only");
+  assert.equal(Array.isArray(example.stub_module_contract_test_results), true);
+  assert.equal(example.stub_module_contract_test_results.length, 14);
+  assert.equal(example.stub_behavior_contract_test_results.length > 0, true);
+  assert.equal(JSON.stringify(example).includes("keychain://"), false);
+  assert.equal(JSON.stringify(example).includes("access_token"), false);
+  assert.equal(JSON.stringify(example).includes("refresh_token"), false);
+  assert.equal(JSON.stringify(example).includes("client_secret"), false);
+});
+
+test("VO-7T-CREATE-290: create stub contract tests from safe artifacts and reject unsafe inputs", () => {
+  const fixture: any = createSafeRealUploadStubContractTestsFixture();
+  try {
+    assert.throws(() => createRealUploadStubContractTests({ ...fixture, dryRun: false as false }), /dryRun=true required/);
+    const approvedFlags = {
+      checklist_acknowledged: true,
+      understands_stub_contract_tests_only: true,
+      understands_no_stub_files_created: true,
+      understands_no_implementation_files_created: true,
+      understands_no_runtime_execution: true,
+      understands_no_upload_enabled: true,
+      understands_no_credentials_accessed: true,
+      understands_no_network_calls: true,
+      understands_no_media_reads: true,
+      understands_no_dependencies_added: true,
+      understands_future_stub_noop_implementation_design_phase_required: true,
+    };
+    assert.throws(() => createRealUploadStubContractTests({ ...fixture, ...approvedFlags, dryRun: true as true, decision: "approved_for_future_stub_noop_implementation_design", stubContracts: { ...fixture.stubContracts, stub_contracts_state: "draft" } }), /stub contracts must be approved for future stub contracts/);
+    assert.throws(() => createRealUploadStubContractTests({ ...fixture, ...approvedFlags, dryRun: true as true, decision: "approved_for_future_stub_noop_implementation_design", checklist_acknowledged: false }), /acknowledgements required/);
+    const tests = createRealUploadStubContractTests({ ...fixture, ...approvedFlags, dryRun: true as true });
+    assert.equal(tests.schema_version, "1.0");
+    assert.equal(tests.stub_contract_tests_state, "tested");
+    assert.equal(tests.validation.ready_for_real_upload, false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7T-VALIDATE-291: validator rejects missing or unsafe stub contract test shapes", () => {
+  const fixture: any = createSafeRealUploadStubContractTestsFixture();
+  try {
+    const tests = fixture.stubContracts.real_upload_stub_contracts_id ? createRealUploadStubContractTests({ ...fixture, dryRun: true as true, checklist_acknowledged: true, understands_stub_contract_tests_only: true, understands_no_stub_files_created: true, understands_no_implementation_files_created: true, understands_no_runtime_execution: true, understands_no_upload_enabled: true, understands_no_credentials_accessed: true, understands_no_network_calls: true, understands_no_media_reads: true, understands_no_dependencies_added: true, understands_future_stub_noop_implementation_design_phase_required: true }) : fixture.stubContracts;
+    assert.equal(validateRealUploadStubContractTests(tests).ok, true);
+    assert.equal(validateRealUploadStubContractTests({ ...tests, stub_module_contract_test_results: tests.stub_module_contract_test_results.filter((module: any) => module.stub_kind !== "upload_scaffold_index_stub_contract") }).ok, false);
+    assert.equal(validateRealUploadStubContractTests({ ...tests, stub_module_contract_test_results: [...tests.stub_module_contract_test_results, tests.stub_module_contract_test_results[0]] }).ok, false);
+    assert.equal(validateRealUploadStubContractTests({ ...tests, no_op_test_boundary: { ...tests.no_op_test_boundary, no_external_effects: false as never } }).ok, false);
+    assert.equal(validateRealUploadStubContractTests({ ...tests, execution_boundary: { ...tests.execution_boundary, contract_runtime_executed: true as never } }).ok, false);
+    assert.equal(validateRealUploadStubContractTests({ ...tests, stub_module_contract_test_results: tests.stub_module_contract_test_results.map((module: any) => module.stub_kind === "credential_provider_stub_contract" ? { ...module, safe_summary: "../unsafe" } : module) }).ok, false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7T-STORE-292: store save list get revoke works and rejects unsafe data", () => {
+  const fixture: any = createSafeRealUploadStubContractTestsFixture();
+  try {
+    const tests = createRealUploadStubContractTests({ ...fixture, dryRun: true as true, checklist_acknowledged: true, understands_stub_contract_tests_only: true, understands_no_stub_files_created: true, understands_no_implementation_files_created: true, understands_no_runtime_execution: true, understands_no_upload_enabled: true, understands_no_credentials_accessed: true, understands_no_network_calls: true, understands_no_media_reads: true, understands_no_dependencies_added: true, understands_future_stub_noop_implementation_design_phase_required: true });
+    saveRealUploadStubContractTests(tests);
+    assert.equal(getRealUploadStubContractTests(tests.real_upload_stub_contract_tests_id)?.real_upload_stub_contract_tests_id, tests.real_upload_stub_contract_tests_id);
+    assert.equal(listRealUploadStubContractTests({ project_id: tests.project_id }).some((item) => item.real_upload_stub_contract_tests_id === tests.real_upload_stub_contract_tests_id), true);
+    assert.equal(revokeRealUploadStubContractTests(tests.real_upload_stub_contract_tests_id, "paused for review").stub_contract_tests_state, "revoked");
+    assert.throws(() => saveRealUploadStubContractTests({ ...tests, real_upload_stub_contract_tests_id: "../unsafe" } as RealUploadStubContractTests), /Unsafe real upload stub contract tests cannot be stored/);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7T-REPORT-293: report counters remain zero and sanitize legacy data", () => {
+  const fixture: any = createSafeRealUploadStubContractTestsFixture();
+  try {
+    const tests = createRealUploadStubContractTests({ ...fixture, dryRun: true as true, checklist_acknowledged: true, understands_stub_contract_tests_only: true, understands_no_stub_files_created: true, understands_no_implementation_files_created: true, understands_no_runtime_execution: true, understands_no_upload_enabled: true, understands_no_credentials_accessed: true, understands_no_network_calls: true, understands_no_media_reads: true, understands_no_dependencies_added: true, understands_future_stub_noop_implementation_design_phase_required: true });
+    saveRealUploadStubContractTests(tests);
+    const storePath = path.join(fixture.tempDir, "real-upload-stub-contract-tests.json");
+    fs.writeFileSync(storePath, JSON.stringify({
+      schema_version: "1.0",
+      created_at: "2026-05-12T00:00:00.000Z",
+      tests: [{
+        ...tests,
+        real_upload_stub_contract_tests_id: "../legacy-tests-001",
+        project_id: "../legacy-project",
+        stub_module_contract_test_results: tests.stub_module_contract_test_results.map((module: any) => ({ ...module, safe_summary: "../legacy-summary" })),
+        validation: { ...tests.validation, blocking_reasons: ["../legacy-blocker"] },
+      }],
+    }, null, 2));
+    const report = getRealUploadStubContractTestsReport();
+    assert.equal(report.ready_for_real_upload, 0);
+    assert.equal(report.stub_files_created, 0);
+    assert.equal(report.implementation_files_created, 0);
+    assert.equal(report.runtime_files_created, 0);
+    assert.equal(report.dependencies_added, 0);
+    assert.equal(report.contract_runtime_executed, 0);
+    assert.equal(report.upload_allowed, 0);
+    assert.equal(report.platform_api_calls_allowed, 0);
+    assert.equal(report.network_calls_allowed, 0);
+    assert.equal(report.credentials_accessed, 0);
+    assert.equal(report.media_file_read, 0);
+    assert.equal(report.file_mutation_allowed, 0);
+    assert.equal(JSON.stringify(report).includes("access_token"), false);
+    assert.equal(JSON.stringify(report).includes("../legacy-summary"), false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
   }
 });

@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
 **Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B complete (operator review of generated local output). VO-7C complete (upload package design). VO-7D complete (platform upload request artifact). VO-7E complete (upload execution approval). VO-7F complete (upload execution design). VO-7G complete (dry-run upload spike simulation). VO-7H complete (real upload readiness assessment). VO-7I complete (real upload execution request). VO-7J complete (real upload strategy design). VO-7K complete (real upload execution plan). VO-7L complete (real upload dry-run execution simulator). VO-7M complete (final real upload preflight gate). VO-7N complete (real upload implementation design). VO-7O complete (real upload scaffold design). VO-7P complete (real upload scaffold contracts). VO-7Q complete (real upload scaffold contract tests). VO-7R complete (real upload scaffold stub design). VO-7S complete (real upload stub contracts); detailed guide for phases 3B+  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B complete (operator review of generated local output). VO-7C complete (upload package design). VO-7D complete (platform upload request artifact). VO-7E complete (upload execution approval). VO-7F complete (upload execution design). VO-7G complete (dry-run upload spike simulation). VO-7H complete (real upload readiness assessment). VO-7I complete (real upload execution request). VO-7J complete (real upload strategy design). VO-7K complete (real upload execution plan). VO-7L complete (real upload dry-run execution simulator). VO-7M complete (final real upload preflight gate). VO-7N complete (real upload implementation design). VO-7O complete (real upload scaffold design). VO-7P complete (real upload scaffold contracts). VO-7Q complete (real upload scaffold contract tests). VO-7R complete (real upload scaffold stub design). VO-7S complete (real upload stub contracts). VO-7T complete (real upload stub contract tests); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -183,6 +183,27 @@ This phase adds a no-op stub contract artifact only.
 - Does not access credentials, tokens, env vars, or keychain entries.
 - Does not read media files.
 - Does not store raw paths, payloads, responses, or account IDs.
+
+### VO-7T: Real Upload Stub Contract Tests
+
+This phase adds a no-op stub contract test artifact only.
+
+**What it does**
+- Defines stub contract test metadata and no-op test boundaries only.
+- Keeps stub files, scaffold implementation files, runtime files, dependencies, package metadata changes, upload execution, platform APIs, credentials, tokens, env access, and media reads disabled.
+- Stores only safe summaries for future review.
+
+**What it does not do**
+- Does not create stub implementation files.
+- Does not create scaffold implementation files.
+- Does not execute runtime or upload flows.
+- Does not call platform APIs.
+- Does not access credentials, tokens, env vars, or keychain entries.
+- Does not read media files.
+- Does not store raw paths, payloads, responses, or account IDs.
+
+**Next phase guidance**
+- If approved later, the next step may add future stub no-op implementation design work, still without implementation or upload capability.
 
 ### VO-7C: Upload Package Design
 
