@@ -18295,3 +18295,114 @@ export function createRealUploadNoopWiringSmokeTestResult(input: { activationRes
   if (!validation.ok) throw new Error(`Smoke test result validation failed: ${validation.blocking_reasons.join("; ")}`);
   return result;
 }
+
+
+// ─── VO-7AC: Real Upload Readiness Gate V2 ─────────────────────────────────
+
+export interface RealUploadReadinessGateV2 {
+  schema_version: "1.0";
+  real_upload_readiness_gate_v2_id: string;
+  real_upload_noop_wiring_smoke_test_result_id: string;
+  real_upload_disabled_noop_wiring_activation_result_id: string;
+  real_upload_disabled_noop_wiring_activation_plan_id: string;
+  real_upload_noop_wiring_contract_tests_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  readiness_gate_state: "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_real_upload_executor_adapter_design" | "rejected" | "revoked";
+  readiness_gate_mode: "real_upload_readiness_gate_v2_only" | "operator_review_real_upload_readiness_gate_v2";
+  required_artifacts: Record<string, true>;
+  gate_scope: Record<string, unknown>;
+  noop_wiring_review: Record<string, unknown>;
+  real_upload_remaining_gates: Record<string, unknown>;
+  operator_review: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadReadinessGateV2ValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+const VO7AC_FALSE_KEYS = [
+  "ready_for_real_upload",
+  "real_upload_enabled",
+  "runtime_enabled",
+  "runtime_executed",
+  "upload_allowed",
+  "upload_execution_enabled",
+  "platform_api_calls_allowed",
+  "network_calls_allowed",
+  "credentials_accessed",
+  "token_accessed",
+  "keychain_accessed",
+  "env_accessed",
+  "media_file_read",
+  "file_mutation_allowed",
+  "dependencies_added",
+  "package_metadata_changed",
+];
+
+export function validateRealUploadReadinessGateV2(gate: unknown): RealUploadReadinessGateV2ValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!gate || typeof gate !== "object" || Array.isArray(gate)) return { ok: false, blocking_reasons: ["Readiness gate v2 must be an object"], warnings };
+  const g = gate as Record<string, unknown>;
+  if (g.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["draft", "blocked", "ready_for_operator_review", "approved_for_future_real_upload_executor_adapter_design", "rejected", "revoked"].includes(String(g.readiness_gate_state))) blocking_reasons.push("Invalid readiness gate state");
+  const scope = g.gate_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.readiness_gate_only !== true || scope.real_upload_enabled_now !== false || scope.upload_execution_enabled_now !== false || scope.network_calls_enabled_now !== false || scope.platform_api_calls_enabled_now !== false || scope.credential_access_enabled_now !== false || scope.media_read_enabled_now !== false || scope.runtime_wiring_changed_now !== false || scope.dependencies_requested !== false || scope.package_metadata_changes_requested !== false) blocking_reasons.push("Gate scope is unsafe");
+  const noopReview = g.noop_wiring_review as Record<string, unknown> | undefined;
+  if (!noopReview || noopReview.noop_wiring_remains_disabled !== true || noopReview.runtime_invoked !== false || noopReview.upload_invoked !== false || noopReview.network_invoked !== false || noopReview.platform_api_invoked !== false || noopReview.credentials_accessed !== false || noopReview.media_file_read !== false) blocking_reasons.push("No-op wiring review is unsafe");
+  const remaining = g.real_upload_remaining_gates as Record<string, unknown> | undefined;
+  if (!remaining || remaining.executor_adapter_design_required !== true || remaining.executor_contract_required !== true || remaining.dry_run_adapter_required !== true || remaining.credential_boundary_required !== true || remaining.network_boundary_required !== true || remaining.media_read_boundary_required !== true || remaining.operator_final_checklist_required !== true || remaining.real_upload_still_blocked !== true) blocking_reasons.push("Remaining real upload gates are incomplete");
+  blocking_reasons.push(...validateVo7abFalseBoundary(g.execution_boundary, VO7AC_FALSE_KEYS, "Execution boundary"));
+  const validation = g.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_real_upload !== false || validation.real_upload_enabled !== false || validation.upload_allowed !== false || validation.network_calls_allowed !== false || validation.platform_api_calls_allowed !== false || validation.credentials_accessed !== false || validation.media_file_read !== false) blocking_reasons.push("Validation boundary is unsafe");
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(gate));
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadReadinessGateV2(input: { smokeTestResult: RealUploadNoopWiringSmokeTestResult; activationResult: RealUploadDisabledNoopWiringActivationResult; decision?: "draft" | "approved_for_future_real_upload_executor_adapter_design" | "rejected"; reviewed_by_label?: string; checklist_acknowledged?: boolean; understands_gate_only?: boolean; understands_real_upload_not_enabled?: boolean; understands_no_network_calls?: boolean; understands_no_platform_api_calls?: boolean; understands_no_credentials_accessed?: boolean; understands_no_media_reads?: boolean; understands_future_executor_adapter_design_required?: boolean; dryRun: true }): RealUploadReadinessGateV2 {
+  if (input.dryRun !== true) throw new Error("VO-7AC real upload readiness gate v2 requires dryRun=true");
+  const smokeValidation = validateRealUploadNoopWiringSmokeTestResult(input.smokeTestResult);
+  if (!smokeValidation.ok) throw new Error("Smoke test validation failed");
+  const activationValidation = validateRealUploadDisabledNoopWiringActivationResult(input.activationResult);
+  if (!activationValidation.ok) throw new Error("Activation result validation failed");
+  if (input.smokeTestResult.real_upload_disabled_noop_wiring_activation_result_id !== input.activationResult.real_upload_disabled_noop_wiring_activation_result_id) throw new Error("Mismatched smoke test and activation result");
+  const decision = input.decision ?? "draft";
+  const approved = decision === "approved_for_future_real_upload_executor_adapter_design";
+  if (approved) {
+    const acknowledgements = [input.checklist_acknowledged, input.understands_gate_only, input.understands_real_upload_not_enabled, input.understands_no_network_calls, input.understands_no_platform_api_calls, input.understands_no_credentials_accessed, input.understands_no_media_reads, input.understands_future_executor_adapter_design_required];
+    if (!acknowledgements.every(Boolean)) throw new Error("Approved VO-7AC gate requires all operator acknowledgements");
+  }
+  const gate: RealUploadReadinessGateV2 = {
+    schema_version: "1.0",
+    real_upload_readiness_gate_v2_id: `real-upload-readiness-gate-v2-${crypto.randomUUID()}`,
+    real_upload_noop_wiring_smoke_test_result_id: input.smokeTestResult.real_upload_noop_wiring_smoke_test_result_id,
+    real_upload_disabled_noop_wiring_activation_result_id: input.activationResult.real_upload_disabled_noop_wiring_activation_result_id,
+    real_upload_disabled_noop_wiring_activation_plan_id: input.activationResult.real_upload_disabled_noop_wiring_activation_plan_id,
+    real_upload_noop_wiring_contract_tests_id: input.activationResult.real_upload_noop_wiring_contract_tests_id,
+    render_plan_id: input.activationResult.render_plan_id,
+    project_id: input.activationResult.project_id,
+    platform: input.activationResult.platform,
+    created_at: new Date().toISOString(),
+    readiness_gate_state: approved ? "approved_for_future_real_upload_executor_adapter_design" : decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    readiness_gate_mode: "real_upload_readiness_gate_v2_only",
+    required_artifacts: { real_upload_noop_wiring_smoke_test_result_validated: true, real_upload_disabled_noop_wiring_activation_result_validated: true, real_upload_disabled_noop_wiring_activation_plan_validated: true, real_upload_noop_wiring_contract_tests_validated: true },
+    gate_scope: { future_real_upload_executor_adapter_design_requested: approved, readiness_gate_only: true, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, runtime_wiring_changed_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    noop_wiring_review: { noop_wiring_smoke_test_complete: true, noop_wiring_remains_disabled: true, runtime_invoked: false, upload_invoked: false, network_invoked: false, platform_api_invoked: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    real_upload_remaining_gates: { executor_adapter_design_required: true, executor_contract_required: true, dry_run_adapter_required: true, credential_boundary_required: true, network_boundary_required: true, media_read_boundary_required: true, operator_final_checklist_required: true, real_upload_still_blocked: true, blocking_reasons: ["Real upload remains blocked until executor adapter design, contracts, dry-run adapter, and final operator checklist exist."], warnings: [] },
+    operator_review: { reviewed_by_label: input.reviewed_by_label ?? "operator-review", checklist_acknowledged: Boolean(input.checklist_acknowledged), understands_gate_only: Boolean(input.understands_gate_only), understands_real_upload_not_enabled: Boolean(input.understands_real_upload_not_enabled), understands_no_network_calls: Boolean(input.understands_no_network_calls), understands_no_platform_api_calls: Boolean(input.understands_no_platform_api_calls), understands_no_credentials_accessed: Boolean(input.understands_no_credentials_accessed), understands_no_media_reads: Boolean(input.understands_no_media_reads), understands_future_executor_adapter_design_required: Boolean(input.understands_future_executor_adapter_design_required), decision_note_summary: "Readiness gate v2 only; real upload remains disabled." },
+    execution_boundary: Object.fromEntries(VO7AC_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { readiness_gate_v2_complete: true, ready_for_future_real_upload_executor_adapter_design: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadReadinessGateV2", source_real_upload_noop_wiring_smoke_test_result_id: input.smokeTestResult.real_upload_noop_wiring_smoke_test_result_id, source_real_upload_disabled_noop_wiring_activation_result_id: input.activationResult.real_upload_disabled_noop_wiring_activation_result_id, source_real_upload_disabled_noop_wiring_activation_plan_id: input.activationResult.real_upload_disabled_noop_wiring_activation_plan_id, source_render_plan_id: input.activationResult.render_plan_id },
+  };
+  const validation = validateRealUploadReadinessGateV2(gate);
+  if (!validation.ok) throw new Error(`Readiness gate v2 validation failed: ${validation.blocking_reasons.join("; ")}`);
+  return gate;
+}

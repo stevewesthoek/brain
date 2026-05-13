@@ -3620,3 +3620,9 @@ VO-7AB adds two safety artifacts:
 The activation result records only that disabled no-op wiring activation is eligible for future tests. The smoke test remains no-op and disabled; it verifies artifact shape without invoking runtime wiring or production paths.
 
 Safety boundaries remain unchanged: no upload, no platform API calls, no network calls, no credential/token/env/keychain access, no media reads, no file mutation, no runtime execution, no dependencies, no package metadata changes, and `ready_for_real_upload` remains false.
+
+## VO-7AC — Real Upload Readiness Gate V2
+
+VO-7AC adds `real-upload-readiness-gate-v2`, a gate artifact that evaluates the disabled no-op wiring smoke test and enumerates the remaining required work before executor adapter design.
+
+The gate is intentionally conservative: it keeps real upload disabled and requires future executor adapter design, executor contracts, a dry-run adapter, credential/network/media boundaries, and a final operator checklist before any real upload can be considered. It does not perform network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, runtime execution, dependency changes, or package metadata changes.

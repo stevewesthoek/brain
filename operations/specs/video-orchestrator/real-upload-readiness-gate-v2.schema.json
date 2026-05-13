@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "real-upload-readiness-gate-v2.schema.json",
+  "title": "Real Upload Readiness Gate V2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "real_upload_readiness_gate_v2_id", "real_upload_noop_wiring_smoke_test_result_id", "real_upload_disabled_noop_wiring_activation_result_id", "real_upload_disabled_noop_wiring_activation_plan_id", "real_upload_noop_wiring_contract_tests_id", "render_plan_id", "project_id", "platform", "created_at", "readiness_gate_state", "readiness_gate_mode", "required_artifacts", "gate_scope", "noop_wiring_review", "real_upload_remaining_gates", "operator_review", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "real_upload_readiness_gate_v2_id": { "type": "string", "minLength": 1 },
+    "real_upload_noop_wiring_smoke_test_result_id": { "type": "string", "minLength": 1 },
+    "real_upload_disabled_noop_wiring_activation_result_id": { "type": "string", "minLength": 1 },
+    "real_upload_disabled_noop_wiring_activation_plan_id": { "type": "string", "minLength": 1 },
+    "real_upload_noop_wiring_contract_tests_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "readiness_gate_state": { "type": "string", "enum": ["draft", "blocked", "ready_for_operator_review", "approved_for_future_real_upload_executor_adapter_design", "rejected", "revoked"] },
+    "readiness_gate_mode": { "type": "string", "enum": ["real_upload_readiness_gate_v2_only", "operator_review_real_upload_readiness_gate_v2"] },
+    "required_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["real_upload_noop_wiring_smoke_test_result_validated", "real_upload_disabled_noop_wiring_activation_result_validated", "real_upload_disabled_noop_wiring_activation_plan_validated", "real_upload_noop_wiring_contract_tests_validated"],
+      "properties": {
+        "real_upload_noop_wiring_smoke_test_result_validated": { "type": "boolean", "const": true },
+        "real_upload_disabled_noop_wiring_activation_result_validated": { "type": "boolean", "const": true },
+        "real_upload_disabled_noop_wiring_activation_plan_validated": { "type": "boolean", "const": true },
+        "real_upload_noop_wiring_contract_tests_validated": { "type": "boolean", "const": true }
+      }
+    },
+    "gate_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["future_real_upload_executor_adapter_design_requested", "readiness_gate_only", "real_upload_enabled_now", "upload_execution_enabled_now", "network_calls_enabled_now", "platform_api_calls_enabled_now", "credential_access_enabled_now", "media_read_enabled_now", "runtime_wiring_changed_now", "dependencies_requested", "package_metadata_changes_requested"],
+      "properties": {
+        "future_real_upload_executor_adapter_design_requested": { "type": "boolean" },
+        "readiness_gate_only": { "type": "boolean", "const": true },
+        "real_upload_enabled_now": { "type": "boolean", "const": false },
+        "upload_execution_enabled_now": { "type": "boolean", "const": false },
+        "network_calls_enabled_now": { "type": "boolean", "const": false },
+        "platform_api_calls_enabled_now": { "type": "boolean", "const": false },
+        "credential_access_enabled_now": { "type": "boolean", "const": false },
+        "media_read_enabled_now": { "type": "boolean", "const": false },
+        "runtime_wiring_changed_now": { "type": "boolean", "const": false },
+        "dependencies_requested": { "type": "boolean", "const": false },
+        "package_metadata_changes_requested": { "type": "boolean", "const": false }
+      }
+    },
+    "noop_wiring_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["noop_wiring_smoke_test_complete", "noop_wiring_remains_disabled", "runtime_invoked", "upload_invoked", "network_invoked", "platform_api_invoked", "credentials_accessed", "media_file_read", "blocking_reasons", "warnings"],
+      "properties": {
+        "noop_wiring_smoke_test_complete": { "type": "boolean" },
+        "noop_wiring_remains_disabled": { "type": "boolean", "const": true },
+        "runtime_invoked": { "type": "boolean", "const": false },
+        "upload_invoked": { "type": "boolean", "const": false },
+        "network_invoked": { "type": "boolean", "const": false },
+        "platform_api_invoked": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "media_file_read": { "type": "boolean", "const": false },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "real_upload_remaining_gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executor_adapter_design_required", "executor_contract_required", "dry_run_adapter_required", "credential_boundary_required", "network_boundary_required", "media_read_boundary_required", "operator_final_checklist_required", "real_upload_still_blocked", "blocking_reasons", "warnings"],
+      "properties": {
+        "executor_adapter_design_required": { "type": "boolean", "const": true },
+        "executor_contract_required": { "type": "boolean", "const": true },
+        "dry_run_adapter_required": { "type": "boolean", "const": true },
+        "credential_boundary_required": { "type": "boolean", "const": true },
+        "network_boundary_required": { "type": "boolean", "const": true },
+        "media_read_boundary_required": { "type": "boolean", "const": true },
+        "operator_final_checklist_required": { "type": "boolean", "const": true },
+        "real_upload_still_blocked": { "type": "boolean", "const": true },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "operator_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checklist_acknowledged", "understands_gate_only", "understands_real_upload_not_enabled", "understands_no_network_calls", "understands_no_platform_api_calls", "understands_no_credentials_accessed", "understands_no_media_reads", "understands_future_executor_adapter_design_required"],
+      "properties": {
+        "reviewed_by_label": { "type": "string" },
+        "checklist_acknowledged": { "type": "boolean" },
+        "understands_gate_only": { "type": "boolean" },
+        "understands_real_upload_not_enabled": { "type": "boolean" },
+        "understands_no_network_calls": { "type": "boolean" },
+        "understands_no_platform_api_calls": { "type": "boolean" },
+        "understands_no_credentials_accessed": { "type": "boolean" },
+        "understands_no_media_reads": { "type": "boolean" },
+        "understands_future_executor_adapter_design_required": { "type": "boolean" },
+        "decision_note_summary": { "type": "string" }
+      }
+    },
+    "execution_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ready_for_real_upload", "real_upload_enabled", "runtime_enabled", "runtime_executed", "upload_allowed", "upload_execution_enabled", "platform_api_calls_allowed", "network_calls_allowed", "credentials_accessed", "token_accessed", "keychain_accessed", "env_accessed", "media_file_read", "file_mutation_allowed", "dependencies_added", "package_metadata_changed"],
+      "properties": {
+        "ready_for_real_upload": { "type": "boolean", "const": false },
+        "real_upload_enabled": { "type": "boolean", "const": false },
+        "runtime_enabled": { "type": "boolean", "const": false },
+        "runtime_executed": { "type": "boolean", "const": false },
+        "upload_allowed": { "type": "boolean", "const": false },
+        "upload_execution_enabled": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "keychain_accessed": { "type": "boolean", "const": false },
+        "env_accessed": { "type": "boolean", "const": false },
+        "media_file_read": { "type": "boolean", "const": false },
+        "file_mutation_allowed": { "type": "boolean", "const": false },
+        "dependencies_added": { "type": "boolean", "const": false },
+        "package_metadata_changed": { "type": "boolean", "const": false }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["readiness_gate_v2_complete", "ready_for_future_real_upload_executor_adapter_design", "ready_for_real_upload", "real_upload_enabled", "upload_allowed", "network_calls_allowed", "platform_api_calls_allowed", "credentials_accessed", "media_file_read", "blocking_reasons", "warnings"],
+      "properties": {
+        "readiness_gate_v2_complete": { "type": "boolean" },
+        "ready_for_future_real_upload_executor_adapter_design": { "type": "boolean" },
+        "ready_for_real_upload": { "type": "boolean", "const": false },
+        "real_upload_enabled": { "type": "boolean", "const": false },
+        "upload_allowed": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "media_file_read": { "type": "boolean", "const": false },
+        "blocking_reasons": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by", "source_real_upload_noop_wiring_smoke_test_result_id", "source_real_upload_disabled_noop_wiring_activation_result_id", "source_real_upload_disabled_noop_wiring_activation_plan_id", "source_render_plan_id"],
+      "properties": {
+        "generated_by": { "type": "string", "enum": ["createRealUploadReadinessGateV2", "revokeRealUploadReadinessGateV2"] },
+        "source_real_upload_noop_wiring_smoke_test_result_id": { "type": "string" },
+        "source_real_upload_disabled_noop_wiring_activation_result_id": { "type": "string" },
+        "source_real_upload_disabled_noop_wiring_activation_plan_id": { "type": "string" },
+        "source_render_plan_id": { "type": "string" }
+      }
+    }
+  }
+}
