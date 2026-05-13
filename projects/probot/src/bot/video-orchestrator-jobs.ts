@@ -15310,6 +15310,468 @@ export function getRealUploadScaffoldStubDesign(real_upload_scaffold_stub_design
 export function revokeRealUploadScaffoldStubDesign(real_upload_scaffold_stub_design_id: string, reason: string): RealUploadScaffoldStubDesign { const design = getRealUploadScaffoldStubDesign(real_upload_scaffold_stub_design_id); if (!design) throw new Error("Real upload scaffold stub design not found"); const safeReason = safeRealUploadScaffoldStubDesignString(reason, "[unsafe-reason]"); if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload scaffold stub design reason cannot be stored."); const revoked: RealUploadScaffoldStubDesign = { ...design, stub_design_state: "revoked", validation: { ...design.validation, blocking_reasons: [...design.validation.blocking_reasons, safeReason], warnings: [...design.validation.warnings, "Real upload scaffold stub design revoked."] }, provenance: { ...design.provenance, generated_by: "revokeRealUploadScaffoldStubDesign" } }; saveRealUploadScaffoldStubDesign(revoked); return revoked; }
 export function getRealUploadScaffoldStubDesignReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_stub_contracts: number; rejected: number; revoked: number; scaffold_stub_design_complete: number; ready_for_future_stub_contracts: number; ready_for_real_upload: 0; stub_files_created: 0; implementation_files_created: 0; runtime_files_created: 0; dependencies_added: 0; package_metadata_changed: 0; runtime_enabled: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; file_mutation_allowed: 0; stub_modules_total: number; stub_modules_with_blockers: number; designs: Array<RealUploadScaffoldStubDesignStoreSummaryItem>; } { const designs = listRealUploadScaffoldStubDesigns(options); const by_state: Record<string, number> = {}; let blocked = 0, ready = 0, approved = 0, rejected = 0, revoked = 0, complete = 0, readyFuture = 0, stubModulesTotal = 0, stubModulesBlocked = 0; const summaries = designs.map((design) => { by_state[design.stub_design_state] = (by_state[design.stub_design_state] ?? 0) + 1; if (design.stub_design_state === "blocked") blocked++; if (design.stub_design_state === "ready_for_operator_review") ready++; if (design.stub_design_state === "approved_for_future_stub_contracts") approved++; if (design.stub_design_state === "rejected") rejected++; if (design.stub_design_state === "revoked") revoked++; if (design.validation.scaffold_stub_design_complete) complete++; if (design.validation.ready_for_future_stub_contracts) readyFuture++; stubModulesTotal += design.proposed_stub_modules.length; stubModulesBlocked += design.proposed_stub_modules.filter((module) => module.blocking_reasons.length > 0).length; return { stub_design_state: design.stub_design_state, created_at: design.created_at, stub_modules_total: design.proposed_stub_modules.length, stub_modules_with_blockers: design.proposed_stub_modules.filter((module) => module.blocking_reasons.length > 0).length, safe_summary: safeRealUploadScaffoldStubDesignString(design.validation.blocking_reasons[0] || design.proposed_stub_modules[0]?.safe_summary || "Stub design summary.", "Stub design summary.") }; }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_stub_contracts: approved, rejected, revoked, scaffold_stub_design_complete: complete, ready_for_future_stub_contracts: readyFuture, ready_for_real_upload: 0, stub_files_created: 0, implementation_files_created: 0, runtime_files_created: 0, dependencies_added: 0, package_metadata_changed: 0, runtime_enabled: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, media_file_read: 0, file_mutation_allowed: 0, stub_modules_total: stubModulesTotal, stub_modules_with_blockers: stubModulesBlocked, designs: summaries }; }
 
+
+
+// ─── VO-7S: Real Upload Stub Contracts ────────────────────────────────────
+
+export type RealUploadStubContractsMode = "real_upload_stub_contracts_only" | "operator_review_real_upload_stub_contracts";
+export type RealUploadStubContractsState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_stub_contract_tests" | "rejected" | "revoked";
+export interface RealUploadStubContractsRequiredArtifacts { real_upload_scaffold_stub_design_validated: true; real_upload_scaffold_contract_tests_validated: true; real_upload_scaffold_contracts_validated: true; real_upload_scaffold_design_validated: true; real_upload_implementation_design_validated: true; final_real_upload_preflight_gate_validated: true; real_upload_dry_run_execution_result_validated: true; real_upload_execution_plan_validated: true; real_upload_strategy_design_validated: true; real_upload_execution_request_validated: true; real_upload_readiness_assessment_validated: true; dry_run_upload_spike_result_validated: true; upload_execution_design_validated: true; upload_execution_approval_validated: true; platform_upload_request_validated: true; upload_package_design_validated: true; local_output_review_validated: true; spike_result_validated: true; }
+export interface RealUploadStubContractsScope { future_stub_contract_tests_requested: boolean; stub_contracts_only: true; stub_files_created: false; implementation_files_created: false; runtime_files_created: false; runtime_enabled: false; current_real_upload_requested: false; current_network_calls_requested: false; current_platform_api_calls_requested: false; current_credential_access_requested: false; current_media_read_requested: false; dependencies_requested: false; package_metadata_changes_requested: false; }
+export interface RealUploadStubModuleContract { stub_contract_id: string; stub_kind: "credential_provider_stub_contract" | "media_reference_resolver_stub_contract" | "platform_adapter_stub_contract" | "payload_builder_stub_contract" | "network_client_stub_contract" | "upload_executor_stub_contract" | "retry_idempotency_stub_contract" | "rollback_stub_contract" | "post_upload_verification_stub_contract" | "audit_event_stub_contract" | "operator_confirmation_stub_contract" | "emergency_stop_stub_contract" | "status_reporter_stub_contract" | "upload_scaffold_index_stub_contract"; contract_state: "proposed" | "blocked" | "deferred" | "ready_for_future_stub_contract_tests"; safe_summary: string; type_shape_defined: boolean; no_op_contract: true; stub_file_created: false; implementation_created: false; runtime_enabled: false; upload_enabled: false; network_enabled: false; platform_api_enabled: false; credential_access_enabled: false; media_read_enabled: false; file_mutation_enabled: false; raw_payload_created: false; raw_response_stored: false; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadStubBehaviorContract { behavior_contract_id: string; behavior_kind: string; contract_state: "proposed" | "blocked" | "deferred" | "ready_for_future_stub_contract_tests"; safe_summary: string; no_op_behavior_contract: true; runtime_execution_allowed: false; external_effects_allowed: false; upload_effect_allowed: false; network_effect_allowed: false; credential_effect_allowed: false; media_effect_allowed: false; file_effect_allowed: false; raw_payload_allowed: false; raw_response_allowed: false; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadNoOpContractBoundary { all_stub_contracts_no_op_only: boolean; no_runtime_execution: true; no_external_effects: true; no_upload_effects: true; no_network_effects: true; no_credential_effects: true; no_media_effects: true; no_file_effects: true; no_raw_payloads: true; no_raw_responses: true; }
+export interface RealUploadCredentialStubContractBoundary { credential_stub_contract_defined: boolean; credentials_required: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; credential_reference_stored: false; token_reference_stored: false; secret_material_stored: false; }
+export interface RealUploadMediaStubContractBoundary { media_stub_contract_defined: boolean; media_file_read: false; raw_media_path_stored: false; media_file_modified: false; media_file_copied: false; media_file_moved: false; media_file_deleted: false; }
+export interface RealUploadPlatformApiStubContractBoundary { platform_api_stub_contract_defined: boolean; platform_adapter_implemented: false; platform_endpoint_selected: false; platform_api_calls_allowed: false; platform_api_calls_made: false; raw_account_ids_stored: false; }
+export interface RealUploadPayloadStubContractBoundary { payload_stub_contract_defined: boolean; platform_api_payload_created: false; platform_api_payload_stored: false; upload_payload_created: false; raw_payload_stored: false; }
+export interface RealUploadNetworkStubContractBoundary { network_stub_contract_defined: boolean; network_client_implemented: false; network_calls_allowed: false; network_calls_made: false; external_side_effects_allowed: false; external_side_effects_observed: false; }
+export interface RealUploadRuntimeStubContractBoundary { runtime_stub_contract_defined: boolean; runtime_enabled: false; runtime_files_created: false; runtime_config_created: false; env_files_created: false; secrets_config_created: false; credential_config_created: false; package_dependency_changes: false; }
+export interface RealUploadFileStubContractBoundary { files_created_now: false; stub_files_created: false; implementation_files_created: false; package_files_changed: false; runtime_files_created: false; file_mutation_allowed: false; }
+export interface RealUploadStubContractsOperatorReview { reviewed_by_label?: string | undefined; checklist_acknowledged: boolean; understands_stub_contracts_only: boolean; understands_no_stub_files_created: boolean; understands_no_implementation_files_created: boolean; understands_no_upload_enabled: boolean; understands_no_credentials_accessed: boolean; understands_no_network_calls: boolean; understands_no_media_reads: boolean; understands_no_dependencies_added: boolean; understands_future_stub_contract_tests_phase_required: boolean; decision_note_summary?: string | undefined; }
+export interface RealUploadStubContractsExecutionBoundary { stub_files_created: false; implementation_files_created: false; runtime_files_created: false; dependencies_added: false; package_metadata_changed: false; runtime_enabled: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; media_file_read: false; file_mutation_allowed: false; ready_for_real_upload: false; }
+export interface RealUploadStubContractsValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadStubContracts { schema_version: "1.0"; real_upload_stub_contracts_id: string; real_upload_scaffold_stub_design_id: string; real_upload_scaffold_contract_tests_id: string; real_upload_scaffold_contracts_id: string; real_upload_scaffold_design_id: string; real_upload_implementation_design_id: string; final_real_upload_preflight_gate_id: string; real_upload_dry_run_execution_result_id: string; real_upload_execution_plan_id: string; real_upload_strategy_design_id: string; real_upload_execution_request_id: string; real_upload_readiness_assessment_id: string; dry_run_upload_spike_result_id: string; upload_execution_design_id: string; upload_execution_approval_id: string; platform_upload_request_id: string; upload_package_design_id: string; local_output_review_id: string; production_render_spike_result_id: string; final_render_execution_request_id: string; render_plan_id: string; project_id: string; platform: string; stub_contracts_state: RealUploadStubContractsState; created_at: string; stub_contracts_mode: RealUploadStubContractsMode; required_artifacts: RealUploadStubContractsRequiredArtifacts; stub_contracts_scope: RealUploadStubContractsScope; stub_module_contracts: RealUploadStubModuleContract[]; stub_behavior_contracts: RealUploadStubBehaviorContract[]; no_op_contract_boundary: RealUploadNoOpContractBoundary; credential_stub_contract_boundary: RealUploadCredentialStubContractBoundary; media_stub_contract_boundary: RealUploadMediaStubContractBoundary; platform_api_stub_contract_boundary: RealUploadPlatformApiStubContractBoundary; payload_stub_contract_boundary: RealUploadPayloadStubContractBoundary; network_stub_contract_boundary: RealUploadNetworkStubContractBoundary; runtime_stub_contract_boundary: RealUploadRuntimeStubContractBoundary; file_stub_contract_boundary: RealUploadFileStubContractBoundary; operator_review: RealUploadStubContractsOperatorReview; execution_boundary: RealUploadStubContractsExecutionBoundary; validation: { stub_contracts_complete: boolean; ready_for_future_stub_contract_tests: boolean; ready_for_real_upload: false; stub_files_created: false; implementation_files_created: false; runtime_files_created: false; dependencies_added: false; package_metadata_changed: false; runtime_enabled: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; media_file_read: false; file_mutation_allowed: false; blocking_reasons: string[]; warnings: string[]; }; provenance: { generated_by: "createRealUploadStubContracts" | "revokeRealUploadStubContracts"; source_real_upload_scaffold_stub_design_id: string; source_real_upload_scaffold_contract_tests_id: string; source_real_upload_scaffold_contracts_id: string; source_real_upload_scaffold_design_id: string; source_real_upload_implementation_design_id: string; source_final_real_upload_preflight_gate_id: string; source_real_upload_dry_run_execution_result_id: string; source_real_upload_execution_plan_id: string; source_real_upload_strategy_design_id: string; source_real_upload_execution_request_id: string; source_real_upload_readiness_assessment_id: string; source_dry_run_upload_spike_result_id: string; source_upload_execution_design_id: string; source_upload_execution_approval_id: string; source_platform_upload_request_id: string; source_upload_package_design_id: string; source_local_output_review_id: string; source_production_render_spike_result_id: string; source_final_render_execution_request_id: string; source_render_plan_id: string; }; }
+function safeRealUploadStubContractsString(value: unknown, fallback: string): string { return safeRealUploadScaffoldStubDesignString(value, fallback); }
+interface RealUploadStubContractsStore { schema_version: "1.0"; created_at: string; contracts: RealUploadStubContracts[]; }
+interface RealUploadStubContractsStoreSummaryItem { stub_contracts_state: RealUploadStubContractsState; created_at: string; stub_contracts_total: number; stub_contracts_with_blockers: number; safe_summary: string; }
+function getRealUploadStubContractsPath(): string { return path.join(getRuntimeDir(), "real-upload-stub-contracts.json"); }
+function loadRealUploadStubContractsStore(): RealUploadStubContractsStore { try { const filePath = getRealUploadStubContractsPath(); if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as RealUploadStubContractsStore; } catch {} return { schema_version: "1.0", created_at: new Date().toISOString(), contracts: [] }; }
+function saveRealUploadStubContractsStore(store: RealUploadStubContractsStore): void { const filePath = getRealUploadStubContractsPath(); fs.mkdirSync(path.dirname(filePath), { recursive: true }); store.contracts.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_stub_contracts_id.localeCompare(b.real_upload_stub_contracts_id)); fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8"); }
+function validateRealUploadStubContractsShape(contracts: unknown): RealUploadStubContractsValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  const fail = (reason: string) => blocking_reasons.push(reason);
+
+  if (!contracts || typeof contracts !== "object" || Array.isArray(contracts)) {
+    return { ok: false, blocking_reasons: ["Invalid stub contracts"], warnings };
+  }
+
+  const d = contracts as RealUploadStubContracts;
+  if (d.schema_version !== "1.0") fail("Invalid schema version");
+  if (d.stub_contracts_mode !== "real_upload_stub_contracts_only" && d.stub_contracts_mode !== "operator_review_real_upload_stub_contracts") fail("Invalid stub contracts mode");
+  if (d.stub_contracts_scope?.stub_contracts_only !== true || d.stub_contracts_scope?.stub_files_created !== false || d.stub_contracts_scope?.implementation_files_created !== false || d.stub_contracts_scope?.runtime_files_created !== false || d.stub_contracts_scope?.runtime_enabled !== false || d.stub_contracts_scope?.current_real_upload_requested !== false || d.stub_contracts_scope?.current_network_calls_requested !== false || d.stub_contracts_scope?.current_platform_api_calls_requested !== false || d.stub_contracts_scope?.current_credential_access_requested !== false || d.stub_contracts_scope?.current_media_read_requested !== false || d.stub_contracts_scope?.dependencies_requested !== false || d.stub_contracts_scope?.package_metadata_changes_requested !== false) fail("Unsafe stub contracts scope");
+
+  const requiredKinds = [
+    "credential_provider_stub_contract",
+    "media_reference_resolver_stub_contract",
+    "platform_adapter_stub_contract",
+    "payload_builder_stub_contract",
+    "network_client_stub_contract",
+    "upload_executor_stub_contract",
+    "retry_idempotency_stub_contract",
+    "rollback_stub_contract",
+    "post_upload_verification_stub_contract",
+    "audit_event_stub_contract",
+    "operator_confirmation_stub_contract",
+    "emergency_stop_stub_contract",
+    "status_reporter_stub_contract",
+    "upload_scaffold_index_stub_contract",
+  ] as const;
+
+  if (!Array.isArray(d.stub_module_contracts) || new Set(d.stub_module_contracts.map((module) => module.stub_kind)).size !== d.stub_module_contracts.length || requiredKinds.some((kind) => !d.stub_module_contracts.some((module) => module.stub_kind === kind))) fail("Missing or duplicate stub contract kinds");
+  if (Array.isArray(d.stub_module_contracts) && d.stub_module_contracts.some((module) => module.stub_file_created !== false || module.implementation_created !== false || module.runtime_enabled !== false || module.no_op_contract !== true || module.upload_enabled !== false || module.network_enabled !== false || module.platform_api_enabled !== false || module.credential_access_enabled !== false || module.media_read_enabled !== false || module.file_mutation_enabled !== false || module.raw_payload_created !== false || module.raw_response_stored !== false)) fail("Unsafe stub module contracts");
+  if (!Array.isArray(d.stub_behavior_contracts) || d.stub_behavior_contracts.some((behavior) => behavior.no_op_behavior_contract !== true || behavior.runtime_execution_allowed !== false || behavior.external_effects_allowed !== false || behavior.upload_effect_allowed !== false || behavior.network_effect_allowed !== false || behavior.credential_effect_allowed !== false || behavior.media_effect_allowed !== false || behavior.file_effect_allowed !== false || behavior.raw_payload_allowed !== false || behavior.raw_response_allowed !== false)) fail("Unsafe stub behavior contracts");
+  if (d.no_op_contract_boundary?.no_runtime_execution !== true || d.no_op_contract_boundary?.no_external_effects !== true || d.no_op_contract_boundary?.no_upload_effects !== true || d.no_op_contract_boundary?.no_network_effects !== true || d.no_op_contract_boundary?.no_credential_effects !== true || d.no_op_contract_boundary?.no_media_effects !== true || d.no_op_contract_boundary?.no_file_effects !== true || d.no_op_contract_boundary?.no_raw_payloads !== true || d.no_op_contract_boundary?.no_raw_responses !== true) fail("Unsafe no-op contract boundary");
+  if (d.credential_stub_contract_boundary?.credentials_required !== false || d.credential_stub_contract_boundary?.credentials_accessed !== false || d.credential_stub_contract_boundary?.token_accessed !== false || d.credential_stub_contract_boundary?.keychain_accessed !== false || d.credential_stub_contract_boundary?.env_accessed !== false || d.credential_stub_contract_boundary?.credential_reference_stored !== false || d.credential_stub_contract_boundary?.token_reference_stored !== false || d.credential_stub_contract_boundary?.secret_material_stored !== false) fail("Unsafe credential boundary");
+  if (d.media_stub_contract_boundary?.media_file_read !== false || d.media_stub_contract_boundary?.raw_media_path_stored !== false || d.media_stub_contract_boundary?.media_file_modified !== false || d.media_stub_contract_boundary?.media_file_copied !== false || d.media_stub_contract_boundary?.media_file_moved !== false || d.media_stub_contract_boundary?.media_file_deleted !== false) fail("Unsafe media boundary");
+  if (d.platform_api_stub_contract_boundary?.platform_adapter_implemented !== false || d.platform_api_stub_contract_boundary?.platform_endpoint_selected !== false || d.platform_api_stub_contract_boundary?.platform_api_calls_allowed !== false || d.platform_api_stub_contract_boundary?.platform_api_calls_made !== false || d.platform_api_stub_contract_boundary?.raw_account_ids_stored !== false) fail("Unsafe platform boundary");
+  if (d.payload_stub_contract_boundary?.platform_api_payload_created !== false || d.payload_stub_contract_boundary?.platform_api_payload_stored !== false || d.payload_stub_contract_boundary?.upload_payload_created !== false || d.payload_stub_contract_boundary?.raw_payload_stored !== false) fail("Unsafe payload boundary");
+  if (d.network_stub_contract_boundary?.network_client_implemented !== false || d.network_stub_contract_boundary?.network_calls_allowed !== false || d.network_stub_contract_boundary?.network_calls_made !== false || d.network_stub_contract_boundary?.external_side_effects_allowed !== false || d.network_stub_contract_boundary?.external_side_effects_observed !== false) fail("Unsafe network boundary");
+  if (d.runtime_stub_contract_boundary?.runtime_enabled !== false || d.runtime_stub_contract_boundary?.runtime_files_created !== false || d.runtime_stub_contract_boundary?.runtime_config_created !== false || d.runtime_stub_contract_boundary?.env_files_created !== false || d.runtime_stub_contract_boundary?.secrets_config_created !== false || d.runtime_stub_contract_boundary?.credential_config_created !== false || d.runtime_stub_contract_boundary?.package_dependency_changes !== false) fail("Unsafe runtime boundary");
+  if (d.file_stub_contract_boundary?.files_created_now !== false || d.file_stub_contract_boundary?.stub_files_created !== false || d.file_stub_contract_boundary?.implementation_files_created !== false || d.file_stub_contract_boundary?.package_files_changed !== false || d.file_stub_contract_boundary?.runtime_files_created !== false || d.file_stub_contract_boundary?.file_mutation_allowed !== false) fail("Unsafe file boundary");
+  if (d.execution_boundary?.stub_files_created !== false || d.execution_boundary?.implementation_files_created !== false || d.execution_boundary?.runtime_files_created !== false || d.execution_boundary?.dependencies_added !== false || d.execution_boundary?.package_metadata_changed !== false || d.execution_boundary?.runtime_enabled !== false || d.execution_boundary?.upload_allowed !== false || d.execution_boundary?.upload_execution_enabled !== false || d.execution_boundary?.platform_api_calls_allowed !== false || d.execution_boundary?.network_calls_allowed !== false || d.execution_boundary?.credentials_accessed !== false || d.execution_boundary?.token_accessed !== false || d.execution_boundary?.keychain_accessed !== false || d.execution_boundary?.env_accessed !== false || d.execution_boundary?.media_file_read !== false || d.execution_boundary?.file_mutation_allowed !== false || d.execution_boundary?.ready_for_real_upload !== false) fail("Unsafe execution boundary");
+  if (d.validation?.ready_for_real_upload !== false || d.validation?.stub_files_created !== false || d.validation?.implementation_files_created !== false || d.validation?.runtime_files_created !== false || d.validation?.dependencies_added !== false || d.validation?.package_metadata_changed !== false || d.validation?.runtime_enabled !== false || d.validation?.upload_allowed !== false || d.validation?.upload_execution_enabled !== false || d.validation?.platform_api_calls_allowed !== false || d.validation?.network_calls_allowed !== false || d.validation?.credentials_accessed !== false || d.validation?.token_accessed !== false || d.validation?.media_file_read !== false || d.validation?.file_mutation_allowed !== false) fail("Unsafe validation boundary");
+
+  const forbidden = (value: unknown): boolean => {
+    if (typeof value === "string") {
+      const lower = value.toLowerCase();
+      return lower.includes("videos.insert") || lower.includes("youtube.videos().insert") || lower.includes("fetch(") || lower.includes("bearer ") || lower.includes("access_token") || lower.includes("refresh_token") || lower.includes("client_secret") || lower.includes("keychain://") || lower.includes("/users/") || lower.includes("http://") || lower.includes("https://") || lower.includes("../") || lower.includes("stdout") || lower.includes("stderr") || lower.includes("process.env");
+    }
+    if (Array.isArray(value)) return value.some(forbidden);
+    if (value && typeof value === "object") return Object.entries(value as Record<string, unknown>).some(([key, child]) => {
+      const lowerKey = key.toLowerCase();
+      return lowerKey.includes("access_token") || lowerKey.includes("refresh_token") || lowerKey.includes("client_secret") || lowerKey.includes("code_verifier") || lowerKey.includes("authorization_code") || forbidden(child);
+    });
+    return false;
+  };
+
+  if (forbidden(contracts)) fail("Unsafe string content");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function validateRealUploadStubContracts(contracts: unknown): RealUploadStubContractsValidationResult {
+  return validateRealUploadStubContractsShape(contracts);
+}
+
+export function createRealUploadStubContracts(input: any): RealUploadStubContracts {
+  if (input.dryRun !== true) throw new Error("createRealUploadStubContracts: dryRun=true required");
+  if (!validateRealUploadScaffoldStubDesign(input.stubDesign).ok || !validateRealUploadScaffoldContractTests(input.scaffoldContractTests).ok || !validateRealUploadScaffoldContracts(input.scaffoldContracts).ok || !validateRealUploadScaffoldDesign(input.scaffoldDesign).ok || !validateRealUploadImplementationDesign(input.implementationDesign).ok || !validateFinalRealUploadPreflightGate(input.finalPreflightGate).ok || !validateRealUploadDryRunExecutionResult(input.dryRunExecutionResult).ok || !validateRealUploadExecutionPlan(input.executionPlan).ok || !validateRealUploadStrategyDesign(input.strategyDesign).ok || !validateRealUploadExecutionRequest(input.realUploadExecutionRequest).ok || !validateRealUploadReadinessAssessment(input.readinessAssessment).ok || !validateDryRunUploadSpikeResult(input.dryRunUploadSpikeResult).ok || !validateUploadExecutionDesign(input.uploadExecutionDesign).ok || !validateUploadExecutionApproval(input.uploadExecutionApproval).ok || !validatePlatformUploadRequest(input.platformUploadRequest).ok || !validateUploadPackageDesign(input.uploadPackageDesign).ok || !validateLocalOutputOperatorReview(input.localOutputReview).ok || !validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("createRealUploadStubContracts: all input artifacts must validate");
+  const approved = input.decision === "approved_for_future_stub_contract_tests";
+  if (approved && (!input.checklist_acknowledged || !input.understands_stub_contracts_only || !input.understands_no_stub_files_created || !input.understands_no_implementation_files_created || !input.understands_no_upload_enabled || !input.understands_no_credentials_accessed || !input.understands_no_network_calls || !input.understands_no_media_reads || !input.understands_no_dependencies_added || !input.understands_future_stub_contract_tests_phase_required)) throw new Error("createRealUploadStubContracts: acknowledgements required");
+
+  const kinds = ["credential_provider_stub_contract","media_reference_resolver_stub_contract","platform_adapter_stub_contract","payload_builder_stub_contract","network_client_stub_contract","upload_executor_stub_contract","retry_idempotency_stub_contract","rollback_stub_contract","post_upload_verification_stub_contract","audit_event_stub_contract","operator_confirmation_stub_contract","emergency_stop_stub_contract","status_reporter_stub_contract","upload_scaffold_index_stub_contract"] as const;
+  const contracts: RealUploadStubContracts = {
+    schema_version: "1.0",
+    real_upload_stub_contracts_id: crypto.randomUUID(),
+    real_upload_scaffold_stub_design_id: input.stubDesign.real_upload_scaffold_stub_design_id,
+    real_upload_scaffold_contract_tests_id: input.scaffoldContractTests.real_upload_scaffold_contract_tests_id,
+    real_upload_scaffold_contracts_id: input.scaffoldContracts.real_upload_scaffold_contracts_id,
+    real_upload_scaffold_design_id: input.scaffoldDesign.real_upload_scaffold_design_id,
+    real_upload_implementation_design_id: input.implementationDesign.real_upload_implementation_design_id,
+    final_real_upload_preflight_gate_id: input.finalPreflightGate.final_real_upload_preflight_gate_id,
+    real_upload_dry_run_execution_result_id: input.dryRunExecutionResult.real_upload_dry_run_execution_result_id,
+    real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id,
+    real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id,
+    real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id,
+    real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id,
+    dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+    upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+    upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+    platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+    upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+    local_output_review_id: input.localOutputReview.local_output_review_id,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.stubDesign.project_id,
+    platform: input.stubDesign.platform,
+    stub_contracts_state: approved ? "approved_for_future_stub_contract_tests" : input.decision === "rejected" ? "rejected" : "draft",
+    created_at: new Date().toISOString(),
+    stub_contracts_mode: approved ? "operator_review_real_upload_stub_contracts" : "real_upload_stub_contracts_only",
+    required_artifacts: {
+      real_upload_scaffold_stub_design_validated: true,
+      real_upload_scaffold_contract_tests_validated: true,
+      real_upload_scaffold_contracts_validated: true,
+      real_upload_scaffold_design_validated: true,
+      real_upload_implementation_design_validated: true,
+      final_real_upload_preflight_gate_validated: true,
+      real_upload_dry_run_execution_result_validated: true,
+      real_upload_execution_plan_validated: true,
+      real_upload_strategy_design_validated: true,
+      real_upload_execution_request_validated: true,
+      real_upload_readiness_assessment_validated: true,
+      dry_run_upload_spike_result_validated: true,
+      upload_execution_design_validated: true,
+      upload_execution_approval_validated: true,
+      platform_upload_request_validated: true,
+      upload_package_design_validated: true,
+      local_output_review_validated: true,
+      spike_result_validated: true,
+    },
+    stub_contracts_scope: {
+      future_stub_contract_tests_requested: true,
+      stub_contracts_only: true,
+      stub_files_created: false,
+      implementation_files_created: false,
+      runtime_files_created: false,
+      runtime_enabled: false,
+      current_real_upload_requested: false,
+      current_network_calls_requested: false,
+      current_platform_api_calls_requested: false,
+      current_credential_access_requested: false,
+      current_media_read_requested: false,
+      dependencies_requested: false,
+      package_metadata_changes_requested: false,
+    },
+    stub_module_contracts: kinds.map((kind, index) => ({
+      stub_contract_id: `stub-contract-${index + 1}`,
+      stub_kind: kind,
+      contract_state: kind === "operator_confirmation_stub_contract" ? "blocked" : "proposed",
+      safe_summary: `Future ${kind.replaceAll("_", " ")} contract only.`,
+      type_shape_defined: true,
+      no_op_contract: true,
+      stub_file_created: false,
+      implementation_created: false,
+      runtime_enabled: false,
+      upload_enabled: false,
+      network_enabled: false,
+      platform_api_enabled: false,
+      credential_access_enabled: false,
+      media_read_enabled: false,
+      file_mutation_enabled: false,
+      raw_payload_created: false,
+      raw_response_stored: false,
+      blocking_reasons: [kind === "credential_provider_stub_contract" ? "Credential access remains disabled." : kind === "media_reference_resolver_stub_contract" ? "Media reads remain disabled." : kind === "platform_adapter_stub_contract" ? "Platform APIs remain disabled." : kind === "payload_builder_stub_contract" ? "Payload creation remains disabled." : kind === "network_client_stub_contract" ? "Network calls remain disabled." : kind === "upload_executor_stub_contract" ? "Upload execution remains disabled." : kind === "retry_idempotency_stub_contract" ? "Retry execution remains disabled." : kind === "rollback_stub_contract" ? "Rollback execution remains disabled." : kind === "post_upload_verification_stub_contract" ? "Verification execution remains disabled." : kind === "audit_event_stub_contract" ? "Raw logging remains disabled." : kind === "operator_confirmation_stub_contract" ? "Operator approval remains required." : kind === "emergency_stop_stub_contract" ? "Emergency stop is stub-only." : kind === "status_reporter_stub_contract" ? "Status reporting remains local-only." : "Index remains contract-only."],
+      warnings: [],
+    })),
+    stub_behavior_contracts: [
+      {
+        behavior_contract_id: "behavior-contract-1",
+        behavior_kind: "credential_provider_stub_contract",
+        contract_state: "proposed",
+        safe_summary: "Credential provider contract remains no-op.",
+        no_op_behavior_contract: true,
+        runtime_execution_allowed: false,
+        external_effects_allowed: false,
+        upload_effect_allowed: false,
+        network_effect_allowed: false,
+        credential_effect_allowed: false,
+        media_effect_allowed: false,
+        file_effect_allowed: false,
+        raw_payload_allowed: false,
+        raw_response_allowed: false,
+        blocking_reasons: ["Credential effects remain disabled."],
+        warnings: [],
+      },
+    ],
+    no_op_contract_boundary: {
+      all_stub_contracts_no_op_only: true,
+      no_runtime_execution: true,
+      no_external_effects: true,
+      no_upload_effects: true,
+      no_network_effects: true,
+      no_credential_effects: true,
+      no_media_effects: true,
+      no_file_effects: true,
+      no_raw_payloads: true,
+      no_raw_responses: true,
+    },
+    credential_stub_contract_boundary: {
+      credential_stub_contract_defined: true,
+      credentials_required: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      keychain_accessed: false,
+      env_accessed: false,
+      credential_reference_stored: false,
+      token_reference_stored: false,
+      secret_material_stored: false,
+    },
+    media_stub_contract_boundary: {
+      media_stub_contract_defined: true,
+      media_file_read: false,
+      raw_media_path_stored: false,
+      media_file_modified: false,
+      media_file_copied: false,
+      media_file_moved: false,
+      media_file_deleted: false,
+    },
+    platform_api_stub_contract_boundary: {
+      platform_api_stub_contract_defined: true,
+      platform_adapter_implemented: false,
+      platform_endpoint_selected: false,
+      platform_api_calls_allowed: false,
+      platform_api_calls_made: false,
+      raw_account_ids_stored: false,
+    },
+    payload_stub_contract_boundary: {
+      payload_stub_contract_defined: true,
+      platform_api_payload_created: false,
+      platform_api_payload_stored: false,
+      upload_payload_created: false,
+      raw_payload_stored: false,
+    },
+    network_stub_contract_boundary: {
+      network_stub_contract_defined: true,
+      network_client_implemented: false,
+      network_calls_allowed: false,
+      network_calls_made: false,
+      external_side_effects_allowed: false,
+      external_side_effects_observed: false,
+    },
+    runtime_stub_contract_boundary: {
+      runtime_stub_contract_defined: true,
+      runtime_enabled: false,
+      runtime_files_created: false,
+      runtime_config_created: false,
+      env_files_created: false,
+      secrets_config_created: false,
+      credential_config_created: false,
+      package_dependency_changes: false,
+    },
+    file_stub_contract_boundary: {
+      files_created_now: false,
+      stub_files_created: false,
+      implementation_files_created: false,
+      package_files_changed: false,
+      runtime_files_created: false,
+      file_mutation_allowed: false,
+    },
+    operator_review: {
+      reviewed_by_label: input.reviewed_by_label || "operator-001",
+      checklist_acknowledged: !!input.checklist_acknowledged,
+      understands_stub_contracts_only: !!input.understands_stub_contracts_only,
+      understands_no_stub_files_created: !!input.understands_no_stub_files_created,
+      understands_no_implementation_files_created: !!input.understands_no_implementation_files_created,
+      understands_no_upload_enabled: !!input.understands_no_upload_enabled,
+      understands_no_credentials_accessed: !!input.understands_no_credentials_accessed,
+      understands_no_network_calls: !!input.understands_no_network_calls,
+      understands_no_media_reads: !!input.understands_no_media_reads,
+      understands_no_dependencies_added: !!input.understands_no_dependencies_added,
+      understands_future_stub_contract_tests_phase_required: !!input.understands_future_stub_contract_tests_phase_required,
+      decision_note_summary: safeRealUploadStubContractsString(input.decision_note_summary, "[stub-contracts]"),
+    },
+    execution_boundary: {
+      stub_files_created: false,
+      implementation_files_created: false,
+      runtime_files_created: false,
+      dependencies_added: false,
+      package_metadata_changed: false,
+      runtime_enabled: false,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      keychain_accessed: false,
+      env_accessed: false,
+      media_file_read: false,
+      file_mutation_allowed: false,
+      ready_for_real_upload: false,
+    },
+    validation: {
+      stub_contracts_complete: true,
+      ready_for_future_stub_contract_tests: approved,
+      ready_for_real_upload: false,
+      stub_files_created: false,
+      implementation_files_created: false,
+      runtime_files_created: false,
+      dependencies_added: false,
+      package_metadata_changed: false,
+      runtime_enabled: false,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      media_file_read: false,
+      file_mutation_allowed: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createRealUploadStubContracts",
+      source_real_upload_scaffold_stub_design_id: input.stubDesign.real_upload_scaffold_stub_design_id,
+      source_real_upload_scaffold_contract_tests_id: input.scaffoldContractTests.real_upload_scaffold_contract_tests_id,
+      source_real_upload_scaffold_contracts_id: input.scaffoldContracts.real_upload_scaffold_contracts_id,
+      source_real_upload_scaffold_design_id: input.scaffoldDesign.real_upload_scaffold_design_id,
+      source_real_upload_implementation_design_id: input.implementationDesign.real_upload_implementation_design_id,
+      source_final_real_upload_preflight_gate_id: input.finalPreflightGate.final_real_upload_preflight_gate_id,
+      source_real_upload_dry_run_execution_result_id: input.dryRunExecutionResult.real_upload_dry_run_execution_result_id,
+      source_real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id,
+      source_real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id,
+      source_real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id,
+      source_real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id,
+      source_dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+      source_upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+      source_upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+      source_platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+      source_upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+      source_local_output_review_id: input.localOutputReview.local_output_review_id,
+      source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+      source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+      source_render_plan_id: input.spikeResult.render_plan_id,
+    },
+  };
+  const validation = validateRealUploadStubContracts(contracts);
+  if (!validation.ok) throw new Error(`Unsafe real upload stub contracts cannot be created: ${validation.blocking_reasons.join("; ")}`);
+  return contracts;
+}
+
+export function saveRealUploadStubContracts(contracts: RealUploadStubContracts): void {
+  const validation = validateRealUploadStubContracts(contracts);
+  if (!validation.ok) throw new Error(`Unsafe real upload stub contracts cannot be stored: ${validation.blocking_reasons.join("; ")}`);
+  const store = loadRealUploadStubContractsStore();
+  const index = store.contracts.findIndex((item) => item.real_upload_stub_contracts_id === contracts.real_upload_stub_contracts_id);
+  if (index >= 0) store.contracts[index] = contracts;
+  else store.contracts.push(contracts);
+  saveRealUploadStubContractsStore(store);
+}
+
+export function listRealUploadStubContracts(options?: { project_id?: string; platform?: string; stub_contracts_state?: string; real_upload_scaffold_stub_design_id?: string; real_upload_scaffold_contract_tests_id?: string }): RealUploadStubContracts[] {
+  return loadRealUploadStubContractsStore().contracts
+    .filter((item) => (!options?.project_id || item.project_id === options.project_id) && (!options?.platform || item.platform === options.platform) && (!options?.stub_contracts_state || item.stub_contracts_state === options.stub_contracts_state) && (!options?.real_upload_scaffold_stub_design_id || item.real_upload_scaffold_stub_design_id === options.real_upload_scaffold_stub_design_id) && (!options?.real_upload_scaffold_contract_tests_id || item.real_upload_scaffold_contract_tests_id === options.real_upload_scaffold_contract_tests_id))
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_stub_contracts_id.localeCompare(b.real_upload_stub_contracts_id));
+}
+
+export function getRealUploadStubContracts(real_upload_stub_contracts_id: string): RealUploadStubContracts | null {
+  return loadRealUploadStubContractsStore().contracts.find((item) => item.real_upload_stub_contracts_id === real_upload_stub_contracts_id) ?? null;
+}
+
+export function revokeRealUploadStubContracts(real_upload_stub_contracts_id: string, reason: string): RealUploadStubContracts {
+  const contracts = getRealUploadStubContracts(real_upload_stub_contracts_id);
+  if (!contracts) throw new Error("Real upload stub contracts not found");
+  const safeReason = safeRealUploadStubContractsString(reason, "[unsafe-reason]");
+  if (safeReason === "[unsafe-reason]") throw new Error("Unsafe real upload stub contracts reason cannot be stored.");
+  const revoked: RealUploadStubContracts = {
+    ...contracts,
+    stub_contracts_state: "revoked",
+    validation: {
+      ...contracts.validation,
+      blocking_reasons: [...contracts.validation.blocking_reasons, safeReason],
+      warnings: [...contracts.validation.warnings, "Real upload stub contracts revoked."],
+    },
+    provenance: { ...contracts.provenance, generated_by: "revokeRealUploadStubContracts" },
+  };
+  saveRealUploadStubContracts(revoked);
+  return revoked;
+}
+
+export function getRealUploadStubContractsReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_stub_contract_tests: number; rejected: number; revoked: number; stub_contracts_complete: number; ready_for_future_stub_contract_tests: number; ready_for_real_upload: 0; stub_files_created: 0; implementation_files_created: 0; runtime_files_created: 0; dependencies_added: 0; package_metadata_changed: 0; runtime_enabled: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; file_mutation_allowed: 0; stub_contracts_total: number; stub_contracts_with_blockers: number; contracts: Array<RealUploadStubContractsStoreSummaryItem>; } {
+  const contracts = listRealUploadStubContracts(options);
+  const by_state: Record<string, number> = {};
+  let blocked = 0;
+  let ready = 0;
+  let approved = 0;
+  let rejected = 0;
+  let revoked = 0;
+  let complete = 0;
+  let readyFuture = 0;
+  let total = 0;
+  let blockers = 0;
+  const summaries = contracts.map((item) => {
+    by_state[item.stub_contracts_state] = (by_state[item.stub_contracts_state] ?? 0) + 1;
+    if (item.stub_contracts_state === "blocked") blocked++;
+    if (item.stub_contracts_state === "ready_for_operator_review") ready++;
+    if (item.stub_contracts_state === "approved_for_future_stub_contract_tests") approved++;
+    if (item.stub_contracts_state === "rejected") rejected++;
+    if (item.stub_contracts_state === "revoked") revoked++;
+    if (item.validation.stub_contracts_complete) complete++;
+    if (item.validation.ready_for_future_stub_contract_tests) readyFuture++;
+    total += item.stub_module_contracts.length;
+    blockers += item.stub_module_contracts.filter((module) => module.blocking_reasons.length > 0).length;
+    return {
+      stub_contracts_state: item.stub_contracts_state,
+      created_at: item.created_at,
+      stub_contracts_total: item.stub_module_contracts.length,
+      stub_contracts_with_blockers: item.stub_module_contracts.filter((module) => module.blocking_reasons.length > 0).length,
+      safe_summary: safeRealUploadStubContractsString(item.validation.blocking_reasons[0] || item.stub_module_contracts[0]?.safe_summary || "Stub contracts summary.", "Stub contracts summary."),
+    };
+  });
+  return {
+    total: summaries.length,
+    by_state,
+    blocked,
+    ready_for_operator_review: ready,
+    approved_for_future_stub_contract_tests: approved,
+    rejected,
+    revoked,
+    stub_contracts_complete: complete,
+    ready_for_future_stub_contract_tests: readyFuture,
+    ready_for_real_upload: 0,
+    stub_files_created: 0,
+    implementation_files_created: 0,
+    runtime_files_created: 0,
+    dependencies_added: 0,
+    package_metadata_changed: 0,
+    runtime_enabled: 0,
+    upload_allowed: 0,
+    upload_execution_enabled: 0,
+    platform_api_calls_allowed: 0,
+    network_calls_allowed: 0,
+    credentials_accessed: 0,
+    token_accessed: 0,
+    media_file_read: 0,
+    file_mutation_allowed: 0,
+    stub_contracts_total: total,
+    stub_contracts_with_blockers: blockers,
+    contracts: summaries,
+  };
+}
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;

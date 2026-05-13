@@ -294,6 +294,13 @@ import {
   getRealUploadScaffoldContracts,
   revokeRealUploadScaffoldContracts,
   getRealUploadScaffoldContractsReport,
+  createRealUploadStubContracts,
+  validateRealUploadStubContracts,
+  saveRealUploadStubContracts,
+  listRealUploadStubContracts,
+  getRealUploadStubContracts,
+  revokeRealUploadStubContracts,
+  getRealUploadStubContractsReport,
   createRealUploadScaffoldContractTests,
   validateRealUploadScaffoldContractTests,
   saveRealUploadScaffoldContractTests,
@@ -339,6 +346,7 @@ import {
   type RealUploadScaffoldContracts,
   type RealUploadScaffoldContractTests,
   type RealUploadScaffoldStubDesign,
+  type RealUploadStubContracts,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -1533,6 +1541,78 @@ function createSafeRealUploadScaffoldStubDesign(
     understands_no_dependencies_added: true,
     understands_future_stub_contract_phase_required: true,
     decision_note_summary: "[real-upload-scaffold-stub-design]",
+    ...overrides,
+  });
+}
+
+function createSafeRealUploadStubContracts(
+  stubDesign: RealUploadScaffoldStubDesign,
+  scaffoldContractTests: RealUploadScaffoldContractTests,
+  scaffoldContracts: RealUploadScaffoldContracts,
+  scaffoldDesign: RealUploadScaffoldDesign,
+  implementationDesign: RealUploadImplementationDesign,
+  finalPreflightGate: FinalRealUploadPreflightGate,
+  dryRunExecutionResult: RealUploadDryRunExecutionResult,
+  executionPlan: RealUploadExecutionPlan,
+  strategyDesign: RealUploadStrategyDesign,
+  realUploadExecutionRequest: RealUploadExecutionRequest,
+  readinessAssessment: RealUploadReadinessAssessment,
+  dryRunUploadSpikeResult: DryRunUploadSpikeResult,
+  uploadExecutionDesign: UploadExecutionDesign,
+  uploadExecutionApproval: UploadExecutionApproval,
+  platformUploadRequest: PlatformUploadRequest,
+  uploadPackageDesign: UploadPackageDesign,
+  localOutputReview: LocalOutputOperatorReview,
+  spikeResult: ControlledProductionRenderSpikeResult,
+  decision: "draft" | "approved_for_future_stub_contract_tests" | "rejected" = "approved_for_future_stub_contract_tests",
+  overrides: Partial<{
+    reviewed_by_label: string;
+    checklist_acknowledged: boolean;
+    understands_stub_contracts_only: boolean;
+    understands_no_stub_files_created: boolean;
+    understands_no_implementation_files_created: boolean;
+    understands_no_upload_enabled: boolean;
+    understands_no_credentials_accessed: boolean;
+    understands_no_network_calls: boolean;
+    understands_no_media_reads: boolean;
+    understands_no_dependencies_added: boolean;
+    understands_future_stub_contract_tests_phase_required: boolean;
+    decision_note_summary: string;
+  }> = {}
+): RealUploadStubContracts {
+  return createRealUploadStubContracts({
+    stubDesign,
+    scaffoldContractTests,
+    scaffoldContracts,
+    scaffoldDesign,
+    implementationDesign,
+    finalPreflightGate,
+    dryRunExecutionResult,
+    executionPlan,
+    strategyDesign,
+    realUploadExecutionRequest,
+    readinessAssessment,
+    dryRunUploadSpikeResult,
+    uploadExecutionDesign,
+    uploadExecutionApproval,
+    platformUploadRequest,
+    uploadPackageDesign,
+    localOutputReview,
+    spikeResult,
+    decision,
+    dryRun: true,
+    reviewed_by_label: "operator-001",
+    checklist_acknowledged: true,
+    understands_stub_contracts_only: true,
+    understands_no_stub_files_created: true,
+    understands_no_implementation_files_created: true,
+    understands_no_upload_enabled: true,
+    understands_no_credentials_accessed: true,
+    understands_no_network_calls: true,
+    understands_no_media_reads: true,
+    understands_no_dependencies_added: true,
+    understands_future_stub_contract_tests_phase_required: true,
+    decision_note_summary: "[real-upload-stub-contracts]",
     ...overrides,
   });
 }
@@ -22610,6 +22690,198 @@ test("VO-7R-REPORT-283: report counters remain zero and sanitize legacy data", (
       }]
     }, null, 2));
     const report = getRealUploadScaffoldStubDesignReport();
+    assert.strictEqual(report.ready_for_real_upload, 0);
+    assert.strictEqual(report.stub_files_created, 0);
+    assert.strictEqual(report.implementation_files_created, 0);
+    assert.strictEqual(report.runtime_files_created, 0);
+    assert.strictEqual(report.dependencies_added, 0);
+    assert.strictEqual(report.package_metadata_changed, 0);
+    assert.strictEqual(report.runtime_enabled, 0);
+    assert.strictEqual(report.upload_allowed, 0);
+    assert.strictEqual(report.network_calls_allowed, 0);
+    assert.strictEqual(report.credentials_accessed, 0);
+    assert.strictEqual(report.media_file_read, 0);
+    assert.strictEqual(JSON.stringify(report).includes("/Users/") || JSON.stringify(report).includes("https://") || JSON.stringify(report).includes("http://") || JSON.stringify(report).includes("../") || JSON.stringify(report).includes("stdout") || JSON.stringify(report).includes("stderr") || JSON.stringify(report).includes("access_token") || JSON.stringify(report).includes("refresh_token") || JSON.stringify(report).includes("client_secret"), false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7S-SCHEMA-284: stub contracts schema and example parse safely", () => {
+  const repoRootForSpecs = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/real-upload-stub-contracts.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/examples/real-upload-stub-contracts.example.json"), "utf8"));
+  const hasForbiddenValue = (value: unknown): boolean => {
+    if (typeof value === "string") {
+      const lower = value.toLowerCase();
+      return lower.includes("://") || lower.includes("stdout") || lower.includes("stderr") || lower.includes("process.env") || lower.includes("access_token") || lower.includes("refresh_token") || lower.includes("client_secret") || lower.includes("code_verifier") || lower.includes("authorization_code") || lower.includes("bearer") || lower.includes("videos.insert") || lower.includes("youtube.videos().insert");
+    }
+    if (Array.isArray(value)) return value.some(hasForbiddenValue);
+    if (value && typeof value === "object") return Object.values(value as Record<string, unknown>).some(hasForbiddenValue);
+    return false;
+  };
+  assert.strictEqual(schema.properties.stub_contracts_scope.properties.stub_contracts_only.const, true);
+  assert.strictEqual(schema.properties.stub_module_contracts.items.properties.no_op_contract.const, true);
+  assert.strictEqual(schema.properties.stub_module_contracts.items.properties.raw_payload_created.const, false);
+  assert.strictEqual(schema.properties.execution_boundary.properties.ready_for_real_upload.const, false);
+  assert.strictEqual(schema.properties.validation.properties.ready_for_real_upload.const, false);
+  assert.strictEqual(schema.properties.no_op_contract_boundary.properties.no_raw_payloads.const, true);
+  assert.strictEqual(schema.properties.credential_stub_contract_boundary.properties.credentials_accessed.const, false);
+  assert.strictEqual(schema.properties.stub_module_contracts.allOf.length >= 14, true);
+  assert.strictEqual(hasForbiddenValue(example), false);
+  assert.strictEqual(example.stub_contracts_state, "approved_for_future_stub_contract_tests");
+});
+
+test("VO-7S-CREATE-285: create stub contracts only from safe artifacts", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+    const strategy = createSafeRealUploadStrategyDesign(executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_plan");
+    const plan = createSafeRealUploadExecutionPlan(strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_dry_run");
+    const dryRunResult = createSafeRealUploadDryRunExecutionResult(plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, true, "approved_for_future_real_upload_preflight");
+    const gate = createSafeFinalRealUploadPreflightGate(dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const implementation = createSafeRealUploadImplementationDesign(gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const scaffold = createSafeRealUploadScaffoldDesign(implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const contracts = createSafeRealUploadScaffoldContracts(scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const tests = createSafeRealUploadScaffoldContractTests(contracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    assert.throws(() => createRealUploadStubContracts({ stubDesign: createSafeRealUploadScaffoldStubDesign(tests, contracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike), scaffoldContractTests: tests, scaffoldContracts: contracts, scaffoldDesign: scaffold, implementationDesign: implementation, finalPreflightGate: gate, dryRunExecutionResult: dryRunResult, executionPlan: plan, strategyDesign: strategy, realUploadExecutionRequest: executionRequest, readinessAssessment, dryRunUploadSpikeResult: dryRunSpike, uploadExecutionDesign: design, uploadExecutionApproval: approval, platformUploadRequest: request, uploadPackageDesign: packageDesign, localOutputReview: review, spikeResult: spike, dryRun: false as never } as never), /dryRun=true required/);
+    const stub = createSafeRealUploadScaffoldStubDesign(tests, contracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const safeContracts = createSafeRealUploadStubContracts(stub, tests, contracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_stub_contract_tests");
+    assert.strictEqual(validateRealUploadStubContracts(safeContracts).ok, true);
+    assert.strictEqual(safeContracts.validation.ready_for_real_upload, false);
+    assert.strictEqual(safeContracts.stub_contracts_scope.stub_contracts_only, true);
+    assert.strictEqual(safeContracts.stub_module_contracts.length, 14);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7S-VALIDATE-286: validator rejects missing, duplicate, unsafe, and forbidden content", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+    const strategy = createSafeRealUploadStrategyDesign(executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_plan");
+    const plan = createSafeRealUploadExecutionPlan(strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_dry_run");
+    const dryRunResult = createSafeRealUploadDryRunExecutionResult(plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, true, "approved_for_future_real_upload_preflight");
+    const gate = createSafeFinalRealUploadPreflightGate(dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const implementation = createSafeRealUploadImplementationDesign(gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const scaffold = createSafeRealUploadScaffoldDesign(implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const contracts = createSafeRealUploadScaffoldContracts(scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const tests = createSafeRealUploadScaffoldContractTests(contracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const stub = createSafeRealUploadScaffoldStubDesign(tests, contracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const safeContracts = createSafeRealUploadStubContracts(stub, tests, contracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    assert.equal(validateRealUploadStubContracts(safeContracts).ok, true);
+    assert.equal(validateRealUploadStubContracts({ ...safeContracts, stub_module_contracts: safeContracts.stub_module_contracts.filter((module) => module.stub_kind !== "upload_scaffold_index_stub_contract") }).ok, false);
+    assert.equal(validateRealUploadStubContracts({ ...safeContracts, stub_module_contracts: [...safeContracts.stub_module_contracts, safeContracts.stub_module_contracts[0]] }).ok, false);
+    assert.equal(validateRealUploadStubContracts({ ...safeContracts, no_op_contract_boundary: { ...safeContracts.no_op_contract_boundary, no_raw_payloads: false as never } }).ok, false);
+    assert.equal(validateRealUploadStubContracts({ ...safeContracts, execution_boundary: { ...safeContracts.execution_boundary, ready_for_real_upload: true as never } }).ok, false);
+    assert.equal(validateRealUploadStubContracts({ ...safeContracts, stub_module_contracts: safeContracts.stub_module_contracts.map((module) => module.stub_kind === "credential_provider_stub_contract" ? { ...module, safe_summary: "../unsafe" } : module) }).ok, false);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7S-STORE-287: store save list get revoke works and rejects unsafe data", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const spike = createSafeControlledProductionSpikeResult(tempDir, true);
+    const review = createSafeLocalOutputOperatorReview(spike, "approved_for_upload_design");
+    const packageDesign = createSafeUploadPackageDesign(review, spike, "approved_for_upload_request_design");
+    const request = createSafePlatformUploadRequest(packageDesign, review, spike, "approved_for_future_upload_execution");
+    const approval = createSafeUploadExecutionApproval(request, packageDesign, review, spike, "approved_for_future_upload_execution_design");
+    const design = createSafeUploadExecutionDesign(approval, request, packageDesign, review, spike, "approved_for_future_dry_run_upload_spike");
+    const dryRunSpike = createSafeDryRunUploadSpikeResult(design, approval, request, packageDesign, review, spike, true);
+    const readinessAssessment = createSafeRealUploadReadinessAssessment(dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const executionRequest = createSafeRealUploadExecutionRequest(readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_real_upload_design");
+    const strategy = createSafeRealUploadStrategyDesign(executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_plan");
+    const plan = createSafeRealUploadExecutionPlan(strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, "approved_for_future_upload_execution_dry_run");
+    const dryRunResult = createSafeRealUploadDryRunExecutionResult(plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike, true, "approved_for_future_real_upload_preflight");
+    const gate = createSafeFinalRealUploadPreflightGate(dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const implementation = createSafeRealUploadImplementationDesign(gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const scaffold = createSafeRealUploadScaffoldDesign(implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const contracts = createSafeRealUploadScaffoldContracts(scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const tests = createSafeRealUploadScaffoldContractTests(contracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const stub = createSafeRealUploadScaffoldStubDesign(tests, contracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    const contractsRecord = createSafeRealUploadStubContracts(stub, tests, contracts, scaffold, implementation, gate, dryRunResult, plan, strategy, executionRequest, readinessAssessment, dryRunSpike, design, approval, request, packageDesign, review, spike);
+    saveRealUploadStubContracts(contractsRecord);
+    assert.equal(getRealUploadStubContracts(contractsRecord.real_upload_stub_contracts_id)?.real_upload_stub_contracts_id, contractsRecord.real_upload_stub_contracts_id);
+    assert.equal(listRealUploadStubContracts({ project_id: contractsRecord.project_id }).some((item) => item.real_upload_stub_contracts_id === contractsRecord.real_upload_stub_contracts_id), true);
+    assert.equal(revokeRealUploadStubContracts(contractsRecord.real_upload_stub_contracts_id, "paused for review").stub_contracts_state, "revoked");
+    assert.throws(() => saveRealUploadStubContracts({ ...contractsRecord, real_upload_stub_contracts_id: "../unsafe" } as RealUploadStubContracts), /Unsafe real upload stub contracts cannot be stored/);
+  } finally {
+    cleanupTestRuntime(tempDir);
+  }
+});
+
+test("VO-7S-REPORT-288: report counters remain zero and sanitize legacy data", () => {
+  const tempDir = setupTestRuntime();
+  try {
+    const storePath = path.join(tempDir, "real-upload-stub-contracts.json");
+    fs.writeFileSync(storePath, JSON.stringify({
+      schema_version: "1.0",
+      created_at: "2026-05-12T00:00:00.000Z",
+      contracts: [{
+        real_upload_stub_contracts_id: "../legacy-contracts-001",
+        real_upload_scaffold_stub_design_id: "../legacy-stub-001",
+        real_upload_scaffold_contract_tests_id: "../legacy-tests-001",
+        real_upload_scaffold_contracts_id: "../legacy-scaffold-contracts-001",
+        real_upload_scaffold_design_id: "../legacy-scaffold-design-001",
+        real_upload_implementation_design_id: "../legacy-implementation-001",
+        final_real_upload_preflight_gate_id: "../legacy-gate-001",
+        real_upload_dry_run_execution_result_id: "../legacy-dry-run-001",
+        real_upload_execution_plan_id: "../legacy-plan-001",
+        real_upload_strategy_design_id: "../legacy-strategy-001",
+        real_upload_execution_request_id: "../legacy-request-001",
+        real_upload_readiness_assessment_id: "../legacy-assessment-001",
+        dry_run_upload_spike_result_id: "../legacy-spike-001",
+        upload_execution_design_id: "../legacy-upload-design-001",
+        upload_execution_approval_id: "../legacy-approval-001",
+        platform_upload_request_id: "../legacy-platform-001",
+        upload_package_design_id: "../legacy-package-001",
+        local_output_review_id: "../legacy-review-001",
+        production_render_spike_result_id: "../legacy-production-001",
+        final_render_execution_request_id: "../legacy-final-request-001",
+        render_plan_id: "../legacy-render-plan-001",
+        project_id: "../legacy-project",
+        platform: "youtube",
+        stub_contracts_state: "draft",
+        created_at: "2026-05-12T00:00:00.000Z",
+        stub_contracts_mode: "real_upload_stub_contracts_only",
+        required_artifacts: { real_upload_scaffold_stub_design_validated: true, real_upload_scaffold_contract_tests_validated: true, real_upload_scaffold_contracts_validated: true, real_upload_scaffold_design_validated: true, real_upload_implementation_design_validated: true, final_real_upload_preflight_gate_validated: true, real_upload_dry_run_execution_result_validated: true, real_upload_execution_plan_validated: true, real_upload_strategy_design_validated: true, real_upload_execution_request_validated: true, real_upload_readiness_assessment_validated: true, dry_run_upload_spike_result_validated: true, upload_execution_design_validated: true, upload_execution_approval_validated: true, platform_upload_request_validated: true, upload_package_design_validated: true, local_output_review_validated: true, spike_result_validated: true },
+        stub_contracts_scope: { future_stub_contract_tests_requested: true, stub_contracts_only: true, stub_files_created: false, implementation_files_created: false, runtime_files_created: false, runtime_enabled: false, current_real_upload_requested: false, current_network_calls_requested: false, current_platform_api_calls_requested: false, current_credential_access_requested: false, current_media_read_requested: false, dependencies_requested: false, package_metadata_changes_requested: false },
+        stub_module_contracts: [],
+        stub_behavior_contracts: [],
+        no_op_contract_boundary: { all_stub_contracts_no_op_only: true, no_runtime_execution: true, no_external_effects: true, no_upload_effects: true, no_network_effects: true, no_credential_effects: true, no_media_effects: true, no_file_effects: true, no_raw_payloads: true, no_raw_responses: true },
+        credential_stub_contract_boundary: { credential_stub_contract_defined: true, credentials_required: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, credential_reference_stored: false, token_reference_stored: false, secret_material_stored: false },
+        media_stub_contract_boundary: { media_stub_contract_defined: true, media_file_read: false, raw_media_path_stored: false, media_file_modified: false, media_file_copied: false, media_file_moved: false, media_file_deleted: false },
+        platform_api_stub_contract_boundary: { platform_api_stub_contract_defined: true, platform_adapter_implemented: false, platform_endpoint_selected: false, platform_api_calls_allowed: false, platform_api_calls_made: false, raw_account_ids_stored: false },
+        payload_stub_contract_boundary: { payload_stub_contract_defined: true, platform_api_payload_created: false, platform_api_payload_stored: false, upload_payload_created: false, raw_payload_stored: false },
+        network_stub_contract_boundary: { network_stub_contract_defined: true, network_client_implemented: false, network_calls_allowed: false, network_calls_made: false, external_side_effects_allowed: false, external_side_effects_observed: false },
+        runtime_stub_contract_boundary: { runtime_stub_contract_defined: true, runtime_enabled: false, runtime_files_created: false, runtime_config_created: false, env_files_created: false, secrets_config_created: false, credential_config_created: false, package_dependency_changes: false },
+        file_stub_contract_boundary: { files_created_now: false, stub_files_created: false, implementation_files_created: false, package_files_changed: false, runtime_files_created: false, file_mutation_allowed: false },
+        operator_review: { reviewed_by_label: "legacy", checklist_acknowledged: true, understands_stub_contracts_only: true, understands_no_stub_files_created: true, understands_no_implementation_files_created: true, understands_no_upload_enabled: true, understands_no_credentials_accessed: true, understands_no_network_calls: true, understands_no_media_reads: true, understands_no_dependencies_added: true, understands_future_stub_contract_tests_phase_required: true, decision_note_summary: "legacy" },
+        execution_boundary: { stub_files_created: false, implementation_files_created: false, runtime_files_created: false, dependencies_added: false, package_metadata_changed: false, runtime_enabled: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, media_file_read: false, file_mutation_allowed: false, ready_for_real_upload: false },
+        validation: { stub_contracts_complete: true, ready_for_future_stub_contract_tests: false, ready_for_real_upload: false, stub_files_created: false, implementation_files_created: false, runtime_files_created: false, dependencies_added: false, package_metadata_changed: false, runtime_enabled: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, media_file_read: false, file_mutation_allowed: false, blocking_reasons: [], warnings: [] },
+        provenance: { generated_by: "createRealUploadStubContracts", source_real_upload_scaffold_stub_design_id: "legacy", source_real_upload_scaffold_contract_tests_id: "legacy", source_real_upload_scaffold_contracts_id: "legacy", source_real_upload_scaffold_design_id: "legacy", source_real_upload_implementation_design_id: "legacy", source_final_real_upload_preflight_gate_id: "legacy", source_real_upload_dry_run_execution_result_id: "legacy", source_real_upload_execution_plan_id: "legacy", source_real_upload_strategy_design_id: "legacy", source_real_upload_execution_request_id: "legacy", source_real_upload_readiness_assessment_id: "legacy", source_dry_run_upload_spike_result_id: "legacy", source_upload_execution_design_id: "legacy", source_upload_execution_approval_id: "legacy", source_platform_upload_request_id: "legacy", source_upload_package_design_id: "legacy", source_local_output_review_id: "legacy", source_production_render_spike_result_id: "legacy", source_final_render_execution_request_id: "legacy", source_render_plan_id: "legacy" }
+      }]
+    }, null, 2));
+    const report = getRealUploadStubContractsReport();
     assert.strictEqual(report.ready_for_real_upload, 0);
     assert.strictEqual(report.stub_files_created, 0);
     assert.strictEqual(report.implementation_files_created, 0);
