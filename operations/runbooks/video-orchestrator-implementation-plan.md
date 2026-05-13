@@ -3668,3 +3668,9 @@ VO-7AN adds `controlled-real-upload-enablement`, and VO-7AO adds `controlled-rea
 These artifacts define controlled enablement and preflight boundaries while still requiring a future separate runtime activation artifact. They preserve the single-upload limit, kill-switch requirement, dry-run-first requirement, safe reporting, and separate runtime activation requirement.
 
 No runtime upload behavior is enabled. Network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7AP/VO-7AQ/VO-7AR — Controlled Runtime Activation Request, Safety Contract, and Dry-Run
+
+VO-7AP adds `controlled-runtime-activation-request`, VO-7AQ adds `controlled-runtime-activation-safety-contract`, and VO-7AR adds `controlled-runtime-activation-dry-run-result`.
+
+These artifacts prepare and dry-run the runtime activation path without activating it. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

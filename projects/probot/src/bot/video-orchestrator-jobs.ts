@@ -19280,3 +19280,191 @@ export function createControlledRealUploadEnablementPreflightResult(input: { con
     provenance: { generated_by: "createControlledRealUploadEnablementPreflightResult", source_controlled_real_upload_enablement_id: input.controlledEnablement.controlled_real_upload_enablement_id, source_render_plan_id: input.controlledEnablement.render_plan_id },
   };
 }
+
+
+// ─── VO-7AP/VO-7AQ/VO-7AR: Runtime Activation Request, Contract, Dry-Run ───
+
+export interface ControlledRuntimeActivationRequest {
+  schema_version: "1.0";
+  controlled_runtime_activation_request_id: string;
+  controlled_real_upload_enablement_preflight_result_id: string;
+  controlled_real_upload_enablement_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  activation_request_state: "draft" | "ready_for_operator_review" | "approved_for_future_runtime_activation_safety_contract" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  activation_request_scope: Record<string, unknown>;
+  requested_runtime_controls: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeActivationSafetyContract {
+  schema_version: "1.0";
+  controlled_runtime_activation_safety_contract_id: string;
+  controlled_runtime_activation_request_id: string;
+  controlled_real_upload_enablement_preflight_result_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safety_contract_state: "draft" | "ready_for_operator_review" | "approved_for_future_runtime_activation_dry_run" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  safety_contract_scope: Record<string, unknown>;
+  runtime_safety_controls: Record<string, unknown>;
+  runtime_safety_contracts: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeActivationDryRunResult {
+  schema_version: "1.0";
+  controlled_runtime_activation_dry_run_result_id: string;
+  controlled_runtime_activation_safety_contract_id: string;
+  controlled_runtime_activation_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  dry_run_state: "draft" | "passed" | "failed" | "blocked" | "revoked";
+  required_artifacts: Record<string, true>;
+  dry_run_scope: Record<string, unknown>;
+  dry_run_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeActivationArtifact(value: unknown, scopeKey: string): RealUploadEnablementArtifactValidationResult {
+  return validateRealUploadEnablementSafety(value, scopeKey);
+}
+
+export function validateControlledRuntimeActivationRequest(request: unknown): RealUploadEnablementArtifactValidationResult {
+  const result = validateRuntimeActivationArtifact(request, "activation_request_scope");
+  if (result.ok) {
+    const controls = (request as Record<string, unknown>).requested_runtime_controls as Record<string, unknown> | undefined;
+    if (!controls || controls.single_upload_limit !== 1 || controls.runtime_activation_contract_required !== true || controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime activation request controls are incomplete");
+    }
+  }
+  return result;
+}
+
+export function validateControlledRuntimeActivationSafetyContract(contract: unknown): RealUploadEnablementArtifactValidationResult {
+  const result = validateRuntimeActivationArtifact(contract, "safety_contract_scope");
+  if (result.ok) {
+    const c = contract as Record<string, unknown>;
+    const controls = c.runtime_safety_controls as Record<string, unknown> | undefined;
+    if (!controls || controls.single_upload_limit !== 1 || controls.raw_payload_storage_allowed !== false || controls.raw_response_storage_allowed !== false || controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime activation safety controls are unsafe");
+    }
+    for (const item of Array.isArray(c.runtime_safety_contracts) ? c.runtime_safety_contracts : []) {
+      if ((item as Record<string, unknown>).enabled_now !== false) {
+        result.ok = false;
+        result.blocking_reasons.push("Runtime safety contract enabled runtime behavior");
+      }
+    }
+  }
+  return result;
+}
+
+export function validateControlledRuntimeActivationDryRunResult(dryRun: unknown): RealUploadEnablementArtifactValidationResult {
+  const result = validateRuntimeActivationArtifact(dryRun, "dry_run_scope");
+  if (result.ok) {
+    const artifact = dryRun as Record<string, unknown>;
+    if (!Array.isArray(artifact.dry_run_checks) || artifact.dry_run_checks.length < 5) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime activation dry-run checks are incomplete");
+    }
+    for (const check of Array.isArray(artifact.dry_run_checks) ? artifact.dry_run_checks : []) {
+      if ((check as Record<string, unknown>).enabled_now !== false) {
+        result.ok = false;
+        result.blocking_reasons.push("Runtime activation dry-run check enabled runtime behavior");
+      }
+    }
+  }
+  return result;
+}
+
+export function createControlledRuntimeActivationRequest(input: { enablementPreflightResult: ControlledRealUploadEnablementPreflightResult; decision?: "draft" | "approved_for_future_runtime_activation_safety_contract" | "rejected"; dryRun: true }): ControlledRuntimeActivationRequest {
+  if (input.dryRun !== true) throw new Error("VO-7AP controlled runtime activation request requires dryRun=true");
+  const preflightValidation = validateControlledRealUploadEnablementPreflightResult(input.enablementPreflightResult);
+  if (!preflightValidation.ok) throw new Error("Controlled enablement preflight validation failed");
+  if (input.enablementPreflightResult.preflight_state !== "passed") throw new Error("Runtime activation request requires passed enablement preflight");
+  const approved = input.decision === "approved_for_future_runtime_activation_safety_contract";
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_request_id: `controlled-runtime-activation-request-${crypto.randomUUID()}`,
+    controlled_real_upload_enablement_preflight_result_id: input.enablementPreflightResult.controlled_real_upload_enablement_preflight_result_id,
+    controlled_real_upload_enablement_id: input.enablementPreflightResult.controlled_real_upload_enablement_id,
+    render_plan_id: input.enablementPreflightResult.render_plan_id,
+    project_id: input.enablementPreflightResult.project_id,
+    platform: input.enablementPreflightResult.platform,
+    created_at: new Date().toISOString(),
+    activation_request_state: approved ? "approved_for_future_runtime_activation_safety_contract" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_real_upload_enablement_preflight_result_validated: true, controlled_real_upload_enablement_validated: true },
+    activation_request_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    requested_runtime_controls: { single_upload_limit: 1, operator_kill_switch_required: true, dry_run_first_required: true, runtime_activation_contract_required: true, runtime_activation_dry_run_required: true, real_upload_still_blocked: true },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationRequest", source_controlled_real_upload_enablement_preflight_result_id: input.enablementPreflightResult.controlled_real_upload_enablement_preflight_result_id, source_render_plan_id: input.enablementPreflightResult.render_plan_id },
+  };
+}
+
+
+export function createControlledRuntimeActivationSafetyContract(input: { activationRequest: ControlledRuntimeActivationRequest; decision?: "draft" | "approved_for_future_runtime_activation_dry_run" | "rejected"; dryRun: true }): ControlledRuntimeActivationSafetyContract {
+  if (input.dryRun !== true) throw new Error("VO-7AQ controlled runtime activation safety contract requires dryRun=true");
+  const requestValidation = validateControlledRuntimeActivationRequest(input.activationRequest);
+  if (!requestValidation.ok) throw new Error("Controlled runtime activation request validation failed");
+  if (input.activationRequest.activation_request_state !== "approved_for_future_runtime_activation_safety_contract") throw new Error("Safety contract requires approved runtime activation request");
+  const approved = input.decision === "approved_for_future_runtime_activation_dry_run";
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_safety_contract_id: `controlled-runtime-activation-safety-contract-${crypto.randomUUID()}`,
+    controlled_runtime_activation_request_id: input.activationRequest.controlled_runtime_activation_request_id,
+    controlled_real_upload_enablement_preflight_result_id: input.activationRequest.controlled_real_upload_enablement_preflight_result_id,
+    render_plan_id: input.activationRequest.render_plan_id,
+    project_id: input.activationRequest.project_id,
+    platform: input.activationRequest.platform,
+    created_at: new Date().toISOString(),
+    safety_contract_state: approved ? "approved_for_future_runtime_activation_dry_run" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_activation_request_validated: true, controlled_real_upload_enablement_preflight_result_validated: true },
+    safety_contract_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    runtime_safety_controls: { single_upload_limit: 1, operator_kill_switch_required: true, dry_run_first_required: true, safe_reporting_required: true, raw_payload_storage_allowed: false, raw_response_storage_allowed: false, real_upload_still_blocked: true },
+    runtime_safety_contracts: ["kill_switch", "single_upload_limit", "credential_boundary", "network_boundary", "media_boundary"].map((kind) => ({ contract_id: `runtime-safety-${kind}`, contract_kind: kind, safe_summary: "Runtime activation safety contract only.", enabled_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationSafetyContract", source_controlled_runtime_activation_request_id: input.activationRequest.controlled_runtime_activation_request_id, source_render_plan_id: input.activationRequest.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeActivationDryRunResult(input: { safetyContract: ControlledRuntimeActivationSafetyContract; decision?: "draft" | "passed" | "failed" | "blocked"; dryRun: true }): ControlledRuntimeActivationDryRunResult {
+  if (input.dryRun !== true) throw new Error("VO-7AR controlled runtime activation dry-run result requires dryRun=true");
+  const contractValidation = validateControlledRuntimeActivationSafetyContract(input.safetyContract);
+  if (!contractValidation.ok) throw new Error("Controlled runtime activation safety contract validation failed");
+  if (input.safetyContract.safety_contract_state !== "approved_for_future_runtime_activation_dry_run") throw new Error("Runtime activation dry-run requires approved safety contract");
+  const passed = input.decision === "passed";
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_dry_run_result_id: `controlled-runtime-activation-dry-run-result-${crypto.randomUUID()}`,
+    controlled_runtime_activation_safety_contract_id: input.safetyContract.controlled_runtime_activation_safety_contract_id,
+    controlled_runtime_activation_request_id: input.safetyContract.controlled_runtime_activation_request_id,
+    render_plan_id: input.safetyContract.render_plan_id,
+    project_id: input.safetyContract.project_id,
+    platform: input.safetyContract.platform,
+    created_at: new Date().toISOString(),
+    dry_run_state: input.decision ?? "draft",
+    required_artifacts: { controlled_runtime_activation_safety_contract_validated: true, controlled_runtime_activation_request_validated: true },
+    dry_run_scope: { artifact_only: true, future_next_phase_requested: passed, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    dry_run_checks: ["kill_switch", "single_upload_limit", "credential_boundary", "network_boundary", "media_boundary"].map((kind) => ({ check_id: `runtime-dry-run-${kind}`, check_kind: kind, check_state: passed ? "passed" : "deferred", safe_summary: "Runtime activation dry-run check only.", enabled_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: passed, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationDryRunResult", source_controlled_runtime_activation_safety_contract_id: input.safetyContract.controlled_runtime_activation_safety_contract_id, source_render_plan_id: input.safetyContract.render_plan_id },
+  };
+}

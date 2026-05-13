@@ -1708,3 +1708,11 @@ Status: complete.
 VO-7AN adds a controlled real upload enablement artifact and VO-7AO adds a controlled enablement preflight result. These artifacts define the last planning and preflight boundary before any future runtime activation artifact.
 
 They do not enable real upload, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, runtime execution, dependencies, or package metadata changes. `ready_for_real_upload` remains false.
+
+## Phase 5AP — Controlled Runtime Activation Request, Safety Contract, and Dry-Run (VO-7AP/VO-7AQ/VO-7AR)
+
+Status: complete.
+
+VO-7AP adds a controlled runtime activation request artifact, VO-7AQ adds a runtime activation safety contract, and VO-7AR adds a runtime activation dry-run result. These phases remain artifact/contract/dry-run only.
+
+They do not add runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "controlled-runtime-activation-safety-contract.schema.json",
+  "title": "Controlled Runtime Activation Safety Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "controlled_runtime_activation_safety_contract_id", "controlled_runtime_activation_request_id", "controlled_real_upload_enablement_preflight_result_id", "render_plan_id", "project_id", "platform", "created_at", "safety_contract_state", "required_artifacts", "safety_contract_scope", "runtime_safety_controls", "runtime_safety_contracts", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "controlled_runtime_activation_safety_contract_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_activation_request_id": { "type": "string", "minLength": 1 },
+    "controlled_real_upload_enablement_preflight_result_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "safety_contract_state": { "type": "string", "enum": ["draft", "ready_for_operator_review", "approved_for_future_runtime_activation_dry_run", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["controlled_runtime_activation_request_validated", "controlled_real_upload_enablement_preflight_result_validated"], "properties": { "controlled_runtime_activation_request_validated": { "type": "boolean", "const": true }, "controlled_real_upload_enablement_preflight_result_validated": { "type": "boolean", "const": true } } },
+    "safety_contract_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "runtime_safety_controls": { "type": "object", "additionalProperties": false, "required": ["single_upload_limit", "operator_kill_switch_required", "dry_run_first_required", "safe_reporting_required", "raw_payload_storage_allowed", "raw_response_storage_allowed", "real_upload_still_blocked"], "properties": { "single_upload_limit": { "type": "integer", "const": 1 }, "operator_kill_switch_required": { "type": "boolean", "const": true }, "dry_run_first_required": { "type": "boolean", "const": true }, "safe_reporting_required": { "type": "boolean", "const": true }, "raw_payload_storage_allowed": { "type": "boolean", "const": false }, "raw_response_storage_allowed": { "type": "boolean", "const": false }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "runtime_safety_contracts": { "type": "array", "minItems": 5, "items": { "type": "object", "additionalProperties": false, "required": ["contract_id", "contract_kind", "safe_summary", "enabled_now"], "properties": { "contract_id": { "type": "string" }, "contract_kind": { "type": "string" }, "safe_summary": { "type": "string" }, "enabled_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_controlled_runtime_activation_request_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createControlledRuntimeActivationSafetyContract", "revokeControlledRuntimeActivationSafetyContract"] }, "source_controlled_runtime_activation_request_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}
