@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "real-upload-enablement-safety-plan.schema.json",
+  "title": "Real Upload Enablement Safety Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "real_upload_enablement_safety_plan_id", "real_upload_enablement_request_id", "real_upload_final_operator_checklist_id", "render_plan_id", "project_id", "platform", "created_at", "safety_plan_state", "required_artifacts", "plan_scope", "planned_enablement_controls", "planned_runtime_boundaries", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "real_upload_enablement_safety_plan_id": { "type": "string", "minLength": 1 },
+    "real_upload_enablement_request_id": { "type": "string", "minLength": 1 },
+    "real_upload_final_operator_checklist_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "safety_plan_state": { "type": "string", "enum": ["draft", "ready_for_operator_review", "approved_for_future_enablement_review_gate", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["real_upload_enablement_request_validated", "real_upload_final_operator_checklist_validated"], "properties": { "real_upload_enablement_request_validated": { "type": "boolean", "const": true }, "real_upload_final_operator_checklist_validated": { "type": "boolean", "const": true } } },
+    "plan_scope": { "type": "object", "additionalProperties": false, "required": ["safety_plan_only", "future_enablement_review_gate_requested", "real_upload_enabled_now", "upload_execution_enabled_now", "network_calls_enabled_now", "platform_api_calls_enabled_now", "credential_access_enabled_now", "media_read_enabled_now", "dependencies_requested", "package_metadata_changes_requested"], "properties": { "safety_plan_only": { "type": "boolean", "const": true }, "future_enablement_review_gate_requested": { "type": "boolean" }, "real_upload_enabled_now": { "type": "boolean", "const": false }, "upload_execution_enabled_now": { "type": "boolean", "const": false }, "network_calls_enabled_now": { "type": "boolean", "const": false }, "platform_api_calls_enabled_now": { "type": "boolean", "const": false }, "credential_access_enabled_now": { "type": "boolean", "const": false }, "media_read_enabled_now": { "type": "boolean", "const": false }, "dependencies_requested": { "type": "boolean", "const": false }, "package_metadata_changes_requested": { "type": "boolean", "const": false } } },
+    "planned_enablement_controls": { "type": "object", "additionalProperties": false, "required": ["separate_activation_commit_required", "operator_kill_switch_required", "dry_run_first_required", "single_upload_limit_required", "safe_reporting_required", "real_upload_still_blocked"], "properties": { "separate_activation_commit_required": { "type": "boolean", "const": true }, "operator_kill_switch_required": { "type": "boolean", "const": true }, "dry_run_first_required": { "type": "boolean", "const": true }, "single_upload_limit_required": { "type": "boolean", "const": true }, "safe_reporting_required": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "planned_runtime_boundaries": { "type": "array", "minItems": 5, "items": { "type": "object", "additionalProperties": false, "required": ["boundary_id", "boundary_kind", "safe_summary", "enabled_now"], "properties": { "boundary_id": { "type": "string" }, "boundary_kind": { "type": "string" }, "safe_summary": { "type": "string" }, "enabled_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "real-upload-enablement-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "real-upload-enablement-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_real_upload_enablement_request_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createRealUploadEnablementSafetyPlan", "revokeRealUploadEnablementSafetyPlan"] }, "source_real_upload_enablement_request_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

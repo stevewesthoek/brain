@@ -24311,3 +24311,60 @@ test("VO-7AJ-VALIDATE: final checklist rejects real upload enablement", async ()
   const validation = validateRealUploadFinalOperatorChecklist(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7AK/VO-7AL/VO-7AM: Enablement Request, Safety Plan, Review Gate ────
+
+test("VO-7AK-SCHEMA: enablement request schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-enablement-request.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-enablement-request.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.requested_boundaries.real_upload_still_blocked, true);
+});
+
+test("VO-7AK-VALIDATE: enablement request rejects unsafe flags", async () => {
+  const { validateRealUploadEnablementRequest } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-enablement-request.example.json"), "utf8"));
+  const unsafe = { ...example, execution_boundary: { ...example.execution_boundary, upload_allowed: true } };
+  const validation = validateRealUploadEnablementRequest(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7AL-SCHEMA: enablement safety plan schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-enablement-safety-plan.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-enablement-safety-plan.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.planned_enablement_controls.real_upload_still_blocked, true);
+});
+
+test("VO-7AL-VALIDATE: enablement safety plan rejects unsafe flags", async () => {
+  const { validateRealUploadEnablementSafetyPlan } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-enablement-safety-plan.example.json"), "utf8"));
+  const unsafe = { ...example, plan_scope: { ...example.plan_scope, network_calls_enabled_now: true } };
+  const validation = validateRealUploadEnablementSafetyPlan(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7AM-SCHEMA: enablement review gate schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-enablement-review-gate.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-enablement-review-gate.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_findings.real_upload_still_blocked, true);
+});
+
+test("VO-7AM-VALIDATE: enablement review gate rejects real upload readiness", async () => {
+  const { validateRealUploadEnablementReviewGate } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-enablement-review-gate.example.json"), "utf8"));
+  const unsafe = { ...example, validation: { ...example.validation, ready_for_real_upload: true } };
+  const validation = validateRealUploadEnablementReviewGate(unsafe);
+  assert.equal(validation.ok, false);
+});

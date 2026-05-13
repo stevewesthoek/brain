@@ -18963,3 +18963,200 @@ export function createRealUploadFinalOperatorChecklist(input: { dryRunAdapterCon
     provenance: { generated_by: "createRealUploadFinalOperatorChecklist", source_real_upload_dry_run_adapter_contract_tests_id: input.dryRunAdapterContractTests.real_upload_dry_run_adapter_contract_tests_id, source_render_plan_id: input.dryRunAdapterContractTests.render_plan_id },
   };
 }
+
+
+// ─── VO-7AK/VO-7AL/VO-7AM: Enablement Request, Safety Plan, Review Gate ────
+
+export interface RealUploadEnablementRequest {
+  schema_version: "1.0";
+  real_upload_enablement_request_id: string;
+  real_upload_final_operator_checklist_id: string;
+  real_upload_dry_run_adapter_contract_tests_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  enablement_request_state: "draft" | "ready_for_operator_review" | "approved_for_future_enablement_safety_plan" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  request_scope: Record<string, unknown>;
+  requested_boundaries: Record<string, unknown>;
+  operator_acknowledgements: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadEnablementSafetyPlan {
+  schema_version: "1.0";
+  real_upload_enablement_safety_plan_id: string;
+  real_upload_enablement_request_id: string;
+  real_upload_final_operator_checklist_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safety_plan_state: "draft" | "ready_for_operator_review" | "approved_for_future_enablement_review_gate" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  plan_scope: Record<string, unknown>;
+  planned_enablement_controls: Record<string, unknown>;
+  planned_runtime_boundaries: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadEnablementReviewGate {
+  schema_version: "1.0";
+  real_upload_enablement_review_gate_id: string;
+  real_upload_enablement_safety_plan_id: string;
+  real_upload_enablement_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  review_gate_state: "draft" | "ready_for_operator_review" | "approved_for_future_controlled_enablement_artifact" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_findings: Record<string, unknown>;
+  operator_acknowledgements: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadEnablementArtifactValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[] }
+
+const VO7_ENABLEMENT_FALSE_KEYS = ["ready_for_real_upload", "real_upload_enabled", "runtime_enabled", "runtime_executed", "upload_allowed", "upload_execution_enabled", "platform_api_calls_allowed", "network_calls_allowed", "credentials_accessed", "token_accessed", "keychain_accessed", "env_accessed", "media_file_read", "file_mutation_allowed", "dependencies_added", "package_metadata_changed"];
+
+function validateRealUploadEnablementSafety(value: unknown, scopeKey: string): RealUploadEnablementArtifactValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!value || typeof value !== "object" || Array.isArray(value)) return { ok: false, blocking_reasons: ["Enablement artifact must be an object"], warnings };
+  const artifact = value as Record<string, unknown>;
+  if (artifact.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  blocking_reasons.push(...validateVo7abFalseBoundary(artifact.execution_boundary, VO7_ENABLEMENT_FALSE_KEYS, "Execution boundary"));
+  const validation = artifact.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_real_upload !== false || validation.real_upload_enabled !== false || validation.upload_allowed !== false || validation.network_calls_allowed !== false || validation.platform_api_calls_allowed !== false || validation.credentials_accessed !== false || validation.media_file_read !== false) blocking_reasons.push("Validation boundary is unsafe");
+  const scope = artifact[scopeKey] as Record<string, unknown> | undefined;
+  if (!scope) blocking_reasons.push(`${scopeKey} is required`);
+  if (scope && (scope.real_upload_enabled_now !== false || scope.upload_execution_enabled_now !== false || scope.network_calls_enabled_now !== false || scope.platform_api_calls_enabled_now !== false || scope.credential_access_enabled_now !== false || scope.media_read_enabled_now !== false || scope.dependencies_requested !== false || scope.package_metadata_changes_requested !== false)) blocking_reasons.push(`${scopeKey} is unsafe`);
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(value));
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function validateRealUploadEnablementRequest(request: unknown): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(request, "request_scope");
+  if (result.ok) {
+    const r = request as Record<string, unknown>;
+    const boundaries = r.requested_boundaries as Record<string, unknown> | undefined;
+    if (!boundaries || boundaries.real_upload_still_blocked !== true || boundaries.separate_activation_commit_required !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Enablement request must remain blocked and require separate activation commit");
+    }
+  }
+  return result;
+}
+
+export function validateRealUploadEnablementSafetyPlan(plan: unknown): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(plan, "plan_scope");
+  if (result.ok) {
+    const p = plan as Record<string, unknown>;
+    const controls = p.planned_enablement_controls as Record<string, unknown> | undefined;
+    if (!controls || controls.real_upload_still_blocked !== true || controls.operator_kill_switch_required !== true || controls.single_upload_limit_required !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Enablement safety plan controls are incomplete");
+    }
+  }
+  return result;
+}
+
+export function validateRealUploadEnablementReviewGate(gate: unknown): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(gate, "review_scope");
+  if (result.ok) {
+    const g = gate as Record<string, unknown>;
+    const findings = g.review_findings as Record<string, unknown> | undefined;
+    if (!findings || findings.real_upload_still_blocked !== true || findings.kill_switch_planned !== true || findings.single_upload_limit_planned !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Enablement review gate findings are incomplete");
+    }
+  }
+  return result;
+}
+
+export function createRealUploadEnablementRequest(input: { finalOperatorChecklist: RealUploadFinalOperatorChecklist; decision?: "draft" | "approved_for_future_enablement_safety_plan" | "rejected"; dryRun: true }): RealUploadEnablementRequest {
+  if (input.dryRun !== true) throw new Error("VO-7AK enablement request requires dryRun=true");
+  const checklistValidation = validateRealUploadFinalOperatorChecklist(input.finalOperatorChecklist);
+  if (!checklistValidation.ok) throw new Error("Final operator checklist validation failed");
+  if (input.finalOperatorChecklist.final_checklist_state !== "approved_for_future_real_upload_enablement_request") throw new Error("Enablement request requires approved final operator checklist");
+  const approved = input.decision === "approved_for_future_enablement_safety_plan";
+  return {
+    schema_version: "1.0",
+    real_upload_enablement_request_id: `real-upload-enablement-request-${crypto.randomUUID()}`,
+    real_upload_final_operator_checklist_id: input.finalOperatorChecklist.real_upload_final_operator_checklist_id,
+    real_upload_dry_run_adapter_contract_tests_id: input.finalOperatorChecklist.real_upload_dry_run_adapter_contract_tests_id,
+    render_plan_id: input.finalOperatorChecklist.render_plan_id,
+    project_id: input.finalOperatorChecklist.project_id,
+    platform: input.finalOperatorChecklist.platform,
+    created_at: new Date().toISOString(),
+    enablement_request_state: approved ? "approved_for_future_enablement_safety_plan" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { real_upload_final_operator_checklist_validated: true, real_upload_dry_run_adapter_contract_tests_validated: true },
+    request_scope: { enablement_request_only: true, future_enablement_safety_plan_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    requested_boundaries: { explicit_credential_boundary_requested: true, explicit_network_boundary_requested: true, explicit_media_read_boundary_requested: true, explicit_platform_api_boundary_requested: true, explicit_kill_switch_requested: true, separate_activation_commit_required: true, real_upload_still_blocked: true },
+    operator_acknowledgements: { checklist_acknowledged: true, understands_request_only: true, understands_real_upload_not_enabled: true, understands_future_safety_plan_required: true, understands_no_credentials_accessed: true, understands_no_network_calls: true, understands_no_media_reads: true, understands_no_platform_api_calls: true, decision_note_summary: "Enablement request only; real upload remains disabled." },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadEnablementRequest", source_real_upload_final_operator_checklist_id: input.finalOperatorChecklist.real_upload_final_operator_checklist_id, source_render_plan_id: input.finalOperatorChecklist.render_plan_id },
+  };
+}
+
+export function createRealUploadEnablementSafetyPlan(input: { enablementRequest: RealUploadEnablementRequest; decision?: "draft" | "approved_for_future_enablement_review_gate" | "rejected"; dryRun: true }): RealUploadEnablementSafetyPlan {
+  if (input.dryRun !== true) throw new Error("VO-7AL enablement safety plan requires dryRun=true");
+  const requestValidation = validateRealUploadEnablementRequest(input.enablementRequest);
+  if (!requestValidation.ok) throw new Error("Enablement request validation failed");
+  if (input.enablementRequest.enablement_request_state !== "approved_for_future_enablement_safety_plan") throw new Error("Safety plan requires approved enablement request");
+  const approved = input.decision === "approved_for_future_enablement_review_gate";
+  return {
+    schema_version: "1.0",
+    real_upload_enablement_safety_plan_id: `real-upload-enablement-safety-plan-${crypto.randomUUID()}`,
+    real_upload_enablement_request_id: input.enablementRequest.real_upload_enablement_request_id,
+    real_upload_final_operator_checklist_id: input.enablementRequest.real_upload_final_operator_checklist_id,
+    render_plan_id: input.enablementRequest.render_plan_id,
+    project_id: input.enablementRequest.project_id,
+    platform: input.enablementRequest.platform,
+    created_at: new Date().toISOString(),
+    safety_plan_state: approved ? "approved_for_future_enablement_review_gate" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { real_upload_enablement_request_validated: true, real_upload_final_operator_checklist_validated: true },
+    plan_scope: { safety_plan_only: true, future_enablement_review_gate_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    planned_enablement_controls: { separate_activation_commit_required: true, operator_kill_switch_required: true, dry_run_first_required: true, single_upload_limit_required: true, safe_reporting_required: true, real_upload_still_blocked: true },
+    planned_runtime_boundaries: ["credential", "network", "platform_api", "media_read", "kill_switch"].map((kind) => ({ boundary_id: `boundary-${kind}`, boundary_kind: kind, safe_summary: "Enablement boundary planned only.", enabled_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadEnablementSafetyPlan", source_real_upload_enablement_request_id: input.enablementRequest.real_upload_enablement_request_id, source_render_plan_id: input.enablementRequest.render_plan_id },
+  };
+}
+
+export function createRealUploadEnablementReviewGate(input: { safetyPlan: RealUploadEnablementSafetyPlan; decision?: "draft" | "approved_for_future_controlled_enablement_artifact" | "rejected"; dryRun: true }): RealUploadEnablementReviewGate {
+  if (input.dryRun !== true) throw new Error("VO-7AM enablement review gate requires dryRun=true");
+  const planValidation = validateRealUploadEnablementSafetyPlan(input.safetyPlan);
+  if (!planValidation.ok) throw new Error("Enablement safety plan validation failed");
+  if (input.safetyPlan.safety_plan_state !== "approved_for_future_enablement_review_gate") throw new Error("Review gate requires approved enablement safety plan");
+  const approved = input.decision === "approved_for_future_controlled_enablement_artifact";
+  return {
+    schema_version: "1.0",
+    real_upload_enablement_review_gate_id: `real-upload-enablement-review-gate-${crypto.randomUUID()}`,
+    real_upload_enablement_safety_plan_id: input.safetyPlan.real_upload_enablement_safety_plan_id,
+    real_upload_enablement_request_id: input.safetyPlan.real_upload_enablement_request_id,
+    render_plan_id: input.safetyPlan.render_plan_id,
+    project_id: input.safetyPlan.project_id,
+    platform: input.safetyPlan.platform,
+    created_at: new Date().toISOString(),
+    review_gate_state: approved ? "approved_for_future_controlled_enablement_artifact" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { real_upload_enablement_safety_plan_validated: true, real_upload_enablement_request_validated: true },
+    review_scope: { review_gate_only: true, future_controlled_enablement_artifact_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_findings: { safety_plan_complete: true, enablement_request_complete: true, kill_switch_planned: true, single_upload_limit_planned: true, real_upload_still_blocked: true, blocking_reasons: [], warnings: [] },
+    operator_acknowledgements: { checklist_acknowledged: true, understands_review_gate_only: true, understands_real_upload_not_enabled: true, understands_future_controlled_enablement_artifact_required: true, understands_no_credentials_accessed: true, understands_no_network_calls: true, understands_no_media_reads: true, understands_no_platform_api_calls: true, decision_note_summary: "Review gate only; real upload remains disabled." },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadEnablementReviewGate", source_real_upload_enablement_safety_plan_id: input.safetyPlan.real_upload_enablement_safety_plan_id, source_render_plan_id: input.safetyPlan.render_plan_id },
+  };
+}

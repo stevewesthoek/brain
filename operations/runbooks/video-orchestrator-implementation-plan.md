@@ -3652,3 +3652,11 @@ VO-7AH adds `real-upload-dry-run-adapter-contracts`, VO-7AI adds `real-upload-dr
 These artifacts complete the pre-enable safety chain up to a final checklist, while still leaving real upload blocked. A future separate real upload enablement request is still required before any credentials, network calls, platform APIs, media reads, or upload execution can be considered.
 
 No adapter code is created. Runtime behavior, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7AK/VO-7AL/VO-7AM — Real Upload Enablement Request, Safety Plan, and Review Gate
+
+VO-7AK adds `real-upload-enablement-request`, VO-7AL adds `real-upload-enablement-safety-plan`, and VO-7AM adds `real-upload-enablement-review-gate`.
+
+These artifacts begin the controlled enablement-planning path while still keeping real upload disabled. They request and plan explicit credential, network, platform API, media read, kill-switch, single-upload-limit, and separate-activation-commit boundaries for a later phase.
+
+No runtime upload behavior is enabled. Network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
