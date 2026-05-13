@@ -25319,3 +25319,60 @@ test("VO-7CK-VALIDATE: runtime stub archive final summary rejects raw material",
   const validation = validateRuntimeStubArchiveFinalSummary(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7CL/VO-7CM/VO-7CN: Runtime Stub Sequence Handoff Layer ─────────────
+
+test("VO-7CL-SCHEMA: runtime stub sequence integrity audit schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-sequence-integrity-audit.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-sequence-integrity-audit.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.audit_checks[0].runtime_executed_now, false);
+});
+
+test("VO-7CL-VALIDATE: runtime stub sequence integrity audit rejects real-upload readiness", async () => {
+  const { validateRuntimeStubSequenceIntegrityAudit } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-sequence-integrity-audit.example.json"), "utf8"));
+  const unsafe = { ...example, audit_checks: [{ ...example.audit_checks[0], ready_for_real_upload_now: true }] };
+  const validation = validateRuntimeStubSequenceIntegrityAudit(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CM-SCHEMA: runtime stub sequence regression report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-sequence-regression-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-sequence-regression-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.regression_checks[0].runtime_executed_now, false);
+});
+
+test("VO-7CM-VALIDATE: runtime stub sequence regression report rejects runtime execution", async () => {
+  const { validateRuntimeStubSequenceRegressionReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-sequence-regression-report.example.json"), "utf8"));
+  const unsafe = { ...example, regression_checks: [{ ...example.regression_checks[0], runtime_executed_now: true }] };
+  const validation = validateRuntimeStubSequenceRegressionReport(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CN-SCHEMA: runtime stub sequence final handoff schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-sequence-final-handoff.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-sequence-final-handoff.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.handoff_sections[0].contains_secret_material, false);
+});
+
+test("VO-7CN-VALIDATE: runtime stub sequence final handoff rejects raw material", async () => {
+  const { validateRuntimeStubSequenceFinalHandoff } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-sequence-final-handoff.example.json"), "utf8"));
+  const unsafe = { ...example, handoff_sections: [{ ...example.handoff_sections[0], contains_secret_material: true }] };
+  const validation = validateRuntimeStubSequenceFinalHandoff(unsafe);
+  assert.equal(validation.ok, false);
+});

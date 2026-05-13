@@ -22218,3 +22218,196 @@ export function createRuntimeStubArchiveFinalSummary(input: { archiveReview: Run
     provenance: { generated_by: "createRuntimeStubArchiveFinalSummary", source_runtime_stub_archive_review_id: input.archiveReview.runtime_stub_archive_review_id, source_render_plan_id: input.archive.render_plan_id },
   };
 }
+
+
+// ─── VO-7CL/VO-7CM/VO-7CN: Runtime Stub Sequence Handoff Layer ─────────────
+
+export interface RuntimeStubSequenceIntegrityAudit {
+  schema_version: "1.0";
+  runtime_stub_sequence_integrity_audit_id: string;
+  runtime_stub_archive_final_summary_id: string;
+  runtime_stub_archive_id: string;
+  runtime_stub_closeout_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  audit_state: "draft" | "complete" | "approved_for_future_sequence_regression_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  audit_scope: Record<string, unknown>;
+  audit_controls: Record<string, unknown>;
+  audit_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubSequenceRegressionReport {
+  schema_version: "1.0";
+  runtime_stub_sequence_regression_report_id: string;
+  runtime_stub_sequence_integrity_audit_id: string;
+  runtime_stub_archive_final_summary_id: string;
+  runtime_stub_archive_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  regression_report_state: "draft" | "passed" | "failed" | "blocked" | "approved_for_future_sequence_final_handoff" | "revoked";
+  required_artifacts: Record<string, true>;
+  regression_scope: Record<string, unknown>;
+  regression_controls: Record<string, unknown>;
+  regression_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubSequenceFinalHandoff {
+  schema_version: "1.0";
+  runtime_stub_sequence_final_handoff_id: string;
+  runtime_stub_sequence_regression_report_id: string;
+  runtime_stub_sequence_integrity_audit_id: string;
+  runtime_stub_archive_final_summary_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  handoff_state: "draft" | "complete" | "runtime_stub_sequence_handed_off" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  handoff_scope: Record<string, unknown>;
+  handoff_controls: Record<string, unknown>;
+  handoff_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeStubSequenceHandoffLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.audit_controls || artifact.regression_controls || artifact.handoff_controls) as Record<string, unknown> | undefined;
+    if (controls && controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub sequence handoff must keep real upload blocked");
+    }
+    if (controls && (controls.contains_runtime_callable === true || controls.contains_raw_payload === true || controls.contains_raw_response === true || controls.contains_secret_material === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub sequence handoff contains unsafe material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 4) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.runtime_executed_now === true || record.ready_for_real_upload_now === true || record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe sequence/runtime/ready material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateRuntimeStubSequenceIntegrityAudit(audit: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubSequenceHandoffLayer(audit, "audit_scope", "audit_checks");
+}
+
+export function validateRuntimeStubSequenceRegressionReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubSequenceHandoffLayer(report, "regression_scope", "regression_checks");
+}
+
+export function validateRuntimeStubSequenceFinalHandoff(handoff: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubSequenceHandoffLayer(handoff, "handoff_scope", "handoff_sections");
+}
+
+export function createRuntimeStubSequenceIntegrityAudit(input: { archiveFinalSummary: RuntimeStubArchiveFinalSummary; archive: RuntimeStubArchive; decision?: "draft" | "approved_for_future_sequence_regression_report" | "rejected"; dryRun: true }): RuntimeStubSequenceIntegrityAudit {
+  if (input.dryRun !== true) throw new Error("VO-7CL runtime stub sequence integrity audit requires dryRun=true");
+  const summaryValidation = validateRuntimeStubArchiveFinalSummary(input.archiveFinalSummary);
+  if (!summaryValidation.ok) throw new Error("Runtime stub archive final summary validation failed");
+  if (input.archiveFinalSummary.final_summary_state !== "runtime_stub_sequence_complete") throw new Error("Runtime stub sequence integrity audit requires completed archive final summary");
+  if (input.archiveFinalSummary.runtime_stub_archive_id !== input.archive.runtime_stub_archive_id) throw new Error("Mismatched archive final summary and archive");
+  const approved = input.decision === "approved_for_future_sequence_regression_report";
+  const checks = ["boundary_chain", "store_chain", "release_chain", "closeout_chain", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_sequence_integrity_audit_id: `runtime-stub-sequence-integrity-audit-${crypto.randomUUID()}`,
+    runtime_stub_archive_final_summary_id: input.archiveFinalSummary.runtime_stub_archive_final_summary_id,
+    runtime_stub_archive_id: input.archive.runtime_stub_archive_id,
+    runtime_stub_closeout_id: input.archive.runtime_stub_closeout_id,
+    render_plan_id: input.archive.render_plan_id,
+    project_id: input.archive.project_id,
+    platform: input.archive.platform,
+    created_at: new Date().toISOString(),
+    audit_state: approved ? "approved_for_future_sequence_regression_report" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_stub_archive_final_summary_validated: true, runtime_stub_archive_validated: true },
+    audit_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    audit_controls: { audit_only: true, sequence_integrity_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    audit_checks: checks.map((kind) => ({ check_id: `audit-${kind}`, check_kind: kind, check_state: "passed", safe_summary: "Runtime stub sequence integrity audit only.", runtime_executed_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubSequenceIntegrityAudit", source_runtime_stub_archive_final_summary_id: input.archiveFinalSummary.runtime_stub_archive_final_summary_id, source_render_plan_id: input.archive.render_plan_id },
+  };
+}
+
+export function createRuntimeStubSequenceRegressionReport(input: { integrityAudit: RuntimeStubSequenceIntegrityAudit; archiveFinalSummary: RuntimeStubArchiveFinalSummary; decision?: "draft" | "approved_for_future_sequence_final_handoff" | "failed" | "blocked"; dryRun: true }): RuntimeStubSequenceRegressionReport {
+  if (input.dryRun !== true) throw new Error("VO-7CM runtime stub sequence regression report requires dryRun=true");
+  const auditValidation = validateRuntimeStubSequenceIntegrityAudit(input.integrityAudit);
+  if (!auditValidation.ok) throw new Error("Runtime stub sequence integrity audit validation failed");
+  if (input.integrityAudit.audit_state !== "approved_for_future_sequence_regression_report") throw new Error("Runtime stub sequence regression report requires approved integrity audit");
+  if (input.integrityAudit.runtime_stub_archive_final_summary_id !== input.archiveFinalSummary.runtime_stub_archive_final_summary_id) throw new Error("Mismatched integrity audit and archive final summary");
+  const approved = input.decision === "approved_for_future_sequence_final_handoff";
+  const checks = ["schema_chain", "example_chain", "validator_chain", "test_chain", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_sequence_regression_report_id: `runtime-stub-sequence-regression-report-${crypto.randomUUID()}`,
+    runtime_stub_sequence_integrity_audit_id: input.integrityAudit.runtime_stub_sequence_integrity_audit_id,
+    runtime_stub_archive_final_summary_id: input.archiveFinalSummary.runtime_stub_archive_final_summary_id,
+    runtime_stub_archive_id: input.archiveFinalSummary.runtime_stub_archive_id,
+    render_plan_id: input.archiveFinalSummary.render_plan_id,
+    project_id: input.archiveFinalSummary.project_id,
+    platform: input.archiveFinalSummary.platform,
+    created_at: new Date().toISOString(),
+    regression_report_state: approved ? "approved_for_future_sequence_final_handoff" : input.decision === "failed" ? "failed" : input.decision === "blocked" ? "blocked" : "passed",
+    required_artifacts: { runtime_stub_sequence_integrity_audit_validated: true, runtime_stub_archive_final_summary_validated: true },
+    regression_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    regression_controls: { regression_report_only: true, sequence_regression_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    regression_checks: checks.map((kind) => ({ check_id: `regression-${kind}`, check_kind: kind, check_state: approved ? "passed" : "deferred", safe_summary: "Runtime stub sequence regression report only.", runtime_executed_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubSequenceRegressionReport", source_runtime_stub_sequence_integrity_audit_id: input.integrityAudit.runtime_stub_sequence_integrity_audit_id, source_render_plan_id: input.archiveFinalSummary.render_plan_id },
+  };
+}
+
+export function createRuntimeStubSequenceFinalHandoff(input: { regressionReport: RuntimeStubSequenceRegressionReport; integrityAudit: RuntimeStubSequenceIntegrityAudit; decision?: "draft" | "runtime_stub_sequence_handed_off" | "rejected"; dryRun: true }): RuntimeStubSequenceFinalHandoff {
+  if (input.dryRun !== true) throw new Error("VO-7CN runtime stub sequence final handoff requires dryRun=true");
+  const reportValidation = validateRuntimeStubSequenceRegressionReport(input.regressionReport);
+  if (!reportValidation.ok) throw new Error("Runtime stub sequence regression report validation failed");
+  if (input.regressionReport.regression_report_state !== "approved_for_future_sequence_final_handoff") throw new Error("Runtime stub sequence final handoff requires approved regression report");
+  if (input.regressionReport.runtime_stub_sequence_integrity_audit_id !== input.integrityAudit.runtime_stub_sequence_integrity_audit_id) throw new Error("Mismatched regression report and integrity audit");
+  const handedOff = input.decision === "runtime_stub_sequence_handed_off";
+  const sections = ["integrity_audit", "regression_report", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_sequence_final_handoff_id: `runtime-stub-sequence-final-handoff-${crypto.randomUUID()}`,
+    runtime_stub_sequence_regression_report_id: input.regressionReport.runtime_stub_sequence_regression_report_id,
+    runtime_stub_sequence_integrity_audit_id: input.integrityAudit.runtime_stub_sequence_integrity_audit_id,
+    runtime_stub_archive_final_summary_id: input.integrityAudit.runtime_stub_archive_final_summary_id,
+    render_plan_id: input.integrityAudit.render_plan_id,
+    project_id: input.integrityAudit.project_id,
+    platform: input.integrityAudit.platform,
+    created_at: new Date().toISOString(),
+    handoff_state: handedOff ? "runtime_stub_sequence_handed_off" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_stub_sequence_regression_report_validated: true, runtime_stub_sequence_integrity_audit_validated: true },
+    handoff_scope: { artifact_only: true, future_next_phase_requested: handedOff, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    handoff_controls: { handoff_only: true, sequence_handoff_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    handoff_sections: sections.map((kind) => ({ section_id: `handoff-${kind}`, section_kind: kind, safe_summary: "Runtime stub sequence final handoff only.", contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: handedOff, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubSequenceFinalHandoff", source_runtime_stub_sequence_regression_report_id: input.regressionReport.runtime_stub_sequence_regression_report_id, source_render_plan_id: input.integrityAudit.render_plan_id },
+  };
+}

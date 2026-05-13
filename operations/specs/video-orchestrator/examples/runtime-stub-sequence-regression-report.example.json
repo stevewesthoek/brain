@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "runtime_stub_sequence_regression_report_id": "runtime-stub-sequence-regression-report-001",
+  "runtime_stub_sequence_integrity_audit_id": "runtime-stub-sequence-integrity-audit-001",
+  "runtime_stub_archive_final_summary_id": "runtime-stub-archive-final-summary-001",
+  "runtime_stub_archive_id": "runtime-stub-archive-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "regression_report_state": "approved_for_future_sequence_final_handoff",
+  "required_artifacts": { "runtime_stub_sequence_integrity_audit_validated": true, "runtime_stub_archive_final_summary_validated": true },
+  "regression_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "regression_controls": { "regression_report_only": true, "sequence_regression_only": true, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_raw_response": false, "contains_secret_material": false, "runtime_invocation_disabled": true, "real_upload_still_blocked": true },
+  "regression_checks": [
+    { "check_id": "regression-schema-chain", "check_kind": "schema_chain", "check_state": "passed", "safe_summary": "Schema chain summarized only.", "runtime_executed_now": false, "ready_for_real_upload_now": false },
+    { "check_id": "regression-example-chain", "check_kind": "example_chain", "check_state": "passed", "safe_summary": "Example chain summarized only.", "runtime_executed_now": false, "ready_for_real_upload_now": false },
+    { "check_id": "regression-validator-chain", "check_kind": "validator_chain", "check_state": "passed", "safe_summary": "Validator chain summarized only.", "runtime_executed_now": false, "ready_for_real_upload_now": false },
+    { "check_id": "regression-test-chain", "check_kind": "test_chain", "check_state": "passed", "safe_summary": "Test chain summarized only.", "runtime_executed_now": false, "ready_for_real_upload_now": false },
+    { "check_id": "regression-final-status", "check_kind": "status", "check_state": "passed", "safe_summary": "Real upload remains disabled.", "runtime_executed_now": false, "ready_for_real_upload_now": false }
+  ],
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createRuntimeStubSequenceRegressionReport", "source_runtime_stub_sequence_integrity_audit_id": "runtime-stub-sequence-integrity-audit-001", "source_render_plan_id": "render-plan-001" }
+}
