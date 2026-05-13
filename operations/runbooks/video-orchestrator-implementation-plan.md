@@ -3626,3 +3626,9 @@ Safety boundaries remain unchanged: no upload, no platform API calls, no network
 VO-7AC adds `real-upload-readiness-gate-v2`, a gate artifact that evaluates the disabled no-op wiring smoke test and enumerates the remaining required work before executor adapter design.
 
 The gate is intentionally conservative: it keeps real upload disabled and requires future executor adapter design, executor contracts, a dry-run adapter, credential/network/media boundaries, and a final operator checklist before any real upload can be considered. It does not perform network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, runtime execution, dependency changes, or package metadata changes.
+
+## VO-7AD — Real Upload Executor Adapter Design
+
+VO-7AD adds `real-upload-executor-adapter-design`, a design-only artifact for a future real upload executor adapter. It identifies required boundaries for credentials, network calls, platform APIs, media reads, payload contracts, response redaction, dry-run-first execution, and executor orchestration.
+
+No adapter code is created in this phase. Runtime adapter behavior, real upload, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

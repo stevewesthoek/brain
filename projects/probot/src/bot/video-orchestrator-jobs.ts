@@ -18406,3 +18406,94 @@ export function createRealUploadReadinessGateV2(input: { smokeTestResult: RealUp
   if (!validation.ok) throw new Error(`Readiness gate v2 validation failed: ${validation.blocking_reasons.join("; ")}`);
   return gate;
 }
+
+
+// ─── VO-7AD: Real Upload Executor Adapter Design ───────────────────────────
+
+export interface RealUploadExecutorAdapterDesign {
+  schema_version: "1.0";
+  real_upload_executor_adapter_design_id: string;
+  real_upload_readiness_gate_v2_id: string;
+  real_upload_noop_wiring_smoke_test_result_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  executor_adapter_design_state: "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_executor_contracts" | "rejected" | "revoked";
+  executor_adapter_design_mode: "real_upload_executor_adapter_design_only" | "operator_review_real_upload_executor_adapter_design";
+  required_artifacts: Record<string, true>;
+  design_scope: Record<string, unknown>;
+  adapter_boundaries: Record<string, unknown>;
+  planned_adapter_modules: Array<Record<string, unknown>>;
+  operator_review: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadExecutorAdapterDesignValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[] }
+
+const VO7AD_FALSE_KEYS = [
+  "ready_for_real_upload", "real_upload_enabled", "adapter_code_created", "runtime_enabled", "runtime_executed", "upload_allowed", "upload_execution_enabled", "platform_api_calls_allowed", "network_calls_allowed", "credentials_accessed", "token_accessed", "keychain_accessed", "env_accessed", "media_file_read", "file_mutation_allowed", "dependencies_added", "package_metadata_changed",
+];
+
+export function validateRealUploadExecutorAdapterDesign(design: unknown): RealUploadExecutorAdapterDesignValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!design || typeof design !== "object" || Array.isArray(design)) return { ok: false, blocking_reasons: ["Executor adapter design must be an object"], warnings };
+  const d = design as Record<string, unknown>;
+  if (d.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["draft", "blocked", "ready_for_operator_review", "approved_for_future_executor_contracts", "rejected", "revoked"].includes(String(d.executor_adapter_design_state))) blocking_reasons.push("Invalid executor adapter design state");
+  const scope = d.design_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.executor_adapter_design_only !== true || scope.adapter_code_created !== false || scope.runtime_adapter_enabled !== false || scope.upload_execution_enabled_now !== false || scope.network_calls_enabled_now !== false || scope.platform_api_calls_enabled_now !== false || scope.credential_access_enabled_now !== false || scope.media_read_enabled_now !== false || scope.dependencies_requested !== false || scope.package_metadata_changes_requested !== false) blocking_reasons.push("Executor adapter design scope is unsafe");
+  const boundaries = d.adapter_boundaries as Record<string, unknown> | undefined;
+  if (!boundaries || boundaries.credential_boundary_required !== true || boundaries.network_boundary_required !== true || boundaries.platform_api_boundary_required !== true || boundaries.media_read_boundary_required !== true || boundaries.payload_contract_required !== true || boundaries.response_redaction_required !== true || boundaries.dry_run_first_required !== true || boundaries.real_upload_still_blocked !== true) blocking_reasons.push("Executor adapter boundaries are incomplete");
+  if (!Array.isArray(d.planned_adapter_modules) || d.planned_adapter_modules.length < 6) blocking_reasons.push("Planned adapter modules are incomplete");
+  for (const module of Array.isArray(d.planned_adapter_modules) ? d.planned_adapter_modules : []) {
+    const m = module as Record<string, unknown>;
+    if (m.code_created !== false || m.runtime_enabled !== false || m.upload_enabled !== false || m.network_enabled !== false || m.platform_api_enabled !== false || m.credential_access_enabled !== false || m.media_read_enabled !== false) blocking_reasons.push("Planned adapter module is unsafe");
+  }
+  blocking_reasons.push(...validateVo7abFalseBoundary(d.execution_boundary, VO7AD_FALSE_KEYS, "Execution boundary"));
+  const validation = d.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_real_upload !== false || validation.real_upload_enabled !== false || validation.adapter_code_created !== false || validation.upload_allowed !== false || validation.network_calls_allowed !== false || validation.platform_api_calls_allowed !== false || validation.credentials_accessed !== false || validation.media_file_read !== false) blocking_reasons.push("Validation boundary is unsafe");
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(design));
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadExecutorAdapterDesign(input: { readinessGate: RealUploadReadinessGateV2; smokeTestResult: RealUploadNoopWiringSmokeTestResult; decision?: "draft" | "approved_for_future_executor_contracts" | "rejected"; checklist_acknowledged?: boolean; understands_design_only?: boolean; understands_no_adapter_code_created?: boolean; understands_real_upload_not_enabled?: boolean; understands_no_network_calls?: boolean; understands_no_platform_api_calls?: boolean; understands_no_credentials_accessed?: boolean; understands_no_media_reads?: boolean; understands_future_executor_contracts_required?: boolean; dryRun: true }): RealUploadExecutorAdapterDesign {
+  if (input.dryRun !== true) throw new Error("VO-7AD executor adapter design requires dryRun=true");
+  const gateValidation = validateRealUploadReadinessGateV2(input.readinessGate);
+  if (!gateValidation.ok) throw new Error("Readiness gate v2 validation failed");
+  if (input.readinessGate.readiness_gate_state !== "approved_for_future_real_upload_executor_adapter_design") throw new Error("Executor adapter design requires approved readiness gate v2");
+  if (input.readinessGate.real_upload_noop_wiring_smoke_test_result_id !== input.smokeTestResult.real_upload_noop_wiring_smoke_test_result_id) throw new Error("Mismatched readiness gate and smoke test result");
+  const decision = input.decision ?? "draft";
+  const approved = decision === "approved_for_future_executor_contracts";
+  if (approved) {
+    const acknowledgements = [input.checklist_acknowledged, input.understands_design_only, input.understands_no_adapter_code_created, input.understands_real_upload_not_enabled, input.understands_no_network_calls, input.understands_no_platform_api_calls, input.understands_no_credentials_accessed, input.understands_no_media_reads, input.understands_future_executor_contracts_required];
+    if (!acknowledgements.every(Boolean)) throw new Error("Approved VO-7AD design requires all operator acknowledgements");
+  }
+  const moduleKinds = ["credential_boundary_adapter_design", "media_read_boundary_adapter_design", "payload_builder_adapter_design", "platform_client_adapter_design", "network_boundary_adapter_design", "response_redaction_adapter_design", "executor_orchestration_adapter_design"];
+  const design: RealUploadExecutorAdapterDesign = {
+    schema_version: "1.0",
+    real_upload_executor_adapter_design_id: `real-upload-executor-adapter-design-${crypto.randomUUID()}`,
+    real_upload_readiness_gate_v2_id: input.readinessGate.real_upload_readiness_gate_v2_id,
+    real_upload_noop_wiring_smoke_test_result_id: input.smokeTestResult.real_upload_noop_wiring_smoke_test_result_id,
+    render_plan_id: input.readinessGate.render_plan_id,
+    project_id: input.readinessGate.project_id,
+    platform: input.readinessGate.platform,
+    created_at: new Date().toISOString(),
+    executor_adapter_design_state: approved ? "approved_for_future_executor_contracts" : decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    executor_adapter_design_mode: "real_upload_executor_adapter_design_only",
+    required_artifacts: { real_upload_readiness_gate_v2_validated: true, real_upload_noop_wiring_smoke_test_result_validated: true },
+    design_scope: { future_executor_contracts_requested: approved, executor_adapter_design_only: true, adapter_code_created: false, runtime_adapter_enabled: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    adapter_boundaries: { credential_boundary_required: true, network_boundary_required: true, platform_api_boundary_required: true, media_read_boundary_required: true, payload_contract_required: true, response_redaction_required: true, dry_run_first_required: true, real_upload_still_blocked: true },
+    planned_adapter_modules: moduleKinds.map((kind) => ({ module_id: `adapter-module-${kind}`, module_kind: kind, safe_summary: "Executor adapter design module only.", code_created: false, runtime_enabled: false, upload_enabled: false, network_enabled: false, platform_api_enabled: false, credential_access_enabled: false, media_read_enabled: false, blocking_reasons: [], warnings: [] })),
+    operator_review: { checklist_acknowledged: Boolean(input.checklist_acknowledged), understands_design_only: Boolean(input.understands_design_only), understands_no_adapter_code_created: Boolean(input.understands_no_adapter_code_created), understands_real_upload_not_enabled: Boolean(input.understands_real_upload_not_enabled), understands_no_network_calls: Boolean(input.understands_no_network_calls), understands_no_platform_api_calls: Boolean(input.understands_no_platform_api_calls), understands_no_credentials_accessed: Boolean(input.understands_no_credentials_accessed), understands_no_media_reads: Boolean(input.understands_no_media_reads), understands_future_executor_contracts_required: Boolean(input.understands_future_executor_contracts_required), decision_note_summary: "Executor adapter design only; real upload remains disabled." },
+    execution_boundary: Object.fromEntries(VO7AD_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { executor_adapter_design_complete: true, ready_for_future_executor_contracts: approved, ready_for_real_upload: false, real_upload_enabled: false, adapter_code_created: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadExecutorAdapterDesign", source_real_upload_readiness_gate_v2_id: input.readinessGate.real_upload_readiness_gate_v2_id, source_real_upload_noop_wiring_smoke_test_result_id: input.smokeTestResult.real_upload_noop_wiring_smoke_test_result_id, source_render_plan_id: input.readinessGate.render_plan_id },
+  };
+  const validation = validateRealUploadExecutorAdapterDesign(design);
+  if (!validation.ok) throw new Error(`Executor adapter design validation failed: ${validation.blocking_reasons.join("; ")}`);
+  return design;
+}

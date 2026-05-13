@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "real_upload_executor_adapter_design_id": "real-upload-executor-adapter-design-001",
+  "real_upload_readiness_gate_v2_id": "real-upload-readiness-gate-v2-001",
+  "real_upload_noop_wiring_smoke_test_result_id": "real-upload-noop-wiring-smoke-test-result-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "executor_adapter_design_state": "ready_for_operator_review",
+  "executor_adapter_design_mode": "real_upload_executor_adapter_design_only",
+  "required_artifacts": {
+    "real_upload_readiness_gate_v2_validated": true,
+    "real_upload_noop_wiring_smoke_test_result_validated": true
+  },
+  "design_scope": {
+    "future_executor_contracts_requested": true,
+    "executor_adapter_design_only": true,
+    "adapter_code_created": false,
+    "runtime_adapter_enabled": false,
+    "upload_execution_enabled_now": false,
+    "network_calls_enabled_now": false,
+    "platform_api_calls_enabled_now": false,
+    "credential_access_enabled_now": false,
+    "media_read_enabled_now": false,
+    "dependencies_requested": false,
+    "package_metadata_changes_requested": false
+  },
+  "adapter_boundaries": {
+    "credential_boundary_required": true,
+    "network_boundary_required": true,
+    "platform_api_boundary_required": true,
+    "media_read_boundary_required": true,
+    "payload_contract_required": true,
+    "response_redaction_required": true,
+    "dry_run_first_required": true,
+    "real_upload_still_blocked": true
+  },
+  "planned_adapter_modules": [
+    { "module_id": "adapter-module-credential-boundary", "module_kind": "credential_boundary_adapter_design", "safe_summary": "Credential boundary design only.", "code_created": false, "runtime_enabled": false, "upload_enabled": false, "network_enabled": false, "platform_api_enabled": false, "credential_access_enabled": false, "media_read_enabled": false, "blocking_reasons": [], "warnings": [] },
+    { "module_id": "adapter-module-media-read-boundary", "module_kind": "media_read_boundary_adapter_design", "safe_summary": "Media read boundary design only.", "code_created": false, "runtime_enabled": false, "upload_enabled": false, "network_enabled": false, "platform_api_enabled": false, "credential_access_enabled": false, "media_read_enabled": false, "blocking_reasons": [], "warnings": [] },
+    { "module_id": "adapter-module-payload-builder", "module_kind": "payload_builder_adapter_design", "safe_summary": "Payload builder contract design only.", "code_created": false, "runtime_enabled": false, "upload_enabled": false, "network_enabled": false, "platform_api_enabled": false, "credential_access_enabled": false, "media_read_enabled": false, "blocking_reasons": [], "warnings": [] },
+    { "module_id": "adapter-module-platform-client", "module_kind": "platform_client_adapter_design", "safe_summary": "Platform client boundary design only.", "code_created": false, "runtime_enabled": false, "upload_enabled": false, "network_enabled": false, "platform_api_enabled": false, "credential_access_enabled": false, "media_read_enabled": false, "blocking_reasons": [], "warnings": [] },
+    { "module_id": "adapter-module-network-boundary", "module_kind": "network_boundary_adapter_design", "safe_summary": "Network boundary design only.", "code_created": false, "runtime_enabled": false, "upload_enabled": false, "network_enabled": false, "platform_api_enabled": false, "credential_access_enabled": false, "media_read_enabled": false, "blocking_reasons": [], "warnings": [] },
+    { "module_id": "adapter-module-response-redaction", "module_kind": "response_redaction_adapter_design", "safe_summary": "Response redaction design only.", "code_created": false, "runtime_enabled": false, "upload_enabled": false, "network_enabled": false, "platform_api_enabled": false, "credential_access_enabled": false, "media_read_enabled": false, "blocking_reasons": [], "warnings": [] },
+    { "module_id": "adapter-module-executor-orchestration", "module_kind": "executor_orchestration_adapter_design", "safe_summary": "Executor orchestration design only.", "code_created": false, "runtime_enabled": false, "upload_enabled": false, "network_enabled": false, "platform_api_enabled": false, "credential_access_enabled": false, "media_read_enabled": false, "blocking_reasons": [], "warnings": [] }
+  ],
+  "operator_review": {
+    "reviewed_by_label": "operator-001",
+    "checklist_acknowledged": true,
+    "understands_design_only": true,
+    "understands_no_adapter_code_created": true,
+    "understands_real_upload_not_enabled": true,
+    "understands_no_network_calls": true,
+    "understands_no_platform_api_calls": true,
+    "understands_no_credentials_accessed": true,
+    "understands_no_media_reads": true,
+    "understands_future_executor_contracts_required": true,
+    "decision_note_summary": "Executor adapter design only. Real upload remains disabled."
+  },
+  "execution_boundary": {
+    "ready_for_real_upload": false,
+    "real_upload_enabled": false,
+    "adapter_code_created": false,
+    "runtime_enabled": false,
+    "runtime_executed": false,
+    "upload_allowed": false,
+    "upload_execution_enabled": false,
+    "platform_api_calls_allowed": false,
+    "network_calls_allowed": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "keychain_accessed": false,
+    "env_accessed": false,
+    "media_file_read": false,
+    "file_mutation_allowed": false,
+    "dependencies_added": false,
+    "package_metadata_changed": false
+  },
+  "validation": {
+    "executor_adapter_design_complete": true,
+    "ready_for_future_executor_contracts": true,
+    "ready_for_real_upload": false,
+    "real_upload_enabled": false,
+    "adapter_code_created": false,
+    "upload_allowed": false,
+    "network_calls_allowed": false,
+    "platform_api_calls_allowed": false,
+    "credentials_accessed": false,
+    "media_file_read": false,
+    "blocking_reasons": [],
+    "warnings": []
+  },
+  "provenance": {
+    "generated_by": "createRealUploadExecutorAdapterDesign",
+    "source_real_upload_readiness_gate_v2_id": "real-upload-readiness-gate-v2-001",
+    "source_real_upload_noop_wiring_smoke_test_result_id": "real-upload-noop-wiring-smoke-test-result-001",
+    "source_render_plan_id": "render-plan-001"
+  }
+}
