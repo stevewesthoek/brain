@@ -326,6 +326,26 @@ This phase adds wiring contract tests only. It defines test artifacts for future
 **Next phase guidance**
 - If approved later, the next step may add future no-op wiring readiness review work, still without runtime wiring or upload capability.
 
+### VO-7AA: Real Upload No-Op Wiring Readiness Review and Activation Plan
+
+This phase reviews the no-op wiring contract tests and creates a disabled-by-default activation plan only.
+
+**What it does**
+- Reviews readiness for future disabled no-op wiring activation planning only.
+- Keeps runtime wiring, feature flags, production path imports, automatic invocation, upload execution, platform APIs, network calls, credential access, media reads, file mutation, and dependency changes disabled.
+- Records only safe summaries for future operator review.
+
+**What it does not do**
+- Does not apply runtime wiring.
+- Does not create or enable a runtime feature flag.
+- Does not change the live orchestrator execution path.
+- Does not enable upload or platform API behavior.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not add dependencies or modify package metadata.
+
+**Next phase guidance**
+- If approved later, the next step may add future disabled no-op wiring activation work, still without runtime wiring or upload capability.
+
 ### VO-7C: Upload Package Design
 
 This phase creates an upload package design artifact only. It prepares safe metadata and platform-target summaries for a future upload-request design review, but it still does not upload or call platform APIs.
