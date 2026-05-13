@@ -20162,3 +20162,183 @@ export function createControlledRuntimeImplementationBoundaryDryRun(input: { saf
     provenance: { generated_by: "createControlledRuntimeImplementationBoundaryDryRun", source_controlled_runtime_implementation_boundary_safety_contract_id: input.safetyContract.controlled_runtime_implementation_boundary_safety_contract_id, source_render_plan_id: input.safetyContract.render_plan_id },
   };
 }
+
+
+// ─── VO-7BE/VO-7BF/VO-7BG: Runtime Implementation Candidate Layer ─────────
+
+export interface ControlledRuntimeImplementationCandidate {
+  schema_version: "1.0";
+  controlled_runtime_implementation_candidate_id: string;
+  controlled_runtime_implementation_boundary_dry_run_id: string;
+  controlled_runtime_implementation_boundary_safety_contract_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  candidate_state: "draft" | "ready_for_operator_review" | "approved_for_future_candidate_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  candidate_scope: Record<string, unknown>;
+  candidate_controls: Record<string, unknown>;
+  candidate_items: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeImplementationCandidateReview {
+  schema_version: "1.0";
+  controlled_runtime_implementation_candidate_review_id: string;
+  controlled_runtime_implementation_candidate_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  candidate_review_state: "draft" | "ready_for_operator_review" | "approved_for_future_candidate_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_controls: Record<string, unknown>;
+  review_items: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeImplementationCandidateSafeReport {
+  schema_version: "1.0";
+  controlled_runtime_implementation_candidate_safe_report_id: string;
+  controlled_runtime_implementation_candidate_review_id: string;
+  controlled_runtime_implementation_candidate_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_implementation_final_boundary" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeImplementationCandidateLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.candidate_controls || artifact.review_controls) as Record<string, unknown> | undefined;
+    if (controls && controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime implementation candidate layer must keep real upload blocked");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 4) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.implemented_now !== false) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} attempted implementation now`);
+        }
+        if (record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe raw or secret material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateControlledRuntimeImplementationCandidate(candidate: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeImplementationCandidateLayer(candidate, "candidate_scope", "candidate_items");
+}
+
+export function validateControlledRuntimeImplementationCandidateReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeImplementationCandidateLayer(review, "review_scope", "review_items");
+}
+
+export function validateControlledRuntimeImplementationCandidateSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeImplementationCandidateLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createControlledRuntimeImplementationCandidate(input: { boundaryDryRun: ControlledRuntimeImplementationBoundaryDryRun; decision?: "draft" | "approved_for_future_candidate_review" | "rejected"; dryRun: true }): ControlledRuntimeImplementationCandidate {
+  if (input.dryRun !== true) throw new Error("VO-7BE runtime implementation candidate requires dryRun=true");
+  const dryRunValidation = validateControlledRuntimeImplementationBoundaryDryRun(input.boundaryDryRun);
+  if (!dryRunValidation.ok) throw new Error("Runtime implementation boundary dry-run validation failed");
+  if (input.boundaryDryRun.dry_run_state !== "passed") throw new Error("Runtime implementation candidate requires passed boundary dry-run");
+  const approved = input.decision === "approved_for_future_candidate_review";
+  const kinds = ["kill_switch", "single_upload_limit", "credential_boundary", "network_boundary", "media_boundary"];
+  return {
+    schema_version: "1.0",
+    controlled_runtime_implementation_candidate_id: `controlled-runtime-implementation-candidate-${crypto.randomUUID()}`,
+    controlled_runtime_implementation_boundary_dry_run_id: input.boundaryDryRun.controlled_runtime_implementation_boundary_dry_run_id,
+    controlled_runtime_implementation_boundary_safety_contract_id: input.boundaryDryRun.controlled_runtime_implementation_boundary_safety_contract_id,
+    render_plan_id: input.boundaryDryRun.render_plan_id,
+    project_id: input.boundaryDryRun.project_id,
+    platform: input.boundaryDryRun.platform,
+    created_at: new Date().toISOString(),
+    candidate_state: approved ? "approved_for_future_candidate_review" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_implementation_boundary_dry_run_validated: true, controlled_runtime_implementation_boundary_safety_contract_validated: true },
+    candidate_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    candidate_controls: { candidate_only: true, safe_stub_only: true, single_upload_limit: 1, operator_kill_switch_required: true, real_upload_still_blocked: true },
+    candidate_items: kinds.map((kind) => ({ item_id: `candidate-${kind}`, item_kind: kind, safe_summary: "Runtime implementation candidate item only.", implemented_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeImplementationCandidate", source_controlled_runtime_implementation_boundary_dry_run_id: input.boundaryDryRun.controlled_runtime_implementation_boundary_dry_run_id, source_render_plan_id: input.boundaryDryRun.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeImplementationCandidateReview(input: { candidate: ControlledRuntimeImplementationCandidate; decision?: "draft" | "approved_for_future_candidate_safe_report" | "rejected"; dryRun: true }): ControlledRuntimeImplementationCandidateReview {
+  if (input.dryRun !== true) throw new Error("VO-7BF runtime implementation candidate review requires dryRun=true");
+  const candidateValidation = validateControlledRuntimeImplementationCandidate(input.candidate);
+  if (!candidateValidation.ok) throw new Error("Runtime implementation candidate validation failed");
+  if (input.candidate.candidate_state !== "approved_for_future_candidate_review") throw new Error("Candidate review requires approved candidate");
+  const approved = input.decision === "approved_for_future_candidate_safe_report";
+  return {
+    schema_version: "1.0",
+    controlled_runtime_implementation_candidate_review_id: `controlled-runtime-implementation-candidate-review-${crypto.randomUUID()}`,
+    controlled_runtime_implementation_candidate_id: input.candidate.controlled_runtime_implementation_candidate_id,
+    render_plan_id: input.candidate.render_plan_id,
+    project_id: input.candidate.project_id,
+    platform: input.candidate.platform,
+    created_at: new Date().toISOString(),
+    candidate_review_state: approved ? "approved_for_future_candidate_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_implementation_candidate_validated: true },
+    review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_controls: { review_only: true, candidate_reviewed: true, single_upload_limit: 1, operator_kill_switch_required: true, real_upload_still_blocked: true },
+    review_items: input.candidate.candidate_items.map((item) => ({ item_id: `review-${String(item.item_kind)}`, item_kind: item.item_kind, review_state: "passed", safe_summary: "Runtime implementation candidate review only.", implemented_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeImplementationCandidateReview", source_controlled_runtime_implementation_candidate_id: input.candidate.controlled_runtime_implementation_candidate_id, source_render_plan_id: input.candidate.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeImplementationCandidateSafeReport(input: { review: ControlledRuntimeImplementationCandidateReview; candidate: ControlledRuntimeImplementationCandidate; decision?: "draft" | "approved_for_future_runtime_implementation_final_boundary" | "rejected"; dryRun: true }): ControlledRuntimeImplementationCandidateSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7BG runtime implementation candidate safe report requires dryRun=true");
+  const reviewValidation = validateControlledRuntimeImplementationCandidateReview(input.review);
+  if (!reviewValidation.ok) throw new Error("Runtime implementation candidate review validation failed");
+  if (input.review.candidate_review_state !== "approved_for_future_candidate_safe_report") throw new Error("Candidate safe report requires approved review");
+  if (input.review.controlled_runtime_implementation_candidate_id !== input.candidate.controlled_runtime_implementation_candidate_id) throw new Error("Mismatched candidate review and candidate");
+  const approved = input.decision === "approved_for_future_runtime_implementation_final_boundary";
+  const sections = ["boundaries", "controls", "review", "status"];
+  return {
+    schema_version: "1.0",
+    controlled_runtime_implementation_candidate_safe_report_id: `controlled-runtime-implementation-candidate-safe-report-${crypto.randomUUID()}`,
+    controlled_runtime_implementation_candidate_review_id: input.review.controlled_runtime_implementation_candidate_review_id,
+    controlled_runtime_implementation_candidate_id: input.candidate.controlled_runtime_implementation_candidate_id,
+    render_plan_id: input.candidate.render_plan_id,
+    project_id: input.candidate.project_id,
+    platform: input.candidate.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_implementation_final_boundary" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { controlled_runtime_implementation_candidate_review_validated: true, controlled_runtime_implementation_candidate_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    safe_report_sections: sections.map((kind) => ({ section_id: `candidate-safe-report-${kind}`, section_kind: kind, safe_summary: "Runtime implementation candidate safe report only.", contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeImplementationCandidateSafeReport", source_controlled_runtime_implementation_candidate_review_id: input.review.controlled_runtime_implementation_candidate_review_id, source_render_plan_id: input.candidate.render_plan_id },
+  };
+}

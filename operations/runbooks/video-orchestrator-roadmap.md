@@ -1748,3 +1748,11 @@ Status: complete.
 VO-7BB adds a runtime implementation boundary request, VO-7BC adds a boundary safety contract, and VO-7BD adds a boundary dry-run artifact. These phases remain boundary-request/contract/dry-run artifacts only.
 
 They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+## Phase 5AU — Runtime Implementation Candidate, Review, and Safe Report (VO-7BE/VO-7BF/VO-7BG)
+
+Status: complete.
+
+VO-7BE adds a runtime implementation candidate artifact, VO-7BF adds a candidate review artifact, and VO-7BG adds a candidate safe report artifact. These phases remain candidate/review/report artifacts only.
+
+They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.

@@ -24692,3 +24692,60 @@ test("VO-7BD-VALIDATE: runtime implementation boundary dry-run rejects implement
   const validation = validateControlledRuntimeImplementationBoundaryDryRun(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7BE/VO-7BF/VO-7BG: Runtime Implementation Candidate Layer ─────────
+
+test("VO-7BE-SCHEMA: runtime implementation candidate schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-implementation-candidate.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-candidate.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.candidate_items[0].implemented_now, false);
+});
+
+test("VO-7BE-VALIDATE: runtime implementation candidate rejects implementation", async () => {
+  const { validateControlledRuntimeImplementationCandidate } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-candidate.example.json"), "utf8"));
+  const unsafe = { ...example, candidate_items: [{ ...example.candidate_items[0], implemented_now: true }] };
+  const validation = validateControlledRuntimeImplementationCandidate(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BF-SCHEMA: runtime implementation candidate review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-implementation-candidate-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-candidate-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_items[0].implemented_now, false);
+});
+
+test("VO-7BF-VALIDATE: runtime implementation candidate review rejects implementation", async () => {
+  const { validateControlledRuntimeImplementationCandidateReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-candidate-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_items: [{ ...example.review_items[0], implemented_now: true }] };
+  const validation = validateControlledRuntimeImplementationCandidateReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BG-SCHEMA: runtime implementation candidate safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-implementation-candidate-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-candidate-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7BG-VALIDATE: runtime implementation candidate safe report rejects raw material", async () => {
+  const { validateControlledRuntimeImplementationCandidateSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-candidate-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateControlledRuntimeImplementationCandidateSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});
