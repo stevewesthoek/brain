@@ -3782,3 +3782,9 @@ These artifacts consolidate operator-facing handoff state after the runtime stub
 VO-7CR adds `explicit-runtime-activation-design-boundary`, VO-7CS adds `explicit-runtime-activation-design-review`, and VO-7CT adds `explicit-runtime-activation-design-safe-report`.
 
 These artifacts document a future explicit runtime activation design boundary without implementing runtime behavior. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, runtime enablement, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7CU/VO-7CV/VO-7CW — Runtime Activation Contract, Review, and Safe Report
+
+VO-7CU adds `runtime-activation-contract`, VO-7CV adds `runtime-activation-contract-review`, and VO-7CW adds `runtime-activation-contract-safe-report`.
+
+These artifacts define a future runtime activation contract boundary without implementing runtime behavior. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, runtime enablement, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

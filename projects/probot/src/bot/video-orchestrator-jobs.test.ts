@@ -25490,3 +25490,60 @@ test("VO-7CT-VALIDATE: explicit runtime activation design safe report rejects ra
   const validation = validateExplicitRuntimeActivationDesignSafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7CU/VO-7CV/VO-7CW: Runtime Activation Contract Layer ───────────────
+
+test("VO-7CU-SCHEMA: runtime activation contract schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-activation-contract.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-contract.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.contract_controls.runtime_wiring_implemented, false);
+});
+
+test("VO-7CU-VALIDATE: runtime activation contract rejects runtime wiring", async () => {
+  const { validateRuntimeActivationContract } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-contract.example.json"), "utf8"));
+  const unsafe = { ...example, contract_controls: { ...example.contract_controls, runtime_wiring_implemented: true } };
+  const validation = validateRuntimeActivationContract(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CV-SCHEMA: runtime activation contract review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-activation-contract-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-contract-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_checks[0].runtime_enabled_now, false);
+});
+
+test("VO-7CV-VALIDATE: runtime activation contract review rejects runtime enablement", async () => {
+  const { validateRuntimeActivationContractReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-contract-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_checks: [{ ...example.review_checks[0], runtime_enabled_now: true }] };
+  const validation = validateRuntimeActivationContractReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CW-SCHEMA: runtime activation contract safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-activation-contract-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-contract-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7CW-VALIDATE: runtime activation contract safe report rejects raw material", async () => {
+  const { validateRuntimeActivationContractSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-contract-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateRuntimeActivationContractSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});

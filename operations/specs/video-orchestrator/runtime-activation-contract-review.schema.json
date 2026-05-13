@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "runtime-activation-contract-review.schema.json",
+  "title": "Runtime Activation Contract Review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "runtime_activation_contract_review_id", "runtime_activation_contract_id", "explicit_runtime_activation_design_safe_report_id", "render_plan_id", "project_id", "platform", "created_at", "contract_review_state", "required_artifacts", "review_scope", "review_controls", "review_checks", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "runtime_activation_contract_review_id": { "type": "string", "minLength": 1 },
+    "runtime_activation_contract_id": { "type": "string", "minLength": 1 },
+    "explicit_runtime_activation_design_safe_report_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "contract_review_state": { "type": "string", "enum": ["draft", "ready_for_operator_review", "approved_for_future_contract_safe_report", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["runtime_activation_contract_validated", "explicit_runtime_activation_design_safe_report_validated"], "properties": { "runtime_activation_contract_validated": { "type": "boolean", "const": true }, "explicit_runtime_activation_design_safe_report_validated": { "type": "boolean", "const": true } } },
+    "review_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "review_controls": { "type": "object", "additionalProperties": false, "required": ["review_only", "contract_review_only", "contains_runtime_callable", "contains_raw_payload", "contains_raw_response", "contains_secret_material", "runtime_wiring_implemented", "runtime_invocation_disabled", "real_upload_still_blocked"], "properties": { "review_only": { "type": "boolean", "const": true }, "contract_review_only": { "type": "boolean", "const": true }, "contains_runtime_callable": { "type": "boolean", "const": false }, "contains_raw_payload": { "type": "boolean", "const": false }, "contains_raw_response": { "type": "boolean", "const": false }, "contains_secret_material": { "type": "boolean", "const": false }, "runtime_wiring_implemented": { "type": "boolean", "const": false }, "runtime_invocation_disabled": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "review_checks": { "type": "array", "minItems": 4, "items": { "type": "object", "additionalProperties": false, "required": ["check_id", "check_kind", "check_state", "safe_summary", "runtime_enabled_now", "ready_for_real_upload_now"], "properties": { "check_id": { "type": "string" }, "check_kind": { "type": "string" }, "check_state": { "type": "string", "enum": ["passed", "failed", "blocked", "deferred"] }, "safe_summary": { "type": "string" }, "runtime_enabled_now": { "type": "boolean", "const": false }, "ready_for_real_upload_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_runtime_activation_contract_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createRuntimeActivationContractReview", "revokeRuntimeActivationContractReview"] }, "source_runtime_activation_contract_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

@@ -1860,3 +1860,11 @@ Status: complete.
 VO-7CR adds an explicit runtime activation design boundary, VO-7CS adds a design review, and VO-7CT adds a design safe report. These phases remain design/review/report artifacts only.
 
 They do not implement runtime wiring, enable runtime, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+## Phase 5BI — Runtime Activation Contract, Review, and Safe Report (VO-7CU/VO-7CV/VO-7CW)
+
+Status: complete.
+
+VO-7CU adds a runtime activation contract, VO-7CV adds a contract review, and VO-7CW adds a contract safe report. These phases remain contract/review/report artifacts only.
+
+They do not implement runtime wiring, enable runtime, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.

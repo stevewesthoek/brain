@@ -22801,3 +22801,190 @@ export function createExplicitRuntimeActivationDesignSafeReport(input: { designR
     provenance: { generated_by: "createExplicitRuntimeActivationDesignSafeReport", source_explicit_runtime_activation_design_review_id: input.designReview.explicit_runtime_activation_design_review_id, source_render_plan_id: input.designBoundary.render_plan_id },
   };
 }
+
+
+// ─── VO-7CU/VO-7CV/VO-7CW: Runtime Activation Contract Layer ───────────────
+
+export interface RuntimeActivationContract {
+  schema_version: "1.0";
+  runtime_activation_contract_id: string;
+  explicit_runtime_activation_design_safe_report_id: string;
+  explicit_runtime_activation_design_boundary_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  contract_state: "draft" | "created" | "approved_for_future_contract_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  contract_scope: Record<string, unknown>;
+  contract_controls: Record<string, unknown>;
+  contract_terms: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeActivationContractReview {
+  schema_version: "1.0";
+  runtime_activation_contract_review_id: string;
+  runtime_activation_contract_id: string;
+  explicit_runtime_activation_design_safe_report_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  contract_review_state: "draft" | "ready_for_operator_review" | "approved_for_future_contract_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_controls: Record<string, unknown>;
+  review_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeActivationContractSafeReport {
+  schema_version: "1.0";
+  runtime_activation_contract_safe_report_id: string;
+  runtime_activation_contract_review_id: string;
+  runtime_activation_contract_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_activation_readiness_contract" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  report_controls: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeActivationContractLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.contract_controls || artifact.review_controls || artifact.report_controls) as Record<string, unknown> | undefined;
+    if (controls && (controls.real_upload_still_blocked !== true || controls.runtime_wiring_implemented === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime activation contract must not implement runtime wiring or unblock real upload");
+    }
+    if (controls && (controls.contains_runtime_callable === true || controls.contains_raw_payload === true || controls.contains_raw_response === true || controls.contains_secret_material === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime activation contract contains unsafe material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 4) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true || record.runtime_enabled_now === true || record.ready_for_real_upload_now === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe contract/runtime/ready material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateRuntimeActivationContract(contract: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeActivationContractLayer(contract, "contract_scope", "contract_terms");
+}
+
+export function validateRuntimeActivationContractReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeActivationContractLayer(review, "review_scope", "review_checks");
+}
+
+export function validateRuntimeActivationContractSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeActivationContractLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createRuntimeActivationContract(input: { designSafeReport: ExplicitRuntimeActivationDesignSafeReport; designBoundary: ExplicitRuntimeActivationDesignBoundary; decision?: "draft" | "approved_for_future_contract_review" | "rejected"; dryRun: true }): RuntimeActivationContract {
+  if (input.dryRun !== true) throw new Error("VO-7CU runtime activation contract requires dryRun=true");
+  const reportValidation = validateExplicitRuntimeActivationDesignSafeReport(input.designSafeReport);
+  if (!reportValidation.ok) throw new Error("Explicit runtime activation design safe report validation failed");
+  if (input.designSafeReport.safe_report_state !== "approved_for_future_runtime_activation_contract") throw new Error("Runtime activation contract requires approved design safe report");
+  if (input.designSafeReport.explicit_runtime_activation_design_boundary_id !== input.designBoundary.explicit_runtime_activation_design_boundary_id) throw new Error("Mismatched design safe report and boundary");
+  const approved = input.decision === "approved_for_future_contract_review";
+  const terms = ["scope", "boundaries", "credentials", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_activation_contract_id: `runtime-activation-contract-${crypto.randomUUID()}`,
+    explicit_runtime_activation_design_safe_report_id: input.designSafeReport.explicit_runtime_activation_design_safe_report_id,
+    explicit_runtime_activation_design_boundary_id: input.designBoundary.explicit_runtime_activation_design_boundary_id,
+    render_plan_id: input.designBoundary.render_plan_id,
+    project_id: input.designBoundary.project_id,
+    platform: input.designBoundary.platform,
+    created_at: new Date().toISOString(),
+    contract_state: approved ? "approved_for_future_contract_review" : input.decision === "rejected" ? "rejected" : "created",
+    required_artifacts: { explicit_runtime_activation_design_safe_report_validated: true, explicit_runtime_activation_design_boundary_validated: true },
+    contract_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    contract_controls: { contract_only: true, activation_contract_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    contract_terms: terms.map((kind) => ({ term_id: `contract-${kind}`, term_kind: kind, safe_summary: "Runtime activation contract only.", runtime_enabled_now: false, ready_for_real_upload_now: false, contains_runtime_callable: false, contains_raw_payload: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeActivationContract", source_explicit_runtime_activation_design_safe_report_id: input.designSafeReport.explicit_runtime_activation_design_safe_report_id, source_render_plan_id: input.designBoundary.render_plan_id },
+  };
+}
+
+export function createRuntimeActivationContractReview(input: { contract: RuntimeActivationContract; designSafeReport: ExplicitRuntimeActivationDesignSafeReport; decision?: "draft" | "approved_for_future_contract_safe_report" | "rejected"; dryRun: true }): RuntimeActivationContractReview {
+  if (input.dryRun !== true) throw new Error("VO-7CV runtime activation contract review requires dryRun=true");
+  const contractValidation = validateRuntimeActivationContract(input.contract);
+  if (!contractValidation.ok) throw new Error("Runtime activation contract validation failed");
+  if (input.contract.contract_state !== "approved_for_future_contract_review") throw new Error("Runtime activation contract review requires approved contract");
+  if (input.contract.explicit_runtime_activation_design_safe_report_id !== input.designSafeReport.explicit_runtime_activation_design_safe_report_id) throw new Error("Mismatched runtime activation contract and design safe report");
+  const approved = input.decision === "approved_for_future_contract_safe_report";
+  const checks = ["scope", "terms", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_activation_contract_review_id: `runtime-activation-contract-review-${crypto.randomUUID()}`,
+    runtime_activation_contract_id: input.contract.runtime_activation_contract_id,
+    explicit_runtime_activation_design_safe_report_id: input.designSafeReport.explicit_runtime_activation_design_safe_report_id,
+    render_plan_id: input.contract.render_plan_id,
+    project_id: input.contract.project_id,
+    platform: input.contract.platform,
+    created_at: new Date().toISOString(),
+    contract_review_state: approved ? "approved_for_future_contract_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { runtime_activation_contract_validated: true, explicit_runtime_activation_design_safe_report_validated: true },
+    review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_controls: { review_only: true, contract_review_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    review_checks: checks.map((kind) => ({ check_id: `contract-review-${kind}`, check_kind: kind, check_state: "passed", safe_summary: "Runtime activation contract review only.", runtime_enabled_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeActivationContractReview", source_runtime_activation_contract_id: input.contract.runtime_activation_contract_id, source_render_plan_id: input.contract.render_plan_id },
+  };
+}
+
+export function createRuntimeActivationContractSafeReport(input: { contractReview: RuntimeActivationContractReview; contract: RuntimeActivationContract; decision?: "draft" | "approved_for_future_runtime_activation_readiness_contract" | "rejected"; dryRun: true }): RuntimeActivationContractSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7CW runtime activation contract safe report requires dryRun=true");
+  const reviewValidation = validateRuntimeActivationContractReview(input.contractReview);
+  if (!reviewValidation.ok) throw new Error("Runtime activation contract review validation failed");
+  if (input.contractReview.contract_review_state !== "approved_for_future_contract_safe_report") throw new Error("Runtime activation contract safe report requires approved contract review");
+  if (input.contractReview.runtime_activation_contract_id !== input.contract.runtime_activation_contract_id) throw new Error("Mismatched contract review and contract");
+  const approved = input.decision === "approved_for_future_runtime_activation_readiness_contract";
+  const sections = ["contract", "review", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_activation_contract_safe_report_id: `runtime-activation-contract-safe-report-${crypto.randomUUID()}`,
+    runtime_activation_contract_review_id: input.contractReview.runtime_activation_contract_review_id,
+    runtime_activation_contract_id: input.contract.runtime_activation_contract_id,
+    render_plan_id: input.contract.render_plan_id,
+    project_id: input.contract.project_id,
+    platform: input.contract.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_activation_readiness_contract" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_activation_contract_review_validated: true, runtime_activation_contract_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    report_controls: { safe_report_only: true, activation_contract_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    safe_report_sections: sections.map((kind) => ({ section_id: `contract-safe-report-${kind}`, section_kind: kind, safe_summary: "Runtime activation contract safe report only.", contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_enabled_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeActivationContractSafeReport", source_runtime_activation_contract_review_id: input.contractReview.runtime_activation_contract_review_id, source_render_plan_id: input.contract.render_plan_id },
+  };
+}
