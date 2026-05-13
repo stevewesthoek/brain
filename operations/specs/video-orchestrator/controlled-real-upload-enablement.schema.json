@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "controlled-real-upload-enablement.schema.json",
+  "title": "Controlled Real Upload Enablement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "controlled_real_upload_enablement_id", "real_upload_enablement_review_gate_id", "real_upload_enablement_safety_plan_id", "render_plan_id", "project_id", "platform", "created_at", "enablement_state", "required_artifacts", "enablement_scope", "controlled_enablement_controls", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "controlled_real_upload_enablement_id": { "type": "string", "minLength": 1 },
+    "real_upload_enablement_review_gate_id": { "type": "string", "minLength": 1 },
+    "real_upload_enablement_safety_plan_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "enablement_state": { "type": "string", "enum": ["draft", "ready_for_operator_review", "approved_for_future_enablement_preflight", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["real_upload_enablement_review_gate_validated", "real_upload_enablement_safety_plan_validated"], "properties": { "real_upload_enablement_review_gate_validated": { "type": "boolean", "const": true }, "real_upload_enablement_safety_plan_validated": { "type": "boolean", "const": true } } },
+    "enablement_scope": { "type": "object", "additionalProperties": false, "required": ["controlled_enablement_artifact_only", "future_enablement_preflight_requested", "real_upload_enabled_now", "upload_execution_enabled_now", "network_calls_enabled_now", "platform_api_calls_enabled_now", "credential_access_enabled_now", "media_read_enabled_now", "dependencies_requested", "package_metadata_changes_requested"], "properties": { "controlled_enablement_artifact_only": { "type": "boolean", "const": true }, "future_enablement_preflight_requested": { "type": "boolean" }, "real_upload_enabled_now": { "type": "boolean", "const": false }, "upload_execution_enabled_now": { "type": "boolean", "const": false }, "network_calls_enabled_now": { "type": "boolean", "const": false }, "platform_api_calls_enabled_now": { "type": "boolean", "const": false }, "credential_access_enabled_now": { "type": "boolean", "const": false }, "media_read_enabled_now": { "type": "boolean", "const": false }, "dependencies_requested": { "type": "boolean", "const": false }, "package_metadata_changes_requested": { "type": "boolean", "const": false } } },
+    "controlled_enablement_controls": { "type": "object", "additionalProperties": false, "required": ["single_upload_limit", "operator_kill_switch_required", "dry_run_first_required", "separate_runtime_activation_required", "safe_reporting_required", "real_upload_still_blocked"], "properties": { "single_upload_limit": { "type": "integer", "const": 1 }, "operator_kill_switch_required": { "type": "boolean", "const": true }, "dry_run_first_required": { "type": "boolean", "const": true }, "separate_runtime_activation_required": { "type": "boolean", "const": true }, "safe_reporting_required": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "execution_boundary": { "$ref": "real-upload-enablement-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "real-upload-enablement-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_real_upload_enablement_review_gate_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createControlledRealUploadEnablement", "revokeControlledRealUploadEnablement"] }, "source_real_upload_enablement_review_gate_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

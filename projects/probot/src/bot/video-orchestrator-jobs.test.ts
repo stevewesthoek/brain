@@ -24368,3 +24368,42 @@ test("VO-7AM-VALIDATE: enablement review gate rejects real upload readiness", as
   const validation = validateRealUploadEnablementReviewGate(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7AN/VO-7AO: Controlled Enablement + Preflight ──────────────────────
+
+test("VO-7AN-SCHEMA: controlled enablement schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-real-upload-enablement.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-real-upload-enablement.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.controlled_enablement_controls.real_upload_still_blocked, true);
+});
+
+test("VO-7AN-VALIDATE: controlled enablement rejects unsafe upload flags", async () => {
+  const { validateControlledRealUploadEnablement } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-real-upload-enablement.example.json"), "utf8"));
+  const unsafe = { ...example, enablement_scope: { ...example.enablement_scope, upload_execution_enabled_now: true } };
+  const validation = validateControlledRealUploadEnablement(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7AO-SCHEMA: controlled enablement preflight schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-real-upload-enablement-preflight-result.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-real-upload-enablement-preflight-result.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.preflight_checks.length, 5);
+});
+
+test("VO-7AO-VALIDATE: controlled enablement preflight rejects enabled checks", async () => {
+  const { validateControlledRealUploadEnablementPreflightResult } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-real-upload-enablement-preflight-result.example.json"), "utf8"));
+  const unsafe = { ...example, preflight_checks: [{ ...example.preflight_checks[0], enabled_now: true }] };
+  const validation = validateControlledRealUploadEnablementPreflightResult(unsafe);
+  assert.equal(validation.ok, false);
+});

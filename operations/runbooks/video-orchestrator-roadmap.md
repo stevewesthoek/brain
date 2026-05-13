@@ -1700,3 +1700,11 @@ Status: complete.
 VO-7AK adds a real upload enablement request artifact, VO-7AL adds an enablement safety plan, and VO-7AM adds an enablement review gate. These are controlled enablement-planning artifacts only. They still do not enable real upload, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, runtime execution, dependencies, or package metadata changes.
 
 Approval only permits a future controlled enablement artifact in a separate phase and commit.
+
+## Phase 5AO — Controlled Real Upload Enablement and Preflight (VO-7AN/VO-7AO)
+
+Status: complete.
+
+VO-7AN adds a controlled real upload enablement artifact and VO-7AO adds a controlled enablement preflight result. These artifacts define the last planning and preflight boundary before any future runtime activation artifact.
+
+They do not enable real upload, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, runtime execution, dependencies, or package metadata changes. `ready_for_real_upload` remains false.

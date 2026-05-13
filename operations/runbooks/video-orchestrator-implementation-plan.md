@@ -3660,3 +3660,11 @@ VO-7AK adds `real-upload-enablement-request`, VO-7AL adds `real-upload-enablemen
 These artifacts begin the controlled enablement-planning path while still keeping real upload disabled. They request and plan explicit credential, network, platform API, media read, kill-switch, single-upload-limit, and separate-activation-commit boundaries for a later phase.
 
 No runtime upload behavior is enabled. Network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7AN/VO-7AO — Controlled Real Upload Enablement and Preflight
+
+VO-7AN adds `controlled-real-upload-enablement`, and VO-7AO adds `controlled-real-upload-enablement-preflight-result`.
+
+These artifacts define controlled enablement and preflight boundaries while still requiring a future separate runtime activation artifact. They preserve the single-upload limit, kill-switch requirement, dry-run-first requirement, safe reporting, and separate runtime activation requirement.
+
+No runtime upload behavior is enabled. Network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

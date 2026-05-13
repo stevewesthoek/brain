@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "controlled_real_upload_enablement_id": "controlled-real-upload-enablement-001",
+  "real_upload_enablement_review_gate_id": "real-upload-enablement-review-gate-001",
+  "real_upload_enablement_safety_plan_id": "real-upload-enablement-safety-plan-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "enablement_state": "approved_for_future_enablement_preflight",
+  "required_artifacts": { "real_upload_enablement_review_gate_validated": true, "real_upload_enablement_safety_plan_validated": true },
+  "enablement_scope": { "controlled_enablement_artifact_only": true, "future_enablement_preflight_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "controlled_enablement_controls": { "single_upload_limit": 1, "operator_kill_switch_required": true, "dry_run_first_required": true, "separate_runtime_activation_required": true, "safe_reporting_required": true, "real_upload_still_blocked": true },
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createControlledRealUploadEnablement", "source_real_upload_enablement_review_gate_id": "real-upload-enablement-review-gate-001", "source_render_plan_id": "render-plan-001" }
+}
