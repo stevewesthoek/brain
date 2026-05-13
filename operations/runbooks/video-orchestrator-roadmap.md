@@ -1828,3 +1828,11 @@ Status: complete.
 VO-7CF adds a runtime stub closeout artifact, VO-7CG adds a runtime stub closeout review, and VO-7CH adds a runtime stub closeout safe report. These phases remain closeout/review/report artifacts only.
 
 They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+## Phase 5BE — Runtime Stub Archive, Review, and Final Summary (VO-7CI/VO-7CJ/VO-7CK)
+
+Status: complete.
+
+VO-7CI adds a runtime stub archive artifact, VO-7CJ adds a runtime stub archive review, and VO-7CK adds a runtime stub archive final summary. These phases remain archive/review/final-summary artifacts only.
+
+They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.

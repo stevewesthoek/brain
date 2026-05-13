@@ -3758,3 +3758,9 @@ These artifacts summarize and review runtime stub completion without enabling ru
 VO-7CF adds `runtime-stub-closeout`, VO-7CG adds `runtime-stub-closeout-review`, and VO-7CH adds `runtime-stub-closeout-safe-report`.
 
 These artifacts close out the runtime stub sequence without enabling runtime behavior. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7CI/VO-7CJ/VO-7CK — Runtime Stub Archive, Review, and Final Summary
+
+VO-7CI adds `runtime-stub-archive`, VO-7CJ adds `runtime-stub-archive-review`, and VO-7CK adds `runtime-stub-archive-final-summary`.
+
+These artifacts archive and summarize the runtime stub sequence without enabling runtime behavior. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
