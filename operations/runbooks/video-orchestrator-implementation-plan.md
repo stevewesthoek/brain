@@ -288,6 +288,25 @@ This phase creates a wiring plan artifact only.
 **Next phase guidance**
 - If approved later, the next step may add future no-op wiring contracts work, still without runtime wiring or upload capability.
 
+### VO-7Y: Real Upload No-Op Wiring Contracts
+
+This phase adds wiring contracts only. It defines future no-op wiring contracts and keeps runtime wiring unapplied.
+
+**What it does**
+- Defines wiring contracts and safety boundaries only.
+- Keeps runtime wiring, production path imports, automatic invocation, upload execution, platform APIs, network calls, credential access, media reads, file mutation, and dependency changes disabled.
+- Records only safe summaries for future review.
+
+**What it does not do**
+- Does not apply runtime wiring.
+- Does not change the live orchestrator execution path.
+- Does not enable upload or platform API behavior.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not add dependencies or modify package metadata.
+
+**Next phase guidance**
+- If approved later, the next step may add future no-op wiring contract tests, still without runtime wiring or upload capability.
+
 ### VO-7C: Upload Package Design
 
 This phase creates an upload package design artifact only. It prepares safe metadata and platform-target summaries for a future upload-request design review, but it still does not upload or call platform APIs.

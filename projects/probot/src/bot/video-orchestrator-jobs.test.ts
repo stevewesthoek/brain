@@ -331,6 +331,13 @@ import {
   getRealUploadNoopStubWiringPlan,
   revokeRealUploadNoopStubWiringPlan,
   getRealUploadNoopStubWiringPlanReport,
+  createRealUploadNoopWiringContracts,
+  validateRealUploadNoopWiringContracts,
+  saveRealUploadNoopWiringContracts,
+  listRealUploadNoopWiringContracts,
+  getRealUploadNoopWiringContracts,
+  revokeRealUploadNoopWiringContracts,
+  getRealUploadNoopWiringContractsReport,
   createRealUploadScaffoldContractTests,
   validateRealUploadScaffoldContractTests,
   saveRealUploadScaffoldContractTests,
@@ -382,6 +389,7 @@ import {
   type RealUploadNoopStubFilePlan,
   type RealUploadNoopStubFileCreationResult,
   type RealUploadNoopStubWiringPlan,
+  type RealUploadNoopWiringContracts,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -23540,6 +23548,125 @@ test("VO-7X-VALIDATE-309: validator rejects unsafe noop stub wiring plan shapes"
     assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, credential_boundary: { ...plan.credential_boundary, credentials_accessed: true as never } }).ok, false);
     assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, media_boundary: { ...plan.media_boundary, media_file_read: true as never } }).ok, false);
     assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, validation: { ...plan.validation, ready_for_real_upload: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+function createSafeRealUploadNoopWiringContractsFixture() {
+  const tempDir = setupTestRuntime();
+  const noopStubFileFixture: any = createSafeRealUploadNoopStubFileCreationResultFixture();
+  const noopStubFilePlan = noopStubFileFixture.approvedPlan;
+  const noopStubFileCreationResult = noopStubFileFixture.creationResult;
+  const noopStubWiringPlan = createRealUploadNoopStubWiringPlan({
+    noopStubFileCreationResult,
+    noopStubFilePlan,
+    dryRun: true as true,
+    decision: "approved_for_future_noop_wiring_contracts",
+    checklist_acknowledged: true,
+    understands_wiring_plan_only: true,
+    understands_no_wiring_applied_now: true,
+    understands_no_runtime_execution: true,
+    understands_no_upload_enabled: true,
+    understands_no_platform_api_calls: true,
+    understands_no_network_calls: true,
+    understands_no_credentials_accessed: true,
+    understands_no_media_reads: true,
+    understands_no_dependencies_added: true,
+    understands_future_noop_wiring_contracts_phase_required: true,
+  });
+  const contracts = createRealUploadNoopWiringContracts({
+    noopStubWiringPlan,
+    noopStubFileCreationResult,
+    dryRun: true as true,
+    decision: "approved_for_future_noop_wiring_contract_tests",
+    checklist_acknowledged: true,
+    understands_wiring_contracts_only: true,
+    understands_no_wiring_applied_now: true,
+    understands_no_runtime_execution: true,
+    understands_no_upload_enabled: true,
+    understands_no_platform_api_calls: true,
+    understands_no_network_calls: true,
+    understands_no_credentials_accessed: true,
+    understands_no_media_reads: true,
+    understands_no_dependencies_added: true,
+    understands_future_noop_wiring_contract_tests_phase_required: true,
+  });
+  return { tempDir, noopStubFilePlan, noopStubFileCreationResult, noopStubWiringPlan, contracts };
+}
+
+test("VO-7Y-SCHEMA-310: noop wiring contracts schema and example parse safely", () => {
+  const repoRootForSpecs = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/real-upload-noop-wiring-contracts.schema.json"), "utf8")) as any;
+  const example = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/examples/real-upload-noop-wiring-contracts.example.json"), "utf8")) as any;
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.schema_version, "1.0");
+  assert.equal(example.wiring_contracts_mode, "real_upload_noop_wiring_contracts_only");
+  assert.equal(example.wiring_target_contracts.length, 14);
+  assert.equal(new Set(example.wiring_target_contracts.map((item: any) => item.contract_kind)).size, 14);
+  assert.equal(example.orchestrator_touchpoint_contracts.length > 0, true);
+  assert.equal(JSON.stringify(example).includes("access_token"), false);
+});
+
+test("VO-7Y-CREATE-311: create noop wiring contracts from approved inputs and reject unsafe inputs", () => {
+  const fixture: any = createSafeRealUploadNoopWiringContractsFixture();
+  try {
+    assert.throws(() => createRealUploadNoopWiringContracts({ noopStubWiringPlan: fixture.noopStubWiringPlan, noopStubFileCreationResult: fixture.noopStubFileCreationResult, dryRun: false as any }), /dryRun=true required/);
+    assert.throws(() => createRealUploadNoopWiringContracts({ noopStubWiringPlan: { ...fixture.noopStubWiringPlan, wiring_plan_state: "draft" }, noopStubFileCreationResult: fixture.noopStubFileCreationResult, dryRun: true as true, decision: "approved_for_future_noop_wiring_contract_tests", checklist_acknowledged: true, understands_wiring_contracts_only: true, understands_no_wiring_applied_now: true, understands_no_runtime_execution: true, understands_no_upload_enabled: true, understands_no_platform_api_calls: true, understands_no_network_calls: true, understands_no_credentials_accessed: true, understands_no_media_reads: true, understands_no_dependencies_added: true, understands_future_noop_wiring_contract_tests_phase_required: true }), /approved_for_future_noop_wiring_contracts/);
+    assert.throws(() => createRealUploadNoopWiringContracts({ noopStubWiringPlan: fixture.noopStubWiringPlan, noopStubFileCreationResult: fixture.noopStubFileCreationResult, dryRun: true as true, decision: "approved_for_future_noop_wiring_contract_tests", checklist_acknowledged: false }), /acknowledgements/);
+    const draft = createRealUploadNoopWiringContracts({ noopStubWiringPlan: fixture.noopStubWiringPlan, noopStubFileCreationResult: fixture.noopStubFileCreationResult, dryRun: true as true, decision: "draft" });
+    assert.equal(draft.validation.ready_for_real_upload, false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7Y-VALIDATE-312: validator rejects unsafe noop wiring contracts shapes", () => {
+  const fixture: any = createSafeRealUploadNoopWiringContractsFixture();
+  try {
+    const contracts = fixture.contracts;
+    assert.equal(validateRealUploadNoopWiringContracts(contracts).ok, true);
+    assert.equal(validateRealUploadNoopWiringContracts({ ...contracts, execution_boundary: { ...contracts.execution_boundary, wiring_applied_now: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopWiringContracts({ ...contracts, wiring_target_contracts: contracts.wiring_target_contracts.slice(1) }).ok, false);
+    assert.equal(validateRealUploadNoopWiringContracts({ ...contracts, wiring_target_contracts: contracts.wiring_target_contracts.map((item: any) => ({ ...item, contract_kind: "credential_provider_noop_wiring_contract" })) }).ok, false);
+    assert.equal(validateRealUploadNoopWiringContracts({ ...contracts, wiring_target_contracts: contracts.wiring_target_contracts.map((item: any) => ({ ...item, runtime_call_contract_enabled: true })) }).ok, false);
+    assert.equal(validateRealUploadNoopWiringContracts({ ...contracts, upload_contract_boundary: { ...contracts.upload_contract_boundary, upload_allowed: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopWiringContracts({ ...contracts, network_contract_boundary: { ...contracts.network_contract_boundary, network_calls_allowed: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopWiringContracts({ ...contracts, credential_contract_boundary: { ...contracts.credential_contract_boundary, credentials_accessed: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopWiringContracts({ ...contracts, media_contract_boundary: { ...contracts.media_contract_boundary, media_file_read: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopWiringContracts({ ...contracts, validation: { ...contracts.validation, ready_for_real_upload: true as never } }).ok, false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7Y-STORE-313: save list get revoke works", () => {
+  const fixture: any = createSafeRealUploadNoopWiringContractsFixture();
+  try {
+    saveRealUploadNoopWiringContracts(fixture.contracts);
+    assert.equal(listRealUploadNoopWiringContracts().length, 1);
+    assert.equal(getRealUploadNoopWiringContracts(fixture.contracts.real_upload_noop_wiring_contracts_id)?.real_upload_noop_wiring_contracts_id, fixture.contracts.real_upload_noop_wiring_contracts_id);
+    const revoked = revokeRealUploadNoopWiringContracts(fixture.contracts.real_upload_noop_wiring_contracts_id, "revoked");
+    assert.equal(revoked.wiring_contracts_state, "revoked");
+    assert.equal(listRealUploadNoopWiringContracts({ wiring_contracts_state: "revoked" }).length, 1);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7Y-REPORT-314: report counters remain zero and sanitizes legacy/manual data", () => {
+  const fixture: any = createSafeRealUploadNoopWiringContractsFixture();
+  try {
+    saveRealUploadNoopWiringContracts(fixture.contracts);
+    const report = getRealUploadNoopWiringContractsReport();
+    assert.equal(report.ready_for_real_upload, 0);
+    assert.equal(report.upload_allowed, 0);
+    assert.equal(report.network_calls_allowed, 0);
+    assert.equal(report.credentials_accessed, 0);
+    assert.equal(report.media_file_read, 0);
+    assert.equal(report.dependencies_added, 0);
+    assert.equal(report.package_metadata_changed, 0);
+    assert.equal(report.contracts.length, 1);
   } finally {
     cleanupTestRuntime(fixture.tempDir);
   }

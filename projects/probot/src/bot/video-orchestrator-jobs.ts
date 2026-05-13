@@ -17350,6 +17350,240 @@ export function getRealUploadNoopStubWiringPlan(real_upload_noop_stub_wiring_pla
 export function revokeRealUploadNoopStubWiringPlan(real_upload_noop_stub_wiring_plan_id: string, reason: string): RealUploadNoopStubWiringPlan { const plan = getRealUploadNoopStubWiringPlan(real_upload_noop_stub_wiring_plan_id); if (!plan) throw new Error("No-op stub wiring plan not found"); const revoked = { ...plan, wiring_plan_state: "revoked" as const, validation: { ...plan.validation, ready_for_future_noop_wiring_contracts: false, blocking_reasons: [...plan.validation.blocking_reasons, safeRealUploadNoopWiringString(reason)] }, provenance: { ...plan.provenance, generated_by: "revokeRealUploadNoopStubWiringPlan" as const } }; saveRealUploadNoopStubWiringPlan(revoked); return revoked; }
 export function getRealUploadNoopStubWiringPlanReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_noop_wiring_contracts: number; rejected: number; revoked: number; noop_stub_wiring_plan_complete: number; ready_for_future_noop_wiring_contracts: number; ready_for_real_upload: 0; wiring_applied_now: 0; orchestrator_runtime_changed: 0; live_execution_path_changed: 0; upload_execution_path_changed: 0; runtime_enabled: 0; runtime_executed: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; file_mutation_allowed: 0; dependencies_added: 0; package_metadata_changed: 0; plans: Array<RealUploadNoopStubWiringPlanStoreSummaryItem>; } { const plans = listRealUploadNoopStubWiringPlans(options); const by_state: Record<string, number> = {}; let blocked = 0; let ready = 0; let approved = 0; let rejected = 0; let revoked = 0; let complete = 0; let readyFuture = 0; const summaries = plans.map((plan) => { by_state[plan.wiring_plan_state] = (by_state[plan.wiring_plan_state] ?? 0) + 1; if (plan.wiring_plan_state === "blocked") blocked++; if (plan.wiring_plan_state === "ready_for_operator_review") ready++; if (plan.wiring_plan_state === "approved_for_future_noop_wiring_contracts") approved++; if (plan.wiring_plan_state === "rejected") rejected++; if (plan.wiring_plan_state === "revoked") revoked++; if (plan.validation.noop_stub_wiring_plan_complete) complete++; if (plan.validation.ready_for_future_noop_wiring_contracts) readyFuture++; return { real_upload_noop_stub_wiring_plan_id: plan.real_upload_noop_stub_wiring_plan_id, wiring_plan_state: plan.wiring_plan_state, created_at: plan.created_at, safe_summary: safeRealUploadNoopWiringString(plan.operator_review.decision_note_summary || plan.planned_import_surface.safe_summary || "No-op stub wiring plan summary."), target_count: plan.planned_wiring_targets.length, target_kinds: plan.planned_wiring_targets.map((target) => target.target_kind), target_states: plan.planned_wiring_targets.map((target) => target.target_state), blocking_reasons: plan.validation.blocking_reasons.slice(0, 3) }; }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_noop_wiring_contracts: approved, rejected, revoked, noop_stub_wiring_plan_complete: complete, ready_for_future_noop_wiring_contracts: readyFuture, ready_for_real_upload: 0, wiring_applied_now: 0, orchestrator_runtime_changed: 0, live_execution_path_changed: 0, upload_execution_path_changed: 0, runtime_enabled: 0, runtime_executed: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, media_file_read: 0, file_mutation_allowed: 0, dependencies_added: 0, package_metadata_changed: 0, plans: summaries }; }
 
+export type RealUploadNoopWiringContractsState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_noop_wiring_contract_tests" | "rejected" | "revoked";
+export type RealUploadNoopWiringContractsMode = "real_upload_noop_wiring_contracts_only" | "operator_review_real_upload_noop_wiring_contracts";
+export interface RealUploadNoopWiringContracts {
+  schema_version: string;
+  real_upload_noop_wiring_contracts_id: string;
+  real_upload_noop_stub_wiring_plan_id: string;
+  real_upload_noop_stub_file_creation_result_id: string;
+  real_upload_noop_stub_file_plan_id: string;
+  real_upload_stub_noop_implementation_design_id: string;
+  real_upload_stub_contract_tests_id: string;
+  real_upload_stub_contracts_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  wiring_contracts_state: RealUploadNoopWiringContractsState;
+  wiring_contracts_mode: RealUploadNoopWiringContractsMode;
+  required_artifacts: {
+    real_upload_noop_stub_wiring_plan_validated: true;
+    real_upload_noop_stub_file_creation_result_validated: true;
+    real_upload_noop_stub_file_plan_validated: true;
+    real_upload_stub_noop_implementation_design_validated: true;
+    real_upload_stub_contract_tests_validated: true;
+    real_upload_stub_contracts_validated: true;
+  };
+  wiring_contracts_scope: {
+    future_noop_wiring_contracts_requested: boolean;
+    wiring_contracts_only: true;
+    wiring_applied_now: false;
+    orchestrator_runtime_changed: false;
+    live_execution_path_changed: false;
+    upload_execution_path_changed: false;
+    runtime_enabled: false;
+    current_real_upload_requested: false;
+    current_network_calls_requested: false;
+    current_platform_api_calls_requested: false;
+    current_credential_access_requested: false;
+    current_media_read_requested: false;
+    dependencies_requested: false;
+    package_metadata_changes_requested: false;
+  };
+  wiring_target_contracts: Array<{
+    wiring_contract_id: string;
+    contract_kind: "credential_provider_noop_wiring_contract" | "media_reference_resolver_noop_wiring_contract" | "platform_adapter_noop_wiring_contract" | "payload_builder_noop_wiring_contract" | "network_client_noop_wiring_contract" | "upload_executor_noop_wiring_contract" | "retry_idempotency_noop_wiring_contract" | "rollback_noop_wiring_contract" | "post_upload_verification_noop_wiring_contract" | "audit_event_noop_wiring_contract" | "operator_confirmation_noop_wiring_contract" | "emergency_stop_noop_wiring_contract" | "status_reporter_noop_wiring_contract" | "upload_scaffold_index_noop_wiring_contract";
+    target_kind: string;
+    contract_state: "proposed" | "blocked" | "deferred" | "ready_for_future_noop_wiring_contract_tests";
+    safe_summary: string;
+    no_runtime_wiring_contract: true;
+    import_contract_defined: boolean;
+    runtime_call_contract_enabled: false;
+    upload_contract_enabled: false;
+    network_contract_enabled: false;
+    platform_api_contract_enabled: false;
+    credential_contract_enabled: false;
+    media_read_contract_enabled: false;
+    file_mutation_contract_enabled: false;
+    raw_payload_contract_enabled: false;
+    raw_response_contract_enabled: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  }>;
+  import_surface_contract: {
+    import_contract_defined: boolean;
+    new_imports_applied_now: false;
+    production_path_imports_applied_now: false;
+    runtime_exports_enabled: false;
+    upload_execution_export_enabled: false;
+    network_export_enabled: false;
+    credential_export_enabled: false;
+    media_read_export_enabled: false;
+    safe_summary: string;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  orchestrator_touchpoint_contracts: Array<{
+    touchpoint_contract_id: string;
+    touchpoint_kind: string;
+    contract_state: "proposed" | "blocked" | "deferred" | "ready_for_future_noop_wiring_contract_tests";
+    safe_summary: string;
+    production_code_change_contract_enabled: false;
+    runtime_behavior_change_contract_enabled: false;
+    live_execution_path_change_contract_enabled: false;
+    automatic_invocation_contract_enabled: false;
+    upload_invocation_contract_enabled: false;
+    network_invocation_contract_enabled: false;
+    credential_invocation_contract_enabled: false;
+    media_read_invocation_contract_enabled: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  }>;
+  no_op_runtime_contract_boundary: { no_op_stubs_available: boolean; no_runtime_wiring_contract: true; no_automatic_invocation_contract: true; no_runtime_execution_contract: true; no_external_effects_contract: true };
+  upload_contract_boundary: { upload_allowed: false; upload_execution_enabled: false; upload_runtime_wiring_contract_enabled: false; real_upload_requested: false; ready_for_real_upload: false };
+  platform_api_contract_boundary: { platform_api_calls_allowed: false; platform_api_calls_made: false; platform_adapter_runtime_wiring_contract_enabled: false; raw_account_ids_stored: false };
+  network_contract_boundary: { network_calls_allowed: false; network_calls_made: false; network_client_runtime_wiring_contract_enabled: false; external_side_effects_allowed: false; external_side_effects_observed: false };
+  credential_contract_boundary: { credentials_required: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; credential_provider_runtime_wiring_contract_enabled: false; credential_reference_stored: false; token_reference_stored: false; secret_material_stored: false };
+  media_contract_boundary: { media_file_read: false; media_resolver_runtime_wiring_contract_enabled: false; raw_media_path_stored: false; media_file_modified: false; media_file_copied: false; media_file_moved: false; media_file_deleted: false };
+  file_mutation_contract_boundary: { files_created_now: false; files_modified_now: false; runtime_files_created: false; runtime_files_modified: false; source_files_modified_for_runtime_wiring: false; file_mutation_allowed: false };
+  dependency_contract_boundary: { dependencies_added: false; package_metadata_changed: false; package_dependency_changes: false; runtime_config_created: false; env_files_created: false; secrets_config_created: false; credential_config_created: false };
+  operator_review: { reviewed_by_label?: string; checklist_acknowledged: boolean; understands_wiring_contracts_only: boolean; understands_no_wiring_applied_now: boolean; understands_no_runtime_execution: boolean; understands_no_upload_enabled: boolean; understands_no_platform_api_calls: boolean; understands_no_network_calls: boolean; understands_no_credentials_accessed: boolean; understands_no_media_reads: boolean; understands_no_dependencies_added: boolean; understands_future_noop_wiring_contract_tests_phase_required: boolean; decision_note_summary?: string };
+  execution_boundary: { wiring_applied_now: false; orchestrator_runtime_changed: false; live_execution_path_changed: false; upload_execution_path_changed: false; runtime_enabled: false; runtime_executed: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; media_file_read: false; file_mutation_allowed: false; dependencies_added: false; package_metadata_changed: false; ready_for_real_upload: false };
+  validation: { noop_wiring_contracts_complete: boolean; ready_for_future_noop_wiring_contract_tests: boolean; ready_for_real_upload: false; wiring_applied_now: false; orchestrator_runtime_changed: false; live_execution_path_changed: false; upload_execution_path_changed: false; runtime_enabled: false; runtime_executed: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; media_file_read: false; file_mutation_allowed: false; dependencies_added: false; package_metadata_changed: false; blocking_reasons: string[]; warnings: string[] };
+  provenance: { generated_by: "createRealUploadNoopWiringContracts" | "revokeRealUploadNoopWiringContracts"; source_real_upload_noop_stub_wiring_plan_id: string; source_real_upload_noop_stub_file_creation_result_id: string; source_real_upload_noop_stub_file_plan_id: string; source_real_upload_stub_noop_implementation_design_id: string; source_real_upload_stub_contract_tests_id: string; source_real_upload_stub_contracts_id: string; source_render_plan_id: string };
+}
+
+function validateRealUploadNoopWiringContractsShape(contracts: unknown): { ok: boolean; blocking_reasons: string[]; warnings: string[] } {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof contracts !== "object" || contracts === null) return { ok: false, blocking_reasons: ["No-op wiring contracts must be an object"], warnings };
+  const r = contracts as Record<string, unknown>;
+  const required = ["schema_version","real_upload_noop_wiring_contracts_id","real_upload_noop_stub_wiring_plan_id","real_upload_noop_stub_file_creation_result_id","real_upload_noop_stub_file_plan_id","real_upload_stub_noop_implementation_design_id","real_upload_stub_contract_tests_id","real_upload_stub_contracts_id","render_plan_id","project_id","platform","created_at","wiring_contracts_state","wiring_contracts_mode","required_artifacts","wiring_contracts_scope","wiring_target_contracts","import_surface_contract","orchestrator_touchpoint_contracts","no_op_runtime_contract_boundary","upload_contract_boundary","platform_api_contract_boundary","network_contract_boundary","credential_contract_boundary","media_contract_boundary","file_mutation_contract_boundary","dependency_contract_boundary","operator_review","execution_boundary","validation","provenance"];
+  for (const key of required) if (!(key in r)) blocking_reasons.push("No-op wiring contracts is missing a required field");
+  const targetKinds = [
+    "credential_provider_noop_wiring_contract","media_reference_resolver_noop_wiring_contract","platform_adapter_noop_wiring_contract","payload_builder_noop_wiring_contract","network_client_noop_wiring_contract","upload_executor_noop_wiring_contract","retry_idempotency_noop_wiring_contract","rollback_noop_wiring_contract","post_upload_verification_noop_wiring_contract","audit_event_noop_wiring_contract","operator_confirmation_noop_wiring_contract","emergency_stop_noop_wiring_contract","status_reporter_noop_wiring_contract","upload_scaffold_index_noop_wiring_contract",
+  ] as const;
+  const targets = Array.isArray(r.wiring_target_contracts) ? (r.wiring_target_contracts as Record<string, unknown>[]) : [];
+  if (targets.length < targetKinds.length) blocking_reasons.push("No-op wiring contracts must include all required wiring contract kinds");
+  for (const kind of targetKinds) if (!targets.some((target) => target.contract_kind === kind)) blocking_reasons.push(`Missing required wiring contract kind: ${kind}`);
+  if (new Set(targets.map((target) => target.contract_kind)).size !== targets.length) blocking_reasons.push("Duplicate wiring contract kind detected");
+  for (const target of targets) {
+    if (target.no_runtime_wiring_contract !== true || target.runtime_call_contract_enabled !== false || target.upload_contract_enabled !== false || target.network_contract_enabled !== false || target.platform_api_contract_enabled !== false || target.credential_contract_enabled !== false || target.media_read_contract_enabled !== false || target.file_mutation_contract_enabled !== false || target.raw_payload_contract_enabled !== false || target.raw_response_contract_enabled !== false) {
+      blocking_reasons.push("No-op wiring contract target is unsafe");
+      break;
+    }
+  }
+  const boundaryObjects = [
+    r.import_surface_contract,
+    r.no_op_runtime_contract_boundary,
+    r.upload_contract_boundary,
+    r.platform_api_contract_boundary,
+    r.network_contract_boundary,
+    r.credential_contract_boundary,
+    r.media_contract_boundary,
+    r.file_mutation_contract_boundary,
+    r.dependency_contract_boundary,
+    r.operator_review,
+    r.execution_boundary,
+    r.validation,
+  ];
+  if (boundaryObjects.some((boundary) => typeof boundary !== "object" || boundary === null)) blocking_reasons.push("No-op wiring contracts boundaries are unsafe");
+  const uploadBoundary = r.upload_contract_boundary as Record<string, unknown> | undefined;
+  if (!uploadBoundary || uploadBoundary.upload_allowed !== false || uploadBoundary.upload_execution_enabled !== false || uploadBoundary.upload_runtime_wiring_contract_enabled !== false || uploadBoundary.real_upload_requested !== false || uploadBoundary.ready_for_real_upload !== false) blocking_reasons.push("No-op wiring contracts upload boundary is unsafe");
+  const platformBoundary = r.platform_api_contract_boundary as Record<string, unknown> | undefined;
+  if (!platformBoundary || platformBoundary.platform_api_calls_allowed !== false || platformBoundary.platform_api_calls_made !== false || platformBoundary.platform_adapter_runtime_wiring_contract_enabled !== false || platformBoundary.raw_account_ids_stored !== false) blocking_reasons.push("No-op wiring contracts platform API boundary is unsafe");
+  const networkBoundary = r.network_contract_boundary as Record<string, unknown> | undefined;
+  if (!networkBoundary || networkBoundary.network_calls_allowed !== false || networkBoundary.network_calls_made !== false || networkBoundary.network_client_runtime_wiring_contract_enabled !== false || networkBoundary.external_side_effects_allowed !== false || networkBoundary.external_side_effects_observed !== false) blocking_reasons.push("No-op wiring contracts network boundary is unsafe");
+  const credentialBoundary = r.credential_contract_boundary as Record<string, unknown> | undefined;
+  if (!credentialBoundary || credentialBoundary.credentials_required !== false || credentialBoundary.credentials_accessed !== false || credentialBoundary.token_accessed !== false || credentialBoundary.keychain_accessed !== false || credentialBoundary.env_accessed !== false || credentialBoundary.credential_provider_runtime_wiring_contract_enabled !== false || credentialBoundary.credential_reference_stored !== false || credentialBoundary.token_reference_stored !== false || credentialBoundary.secret_material_stored !== false) blocking_reasons.push("No-op wiring contracts credential boundary is unsafe");
+  const mediaBoundary = r.media_contract_boundary as Record<string, unknown> | undefined;
+  if (!mediaBoundary || mediaBoundary.media_file_read !== false || mediaBoundary.media_resolver_runtime_wiring_contract_enabled !== false || mediaBoundary.raw_media_path_stored !== false || mediaBoundary.media_file_modified !== false || mediaBoundary.media_file_copied !== false || mediaBoundary.media_file_moved !== false || mediaBoundary.media_file_deleted !== false) blocking_reasons.push("No-op wiring contracts media boundary is unsafe");
+  const fileMutationBoundary = r.file_mutation_contract_boundary as Record<string, unknown> | undefined;
+  if (!fileMutationBoundary || fileMutationBoundary.files_created_now !== false || fileMutationBoundary.files_modified_now !== false || fileMutationBoundary.runtime_files_created !== false || fileMutationBoundary.runtime_files_modified !== false || fileMutationBoundary.source_files_modified_for_runtime_wiring !== false || fileMutationBoundary.file_mutation_allowed !== false) blocking_reasons.push("No-op wiring contracts file mutation boundary is unsafe");
+  const dependencyBoundary = r.dependency_contract_boundary as Record<string, unknown> | undefined;
+  if (!dependencyBoundary || dependencyBoundary.dependencies_added !== false || dependencyBoundary.package_metadata_changed !== false || dependencyBoundary.package_dependency_changes !== false || dependencyBoundary.runtime_config_created !== false || dependencyBoundary.env_files_created !== false || dependencyBoundary.secrets_config_created !== false || dependencyBoundary.credential_config_created !== false) blocking_reasons.push("No-op wiring contracts dependency boundary is unsafe");
+  const importSurface = r.import_surface_contract as Record<string, unknown> | undefined;
+  if (!importSurface || importSurface.import_contract_defined !== true || importSurface.new_imports_applied_now !== false || importSurface.production_path_imports_applied_now !== false || importSurface.runtime_exports_enabled !== false || importSurface.upload_execution_export_enabled !== false || importSurface.network_export_enabled !== false || importSurface.credential_export_enabled !== false || importSurface.media_read_export_enabled !== false) blocking_reasons.push("No-op wiring contracts import surface is unsafe");
+  const noOpRuntime = r.no_op_runtime_contract_boundary as Record<string, unknown> | undefined;
+  if (!noOpRuntime || noOpRuntime.no_op_stubs_available !== true || noOpRuntime.no_runtime_wiring_contract !== true || noOpRuntime.no_automatic_invocation_contract !== true || noOpRuntime.no_runtime_execution_contract !== true || noOpRuntime.no_external_effects_contract !== true) blocking_reasons.push("No-op wiring contracts runtime boundary is unsafe");
+  const operatorReview = r.operator_review as Record<string, unknown> | undefined;
+  if (!operatorReview || typeof operatorReview.checklist_acknowledged !== "boolean" || typeof operatorReview.understands_wiring_contracts_only !== "boolean" || typeof operatorReview.understands_no_wiring_applied_now !== "boolean" || typeof operatorReview.understands_no_runtime_execution !== "boolean" || typeof operatorReview.understands_no_upload_enabled !== "boolean" || typeof operatorReview.understands_no_platform_api_calls !== "boolean" || typeof operatorReview.understands_no_network_calls !== "boolean" || typeof operatorReview.understands_no_credentials_accessed !== "boolean" || typeof operatorReview.understands_no_media_reads !== "boolean" || typeof operatorReview.understands_no_dependencies_added !== "boolean" || typeof operatorReview.understands_future_noop_wiring_contract_tests_phase_required !== "boolean") blocking_reasons.push("No-op wiring contracts operator review is unsafe");
+  const executionBoundary = r.execution_boundary as Record<string, unknown> | undefined;
+  if (!executionBoundary || executionBoundary.wiring_applied_now !== false || executionBoundary.orchestrator_runtime_changed !== false || executionBoundary.live_execution_path_changed !== false || executionBoundary.upload_execution_path_changed !== false || executionBoundary.runtime_enabled !== false || executionBoundary.runtime_executed !== false || executionBoundary.upload_allowed !== false || executionBoundary.upload_execution_enabled !== false || executionBoundary.platform_api_calls_allowed !== false || executionBoundary.network_calls_allowed !== false || executionBoundary.credentials_accessed !== false || executionBoundary.token_accessed !== false || executionBoundary.keychain_accessed !== false || executionBoundary.env_accessed !== false || executionBoundary.media_file_read !== false || executionBoundary.file_mutation_allowed !== false || executionBoundary.dependencies_added !== false || executionBoundary.package_metadata_changed !== false || executionBoundary.ready_for_real_upload !== false) {
+    blocking_reasons.push("No-op wiring contracts execution boundary is unsafe");
+  }
+  const validationBoundary = r.validation as Record<string, unknown> | undefined;
+  if (!validationBoundary || validationBoundary.ready_for_real_upload !== false || validationBoundary.wiring_applied_now !== false || validationBoundary.orchestrator_runtime_changed !== false || validationBoundary.live_execution_path_changed !== false || validationBoundary.upload_execution_path_changed !== false || validationBoundary.runtime_enabled !== false || validationBoundary.runtime_executed !== false || validationBoundary.upload_allowed !== false || validationBoundary.upload_execution_enabled !== false || validationBoundary.platform_api_calls_allowed !== false || validationBoundary.network_calls_allowed !== false || validationBoundary.credentials_accessed !== false || validationBoundary.token_accessed !== false || validationBoundary.media_file_read !== false || validationBoundary.file_mutation_allowed !== false || validationBoundary.dependencies_added !== false || validationBoundary.package_metadata_changed !== false) {
+    blocking_reasons.push("No-op wiring contracts validation boundary is unsafe");
+  }
+  const text = JSON.stringify(contracts);
+  if (text.includes("fetch(") || text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("process.env") || text.includes("Bearer ") || text.includes("access_token") || text.includes("refresh_token") || text.includes("client_secret") || text.includes("keychain://") || text.includes("http://") || text.includes("https://") || text.includes("/Users/") || text.includes("../")) blocking_reasons.push("No-op wiring contracts contains forbidden payload content");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function validateRealUploadNoopWiringContracts(contracts: unknown) {
+  return validateRealUploadNoopWiringContractsShape(contracts);
+}
+
+export function createRealUploadNoopWiringContracts(input: { noopStubWiringPlan: RealUploadNoopStubWiringPlan; noopStubFileCreationResult: RealUploadNoopStubFileCreationResult; dryRun: true; decision?: "draft" | "approved_for_future_noop_wiring_contract_tests" | "rejected"; reviewed_by_label?: string; checklist_acknowledged?: boolean; understands_wiring_contracts_only?: boolean; understands_no_wiring_applied_now?: boolean; understands_no_runtime_execution?: boolean; understands_no_upload_enabled?: boolean; understands_no_platform_api_calls?: boolean; understands_no_network_calls?: boolean; understands_no_credentials_accessed?: boolean; understands_no_media_reads?: boolean; understands_no_dependencies_added?: boolean; understands_future_noop_wiring_contract_tests_phase_required?: boolean }): RealUploadNoopWiringContracts {
+  if (input.dryRun !== true) throw new Error("dryRun=true required");
+  if (!validateRealUploadNoopStubWiringPlan(input.noopStubWiringPlan).ok) throw new Error("noop stub wiring plan must validate");
+  if (!validateRealUploadNoopStubFileCreationResult(input.noopStubFileCreationResult).ok) throw new Error("noop stub file creation result must validate");
+  const approved = input.decision === "approved_for_future_noop_wiring_contract_tests";
+  if (approved) {
+    if (input.noopStubWiringPlan.wiring_plan_state !== "approved_for_future_noop_wiring_contracts") throw new Error("approved decision requires approved_for_future_noop_wiring_contracts");
+    if (!input.checklist_acknowledged || !input.understands_wiring_contracts_only || !input.understands_no_wiring_applied_now || !input.understands_no_runtime_execution || !input.understands_no_upload_enabled || !input.understands_no_platform_api_calls || !input.understands_no_network_calls || !input.understands_no_credentials_accessed || !input.understands_no_media_reads || !input.understands_no_dependencies_added || !input.understands_future_noop_wiring_contract_tests_phase_required) throw new Error("approved decision requires acknowledgements required");
+  }
+  const contracts: RealUploadNoopWiringContracts = {
+    schema_version: "1.0",
+    real_upload_noop_wiring_contracts_id: `${input.noopStubWiringPlan.real_upload_noop_stub_wiring_plan_id}-contracts`,
+    real_upload_noop_stub_wiring_plan_id: input.noopStubWiringPlan.real_upload_noop_stub_wiring_plan_id,
+    real_upload_noop_stub_file_creation_result_id: input.noopStubWiringPlan.real_upload_noop_stub_file_creation_result_id,
+    real_upload_noop_stub_file_plan_id: input.noopStubWiringPlan.real_upload_noop_stub_file_plan_id,
+    real_upload_stub_noop_implementation_design_id: input.noopStubWiringPlan.real_upload_stub_noop_implementation_design_id,
+    real_upload_stub_contract_tests_id: input.noopStubWiringPlan.real_upload_stub_contract_tests_id,
+    real_upload_stub_contracts_id: input.noopStubWiringPlan.real_upload_stub_contracts_id,
+    render_plan_id: input.noopStubWiringPlan.render_plan_id,
+    project_id: input.noopStubWiringPlan.project_id,
+    platform: input.noopStubWiringPlan.platform,
+    created_at: input.noopStubWiringPlan.created_at,
+    wiring_contracts_state: approved ? "approved_for_future_noop_wiring_contract_tests" : "draft",
+    wiring_contracts_mode: "real_upload_noop_wiring_contracts_only",
+    required_artifacts: { real_upload_noop_stub_wiring_plan_validated: true, real_upload_noop_stub_file_creation_result_validated: true, real_upload_noop_stub_file_plan_validated: true, real_upload_stub_noop_implementation_design_validated: true, real_upload_stub_contract_tests_validated: true, real_upload_stub_contracts_validated: true },
+    wiring_contracts_scope: { future_noop_wiring_contracts_requested: approved, wiring_contracts_only: true, wiring_applied_now: false, orchestrator_runtime_changed: false, live_execution_path_changed: false, upload_execution_path_changed: false, runtime_enabled: false, current_real_upload_requested: false, current_network_calls_requested: false, current_platform_api_calls_requested: false, current_credential_access_requested: false, current_media_read_requested: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    wiring_target_contracts: REAL_UPLOAD_NOOP_STUB_WIRING_TARGET_KINDS.map((target_kind, index) => ({ wiring_contract_id: `contract-${index + 1}`, contract_kind: target_kind.replace("_noop_wiring_target", "_noop_wiring_contract") as RealUploadNoopWiringContracts["wiring_target_contracts"][number]["contract_kind"], target_kind, contract_state: "proposed", safe_summary: `${target_kind} wiring contracts remain planned only.`, no_runtime_wiring_contract: true, import_contract_defined: true, runtime_call_contract_enabled: false, upload_contract_enabled: false, network_contract_enabled: false, platform_api_contract_enabled: false, credential_contract_enabled: false, media_read_contract_enabled: false, file_mutation_contract_enabled: false, raw_payload_contract_enabled: false, raw_response_contract_enabled: false, blocking_reasons: ["Wiring contracts only."], warnings: [] })),
+    import_surface_contract: { import_contract_defined: true, new_imports_applied_now: false, production_path_imports_applied_now: false, runtime_exports_enabled: false, upload_execution_export_enabled: false, network_export_enabled: false, credential_export_enabled: false, media_read_export_enabled: false, safe_summary: "No-op wiring contracts remain planned only.", blocking_reasons: [], warnings: [] },
+    orchestrator_touchpoint_contracts: [{ touchpoint_contract_id: "touchpoint-contract-1", touchpoint_kind: "orchestrator-entrypoint", contract_state: "proposed", safe_summary: "Orchestrator touchpoint contract remains planned only.", production_code_change_contract_enabled: false, runtime_behavior_change_contract_enabled: false, live_execution_path_change_contract_enabled: false, automatic_invocation_contract_enabled: false, upload_invocation_contract_enabled: false, network_invocation_contract_enabled: false, credential_invocation_contract_enabled: false, media_read_invocation_contract_enabled: false, blocking_reasons: ["Wiring contracts only."], warnings: [] }],
+    no_op_runtime_contract_boundary: { no_op_stubs_available: true, no_runtime_wiring_contract: true, no_automatic_invocation_contract: true, no_runtime_execution_contract: true, no_external_effects_contract: true },
+    upload_contract_boundary: { upload_allowed: false, upload_execution_enabled: false, upload_runtime_wiring_contract_enabled: false, real_upload_requested: false, ready_for_real_upload: false },
+    platform_api_contract_boundary: { platform_api_calls_allowed: false, platform_api_calls_made: false, platform_adapter_runtime_wiring_contract_enabled: false, raw_account_ids_stored: false },
+    network_contract_boundary: { network_calls_allowed: false, network_calls_made: false, network_client_runtime_wiring_contract_enabled: false, external_side_effects_allowed: false, external_side_effects_observed: false },
+    credential_contract_boundary: { credentials_required: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, credential_provider_runtime_wiring_contract_enabled: false, credential_reference_stored: false, token_reference_stored: false, secret_material_stored: false },
+    media_contract_boundary: { media_file_read: false, media_resolver_runtime_wiring_contract_enabled: false, raw_media_path_stored: false, media_file_modified: false, media_file_copied: false, media_file_moved: false, media_file_deleted: false },
+    file_mutation_contract_boundary: { files_created_now: false, files_modified_now: false, runtime_files_created: false, runtime_files_modified: false, source_files_modified_for_runtime_wiring: false, file_mutation_allowed: false },
+    dependency_contract_boundary: { dependencies_added: false, package_metadata_changed: false, package_dependency_changes: false, runtime_config_created: false, env_files_created: false, secrets_config_created: false, credential_config_created: false },
+    operator_review: { reviewed_by_label: input.reviewed_by_label ?? "operator-001", checklist_acknowledged: !!input.checklist_acknowledged, understands_wiring_contracts_only: !!input.understands_wiring_contracts_only, understands_no_wiring_applied_now: !!input.understands_no_wiring_applied_now, understands_no_runtime_execution: !!input.understands_no_runtime_execution, understands_no_upload_enabled: !!input.understands_no_upload_enabled, understands_no_platform_api_calls: !!input.understands_no_platform_api_calls, understands_no_network_calls: !!input.understands_no_network_calls, understands_no_credentials_accessed: !!input.understands_no_credentials_accessed, understands_no_media_reads: !!input.understands_no_media_reads, understands_no_dependencies_added: !!input.understands_no_dependencies_added, understands_future_noop_wiring_contract_tests_phase_required: !!input.understands_future_noop_wiring_contract_tests_phase_required, decision_note_summary: approved ? "No-op wiring contracts approved for future contract tests." : "No-op wiring contracts draft." },
+    execution_boundary: { wiring_applied_now: false, orchestrator_runtime_changed: false, live_execution_path_changed: false, upload_execution_path_changed: false, runtime_enabled: false, runtime_executed: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, media_file_read: false, file_mutation_allowed: false, dependencies_added: false, package_metadata_changed: false, ready_for_real_upload: false },
+    validation: { noop_wiring_contracts_complete: true, ready_for_future_noop_wiring_contract_tests: true, ready_for_real_upload: false, wiring_applied_now: false, orchestrator_runtime_changed: false, live_execution_path_changed: false, upload_execution_path_changed: false, runtime_enabled: false, runtime_executed: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, media_file_read: false, file_mutation_allowed: false, dependencies_added: false, package_metadata_changed: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadNoopWiringContracts", source_real_upload_noop_stub_wiring_plan_id: input.noopStubWiringPlan.real_upload_noop_stub_wiring_plan_id, source_real_upload_noop_stub_file_creation_result_id: input.noopStubWiringPlan.real_upload_noop_stub_file_creation_result_id, source_real_upload_noop_stub_file_plan_id: input.noopStubWiringPlan.real_upload_noop_stub_file_plan_id, source_real_upload_stub_noop_implementation_design_id: input.noopStubWiringPlan.real_upload_stub_noop_implementation_design_id, source_real_upload_stub_contract_tests_id: input.noopStubWiringPlan.real_upload_stub_contract_tests_id, source_real_upload_stub_contracts_id: input.noopStubWiringPlan.real_upload_stub_contracts_id, source_render_plan_id: input.noopStubWiringPlan.render_plan_id },
+  };
+  const validation = validateRealUploadNoopWiringContractsShape(contracts);
+  if (!validation.ok) throw new Error(`noop wiring contracts failed validation: ${validation.blocking_reasons.join("; ")}`);
+  return contracts;
+}
+
+type RealUploadNoopWiringContractsStoreEnvelope = { schema_version: "1.0"; created_at: string; contracts: RealUploadNoopWiringContracts[] };
+type RealUploadNoopWiringContractsSummaryItem = { real_upload_noop_wiring_contracts_id: string; wiring_contracts_state: RealUploadNoopWiringContractsState; created_at: string; safe_summary: string; contract_count: number; contract_kinds: string[]; contract_states: string[]; blocking_reasons: string[] };
+function getRealUploadNoopWiringContractsStorePath(): string { return path.join(getRuntimeDir(), "real-upload-noop-wiring-contracts.json"); }
+function loadRealUploadNoopWiringContractsStore(): RealUploadNoopWiringContractsStoreEnvelope { try { if (!fs.existsSync(getRealUploadNoopWiringContractsStorePath())) return { schema_version: "1.0", created_at: new Date().toISOString(), contracts: [] }; return JSON.parse(fs.readFileSync(getRealUploadNoopWiringContractsStorePath(), "utf8")) as RealUploadNoopWiringContractsStoreEnvelope; } catch { return { schema_version: "1.0", created_at: new Date().toISOString(), contracts: [] }; } }
+function saveRealUploadNoopWiringContractsStore(store: RealUploadNoopWiringContractsStoreEnvelope): void { fs.mkdirSync(path.dirname(getRealUploadNoopWiringContractsStorePath()), { recursive: true }); fs.writeFileSync(getRealUploadNoopWiringContractsStorePath(), JSON.stringify(store, null, 2)); }
+export function saveRealUploadNoopWiringContracts(contracts: RealUploadNoopWiringContracts): void { const validation = validateRealUploadNoopWiringContracts(contracts); if (!validation.ok) throw new Error("Unsafe no-op wiring contracts cannot be stored"); const store = loadRealUploadNoopWiringContractsStore(); const items = store.contracts.filter((item) => item.real_upload_noop_wiring_contracts_id !== contracts.real_upload_noop_wiring_contracts_id); items.push(contracts); items.sort((a, b) => a.created_at.localeCompare(b.created_at) || a.real_upload_noop_wiring_contracts_id.localeCompare(b.real_upload_noop_wiring_contracts_id)); saveRealUploadNoopWiringContractsStore({ ...store, contracts: items }); }
+export function listRealUploadNoopWiringContracts(options?: { project_id?: string; platform?: string; wiring_contracts_state?: string; real_upload_noop_stub_wiring_plan_id?: string; real_upload_noop_stub_file_creation_result_id?: string }): RealUploadNoopWiringContracts[] { const store = loadRealUploadNoopWiringContractsStore(); return store.contracts.filter((item) => (!options?.project_id || item.project_id === options.project_id) && (!options?.platform || item.platform === options.platform) && (!options?.wiring_contracts_state || item.wiring_contracts_state === options.wiring_contracts_state) && (!options?.real_upload_noop_stub_wiring_plan_id || item.real_upload_noop_stub_wiring_plan_id === options.real_upload_noop_stub_wiring_plan_id) && (!options?.real_upload_noop_stub_file_creation_result_id || item.real_upload_noop_stub_file_creation_result_id === options.real_upload_noop_stub_file_creation_result_id)); }
+export function getRealUploadNoopWiringContracts(real_upload_noop_wiring_contracts_id: string): RealUploadNoopWiringContracts | null { return listRealUploadNoopWiringContracts().find((item) => item.real_upload_noop_wiring_contracts_id === real_upload_noop_wiring_contracts_id) ?? null; }
+export function revokeRealUploadNoopWiringContracts(real_upload_noop_wiring_contracts_id: string, reason: string): RealUploadNoopWiringContracts { const contracts = getRealUploadNoopWiringContracts(real_upload_noop_wiring_contracts_id); if (!contracts) throw new Error("No-op wiring contracts not found"); const revoked: RealUploadNoopWiringContracts = { ...contracts, wiring_contracts_state: "revoked", validation: { ...contracts.validation, ready_for_future_noop_wiring_contract_tests: false, blocking_reasons: [...contracts.validation.blocking_reasons, safeRealUploadNoopWiringString(reason)] }, provenance: { ...contracts.provenance, generated_by: "revokeRealUploadNoopWiringContracts" } }; saveRealUploadNoopWiringContracts(revoked); return revoked; }
+export function getRealUploadNoopWiringContractsReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_noop_wiring_contract_tests: number; rejected: number; revoked: number; noop_wiring_contracts_complete: number; ready_for_future_noop_wiring_contract_tests: number; ready_for_real_upload: 0; wiring_applied_now: 0; orchestrator_runtime_changed: 0; live_execution_path_changed: 0; upload_execution_path_changed: 0; runtime_enabled: 0; runtime_executed: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; file_mutation_allowed: 0; dependencies_added: 0; package_metadata_changed: 0; contracts: Array<RealUploadNoopWiringContractsSummaryItem>; } { const contracts = listRealUploadNoopWiringContracts(options); const by_state: Record<string, number> = {}; let blocked = 0; let ready = 0; let approved = 0; let rejected = 0; let revoked = 0; let complete = 0; let readyFuture = 0; const summaries = contracts.map((item) => { by_state[item.wiring_contracts_state] = (by_state[item.wiring_contracts_state] ?? 0) + 1; if (item.wiring_contracts_state === "blocked") blocked++; if (item.wiring_contracts_state === "ready_for_operator_review") ready++; if (item.wiring_contracts_state === "approved_for_future_noop_wiring_contract_tests") approved++; if (item.wiring_contracts_state === "rejected") rejected++; if (item.wiring_contracts_state === "revoked") revoked++; if (item.validation.noop_wiring_contracts_complete) complete++; if (item.validation.ready_for_future_noop_wiring_contract_tests) readyFuture++; return { real_upload_noop_wiring_contracts_id: item.real_upload_noop_wiring_contracts_id, wiring_contracts_state: item.wiring_contracts_state, created_at: item.created_at, safe_summary: safeRealUploadNoopWiringString(item.operator_review.decision_note_summary || item.import_surface_contract.safe_summary || "No-op wiring contracts summary."), contract_count: item.wiring_target_contracts.length, contract_kinds: item.wiring_target_contracts.map((contract) => contract.contract_kind), contract_states: item.wiring_target_contracts.map((contract) => contract.contract_state), blocking_reasons: item.validation.blocking_reasons.slice(0, 3) }; }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_noop_wiring_contract_tests: approved, rejected, revoked, noop_wiring_contracts_complete: complete, ready_for_future_noop_wiring_contract_tests: readyFuture, ready_for_real_upload: 0, wiring_applied_now: 0, orchestrator_runtime_changed: 0, live_execution_path_changed: 0, upload_execution_path_changed: 0, runtime_enabled: 0, runtime_executed: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, media_file_read: 0, file_mutation_allowed: 0, dependencies_added: 0, package_metadata_changed: 0, contracts: summaries }; }
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;
