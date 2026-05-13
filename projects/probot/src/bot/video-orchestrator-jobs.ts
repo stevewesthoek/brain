@@ -21646,3 +21646,193 @@ export function createRuntimeStubFinalGateSafeReport(input: { finalGateReview: R
     provenance: { generated_by: "createRuntimeStubFinalGateSafeReport", source_runtime_stub_final_gate_review_id: input.finalGateReview.runtime_stub_final_gate_review_id, source_render_plan_id: input.finalGate.render_plan_id },
   };
 }
+
+
+// ─── VO-7CC/VO-7CD/VO-7CE: Runtime Stub Completion Layer ───────────────────
+
+export interface RuntimeStubCompletionSummary {
+  schema_version: "1.0";
+  runtime_stub_completion_summary_id: string;
+  runtime_stub_final_gate_safe_report_id: string;
+  runtime_stub_final_gate_id: string;
+  runtime_stub_release_candidate_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  completion_summary_state: "draft" | "complete" | "approved_for_future_completion_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  summary_scope: Record<string, unknown>;
+  summary_controls: Record<string, unknown>;
+  completion_items: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubCompletionReview {
+  schema_version: "1.0";
+  runtime_stub_completion_review_id: string;
+  runtime_stub_completion_summary_id: string;
+  runtime_stub_final_gate_id: string;
+  runtime_stub_release_candidate_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  completion_review_state: "draft" | "ready_for_operator_review" | "approved_for_future_completion_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_controls: Record<string, unknown>;
+  review_items: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubCompletionSafeReport {
+  schema_version: "1.0";
+  runtime_stub_completion_safe_report_id: string;
+  runtime_stub_completion_review_id: string;
+  runtime_stub_completion_summary_id: string;
+  runtime_stub_final_gate_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_stub_closeout" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeStubCompletionLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.summary_controls || artifact.review_controls) as Record<string, unknown> | undefined;
+    if (controls && controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub completion must keep real upload blocked");
+    }
+    if (controls && (controls.contains_runtime_callable === true || controls.contains_raw_payload === true || controls.contains_raw_response === true || controls.contains_secret_material === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub completion contains unsafe material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 4) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.runtime_executed_now === true || record.ready_for_real_upload_now === true || record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe completion/runtime/ready material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateRuntimeStubCompletionSummary(summary: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubCompletionLayer(summary, "summary_scope", "completion_items");
+}
+
+export function validateRuntimeStubCompletionReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubCompletionLayer(review, "review_scope", "review_items");
+}
+
+export function validateRuntimeStubCompletionSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubCompletionLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createRuntimeStubCompletionSummary(input: { finalGateSafeReport: RuntimeStubFinalGateSafeReport; finalGate: RuntimeStubFinalGate; decision?: "draft" | "approved_for_future_completion_review" | "rejected"; dryRun: true }): RuntimeStubCompletionSummary {
+  if (input.dryRun !== true) throw new Error("VO-7CC runtime stub completion summary requires dryRun=true");
+  const reportValidation = validateRuntimeStubFinalGateSafeReport(input.finalGateSafeReport);
+  if (!reportValidation.ok) throw new Error("Runtime stub final gate safe report validation failed");
+  if (input.finalGateSafeReport.safe_report_state !== "approved_for_future_runtime_stub_completion_summary") throw new Error("Runtime stub completion summary requires approved final gate safe report");
+  if (input.finalGateSafeReport.runtime_stub_final_gate_id !== input.finalGate.runtime_stub_final_gate_id) throw new Error("Mismatched final gate safe report and final gate");
+  const approved = input.decision === "approved_for_future_completion_review";
+  const items = ["final_gate", "release_candidate", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_completion_summary_id: `runtime-stub-completion-summary-${crypto.randomUUID()}`,
+    runtime_stub_final_gate_safe_report_id: input.finalGateSafeReport.runtime_stub_final_gate_safe_report_id,
+    runtime_stub_final_gate_id: input.finalGate.runtime_stub_final_gate_id,
+    runtime_stub_release_candidate_id: input.finalGate.runtime_stub_release_candidate_id,
+    render_plan_id: input.finalGate.render_plan_id,
+    project_id: input.finalGate.project_id,
+    platform: input.finalGate.platform,
+    created_at: new Date().toISOString(),
+    completion_summary_state: approved ? "approved_for_future_completion_review" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_stub_final_gate_safe_report_validated: true, runtime_stub_final_gate_validated: true },
+    summary_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    summary_controls: { summary_only: true, completion_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    completion_items: items.map((kind) => ({ item_id: `completion-${kind}`, item_kind: kind, item_state: "complete", safe_summary: "Runtime stub completion summary only.", runtime_executed_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubCompletionSummary", source_runtime_stub_final_gate_safe_report_id: input.finalGateSafeReport.runtime_stub_final_gate_safe_report_id, source_render_plan_id: input.finalGate.render_plan_id },
+  };
+}
+
+export function createRuntimeStubCompletionReview(input: { completionSummary: RuntimeStubCompletionSummary; finalGate: RuntimeStubFinalGate; decision?: "draft" | "approved_for_future_completion_safe_report" | "rejected"; dryRun: true }): RuntimeStubCompletionReview {
+  if (input.dryRun !== true) throw new Error("VO-7CD runtime stub completion review requires dryRun=true");
+  const summaryValidation = validateRuntimeStubCompletionSummary(input.completionSummary);
+  if (!summaryValidation.ok) throw new Error("Runtime stub completion summary validation failed");
+  if (input.completionSummary.completion_summary_state !== "approved_for_future_completion_review") throw new Error("Runtime stub completion review requires approved completion summary");
+  if (input.completionSummary.runtime_stub_final_gate_id !== input.finalGate.runtime_stub_final_gate_id) throw new Error("Mismatched completion summary and final gate");
+  const approved = input.decision === "approved_for_future_completion_safe_report";
+  return {
+    schema_version: "1.0",
+    runtime_stub_completion_review_id: `runtime-stub-completion-review-${crypto.randomUUID()}`,
+    runtime_stub_completion_summary_id: input.completionSummary.runtime_stub_completion_summary_id,
+    runtime_stub_final_gate_id: input.finalGate.runtime_stub_final_gate_id,
+    runtime_stub_release_candidate_id: input.finalGate.runtime_stub_release_candidate_id,
+    render_plan_id: input.finalGate.render_plan_id,
+    project_id: input.finalGate.project_id,
+    platform: input.finalGate.platform,
+    created_at: new Date().toISOString(),
+    completion_review_state: approved ? "approved_for_future_completion_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { runtime_stub_completion_summary_validated: true, runtime_stub_final_gate_validated: true },
+    review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_controls: { review_only: true, completion_reviewed: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    review_items: input.completionSummary.completion_items.map((item) => ({ item_id: `completion-review-${String(item.item_kind)}`, item_kind: item.item_kind, review_state: "passed", safe_summary: "Runtime stub completion review only.", runtime_executed_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubCompletionReview", source_runtime_stub_completion_summary_id: input.completionSummary.runtime_stub_completion_summary_id, source_render_plan_id: input.finalGate.render_plan_id },
+  };
+}
+
+export function createRuntimeStubCompletionSafeReport(input: { completionReview: RuntimeStubCompletionReview; completionSummary: RuntimeStubCompletionSummary; decision?: "draft" | "approved_for_future_runtime_stub_closeout" | "rejected"; dryRun: true }): RuntimeStubCompletionSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7CE runtime stub completion safe report requires dryRun=true");
+  const reviewValidation = validateRuntimeStubCompletionReview(input.completionReview);
+  if (!reviewValidation.ok) throw new Error("Runtime stub completion review validation failed");
+  if (input.completionReview.completion_review_state !== "approved_for_future_completion_safe_report") throw new Error("Runtime stub completion safe report requires approved completion review");
+  if (input.completionReview.runtime_stub_completion_summary_id !== input.completionSummary.runtime_stub_completion_summary_id) throw new Error("Mismatched completion review and summary");
+  const approved = input.decision === "approved_for_future_runtime_stub_closeout";
+  const sections = ["summary", "review", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_completion_safe_report_id: `runtime-stub-completion-safe-report-${crypto.randomUUID()}`,
+    runtime_stub_completion_review_id: input.completionReview.runtime_stub_completion_review_id,
+    runtime_stub_completion_summary_id: input.completionSummary.runtime_stub_completion_summary_id,
+    runtime_stub_final_gate_id: input.completionSummary.runtime_stub_final_gate_id,
+    render_plan_id: input.completionSummary.render_plan_id,
+    project_id: input.completionSummary.project_id,
+    platform: input.completionSummary.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_stub_closeout" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_stub_completion_review_validated: true, runtime_stub_completion_summary_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    safe_report_sections: sections.map((kind) => ({ section_id: `completion-safe-report-${kind}`, section_kind: kind, safe_summary: "Runtime stub completion safe report only.", contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubCompletionSafeReport", source_runtime_stub_completion_review_id: input.completionReview.runtime_stub_completion_review_id, source_render_plan_id: input.completionSummary.render_plan_id },
+  };
+}

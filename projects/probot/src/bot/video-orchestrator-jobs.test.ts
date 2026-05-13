@@ -25148,3 +25148,60 @@ test("VO-7CB-VALIDATE: runtime stub final gate safe report rejects raw material"
   const validation = validateRuntimeStubFinalGateSafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7CC/VO-7CD/VO-7CE: Runtime Stub Completion Layer ───────────────────
+
+test("VO-7CC-SCHEMA: runtime stub completion summary schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-completion-summary.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-completion-summary.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.completion_items[0].ready_for_real_upload_now, false);
+});
+
+test("VO-7CC-VALIDATE: runtime stub completion summary rejects real-upload readiness", async () => {
+  const { validateRuntimeStubCompletionSummary } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-completion-summary.example.json"), "utf8"));
+  const unsafe = { ...example, completion_items: [{ ...example.completion_items[0], ready_for_real_upload_now: true }] };
+  const validation = validateRuntimeStubCompletionSummary(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CD-SCHEMA: runtime stub completion review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-completion-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-completion-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_items[0].runtime_executed_now, false);
+});
+
+test("VO-7CD-VALIDATE: runtime stub completion review rejects runtime execution", async () => {
+  const { validateRuntimeStubCompletionReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-completion-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_items: [{ ...example.review_items[0], runtime_executed_now: true }] };
+  const validation = validateRuntimeStubCompletionReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CE-SCHEMA: runtime stub completion safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-completion-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-completion-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7CE-VALIDATE: runtime stub completion safe report rejects raw material", async () => {
+  const { validateRuntimeStubCompletionSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-completion-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateRuntimeStubCompletionSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});
