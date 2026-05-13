@@ -3644,3 +3644,11 @@ No adapter code is created. Runtime behavior, upload execution, network calls, p
 VO-7AF adds `real-upload-executor-contract-tests`, a contract-test artifact that checks the executor contract shapes without creating code or invoking runtime behavior. VO-7AG adds `real-upload-dry-run-adapter-design`, a design-only artifact for local simulation boundaries.
 
 Both phases remain non-executing. They do not create adapter code, enable runtime behavior, perform uploads, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, or change package metadata. `ready_for_real_upload` remains false.
+
+## VO-7AH/VO-7AI/VO-7AJ — Dry-Run Adapter Contracts, Contract Tests, and Final Operator Checklist
+
+VO-7AH adds `real-upload-dry-run-adapter-contracts`, VO-7AI adds `real-upload-dry-run-adapter-contract-tests`, and VO-7AJ adds `real-upload-final-operator-checklist`.
+
+These artifacts complete the pre-enable safety chain up to a final checklist, while still leaving real upload blocked. A future separate real upload enablement request is still required before any credentials, network calls, platform APIs, media reads, or upload execution can be considered.
+
+No adapter code is created. Runtime behavior, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

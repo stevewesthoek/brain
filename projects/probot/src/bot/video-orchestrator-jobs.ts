@@ -18755,3 +18755,211 @@ export function createRealUploadDryRunAdapterDesign(input: { executorContractTes
   if (!validation.ok) throw new Error(`Dry-run adapter design validation failed: ${validation.blocking_reasons.join("; ")}`);
   return design;
 }
+
+
+// ─── VO-7AH/VO-7AI/VO-7AJ: Dry-Run Contracts, Tests, Final Checklist ──────
+
+export interface RealUploadDryRunAdapterContracts {
+  schema_version: "1.0";
+  real_upload_dry_run_adapter_contracts_id: string;
+  real_upload_dry_run_adapter_design_id: string;
+  real_upload_executor_contract_tests_id: string;
+  real_upload_executor_contracts_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  dry_run_adapter_contracts_state: "draft" | "ready_for_operator_review" | "approved_for_future_dry_run_adapter_contract_tests" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  contracts_scope: Record<string, unknown>;
+  dry_run_adapter_contracts: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadDryRunAdapterContractTests {
+  schema_version: "1.0";
+  real_upload_dry_run_adapter_contract_tests_id: string;
+  real_upload_dry_run_adapter_contracts_id: string;
+  real_upload_dry_run_adapter_design_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  dry_run_adapter_contract_tests_state: "draft" | "tested" | "ready_for_operator_review" | "approved_for_final_operator_checklist" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  contract_tests_scope: Record<string, unknown>;
+  dry_run_contract_test_results: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadFinalOperatorChecklist {
+  schema_version: "1.0";
+  real_upload_final_operator_checklist_id: string;
+  real_upload_dry_run_adapter_contract_tests_id: string;
+  real_upload_dry_run_adapter_contracts_id: string;
+  real_upload_dry_run_adapter_design_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  final_checklist_state: "draft" | "ready_for_operator_review" | "approved_for_future_real_upload_enablement_request" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  checklist_scope: Record<string, unknown>;
+  operator_acknowledgements: Record<string, unknown>;
+  remaining_real_upload_blocks: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadFinalChecklistValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[] }
+
+function validateDryRunContractItemFlags(items: unknown, label: string): string[] {
+  const blocking: string[] = [];
+  if (!Array.isArray(items) || items.length === 0) return [`${label} items are required`];
+  for (const item of items) {
+    const r = item as Record<string, unknown>;
+    if (r.code_created !== false || r.runtime_enabled !== false || r.upload_enabled !== false || r.network_enabled !== false || r.platform_api_enabled !== false || r.credential_access_enabled !== false || r.media_read_enabled !== false || r.raw_payload_allowed !== false || r.raw_response_allowed !== false) {
+      blocking.push(`${label} item is unsafe`);
+    }
+  }
+  return blocking;
+}
+
+function validateFinalSafetyObject(value: unknown, validationKey: string, itemKey?: string): RealUploadFinalChecklistValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!value || typeof value !== "object" || Array.isArray(value)) return { ok: false, blocking_reasons: ["Artifact must be an object"], warnings };
+  const artifact = value as Record<string, unknown>;
+  if (artifact.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  blocking_reasons.push(...validateExecutorArtifactFalseBoundary(artifact.execution_boundary, "Execution boundary"));
+  const validation = artifact.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_real_upload !== false || validation.real_upload_enabled !== false || validation.upload_allowed !== false || validation.network_calls_allowed !== false || validation.platform_api_calls_allowed !== false || validation.credentials_accessed !== false || validation.media_file_read !== false) blocking_reasons.push("Validation boundary is unsafe");
+  if (itemKey) blocking_reasons.push(...validateDryRunContractItemFlags(artifact[itemKey], validationKey));
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(value));
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function validateRealUploadDryRunAdapterContracts(contracts: unknown): RealUploadFinalChecklistValidationResult {
+  const result = validateFinalSafetyObject(contracts, "Dry-run adapter contracts", "dry_run_adapter_contracts");
+  if (result.ok) {
+    const c = contracts as Record<string, unknown>;
+    const scope = c.contracts_scope as Record<string, unknown> | undefined;
+    if (!scope || scope.dry_run_adapter_contracts_only !== true || scope.adapter_code_created !== false || scope.runtime_enabled !== false || scope.real_upload_enabled_now !== false || scope.network_calls_enabled_now !== false || scope.credential_access_enabled_now !== false || scope.media_read_enabled_now !== false) {
+      result.ok = false;
+      result.blocking_reasons.push("Dry-run adapter contracts scope is unsafe");
+    }
+  }
+  return result;
+}
+
+export function validateRealUploadDryRunAdapterContractTests(tests: unknown): RealUploadFinalChecklistValidationResult {
+  const result = validateFinalSafetyObject(tests, "Dry-run adapter contract tests", "dry_run_contract_test_results");
+  if (result.ok) {
+    const t = tests as Record<string, unknown>;
+    const scope = t.contract_tests_scope as Record<string, unknown> | undefined;
+    if (!scope || scope.dry_run_adapter_contract_tests_only !== true || scope.adapter_code_created !== false || scope.runtime_enabled !== false || scope.real_upload_enabled_now !== false || scope.network_calls_enabled_now !== false || scope.credential_access_enabled_now !== false || scope.media_read_enabled_now !== false) {
+      result.ok = false;
+      result.blocking_reasons.push("Dry-run adapter contract tests scope is unsafe");
+    }
+  }
+  return result;
+}
+
+export function validateRealUploadFinalOperatorChecklist(checklist: unknown): RealUploadFinalChecklistValidationResult {
+  const result = validateFinalSafetyObject(checklist, "Final operator checklist");
+  if (result.ok) {
+    const c = checklist as Record<string, unknown>;
+    const scope = c.checklist_scope as Record<string, unknown> | undefined;
+    const blocks = c.remaining_real_upload_blocks as Record<string, unknown> | undefined;
+    if (!scope || scope.final_operator_checklist_only !== true || scope.real_upload_enabled_now !== false || scope.network_calls_enabled_now !== false || scope.credential_access_enabled_now !== false || scope.media_read_enabled_now !== false) {
+      result.ok = false;
+      result.blocking_reasons.push("Final checklist scope is unsafe");
+    }
+    if (!blocks || blocks.real_upload_enablement_request_required !== true || blocks.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Final checklist must keep real upload blocked until a separate enablement request");
+    }
+  }
+  return result;
+}
+
+export function createRealUploadDryRunAdapterContracts(input: { dryRunAdapterDesign: RealUploadDryRunAdapterDesign; decision?: "draft" | "approved_for_future_dry_run_adapter_contract_tests" | "rejected"; dryRun: true }): RealUploadDryRunAdapterContracts {
+  if (input.dryRun !== true) throw new Error("VO-7AH dry-run adapter contracts require dryRun=true");
+  const designValidation = validateRealUploadDryRunAdapterDesign(input.dryRunAdapterDesign);
+  if (!designValidation.ok) throw new Error("Dry-run adapter design validation failed");
+  if (input.dryRunAdapterDesign.dry_run_adapter_design_state !== "approved_for_future_dry_run_adapter_contracts") throw new Error("Dry-run adapter contracts require approved dry-run adapter design");
+  const kinds = ["payload_shape_dry_run_contract", "credential_boundary_dry_run_contract", "network_boundary_dry_run_contract", "media_boundary_dry_run_contract", "response_redaction_dry_run_contract", "executor_orchestration_dry_run_contract"];
+  return {
+    schema_version: "1.0",
+    real_upload_dry_run_adapter_contracts_id: `real-upload-dry-run-adapter-contracts-${crypto.randomUUID()}`,
+    real_upload_dry_run_adapter_design_id: input.dryRunAdapterDesign.real_upload_dry_run_adapter_design_id,
+    real_upload_executor_contract_tests_id: input.dryRunAdapterDesign.real_upload_executor_contract_tests_id,
+    real_upload_executor_contracts_id: input.dryRunAdapterDesign.real_upload_executor_contracts_id,
+    render_plan_id: input.dryRunAdapterDesign.render_plan_id,
+    project_id: input.dryRunAdapterDesign.project_id,
+    platform: input.dryRunAdapterDesign.platform,
+    created_at: new Date().toISOString(),
+    dry_run_adapter_contracts_state: input.decision === "approved_for_future_dry_run_adapter_contract_tests" ? "approved_for_future_dry_run_adapter_contract_tests" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { real_upload_dry_run_adapter_design_validated: true, real_upload_executor_contract_tests_validated: true, real_upload_executor_contracts_validated: true },
+    contracts_scope: { dry_run_adapter_contracts_only: true, future_dry_run_adapter_contract_tests_requested: input.decision === "approved_for_future_dry_run_adapter_contract_tests", adapter_code_created: false, runtime_enabled: false, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    dry_run_adapter_contracts: kinds.map((kind) => ({ contract_id: `dry-run-contract-${kind}`, contract_kind: kind, safe_summary: "Dry-run adapter contract only.", contract_defined: true, code_created: false, runtime_enabled: false, upload_enabled: false, network_enabled: false, platform_api_enabled: false, credential_access_enabled: false, media_read_enabled: false, raw_payload_allowed: false, raw_response_allowed: false })),
+    execution_boundary: Object.fromEntries(VO7AD_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: input.decision === "approved_for_future_dry_run_adapter_contract_tests", ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadDryRunAdapterContracts", source_real_upload_dry_run_adapter_design_id: input.dryRunAdapterDesign.real_upload_dry_run_adapter_design_id, source_render_plan_id: input.dryRunAdapterDesign.render_plan_id },
+  };
+}
+
+export function createRealUploadDryRunAdapterContractTests(input: { dryRunAdapterContracts: RealUploadDryRunAdapterContracts; decision?: "draft" | "approved_for_final_operator_checklist" | "rejected"; dryRun: true }): RealUploadDryRunAdapterContractTests {
+  if (input.dryRun !== true) throw new Error("VO-7AI dry-run adapter contract tests require dryRun=true");
+  const contractsValidation = validateRealUploadDryRunAdapterContracts(input.dryRunAdapterContracts);
+  if (!contractsValidation.ok) throw new Error("Dry-run adapter contracts validation failed");
+  if (input.dryRunAdapterContracts.dry_run_adapter_contracts_state !== "approved_for_future_dry_run_adapter_contract_tests") throw new Error("Dry-run adapter contract tests require approved dry-run adapter contracts");
+  return {
+    schema_version: "1.0",
+    real_upload_dry_run_adapter_contract_tests_id: `real-upload-dry-run-adapter-contract-tests-${crypto.randomUUID()}`,
+    real_upload_dry_run_adapter_contracts_id: input.dryRunAdapterContracts.real_upload_dry_run_adapter_contracts_id,
+    real_upload_dry_run_adapter_design_id: input.dryRunAdapterContracts.real_upload_dry_run_adapter_design_id,
+    render_plan_id: input.dryRunAdapterContracts.render_plan_id,
+    project_id: input.dryRunAdapterContracts.project_id,
+    platform: input.dryRunAdapterContracts.platform,
+    created_at: new Date().toISOString(),
+    dry_run_adapter_contract_tests_state: input.decision === "approved_for_final_operator_checklist" ? "approved_for_final_operator_checklist" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { real_upload_dry_run_adapter_contracts_validated: true, real_upload_dry_run_adapter_design_validated: true },
+    contract_tests_scope: { dry_run_adapter_contract_tests_only: true, future_final_operator_checklist_requested: input.decision === "approved_for_final_operator_checklist", adapter_code_created: false, runtime_enabled: false, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    dry_run_contract_test_results: input.dryRunAdapterContracts.dry_run_adapter_contracts.map((contract) => ({ test_id: `dry-run-contract-test-${String(contract.contract_kind)}`, contract_kind: contract.contract_kind, test_state: "passed", safe_summary: "Dry-run adapter contract shape checked without execution.", contract_shape_checked: true, code_created: false, runtime_enabled: false, upload_enabled: false, network_enabled: false, platform_api_enabled: false, credential_access_enabled: false, media_read_enabled: false, raw_payload_allowed: false, raw_response_allowed: false })),
+    execution_boundary: Object.fromEntries(VO7AD_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: input.decision === "approved_for_final_operator_checklist", ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadDryRunAdapterContractTests", source_real_upload_dry_run_adapter_contracts_id: input.dryRunAdapterContracts.real_upload_dry_run_adapter_contracts_id, source_render_plan_id: input.dryRunAdapterContracts.render_plan_id },
+  };
+}
+
+export function createRealUploadFinalOperatorChecklist(input: { dryRunAdapterContractTests: RealUploadDryRunAdapterContractTests; decision?: "draft" | "approved_for_future_real_upload_enablement_request" | "rejected"; dryRun: true }): RealUploadFinalOperatorChecklist {
+  if (input.dryRun !== true) throw new Error("VO-7AJ final operator checklist requires dryRun=true");
+  const testsValidation = validateRealUploadDryRunAdapterContractTests(input.dryRunAdapterContractTests);
+  if (!testsValidation.ok) throw new Error("Dry-run adapter contract tests validation failed");
+  if (input.dryRunAdapterContractTests.dry_run_adapter_contract_tests_state !== "approved_for_final_operator_checklist") throw new Error("Final operator checklist requires approved dry-run adapter contract tests");
+  return {
+    schema_version: "1.0",
+    real_upload_final_operator_checklist_id: `real-upload-final-operator-checklist-${crypto.randomUUID()}`,
+    real_upload_dry_run_adapter_contract_tests_id: input.dryRunAdapterContractTests.real_upload_dry_run_adapter_contract_tests_id,
+    real_upload_dry_run_adapter_contracts_id: input.dryRunAdapterContractTests.real_upload_dry_run_adapter_contracts_id,
+    real_upload_dry_run_adapter_design_id: input.dryRunAdapterContractTests.real_upload_dry_run_adapter_design_id,
+    render_plan_id: input.dryRunAdapterContractTests.render_plan_id,
+    project_id: input.dryRunAdapterContractTests.project_id,
+    platform: input.dryRunAdapterContractTests.platform,
+    created_at: new Date().toISOString(),
+    final_checklist_state: input.decision === "approved_for_future_real_upload_enablement_request" ? "approved_for_future_real_upload_enablement_request" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { real_upload_dry_run_adapter_contract_tests_validated: true, real_upload_dry_run_adapter_contracts_validated: true, real_upload_dry_run_adapter_design_validated: true },
+    checklist_scope: { final_operator_checklist_only: true, future_real_upload_enablement_request_allowed: input.decision === "approved_for_future_real_upload_enablement_request", real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    operator_acknowledgements: { checklist_acknowledged: true, understands_final_checklist_only: true, understands_real_upload_not_enabled: true, understands_future_enablement_request_required: true, understands_credentials_are_not_accessed: true, understands_network_calls_are_not_enabled: true, understands_media_reads_are_not_enabled: true, understands_platform_api_calls_are_not_enabled: true, understands_dependencies_are_not_added: true, decision_note_summary: "Final checklist only; real upload remains disabled until a separate enablement request." },
+    remaining_real_upload_blocks: { real_upload_enablement_request_required: true, explicit_credentials_boundary_required: true, explicit_network_boundary_required: true, explicit_media_read_boundary_required: true, explicit_platform_api_boundary_required: true, separate_commit_required: true, real_upload_still_blocked: true },
+    execution_boundary: Object.fromEntries(VO7AD_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: input.decision === "approved_for_future_real_upload_enablement_request", ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadFinalOperatorChecklist", source_real_upload_dry_run_adapter_contract_tests_id: input.dryRunAdapterContractTests.real_upload_dry_run_adapter_contract_tests_id, source_render_plan_id: input.dryRunAdapterContractTests.render_plan_id },
+  };
+}

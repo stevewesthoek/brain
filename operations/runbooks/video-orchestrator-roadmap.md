@@ -1682,3 +1682,13 @@ VO-7AF adds executor contract test artifacts for the credential, media read, pay
 These phases do not create adapter code, enable runtime behavior, upload, call platform APIs, make network calls, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
 
 Approval only permits future dry-run adapter contract work.
+
+## Phase 5AM — Dry-Run Adapter Contracts, Contract Tests, and Final Operator Checklist (VO-7AH/VO-7AI/VO-7AJ)
+
+Status: complete.
+
+VO-7AH adds dry-run adapter contracts, VO-7AI adds dry-run adapter contract tests, and VO-7AJ adds the final operator checklist before any future real upload enablement request. These phases remain non-executing and do not enable real upload.
+
+They do not create adapter code, enable runtime behavior, upload, call platform APIs, make network calls, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+Approval only permits a future separate real upload enablement request artifact.

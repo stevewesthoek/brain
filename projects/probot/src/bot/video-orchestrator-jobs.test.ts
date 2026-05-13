@@ -24254,3 +24254,60 @@ test("VO-7AG-CREATE: approved dry-run adapter design keeps all execution disable
   assert.equal(design.execution_boundary.network_calls_allowed, false);
   assert.equal(design.validation.ready_for_real_upload, false);
 });
+
+
+// ─── VO-7AH/VO-7AI/VO-7AJ: Dry-Run Contracts, Tests, Final Checklist ──────
+
+test("VO-7AH-SCHEMA: dry-run adapter contracts schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-dry-run-adapter-contracts.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-dry-run-adapter-contracts.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.dry_run_adapter_contracts.length, 6);
+});
+
+test("VO-7AH-VALIDATE: dry-run adapter contracts reject unsafe flags", async () => {
+  const { validateRealUploadDryRunAdapterContracts } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-dry-run-adapter-contracts.example.json"), "utf8"));
+  const unsafe = { ...example, dry_run_adapter_contracts: [{ ...example.dry_run_adapter_contracts[0], network_enabled: true }] };
+  const validation = validateRealUploadDryRunAdapterContracts(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7AI-SCHEMA: dry-run adapter contract tests schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-dry-run-adapter-contract-tests.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-dry-run-adapter-contract-tests.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.dry_run_contract_test_results.length, 6);
+});
+
+test("VO-7AI-VALIDATE: dry-run adapter contract tests reject unsafe flags", async () => {
+  const { validateRealUploadDryRunAdapterContractTests } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-dry-run-adapter-contract-tests.example.json"), "utf8"));
+  const unsafe = { ...example, dry_run_contract_test_results: [{ ...example.dry_run_contract_test_results[0], platform_api_enabled: true }] };
+  const validation = validateRealUploadDryRunAdapterContractTests(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7AJ-SCHEMA: final operator checklist schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-final-operator-checklist.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-final-operator-checklist.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.remaining_real_upload_blocks.real_upload_still_blocked, true);
+});
+
+test("VO-7AJ-VALIDATE: final checklist rejects real upload enablement", async () => {
+  const { validateRealUploadFinalOperatorChecklist } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-final-operator-checklist.example.json"), "utf8"));
+  const unsafe = { ...example, execution_boundary: { ...example.execution_boundary, ready_for_real_upload: true, upload_allowed: true } };
+  const validation = validateRealUploadFinalOperatorChecklist(unsafe);
+  assert.equal(validation.ok, false);
+});
