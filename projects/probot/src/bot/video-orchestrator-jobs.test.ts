@@ -25205,3 +25205,60 @@ test("VO-7CE-VALIDATE: runtime stub completion safe report rejects raw material"
   const validation = validateRuntimeStubCompletionSafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7CF/VO-7CG/VO-7CH: Runtime Stub Closeout Layer ─────────────────────
+
+test("VO-7CF-SCHEMA: runtime stub closeout schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-closeout.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-closeout.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.closeout_items[0].closed_now, false);
+});
+
+test("VO-7CF-VALIDATE: runtime stub closeout rejects closeout now", async () => {
+  const { validateRuntimeStubCloseout } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-closeout.example.json"), "utf8"));
+  const unsafe = { ...example, closeout_items: [{ ...example.closeout_items[0], closed_now: true }] };
+  const validation = validateRuntimeStubCloseout(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CG-SCHEMA: runtime stub closeout review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-closeout-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-closeout-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_items[0].runtime_executed_now, false);
+});
+
+test("VO-7CG-VALIDATE: runtime stub closeout review rejects real-upload readiness", async () => {
+  const { validateRuntimeStubCloseoutReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-closeout-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_items: [{ ...example.review_items[0], ready_for_real_upload_now: true }] };
+  const validation = validateRuntimeStubCloseoutReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CH-SCHEMA: runtime stub closeout safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-closeout-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-closeout-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7CH-VALIDATE: runtime stub closeout safe report rejects raw material", async () => {
+  const { validateRuntimeStubCloseoutSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-closeout-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateRuntimeStubCloseoutSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});

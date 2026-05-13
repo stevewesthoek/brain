@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "runtime_stub_closeout_id": "runtime-stub-closeout-001",
+  "runtime_stub_completion_safe_report_id": "runtime-stub-completion-safe-report-001",
+  "runtime_stub_completion_summary_id": "runtime-stub-completion-summary-001",
+  "runtime_stub_final_gate_id": "runtime-stub-final-gate-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "closeout_state": "approved_for_future_closeout_review",
+  "required_artifacts": { "runtime_stub_completion_safe_report_validated": true, "runtime_stub_completion_summary_validated": true },
+  "closeout_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "closeout_controls": { "closeout_only": true, "summary_only": true, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_raw_response": false, "contains_secret_material": false, "runtime_invocation_disabled": true, "real_upload_still_blocked": true },
+  "closeout_items": [
+    { "item_id": "closeout-completion", "item_kind": "completion", "item_state": "closed", "safe_summary": "Completion summarized only.", "closed_now": false, "runtime_executed_now": false, "ready_for_real_upload_now": false },
+    { "item_id": "closeout-final-gate", "item_kind": "final_gate", "item_state": "closed", "safe_summary": "Final gate summarized only.", "closed_now": false, "runtime_executed_now": false, "ready_for_real_upload_now": false },
+    { "item_id": "closeout-boundaries", "item_kind": "boundaries", "item_state": "closed", "safe_summary": "Runtime invocation remains disabled.", "closed_now": false, "runtime_executed_now": false, "ready_for_real_upload_now": false },
+    { "item_id": "closeout-status", "item_kind": "status", "item_state": "closed", "safe_summary": "Real upload remains disabled.", "closed_now": false, "runtime_executed_now": false, "ready_for_real_upload_now": false }
+  ],
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createRuntimeStubCloseout", "source_runtime_stub_completion_safe_report_id": "runtime-stub-completion-safe-report-001", "source_render_plan_id": "render-plan-001" }
+}

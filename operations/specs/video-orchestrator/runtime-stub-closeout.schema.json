@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "runtime-stub-closeout.schema.json",
+  "title": "Runtime Stub Closeout",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "runtime_stub_closeout_id", "runtime_stub_completion_safe_report_id", "runtime_stub_completion_summary_id", "runtime_stub_final_gate_id", "render_plan_id", "project_id", "platform", "created_at", "closeout_state", "required_artifacts", "closeout_scope", "closeout_controls", "closeout_items", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "runtime_stub_closeout_id": { "type": "string", "minLength": 1 },
+    "runtime_stub_completion_safe_report_id": { "type": "string", "minLength": 1 },
+    "runtime_stub_completion_summary_id": { "type": "string", "minLength": 1 },
+    "runtime_stub_final_gate_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "closeout_state": { "type": "string", "enum": ["draft", "closed", "approved_for_future_closeout_review", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["runtime_stub_completion_safe_report_validated", "runtime_stub_completion_summary_validated"], "properties": { "runtime_stub_completion_safe_report_validated": { "type": "boolean", "const": true }, "runtime_stub_completion_summary_validated": { "type": "boolean", "const": true } } },
+    "closeout_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "closeout_controls": { "type": "object", "additionalProperties": false, "required": ["closeout_only", "summary_only", "contains_runtime_callable", "contains_raw_payload", "contains_raw_response", "contains_secret_material", "runtime_invocation_disabled", "real_upload_still_blocked"], "properties": { "closeout_only": { "type": "boolean", "const": true }, "summary_only": { "type": "boolean", "const": true }, "contains_runtime_callable": { "type": "boolean", "const": false }, "contains_raw_payload": { "type": "boolean", "const": false }, "contains_raw_response": { "type": "boolean", "const": false }, "contains_secret_material": { "type": "boolean", "const": false }, "runtime_invocation_disabled": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "closeout_items": { "type": "array", "minItems": 4, "items": { "type": "object", "additionalProperties": false, "required": ["item_id", "item_kind", "item_state", "safe_summary", "closed_now", "runtime_executed_now", "ready_for_real_upload_now"], "properties": { "item_id": { "type": "string" }, "item_kind": { "type": "string" }, "item_state": { "type": "string", "enum": ["closed", "blocked", "deferred"] }, "safe_summary": { "type": "string" }, "closed_now": { "type": "boolean", "const": false }, "runtime_executed_now": { "type": "boolean", "const": false }, "ready_for_real_upload_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_runtime_stub_completion_safe_report_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createRuntimeStubCloseout", "revokeRuntimeStubCloseout"] }, "source_runtime_stub_completion_safe_report_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

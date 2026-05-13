@@ -21836,3 +21836,193 @@ export function createRuntimeStubCompletionSafeReport(input: { completionReview:
     provenance: { generated_by: "createRuntimeStubCompletionSafeReport", source_runtime_stub_completion_review_id: input.completionReview.runtime_stub_completion_review_id, source_render_plan_id: input.completionSummary.render_plan_id },
   };
 }
+
+
+// ─── VO-7CF/VO-7CG/VO-7CH: Runtime Stub Closeout Layer ─────────────────────
+
+export interface RuntimeStubCloseout {
+  schema_version: "1.0";
+  runtime_stub_closeout_id: string;
+  runtime_stub_completion_safe_report_id: string;
+  runtime_stub_completion_summary_id: string;
+  runtime_stub_final_gate_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  closeout_state: "draft" | "closed" | "approved_for_future_closeout_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  closeout_scope: Record<string, unknown>;
+  closeout_controls: Record<string, unknown>;
+  closeout_items: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubCloseoutReview {
+  schema_version: "1.0";
+  runtime_stub_closeout_review_id: string;
+  runtime_stub_closeout_id: string;
+  runtime_stub_completion_summary_id: string;
+  runtime_stub_final_gate_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  closeout_review_state: "draft" | "ready_for_operator_review" | "approved_for_future_closeout_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_controls: Record<string, unknown>;
+  review_items: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubCloseoutSafeReport {
+  schema_version: "1.0";
+  runtime_stub_closeout_safe_report_id: string;
+  runtime_stub_closeout_review_id: string;
+  runtime_stub_closeout_id: string;
+  runtime_stub_completion_summary_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_stub_archive" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeStubCloseoutLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.closeout_controls || artifact.review_controls) as Record<string, unknown> | undefined;
+    if (controls && controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub closeout must keep real upload blocked");
+    }
+    if (controls && (controls.contains_runtime_callable === true || controls.contains_raw_payload === true || controls.contains_raw_response === true || controls.contains_secret_material === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub closeout contains unsafe material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 4) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.closed_now === true || record.runtime_executed_now === true || record.ready_for_real_upload_now === true || record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe closeout/runtime/ready material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateRuntimeStubCloseout(closeout: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubCloseoutLayer(closeout, "closeout_scope", "closeout_items");
+}
+
+export function validateRuntimeStubCloseoutReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubCloseoutLayer(review, "review_scope", "review_items");
+}
+
+export function validateRuntimeStubCloseoutSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubCloseoutLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createRuntimeStubCloseout(input: { completionSafeReport: RuntimeStubCompletionSafeReport; completionSummary: RuntimeStubCompletionSummary; decision?: "draft" | "approved_for_future_closeout_review" | "rejected"; dryRun: true }): RuntimeStubCloseout {
+  if (input.dryRun !== true) throw new Error("VO-7CF runtime stub closeout requires dryRun=true");
+  const reportValidation = validateRuntimeStubCompletionSafeReport(input.completionSafeReport);
+  if (!reportValidation.ok) throw new Error("Runtime stub completion safe report validation failed");
+  if (input.completionSafeReport.safe_report_state !== "approved_for_future_runtime_stub_closeout") throw new Error("Runtime stub closeout requires approved completion safe report");
+  if (input.completionSafeReport.runtime_stub_completion_summary_id !== input.completionSummary.runtime_stub_completion_summary_id) throw new Error("Mismatched completion safe report and summary");
+  const approved = input.decision === "approved_for_future_closeout_review";
+  const items = ["completion", "final_gate", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_closeout_id: `runtime-stub-closeout-${crypto.randomUUID()}`,
+    runtime_stub_completion_safe_report_id: input.completionSafeReport.runtime_stub_completion_safe_report_id,
+    runtime_stub_completion_summary_id: input.completionSummary.runtime_stub_completion_summary_id,
+    runtime_stub_final_gate_id: input.completionSummary.runtime_stub_final_gate_id,
+    render_plan_id: input.completionSummary.render_plan_id,
+    project_id: input.completionSummary.project_id,
+    platform: input.completionSummary.platform,
+    created_at: new Date().toISOString(),
+    closeout_state: approved ? "approved_for_future_closeout_review" : input.decision === "rejected" ? "rejected" : "closed",
+    required_artifacts: { runtime_stub_completion_safe_report_validated: true, runtime_stub_completion_summary_validated: true },
+    closeout_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    closeout_controls: { closeout_only: true, summary_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    closeout_items: items.map((kind) => ({ item_id: `closeout-${kind}`, item_kind: kind, item_state: "closed", safe_summary: "Runtime stub closeout only.", closed_now: false, runtime_executed_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubCloseout", source_runtime_stub_completion_safe_report_id: input.completionSafeReport.runtime_stub_completion_safe_report_id, source_render_plan_id: input.completionSummary.render_plan_id },
+  };
+}
+
+export function createRuntimeStubCloseoutReview(input: { closeout: RuntimeStubCloseout; completionSummary: RuntimeStubCompletionSummary; decision?: "draft" | "approved_for_future_closeout_safe_report" | "rejected"; dryRun: true }): RuntimeStubCloseoutReview {
+  if (input.dryRun !== true) throw new Error("VO-7CG runtime stub closeout review requires dryRun=true");
+  const closeoutValidation = validateRuntimeStubCloseout(input.closeout);
+  if (!closeoutValidation.ok) throw new Error("Runtime stub closeout validation failed");
+  if (input.closeout.closeout_state !== "approved_for_future_closeout_review") throw new Error("Runtime stub closeout review requires approved closeout");
+  if (input.closeout.runtime_stub_completion_summary_id !== input.completionSummary.runtime_stub_completion_summary_id) throw new Error("Mismatched closeout and completion summary");
+  const approved = input.decision === "approved_for_future_closeout_safe_report";
+  return {
+    schema_version: "1.0",
+    runtime_stub_closeout_review_id: `runtime-stub-closeout-review-${crypto.randomUUID()}`,
+    runtime_stub_closeout_id: input.closeout.runtime_stub_closeout_id,
+    runtime_stub_completion_summary_id: input.completionSummary.runtime_stub_completion_summary_id,
+    runtime_stub_final_gate_id: input.completionSummary.runtime_stub_final_gate_id,
+    render_plan_id: input.completionSummary.render_plan_id,
+    project_id: input.completionSummary.project_id,
+    platform: input.completionSummary.platform,
+    created_at: new Date().toISOString(),
+    closeout_review_state: approved ? "approved_for_future_closeout_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { runtime_stub_closeout_validated: true, runtime_stub_completion_summary_validated: true },
+    review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_controls: { review_only: true, closeout_reviewed: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    review_items: input.closeout.closeout_items.map((item) => ({ item_id: `closeout-review-${String(item.item_kind)}`, item_kind: item.item_kind, review_state: "passed", safe_summary: "Runtime stub closeout review only.", closed_now: false, runtime_executed_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubCloseoutReview", source_runtime_stub_closeout_id: input.closeout.runtime_stub_closeout_id, source_render_plan_id: input.completionSummary.render_plan_id },
+  };
+}
+
+export function createRuntimeStubCloseoutSafeReport(input: { closeoutReview: RuntimeStubCloseoutReview; closeout: RuntimeStubCloseout; decision?: "draft" | "approved_for_future_runtime_stub_archive" | "rejected"; dryRun: true }): RuntimeStubCloseoutSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7CH runtime stub closeout safe report requires dryRun=true");
+  const reviewValidation = validateRuntimeStubCloseoutReview(input.closeoutReview);
+  if (!reviewValidation.ok) throw new Error("Runtime stub closeout review validation failed");
+  if (input.closeoutReview.closeout_review_state !== "approved_for_future_closeout_safe_report") throw new Error("Runtime stub closeout safe report requires approved closeout review");
+  if (input.closeoutReview.runtime_stub_closeout_id !== input.closeout.runtime_stub_closeout_id) throw new Error("Mismatched closeout review and closeout");
+  const approved = input.decision === "approved_for_future_runtime_stub_archive";
+  const sections = ["closeout", "review", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_closeout_safe_report_id: `runtime-stub-closeout-safe-report-${crypto.randomUUID()}`,
+    runtime_stub_closeout_review_id: input.closeoutReview.runtime_stub_closeout_review_id,
+    runtime_stub_closeout_id: input.closeout.runtime_stub_closeout_id,
+    runtime_stub_completion_summary_id: input.closeout.runtime_stub_completion_summary_id,
+    render_plan_id: input.closeout.render_plan_id,
+    project_id: input.closeout.project_id,
+    platform: input.closeout.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_stub_archive" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_stub_closeout_review_validated: true, runtime_stub_closeout_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    safe_report_sections: sections.map((kind) => ({ section_id: `closeout-safe-report-${kind}`, section_kind: kind, safe_summary: "Runtime stub closeout safe report only.", contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubCloseoutSafeReport", source_runtime_stub_closeout_review_id: input.closeoutReview.runtime_stub_closeout_review_id, source_render_plan_id: input.closeout.render_plan_id },
+  };
+}
