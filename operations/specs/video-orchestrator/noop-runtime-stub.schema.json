@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "noop-runtime-stub.schema.json",
+  "title": "No-Op Runtime Stub",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "noop_runtime_stub_id", "real_runtime_stub_boundary_dry_run_report_id", "real_runtime_stub_boundary_contract_id", "render_plan_id", "project_id", "platform", "created_at", "stub_state", "required_artifacts", "stub_scope", "stub_controls", "stub_items", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "noop_runtime_stub_id": { "type": "string", "minLength": 1 },
+    "real_runtime_stub_boundary_dry_run_report_id": { "type": "string", "minLength": 1 },
+    "real_runtime_stub_boundary_contract_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "stub_state": { "type": "string", "enum": ["draft", "created", "ready_for_operator_review", "approved_for_future_noop_runtime_stub_review", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["real_runtime_stub_boundary_dry_run_report_validated", "real_runtime_stub_boundary_contract_validated"], "properties": { "real_runtime_stub_boundary_dry_run_report_validated": { "type": "boolean", "const": true }, "real_runtime_stub_boundary_contract_validated": { "type": "boolean", "const": true } } },
+    "stub_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "stub_controls": { "type": "object", "additionalProperties": false, "required": ["noop_stub_only", "runtime_invocation_disabled", "network_client_absent", "platform_adapter_absent", "credential_provider_absent", "media_resolver_absent", "single_upload_limit", "operator_kill_switch_required", "real_upload_still_blocked"], "properties": { "noop_stub_only": { "type": "boolean", "const": true }, "runtime_invocation_disabled": { "type": "boolean", "const": true }, "network_client_absent": { "type": "boolean", "const": true }, "platform_adapter_absent": { "type": "boolean", "const": true }, "credential_provider_absent": { "type": "boolean", "const": true }, "media_resolver_absent": { "type": "boolean", "const": true }, "single_upload_limit": { "type": "integer", "const": 1 }, "operator_kill_switch_required": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "stub_items": { "type": "array", "minItems": 5, "items": { "type": "object", "additionalProperties": false, "required": ["item_id", "item_kind", "safe_summary", "implemented_now", "runtime_executed_now"], "properties": { "item_id": { "type": "string" }, "item_kind": { "type": "string" }, "safe_summary": { "type": "string" }, "implemented_now": { "type": "boolean", "const": false }, "runtime_executed_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_real_runtime_stub_boundary_dry_run_report_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createNoopRuntimeStub", "revokeNoopRuntimeStub"] }, "source_real_runtime_stub_boundary_dry_run_report_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

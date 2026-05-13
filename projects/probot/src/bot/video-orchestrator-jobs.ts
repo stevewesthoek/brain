@@ -20700,3 +20700,188 @@ export function createRealRuntimeStubBoundaryDryRunReport(input: { stubContract:
     provenance: { generated_by: "createRealRuntimeStubBoundaryDryRunReport", source_real_runtime_stub_boundary_contract_id: input.stubContract.real_runtime_stub_boundary_contract_id, source_render_plan_id: input.stubContract.render_plan_id },
   };
 }
+
+
+// ─── VO-7BN/VO-7BO/VO-7BP: No-Op Runtime Stub Layer ───────────────────────
+
+export interface NoopRuntimeStub {
+  schema_version: "1.0";
+  noop_runtime_stub_id: string;
+  real_runtime_stub_boundary_dry_run_report_id: string;
+  real_runtime_stub_boundary_contract_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  stub_state: "draft" | "created" | "ready_for_operator_review" | "approved_for_future_noop_runtime_stub_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  stub_scope: Record<string, unknown>;
+  stub_controls: Record<string, unknown>;
+  stub_items: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface NoopRuntimeStubReview {
+  schema_version: "1.0";
+  noop_runtime_stub_review_id: string;
+  noop_runtime_stub_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  stub_review_state: "draft" | "ready_for_operator_review" | "approved_for_future_noop_runtime_stub_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_controls: Record<string, unknown>;
+  review_items: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface NoopRuntimeStubSafeReport {
+  schema_version: "1.0";
+  noop_runtime_stub_safe_report_id: string;
+  noop_runtime_stub_review_id: string;
+  noop_runtime_stub_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_stub_store" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateNoopRuntimeStubLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.stub_controls || artifact.review_controls) as Record<string, unknown> | undefined;
+    if (controls && (controls.real_upload_still_blocked !== true || controls.runtime_invocation_disabled !== true)) {
+      result.ok = false;
+      result.blocking_reasons.push("No-op runtime stub must keep runtime invocation disabled and real upload blocked");
+    }
+    if (controls && (controls.network_client_absent !== true || controls.platform_adapter_absent !== true || controls.credential_provider_absent !== true || controls.media_resolver_absent !== true)) {
+      result.ok = false;
+      result.blocking_reasons.push("No-op runtime stub dependency boundaries are unsafe");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 4) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.implemented_now !== false || record.runtime_executed_now !== false) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} attempted implementation or runtime execution now`);
+        }
+        if (record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe raw or secret material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateNoopRuntimeStub(stub: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateNoopRuntimeStubLayer(stub, "stub_scope", "stub_items");
+}
+
+export function validateNoopRuntimeStubReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateNoopRuntimeStubLayer(review, "review_scope", "review_items");
+}
+
+export function validateNoopRuntimeStubSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateNoopRuntimeStubLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createNoopRuntimeStub(input: { stubDryRunReport: RealRuntimeStubBoundaryDryRunReport; stubContract: RealRuntimeStubBoundaryContract; decision?: "draft" | "approved_for_future_noop_runtime_stub_review" | "rejected"; dryRun: true }): NoopRuntimeStub {
+  if (input.dryRun !== true) throw new Error("VO-7BN no-op runtime stub requires dryRun=true");
+  const reportValidation = validateRealRuntimeStubBoundaryDryRunReport(input.stubDryRunReport);
+  if (!reportValidation.ok) throw new Error("Real runtime stub boundary dry-run report validation failed");
+  if (input.stubDryRunReport.dry_run_report_state !== "approved_for_future_noop_runtime_stub") throw new Error("No-op runtime stub requires approved stub dry-run report");
+  if (input.stubDryRunReport.real_runtime_stub_boundary_contract_id !== input.stubContract.real_runtime_stub_boundary_contract_id) throw new Error("Mismatched stub dry-run report and contract");
+  const approved = input.decision === "approved_for_future_noop_runtime_stub_review";
+  const kinds = ["kill_switch", "single_upload_limit", "credential_boundary", "network_boundary", "media_boundary"];
+  return {
+    schema_version: "1.0",
+    noop_runtime_stub_id: `noop-runtime-stub-${crypto.randomUUID()}`,
+    real_runtime_stub_boundary_dry_run_report_id: input.stubDryRunReport.real_runtime_stub_boundary_dry_run_report_id,
+    real_runtime_stub_boundary_contract_id: input.stubContract.real_runtime_stub_boundary_contract_id,
+    render_plan_id: input.stubContract.render_plan_id,
+    project_id: input.stubContract.project_id,
+    platform: input.stubContract.platform,
+    created_at: new Date().toISOString(),
+    stub_state: approved ? "approved_for_future_noop_runtime_stub_review" : input.decision === "rejected" ? "rejected" : "created",
+    required_artifacts: { real_runtime_stub_boundary_dry_run_report_validated: true, real_runtime_stub_boundary_contract_validated: true },
+    stub_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    stub_controls: { noop_stub_only: true, runtime_invocation_disabled: true, network_client_absent: true, platform_adapter_absent: true, credential_provider_absent: true, media_resolver_absent: true, single_upload_limit: 1, operator_kill_switch_required: true, real_upload_still_blocked: true },
+    stub_items: kinds.map((kind) => ({ item_id: `noop-stub-${kind}`, item_kind: kind, safe_summary: "No-op runtime stub artifact only.", implemented_now: false, runtime_executed_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createNoopRuntimeStub", source_real_runtime_stub_boundary_dry_run_report_id: input.stubDryRunReport.real_runtime_stub_boundary_dry_run_report_id, source_render_plan_id: input.stubContract.render_plan_id },
+  };
+}
+
+export function createNoopRuntimeStubReview(input: { stub: NoopRuntimeStub; decision?: "draft" | "approved_for_future_noop_runtime_stub_safe_report" | "rejected"; dryRun: true }): NoopRuntimeStubReview {
+  if (input.dryRun !== true) throw new Error("VO-7BO no-op runtime stub review requires dryRun=true");
+  const stubValidation = validateNoopRuntimeStub(input.stub);
+  if (!stubValidation.ok) throw new Error("No-op runtime stub validation failed");
+  if (input.stub.stub_state !== "approved_for_future_noop_runtime_stub_review") throw new Error("No-op runtime stub review requires approved stub");
+  const approved = input.decision === "approved_for_future_noop_runtime_stub_safe_report";
+  return {
+    schema_version: "1.0",
+    noop_runtime_stub_review_id: `noop-runtime-stub-review-${crypto.randomUUID()}`,
+    noop_runtime_stub_id: input.stub.noop_runtime_stub_id,
+    render_plan_id: input.stub.render_plan_id,
+    project_id: input.stub.project_id,
+    platform: input.stub.platform,
+    created_at: new Date().toISOString(),
+    stub_review_state: approved ? "approved_for_future_noop_runtime_stub_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { noop_runtime_stub_validated: true },
+    review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_controls: { review_only: true, noop_stub_reviewed: true, runtime_invocation_disabled: true, network_client_absent: true, platform_adapter_absent: true, credential_provider_absent: true, media_resolver_absent: true, real_upload_still_blocked: true },
+    review_items: input.stub.stub_items.map((item) => ({ item_id: `review-${String(item.item_kind)}`, item_kind: item.item_kind, review_state: "passed", safe_summary: "No-op runtime stub review only.", implemented_now: false, runtime_executed_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createNoopRuntimeStubReview", source_noop_runtime_stub_id: input.stub.noop_runtime_stub_id, source_render_plan_id: input.stub.render_plan_id },
+  };
+}
+
+export function createNoopRuntimeStubSafeReport(input: { review: NoopRuntimeStubReview; stub: NoopRuntimeStub; decision?: "draft" | "approved_for_future_runtime_stub_store" | "rejected"; dryRun: true }): NoopRuntimeStubSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7BP no-op runtime stub safe report requires dryRun=true");
+  const reviewValidation = validateNoopRuntimeStubReview(input.review);
+  if (!reviewValidation.ok) throw new Error("No-op runtime stub review validation failed");
+  if (input.review.stub_review_state !== "approved_for_future_noop_runtime_stub_safe_report") throw new Error("No-op runtime stub safe report requires approved review");
+  if (input.review.noop_runtime_stub_id !== input.stub.noop_runtime_stub_id) throw new Error("Mismatched no-op runtime stub review and stub");
+  const approved = input.decision === "approved_for_future_runtime_stub_store";
+  const sections = ["boundaries", "controls", "review", "status"];
+  return {
+    schema_version: "1.0",
+    noop_runtime_stub_safe_report_id: `noop-runtime-stub-safe-report-${crypto.randomUUID()}`,
+    noop_runtime_stub_review_id: input.review.noop_runtime_stub_review_id,
+    noop_runtime_stub_id: input.stub.noop_runtime_stub_id,
+    render_plan_id: input.stub.render_plan_id,
+    project_id: input.stub.project_id,
+    platform: input.stub.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_stub_store" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { noop_runtime_stub_review_validated: true, noop_runtime_stub_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    safe_report_sections: sections.map((kind) => ({ section_id: `noop-safe-report-${kind}`, section_kind: kind, safe_summary: "No-op runtime stub safe report only.", contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createNoopRuntimeStubSafeReport", source_noop_runtime_stub_review_id: input.review.noop_runtime_stub_review_id, source_render_plan_id: input.stub.render_plan_id },
+  };
+}

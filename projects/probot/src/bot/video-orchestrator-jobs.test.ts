@@ -24863,3 +24863,60 @@ test("VO-7BM-VALIDATE: real runtime stub boundary dry-run report rejects impleme
   const validation = validateRealRuntimeStubBoundaryDryRunReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7BN/VO-7BO/VO-7BP: No-Op Runtime Stub Layer ───────────────────────
+
+test("VO-7BN-SCHEMA: no-op runtime stub schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/noop-runtime-stub.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/noop-runtime-stub.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.stub_controls.runtime_invocation_disabled, true);
+});
+
+test("VO-7BN-VALIDATE: no-op runtime stub rejects runtime execution", async () => {
+  const { validateNoopRuntimeStub } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/noop-runtime-stub.example.json"), "utf8"));
+  const unsafe = { ...example, stub_items: [{ ...example.stub_items[0], runtime_executed_now: true }] };
+  const validation = validateNoopRuntimeStub(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BO-SCHEMA: no-op runtime stub review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/noop-runtime-stub-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/noop-runtime-stub-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_items[0].implemented_now, false);
+});
+
+test("VO-7BO-VALIDATE: no-op runtime stub review rejects implementation", async () => {
+  const { validateNoopRuntimeStubReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/noop-runtime-stub-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_items: [{ ...example.review_items[0], implemented_now: true }] };
+  const validation = validateNoopRuntimeStubReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BP-SCHEMA: no-op runtime stub safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/noop-runtime-stub-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/noop-runtime-stub-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7BP-VALIDATE: no-op runtime stub safe report rejects raw material", async () => {
+  const { validateNoopRuntimeStubSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/noop-runtime-stub-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateNoopRuntimeStubSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});
