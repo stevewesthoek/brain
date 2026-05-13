@@ -1764,3 +1764,11 @@ Status: complete.
 VO-7BH adds a runtime implementation final boundary artifact, VO-7BI adds a final boundary review artifact, and VO-7BJ adds a final boundary safe report artifact. These phases remain final-boundary/review/report artifacts only.
 
 They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+## Phase 5AW — Real Runtime Stub Boundary, Contract, and Dry-Run Report (VO-7BK/VO-7BL/VO-7BM)
+
+Status: complete.
+
+VO-7BK adds a real runtime stub boundary request, VO-7BL adds a real runtime stub boundary contract, and VO-7BM adds a real runtime stub boundary dry-run report. These phases remain stub-boundary/contract/dry-run report artifacts only.
+
+They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "real-runtime-stub-boundary-dry-run-report.schema.json",
+  "title": "Real Runtime Stub Boundary Dry-Run Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "real_runtime_stub_boundary_dry_run_report_id", "real_runtime_stub_boundary_contract_id", "real_runtime_stub_boundary_request_id", "render_plan_id", "project_id", "platform", "created_at", "dry_run_report_state", "required_artifacts", "dry_run_scope", "dry_run_results", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "real_runtime_stub_boundary_dry_run_report_id": { "type": "string", "minLength": 1 },
+    "real_runtime_stub_boundary_contract_id": { "type": "string", "minLength": 1 },
+    "real_runtime_stub_boundary_request_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "dry_run_report_state": { "type": "string", "enum": ["draft", "passed", "failed", "blocked", "approved_for_future_noop_runtime_stub", "revoked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["real_runtime_stub_boundary_contract_validated", "real_runtime_stub_boundary_request_validated"], "properties": { "real_runtime_stub_boundary_contract_validated": { "type": "boolean", "const": true }, "real_runtime_stub_boundary_request_validated": { "type": "boolean", "const": true } } },
+    "dry_run_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "dry_run_results": { "type": "array", "minItems": 5, "items": { "type": "object", "additionalProperties": false, "required": ["result_id", "result_kind", "result_state", "safe_summary", "implemented_now", "runtime_executed_now"], "properties": { "result_id": { "type": "string" }, "result_kind": { "type": "string" }, "result_state": { "type": "string", "enum": ["passed", "failed", "blocked", "deferred"] }, "safe_summary": { "type": "string" }, "implemented_now": { "type": "boolean", "const": false }, "runtime_executed_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_real_runtime_stub_boundary_contract_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createRealRuntimeStubBoundaryDryRunReport", "revokeRealRuntimeStubBoundaryDryRunReport"] }, "source_real_runtime_stub_boundary_contract_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

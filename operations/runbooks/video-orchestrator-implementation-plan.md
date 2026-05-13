@@ -3710,3 +3710,9 @@ These artifacts prepare and review a future runtime implementation candidate wit
 VO-7BH adds `controlled-runtime-implementation-final-boundary`, VO-7BI adds `controlled-runtime-implementation-final-boundary-review`, and VO-7BJ adds `controlled-runtime-implementation-final-boundary-safe-report`.
 
 These artifacts complete the final boundary layer before any future real runtime stub boundary. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7BK/VO-7BL/VO-7BM — Real Runtime Stub Boundary, Contract, and Dry-Run Report
+
+VO-7BK adds `real-runtime-stub-boundary-request`, VO-7BL adds `real-runtime-stub-boundary-contract`, and VO-7BM adds `real-runtime-stub-boundary-dry-run-report`.
+
+These artifacts create the real runtime stub boundary while preserving no-op behavior. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

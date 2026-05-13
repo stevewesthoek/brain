@@ -24806,3 +24806,60 @@ test("VO-7BJ-VALIDATE: runtime implementation final boundary safe report rejects
   const validation = validateControlledRuntimeImplementationFinalBoundarySafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7BK/VO-7BL/VO-7BM: Real Runtime Stub Boundary ─────────────────────
+
+test("VO-7BK-SCHEMA: real runtime stub boundary request schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-runtime-stub-boundary-request.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-runtime-stub-boundary-request.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.stub_controls.runtime_stub_only, true);
+});
+
+test("VO-7BK-VALIDATE: real runtime stub boundary request rejects unsafe enablement", async () => {
+  const { validateRealRuntimeStubBoundaryRequest } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-runtime-stub-boundary-request.example.json"), "utf8"));
+  const unsafe = { ...example, request_scope: { ...example.request_scope, upload_execution_enabled_now: true } };
+  const validation = validateRealRuntimeStubBoundaryRequest(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BL-SCHEMA: real runtime stub boundary contract schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-runtime-stub-boundary-contract.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-runtime-stub-boundary-contract.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.stub_contract_items[0].runtime_executed_now, false);
+});
+
+test("VO-7BL-VALIDATE: real runtime stub boundary contract rejects runtime execution", async () => {
+  const { validateRealRuntimeStubBoundaryContract } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-runtime-stub-boundary-contract.example.json"), "utf8"));
+  const unsafe = { ...example, stub_contract_items: [{ ...example.stub_contract_items[0], runtime_executed_now: true }] };
+  const validation = validateRealRuntimeStubBoundaryContract(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BM-SCHEMA: real runtime stub boundary dry-run report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-runtime-stub-boundary-dry-run-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-runtime-stub-boundary-dry-run-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.dry_run_results[0].implemented_now, false);
+});
+
+test("VO-7BM-VALIDATE: real runtime stub boundary dry-run report rejects implementation", async () => {
+  const { validateRealRuntimeStubBoundaryDryRunReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-runtime-stub-boundary-dry-run-report.example.json"), "utf8"));
+  const unsafe = { ...example, dry_run_results: [{ ...example.dry_run_results[0], implemented_now: true }] };
+  const validation = validateRealRuntimeStubBoundaryDryRunReport(unsafe);
+  assert.equal(validation.ok, false);
+});

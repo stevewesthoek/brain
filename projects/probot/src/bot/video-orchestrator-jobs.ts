@@ -20523,3 +20523,180 @@ export function createControlledRuntimeImplementationFinalBoundarySafeReport(inp
     provenance: { generated_by: "createControlledRuntimeImplementationFinalBoundarySafeReport", source_controlled_runtime_implementation_final_boundary_review_id: input.review.controlled_runtime_implementation_final_boundary_review_id, source_render_plan_id: input.finalBoundary.render_plan_id },
   };
 }
+
+
+// ─── VO-7BK/VO-7BL/VO-7BM: Real Runtime Stub Boundary ─────────────────────
+
+export interface RealRuntimeStubBoundaryRequest {
+  schema_version: "1.0";
+  real_runtime_stub_boundary_request_id: string;
+  controlled_runtime_implementation_final_boundary_safe_report_id: string;
+  controlled_runtime_implementation_final_boundary_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  stub_boundary_request_state: "draft" | "ready_for_operator_review" | "approved_for_future_stub_boundary_contract" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  request_scope: Record<string, unknown>;
+  stub_controls: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealRuntimeStubBoundaryContract {
+  schema_version: "1.0";
+  real_runtime_stub_boundary_contract_id: string;
+  real_runtime_stub_boundary_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  stub_contract_state: "draft" | "ready_for_operator_review" | "approved_for_future_stub_boundary_dry_run_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  contract_scope: Record<string, unknown>;
+  stub_contract_controls: Record<string, unknown>;
+  stub_contract_items: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealRuntimeStubBoundaryDryRunReport {
+  schema_version: "1.0";
+  real_runtime_stub_boundary_dry_run_report_id: string;
+  real_runtime_stub_boundary_contract_id: string;
+  real_runtime_stub_boundary_request_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  dry_run_report_state: "draft" | "passed" | "failed" | "blocked" | "approved_for_future_noop_runtime_stub" | "revoked";
+  required_artifacts: Record<string, true>;
+  dry_run_scope: Record<string, unknown>;
+  dry_run_results: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRealRuntimeStubBoundaryLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.stub_controls || artifact.stub_contract_controls) as Record<string, unknown> | undefined;
+    if (controls && (controls.real_upload_still_blocked !== true || controls.runtime_stub_only !== true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Real runtime stub boundary must remain stub-only and blocked");
+    }
+    if (controls && (controls.raw_payload_storage_allowed === true || controls.raw_response_storage_allowed === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Real runtime stub boundary raw storage controls are unsafe");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 5) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.implemented_now !== false || record.runtime_executed_now !== false) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} attempted implementation or runtime execution now`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateRealRuntimeStubBoundaryRequest(request: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRealRuntimeStubBoundaryLayer(request, "request_scope");
+}
+
+export function validateRealRuntimeStubBoundaryContract(contract: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRealRuntimeStubBoundaryLayer(contract, "contract_scope", "stub_contract_items");
+}
+
+export function validateRealRuntimeStubBoundaryDryRunReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRealRuntimeStubBoundaryLayer(report, "dry_run_scope", "dry_run_results");
+}
+
+export function createRealRuntimeStubBoundaryRequest(input: { finalBoundarySafeReport: ControlledRuntimeImplementationFinalBoundarySafeReport; finalBoundary: ControlledRuntimeImplementationFinalBoundary; decision?: "draft" | "approved_for_future_stub_boundary_contract" | "rejected"; dryRun: true }): RealRuntimeStubBoundaryRequest {
+  if (input.dryRun !== true) throw new Error("VO-7BK real runtime stub boundary request requires dryRun=true");
+  const reportValidation = validateControlledRuntimeImplementationFinalBoundarySafeReport(input.finalBoundarySafeReport);
+  if (!reportValidation.ok) throw new Error("Final boundary safe report validation failed");
+  if (input.finalBoundarySafeReport.safe_report_state !== "approved_for_future_real_runtime_stub_boundary") throw new Error("Stub boundary request requires approved final boundary safe report");
+  if (input.finalBoundarySafeReport.controlled_runtime_implementation_final_boundary_id !== input.finalBoundary.controlled_runtime_implementation_final_boundary_id) throw new Error("Mismatched final boundary safe report and final boundary");
+  const approved = input.decision === "approved_for_future_stub_boundary_contract";
+  return {
+    schema_version: "1.0",
+    real_runtime_stub_boundary_request_id: `real-runtime-stub-boundary-request-${crypto.randomUUID()}`,
+    controlled_runtime_implementation_final_boundary_safe_report_id: input.finalBoundarySafeReport.controlled_runtime_implementation_final_boundary_safe_report_id,
+    controlled_runtime_implementation_final_boundary_id: input.finalBoundary.controlled_runtime_implementation_final_boundary_id,
+    render_plan_id: input.finalBoundary.render_plan_id,
+    project_id: input.finalBoundary.project_id,
+    platform: input.finalBoundary.platform,
+    created_at: new Date().toISOString(),
+    stub_boundary_request_state: approved ? "approved_for_future_stub_boundary_contract" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_implementation_final_boundary_safe_report_validated: true, controlled_runtime_implementation_final_boundary_validated: true },
+    request_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    stub_controls: { stub_boundary_request_only: true, runtime_stub_only: true, no_op_runtime_required: true, single_upload_limit: 1, operator_kill_switch_required: true, real_upload_still_blocked: true },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealRuntimeStubBoundaryRequest", source_controlled_runtime_implementation_final_boundary_safe_report_id: input.finalBoundarySafeReport.controlled_runtime_implementation_final_boundary_safe_report_id, source_render_plan_id: input.finalBoundary.render_plan_id },
+  };
+}
+
+export function createRealRuntimeStubBoundaryContract(input: { stubRequest: RealRuntimeStubBoundaryRequest; decision?: "draft" | "approved_for_future_stub_boundary_dry_run_report" | "rejected"; dryRun: true }): RealRuntimeStubBoundaryContract {
+  if (input.dryRun !== true) throw new Error("VO-7BL real runtime stub boundary contract requires dryRun=true");
+  const requestValidation = validateRealRuntimeStubBoundaryRequest(input.stubRequest);
+  if (!requestValidation.ok) throw new Error("Real runtime stub boundary request validation failed");
+  if (input.stubRequest.stub_boundary_request_state !== "approved_for_future_stub_boundary_contract") throw new Error("Stub contract requires approved stub boundary request");
+  const approved = input.decision === "approved_for_future_stub_boundary_dry_run_report";
+  const kinds = ["kill_switch", "single_upload_limit", "credential_boundary", "network_boundary", "media_boundary"];
+  return {
+    schema_version: "1.0",
+    real_runtime_stub_boundary_contract_id: `real-runtime-stub-boundary-contract-${crypto.randomUUID()}`,
+    real_runtime_stub_boundary_request_id: input.stubRequest.real_runtime_stub_boundary_request_id,
+    render_plan_id: input.stubRequest.render_plan_id,
+    project_id: input.stubRequest.project_id,
+    platform: input.stubRequest.platform,
+    created_at: new Date().toISOString(),
+    stub_contract_state: approved ? "approved_for_future_stub_boundary_dry_run_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { real_runtime_stub_boundary_request_validated: true },
+    contract_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    stub_contract_controls: { contract_only: true, runtime_stub_only: true, no_op_runtime_required: true, single_upload_limit: 1, operator_kill_switch_required: true, raw_payload_storage_allowed: false, raw_response_storage_allowed: false, real_upload_still_blocked: true },
+    stub_contract_items: kinds.map((kind) => ({ item_id: `stub-contract-${kind}`, item_kind: kind, safe_summary: "Real runtime stub boundary contract only.", implemented_now: false, runtime_executed_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealRuntimeStubBoundaryContract", source_real_runtime_stub_boundary_request_id: input.stubRequest.real_runtime_stub_boundary_request_id, source_render_plan_id: input.stubRequest.render_plan_id },
+  };
+}
+
+export function createRealRuntimeStubBoundaryDryRunReport(input: { stubContract: RealRuntimeStubBoundaryContract; decision?: "draft" | "approved_for_future_noop_runtime_stub" | "failed" | "blocked"; dryRun: true }): RealRuntimeStubBoundaryDryRunReport {
+  if (input.dryRun !== true) throw new Error("VO-7BM real runtime stub boundary dry-run report requires dryRun=true");
+  const contractValidation = validateRealRuntimeStubBoundaryContract(input.stubContract);
+  if (!contractValidation.ok) throw new Error("Real runtime stub boundary contract validation failed");
+  if (input.stubContract.stub_contract_state !== "approved_for_future_stub_boundary_dry_run_report") throw new Error("Stub dry-run report requires approved stub contract");
+  const approved = input.decision === "approved_for_future_noop_runtime_stub";
+  return {
+    schema_version: "1.0",
+    real_runtime_stub_boundary_dry_run_report_id: `real-runtime-stub-boundary-dry-run-report-${crypto.randomUUID()}`,
+    real_runtime_stub_boundary_contract_id: input.stubContract.real_runtime_stub_boundary_contract_id,
+    real_runtime_stub_boundary_request_id: input.stubContract.real_runtime_stub_boundary_request_id,
+    render_plan_id: input.stubContract.render_plan_id,
+    project_id: input.stubContract.project_id,
+    platform: input.stubContract.platform,
+    created_at: new Date().toISOString(),
+    dry_run_report_state: approved ? "approved_for_future_noop_runtime_stub" : input.decision === "failed" ? "failed" : input.decision === "blocked" ? "blocked" : "draft",
+    required_artifacts: { real_runtime_stub_boundary_contract_validated: true, real_runtime_stub_boundary_request_validated: true },
+    dry_run_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    dry_run_results: input.stubContract.stub_contract_items.map((item) => ({ result_id: `stub-dry-run-${String(item.item_kind)}`, result_kind: item.item_kind, result_state: approved ? "passed" : "deferred", safe_summary: "Real runtime stub boundary dry-run report only.", implemented_now: false, runtime_executed_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealRuntimeStubBoundaryDryRunReport", source_real_runtime_stub_boundary_contract_id: input.stubContract.real_runtime_stub_boundary_contract_id, source_render_plan_id: input.stubContract.render_plan_id },
+  };
+}
