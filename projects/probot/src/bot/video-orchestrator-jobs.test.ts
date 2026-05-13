@@ -25376,3 +25376,60 @@ test("VO-7CN-VALIDATE: runtime stub sequence final handoff rejects raw material"
   const validation = validateRuntimeStubSequenceFinalHandoff(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7CO/VO-7CP/VO-7CQ: Runtime Stub Operator Handoff Consolidation ─────
+
+test("VO-7CO-SCHEMA: runtime stub sequence index schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-sequence-index.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-sequence-index.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.indexed_artifacts[0].contains_runtime_callable, false);
+});
+
+test("VO-7CO-VALIDATE: runtime stub sequence index rejects runtime callable", async () => {
+  const { validateRuntimeStubSequenceIndex } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-sequence-index.example.json"), "utf8"));
+  const unsafe = { ...example, indexed_artifacts: [{ ...example.indexed_artifacts[0], contains_runtime_callable: true }] };
+  const validation = validateRuntimeStubSequenceIndex(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CP-SCHEMA: runtime stub operator handoff checklist schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-operator-handoff-checklist.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-operator-handoff-checklist.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.checklist_items[0].operator_action_required_now, false);
+});
+
+test("VO-7CP-VALIDATE: runtime stub operator checklist rejects operator action now", async () => {
+  const { validateRuntimeStubOperatorHandoffChecklist } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-operator-handoff-checklist.example.json"), "utf8"));
+  const unsafe = { ...example, checklist_items: [{ ...example.checklist_items[0], operator_action_required_now: true }] };
+  const validation = validateRuntimeStubOperatorHandoffChecklist(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CQ-SCHEMA: runtime stub next phase decision record schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-next-phase-decision-record.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-next-phase-decision-record.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.selected_decision.runtime_enabled_now, false);
+});
+
+test("VO-7CQ-VALIDATE: runtime stub next phase decision rejects runtime enablement", async () => {
+  const { validateRuntimeStubNextPhaseDecisionRecord } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-next-phase-decision-record.example.json"), "utf8"));
+  const unsafe = { ...example, selected_decision: { ...example.selected_decision, runtime_enabled_now: true } };
+  const validation = validateRuntimeStubNextPhaseDecisionRecord(unsafe);
+  assert.equal(validation.ok, false);
+});

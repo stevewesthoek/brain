@@ -22411,3 +22411,206 @@ export function createRuntimeStubSequenceFinalHandoff(input: { regressionReport:
     provenance: { generated_by: "createRuntimeStubSequenceFinalHandoff", source_runtime_stub_sequence_regression_report_id: input.regressionReport.runtime_stub_sequence_regression_report_id, source_render_plan_id: input.integrityAudit.render_plan_id },
   };
 }
+
+
+// ─── VO-7CO/VO-7CP/VO-7CQ: Runtime Stub Operator Handoff Consolidation ─────
+
+export interface RuntimeStubSequenceIndex {
+  schema_version: "1.0";
+  runtime_stub_sequence_index_id: string;
+  runtime_stub_sequence_final_handoff_id: string;
+  runtime_stub_archive_final_summary_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  index_state: "draft" | "complete" | "approved_for_future_operator_handoff_checklist" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  index_scope: Record<string, unknown>;
+  index_controls: Record<string, unknown>;
+  indexed_artifacts: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubOperatorHandoffChecklist {
+  schema_version: "1.0";
+  runtime_stub_operator_handoff_checklist_id: string;
+  runtime_stub_sequence_index_id: string;
+  runtime_stub_sequence_final_handoff_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  checklist_state: "draft" | "ready_for_operator_review" | "approved_for_future_next_phase_decision_record" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  checklist_scope: Record<string, unknown>;
+  checklist_controls: Record<string, unknown>;
+  checklist_items: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubNextPhaseDecisionRecord {
+  schema_version: "1.0";
+  runtime_stub_next_phase_decision_record_id: string;
+  runtime_stub_operator_handoff_checklist_id: string;
+  runtime_stub_sequence_index_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  decision_state: "draft" | "recorded" | "deferred" | "approved_for_future_explicit_runtime_activation_design" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  decision_scope: Record<string, unknown>;
+  decision_controls: Record<string, unknown>;
+  decision_options: Array<Record<string, unknown>>;
+  selected_decision: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeStubOperatorHandoffLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.index_controls || artifact.checklist_controls || artifact.decision_controls) as Record<string, unknown> | undefined;
+    if (controls && controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub operator handoff must keep real upload blocked");
+    }
+    if (controls && (controls.contains_runtime_callable === true || controls.contains_raw_payload === true || controls.contains_raw_response === true || controls.contains_secret_material === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub operator handoff contains unsafe material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 3) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_secret_material === true || record.runtime_executed_now === true || record.ready_for_real_upload_now === true || record.operator_action_required_now === true || record.would_enable_runtime_now === true || record.would_enable_real_upload_now === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe operator-handoff/runtime/ready material`);
+        }
+      }
+    }
+    const selectedDecision = artifact.selected_decision as Record<string, unknown> | undefined;
+    if (selectedDecision && (selectedDecision.runtime_enabled_now === true || selectedDecision.ready_for_real_upload_now === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Selected decision cannot enable runtime or real upload now");
+    }
+  }
+  return result;
+}
+
+export function validateRuntimeStubSequenceIndex(index: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubOperatorHandoffLayer(index, "index_scope", "indexed_artifacts");
+}
+
+export function validateRuntimeStubOperatorHandoffChecklist(checklist: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubOperatorHandoffLayer(checklist, "checklist_scope", "checklist_items");
+}
+
+export function validateRuntimeStubNextPhaseDecisionRecord(record: unknown): RealUploadEnablementArtifactValidationResult {
+  const result = validateRuntimeStubOperatorHandoffLayer(record, "decision_scope", "decision_options");
+  if (result.ok) {
+    const decision = (record as Record<string, unknown>).selected_decision as Record<string, unknown> | undefined;
+    if (!decision || decision.runtime_enabled_now !== false || decision.ready_for_real_upload_now !== false) {
+      result.ok = false;
+      result.blocking_reasons.push("Next phase decision record selected decision is unsafe");
+    }
+  }
+  return result;
+}
+
+export function createRuntimeStubSequenceIndex(input: { finalHandoff: RuntimeStubSequenceFinalHandoff; archiveFinalSummary: RuntimeStubArchiveFinalSummary; decision?: "draft" | "approved_for_future_operator_handoff_checklist" | "rejected"; dryRun: true }): RuntimeStubSequenceIndex {
+  if (input.dryRun !== true) throw new Error("VO-7CO runtime stub sequence index requires dryRun=true");
+  const handoffValidation = validateRuntimeStubSequenceFinalHandoff(input.finalHandoff);
+  if (!handoffValidation.ok) throw new Error("Runtime stub sequence final handoff validation failed");
+  if (input.finalHandoff.handoff_state !== "runtime_stub_sequence_handed_off") throw new Error("Runtime stub sequence index requires handed off final handoff");
+  if (input.finalHandoff.runtime_stub_archive_final_summary_id !== input.archiveFinalSummary.runtime_stub_archive_final_summary_id) throw new Error("Mismatched final handoff and archive final summary");
+  const approved = input.decision === "approved_for_future_operator_handoff_checklist";
+  const artifacts = ["noop-runtime-stub", "runtime-stub-store", "runtime-stub-manifest", "runtime-stub-release-candidate", "runtime-stub-archive-final-summary", "runtime-stub-sequence-final-handoff"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_sequence_index_id: `runtime-stub-sequence-index-${crypto.randomUUID()}`,
+    runtime_stub_sequence_final_handoff_id: input.finalHandoff.runtime_stub_sequence_final_handoff_id,
+    runtime_stub_archive_final_summary_id: input.archiveFinalSummary.runtime_stub_archive_final_summary_id,
+    render_plan_id: input.finalHandoff.render_plan_id,
+    project_id: input.finalHandoff.project_id,
+    platform: input.finalHandoff.platform,
+    created_at: new Date().toISOString(),
+    index_state: approved ? "approved_for_future_operator_handoff_checklist" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_stub_sequence_final_handoff_validated: true, runtime_stub_archive_final_summary_validated: true },
+    index_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    index_controls: { index_only: true, operator_summary_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    indexed_artifacts: artifacts.map((artifact) => ({ artifact_key: artifact, artifact_kind: artifact.includes("summary") ? "final_summary" : artifact.includes("handoff") ? "handoff" : artifact.includes("candidate") ? "release_candidate" : "artifact", safe_summary: "Runtime stub sequence index summary only.", contains_runtime_callable: false, contains_raw_payload: false, contains_secret_material: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubSequenceIndex", source_runtime_stub_sequence_final_handoff_id: input.finalHandoff.runtime_stub_sequence_final_handoff_id, source_render_plan_id: input.finalHandoff.render_plan_id },
+  };
+}
+
+export function createRuntimeStubOperatorHandoffChecklist(input: { sequenceIndex: RuntimeStubSequenceIndex; finalHandoff: RuntimeStubSequenceFinalHandoff; decision?: "draft" | "approved_for_future_next_phase_decision_record" | "rejected"; dryRun: true }): RuntimeStubOperatorHandoffChecklist {
+  if (input.dryRun !== true) throw new Error("VO-7CP runtime stub operator handoff checklist requires dryRun=true");
+  const indexValidation = validateRuntimeStubSequenceIndex(input.sequenceIndex);
+  if (!indexValidation.ok) throw new Error("Runtime stub sequence index validation failed");
+  if (input.sequenceIndex.index_state !== "approved_for_future_operator_handoff_checklist") throw new Error("Operator handoff checklist requires approved sequence index");
+  if (input.sequenceIndex.runtime_stub_sequence_final_handoff_id !== input.finalHandoff.runtime_stub_sequence_final_handoff_id) throw new Error("Mismatched sequence index and final handoff");
+  const approved = input.decision === "approved_for_future_next_phase_decision_record";
+  const items = ["index", "final_handoff", "boundaries", "real_upload", "next_phase"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_operator_handoff_checklist_id: `runtime-stub-operator-handoff-checklist-${crypto.randomUUID()}`,
+    runtime_stub_sequence_index_id: input.sequenceIndex.runtime_stub_sequence_index_id,
+    runtime_stub_sequence_final_handoff_id: input.finalHandoff.runtime_stub_sequence_final_handoff_id,
+    render_plan_id: input.finalHandoff.render_plan_id,
+    project_id: input.finalHandoff.project_id,
+    platform: input.finalHandoff.platform,
+    created_at: new Date().toISOString(),
+    checklist_state: approved ? "approved_for_future_next_phase_decision_record" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { runtime_stub_sequence_index_validated: true, runtime_stub_sequence_final_handoff_validated: true },
+    checklist_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    checklist_controls: { checklist_only: true, operator_handoff_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    checklist_items: items.map((item) => ({ item_id: `check-${item}`, item_kind: item, item_state: "checked", safe_summary: "Runtime stub operator handoff checklist only.", operator_action_required_now: false, runtime_executed_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubOperatorHandoffChecklist", source_runtime_stub_sequence_index_id: input.sequenceIndex.runtime_stub_sequence_index_id, source_render_plan_id: input.finalHandoff.render_plan_id },
+  };
+}
+
+export function createRuntimeStubNextPhaseDecisionRecord(input: { checklist: RuntimeStubOperatorHandoffChecklist; sequenceIndex: RuntimeStubSequenceIndex; decision?: "defer" | "document_future_activation_design" | "stop_runtime_stub_track" | "blocked"; dryRun: true }): RuntimeStubNextPhaseDecisionRecord {
+  if (input.dryRun !== true) throw new Error("VO-7CQ runtime stub next phase decision record requires dryRun=true");
+  const checklistValidation = validateRuntimeStubOperatorHandoffChecklist(input.checklist);
+  if (!checklistValidation.ok) throw new Error("Runtime stub operator handoff checklist validation failed");
+  if (input.checklist.checklist_state !== "approved_for_future_next_phase_decision_record") throw new Error("Next phase decision record requires approved operator handoff checklist");
+  if (input.checklist.runtime_stub_sequence_index_id !== input.sequenceIndex.runtime_stub_sequence_index_id) throw new Error("Mismatched checklist and sequence index");
+  const decision = input.decision ?? "document_future_activation_design";
+  const approved = decision === "document_future_activation_design";
+  const options = ["defer", "document_future_activation_design", "stop_runtime_stub_track"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_next_phase_decision_record_id: `runtime-stub-next-phase-decision-record-${crypto.randomUUID()}`,
+    runtime_stub_operator_handoff_checklist_id: input.checklist.runtime_stub_operator_handoff_checklist_id,
+    runtime_stub_sequence_index_id: input.sequenceIndex.runtime_stub_sequence_index_id,
+    render_plan_id: input.checklist.render_plan_id,
+    project_id: input.checklist.project_id,
+    platform: input.checklist.platform,
+    created_at: new Date().toISOString(),
+    decision_state: approved ? "approved_for_future_explicit_runtime_activation_design" : decision === "defer" ? "deferred" : decision === "blocked" ? "blocked" : "recorded",
+    required_artifacts: { runtime_stub_operator_handoff_checklist_validated: true, runtime_stub_sequence_index_validated: true },
+    decision_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    decision_controls: { decision_record_only: true, future_phase_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    decision_options: options.map((option) => ({ option_id: `decision-${option}`, option_kind: option, safe_summary: "Runtime stub next phase decision option only.", would_enable_runtime_now: false, would_enable_real_upload_now: false })),
+    selected_decision: { decision_id: `selected-${decision}`, decision_kind: decision, safe_summary: "Runtime stub next phase decision record only. Runtime and real upload remain disabled now.", runtime_enabled_now: false, ready_for_real_upload_now: false },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubNextPhaseDecisionRecord", source_runtime_stub_operator_handoff_checklist_id: input.checklist.runtime_stub_operator_handoff_checklist_id, source_render_plan_id: input.checklist.render_plan_id },
+  };
+}

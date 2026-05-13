@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "runtime_stub_sequence_index_id": "runtime-stub-sequence-index-001",
+  "runtime_stub_sequence_final_handoff_id": "runtime-stub-sequence-final-handoff-001",
+  "runtime_stub_archive_final_summary_id": "runtime-stub-archive-final-summary-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "index_state": "approved_for_future_operator_handoff_checklist",
+  "required_artifacts": { "runtime_stub_sequence_final_handoff_validated": true, "runtime_stub_archive_final_summary_validated": true },
+  "index_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "index_controls": { "index_only": true, "operator_summary_only": true, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_raw_response": false, "contains_secret_material": false, "runtime_invocation_disabled": true, "real_upload_still_blocked": true },
+  "indexed_artifacts": [
+    { "artifact_key": "noop-runtime-stub", "artifact_kind": "stub", "safe_summary": "No-op runtime stub summarized only.", "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false, "ready_for_real_upload_now": false },
+    { "artifact_key": "runtime-stub-store", "artifact_kind": "store", "safe_summary": "Runtime stub store summarized only.", "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false, "ready_for_real_upload_now": false },
+    { "artifact_key": "runtime-stub-manifest", "artifact_kind": "manifest", "safe_summary": "Manifest summarized only.", "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false, "ready_for_real_upload_now": false },
+    { "artifact_key": "runtime-stub-release-candidate", "artifact_kind": "release_candidate", "safe_summary": "Release candidate summarized only.", "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false, "ready_for_real_upload_now": false },
+    { "artifact_key": "runtime-stub-archive-final-summary", "artifact_kind": "final_summary", "safe_summary": "Archive final summary summarized only.", "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false, "ready_for_real_upload_now": false },
+    { "artifact_key": "runtime-stub-sequence-final-handoff", "artifact_kind": "handoff", "safe_summary": "Final handoff summarized only.", "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false, "ready_for_real_upload_now": false }
+  ],
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createRuntimeStubSequenceIndex", "source_runtime_stub_sequence_final_handoff_id": "runtime-stub-sequence-final-handoff-001", "source_render_plan_id": "render-plan-001" }
+}

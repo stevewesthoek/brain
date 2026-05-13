@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "runtime_stub_next_phase_decision_record_id": "runtime-stub-next-phase-decision-record-001",
+  "runtime_stub_operator_handoff_checklist_id": "runtime-stub-operator-handoff-checklist-001",
+  "runtime_stub_sequence_index_id": "runtime-stub-sequence-index-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "decision_state": "approved_for_future_explicit_runtime_activation_design",
+  "required_artifacts": { "runtime_stub_operator_handoff_checklist_validated": true, "runtime_stub_sequence_index_validated": true },
+  "decision_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "decision_controls": { "decision_record_only": true, "future_phase_only": true, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_raw_response": false, "contains_secret_material": false, "runtime_invocation_disabled": true, "real_upload_still_blocked": true },
+  "decision_options": [
+    { "option_id": "decision-defer", "option_kind": "defer", "safe_summary": "Defer future runtime activation design.", "would_enable_runtime_now": false, "would_enable_real_upload_now": false },
+    { "option_id": "decision-document-future-design", "option_kind": "document_future_activation_design", "safe_summary": "Document a future explicit runtime activation design only.", "would_enable_runtime_now": false, "would_enable_real_upload_now": false },
+    { "option_id": "decision-stop-track", "option_kind": "stop_runtime_stub_track", "safe_summary": "Stop the runtime stub track after handoff.", "would_enable_runtime_now": false, "would_enable_real_upload_now": false }
+  ],
+  "selected_decision": { "decision_id": "selected-document-future-design", "decision_kind": "document_future_activation_design", "safe_summary": "Proceed only to a future explicit activation design artifact. Do not enable runtime or real upload now.", "runtime_enabled_now": false, "ready_for_real_upload_now": false },
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createRuntimeStubNextPhaseDecisionRecord", "source_runtime_stub_operator_handoff_checklist_id": "runtime-stub-operator-handoff-checklist-001", "source_render_plan_id": "render-plan-001" }
+}

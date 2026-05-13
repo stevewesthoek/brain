@@ -3770,3 +3770,9 @@ These artifacts archive and summarize the runtime stub sequence without enabling
 VO-7CL adds `runtime-stub-sequence-integrity-audit`, VO-7CM adds `runtime-stub-sequence-regression-report`, and VO-7CN adds `runtime-stub-sequence-final-handoff`.
 
 These artifacts harden and hand off the completed runtime stub sequence without enabling runtime behavior. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7CO/VO-7CP/VO-7CQ — Runtime Stub Sequence Index, Operator Handoff Checklist, and Next-Phase Decision Record
+
+VO-7CO adds `runtime-stub-sequence-index`, VO-7CP adds `runtime-stub-operator-handoff-checklist`, and VO-7CQ adds `runtime-stub-next-phase-decision-record`.
+
+These artifacts consolidate operator-facing handoff state after the runtime stub sequence. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

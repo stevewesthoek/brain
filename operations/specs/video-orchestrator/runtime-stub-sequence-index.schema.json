@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "runtime-stub-sequence-index.schema.json",
+  "title": "Runtime Stub Sequence Index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "runtime_stub_sequence_index_id", "runtime_stub_sequence_final_handoff_id", "runtime_stub_archive_final_summary_id", "render_plan_id", "project_id", "platform", "created_at", "index_state", "required_artifacts", "index_scope", "index_controls", "indexed_artifacts", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "runtime_stub_sequence_index_id": { "type": "string", "minLength": 1 },
+    "runtime_stub_sequence_final_handoff_id": { "type": "string", "minLength": 1 },
+    "runtime_stub_archive_final_summary_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "index_state": { "type": "string", "enum": ["draft", "complete", "approved_for_future_operator_handoff_checklist", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["runtime_stub_sequence_final_handoff_validated", "runtime_stub_archive_final_summary_validated"], "properties": { "runtime_stub_sequence_final_handoff_validated": { "type": "boolean", "const": true }, "runtime_stub_archive_final_summary_validated": { "type": "boolean", "const": true } } },
+    "index_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "index_controls": { "type": "object", "additionalProperties": false, "required": ["index_only", "operator_summary_only", "contains_runtime_callable", "contains_raw_payload", "contains_raw_response", "contains_secret_material", "runtime_invocation_disabled", "real_upload_still_blocked"], "properties": { "index_only": { "type": "boolean", "const": true }, "operator_summary_only": { "type": "boolean", "const": true }, "contains_runtime_callable": { "type": "boolean", "const": false }, "contains_raw_payload": { "type": "boolean", "const": false }, "contains_raw_response": { "type": "boolean", "const": false }, "contains_secret_material": { "type": "boolean", "const": false }, "runtime_invocation_disabled": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "indexed_artifacts": { "type": "array", "minItems": 6, "items": { "type": "object", "additionalProperties": false, "required": ["artifact_key", "artifact_kind", "safe_summary", "contains_runtime_callable", "contains_raw_payload", "contains_secret_material", "ready_for_real_upload_now"], "properties": { "artifact_key": { "type": "string" }, "artifact_kind": { "type": "string" }, "safe_summary": { "type": "string" }, "contains_runtime_callable": { "type": "boolean", "const": false }, "contains_raw_payload": { "type": "boolean", "const": false }, "contains_secret_material": { "type": "boolean", "const": false }, "ready_for_real_upload_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_runtime_stub_sequence_final_handoff_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createRuntimeStubSequenceIndex", "revokeRuntimeStubSequenceIndex"] }, "source_runtime_stub_sequence_final_handoff_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

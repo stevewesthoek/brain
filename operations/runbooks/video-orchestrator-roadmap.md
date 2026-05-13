@@ -1844,3 +1844,11 @@ Status: complete.
 VO-7CL adds a runtime stub sequence integrity audit, VO-7CM adds a runtime stub sequence regression report, and VO-7CN adds a runtime stub sequence final handoff. These phases remain audit/regression/handoff artifacts only.
 
 They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+## Phase 5BG — Runtime Stub Sequence Index, Operator Handoff Checklist, and Next-Phase Decision Record (VO-7CO/VO-7CP/VO-7CQ)
+
+Status: complete.
+
+VO-7CO adds a runtime stub sequence index, VO-7CP adds an operator handoff checklist, and VO-7CQ adds a next-phase decision record. These phases remain index/checklist/decision-record artifacts only.
+
+They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
