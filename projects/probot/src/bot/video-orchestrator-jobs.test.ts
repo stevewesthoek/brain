@@ -24920,3 +24920,60 @@ test("VO-7BP-VALIDATE: no-op runtime stub safe report rejects raw material", asy
   const validation = validateNoopRuntimeStubSafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7BQ/VO-7BR/VO-7BS: Runtime Stub Store/Retrieval Boundary ───────────
+
+test("VO-7BQ-SCHEMA: runtime stub store schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-store.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-store.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.store_controls.stores_runtime_callable, false);
+});
+
+test("VO-7BQ-VALIDATE: runtime stub store rejects runtime callable storage", async () => {
+  const { validateRuntimeStubStore } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-store.example.json"), "utf8"));
+  const unsafe = { ...example, store_controls: { ...example.store_controls, stores_runtime_callable: true } };
+  const validation = validateRuntimeStubStore(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BR-SCHEMA: runtime stub retrieval contract schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-retrieval-contract.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-retrieval-contract.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.retrieval_controls.runtime_callable_retrieved, false);
+});
+
+test("VO-7BR-VALIDATE: runtime stub retrieval contract rejects runtime retrieval", async () => {
+  const { validateRuntimeStubRetrievalContract } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-retrieval-contract.example.json"), "utf8"));
+  const unsafe = { ...example, retrieval_controls: { ...example.retrieval_controls, runtime_callable_retrieved: true } };
+  const validation = validateRuntimeStubRetrievalContract(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BS-SCHEMA: runtime stub store/retrieval safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-store-retrieval-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-store-retrieval-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_runtime_callable, false);
+});
+
+test("VO-7BS-VALIDATE: runtime stub store/retrieval safe report rejects raw material", async () => {
+  const { validateRuntimeStubStoreRetrievalSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-store-retrieval-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateRuntimeStubStoreRetrievalSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});

@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "runtime_stub_retrieval_contract_id": "runtime-stub-retrieval-contract-001",
+  "runtime_stub_store_id": "runtime-stub-store-001",
+  "noop_runtime_stub_id": "noop-runtime-stub-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "retrieval_contract_state": "approved_for_future_store_retrieval_safe_report",
+  "required_artifacts": { "runtime_stub_store_validated": true, "noop_runtime_stub_validated": true },
+  "retrieval_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "retrieval_controls": { "retrieval_contract_only": true, "retrieves_summary_only": true, "runtime_callable_retrieved": false, "raw_payload_retrieved": false, "raw_response_retrieved": false, "secret_material_retrieved": false, "runtime_invocation_disabled": true, "real_upload_still_blocked": true },
+  "retrieval_checks": [
+    { "check_id": "retrieval-summary", "check_kind": "summary_only", "safe_summary": "Retrieval contract only.", "retrieved_now": false, "runtime_executed_now": false },
+    { "check_id": "retrieval-no-callable", "check_kind": "runtime_callable_boundary", "safe_summary": "No runtime callable retrieved.", "retrieved_now": false, "runtime_executed_now": false },
+    { "check_id": "retrieval-no-raw", "check_kind": "raw_material_boundary", "safe_summary": "No raw payload or response retrieved.", "retrieved_now": false, "runtime_executed_now": false },
+    { "check_id": "retrieval-no-secret", "check_kind": "secret_boundary", "safe_summary": "No secret material retrieved.", "retrieved_now": false, "runtime_executed_now": false }
+  ],
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createRuntimeStubRetrievalContract", "source_runtime_stub_store_id": "runtime-stub-store-001", "source_render_plan_id": "render-plan-001" }
+}

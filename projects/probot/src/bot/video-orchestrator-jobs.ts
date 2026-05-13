@@ -20885,3 +20885,194 @@ export function createNoopRuntimeStubSafeReport(input: { review: NoopRuntimeStub
     provenance: { generated_by: "createNoopRuntimeStubSafeReport", source_noop_runtime_stub_review_id: input.review.noop_runtime_stub_review_id, source_render_plan_id: input.stub.render_plan_id },
   };
 }
+
+
+// ─── VO-7BQ/VO-7BR/VO-7BS: Runtime Stub Store/Retrieval Boundary ───────────
+
+export interface RuntimeStubStore {
+  schema_version: "1.0";
+  runtime_stub_store_id: string;
+  noop_runtime_stub_safe_report_id: string;
+  noop_runtime_stub_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  store_state: "draft" | "stored" | "ready_for_operator_review" | "approved_for_future_retrieval_contract" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  store_scope: Record<string, unknown>;
+  store_controls: Record<string, unknown>;
+  stored_stub_summary: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubRetrievalContract {
+  schema_version: "1.0";
+  runtime_stub_retrieval_contract_id: string;
+  runtime_stub_store_id: string;
+  noop_runtime_stub_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  retrieval_contract_state: "draft" | "ready_for_operator_review" | "approved_for_future_store_retrieval_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  retrieval_scope: Record<string, unknown>;
+  retrieval_controls: Record<string, unknown>;
+  retrieval_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubStoreRetrievalSafeReport {
+  schema_version: "1.0";
+  runtime_stub_store_retrieval_safe_report_id: string;
+  runtime_stub_retrieval_contract_id: string;
+  runtime_stub_store_id: string;
+  noop_runtime_stub_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_stub_manifest" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeStubStoreRetrievalLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.store_controls || artifact.retrieval_controls) as Record<string, unknown> | undefined;
+    if (controls && controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub store/retrieval must keep real upload blocked");
+    }
+    if (controls && (controls.stores_runtime_callable === true || controls.runtime_callable_retrieved === true || controls.stores_secret_material === true || controls.secret_material_retrieved === true || controls.stores_raw_payload === true || controls.raw_payload_retrieved === true || controls.stores_raw_response === true || controls.raw_response_retrieved === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub store/retrieval attempted unsafe material storage or retrieval");
+    }
+    const summary = artifact.stored_stub_summary as Record<string, unknown> | undefined;
+    if (summary && (summary.runtime_callable_stored !== false || summary.raw_payload_stored !== false || summary.raw_response_stored !== false || summary.secret_material_stored !== false)) {
+      result.ok = false;
+      result.blocking_reasons.push("Stored stub summary contains unsafe stored material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 4) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.retrieved_now === true || record.runtime_executed_now === true || record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe retrieval/runtime/raw/secret material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateRuntimeStubStore(store: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubStoreRetrievalLayer(store, "store_scope");
+}
+
+export function validateRuntimeStubRetrievalContract(contract: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubStoreRetrievalLayer(contract, "retrieval_scope", "retrieval_checks");
+}
+
+export function validateRuntimeStubStoreRetrievalSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubStoreRetrievalLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createRuntimeStubStore(input: { stubSafeReport: NoopRuntimeStubSafeReport; stub: NoopRuntimeStub; decision?: "draft" | "approved_for_future_retrieval_contract" | "rejected"; dryRun: true }): RuntimeStubStore {
+  if (input.dryRun !== true) throw new Error("VO-7BQ runtime stub store requires dryRun=true");
+  const reportValidation = validateNoopRuntimeStubSafeReport(input.stubSafeReport);
+  if (!reportValidation.ok) throw new Error("No-op runtime stub safe report validation failed");
+  if (input.stubSafeReport.safe_report_state !== "approved_for_future_runtime_stub_store") throw new Error("Runtime stub store requires approved no-op runtime stub safe report");
+  if (input.stubSafeReport.noop_runtime_stub_id !== input.stub.noop_runtime_stub_id) throw new Error("Mismatched no-op runtime stub safe report and stub");
+  const approved = input.decision === "approved_for_future_retrieval_contract";
+  return {
+    schema_version: "1.0",
+    runtime_stub_store_id: `runtime-stub-store-${crypto.randomUUID()}`,
+    noop_runtime_stub_safe_report_id: input.stubSafeReport.noop_runtime_stub_safe_report_id,
+    noop_runtime_stub_id: input.stub.noop_runtime_stub_id,
+    render_plan_id: input.stub.render_plan_id,
+    project_id: input.stub.project_id,
+    platform: input.stub.platform,
+    created_at: new Date().toISOString(),
+    store_state: approved ? "approved_for_future_retrieval_contract" : input.decision === "rejected" ? "rejected" : "stored",
+    required_artifacts: { noop_runtime_stub_safe_report_validated: true, noop_runtime_stub_validated: true },
+    store_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    store_controls: { store_artifact_only: true, stores_stub_summary_only: true, stores_runtime_callable: false, stores_raw_payload: false, stores_raw_response: false, stores_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    stored_stub_summary: { summary_only: true, noop_runtime_stub_id: input.stub.noop_runtime_stub_id, runtime_callable_stored: false, raw_payload_stored: false, raw_response_stored: false, secret_material_stored: false },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubStore", source_noop_runtime_stub_safe_report_id: input.stubSafeReport.noop_runtime_stub_safe_report_id, source_render_plan_id: input.stub.render_plan_id },
+  };
+}
+
+export function createRuntimeStubRetrievalContract(input: { store: RuntimeStubStore; stub: NoopRuntimeStub; decision?: "draft" | "approved_for_future_store_retrieval_safe_report" | "rejected"; dryRun: true }): RuntimeStubRetrievalContract {
+  if (input.dryRun !== true) throw new Error("VO-7BR runtime stub retrieval contract requires dryRun=true");
+  const storeValidation = validateRuntimeStubStore(input.store);
+  if (!storeValidation.ok) throw new Error("Runtime stub store validation failed");
+  if (input.store.store_state !== "approved_for_future_retrieval_contract") throw new Error("Retrieval contract requires approved runtime stub store");
+  if (input.store.noop_runtime_stub_id !== input.stub.noop_runtime_stub_id) throw new Error("Mismatched runtime stub store and no-op stub");
+  const approved = input.decision === "approved_for_future_store_retrieval_safe_report";
+  const checks = ["summary_only", "runtime_callable_boundary", "raw_material_boundary", "secret_boundary"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_retrieval_contract_id: `runtime-stub-retrieval-contract-${crypto.randomUUID()}`,
+    runtime_stub_store_id: input.store.runtime_stub_store_id,
+    noop_runtime_stub_id: input.stub.noop_runtime_stub_id,
+    render_plan_id: input.stub.render_plan_id,
+    project_id: input.stub.project_id,
+    platform: input.stub.platform,
+    created_at: new Date().toISOString(),
+    retrieval_contract_state: approved ? "approved_for_future_store_retrieval_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { runtime_stub_store_validated: true, noop_runtime_stub_validated: true },
+    retrieval_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    retrieval_controls: { retrieval_contract_only: true, retrieves_summary_only: true, runtime_callable_retrieved: false, raw_payload_retrieved: false, raw_response_retrieved: false, secret_material_retrieved: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    retrieval_checks: checks.map((kind) => ({ check_id: `retrieval-${kind}`, check_kind: kind, safe_summary: "Runtime stub retrieval contract only.", retrieved_now: false, runtime_executed_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubRetrievalContract", source_runtime_stub_store_id: input.store.runtime_stub_store_id, source_render_plan_id: input.stub.render_plan_id },
+  };
+}
+
+export function createRuntimeStubStoreRetrievalSafeReport(input: { retrievalContract: RuntimeStubRetrievalContract; store: RuntimeStubStore; decision?: "draft" | "approved_for_future_runtime_stub_manifest" | "rejected"; dryRun: true }): RuntimeStubStoreRetrievalSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7BS runtime stub store/retrieval safe report requires dryRun=true");
+  const contractValidation = validateRuntimeStubRetrievalContract(input.retrievalContract);
+  if (!contractValidation.ok) throw new Error("Runtime stub retrieval contract validation failed");
+  if (input.retrievalContract.retrieval_contract_state !== "approved_for_future_store_retrieval_safe_report") throw new Error("Store/retrieval safe report requires approved retrieval contract");
+  if (input.retrievalContract.runtime_stub_store_id !== input.store.runtime_stub_store_id) throw new Error("Mismatched retrieval contract and runtime stub store");
+  const approved = input.decision === "approved_for_future_runtime_stub_manifest";
+  const sections = ["store", "retrieval", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_store_retrieval_safe_report_id: `runtime-stub-store-retrieval-safe-report-${crypto.randomUUID()}`,
+    runtime_stub_retrieval_contract_id: input.retrievalContract.runtime_stub_retrieval_contract_id,
+    runtime_stub_store_id: input.store.runtime_stub_store_id,
+    noop_runtime_stub_id: input.store.noop_runtime_stub_id,
+    render_plan_id: input.store.render_plan_id,
+    project_id: input.store.project_id,
+    platform: input.store.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_stub_manifest" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_stub_retrieval_contract_validated: true, runtime_stub_store_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    safe_report_sections: sections.map((kind) => ({ section_id: `store-retrieval-safe-report-${kind}`, section_kind: kind, safe_summary: "Runtime stub store/retrieval safe report only.", contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubStoreRetrievalSafeReport", source_runtime_stub_retrieval_contract_id: input.retrievalContract.runtime_stub_retrieval_contract_id, source_render_plan_id: input.store.render_plan_id },
+  };
+}

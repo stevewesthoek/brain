@@ -3722,3 +3722,9 @@ These artifacts create the real runtime stub boundary while preserving no-op beh
 VO-7BN adds `noop-runtime-stub`, VO-7BO adds `noop-runtime-stub-review`, and VO-7BP adds `noop-runtime-stub-safe-report`.
 
 These artifacts create and review a no-op runtime stub while preserving no runtime invocation. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7BQ/VO-7BR/VO-7BS — Runtime Stub Store, Retrieval Contract, and Safe Report
+
+VO-7BQ adds `runtime-stub-store`, VO-7BR adds `runtime-stub-retrieval-contract`, and VO-7BS adds `runtime-stub-store-retrieval-safe-report`.
+
+These artifacts store and retrieve only safe stub summaries. Runtime callables, raw payloads, raw responses, and secret material are not stored or retrieved. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
