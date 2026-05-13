@@ -205,6 +205,28 @@ This phase adds a no-op stub contract test artifact only.
 **Next phase guidance**
 - If approved later, the next step may add future stub no-op implementation design work, still without implementation or upload capability.
 
+### VO-7U: Real Upload Stub No-Op Implementation Design
+
+This phase adds a no-op implementation design artifact only.
+
+**What it does**
+- Defines no-op implementation design metadata and no-op boundaries only.
+- Keeps implementation code, stub files, scaffold implementation files, runtime files, dependencies, package metadata changes, upload execution, platform APIs, credentials, tokens, env access, and media reads disabled.
+- Stores only safe summaries for future review.
+
+**What it does not do**
+- Does not create implementation code.
+- Does not create stub files.
+- Does not create scaffold implementation files.
+- Does not execute runtime or upload flows.
+- Does not call platform APIs.
+- Does not access credentials, tokens, env vars, or keychain entries.
+- Does not read media files.
+- Does not store raw paths, payloads, responses, or account IDs.
+
+**Next phase guidance**
+- If approved later, the next step may add future no-op stub file plan work, still without implementation or upload capability.
+
 ### VO-7C: Upload Package Design
 
 This phase creates an upload package design artifact only. It prepares safe metadata and platform-target summaries for a future upload-request design review, but it still does not upload or call platform APIs.

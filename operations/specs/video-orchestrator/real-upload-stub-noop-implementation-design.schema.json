@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "real_upload_stub_noop_implementation_design_id", "real_upload_stub_contract_tests_id", "real_upload_stub_contracts_id", "real_upload_scaffold_stub_design_id", "real_upload_scaffold_contract_tests_id", "real_upload_scaffold_contracts_id", "real_upload_scaffold_design_id", "real_upload_implementation_design_id", "final_real_upload_preflight_gate_id", "real_upload_dry_run_execution_result_id", "real_upload_execution_plan_id", "real_upload_strategy_design_id", "real_upload_execution_request_id", "real_upload_readiness_assessment_id", "dry_run_upload_spike_result_id", "upload_execution_design_id", "upload_execution_approval_id", "platform_upload_request_id", "upload_package_design_id", "local_output_review_id", "production_render_spike_result_id", "final_render_execution_request_id", "render_plan_id", "project_id", "platform", "noop_implementation_design_state", "created_at", "noop_implementation_design_mode", "required_artifacts", "noop_implementation_scope", "proposed_noop_modules", "proposed_noop_behaviors", "noop_runtime_boundary", "credential_noop_boundary", "media_noop_boundary", "platform_api_noop_boundary", "payload_noop_boundary", "network_noop_boundary", "file_noop_boundary", "dependency_noop_boundary", "operator_review", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "real_upload_stub_noop_implementation_design_id": { "type": "string", "minLength": 1 },
+    "real_upload_stub_contract_tests_id": { "type": "string", "minLength": 1 },
+    "real_upload_stub_contracts_id": { "type": "string", "minLength": 1 },
+    "real_upload_scaffold_stub_design_id": { "type": "string", "minLength": 1 },
+    "real_upload_scaffold_contract_tests_id": { "type": "string", "minLength": 1 },
+    "real_upload_scaffold_contracts_id": { "type": "string", "minLength": 1 },
+    "real_upload_scaffold_design_id": { "type": "string", "minLength": 1 },
+    "real_upload_implementation_design_id": { "type": "string", "minLength": 1 },
+    "final_real_upload_preflight_gate_id": { "type": "string", "minLength": 1 },
+    "real_upload_dry_run_execution_result_id": { "type": "string", "minLength": 1 },
+    "real_upload_execution_plan_id": { "type": "string", "minLength": 1 },
+    "real_upload_strategy_design_id": { "type": "string", "minLength": 1 },
+    "real_upload_execution_request_id": { "type": "string", "minLength": 1 },
+    "real_upload_readiness_assessment_id": { "type": "string", "minLength": 1 },
+    "dry_run_upload_spike_result_id": { "type": "string", "minLength": 1 },
+    "upload_execution_design_id": { "type": "string", "minLength": 1 },
+    "upload_execution_approval_id": { "type": "string", "minLength": 1 },
+    "platform_upload_request_id": { "type": "string", "minLength": 1 },
+    "upload_package_design_id": { "type": "string", "minLength": 1 },
+    "local_output_review_id": { "type": "string", "minLength": 1 },
+    "production_render_spike_result_id": { "type": "string", "minLength": 1 },
+    "final_render_execution_request_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "noop_implementation_design_state": { "type": "string", "enum": ["draft", "blocked", "ready_for_operator_review", "approved_for_future_noop_stub_file_plan", "rejected", "revoked"] },
+    "created_at": { "type": "string", "minLength": 1 },
+    "noop_implementation_design_mode": { "type": "string", "enum": ["real_upload_stub_noop_implementation_design_only", "operator_review_real_upload_stub_noop_implementation_design"] },
+    "required_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["real_upload_stub_contract_tests_validated", "real_upload_stub_contracts_validated", "real_upload_scaffold_stub_design_validated", "real_upload_scaffold_contract_tests_validated", "real_upload_scaffold_contracts_validated", "real_upload_scaffold_design_validated", "real_upload_implementation_design_validated", "final_real_upload_preflight_gate_validated", "real_upload_dry_run_execution_result_validated", "real_upload_execution_plan_validated", "real_upload_strategy_design_validated", "real_upload_execution_request_validated", "real_upload_readiness_assessment_validated", "dry_run_upload_spike_result_validated", "upload_execution_design_validated", "upload_execution_approval_validated", "platform_upload_request_validated", "upload_package_design_validated", "local_output_review_validated", "spike_result_validated"],
+      "properties": {
+        "real_upload_stub_contract_tests_validated": { "type": "boolean", "const": true },
+        "real_upload_stub_contracts_validated": { "type": "boolean", "const": true },
+        "real_upload_scaffold_stub_design_validated": { "type": "boolean", "const": true },
+        "real_upload_scaffold_contract_tests_validated": { "type": "boolean", "const": true },
+        "real_upload_scaffold_contracts_validated": { "type": "boolean", "const": true },
+        "real_upload_scaffold_design_validated": { "type": "boolean", "const": true },
+        "real_upload_implementation_design_validated": { "type": "boolean", "const": true },
+        "final_real_upload_preflight_gate_validated": { "type": "boolean", "const": true },
+        "real_upload_dry_run_execution_result_validated": { "type": "boolean", "const": true },
+        "real_upload_execution_plan_validated": { "type": "boolean", "const": true },
+        "real_upload_strategy_design_validated": { "type": "boolean", "const": true },
+        "real_upload_execution_request_validated": { "type": "boolean", "const": true },
+        "real_upload_readiness_assessment_validated": { "type": "boolean", "const": true },
+        "dry_run_upload_spike_result_validated": { "type": "boolean", "const": true },
+        "upload_execution_design_validated": { "type": "boolean", "const": true },
+        "upload_execution_approval_validated": { "type": "boolean", "const": true },
+        "platform_upload_request_validated": { "type": "boolean", "const": true },
+        "upload_package_design_validated": { "type": "boolean", "const": true },
+        "local_output_review_validated": { "type": "boolean", "const": true },
+        "spike_result_validated": { "type": "boolean", "const": true }
+      }
+    },
+    "noop_implementation_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["future_noop_stub_file_plan_requested", "noop_implementation_design_only", "implementation_code_created", "stub_files_created", "runtime_files_created", "runtime_enabled", "current_real_upload_requested", "current_network_calls_requested", "current_platform_api_calls_requested", "current_credential_access_requested", "current_media_read_requested", "dependencies_requested", "package_metadata_changes_requested"],
+      "properties": {
+        "future_noop_stub_file_plan_requested": { "type": "boolean" },
+        "noop_implementation_design_only": { "type": "boolean", "const": true },
+        "implementation_code_created": { "type": "boolean", "const": false },
+        "stub_files_created": { "type": "boolean", "const": false },
+        "runtime_files_created": { "type": "boolean", "const": false },
+        "runtime_enabled": { "type": "boolean", "const": false },
+        "current_real_upload_requested": { "type": "boolean", "const": false },
+        "current_network_calls_requested": { "type": "boolean", "const": false },
+        "current_platform_api_calls_requested": { "type": "boolean", "const": false },
+        "current_credential_access_requested": { "type": "boolean", "const": false },
+        "current_media_read_requested": { "type": "boolean", "const": false },
+        "dependencies_requested": { "type": "boolean", "const": false },
+        "package_metadata_changes_requested": { "type": "boolean", "const": false }
+      }
+    },
+    "proposed_noop_modules": {
+      "type": "array",
+      "minItems": 14,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["noop_module_id", "module_kind", "module_state", "safe_summary", "no_op_only", "implementation_code_created", "stub_file_created", "runtime_enabled", "upload_enabled", "network_enabled", "platform_api_enabled", "credential_access_enabled", "media_read_enabled", "file_mutation_enabled", "raw_payload_created", "raw_response_stored", "blocking_reasons", "warnings"],
+        "properties": {
+          "noop_module_id": { "type": "string", "minLength": 1 },
+          "module_kind": { "type": "string", "enum": ["credential_provider_noop_module", "media_reference_resolver_noop_module", "platform_adapter_noop_module", "payload_builder_noop_module", "network_client_noop_module", "upload_executor_noop_module", "retry_idempotency_noop_module", "rollback_noop_module", "post_upload_verification_noop_module", "audit_event_noop_module", "operator_confirmation_noop_module", "emergency_stop_noop_module", "status_reporter_noop_module", "upload_scaffold_index_noop_module"] },
+          "module_state": { "type": "string", "enum": ["proposed", "blocked", "deferred", "ready_for_future_noop_stub_file_plan"] },
+          "safe_summary": { "type": "string", "minLength": 1 },
+          "no_op_only": { "type": "boolean", "const": true },
+          "implementation_code_created": { "type": "boolean", "const": false },
+          "stub_file_created": { "type": "boolean", "const": false },
+          "runtime_enabled": { "type": "boolean", "const": false },
+          "upload_enabled": { "type": "boolean", "const": false },
+          "network_enabled": { "type": "boolean", "const": false },
+          "platform_api_enabled": { "type": "boolean", "const": false },
+          "credential_access_enabled": { "type": "boolean", "const": false },
+          "media_read_enabled": { "type": "boolean", "const": false },
+          "file_mutation_enabled": { "type": "boolean", "const": false },
+          "raw_payload_created": { "type": "boolean", "const": false },
+          "raw_response_stored": { "type": "boolean", "const": false },
+          "blocking_reasons": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "warnings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        }
+      },
+      "allOf": [
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "credential_provider_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "media_reference_resolver_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "platform_adapter_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "payload_builder_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "network_client_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "upload_executor_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "retry_idempotency_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "rollback_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "post_upload_verification_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "audit_event_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "operator_confirmation_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "emergency_stop_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "status_reporter_noop_module" } }, "required": ["module_kind"] } },
+        { "contains": { "type": "object", "properties": { "module_kind": { "const": "upload_scaffold_index_noop_module" } }, "required": ["module_kind"] } }
+      ]
+    },
+    "proposed_noop_behaviors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["noop_behavior_id", "behavior_kind", "behavior_state", "safe_summary", "no_op_behavior", "runtime_execution_allowed", "runtime_executed", "external_effects_allowed", "upload_effect_allowed", "network_effect_allowed", "credential_effect_allowed", "media_effect_allowed", "file_effect_allowed", "raw_payload_allowed", "raw_response_allowed", "blocking_reasons", "warnings"],
+        "properties": {
+          "noop_behavior_id": { "type": "string", "minLength": 1 },
+          "behavior_kind": { "type": "string", "minLength": 1 },
+          "behavior_state": { "type": "string", "enum": ["proposed", "blocked", "deferred", "ready_for_future_noop_stub_file_plan"] },
+          "safe_summary": { "type": "string", "minLength": 1 },
+          "no_op_behavior": { "type": "boolean", "const": true },
+          "runtime_execution_allowed": { "type": "boolean", "const": false },
+          "runtime_executed": { "type": "boolean", "const": false },
+          "external_effects_allowed": { "type": "boolean", "const": false },
+          "upload_effect_allowed": { "type": "boolean", "const": false },
+          "network_effect_allowed": { "type": "boolean", "const": false },
+          "credential_effect_allowed": { "type": "boolean", "const": false },
+          "media_effect_allowed": { "type": "boolean", "const": false },
+          "file_effect_allowed": { "type": "boolean", "const": false },
+          "raw_payload_allowed": { "type": "boolean", "const": false },
+          "raw_response_allowed": { "type": "boolean", "const": false },
+          "blocking_reasons": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "warnings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "noop_runtime_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["all_modules_no_op_only", "no_runtime_execution", "no_external_effects", "no_upload_effects", "no_network_effects", "no_credential_effects", "no_media_effects", "no_file_effects", "no_raw_payloads", "no_raw_responses"],
+      "properties": {
+        "all_modules_no_op_only": { "type": "boolean" },
+        "no_runtime_execution": { "type": "boolean", "const": true },
+        "no_external_effects": { "type": "boolean", "const": true },
+        "no_upload_effects": { "type": "boolean", "const": true },
+        "no_network_effects": { "type": "boolean", "const": true },
+        "no_credential_effects": { "type": "boolean", "const": true },
+        "no_media_effects": { "type": "boolean", "const": true },
+        "no_file_effects": { "type": "boolean", "const": true },
+        "no_raw_payloads": { "type": "boolean", "const": true },
+        "no_raw_responses": { "type": "boolean", "const": true }
+      }
+    },
+    "credential_noop_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["credential_noop_designed", "credentials_required", "credentials_accessed", "token_accessed", "keychain_accessed", "env_accessed", "credential_reference_stored", "token_reference_stored", "secret_material_stored"],
+      "properties": {
+        "credential_noop_designed": { "type": "boolean" },
+        "credentials_required": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "keychain_accessed": { "type": "boolean", "const": false },
+        "env_accessed": { "type": "boolean", "const": false },
+        "credential_reference_stored": { "type": "boolean", "const": false },
+        "token_reference_stored": { "type": "boolean", "const": false },
+        "secret_material_stored": { "type": "boolean", "const": false }
+      }
+    },
+    "media_noop_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["media_noop_designed", "media_file_read", "raw_media_path_stored", "media_file_modified", "media_file_copied", "media_file_moved", "media_file_deleted"],
+      "properties": {
+        "media_noop_designed": { "type": "boolean" },
+        "media_file_read": { "type": "boolean", "const": false },
+        "raw_media_path_stored": { "type": "boolean", "const": false },
+        "media_file_modified": { "type": "boolean", "const": false },
+        "media_file_copied": { "type": "boolean", "const": false },
+        "media_file_moved": { "type": "boolean", "const": false },
+        "media_file_deleted": { "type": "boolean", "const": false }
+      }
+    },
+    "platform_api_noop_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform_api_noop_designed", "platform_adapter_implemented", "platform_endpoint_selected", "platform_api_calls_allowed", "platform_api_calls_made", "raw_account_ids_stored"],
+      "properties": {
+        "platform_api_noop_designed": { "type": "boolean" },
+        "platform_adapter_implemented": { "type": "boolean", "const": false },
+        "platform_endpoint_selected": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "platform_api_calls_made": { "type": "boolean", "const": false },
+        "raw_account_ids_stored": { "type": "boolean", "const": false }
+      }
+    },
+    "payload_noop_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["payload_noop_designed", "platform_api_payload_created", "platform_api_payload_stored", "upload_payload_created", "raw_payload_stored"],
+      "properties": {
+        "payload_noop_designed": { "type": "boolean" },
+        "platform_api_payload_created": { "type": "boolean", "const": false },
+        "platform_api_payload_stored": { "type": "boolean", "const": false },
+        "upload_payload_created": { "type": "boolean", "const": false },
+        "raw_payload_stored": { "type": "boolean", "const": false }
+      }
+    },
+    "network_noop_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["network_noop_designed", "network_client_implemented", "network_calls_allowed", "network_calls_made", "external_side_effects_allowed", "external_side_effects_observed"],
+      "properties": {
+        "network_noop_designed": { "type": "boolean" },
+        "network_client_implemented": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_made": { "type": "boolean", "const": false },
+        "external_side_effects_allowed": { "type": "boolean", "const": false },
+        "external_side_effects_observed": { "type": "boolean", "const": false }
+      }
+    },
+    "file_noop_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files_created_now", "stub_files_created", "implementation_files_created", "package_files_changed", "runtime_files_created", "file_mutation_allowed"],
+      "properties": {
+        "files_created_now": { "type": "boolean", "const": false },
+        "stub_files_created": { "type": "boolean", "const": false },
+        "implementation_files_created": { "type": "boolean", "const": false },
+        "package_files_changed": { "type": "boolean", "const": false },
+        "runtime_files_created": { "type": "boolean", "const": false },
+        "file_mutation_allowed": { "type": "boolean", "const": false }
+      }
+    },
+    "dependency_noop_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dependencies_added", "package_metadata_changed", "package_dependency_changes", "runtime_config_created", "env_files_created", "secrets_config_created", "credential_config_created"],
+      "properties": {
+        "dependencies_added": { "type": "boolean", "const": false },
+        "package_metadata_changed": { "type": "boolean", "const": false },
+        "package_dependency_changes": { "type": "boolean", "const": false },
+        "runtime_config_created": { "type": "boolean", "const": false },
+        "env_files_created": { "type": "boolean", "const": false },
+        "secrets_config_created": { "type": "boolean", "const": false },
+        "credential_config_created": { "type": "boolean", "const": false }
+      }
+    },
+    "operator_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checklist_acknowledged", "understands_noop_implementation_design_only", "understands_no_stub_files_created", "understands_no_implementation_code_created", "understands_no_runtime_execution", "understands_no_upload_enabled", "understands_no_credentials_accessed", "understands_no_network_calls", "understands_no_media_reads", "understands_no_dependencies_added", "understands_future_noop_stub_file_plan_phase_required"],
+      "properties": {
+        "reviewed_by_label": { "type": "string", "minLength": 1 },
+        "checklist_acknowledged": { "type": "boolean" },
+        "understands_noop_implementation_design_only": { "type": "boolean" },
+        "understands_no_stub_files_created": { "type": "boolean" },
+        "understands_no_implementation_code_created": { "type": "boolean" },
+        "understands_no_runtime_execution": { "type": "boolean" },
+        "understands_no_upload_enabled": { "type": "boolean" },
+        "understands_no_credentials_accessed": { "type": "boolean" },
+        "understands_no_network_calls": { "type": "boolean" },
+        "understands_no_media_reads": { "type": "boolean" },
+        "understands_no_dependencies_added": { "type": "boolean" },
+        "understands_future_noop_stub_file_plan_phase_required": { "type": "boolean" },
+        "decision_note_summary": { "type": "string", "minLength": 1 }
+      }
+    },
+    "execution_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["implementation_code_created", "stub_files_created", "implementation_files_created", "runtime_files_created", "dependencies_added", "package_metadata_changed", "runtime_enabled", "upload_allowed", "upload_execution_enabled", "platform_api_calls_allowed", "network_calls_allowed", "credentials_accessed", "token_accessed", "keychain_accessed", "env_accessed", "media_file_read", "file_mutation_allowed", "ready_for_real_upload"],
+      "properties": {
+        "implementation_code_created": { "type": "boolean", "const": false },
+        "stub_files_created": { "type": "boolean", "const": false },
+        "implementation_files_created": { "type": "boolean", "const": false },
+        "runtime_files_created": { "type": "boolean", "const": false },
+        "dependencies_added": { "type": "boolean", "const": false },
+        "package_metadata_changed": { "type": "boolean", "const": false },
+        "runtime_enabled": { "type": "boolean", "const": false },
+        "upload_allowed": { "type": "boolean", "const": false },
+        "upload_execution_enabled": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "keychain_accessed": { "type": "boolean", "const": false },
+        "env_accessed": { "type": "boolean", "const": false },
+        "media_file_read": { "type": "boolean", "const": false },
+        "file_mutation_allowed": { "type": "boolean", "const": false },
+        "ready_for_real_upload": { "type": "boolean", "const": false }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["noop_implementation_design_complete", "ready_for_future_noop_stub_file_plan", "ready_for_real_upload", "implementation_code_created", "stub_files_created", "implementation_files_created", "runtime_files_created", "dependencies_added", "package_metadata_changed", "runtime_enabled", "upload_allowed", "upload_execution_enabled", "platform_api_calls_allowed", "network_calls_allowed", "credentials_accessed", "token_accessed", "media_file_read", "file_mutation_allowed", "blocking_reasons", "warnings"],
+      "properties": {
+        "noop_implementation_design_complete": { "type": "boolean" },
+        "ready_for_future_noop_stub_file_plan": { "type": "boolean" },
+        "ready_for_real_upload": { "type": "boolean", "const": false },
+        "implementation_code_created": { "type": "boolean", "const": false },
+        "stub_files_created": { "type": "boolean", "const": false },
+        "implementation_files_created": { "type": "boolean", "const": false },
+        "runtime_files_created": { "type": "boolean", "const": false },
+        "dependencies_added": { "type": "boolean", "const": false },
+        "package_metadata_changed": { "type": "boolean", "const": false },
+        "runtime_enabled": { "type": "boolean", "const": false },
+        "upload_allowed": { "type": "boolean", "const": false },
+        "upload_execution_enabled": { "type": "boolean", "const": false },
+        "platform_api_calls_allowed": { "type": "boolean", "const": false },
+        "network_calls_allowed": { "type": "boolean", "const": false },
+        "credentials_accessed": { "type": "boolean", "const": false },
+        "token_accessed": { "type": "boolean", "const": false },
+        "media_file_read": { "type": "boolean", "const": false },
+        "file_mutation_allowed": { "type": "boolean", "const": false },
+        "blocking_reasons": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "warnings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_by", "source_real_upload_stub_contract_tests_id", "source_real_upload_stub_contracts_id", "source_real_upload_scaffold_stub_design_id", "source_real_upload_scaffold_contract_tests_id", "source_real_upload_scaffold_contracts_id", "source_real_upload_scaffold_design_id", "source_real_upload_implementation_design_id", "source_final_real_upload_preflight_gate_id", "source_real_upload_dry_run_execution_result_id", "source_real_upload_execution_plan_id", "source_real_upload_strategy_design_id", "source_real_upload_execution_request_id", "source_real_upload_readiness_assessment_id", "source_dry_run_upload_spike_result_id", "source_upload_execution_design_id", "source_upload_execution_approval_id", "source_platform_upload_request_id", "source_upload_package_design_id", "source_local_output_review_id", "source_production_render_spike_result_id", "source_final_render_execution_request_id", "source_render_plan_id"],
+      "properties": {
+        "generated_by": { "type": "string", "enum": ["createRealUploadStubNoopImplementationDesign", "revokeRealUploadStubNoopImplementationDesign"] },
+        "source_real_upload_stub_contract_tests_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_stub_contracts_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_scaffold_stub_design_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_scaffold_contract_tests_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_scaffold_contracts_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_scaffold_design_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_implementation_design_id": { "type": "string", "minLength": 1 },
+        "source_final_real_upload_preflight_gate_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_dry_run_execution_result_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_execution_plan_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_strategy_design_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_execution_request_id": { "type": "string", "minLength": 1 },
+        "source_real_upload_readiness_assessment_id": { "type": "string", "minLength": 1 },
+        "source_dry_run_upload_spike_result_id": { "type": "string", "minLength": 1 },
+        "source_upload_execution_design_id": { "type": "string", "minLength": 1 },
+        "source_upload_execution_approval_id": { "type": "string", "minLength": 1 },
+        "source_platform_upload_request_id": { "type": "string", "minLength": 1 },
+        "source_upload_package_design_id": { "type": "string", "minLength": 1 },
+        "source_local_output_review_id": { "type": "string", "minLength": 1 },
+        "source_production_render_spike_result_id": { "type": "string", "minLength": 1 },
+        "source_final_render_execution_request_id": { "type": "string", "minLength": 1 },
+        "source_render_plan_id": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

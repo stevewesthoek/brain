@@ -1454,6 +1454,11 @@ function isForbiddenStringPattern(value: string): boolean {
     "private_key",
     "password",
     "token",
+    "../",
+    "..\\",
+    "stdout",
+    "stderr",
+    "process.env",
   ];
   const lower = value.toLowerCase();
   return forbidden.some((p) => lower.includes(p));
@@ -1481,6 +1486,12 @@ function safeValidationLabel(value: unknown, fallback: string): string {
 
 function recursivelyCheckForForbiddenPatterns(obj: unknown): string[] {
   const violations: string[] = [];
+  const allowedForbiddenKeyNames = new Set([
+    "stdout_stored",
+    "stderr_stored",
+    "raw_command_stored",
+    "process_output_capture_allowed",
+  ]);
 
   function check(val: unknown, path: string = "root", depth: number = 0): void {
     // Limit recursion depth to prevent stack overflow from circular references
@@ -1495,7 +1506,7 @@ function recursivelyCheckForForbiddenPatterns(obj: unknown): string[] {
     } else if (typeof val === "object" && val !== null && !Array.isArray(val)) {
       const o = val as Record<string, unknown>;
       for (const [k, v] of Object.entries(o)) {
-        if (isForbiddenStringPattern(k)) {
+        if (isForbiddenStringPattern(k) && !allowedForbiddenKeyNames.has(k)) {
           // Do not echo the key name, only indicate a forbidden pattern was found in an object
           violations.push(`Forbidden key pattern found at ${path}`);
         }
@@ -8368,8 +8379,8 @@ function validateControlledProductionRenderSpikeResultShape(result: unknown): Co
   }
   if (r.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
   if (r.execution_mode !== "controlled_local_production_render_spike") blocking_reasons.push("execution_mode must be controlled_local_production_render_spike");
-  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(result));
   const text = JSON.stringify(result);
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(result));
   if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env[") || text.includes("\"stdout\":") || text.includes("\"stderr\":") || text.includes("ffmpeg -i") || text.includes(" -i ") || text.includes("Bearer ") || text.includes("data=") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../") || text.includes("\"[]\"")) {
     blocking_reasons.push("Controlled production render spike result contains forbidden payload content");
   }
@@ -15793,6 +15804,25 @@ export interface RealUploadStubContractTestsValidationResult { ok: boolean; bloc
 export interface RealUploadStubContractTestsExecutionBoundary { stub_files_created: false; implementation_files_created: false; runtime_files_created: false; dependencies_added: false; package_metadata_changed: false; runtime_enabled: false; contract_runtime_executed: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; media_file_read: false; file_mutation_allowed: false; ready_for_real_upload: false; }
 export interface RealUploadStubContractTests { schema_version: "1.0"; real_upload_stub_contract_tests_id: string; real_upload_stub_contracts_id: string; real_upload_scaffold_stub_design_id: string; real_upload_scaffold_contract_tests_id: string; real_upload_scaffold_contracts_id: string; real_upload_scaffold_design_id: string; real_upload_implementation_design_id: string; final_real_upload_preflight_gate_id: string; real_upload_dry_run_execution_result_id: string; real_upload_execution_plan_id: string; real_upload_strategy_design_id: string; real_upload_execution_request_id: string; real_upload_readiness_assessment_id: string; dry_run_upload_spike_result_id: string; upload_execution_design_id: string; upload_execution_approval_id: string; platform_upload_request_id: string; upload_package_design_id: string; local_output_review_id: string; production_render_spike_result_id: string; final_render_execution_request_id: string; render_plan_id: string; project_id: string; platform: string; stub_contract_tests_state: RealUploadStubContractTestsState; created_at: string; stub_contract_tests_mode: RealUploadStubContractTestsMode; required_artifacts: RealUploadStubContractTestsRequiredArtifacts; stub_contract_tests_scope: RealUploadStubContractTestsScope; stub_module_contract_test_results: RealUploadStubModuleContractTestResult[]; stub_behavior_contract_test_results: RealUploadStubBehaviorContractTestResult[]; no_op_test_boundary: RealUploadNoOpTestBoundary; credential_stub_contract_test_boundary: RealUploadCredentialStubContractTestBoundary; media_stub_contract_test_boundary: RealUploadMediaStubContractTestBoundary; platform_api_stub_contract_test_boundary: RealUploadPlatformApiStubContractTestBoundary; payload_stub_contract_test_boundary: RealUploadPayloadStubContractTestBoundary; network_stub_contract_test_boundary: RealUploadNetworkStubContractTestBoundary; runtime_stub_contract_test_boundary: RealUploadRuntimeStubContractTestBoundary; file_stub_contract_test_boundary: RealUploadFileStubContractTestBoundary; operator_review: RealUploadStubContractTestsOperatorReview; execution_boundary: RealUploadStubContractTestsExecutionBoundary; validation: { stub_contract_tests_complete: boolean; ready_for_future_stub_noop_implementation_design: boolean; ready_for_real_upload: false; stub_files_created: false; implementation_files_created: false; runtime_files_created: false; dependencies_added: false; package_metadata_changed: false; runtime_enabled: false; contract_runtime_executed: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; media_file_read: false; file_mutation_allowed: false; blocking_reasons: string[]; warnings: string[]; }; provenance: { generated_by: "createRealUploadStubContractTests" | "revokeRealUploadStubContractTests"; source_real_upload_stub_contracts_id: string; source_real_upload_scaffold_stub_design_id: string; source_real_upload_scaffold_contract_tests_id: string; source_real_upload_scaffold_contracts_id: string; source_real_upload_scaffold_design_id: string; source_real_upload_implementation_design_id: string; source_final_real_upload_preflight_gate_id: string; source_real_upload_dry_run_execution_result_id: string; source_real_upload_execution_plan_id: string; source_real_upload_strategy_design_id: string; source_real_upload_execution_request_id: string; source_real_upload_readiness_assessment_id: string; source_dry_run_upload_spike_result_id: string; source_upload_execution_design_id: string; source_upload_execution_approval_id: string; source_platform_upload_request_id: string; source_upload_package_design_id: string; source_local_output_review_id: string; source_production_render_spike_result_id: string; source_final_render_execution_request_id: string; source_render_plan_id: string; }; }
 function safeRealUploadStubContractTestsString(value: unknown, fallback: string): string { return safeRealUploadStubContractsString(value, fallback); }
+function recursivelyCheckForForbiddenStringValues(value: unknown): string[] {
+  const violations: string[] = [];
+  function check(val: unknown, depth: number = 0): void {
+    if (depth > 100) return;
+    if (typeof val === "string") {
+      if (isForbiddenStringPattern(val)) violations.push("Forbidden string pattern found.");
+      return;
+    }
+    if (Array.isArray(val)) {
+      for (const item of val) check(item, depth + 1);
+      return;
+    }
+    if (typeof val === "object" && val !== null) {
+      for (const nested of Object.values(val as Record<string, unknown>)) check(nested, depth + 1);
+    }
+  }
+  check(value);
+  return violations;
+}
 interface RealUploadStubContractTestsStore { schema_version: "1.0"; created_at: string; tests: RealUploadStubContractTests[]; }
 interface RealUploadStubContractTestsStoreSummaryItem { stub_contract_tests_state: RealUploadStubContractTestsState; created_at: string; stub_contract_tests_total: number; stub_contract_tests_with_blockers: number; safe_summary: string; }
 function getRealUploadStubContractTestsPath(): string { return path.join(getRuntimeDir(), "real-upload-stub-contract-tests.json"); }
@@ -16208,6 +16238,410 @@ export function getRealUploadStubContractTestsReport(options?: { project_id?: st
     stub_contract_tests_total: total,
     stub_contract_tests_with_blockers: blockers,
     tests: summaries,
+  };
+}
+
+export type RealUploadStubNoopImplementationDesignMode = "real_upload_stub_noop_implementation_design_only" | "operator_review_real_upload_stub_noop_implementation_design";
+export type RealUploadStubNoopImplementationDesignState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_noop_stub_file_plan" | "rejected" | "revoked";
+export interface RealUploadStubNoopImplementationRequiredArtifacts { real_upload_stub_contract_tests_validated: true; real_upload_stub_contracts_validated: true; real_upload_scaffold_stub_design_validated: true; real_upload_scaffold_contract_tests_validated: true; real_upload_scaffold_contracts_validated: true; real_upload_scaffold_design_validated: true; real_upload_implementation_design_validated: true; final_real_upload_preflight_gate_validated: true; real_upload_dry_run_execution_result_validated: true; real_upload_execution_plan_validated: true; real_upload_strategy_design_validated: true; real_upload_execution_request_validated: true; real_upload_readiness_assessment_validated: true; dry_run_upload_spike_result_validated: true; upload_execution_design_validated: true; upload_execution_approval_validated: true; platform_upload_request_validated: true; upload_package_design_validated: true; local_output_review_validated: true; spike_result_validated: true; }
+export interface RealUploadStubNoopImplementationScope { future_noop_stub_file_plan_requested: boolean; noop_implementation_design_only: true; implementation_code_created: false; stub_files_created: false; runtime_files_created: false; runtime_enabled: false; current_real_upload_requested: false; current_network_calls_requested: false; current_platform_api_calls_requested: false; current_credential_access_requested: false; current_media_read_requested: false; dependencies_requested: false; package_metadata_changes_requested: false; }
+export interface RealUploadProposedNoopModule { noop_module_id: string; module_kind: "credential_provider_noop_module" | "media_reference_resolver_noop_module" | "platform_adapter_noop_module" | "payload_builder_noop_module" | "network_client_noop_module" | "upload_executor_noop_module" | "retry_idempotency_noop_module" | "rollback_noop_module" | "post_upload_verification_noop_module" | "audit_event_noop_module" | "operator_confirmation_noop_module" | "emergency_stop_noop_module" | "status_reporter_noop_module" | "upload_scaffold_index_noop_module"; module_state: "proposed" | "blocked" | "deferred" | "ready_for_future_noop_stub_file_plan"; safe_summary: string; no_op_only: true; implementation_code_created: false; stub_file_created: false; runtime_enabled: false; upload_enabled: false; network_enabled: false; platform_api_enabled: false; credential_access_enabled: false; media_read_enabled: false; file_mutation_enabled: false; raw_payload_created: false; raw_response_stored: false; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadProposedNoopBehavior { noop_behavior_id: string; behavior_kind: string; behavior_state: "proposed" | "blocked" | "deferred" | "ready_for_future_noop_stub_file_plan"; safe_summary: string; no_op_behavior: true; runtime_execution_allowed: false; runtime_executed: false; external_effects_allowed: false; upload_effect_allowed: false; network_effect_allowed: false; credential_effect_allowed: false; media_effect_allowed: false; file_effect_allowed: false; raw_payload_allowed: false; raw_response_allowed: false; blocking_reasons: string[]; warnings: string[]; }
+export interface RealUploadNoopRuntimeBoundary { all_modules_no_op_only: boolean; no_runtime_execution: true; no_external_effects: true; no_upload_effects: true; no_network_effects: true; no_credential_effects: true; no_media_effects: true; no_file_effects: true; no_raw_payloads: true; no_raw_responses: true; }
+export interface RealUploadCredentialNoopBoundary { credential_noop_designed: boolean; credentials_required: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; credential_reference_stored: false; token_reference_stored: false; secret_material_stored: false; }
+export interface RealUploadMediaNoopBoundary { media_noop_designed: boolean; media_file_read: false; raw_media_path_stored: false; media_file_modified: false; media_file_copied: false; media_file_moved: false; media_file_deleted: false; }
+export interface RealUploadPlatformApiNoopBoundary { platform_api_noop_designed: boolean; platform_adapter_implemented: false; platform_endpoint_selected: false; platform_api_calls_allowed: false; platform_api_calls_made: false; raw_account_ids_stored: false; }
+export interface RealUploadPayloadNoopBoundary { payload_noop_designed: boolean; platform_api_payload_created: false; platform_api_payload_stored: false; upload_payload_created: false; raw_payload_stored: false; }
+export interface RealUploadNetworkNoopBoundary { network_noop_designed: boolean; network_client_implemented: false; network_calls_allowed: false; network_calls_made: false; external_side_effects_allowed: false; external_side_effects_observed: false; }
+export interface RealUploadFileNoopBoundary { files_created_now: false; stub_files_created: false; implementation_files_created: false; package_files_changed: false; runtime_files_created: false; file_mutation_allowed: false; }
+export interface RealUploadDependencyNoopBoundary { dependencies_added: false; package_metadata_changed: false; package_dependency_changes: false; runtime_config_created: false; env_files_created: false; secrets_config_created: false; credential_config_created: false; }
+export interface RealUploadStubNoopImplementationOperatorReview { reviewed_by_label?: string | undefined; checklist_acknowledged: boolean; understands_noop_implementation_design_only: boolean; understands_no_stub_files_created: boolean; understands_no_implementation_code_created: boolean; understands_no_runtime_execution: boolean; understands_no_upload_enabled: boolean; understands_no_credentials_accessed: boolean; understands_no_network_calls: boolean; understands_no_media_reads: boolean; understands_no_dependencies_added: boolean; understands_future_noop_stub_file_plan_phase_required: boolean; decision_note_summary?: string | undefined; }
+export interface RealUploadStubNoopImplementationExecutionBoundary { implementation_code_created: false; stub_files_created: false; implementation_files_created: false; runtime_files_created: false; dependencies_added: false; package_metadata_changed: false; runtime_enabled: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; media_file_read: false; file_mutation_allowed: false; ready_for_real_upload: false; }
+export interface RealUploadStubNoopImplementationDesign { schema_version: "1.0"; real_upload_stub_noop_implementation_design_id: string; real_upload_stub_contract_tests_id: string; real_upload_stub_contracts_id: string; real_upload_scaffold_stub_design_id: string; real_upload_scaffold_contract_tests_id: string; real_upload_scaffold_contracts_id: string; real_upload_scaffold_design_id: string; real_upload_implementation_design_id: string; final_real_upload_preflight_gate_id: string; real_upload_dry_run_execution_result_id: string; real_upload_execution_plan_id: string; real_upload_strategy_design_id: string; real_upload_execution_request_id: string; real_upload_readiness_assessment_id: string; dry_run_upload_spike_result_id: string; upload_execution_design_id: string; upload_execution_approval_id: string; platform_upload_request_id: string; upload_package_design_id: string; local_output_review_id: string; production_render_spike_result_id: string; final_render_execution_request_id: string; render_plan_id: string; project_id: string; platform: string; noop_implementation_design_state: RealUploadStubNoopImplementationDesignState; created_at: string; noop_implementation_design_mode: RealUploadStubNoopImplementationDesignMode; required_artifacts: RealUploadStubNoopImplementationRequiredArtifacts; noop_implementation_scope: RealUploadStubNoopImplementationScope; proposed_noop_modules: RealUploadProposedNoopModule[]; proposed_noop_behaviors: RealUploadProposedNoopBehavior[]; noop_runtime_boundary: RealUploadNoopRuntimeBoundary; credential_noop_boundary: RealUploadCredentialNoopBoundary; media_noop_boundary: RealUploadMediaNoopBoundary; platform_api_noop_boundary: RealUploadPlatformApiNoopBoundary; payload_noop_boundary: RealUploadPayloadNoopBoundary; network_noop_boundary: RealUploadNetworkNoopBoundary; file_noop_boundary: RealUploadFileNoopBoundary; dependency_noop_boundary: RealUploadDependencyNoopBoundary; operator_review: RealUploadStubNoopImplementationOperatorReview; execution_boundary: RealUploadStubNoopImplementationExecutionBoundary; validation: { noop_implementation_design_complete: boolean; ready_for_future_noop_stub_file_plan: boolean; ready_for_real_upload: false; implementation_code_created: false; stub_files_created: false; implementation_files_created: false; runtime_files_created: false; dependencies_added: false; package_metadata_changed: false; runtime_enabled: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; media_file_read: false; file_mutation_allowed: false; blocking_reasons: string[]; warnings: string[]; }; provenance: { generated_by: "createRealUploadStubNoopImplementationDesign" | "revokeRealUploadStubNoopImplementationDesign"; source_real_upload_stub_contract_tests_id: string; source_real_upload_stub_contracts_id: string; source_real_upload_scaffold_stub_design_id: string; source_real_upload_scaffold_contract_tests_id: string; source_real_upload_scaffold_contracts_id: string; source_real_upload_scaffold_design_id: string; source_real_upload_implementation_design_id: string; source_final_real_upload_preflight_gate_id: string; source_real_upload_dry_run_execution_result_id: string; source_real_upload_execution_plan_id: string; source_real_upload_strategy_design_id: string; source_real_upload_execution_request_id: string; source_real_upload_readiness_assessment_id: string; source_dry_run_upload_spike_result_id: string; source_upload_execution_design_id: string; source_upload_execution_approval_id: string; source_platform_upload_request_id: string; source_upload_package_design_id: string; source_local_output_review_id: string; source_production_render_spike_result_id: string; source_final_render_execution_request_id: string; source_render_plan_id: string; }; }
+export interface RealUploadStubNoopImplementationDesignValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[]; }
+interface RealUploadStubNoopImplementationDesignStore { schema_version: "1.0"; created_at: string; designs: RealUploadStubNoopImplementationDesign[]; }
+interface RealUploadStubNoopImplementationDesignStoreSummaryItem { noop_implementation_design_state: RealUploadStubNoopImplementationDesignState; created_at: string; noop_implementation_design_total: number; noop_modules_with_blockers: number; safe_summary: string; }
+const REAL_UPLOAD_NOOP_MODULE_KINDS: RealUploadProposedNoopModule["module_kind"][] = ["credential_provider_noop_module", "media_reference_resolver_noop_module", "platform_adapter_noop_module", "payload_builder_noop_module", "network_client_noop_module", "upload_executor_noop_module", "retry_idempotency_noop_module", "rollback_noop_module", "post_upload_verification_noop_module", "audit_event_noop_module", "operator_confirmation_noop_module", "emergency_stop_noop_module", "status_reporter_noop_module", "upload_scaffold_index_noop_module"];
+function getRealUploadStubNoopImplementationDesignPath(): string { return path.join(getRuntimeDir(), "real-upload-stub-noop-implementation-designs.json"); }
+function loadRealUploadStubNoopImplementationDesignStore(): RealUploadStubNoopImplementationDesignStore { try { const filePath = getRealUploadStubNoopImplementationDesignPath(); if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8")) as RealUploadStubNoopImplementationDesignStore; } catch {} return { schema_version: "1.0", created_at: new Date().toISOString(), designs: [] }; }
+function saveRealUploadStubNoopImplementationDesignStore(store: RealUploadStubNoopImplementationDesignStore): void { const filePath = getRealUploadStubNoopImplementationDesignPath(); fs.mkdirSync(path.dirname(filePath), { recursive: true }); store.designs.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_stub_noop_implementation_design_id.localeCompare(b.real_upload_stub_noop_implementation_design_id)); fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf8"); }
+function validateRealUploadStubNoopImplementationDesignShape(design: unknown): RealUploadStubNoopImplementationDesignValidationResult {
+  if (!design || typeof design !== "object") return { ok: false, blocking_reasons: ["No-op implementation design must be an object."], warnings: [] };
+  const d = design as RealUploadStubNoopImplementationDesign;
+  const forbidden = recursivelyCheckForForbiddenStringValues(d);
+  if (forbidden.length > 0) return { ok: false, blocking_reasons: ["No-op implementation design contains forbidden string content."], warnings: [] };
+  if (d.schema_version !== "1.0") return { ok: false, blocking_reasons: ["Schema version must be 1.0."], warnings: [] };
+  if (d.noop_implementation_scope?.noop_implementation_design_only !== true || d.noop_implementation_scope?.implementation_code_created !== false || d.noop_implementation_scope?.stub_files_created !== false || d.noop_implementation_scope?.runtime_files_created !== false || d.noop_implementation_scope?.runtime_enabled !== false || d.noop_implementation_scope?.current_real_upload_requested !== false || d.noop_implementation_scope?.current_network_calls_requested !== false || d.noop_implementation_scope?.current_platform_api_calls_requested !== false || d.noop_implementation_scope?.current_credential_access_requested !== false || d.noop_implementation_scope?.current_media_read_requested !== false || d.noop_implementation_scope?.dependencies_requested !== false || d.noop_implementation_scope?.package_metadata_changes_requested !== false) return { ok: false, blocking_reasons: ["No-op implementation scope must remain design-only."], warnings: [] };
+  if (d.noop_runtime_boundary?.no_runtime_execution !== true || d.noop_runtime_boundary?.no_external_effects !== true || d.noop_runtime_boundary?.no_upload_effects !== true || d.noop_runtime_boundary?.no_network_effects !== true || d.noop_runtime_boundary?.no_credential_effects !== true || d.noop_runtime_boundary?.no_media_effects !== true || d.noop_runtime_boundary?.no_file_effects !== true || d.noop_runtime_boundary?.no_raw_payloads !== true || d.noop_runtime_boundary?.no_raw_responses !== true) return { ok: false, blocking_reasons: ["No-op runtime boundary must be true-gated."], warnings: [] };
+  if (REAL_UPLOAD_NOOP_MODULE_KINDS.some((kind) => d.proposed_noop_modules.filter((m) => m.module_kind === kind).length !== 1)) return { ok: false, blocking_reasons: ["Each required no-op module kind must appear exactly once."], warnings: [] };
+  if (d.proposed_noop_modules.some((m) => m.no_op_only !== true || m.implementation_code_created !== false || m.stub_file_created !== false || m.runtime_enabled !== false || m.upload_enabled !== false || m.network_enabled !== false || m.platform_api_enabled !== false || m.credential_access_enabled !== false || m.media_read_enabled !== false || m.file_mutation_enabled !== false || m.raw_payload_created !== false || m.raw_response_stored !== false)) return { ok: false, blocking_reasons: ["No-op modules must remain safe."], warnings: [] };
+  if (d.proposed_noop_behaviors.some((b) => b.no_op_behavior !== true || b.runtime_execution_allowed !== false || b.runtime_executed !== false || b.external_effects_allowed !== false || b.upload_effect_allowed !== false || b.network_effect_allowed !== false || b.credential_effect_allowed !== false || b.media_effect_allowed !== false || b.file_effect_allowed !== false || b.raw_payload_allowed !== false || b.raw_response_allowed !== false)) return { ok: false, blocking_reasons: ["No-op behaviors must remain safe."], warnings: [] };
+  if (d.execution_boundary?.implementation_code_created !== false || d.execution_boundary?.stub_files_created !== false || d.execution_boundary?.implementation_files_created !== false || d.execution_boundary?.runtime_files_created !== false || d.execution_boundary?.dependencies_added !== false || d.execution_boundary?.package_metadata_changed !== false || d.execution_boundary?.runtime_enabled !== false || d.execution_boundary?.upload_allowed !== false || d.execution_boundary?.upload_execution_enabled !== false || d.execution_boundary?.platform_api_calls_allowed !== false || d.execution_boundary?.network_calls_allowed !== false || d.execution_boundary?.credentials_accessed !== false || d.execution_boundary?.token_accessed !== false || d.execution_boundary?.keychain_accessed !== false || d.execution_boundary?.env_accessed !== false || d.execution_boundary?.media_file_read !== false || d.execution_boundary?.file_mutation_allowed !== false || d.execution_boundary?.ready_for_real_upload !== false) return { ok: false, blocking_reasons: ["Execution boundary must remain false-gated."], warnings: [] };
+  if (d.validation?.ready_for_real_upload !== false || d.validation?.implementation_code_created !== false || d.validation?.stub_files_created !== false || d.validation?.implementation_files_created !== false || d.validation?.runtime_files_created !== false || d.validation?.dependencies_added !== false || d.validation?.package_metadata_changed !== false || d.validation?.runtime_enabled !== false || d.validation?.upload_allowed !== false || d.validation?.upload_execution_enabled !== false || d.validation?.platform_api_calls_allowed !== false || d.validation?.network_calls_allowed !== false || d.validation?.credentials_accessed !== false || d.validation?.token_accessed !== false || d.validation?.media_file_read !== false || d.validation?.file_mutation_allowed !== false) return { ok: false, blocking_reasons: ["Validation flags must remain false."], warnings: [] };
+  return { ok: true, blocking_reasons: [], warnings: [] };
+}
+export function validateRealUploadStubNoopImplementationDesign(design: unknown): RealUploadStubNoopImplementationDesignValidationResult { return validateRealUploadStubNoopImplementationDesignShape(design); }
+export function createRealUploadStubNoopImplementationDesign(input: { stubContractTests: RealUploadStubContractTests; stubContracts: RealUploadStubContracts; stubDesign: RealUploadScaffoldStubDesign; scaffoldContractTests: RealUploadScaffoldContractTests; scaffoldContracts: RealUploadScaffoldContracts; scaffoldDesign: RealUploadScaffoldDesign; implementationDesign: RealUploadImplementationDesign; finalPreflightGate: FinalRealUploadPreflightGate; dryRunExecutionResult: RealUploadDryRunExecutionResult; executionPlan: RealUploadExecutionPlan; strategyDesign: RealUploadStrategyDesign; realUploadExecutionRequest: RealUploadExecutionRequest; readinessAssessment: RealUploadReadinessAssessment; dryRunUploadSpikeResult: DryRunUploadSpikeResult; uploadExecutionDesign: UploadExecutionDesign; uploadExecutionApproval: UploadExecutionApproval; platformUploadRequest: PlatformUploadRequest; uploadPackageDesign: UploadPackageDesign; localOutputReview: LocalOutputOperatorReview; spikeResult: ControlledProductionRenderSpikeResult; decision?: "draft" | "approved_for_future_noop_stub_file_plan" | "rejected"; reviewed_by_label?: string; checklist_acknowledged?: boolean; understands_noop_implementation_design_only?: boolean; understands_no_stub_files_created?: boolean; understands_no_implementation_code_created?: boolean; understands_no_runtime_execution?: boolean; understands_no_upload_enabled?: boolean; understands_no_credentials_accessed?: boolean; understands_no_network_calls?: boolean; understands_no_media_reads?: boolean; understands_no_dependencies_added?: boolean; understands_future_noop_stub_file_plan_phase_required?: boolean; dryRun: true; }): RealUploadStubNoopImplementationDesign {
+  if (input.dryRun !== true) throw new Error("createRealUploadStubNoopImplementationDesign: dryRun=true required");
+  if (!validateRealUploadStubContractTests(input.stubContractTests).ok || !validateRealUploadStubContracts(input.stubContracts).ok || !validateRealUploadScaffoldStubDesign(input.stubDesign).ok || !validateRealUploadScaffoldContractTests(input.scaffoldContractTests).ok || !validateRealUploadScaffoldContracts(input.scaffoldContracts).ok || !validateRealUploadScaffoldDesign(input.scaffoldDesign).ok || !validateRealUploadImplementationDesign(input.implementationDesign).ok || !validateFinalRealUploadPreflightGate(input.finalPreflightGate).ok || !validateRealUploadDryRunExecutionResult(input.dryRunExecutionResult).ok || !validateRealUploadExecutionPlan(input.executionPlan).ok || !validateRealUploadStrategyDesign(input.strategyDesign).ok || !validateRealUploadExecutionRequest(input.realUploadExecutionRequest).ok || !validateRealUploadReadinessAssessment(input.readinessAssessment).ok || !validateDryRunUploadSpikeResult(input.dryRunUploadSpikeResult).ok || !validateUploadExecutionDesign(input.uploadExecutionDesign).ok || !validateUploadExecutionApproval(input.uploadExecutionApproval).ok || !validatePlatformUploadRequest(input.platformUploadRequest).ok || !validateUploadPackageDesign(input.uploadPackageDesign).ok || !validateLocalOutputOperatorReview(input.localOutputReview).ok || !validateControlledProductionRenderSpikeResult(input.spikeResult).ok) throw new Error("createRealUploadStubNoopImplementationDesign: all input artifacts must validate");
+  if (input.stubContractTests.project_id !== input.stubContracts.project_id || input.stubContractTests.platform !== input.stubContracts.platform || input.stubContractTests.render_plan_id !== input.spikeResult.render_plan_id || input.stubContracts.real_upload_stub_contracts_id !== input.stubContractTests.real_upload_stub_contracts_id || input.stubDesign.real_upload_scaffold_stub_design_id !== input.stubContractTests.real_upload_scaffold_stub_design_id || input.scaffoldContractTests.real_upload_scaffold_contract_tests_id !== input.stubContractTests.real_upload_scaffold_contract_tests_id || input.scaffoldContracts.real_upload_scaffold_contracts_id !== input.stubContractTests.real_upload_scaffold_contracts_id || input.scaffoldDesign.real_upload_scaffold_design_id !== input.stubContractTests.real_upload_scaffold_design_id || input.implementationDesign.real_upload_implementation_design_id !== input.stubContractTests.real_upload_implementation_design_id || input.finalPreflightGate.final_real_upload_preflight_gate_id !== input.stubContractTests.final_real_upload_preflight_gate_id || input.dryRunExecutionResult.real_upload_dry_run_execution_result_id !== input.stubContractTests.real_upload_dry_run_execution_result_id || input.executionPlan.real_upload_execution_plan_id !== input.stubContractTests.real_upload_execution_plan_id || input.strategyDesign.real_upload_strategy_design_id !== input.stubContractTests.real_upload_strategy_design_id || input.realUploadExecutionRequest.real_upload_execution_request_id !== input.stubContractTests.real_upload_execution_request_id || input.readinessAssessment.real_upload_readiness_assessment_id !== input.stubContractTests.real_upload_readiness_assessment_id || input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id !== input.stubContractTests.dry_run_upload_spike_result_id || input.uploadExecutionDesign.upload_execution_design_id !== input.stubContractTests.upload_execution_design_id || input.uploadExecutionApproval.upload_execution_approval_id !== input.stubContractTests.upload_execution_approval_id || input.platformUploadRequest.platform_upload_request_id !== input.stubContractTests.platform_upload_request_id || input.uploadPackageDesign.upload_package_design_id !== input.stubContractTests.upload_package_design_id || input.localOutputReview.local_output_review_id !== input.stubContractTests.local_output_review_id || input.spikeResult.production_render_spike_result_id !== input.stubContractTests.production_render_spike_result_id || input.spikeResult.final_render_execution_request_id !== input.stubContractTests.final_render_execution_request_id || input.spikeResult.render_plan_id !== input.stubContractTests.render_plan_id) throw new Error("createRealUploadStubNoopImplementationDesign: artifact IDs must match");
+  const approved = input.decision === "approved_for_future_noop_stub_file_plan";
+  if (approved && (input.stubContractTests.stub_contract_tests_state !== "approved_for_future_stub_noop_implementation_design" || input.stubContractTests.validation.ready_for_future_stub_noop_implementation_design !== true || input.stubContractTests.validation.ready_for_real_upload !== false)) throw new Error("createRealUploadStubNoopImplementationDesign: stub contract tests must be approved for future noop implementation design");
+  if (approved && (!input.checklist_acknowledged || !input.understands_noop_implementation_design_only || !input.understands_no_stub_files_created || !input.understands_no_implementation_code_created || !input.understands_no_runtime_execution || !input.understands_no_upload_enabled || !input.understands_no_credentials_accessed || !input.understands_no_network_calls || !input.understands_no_media_reads || !input.understands_no_dependencies_added || !input.understands_future_noop_stub_file_plan_phase_required)) throw new Error("createRealUploadStubNoopImplementationDesign: acknowledgements required");
+  const design: RealUploadStubNoopImplementationDesign = {
+    schema_version: "1.0",
+    real_upload_stub_noop_implementation_design_id: input.stubContractTests.real_upload_stub_contract_tests_id.replace("tests", "noop-implementation-design"),
+    real_upload_stub_contract_tests_id: input.stubContractTests.real_upload_stub_contract_tests_id,
+    real_upload_stub_contracts_id: input.stubContracts.real_upload_stub_contracts_id,
+    real_upload_scaffold_stub_design_id: input.stubDesign.real_upload_scaffold_stub_design_id,
+    real_upload_scaffold_contract_tests_id: input.scaffoldContractTests.real_upload_scaffold_contract_tests_id,
+    real_upload_scaffold_contracts_id: input.scaffoldContracts.real_upload_scaffold_contracts_id,
+    real_upload_scaffold_design_id: input.scaffoldDesign.real_upload_scaffold_design_id,
+    real_upload_implementation_design_id: input.implementationDesign.real_upload_implementation_design_id,
+    final_real_upload_preflight_gate_id: input.finalPreflightGate.final_real_upload_preflight_gate_id,
+    real_upload_dry_run_execution_result_id: input.dryRunExecutionResult.real_upload_dry_run_execution_result_id,
+    real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id,
+    real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id,
+    real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id,
+    real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id,
+    dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+    upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+    upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+    platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+    upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+    local_output_review_id: input.localOutputReview.local_output_review_id,
+    production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+    final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+    render_plan_id: input.spikeResult.render_plan_id,
+    project_id: input.stubContractTests.project_id,
+    platform: input.stubContractTests.platform,
+    noop_implementation_design_state: approved ? "approved_for_future_noop_stub_file_plan" : "draft",
+    created_at: new Date().toISOString(),
+    noop_implementation_design_mode: approved ? "operator_review_real_upload_stub_noop_implementation_design" : "real_upload_stub_noop_implementation_design_only",
+    required_artifacts: {
+      real_upload_stub_contract_tests_validated: true,
+      real_upload_stub_contracts_validated: true,
+      real_upload_scaffold_stub_design_validated: true,
+      real_upload_scaffold_contract_tests_validated: true,
+      real_upload_scaffold_contracts_validated: true,
+      real_upload_scaffold_design_validated: true,
+      real_upload_implementation_design_validated: true,
+      final_real_upload_preflight_gate_validated: true,
+      real_upload_dry_run_execution_result_validated: true,
+      real_upload_execution_plan_validated: true,
+      real_upload_strategy_design_validated: true,
+      real_upload_execution_request_validated: true,
+      real_upload_readiness_assessment_validated: true,
+      dry_run_upload_spike_result_validated: true,
+      upload_execution_design_validated: true,
+      upload_execution_approval_validated: true,
+      platform_upload_request_validated: true,
+      upload_package_design_validated: true,
+      local_output_review_validated: true,
+      spike_result_validated: true,
+    },
+    noop_implementation_scope: {
+      future_noop_stub_file_plan_requested: approved,
+      noop_implementation_design_only: true,
+      implementation_code_created: false,
+      stub_files_created: false,
+      runtime_files_created: false,
+      runtime_enabled: false,
+      current_real_upload_requested: false,
+      current_network_calls_requested: false,
+      current_platform_api_calls_requested: false,
+      current_credential_access_requested: false,
+      current_media_read_requested: false,
+      dependencies_requested: false,
+      package_metadata_changes_requested: false,
+    },
+    proposed_noop_modules: REAL_UPLOAD_NOOP_MODULE_KINDS.map((module_kind, index) => ({
+      noop_module_id: `noop-module-${index + 1}`,
+      module_kind,
+      module_state: approved ? "ready_for_future_noop_stub_file_plan" : "proposed",
+      safe_summary: `${module_kind.replace(/_/g, " ")} only.`,
+      no_op_only: true as const,
+      implementation_code_created: false as const,
+      stub_file_created: false as const,
+      runtime_enabled: false as const,
+      upload_enabled: false as const,
+      network_enabled: false as const,
+      platform_api_enabled: false as const,
+      credential_access_enabled: false as const,
+      media_read_enabled: false as const,
+      file_mutation_enabled: false as const,
+      raw_payload_created: false as const,
+      raw_response_stored: false as const,
+      blocking_reasons: [],
+      warnings: [],
+    })),
+    proposed_noop_behaviors: [{
+      noop_behavior_id: "noop-behavior-1",
+      behavior_kind: "credential_provider",
+      behavior_state: approved ? "ready_for_future_noop_stub_file_plan" : "proposed",
+      safe_summary: "Credential provider noop behavior only.",
+      no_op_behavior: true as const,
+      runtime_execution_allowed: false as const,
+      runtime_executed: false as const,
+      external_effects_allowed: false as const,
+      upload_effect_allowed: false as const,
+      network_effect_allowed: false as const,
+      credential_effect_allowed: false as const,
+      media_effect_allowed: false as const,
+      file_effect_allowed: false as const,
+      raw_payload_allowed: false as const,
+      raw_response_allowed: false as const,
+      blocking_reasons: [],
+      warnings: [],
+    }],
+    noop_runtime_boundary: {
+      all_modules_no_op_only: true,
+      no_runtime_execution: true,
+      no_external_effects: true,
+      no_upload_effects: true,
+      no_network_effects: true,
+      no_credential_effects: true,
+      no_media_effects: true,
+      no_file_effects: true,
+      no_raw_payloads: true,
+      no_raw_responses: true,
+    },
+    credential_noop_boundary: {
+      credential_noop_designed: true,
+      credentials_required: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      keychain_accessed: false,
+      env_accessed: false,
+      credential_reference_stored: false,
+      token_reference_stored: false,
+      secret_material_stored: false,
+    },
+    media_noop_boundary: {
+      media_noop_designed: true,
+      media_file_read: false,
+      raw_media_path_stored: false,
+      media_file_modified: false,
+      media_file_copied: false,
+      media_file_moved: false,
+      media_file_deleted: false,
+    },
+    platform_api_noop_boundary: {
+      platform_api_noop_designed: true,
+      platform_adapter_implemented: false,
+      platform_endpoint_selected: false,
+      platform_api_calls_allowed: false,
+      platform_api_calls_made: false,
+      raw_account_ids_stored: false,
+    },
+    payload_noop_boundary: {
+      payload_noop_designed: true,
+      platform_api_payload_created: false,
+      platform_api_payload_stored: false,
+      upload_payload_created: false,
+      raw_payload_stored: false,
+    },
+    network_noop_boundary: {
+      network_noop_designed: true,
+      network_client_implemented: false,
+      network_calls_allowed: false,
+      network_calls_made: false,
+      external_side_effects_allowed: false,
+      external_side_effects_observed: false,
+    },
+    file_noop_boundary: {
+      files_created_now: false,
+      stub_files_created: false,
+      implementation_files_created: false,
+      package_files_changed: false,
+      runtime_files_created: false,
+      file_mutation_allowed: false,
+    },
+    dependency_noop_boundary: {
+      dependencies_added: false,
+      package_metadata_changed: false,
+      package_dependency_changes: false,
+      runtime_config_created: false,
+      env_files_created: false,
+      secrets_config_created: false,
+      credential_config_created: false,
+    },
+    operator_review: {
+      reviewed_by_label: safeRealUploadStubContractTestsString(input.reviewed_by_label, "[operator]"),
+      checklist_acknowledged: input.checklist_acknowledged ?? false,
+      understands_noop_implementation_design_only: input.understands_noop_implementation_design_only ?? false,
+      understands_no_stub_files_created: input.understands_no_stub_files_created ?? false,
+      understands_no_implementation_code_created: input.understands_no_implementation_code_created ?? false,
+      understands_no_runtime_execution: input.understands_no_runtime_execution ?? false,
+      understands_no_upload_enabled: input.understands_no_upload_enabled ?? false,
+      understands_no_credentials_accessed: input.understands_no_credentials_accessed ?? false,
+      understands_no_network_calls: input.understands_no_network_calls ?? false,
+      understands_no_media_reads: input.understands_no_media_reads ?? false,
+      understands_no_dependencies_added: input.understands_no_dependencies_added ?? false,
+      understands_future_noop_stub_file_plan_phase_required: input.understands_future_noop_stub_file_plan_phase_required ?? false,
+      decision_note_summary: safeRealUploadStubContractTestsString((input as { decision_note_summary?: string }).decision_note_summary, "[noop-implementation-design]"),
+    },
+    execution_boundary: {
+      implementation_code_created: false,
+      stub_files_created: false,
+      implementation_files_created: false,
+      runtime_files_created: false,
+      dependencies_added: false,
+      package_metadata_changed: false,
+      runtime_enabled: false,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      keychain_accessed: false,
+      env_accessed: false,
+      media_file_read: false,
+      file_mutation_allowed: false,
+      ready_for_real_upload: false,
+    },
+    validation: {
+      noop_implementation_design_complete: true,
+      ready_for_future_noop_stub_file_plan: approved,
+      ready_for_real_upload: false,
+      implementation_code_created: false,
+      stub_files_created: false,
+      implementation_files_created: false,
+      runtime_files_created: false,
+      dependencies_added: false,
+      package_metadata_changed: false,
+      runtime_enabled: false,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      media_file_read: false,
+      file_mutation_allowed: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createRealUploadStubNoopImplementationDesign",
+      source_real_upload_stub_contract_tests_id: input.stubContractTests.real_upload_stub_contract_tests_id,
+      source_real_upload_stub_contracts_id: input.stubContracts.real_upload_stub_contracts_id,
+      source_real_upload_scaffold_stub_design_id: input.stubDesign.real_upload_scaffold_stub_design_id,
+      source_real_upload_scaffold_contract_tests_id: input.scaffoldContractTests.real_upload_scaffold_contract_tests_id,
+      source_real_upload_scaffold_contracts_id: input.scaffoldContracts.real_upload_scaffold_contracts_id,
+      source_real_upload_scaffold_design_id: input.scaffoldDesign.real_upload_scaffold_design_id,
+      source_real_upload_implementation_design_id: input.implementationDesign.real_upload_implementation_design_id,
+      source_final_real_upload_preflight_gate_id: input.finalPreflightGate.final_real_upload_preflight_gate_id,
+      source_real_upload_dry_run_execution_result_id: input.dryRunExecutionResult.real_upload_dry_run_execution_result_id,
+      source_real_upload_execution_plan_id: input.executionPlan.real_upload_execution_plan_id,
+      source_real_upload_strategy_design_id: input.strategyDesign.real_upload_strategy_design_id,
+      source_real_upload_execution_request_id: input.realUploadExecutionRequest.real_upload_execution_request_id,
+      source_real_upload_readiness_assessment_id: input.readinessAssessment.real_upload_readiness_assessment_id,
+      source_dry_run_upload_spike_result_id: input.dryRunUploadSpikeResult.dry_run_upload_spike_result_id,
+      source_upload_execution_design_id: input.uploadExecutionDesign.upload_execution_design_id,
+      source_upload_execution_approval_id: input.uploadExecutionApproval.upload_execution_approval_id,
+      source_platform_upload_request_id: input.platformUploadRequest.platform_upload_request_id,
+      source_upload_package_design_id: input.uploadPackageDesign.upload_package_design_id,
+      source_local_output_review_id: input.localOutputReview.local_output_review_id,
+      source_production_render_spike_result_id: input.spikeResult.production_render_spike_result_id,
+      source_final_render_execution_request_id: input.spikeResult.final_render_execution_request_id,
+      source_render_plan_id: input.spikeResult.render_plan_id,
+    },
+  };
+  const validation = validateRealUploadStubNoopImplementationDesign(design);
+  if (!validation.ok) throw new Error(`createRealUploadStubNoopImplementationDesign: ${validation.blocking_reasons.join("; ")}`);
+  return design;
+}
+export function saveRealUploadStubNoopImplementationDesign(design: RealUploadStubNoopImplementationDesign): void {
+  if (recursivelyCheckForForbiddenStringValues(design).length > 0) throw new Error("Unsafe real upload stub noop implementation design cannot be stored.");
+  const validation = validateRealUploadStubNoopImplementationDesign(design);
+  if (!validation.ok) throw new Error(`saveRealUploadStubNoopImplementationDesign: ${validation.blocking_reasons.join("; ")}`);
+  const store = loadRealUploadStubNoopImplementationDesignStore();
+  const index = store.designs.findIndex((item) => item.real_upload_stub_noop_implementation_design_id === design.real_upload_stub_noop_implementation_design_id);
+  if (index >= 0) store.designs[index] = design; else store.designs.push(design);
+  saveRealUploadStubNoopImplementationDesignStore(store);
+}
+export function listRealUploadStubNoopImplementationDesigns(options?: { project_id?: string; platform?: string; noop_implementation_design_state?: string; real_upload_stub_contract_tests_id?: string; real_upload_stub_contracts_id?: string }): RealUploadStubNoopImplementationDesign[] {
+  return loadRealUploadStubNoopImplementationDesignStore().designs
+    .filter((item) => !options?.project_id || item.project_id === options.project_id)
+    .filter((item) => !options?.platform || item.platform === options.platform)
+    .filter((item) => !options?.noop_implementation_design_state || item.noop_implementation_design_state === options.noop_implementation_design_state)
+    .filter((item) => !options?.real_upload_stub_contract_tests_id || item.real_upload_stub_contract_tests_id === options.real_upload_stub_contract_tests_id)
+    .filter((item) => !options?.real_upload_stub_contracts_id || item.real_upload_stub_contracts_id === options.real_upload_stub_contracts_id)
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.real_upload_stub_noop_implementation_design_id.localeCompare(b.real_upload_stub_noop_implementation_design_id));
+}
+export function getRealUploadStubNoopImplementationDesign(real_upload_stub_noop_implementation_design_id: string): RealUploadStubNoopImplementationDesign | null {
+  return loadRealUploadStubNoopImplementationDesignStore().designs.find((item) => item.real_upload_stub_noop_implementation_design_id === real_upload_stub_noop_implementation_design_id) ?? null;
+}
+export function revokeRealUploadStubNoopImplementationDesign(real_upload_stub_noop_implementation_design_id: string, reason: string): RealUploadStubNoopImplementationDesign {
+  const design = getRealUploadStubNoopImplementationDesign(real_upload_stub_noop_implementation_design_id);
+  if (!design) throw new Error(`No-op implementation design not found: ${real_upload_stub_noop_implementation_design_id}`);
+  const safeReason = safeRealUploadStubContractTestsString(reason, "[unsafe-reason]");
+  const revoked: RealUploadStubNoopImplementationDesign = { ...design, noop_implementation_design_state: "revoked", validation: { ...design.validation, ready_for_future_noop_stub_file_plan: false, blocking_reasons: [...design.validation.blocking_reasons, safeReason] }, provenance: { ...design.provenance, generated_by: "revokeRealUploadStubNoopImplementationDesign" } };
+  saveRealUploadStubNoopImplementationDesign(revoked);
+  return revoked;
+}
+export function getRealUploadStubNoopImplementationDesignReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_noop_stub_file_plan: number; rejected: number; revoked: number; noop_implementation_design_complete: number; ready_for_future_noop_stub_file_plan: number; ready_for_real_upload: 0; implementation_code_created: 0; stub_files_created: 0; implementation_files_created: 0; runtime_files_created: 0; dependencies_added: 0; package_metadata_changed: 0; runtime_enabled: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; file_mutation_allowed: 0; noop_modules_total: number; noop_modules_with_blockers: number; designs: Array<RealUploadStubNoopImplementationDesignStoreSummaryItem>; } {
+  const designs = listRealUploadStubNoopImplementationDesigns(options);
+  const by_state: Record<string, number> = {};
+  let blocked = 0;
+  let ready = 0;
+  let approved = 0;
+  let rejected = 0;
+  let revoked = 0;
+  let complete = 0;
+  let readyFuture = 0;
+  let total = 0;
+  let blockers = 0;
+  const summaries = designs.map((item) => {
+    by_state[item.noop_implementation_design_state] = (by_state[item.noop_implementation_design_state] ?? 0) + 1;
+    if (item.noop_implementation_design_state === "blocked") blocked++;
+    if (item.noop_implementation_design_state === "ready_for_operator_review") ready++;
+    if (item.noop_implementation_design_state === "approved_for_future_noop_stub_file_plan") approved++;
+    if (item.noop_implementation_design_state === "rejected") rejected++;
+    if (item.noop_implementation_design_state === "revoked") revoked++;
+    if (item.validation.noop_implementation_design_complete) complete++;
+    if (item.validation.ready_for_future_noop_stub_file_plan) readyFuture++;
+    total += item.proposed_noop_modules.length;
+    blockers += item.proposed_noop_modules.filter((module) => module.blocking_reasons.length > 0).length;
+    return {
+      noop_implementation_design_state: item.noop_implementation_design_state,
+      created_at: item.created_at,
+      noop_implementation_design_total: item.proposed_noop_modules.length,
+      noop_modules_with_blockers: item.proposed_noop_modules.filter((module) => module.blocking_reasons.length > 0).length,
+      safe_summary: safeRealUploadStubContractTestsString(item.validation.blocking_reasons[0] || item.proposed_noop_modules[0]?.safe_summary || "No-op implementation design summary.", "No-op implementation design summary."),
+    };
+  });
+  return {
+    total: summaries.length,
+    by_state,
+    blocked,
+    ready_for_operator_review: ready,
+    approved_for_future_noop_stub_file_plan: approved,
+    rejected,
+    revoked,
+    noop_implementation_design_complete: complete,
+    ready_for_future_noop_stub_file_plan: readyFuture,
+    ready_for_real_upload: 0,
+    implementation_code_created: 0,
+    stub_files_created: 0,
+    implementation_files_created: 0,
+    runtime_files_created: 0,
+    dependencies_added: 0,
+    package_metadata_changed: 0,
+    runtime_enabled: 0,
+    upload_allowed: 0,
+    upload_execution_enabled: 0,
+    platform_api_calls_allowed: 0,
+    network_calls_allowed: 0,
+    credentials_accessed: 0,
+    token_accessed: 0,
+    media_file_read: 0,
+    file_mutation_allowed: 0,
+    noop_modules_total: total,
+    noop_modules_with_blockers: blockers,
+    designs: summaries,
   };
 }
 

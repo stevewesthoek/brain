@@ -308,6 +308,13 @@ import {
   getRealUploadStubContractTests,
   revokeRealUploadStubContractTests,
   getRealUploadStubContractTestsReport,
+  createRealUploadStubNoopImplementationDesign,
+  validateRealUploadStubNoopImplementationDesign,
+  saveRealUploadStubNoopImplementationDesign,
+  listRealUploadStubNoopImplementationDesigns,
+  getRealUploadStubNoopImplementationDesign,
+  revokeRealUploadStubNoopImplementationDesign,
+  getRealUploadStubNoopImplementationDesignReport,
   createRealUploadScaffoldContractTests,
   validateRealUploadScaffoldContractTests,
   saveRealUploadScaffoldContractTests,
@@ -355,6 +362,7 @@ import {
   type RealUploadScaffoldStubDesign,
   type RealUploadStubContracts,
   type RealUploadStubContractTests,
+  type RealUploadStubNoopImplementationDesign,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -733,20 +741,18 @@ function createSafeLocalOutputOperatorReview(
     decision_note_summary: string;
   }> = {}
 ): LocalOutputOperatorReview {
-  const review = createLocalOutputOperatorReview({
+  return createLocalOutputOperatorReview({
     spikeResult,
     decision,
     dryRun: true,
-    reviewed_by_label: "operator-001",
-    checklist_acknowledged: true,
-    content_quality_acknowledged: true,
-    platform_fit_acknowledged: true,
-    rights_and_safety_acknowledged: true,
-    understands_no_upload_enabled: true,
-    decision_note_summary: "[local-output-review]",
-    ...overrides,
+    reviewed_by_label: overrides.reviewed_by_label ?? "operator-001",
+    checklist_acknowledged: overrides.checklist_acknowledged ?? true,
+    content_quality_acknowledged: overrides.content_quality_acknowledged ?? true,
+    platform_fit_acknowledged: overrides.platform_fit_acknowledged ?? true,
+    rights_and_safety_acknowledged: overrides.rights_and_safety_acknowledged ?? true,
+    understands_no_upload_enabled: overrides.understands_no_upload_enabled ?? true,
+    decision_note_summary: overrides.decision_note_summary ?? "[local-output-review]",
   });
-  return review;
 }
 
 function createSafeUploadPackageDesign(
@@ -776,22 +782,21 @@ function createSafeUploadPackageDesign(
     spikeResult,
     decision,
     dryRun: true,
-    reviewed_by_label: "operator-001",
-    checklist_acknowledged: true,
-    metadata_quality_acknowledged: true,
-    platform_target_acknowledged: true,
-    understands_no_upload_enabled: true,
-    decision_note_summary: "[upload-package-design]",
-    platform_target_summary: "[platform-target]",
-    account_reference_summary: "[account-reference]",
-    channel_or_profile_reference_summary: "[channel-reference]",
-    title_summary: "Safe upload package design title",
-    description_summary: "Safe upload package design description",
-    tags_summary: ["tag1", "tag2"],
-    category_summary: "education",
-    visibility_summary: "unlisted",
-    thumbnail_summary: "[thumbnail-design]",
-  ...overrides,
+    reviewed_by_label: overrides.reviewed_by_label ?? "operator-001",
+    checklist_acknowledged: overrides.checklist_acknowledged ?? true,
+    metadata_quality_acknowledged: overrides.metadata_quality_acknowledged ?? true,
+    platform_target_acknowledged: overrides.platform_target_acknowledged ?? true,
+    understands_no_upload_enabled: overrides.understands_no_upload_enabled ?? true,
+    decision_note_summary: overrides.decision_note_summary ?? "[upload-package-design]",
+    platform_target_summary: overrides.platform_target_summary ?? "[platform-target]",
+    account_reference_summary: overrides.account_reference_summary ?? "[account-reference]",
+    channel_or_profile_reference_summary: overrides.channel_or_profile_reference_summary ?? "[channel-reference]",
+    title_summary: overrides.title_summary ?? "Safe upload package design title",
+    description_summary: overrides.description_summary ?? "Safe upload package design description",
+    tags_summary: overrides.tags_summary ?? ["tag1", "tag2"],
+    category_summary: overrides.category_summary ?? "education",
+    visibility_summary: overrides.visibility_summary ?? "unlisted",
+    thumbnail_summary: overrides.thumbnail_summary ?? "[thumbnail-design]",
   });
 }
 
@@ -23049,6 +23054,142 @@ test("VO-7T-REPORT-293: report counters remain zero and sanitize legacy data", (
     assert.equal(report.runtime_files_created, 0);
     assert.equal(report.dependencies_added, 0);
     assert.equal(report.contract_runtime_executed, 0);
+    assert.equal(report.upload_allowed, 0);
+    assert.equal(report.platform_api_calls_allowed, 0);
+    assert.equal(report.network_calls_allowed, 0);
+    assert.equal(report.credentials_accessed, 0);
+    assert.equal(report.media_file_read, 0);
+    assert.equal(report.file_mutation_allowed, 0);
+    assert.equal(JSON.stringify(report).includes("access_token"), false);
+    assert.equal(JSON.stringify(report).includes("../legacy-summary"), false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+function createSafeRealUploadStubNoopImplementationDesignFixture() {
+  const fixture: any = createSafeRealUploadStubContractTestsFixture();
+  const approvedFlags = {
+    checklist_acknowledged: true,
+    understands_stub_contract_tests_only: true,
+    understands_no_stub_files_created: true,
+    understands_no_implementation_files_created: true,
+    understands_no_runtime_execution: true,
+    understands_no_upload_enabled: true,
+    understands_no_credentials_accessed: true,
+    understands_no_network_calls: true,
+    understands_no_media_reads: true,
+    understands_no_dependencies_added: true,
+    understands_future_stub_noop_implementation_design_phase_required: true,
+  };
+  const stubContractTests = createRealUploadStubContractTests({ ...fixture, ...approvedFlags, dryRun: true as true, decision: "approved_for_future_stub_noop_implementation_design" });
+  const design = createRealUploadStubNoopImplementationDesign({
+    ...fixture,
+    stubContractTests,
+    dryRun: true as true,
+  });
+  return { ...fixture, stubContractTests, design };
+}
+
+test("VO-7U-SCHEMA-294: noop implementation design schema and example parse safely", () => {
+  const repoRootForSpecs = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/real-upload-stub-noop-implementation-design.schema.json"), "utf8")) as Record<string, unknown>;
+  const example = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/examples/real-upload-stub-noop-implementation-design.example.json"), "utf8")) as any;
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.schema_version, "1.0");
+  assert.equal(example.noop_implementation_design_mode, "real_upload_stub_noop_implementation_design_only");
+  assert.equal(Array.isArray(example.proposed_noop_modules), true);
+  assert.equal(example.proposed_noop_modules.length, 14);
+  assert.equal(example.proposed_noop_behaviors.length > 0, true);
+  assert.equal(JSON.stringify(example).includes("keychain://"), false);
+  assert.equal(JSON.stringify(example).includes("access_token"), false);
+  assert.equal(JSON.stringify(example).includes("refresh_token"), false);
+  assert.equal(JSON.stringify(example).includes("client_secret"), false);
+});
+
+test("VO-7U-CREATE-295: create noop implementation design from safe artifacts and reject unsafe inputs", () => {
+  const fixture: any = createSafeRealUploadStubNoopImplementationDesignFixture();
+  try {
+    assert.throws(() => createRealUploadStubNoopImplementationDesign({ ...fixture, dryRun: false as false }), /dryRun=true required/);
+    const approvedFlags = {
+      checklist_acknowledged: true,
+      understands_noop_implementation_design_only: true,
+      understands_no_stub_files_created: true,
+      understands_no_implementation_code_created: true,
+      understands_no_runtime_execution: true,
+      understands_no_upload_enabled: true,
+      understands_no_credentials_accessed: true,
+      understands_no_network_calls: true,
+      understands_no_media_reads: true,
+      understands_no_dependencies_added: true,
+      understands_future_noop_stub_file_plan_phase_required: true,
+    };
+    assert.throws(() => createRealUploadStubNoopImplementationDesign({ ...fixture, ...approvedFlags, dryRun: true as true, decision: "approved_for_future_noop_stub_file_plan", stubContractTests: { ...fixture.stubContractTests, stub_contract_tests_state: "draft" } }), /stub contract tests must be approved for future noop implementation design/);
+    assert.throws(() => createRealUploadStubNoopImplementationDesign({ ...fixture, ...approvedFlags, dryRun: true as true, decision: "approved_for_future_noop_stub_file_plan", checklist_acknowledged: false }), /acknowledgements required/);
+    const draftDesign = createRealUploadStubNoopImplementationDesign({ ...fixture, dryRun: true as true });
+    assert.equal(draftDesign.schema_version, "1.0");
+    assert.equal(draftDesign.noop_implementation_design_state, "draft");
+    assert.equal(draftDesign.validation.ready_for_real_upload, false);
+    const approvedDesign = createRealUploadStubNoopImplementationDesign({ ...fixture, ...approvedFlags, dryRun: true as true, decision: "approved_for_future_noop_stub_file_plan" });
+    assert.equal(approvedDesign.noop_implementation_design_state, "approved_for_future_noop_stub_file_plan");
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7U-VALIDATE-296: validator rejects missing or unsafe noop implementation design shapes", () => {
+  const fixture: any = createSafeRealUploadStubNoopImplementationDesignFixture();
+  try {
+    const design = fixture.design;
+    assert.equal(validateRealUploadStubNoopImplementationDesign(design).ok, true);
+    assert.equal(validateRealUploadStubNoopImplementationDesign({ ...design, proposed_noop_modules: design.proposed_noop_modules.filter((module: any) => module.module_kind !== "upload_scaffold_index_noop_module") }).ok, false);
+    assert.equal(validateRealUploadStubNoopImplementationDesign({ ...design, proposed_noop_modules: [...design.proposed_noop_modules, design.proposed_noop_modules[0]] }).ok, false);
+    assert.equal(validateRealUploadStubNoopImplementationDesign({ ...design, noop_runtime_boundary: { ...design.noop_runtime_boundary, no_external_effects: false as never } }).ok, false);
+    assert.equal(validateRealUploadStubNoopImplementationDesign({ ...design, execution_boundary: { ...design.execution_boundary, implementation_code_created: true as never } }).ok, false);
+    assert.equal(validateRealUploadStubNoopImplementationDesign({ ...design, proposed_noop_modules: design.proposed_noop_modules.map((module: any) => module.module_kind === "credential_provider_noop_module" ? { ...module, safe_summary: "../unsafe" } : module) }).ok, false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7U-STORE-297: store save list get revoke works and rejects unsafe data", () => {
+  const fixture: any = createSafeRealUploadStubNoopImplementationDesignFixture();
+  try {
+    const design = fixture.design;
+    saveRealUploadStubNoopImplementationDesign(design);
+    assert.equal(getRealUploadStubNoopImplementationDesign(design.real_upload_stub_noop_implementation_design_id)?.real_upload_stub_noop_implementation_design_id, design.real_upload_stub_noop_implementation_design_id);
+    assert.equal(listRealUploadStubNoopImplementationDesigns({ project_id: design.project_id }).some((item) => item.real_upload_stub_noop_implementation_design_id === design.real_upload_stub_noop_implementation_design_id), true);
+    assert.equal(revokeRealUploadStubNoopImplementationDesign(design.real_upload_stub_noop_implementation_design_id, "paused for review").noop_implementation_design_state, "revoked");
+    assert.throws(() => saveRealUploadStubNoopImplementationDesign({ ...design, real_upload_stub_noop_implementation_design_id: "../unsafe" } as RealUploadStubNoopImplementationDesign), /Unsafe real upload stub noop implementation design cannot be stored/);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7U-REPORT-298: report counters remain zero and sanitize legacy data", () => {
+  const fixture: any = createSafeRealUploadStubNoopImplementationDesignFixture();
+  try {
+    const design = fixture.design;
+    saveRealUploadStubNoopImplementationDesign(design);
+    const storePath = path.join(fixture.tempDir, "real-upload-stub-noop-implementation-designs.json");
+    fs.writeFileSync(storePath, JSON.stringify({
+      schema_version: "1.0",
+      created_at: "2026-05-12T00:00:00.000Z",
+      designs: [{
+        ...design,
+        real_upload_stub_noop_implementation_design_id: "../legacy-design-001",
+        project_id: "../legacy-project",
+        proposed_noop_modules: design.proposed_noop_modules.map((module: any) => ({ ...module, safe_summary: "../legacy-summary" })),
+        validation: { ...design.validation, blocking_reasons: ["../legacy-blocker"] },
+      }],
+    }, null, 2));
+    const report = getRealUploadStubNoopImplementationDesignReport();
+    assert.equal(report.ready_for_real_upload, 0);
+    assert.equal(report.implementation_code_created, 0);
+    assert.equal(report.stub_files_created, 0);
+    assert.equal(report.implementation_files_created, 0);
+    assert.equal(report.runtime_files_created, 0);
+    assert.equal(report.dependencies_added, 0);
     assert.equal(report.upload_allowed, 0);
     assert.equal(report.platform_api_calls_allowed, 0);
     assert.equal(report.network_calls_allowed, 0);
