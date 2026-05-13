@@ -322,6 +322,8 @@ import {
   getRealUploadNoopStubFilePlan,
   revokeRealUploadNoopStubFilePlan,
   getRealUploadNoopStubFilePlanReport,
+  createRealUploadNoopStubFileCreationResult,
+  validateRealUploadNoopStubFileCreationResult,
   createRealUploadScaffoldContractTests,
   validateRealUploadScaffoldContractTests,
   saveRealUploadScaffoldContractTests,
@@ -23351,6 +23353,58 @@ test("VO-7V-REPORT-303: report counters remain zero and sanitize legacy data", (
     assert.equal(report.file_mutation_allowed, 0);
     assert.equal(JSON.stringify(report).includes("access_token"), false);
     assert.equal(JSON.stringify(report).includes("../legacy-summary"), false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+function createSafeRealUploadNoopStubFileCreationResultFixture() {
+  const fixture: any = createSafeRealUploadNoopStubFilePlanFixture();
+  const approvedPlan = createRealUploadNoopStubFilePlan({ ...fixture, ...fixture.approvedFlags, dryRun: true as true, decision: "approved_for_future_noop_stub_file_creation" });
+  const creationResult = createRealUploadNoopStubFileCreationResult({ noopStubFilePlan: approvedPlan, dryRun: true as true });
+  return { ...fixture, approvedPlan, creationResult };
+}
+
+test("VO-7W-SCHEMA-304: noop stub file creation result schema and example parse safely", () => {
+  const repoRootForSpecs = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/real-upload-noop-stub-file-creation-result.schema.json"), "utf8")) as Record<string, unknown>;
+  const example = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/examples/real-upload-noop-stub-file-creation-result.example.json"), "utf8")) as any;
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.schema_version, "1.0");
+  assert.equal(example.creation_state, "created_noop_stubs");
+  assert.equal(example.created_files_summary.stub_source_file_created, true);
+  assert.equal(example.created_files_summary.stub_test_file_created, true);
+  assert.equal(example.no_op_stub_results_summary.required_stub_kinds_present, true);
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(JSON.stringify(example).includes("keychain://"), false);
+  assert.equal(JSON.stringify(example).includes("access_token"), false);
+  assert.equal(JSON.stringify(example).includes("refresh_token"), false);
+  assert.equal(JSON.stringify(example).includes("client_secret"), false);
+});
+
+test("VO-7W-CREATE-305: create noop stub file creation result from approved plan and reject unsafe inputs", () => {
+  const fixture: any = createSafeRealUploadNoopStubFileCreationResultFixture();
+  try {
+    assert.throws(() => createRealUploadNoopStubFileCreationResult({ ...fixture, dryRun: false as false }), /dryRun=true required/);
+    assert.throws(() => createRealUploadNoopStubFileCreationResult({ noopStubFilePlan: { ...fixture.approvedPlan, noop_stub_file_plan_state: "draft" }, dryRun: true as true }), /approved for future noop stub file creation/);
+    const result = createRealUploadNoopStubFileCreationResult({ noopStubFilePlan: fixture.approvedPlan, dryRun: true as true });
+    assert.equal(result.creation_state, "created_noop_stubs");
+    assert.equal(result.validation.ready_for_real_upload, false);
+    assert.equal(result.created_files_summary.stub_source_file_created, true);
+    assert.equal(result.created_files_summary.stub_test_file_created, true);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7W-VALIDATE-306: validator rejects unsafe noop stub file creation result shapes", () => {
+  const fixture: any = createSafeRealUploadNoopStubFileCreationResultFixture();
+  try {
+    const result = fixture.creationResult;
+    assert.equal(validateRealUploadNoopStubFileCreationResult(result).ok, true);
+    assert.equal(validateRealUploadNoopStubFileCreationResult({ ...result, ready_for_real_upload: true }).ok, false);
+    assert.equal(validateRealUploadNoopStubFileCreationResult({ ...result, execution_boundary: { ...result.execution_boundary, upload_allowed: true } }).ok, false);
+    assert.equal(validateRealUploadNoopStubFileCreationResult({ ...result, created_files_summary: { ...result.created_files_summary, created_file_labels: ["../unsafe"] } }).ok, false);
   } finally {
     cleanupTestRuntime(fixture.tempDir);
   }

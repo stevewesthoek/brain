@@ -8,6 +8,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import os from "node:os";
+import { REAL_UPLOAD_NOOP_STUB_FILE_KINDS } from "./real-upload-noop-stubs.js";
 
 // ─── Runtime Storage ────────────────────────────────────────────────────────
 
@@ -16840,6 +16841,280 @@ export function getRealUploadNoopStubFilePlanReport(options?: { project_id?: str
   const by_state: Record<string, number> = {}; let blocked = 0; let ready = 0; let approved = 0; let rejected = 0; let revoked = 0; let complete = 0; let readyFuture = 0; let total = 0; let blockers = 0;
   const summaries = plans.map((item) => { by_state[item.noop_stub_file_plan_state] = (by_state[item.noop_stub_file_plan_state] ?? 0) + 1; if (item.noop_stub_file_plan_state === "blocked") blocked++; if (item.noop_stub_file_plan_state === "ready_for_operator_review") ready++; if (item.noop_stub_file_plan_state === "approved_for_future_noop_stub_file_creation") approved++; if (item.noop_stub_file_plan_state === "rejected") rejected++; if (item.noop_stub_file_plan_state === "revoked") revoked++; if (item.validation.noop_stub_file_plan_complete) complete++; if (item.validation.ready_for_future_noop_stub_file_creation) readyFuture++; total += item.planned_stub_files.length; blockers += item.planned_stub_files.filter((file) => file.blocking_reasons.length > 0).length; return { noop_stub_file_plan_state: item.noop_stub_file_plan_state, created_at: item.created_at, noop_stub_file_plan_total: item.planned_stub_files.length, planned_stub_files_with_blockers: item.planned_stub_files.filter((file) => file.blocking_reasons.length > 0).length, safe_summary: safeRealUploadStubContractTestsString(item.validation.blocking_reasons[0] || item.planned_stub_files[0]?.safe_summary || "No-op stub file plan summary.", "No-op stub file plan summary.") }; });
   return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_noop_stub_file_creation: approved, rejected, revoked, noop_stub_file_plan_complete: complete, ready_for_future_noop_stub_file_creation: readyFuture, ready_for_real_upload: 0, files_created_now: 0, stub_files_created: 0, test_files_created: 0, implementation_code_created: 0, implementation_files_created: 0, runtime_files_created: 0, dependencies_added: 0, package_metadata_changed: 0, runtime_enabled: 0, runtime_executed: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, media_file_read: 0, file_mutation_allowed: 0, planned_stub_files_total: total, planned_stub_files_with_blockers: blockers, plans: summaries };
+}
+
+export type RealUploadNoopStubFileCreationResultState = "created_noop_stubs" | "blocked" | "revoked";
+export interface RealUploadNoopStubFileCreationResult {
+  schema_version: string;
+  real_upload_noop_stub_file_creation_result_id: string;
+  real_upload_noop_stub_file_plan_id: string;
+  real_upload_stub_noop_implementation_design_id: string;
+  real_upload_stub_contract_tests_id: string;
+  real_upload_stub_contracts_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  creation_state: RealUploadNoopStubFileCreationResultState;
+  required_artifacts: {
+    real_upload_noop_stub_file_plan_validated: true;
+    real_upload_stub_noop_implementation_design_validated: true;
+    real_upload_stub_contract_tests_validated: true;
+    real_upload_stub_contracts_validated: true;
+  };
+  created_files_summary: {
+    files_created_now: boolean;
+    stub_source_file_created: boolean;
+    stub_test_file_created: boolean;
+    implementation_code_created: false;
+    runtime_files_created: false;
+    dependencies_added: false;
+    package_metadata_changed: false;
+    raw_paths_stored: false;
+    created_file_labels: string[];
+    warnings: string[];
+  };
+  no_op_stub_results_summary: {
+    total_stub_results: number;
+    required_stub_kinds_present: boolean;
+    duplicate_stub_kinds_detected: false;
+    all_results_noop_disabled: boolean;
+    ready_for_real_upload: false;
+    upload_allowed: false;
+    upload_execution_enabled: false;
+    platform_api_calls_allowed: false;
+    network_calls_allowed: false;
+    credentials_accessed: false;
+    token_accessed: false;
+    media_file_read: false;
+    file_mutation_allowed: false;
+    raw_payload_created: false;
+    raw_response_stored: false;
+  };
+  execution_boundary: {
+    upload_allowed: false;
+    upload_execution_enabled: false;
+    platform_api_calls_allowed: false;
+    network_calls_allowed: false;
+    credentials_accessed: false;
+    token_accessed: false;
+    keychain_accessed: false;
+    env_accessed: false;
+    media_file_read: false;
+    file_mutation_allowed: false;
+    runtime_enabled: false;
+    runtime_executed: false;
+    ready_for_real_upload: false;
+  };
+  validation: {
+    noop_stub_file_creation_complete: boolean;
+    ready_for_future_noop_stub_wiring_plan: boolean;
+    ready_for_real_upload: false;
+    upload_allowed: false;
+    upload_execution_enabled: false;
+    platform_api_calls_allowed: false;
+    network_calls_allowed: false;
+    credentials_accessed: false;
+    token_accessed: false;
+    media_file_read: false;
+    file_mutation_allowed: false;
+    runtime_enabled: false;
+    runtime_executed: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  provenance: {
+    generated_by: "createRealUploadNoopStubFileCreationResult" | "revokeRealUploadNoopStubFileCreationResult";
+    source_real_upload_noop_stub_file_plan_id: string;
+    source_real_upload_stub_noop_implementation_design_id: string;
+    source_real_upload_stub_contract_tests_id: string;
+    source_real_upload_stub_contracts_id: string;
+    source_render_plan_id: string;
+  };
+}
+
+function safeRealUploadNoopStubCreationString(value: unknown, fallback = "No-op stub file creation remains disabled."): string {
+  if (typeof value !== "string") return fallback;
+  const text = value.trim();
+  if (!text) return fallback;
+  const lower = text.toLowerCase();
+  if (lower.includes("://") || lower.includes("stdout") || lower.includes("stderr") || lower.includes("process.env") || lower.includes("access_token") || lower.includes("refresh_token") || lower.includes("client_secret") || lower.includes("code_verifier") || lower.includes("authorization_code") || lower.includes("bearer") || lower.includes("videos.insert") || lower.includes("youtube.videos().insert") || lower.includes("fetch(") || lower.includes("../") || lower.includes("/users/") || lower.includes("keychain://")) {
+    return fallback;
+  }
+  return text.length > 160 ? text.slice(0, 160) : text;
+}
+
+export interface RealUploadNoopStubFileCreationResultValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+export function validateRealUploadNoopStubFileCreationResult(result: unknown): RealUploadNoopStubFileCreationResultValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof result !== "object" || result === null) {
+    return { ok: false, blocking_reasons: ["No-op stub file creation result must be an object"], warnings };
+  }
+  const r = result as Record<string, unknown>;
+  const required = [
+    "schema_version",
+    "real_upload_noop_stub_file_creation_result_id",
+    "real_upload_noop_stub_file_plan_id",
+    "real_upload_stub_noop_implementation_design_id",
+    "real_upload_stub_contract_tests_id",
+    "real_upload_stub_contracts_id",
+    "render_plan_id",
+    "project_id",
+    "platform",
+    "created_at",
+    "creation_state",
+    "required_artifacts",
+    "created_files_summary",
+    "no_op_stub_results_summary",
+    "execution_boundary",
+    "validation",
+    "provenance",
+  ];
+  for (const key of required) if (!(key in r)) blocking_reasons.push("No-op stub file creation result is missing a required field");
+  const requiredArtifacts = r.required_artifacts as Record<string, unknown> | undefined;
+  if (!requiredArtifacts || requiredArtifacts.real_upload_noop_stub_file_plan_validated !== true || requiredArtifacts.real_upload_stub_noop_implementation_design_validated !== true || requiredArtifacts.real_upload_stub_contract_tests_validated !== true || requiredArtifacts.real_upload_stub_contracts_validated !== true) {
+    blocking_reasons.push("Required artifacts are unsafe");
+  }
+  if (r.ready_for_real_upload === true) blocking_reasons.push("ready_for_real_upload must remain false");
+  if (r.creation_state !== "created_noop_stubs" && r.creation_state !== "blocked" && r.creation_state !== "revoked") blocking_reasons.push("creation_state is invalid");
+  const text = JSON.stringify(result);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env[") || text.includes("stdout") || text.includes("stderr") || text.includes("Bearer ") || text.includes("access_token") || text.includes("refresh_token") || text.includes("client_secret") || text.includes("code_verifier") || text.includes("authorization_code") || text.includes("../") || text.includes("/Users/") || text.includes("https://") || text.includes("http://")) {
+    blocking_reasons.push("No-op stub file creation result contains forbidden payload content");
+  }
+  const created = r.created_files_summary as Record<string, unknown> | undefined;
+  if (!created || typeof created.files_created_now !== "boolean" || typeof created.stub_source_file_created !== "boolean" || typeof created.stub_test_file_created !== "boolean" || created.implementation_code_created !== false || created.runtime_files_created !== false || created.dependencies_added !== false || created.package_metadata_changed !== false || created.raw_paths_stored !== false) {
+    blocking_reasons.push("Created files summary is unsafe");
+  }
+  if (typeof created?.created_file_labels !== "undefined" && Array.isArray(created.created_file_labels)) {
+    for (const label of created.created_file_labels) {
+      if (typeof label === "string" && (label.includes("://") || label.includes("../") || label.includes("/Users/") || label.includes("stdout") || label.includes("stderr") || label.includes("access_token") || label.includes("refresh_token") || label.includes("client_secret"))) {
+        blocking_reasons.push("Created file labels are unsafe");
+        break;
+      }
+    }
+  }
+  const summary = r.no_op_stub_results_summary as Record<string, unknown> | undefined;
+  if (!summary || summary.ready_for_real_upload !== false || summary.upload_allowed !== false || summary.upload_execution_enabled !== false || summary.platform_api_calls_allowed !== false || summary.network_calls_allowed !== false || summary.credentials_accessed !== false || summary.token_accessed !== false || summary.media_file_read !== false || summary.file_mutation_allowed !== false || summary.raw_payload_created !== false || summary.raw_response_stored !== false || summary.duplicate_stub_kinds_detected !== false) {
+    blocking_reasons.push("No-op stub results summary is unsafe");
+  }
+  const boundary = r.execution_boundary as Record<string, unknown> | undefined;
+  if (!boundary || boundary.upload_allowed !== false || boundary.upload_execution_enabled !== false || boundary.platform_api_calls_allowed !== false || boundary.network_calls_allowed !== false || boundary.credentials_accessed !== false || boundary.token_accessed !== false || boundary.keychain_accessed !== false || boundary.env_accessed !== false || boundary.media_file_read !== false || boundary.file_mutation_allowed !== false || boundary.runtime_enabled !== false || boundary.runtime_executed !== false || boundary.ready_for_real_upload !== false) {
+    blocking_reasons.push("Execution boundary is unsafe");
+  }
+  if (r.validation && typeof r.validation === "object") {
+    const validation = r.validation as Record<string, unknown>;
+    if (validation.ready_for_real_upload !== false || validation.upload_allowed !== false || validation.upload_execution_enabled !== false || validation.platform_api_calls_allowed !== false || validation.network_calls_allowed !== false || validation.credentials_accessed !== false || validation.token_accessed !== false || validation.media_file_read !== false || validation.file_mutation_allowed !== false || validation.runtime_enabled !== false || validation.runtime_executed !== false) {
+      blocking_reasons.push("Validation flags are unsafe");
+    }
+  }
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadNoopStubFileCreationResult(input: { noopStubFilePlan: RealUploadNoopStubFilePlan; dryRun: true }): RealUploadNoopStubFileCreationResult {
+  if (input.dryRun !== true) throw new Error("dryRun=true required");
+  const planValidation = validateRealUploadNoopStubFilePlan(input.noopStubFilePlan);
+  if (!planValidation.ok) throw new Error("noop stub file plan must validate");
+  if (input.noopStubFilePlan.noop_stub_file_plan_state !== "approved_for_future_noop_stub_file_creation") throw new Error("noop stub file plan must be approved for future noop stub file creation");
+  if (input.noopStubFilePlan.validation.ready_for_future_noop_stub_file_creation !== true || input.noopStubFilePlan.validation.ready_for_real_upload !== false) throw new Error("noop stub file plan readiness is unsafe");
+  const createdAt = input.noopStubFilePlan.created_at || new Date().toISOString();
+  const labels = [safeRealUploadNoopStubCreationString("real-upload-noop-stubs.ts"), safeRealUploadNoopStubCreationString("real-upload-noop-stubs.test.ts")];
+  const result: RealUploadNoopStubFileCreationResult = {
+    schema_version: "1.0",
+    real_upload_noop_stub_file_creation_result_id: `${input.noopStubFilePlan.real_upload_noop_stub_file_plan_id}-creation-result`,
+    real_upload_noop_stub_file_plan_id: input.noopStubFilePlan.real_upload_noop_stub_file_plan_id,
+    real_upload_stub_noop_implementation_design_id: input.noopStubFilePlan.real_upload_stub_noop_implementation_design_id,
+    real_upload_stub_contract_tests_id: input.noopStubFilePlan.real_upload_stub_contract_tests_id,
+    real_upload_stub_contracts_id: input.noopStubFilePlan.real_upload_stub_contracts_id,
+    render_plan_id: input.noopStubFilePlan.render_plan_id,
+    project_id: input.noopStubFilePlan.project_id,
+    platform: input.noopStubFilePlan.platform,
+    created_at: createdAt,
+    creation_state: "created_noop_stubs",
+    required_artifacts: {
+      real_upload_noop_stub_file_plan_validated: true,
+      real_upload_stub_noop_implementation_design_validated: true,
+      real_upload_stub_contract_tests_validated: true,
+      real_upload_stub_contracts_validated: true,
+    },
+    created_files_summary: {
+      files_created_now: true,
+      stub_source_file_created: true,
+      stub_test_file_created: true,
+      implementation_code_created: false,
+      runtime_files_created: false,
+      dependencies_added: false,
+      package_metadata_changed: false,
+      raw_paths_stored: false,
+      created_file_labels: labels,
+      warnings: [],
+    },
+    no_op_stub_results_summary: {
+      total_stub_results: REAL_UPLOAD_NOOP_STUB_FILE_KINDS.length,
+      required_stub_kinds_present: true,
+      duplicate_stub_kinds_detected: false,
+      all_results_noop_disabled: true,
+      ready_for_real_upload: false,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      media_file_read: false,
+      file_mutation_allowed: false,
+      raw_payload_created: false,
+      raw_response_stored: false,
+    },
+    execution_boundary: {
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      keychain_accessed: false,
+      env_accessed: false,
+      media_file_read: false,
+      file_mutation_allowed: false,
+      runtime_enabled: false,
+      runtime_executed: false,
+      ready_for_real_upload: false,
+    },
+    validation: {
+      noop_stub_file_creation_complete: true,
+      ready_for_future_noop_stub_wiring_plan: true,
+      ready_for_real_upload: false,
+      upload_allowed: false,
+      upload_execution_enabled: false,
+      platform_api_calls_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      token_accessed: false,
+      media_file_read: false,
+      file_mutation_allowed: false,
+      runtime_enabled: false,
+      runtime_executed: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createRealUploadNoopStubFileCreationResult",
+      source_real_upload_noop_stub_file_plan_id: input.noopStubFilePlan.real_upload_noop_stub_file_plan_id,
+      source_real_upload_stub_noop_implementation_design_id: input.noopStubFilePlan.real_upload_stub_noop_implementation_design_id,
+      source_real_upload_stub_contract_tests_id: input.noopStubFilePlan.real_upload_stub_contract_tests_id,
+      source_real_upload_stub_contracts_id: input.noopStubFilePlan.real_upload_stub_contracts_id,
+      source_render_plan_id: input.noopStubFilePlan.render_plan_id,
+    },
+  };
+  const validation = validateRealUploadNoopStubFileCreationResult(result);
+  if (!validation.ok) throw new Error("noop stub file creation result failed validation");
+  return result;
 }
 
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
