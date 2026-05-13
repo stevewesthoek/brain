@@ -3734,3 +3734,9 @@ These artifacts store and retrieve only safe stub summaries. Runtime callables, 
 VO-7BT adds `runtime-stub-manifest`, VO-7BU adds `runtime-stub-index-contract`, and VO-7BV adds `runtime-stub-manifest-index-safe-report`.
 
 These artifacts create only a safe manifest and index over runtime stub summaries. Runtime callables, raw payloads, raw responses, and secret material are not indexed or included. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7BW/VO-7BX/VO-7BY — Runtime Stub Release Candidate, Review, and Safe Report
+
+VO-7BW adds `runtime-stub-release-candidate`, VO-7BX adds `runtime-stub-release-candidate-review`, and VO-7BY adds `runtime-stub-release-candidate-safe-report`.
+
+These artifacts prepare and review a runtime stub release candidate without releasing or activating runtime behavior. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

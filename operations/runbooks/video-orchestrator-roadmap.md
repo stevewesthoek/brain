@@ -1796,3 +1796,11 @@ Status: complete.
 VO-7BT adds a runtime stub manifest artifact, VO-7BU adds a runtime stub index contract, and VO-7BV adds a manifest/index safe report. These phases remain manifest/index-contract/report artifacts only.
 
 They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+## Phase 5BA — Runtime Stub Release Candidate, Review, and Safe Report (VO-7BW/VO-7BX/VO-7BY)
+
+Status: complete.
+
+VO-7BW adds a runtime stub release candidate artifact, VO-7BX adds a release candidate review, and VO-7BY adds a release candidate safe report. These phases remain release-candidate/review/report artifacts only.
+
+They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.

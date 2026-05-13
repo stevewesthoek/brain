@@ -25034,3 +25034,60 @@ test("VO-7BV-VALIDATE: runtime stub manifest/index safe report rejects raw mater
   const validation = validateRuntimeStubManifestIndexSafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7BW/VO-7BX/VO-7BY: Runtime Stub Release Candidate Layer ────────────
+
+test("VO-7BW-SCHEMA: runtime stub release candidate schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-release-candidate.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-release-candidate.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.candidate_entries[0].released_now, false);
+});
+
+test("VO-7BW-VALIDATE: runtime stub release candidate rejects released now", async () => {
+  const { validateRuntimeStubReleaseCandidate } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-release-candidate.example.json"), "utf8"));
+  const unsafe = { ...example, candidate_entries: [{ ...example.candidate_entries[0], released_now: true }] };
+  const validation = validateRuntimeStubReleaseCandidate(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BX-SCHEMA: runtime stub release candidate review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-release-candidate-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-release-candidate-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_entries[0].runtime_callable_present, false);
+});
+
+test("VO-7BX-VALIDATE: runtime stub release candidate review rejects runtime callable", async () => {
+  const { validateRuntimeStubReleaseCandidateReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-release-candidate-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_entries: [{ ...example.review_entries[0], runtime_callable_present: true }] };
+  const validation = validateRuntimeStubReleaseCandidateReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BY-SCHEMA: runtime stub release candidate safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-release-candidate-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-release-candidate-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7BY-VALIDATE: runtime stub release candidate safe report rejects raw material", async () => {
+  const { validateRuntimeStubReleaseCandidateSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-release-candidate-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateRuntimeStubReleaseCandidateSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});

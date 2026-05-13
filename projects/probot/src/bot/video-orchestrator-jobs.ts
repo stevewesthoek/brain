@@ -21269,3 +21269,191 @@ export function createRuntimeStubManifestIndexSafeReport(input: { indexContract:
     provenance: { generated_by: "createRuntimeStubManifestIndexSafeReport", source_runtime_stub_index_contract_id: input.indexContract.runtime_stub_index_contract_id, source_render_plan_id: input.manifest.render_plan_id },
   };
 }
+
+
+// ─── VO-7BW/VO-7BX/VO-7BY: Runtime Stub Release Candidate Layer ────────────
+
+export interface RuntimeStubReleaseCandidate {
+  schema_version: "1.0";
+  runtime_stub_release_candidate_id: string;
+  runtime_stub_manifest_index_safe_report_id: string;
+  runtime_stub_manifest_id: string;
+  runtime_stub_store_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  release_candidate_state: "draft" | "created" | "ready_for_operator_review" | "approved_for_future_release_candidate_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  candidate_scope: Record<string, unknown>;
+  candidate_controls: Record<string, unknown>;
+  candidate_entries: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubReleaseCandidateReview {
+  schema_version: "1.0";
+  runtime_stub_release_candidate_review_id: string;
+  runtime_stub_release_candidate_id: string;
+  runtime_stub_manifest_id: string;
+  runtime_stub_store_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  release_candidate_review_state: "draft" | "ready_for_operator_review" | "approved_for_future_release_candidate_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_controls: Record<string, unknown>;
+  review_entries: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubReleaseCandidateSafeReport {
+  schema_version: "1.0";
+  runtime_stub_release_candidate_safe_report_id: string;
+  runtime_stub_release_candidate_review_id: string;
+  runtime_stub_release_candidate_id: string;
+  runtime_stub_manifest_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_stub_final_gate" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeStubReleaseCandidateLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.candidate_controls || artifact.review_controls) as Record<string, unknown> | undefined;
+    if (controls && controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub release candidate must keep real upload blocked");
+    }
+    if (controls && (controls.contains_runtime_callable === true || controls.contains_raw_payload === true || controls.contains_raw_response === true || controls.contains_secret_material === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub release candidate contains unsafe material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 3) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.runtime_callable_present === true || record.raw_payload_present === true || record.secret_material_present === true || record.released_now === true || record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe runtime/raw/secret/release material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateRuntimeStubReleaseCandidate(candidate: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubReleaseCandidateLayer(candidate, "candidate_scope", "candidate_entries");
+}
+
+export function validateRuntimeStubReleaseCandidateReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubReleaseCandidateLayer(review, "review_scope", "review_entries");
+}
+
+export function validateRuntimeStubReleaseCandidateSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubReleaseCandidateLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createRuntimeStubReleaseCandidate(input: { manifestIndexSafeReport: RuntimeStubManifestIndexSafeReport; manifest: RuntimeStubManifest; decision?: "draft" | "approved_for_future_release_candidate_review" | "rejected"; dryRun: true }): RuntimeStubReleaseCandidate {
+  if (input.dryRun !== true) throw new Error("VO-7BW runtime stub release candidate requires dryRun=true");
+  const reportValidation = validateRuntimeStubManifestIndexSafeReport(input.manifestIndexSafeReport);
+  if (!reportValidation.ok) throw new Error("Runtime stub manifest/index safe report validation failed");
+  if (input.manifestIndexSafeReport.safe_report_state !== "approved_for_future_runtime_stub_release_candidate") throw new Error("Runtime stub release candidate requires approved manifest/index safe report");
+  if (input.manifestIndexSafeReport.runtime_stub_manifest_id !== input.manifest.runtime_stub_manifest_id) throw new Error("Mismatched manifest/index safe report and manifest");
+  const approved = input.decision === "approved_for_future_release_candidate_review";
+  return {
+    schema_version: "1.0",
+    runtime_stub_release_candidate_id: `runtime-stub-release-candidate-${crypto.randomUUID()}`,
+    runtime_stub_manifest_index_safe_report_id: input.manifestIndexSafeReport.runtime_stub_manifest_index_safe_report_id,
+    runtime_stub_manifest_id: input.manifest.runtime_stub_manifest_id,
+    runtime_stub_store_id: input.manifest.runtime_stub_store_id,
+    render_plan_id: input.manifest.render_plan_id,
+    project_id: input.manifest.project_id,
+    platform: input.manifest.platform,
+    created_at: new Date().toISOString(),
+    release_candidate_state: approved ? "approved_for_future_release_candidate_review" : input.decision === "rejected" ? "rejected" : "created",
+    required_artifacts: { runtime_stub_manifest_index_safe_report_validated: true, runtime_stub_manifest_validated: true },
+    candidate_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    candidate_controls: { release_candidate_only: true, summary_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    candidate_entries: input.manifest.manifest_entries.map((entry) => ({ entry_id: `release-candidate-${String(entry.entry_kind)}`, entry_kind: entry.entry_kind, artifact_id: entry.artifact_id, safe_summary: "Runtime stub release candidate summary only.", runtime_callable_present: false, raw_payload_present: false, secret_material_present: false, released_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubReleaseCandidate", source_runtime_stub_manifest_index_safe_report_id: input.manifestIndexSafeReport.runtime_stub_manifest_index_safe_report_id, source_render_plan_id: input.manifest.render_plan_id },
+  };
+}
+
+export function createRuntimeStubReleaseCandidateReview(input: { candidate: RuntimeStubReleaseCandidate; decision?: "draft" | "approved_for_future_release_candidate_safe_report" | "rejected"; dryRun: true }): RuntimeStubReleaseCandidateReview {
+  if (input.dryRun !== true) throw new Error("VO-7BX runtime stub release candidate review requires dryRun=true");
+  const candidateValidation = validateRuntimeStubReleaseCandidate(input.candidate);
+  if (!candidateValidation.ok) throw new Error("Runtime stub release candidate validation failed");
+  if (input.candidate.release_candidate_state !== "approved_for_future_release_candidate_review") throw new Error("Release candidate review requires approved candidate");
+  const approved = input.decision === "approved_for_future_release_candidate_safe_report";
+  return {
+    schema_version: "1.0",
+    runtime_stub_release_candidate_review_id: `runtime-stub-release-candidate-review-${crypto.randomUUID()}`,
+    runtime_stub_release_candidate_id: input.candidate.runtime_stub_release_candidate_id,
+    runtime_stub_manifest_id: input.candidate.runtime_stub_manifest_id,
+    runtime_stub_store_id: input.candidate.runtime_stub_store_id,
+    render_plan_id: input.candidate.render_plan_id,
+    project_id: input.candidate.project_id,
+    platform: input.candidate.platform,
+    created_at: new Date().toISOString(),
+    release_candidate_review_state: approved ? "approved_for_future_release_candidate_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { runtime_stub_release_candidate_validated: true, runtime_stub_manifest_validated: true },
+    review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_controls: { review_only: true, release_candidate_reviewed: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    review_entries: input.candidate.candidate_entries.map((entry) => ({ entry_id: `release-review-${String(entry.entry_kind)}`, entry_kind: entry.entry_kind, review_state: "passed", safe_summary: "Runtime stub release candidate review only.", runtime_callable_present: false, raw_payload_present: false, secret_material_present: false, released_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubReleaseCandidateReview", source_runtime_stub_release_candidate_id: input.candidate.runtime_stub_release_candidate_id, source_render_plan_id: input.candidate.render_plan_id },
+  };
+}
+
+export function createRuntimeStubReleaseCandidateSafeReport(input: { review: RuntimeStubReleaseCandidateReview; candidate: RuntimeStubReleaseCandidate; decision?: "draft" | "approved_for_future_runtime_stub_final_gate" | "rejected"; dryRun: true }): RuntimeStubReleaseCandidateSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7BY runtime stub release candidate safe report requires dryRun=true");
+  const reviewValidation = validateRuntimeStubReleaseCandidateReview(input.review);
+  if (!reviewValidation.ok) throw new Error("Runtime stub release candidate review validation failed");
+  if (input.review.release_candidate_review_state !== "approved_for_future_release_candidate_safe_report") throw new Error("Release candidate safe report requires approved review");
+  if (input.review.runtime_stub_release_candidate_id !== input.candidate.runtime_stub_release_candidate_id) throw new Error("Mismatched release candidate review and candidate");
+  const approved = input.decision === "approved_for_future_runtime_stub_final_gate";
+  const sections = ["candidate", "review", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_release_candidate_safe_report_id: `runtime-stub-release-candidate-safe-report-${crypto.randomUUID()}`,
+    runtime_stub_release_candidate_review_id: input.review.runtime_stub_release_candidate_review_id,
+    runtime_stub_release_candidate_id: input.candidate.runtime_stub_release_candidate_id,
+    runtime_stub_manifest_id: input.candidate.runtime_stub_manifest_id,
+    render_plan_id: input.candidate.render_plan_id,
+    project_id: input.candidate.project_id,
+    platform: input.candidate.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_stub_final_gate" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_stub_release_candidate_review_validated: true, runtime_stub_release_candidate_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    safe_report_sections: sections.map((kind) => ({ section_id: `release-safe-report-${kind}`, section_kind: kind, safe_summary: "Runtime stub release candidate safe report only.", contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubReleaseCandidateSafeReport", source_runtime_stub_release_candidate_review_id: input.review.runtime_stub_release_candidate_review_id, source_render_plan_id: input.candidate.render_plan_id },
+  };
+}
