@@ -19635,3 +19635,170 @@ export function createControlledRuntimeActivationImplementationDryRunReview(inpu
     provenance: { generated_by: "createControlledRuntimeActivationImplementationDryRunReview", source_controlled_runtime_activation_implementation_contract_id: input.implementationContract.controlled_runtime_activation_implementation_contract_id, source_render_plan_id: input.implementationContract.render_plan_id },
   };
 }
+
+
+// ─── VO-7AV/VO-7AW/VO-7AX: Activation Candidate, Final Review, Rollback ────
+
+export interface ControlledRuntimeActivationCandidate {
+  schema_version: "1.0";
+  controlled_runtime_activation_candidate_id: string;
+  controlled_runtime_activation_implementation_dry_run_review_id: string;
+  controlled_runtime_activation_implementation_contract_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  activation_candidate_state: "draft" | "ready_for_operator_review" | "approved_for_future_final_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  candidate_scope: Record<string, unknown>;
+  candidate_controls: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeActivationFinalReview {
+  schema_version: "1.0";
+  controlled_runtime_activation_final_review_id: string;
+  controlled_runtime_activation_candidate_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  final_review_state: "draft" | "ready_for_operator_review" | "approved_for_future_rollback_plan" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  final_review_scope: Record<string, unknown>;
+  final_review_controls: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeActivationRollbackPlan {
+  schema_version: "1.0";
+  controlled_runtime_activation_rollback_plan_id: string;
+  controlled_runtime_activation_final_review_id: string;
+  controlled_runtime_activation_candidate_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  rollback_plan_state: "draft" | "ready_for_operator_review" | "approved_for_future_activation_go_no_go" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  rollback_scope: Record<string, unknown>;
+  rollback_controls: Record<string, unknown>;
+  rollback_steps: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeCandidateArtifact(value: unknown, scopeKey: string, controlsKey: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = artifact[controlsKey] as Record<string, unknown> | undefined;
+    if (!controls || controls.real_upload_still_blocked !== true || controls.single_upload_limit !== 1) {
+      result.ok = false;
+      result.blocking_reasons.push(`${controlsKey} is incomplete or unsafe`);
+    }
+    const steps = artifact.rollback_steps;
+    if (Array.isArray(steps)) {
+      for (const step of steps) {
+        if ((step as Record<string, unknown>).executed_now !== false) {
+          result.ok = false;
+          result.blocking_reasons.push("Rollback step executed now");
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateControlledRuntimeActivationCandidate(candidate: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeCandidateArtifact(candidate, "candidate_scope", "candidate_controls");
+}
+
+export function validateControlledRuntimeActivationFinalReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeCandidateArtifact(review, "final_review_scope", "final_review_controls");
+}
+
+export function validateControlledRuntimeActivationRollbackPlan(plan: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeCandidateArtifact(plan, "rollback_scope", "rollback_controls");
+}
+
+export function createControlledRuntimeActivationCandidate(input: { implementationDryRunReview: ControlledRuntimeActivationImplementationDryRunReview; decision?: "draft" | "approved_for_future_final_review" | "rejected"; dryRun: true }): ControlledRuntimeActivationCandidate {
+  if (input.dryRun !== true) throw new Error("VO-7AV activation candidate requires dryRun=true");
+  const reviewValidation = validateControlledRuntimeActivationImplementationDryRunReview(input.implementationDryRunReview);
+  if (!reviewValidation.ok) throw new Error("Implementation dry-run review validation failed");
+  if (input.implementationDryRunReview.implementation_dry_run_review_state !== "approved_for_future_activation_candidate") throw new Error("Activation candidate requires approved implementation dry-run review");
+  const approved = input.decision === "approved_for_future_final_review";
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_candidate_id: `controlled-runtime-activation-candidate-${crypto.randomUUID()}`,
+    controlled_runtime_activation_implementation_dry_run_review_id: input.implementationDryRunReview.controlled_runtime_activation_implementation_dry_run_review_id,
+    controlled_runtime_activation_implementation_contract_id: input.implementationDryRunReview.controlled_runtime_activation_implementation_contract_id,
+    render_plan_id: input.implementationDryRunReview.render_plan_id,
+    project_id: input.implementationDryRunReview.project_id,
+    platform: input.implementationDryRunReview.platform,
+    created_at: new Date().toISOString(),
+    activation_candidate_state: approved ? "approved_for_future_final_review" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_activation_implementation_dry_run_review_validated: true, controlled_runtime_activation_implementation_contract_validated: true },
+    candidate_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    candidate_controls: { single_upload_limit: 1, operator_kill_switch_required: true, rollback_plan_required: true, final_review_required: true, runtime_activation_separate_commit_required: true, real_upload_still_blocked: true },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationCandidate", source_controlled_runtime_activation_implementation_dry_run_review_id: input.implementationDryRunReview.controlled_runtime_activation_implementation_dry_run_review_id, source_render_plan_id: input.implementationDryRunReview.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeActivationFinalReview(input: { candidate: ControlledRuntimeActivationCandidate; decision?: "draft" | "approved_for_future_rollback_plan" | "rejected"; dryRun: true }): ControlledRuntimeActivationFinalReview {
+  if (input.dryRun !== true) throw new Error("VO-7AW activation final review requires dryRun=true");
+  const candidateValidation = validateControlledRuntimeActivationCandidate(input.candidate);
+  if (!candidateValidation.ok) throw new Error("Activation candidate validation failed");
+  if (input.candidate.activation_candidate_state !== "approved_for_future_final_review") throw new Error("Final review requires approved activation candidate");
+  const approved = input.decision === "approved_for_future_rollback_plan";
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_final_review_id: `controlled-runtime-activation-final-review-${crypto.randomUUID()}`,
+    controlled_runtime_activation_candidate_id: input.candidate.controlled_runtime_activation_candidate_id,
+    render_plan_id: input.candidate.render_plan_id,
+    project_id: input.candidate.project_id,
+    platform: input.candidate.platform,
+    created_at: new Date().toISOString(),
+    final_review_state: approved ? "approved_for_future_rollback_plan" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_activation_candidate_validated: true },
+    final_review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    final_review_controls: { candidate_reviewed: true, rollback_plan_required: true, operator_kill_switch_required: true, single_upload_limit: 1, real_upload_still_blocked: true },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationFinalReview", source_controlled_runtime_activation_candidate_id: input.candidate.controlled_runtime_activation_candidate_id, source_render_plan_id: input.candidate.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeActivationRollbackPlan(input: { finalReview: ControlledRuntimeActivationFinalReview; candidate: ControlledRuntimeActivationCandidate; decision?: "draft" | "approved_for_future_activation_go_no_go" | "rejected"; dryRun: true }): ControlledRuntimeActivationRollbackPlan {
+  if (input.dryRun !== true) throw new Error("VO-7AX activation rollback plan requires dryRun=true");
+  const reviewValidation = validateControlledRuntimeActivationFinalReview(input.finalReview);
+  if (!reviewValidation.ok) throw new Error("Activation final review validation failed");
+  if (input.finalReview.final_review_state !== "approved_for_future_rollback_plan") throw new Error("Rollback plan requires approved final review");
+  if (input.finalReview.controlled_runtime_activation_candidate_id !== input.candidate.controlled_runtime_activation_candidate_id) throw new Error("Mismatched final review and activation candidate");
+  const approved = input.decision === "approved_for_future_activation_go_no_go";
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_rollback_plan_id: `controlled-runtime-activation-rollback-plan-${crypto.randomUUID()}`,
+    controlled_runtime_activation_final_review_id: input.finalReview.controlled_runtime_activation_final_review_id,
+    controlled_runtime_activation_candidate_id: input.candidate.controlled_runtime_activation_candidate_id,
+    render_plan_id: input.candidate.render_plan_id,
+    project_id: input.candidate.project_id,
+    platform: input.candidate.platform,
+    created_at: new Date().toISOString(),
+    rollback_plan_state: approved ? "approved_for_future_activation_go_no_go" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_activation_final_review_validated: true, controlled_runtime_activation_candidate_validated: true },
+    rollback_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    rollback_controls: { rollback_plan_only: true, operator_kill_switch_required: true, single_upload_limit: 1, runtime_activation_separate_commit_required: true, real_upload_still_blocked: true },
+    rollback_steps: ["disable_runtime_activation", "revoke_approval", "stop_upload_execution", "safe_report"].map((kind) => ({ step_id: `rollback-${kind}`, step_kind: kind, safe_summary: "Rollback step planned only.", executed_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationRollbackPlan", source_controlled_runtime_activation_final_review_id: input.finalReview.controlled_runtime_activation_final_review_id, source_render_plan_id: input.candidate.render_plan_id },
+  };
+}

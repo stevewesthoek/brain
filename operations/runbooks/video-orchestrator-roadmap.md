@@ -1724,3 +1724,11 @@ Status: complete.
 VO-7AS adds a runtime activation implementation plan, VO-7AT adds an implementation contract, and VO-7AU adds an implementation dry-run review. These phases plan and review future implementation only.
 
 They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+## Phase 5AR — Activation Candidate, Final Review, and Rollback Plan (VO-7AV/VO-7AW/VO-7AX)
+
+Status: complete.
+
+VO-7AV adds a controlled runtime activation candidate, VO-7AW adds a final review artifact, and VO-7AX adds a rollback plan artifact. These phases remain candidate/review/rollback-planning artifacts only.
+
+They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.

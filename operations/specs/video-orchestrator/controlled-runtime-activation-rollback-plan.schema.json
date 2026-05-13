@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "controlled-runtime-activation-rollback-plan.schema.json",
+  "title": "Controlled Runtime Activation Rollback Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "controlled_runtime_activation_rollback_plan_id", "controlled_runtime_activation_final_review_id", "controlled_runtime_activation_candidate_id", "render_plan_id", "project_id", "platform", "created_at", "rollback_plan_state", "required_artifacts", "rollback_scope", "rollback_controls", "rollback_steps", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "controlled_runtime_activation_rollback_plan_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_activation_final_review_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_activation_candidate_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "rollback_plan_state": { "type": "string", "enum": ["draft", "ready_for_operator_review", "approved_for_future_activation_go_no_go", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["controlled_runtime_activation_final_review_validated", "controlled_runtime_activation_candidate_validated"], "properties": { "controlled_runtime_activation_final_review_validated": { "type": "boolean", "const": true }, "controlled_runtime_activation_candidate_validated": { "type": "boolean", "const": true } } },
+    "rollback_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "rollback_controls": { "type": "object", "additionalProperties": false, "required": ["rollback_plan_only", "operator_kill_switch_required", "single_upload_limit", "runtime_activation_separate_commit_required", "real_upload_still_blocked"], "properties": { "rollback_plan_only": { "type": "boolean", "const": true }, "operator_kill_switch_required": { "type": "boolean", "const": true }, "single_upload_limit": { "type": "integer", "const": 1 }, "runtime_activation_separate_commit_required": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "rollback_steps": { "type": "array", "minItems": 4, "items": { "type": "object", "additionalProperties": false, "required": ["step_id", "step_kind", "safe_summary", "executed_now"], "properties": { "step_id": { "type": "string" }, "step_kind": { "type": "string" }, "safe_summary": { "type": "string" }, "executed_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_controlled_runtime_activation_final_review_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createControlledRuntimeActivationRollbackPlan", "revokeControlledRuntimeActivationRollbackPlan"] }, "source_controlled_runtime_activation_final_review_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

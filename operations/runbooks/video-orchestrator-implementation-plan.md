@@ -3680,3 +3680,9 @@ These artifacts prepare and dry-run the runtime activation path without activati
 VO-7AS adds `controlled-runtime-activation-implementation-plan`, VO-7AT adds `controlled-runtime-activation-implementation-contract`, and VO-7AU adds `controlled-runtime-activation-implementation-dry-run-review`.
 
 These artifacts prepare a future implementation path without implementing or activating it. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7AV/VO-7AW/VO-7AX — Activation Candidate, Final Review, and Rollback Plan
+
+VO-7AV adds `controlled-runtime-activation-candidate`, VO-7AW adds `controlled-runtime-activation-final-review`, and VO-7AX adds `controlled-runtime-activation-rollback-plan`.
+
+These artifacts establish the final candidate/review/rollback planning layer before a future activation go/no-go artifact. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

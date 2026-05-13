@@ -24521,3 +24521,60 @@ test("VO-7AU-VALIDATE: runtime activation implementation dry-run review rejects 
   const validation = validateControlledRuntimeActivationImplementationDryRunReview(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7AV/VO-7AW/VO-7AX: Activation Candidate, Final Review, Rollback ────
+
+test("VO-7AV-SCHEMA: controlled runtime activation candidate schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-activation-candidate.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-candidate.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.candidate_controls.real_upload_still_blocked, true);
+});
+
+test("VO-7AV-VALIDATE: controlled runtime activation candidate rejects unsafe flags", async () => {
+  const { validateControlledRuntimeActivationCandidate } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-candidate.example.json"), "utf8"));
+  const unsafe = { ...example, candidate_scope: { ...example.candidate_scope, real_upload_enabled_now: true } };
+  const validation = validateControlledRuntimeActivationCandidate(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7AW-SCHEMA: controlled runtime activation final review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-activation-final-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-final-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.final_review_controls.real_upload_still_blocked, true);
+});
+
+test("VO-7AW-VALIDATE: controlled runtime activation final review rejects unsafe flags", async () => {
+  const { validateControlledRuntimeActivationFinalReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-final-review.example.json"), "utf8"));
+  const unsafe = { ...example, final_review_scope: { ...example.final_review_scope, network_calls_enabled_now: true } };
+  const validation = validateControlledRuntimeActivationFinalReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7AX-SCHEMA: controlled runtime activation rollback plan schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-activation-rollback-plan.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-rollback-plan.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.rollback_steps[0].executed_now, false);
+});
+
+test("VO-7AX-VALIDATE: controlled runtime activation rollback plan rejects executed rollback", async () => {
+  const { validateControlledRuntimeActivationRollbackPlan } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-rollback-plan.example.json"), "utf8"));
+  const unsafe = { ...example, rollback_steps: [{ ...example.rollback_steps[0], executed_now: true }] };
+  const validation = validateControlledRuntimeActivationRollbackPlan(unsafe);
+  assert.equal(validation.ok, false);
+});
