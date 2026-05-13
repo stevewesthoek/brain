@@ -23951,3 +23951,60 @@ test("VO-7Y-REPORT-314: report counters remain zero and sanitizes legacy/manual 
     cleanupTestRuntime(fixture.tempDir);
   }
 });
+
+
+// ─── VO-7AB: Disabled No-Op Wiring Activation + Smoke Test ─────────────────
+
+test("VO-7AB-SCHEMA: disabled activation result schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-disabled-noop-wiring-activation-result.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-disabled-noop-wiring-activation-result.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.execution_boundary.upload_allowed, false);
+});
+
+test("VO-7AB-SCHEMA: no-op wiring smoke test schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-noop-wiring-smoke-test-result.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-noop-wiring-smoke-test-result.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.smoke_test_scope.runtime_invoked, false);
+  assert.equal(example.validation.ready_for_real_upload, false);
+});
+
+test("VO-7AB-VALIDATE: activation result rejects unsafe true flags", async () => {
+  const { validateRealUploadDisabledNoopWiringActivationResult } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-disabled-noop-wiring-activation-result.example.json"), "utf8"));
+  const unsafe = { ...example, execution_boundary: { ...example.execution_boundary, upload_allowed: true } };
+  const validation = validateRealUploadDisabledNoopWiringActivationResult(unsafe);
+  assert.equal(validation.ok, false);
+  assert.ok(validation.blocking_reasons.length > 0);
+});
+
+test("VO-7AB-VALIDATE: smoke test result rejects unsafe runtime invocation", async () => {
+  const { validateRealUploadNoopWiringSmokeTestResult } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-noop-wiring-smoke-test-result.example.json"), "utf8"));
+  const unsafe = { ...example, smoke_test_scope: { ...example.smoke_test_scope, runtime_invoked: true } };
+  const validation = validateRealUploadNoopWiringSmokeTestResult(unsafe);
+  assert.equal(validation.ok, false);
+  assert.ok(validation.blocking_reasons.length > 0);
+});
+
+test("VO-7AB-CREATE: dryRun false is blocked by activation result creation", async () => {
+  const { createRealUploadDisabledNoopWiringActivationResult } = await import("./video-orchestrator-jobs.js");
+  assert.throws(() => createRealUploadDisabledNoopWiringActivationResult({ activationPlan: {} as never, dryRun: false as never }), /dryRun=true/);
+});
+
+test("VO-7AB-CREATE: smoke result keeps real upload disabled", async () => {
+  const { createRealUploadNoopWiringSmokeTestResult } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const activationResult = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-disabled-noop-wiring-activation-result.example.json"), "utf8"));
+  const smoke = createRealUploadNoopWiringSmokeTestResult({ activationResult, dryRun: true });
+  assert.equal(smoke.smoke_test_state, "passed_noop_disabled");
+  assert.equal(smoke.execution_boundary.ready_for_real_upload, false);
+  assert.equal(smoke.execution_boundary.upload_allowed, false);
+  assert.equal(smoke.execution_boundary.network_calls_allowed, false);
+});

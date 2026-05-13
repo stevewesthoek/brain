@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "real_upload_noop_wiring_smoke_test_result_id": "real-upload-noop-wiring-smoke-test-result-001",
+  "real_upload_disabled_noop_wiring_activation_result_id": "real-upload-disabled-noop-wiring-activation-result-001",
+  "real_upload_disabled_noop_wiring_activation_plan_id": "real-upload-disabled-noop-wiring-activation-plan-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "smoke_test_state": "passed_noop_disabled",
+  "required_artifacts": {
+    "real_upload_disabled_noop_wiring_activation_result_validated": true,
+    "real_upload_disabled_noop_wiring_activation_plan_validated": true
+  },
+  "smoke_test_scope": {
+    "noop_smoke_test_only": true,
+    "runtime_invoked": false,
+    "production_path_invoked": false,
+    "upload_invoked": false,
+    "network_invoked": false,
+    "platform_api_invoked": false,
+    "credentials_accessed": false,
+    "media_file_read": false,
+    "file_mutation_allowed": false
+  },
+  "noop_wiring_checks": [
+    {
+      "check_id": "noop-wiring-smoke-check-001",
+      "check_kind": "disabled-artifact-presence",
+      "check_state": "passed",
+      "safe_summary": "Disabled no-op wiring artifact was reviewed without invoking runtime wiring.",
+      "runtime_invoked": false,
+      "upload_invoked": false,
+      "network_invoked": false,
+      "credential_invoked": false,
+      "media_read_invoked": false,
+      "file_mutation_invoked": false,
+      "blocking_reasons": [],
+      "warnings": []
+    }
+  ],
+  "execution_boundary": {
+    "runtime_enabled": false,
+    "runtime_executed": false,
+    "upload_allowed": false,
+    "upload_execution_enabled": false,
+    "platform_api_calls_allowed": false,
+    "network_calls_allowed": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "keychain_accessed": false,
+    "env_accessed": false,
+    "media_file_read": false,
+    "file_mutation_allowed": false,
+    "dependencies_added": false,
+    "package_metadata_changed": false,
+    "ready_for_real_upload": false
+  },
+  "validation": {
+    "noop_wiring_smoke_test_complete": true,
+    "ready_for_future_real_upload_readiness_gate_v2": true,
+    "ready_for_real_upload": false,
+    "runtime_enabled": false,
+    "upload_allowed": false,
+    "network_calls_allowed": false,
+    "credentials_accessed": false,
+    "media_file_read": false,
+    "blocking_reasons": [],
+    "warnings": []
+  },
+  "provenance": {
+    "generated_by": "createRealUploadNoopWiringSmokeTestResult",
+    "source_real_upload_disabled_noop_wiring_activation_result_id": "real-upload-disabled-noop-wiring-activation-result-001",
+    "source_real_upload_disabled_noop_wiring_activation_plan_id": "real-upload-disabled-noop-wiring-activation-plan-001",
+    "source_render_plan_id": "render-plan-001"
+  }
+}

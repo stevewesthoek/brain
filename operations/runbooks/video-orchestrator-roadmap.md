@@ -1635,3 +1635,12 @@ Validate each tier by benchmarking; actual throughput depends on content complex
 5. **Phase 5 (Aug 15):** Metrics + optional LoRA
 
 All phases assume feedback and iteration; do not treat timelines as fixed.
+
+
+## Phase 5AH — Real Upload Disabled No-Op Wiring Activation and Smoke Test (VO-7AB)
+
+Status: complete.
+
+VO-7AB records a disabled no-op wiring activation result and a no-op wiring smoke test result. These are artifact and validation layers only. They do not apply runtime wiring, create or enable a feature flag, change live execution paths, add production imports, upload, call platform APIs, make network calls, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+Approval only permits future real upload readiness gate v2 work.

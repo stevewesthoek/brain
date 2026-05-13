@@ -18052,3 +18052,246 @@ export {
   getPackageDraftsPath,
   buildProductionPackageDraftSummary,
 };
+
+
+// ─── VO-7AB: Disabled No-Op Wiring Activation + Smoke Test ─────────────────
+
+export interface RealUploadDisabledNoopWiringActivationResult {
+  schema_version: "1.0";
+  real_upload_disabled_noop_wiring_activation_result_id: string;
+  real_upload_disabled_noop_wiring_activation_plan_id: string;
+  real_upload_noop_wiring_readiness_review_id: string;
+  real_upload_noop_wiring_contract_tests_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  activation_result_state: "disabled_noop_activation_recorded" | "blocked" | "revoked";
+  required_artifacts: Record<string, true>;
+  activation_scope: Record<string, unknown>;
+  disabled_activation_summary: Record<string, unknown>;
+  kill_switch_status: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadNoopWiringSmokeTestResult {
+  schema_version: "1.0";
+  real_upload_noop_wiring_smoke_test_result_id: string;
+  real_upload_disabled_noop_wiring_activation_result_id: string;
+  real_upload_disabled_noop_wiring_activation_plan_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  smoke_test_state: "passed_noop_disabled" | "blocked" | "revoked";
+  required_artifacts: Record<string, true>;
+  smoke_test_scope: Record<string, unknown>;
+  noop_wiring_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadDisabledNoopWiringValidationResult {
+  ok: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+}
+
+function validateVo7abFalseBoundary(obj: unknown, keys: string[], label: string): string[] {
+  const blocking: string[] = [];
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+    return [`${label} is required`];
+  }
+  const rec = obj as Record<string, unknown>;
+  for (const key of keys) {
+    if (rec[key] !== false) blocking.push(`${label} unsafe flag detected`);
+  }
+  return blocking;
+}
+
+const VO7AB_UNSAFE_FALSE_KEYS = [
+  "runtime_enabled",
+  "runtime_executed",
+  "upload_allowed",
+  "upload_execution_enabled",
+  "platform_api_calls_allowed",
+  "network_calls_allowed",
+  "credentials_accessed",
+  "token_accessed",
+  "keychain_accessed",
+  "env_accessed",
+  "media_file_read",
+  "file_mutation_allowed",
+  "dependencies_added",
+  "package_metadata_changed",
+  "ready_for_real_upload",
+];
+
+export function validateRealUploadDisabledNoopWiringActivationResult(result: unknown): RealUploadDisabledNoopWiringValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    return { ok: false, blocking_reasons: ["Activation result must be an object"], warnings };
+  }
+  const r = result as Record<string, unknown>;
+  if (r.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (r.activation_result_state !== "disabled_noop_activation_recorded" && r.activation_result_state !== "blocked" && r.activation_result_state !== "revoked") blocking_reasons.push("Invalid activation result state");
+  const scope = r.activation_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.disabled_noop_activation_only !== true || scope.activation_applied_to_runtime !== false || scope.runtime_feature_flag_enabled !== false || scope.production_imports_applied !== false || scope.automatic_invocation_enabled !== false || scope.real_upload_requested !== false) {
+    blocking_reasons.push("Activation scope is unsafe");
+  }
+  const kill = r.kill_switch_status as Record<string, unknown> | undefined;
+  if (!kill || kill.default_state_disabled !== true || kill.emergency_disable_supported !== true || kill.credentials_required_for_disable !== false || kill.network_required_for_disable !== false) {
+    blocking_reasons.push("Kill switch status is unsafe");
+  }
+  blocking_reasons.push(...validateVo7abFalseBoundary(r.execution_boundary, VO7AB_UNSAFE_FALSE_KEYS, "Execution boundary"));
+  const validation = r.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_real_upload !== false || validation.runtime_enabled !== false || validation.upload_allowed !== false || validation.network_calls_allowed !== false || validation.credentials_accessed !== false || validation.media_file_read !== false) {
+    blocking_reasons.push("Validation boundary is unsafe");
+  }
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(result));
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadDisabledNoopWiringActivationResult(input: { activationPlan: RealUploadDisabledNoopWiringActivationPlan; readinessReview?: RealUploadNoopWiringReadinessReview; dryRun: true }): RealUploadDisabledNoopWiringActivationResult {
+  if (input.dryRun !== true) throw new Error("VO-7AB disabled no-op wiring activation result requires dryRun=true");
+  const planValidation = validateRealUploadDisabledNoopWiringActivationPlan(input.activationPlan);
+  if (!planValidation.ok) throw new Error("Activation plan validation failed");
+  if (input.activationPlan.activation_plan_state !== "approved_for_future_disabled_noop_wiring_activation") {
+    throw new Error("Activation result requires approved disabled no-op wiring activation plan");
+  }
+  const result: RealUploadDisabledNoopWiringActivationResult = {
+    schema_version: "1.0",
+    real_upload_disabled_noop_wiring_activation_result_id: `real-upload-disabled-noop-wiring-activation-result-${crypto.randomUUID()}`,
+    real_upload_disabled_noop_wiring_activation_plan_id: input.activationPlan.real_upload_disabled_noop_wiring_activation_plan_id,
+    real_upload_noop_wiring_readiness_review_id: input.activationPlan.real_upload_noop_wiring_readiness_review_id,
+    real_upload_noop_wiring_contract_tests_id: input.activationPlan.real_upload_noop_wiring_contract_tests_id,
+    render_plan_id: input.activationPlan.render_plan_id,
+    project_id: input.activationPlan.project_id,
+    platform: input.activationPlan.platform,
+    created_at: new Date().toISOString(),
+    activation_result_state: "disabled_noop_activation_recorded",
+    required_artifacts: {
+      real_upload_disabled_noop_wiring_activation_plan_validated: true,
+      real_upload_noop_wiring_readiness_review_validated: true,
+      real_upload_noop_wiring_contract_tests_validated: true,
+    },
+    activation_scope: {
+      disabled_noop_activation_only: true,
+      activation_recorded: true,
+      activation_applied_to_runtime: false,
+      runtime_feature_flag_created: false,
+      runtime_feature_flag_enabled: false,
+      production_imports_applied: false,
+      automatic_invocation_enabled: false,
+      live_execution_path_changed: false,
+      upload_execution_path_changed: false,
+      real_upload_requested: false,
+    },
+    disabled_activation_summary: {
+      disabled_by_default: true,
+      operator_activation_required: true,
+      kill_switch_available: true,
+      noop_wiring_available_for_future_tests: true,
+      safe_summary: "Disabled no-op wiring activation recorded as an artifact only.",
+      blocking_reasons: [],
+      warnings: ["No runtime wiring was applied."],
+    },
+    kill_switch_status: {
+      default_state_disabled: true,
+      emergency_disable_supported: true,
+      operator_reversible: true,
+      credentials_required_for_disable: false,
+      network_required_for_disable: false,
+    },
+    execution_boundary: Object.fromEntries(VO7AB_UNSAFE_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: {
+      disabled_noop_wiring_activation_complete: true,
+      ready_for_future_noop_wiring_smoke_test: true,
+      ready_for_real_upload: false,
+      runtime_enabled: false,
+      upload_allowed: false,
+      network_calls_allowed: false,
+      credentials_accessed: false,
+      media_file_read: false,
+      blocking_reasons: [],
+      warnings: [],
+    },
+    provenance: {
+      generated_by: "createRealUploadDisabledNoopWiringActivationResult",
+      source_real_upload_disabled_noop_wiring_activation_plan_id: input.activationPlan.real_upload_disabled_noop_wiring_activation_plan_id,
+      source_real_upload_noop_wiring_readiness_review_id: input.activationPlan.real_upload_noop_wiring_readiness_review_id,
+      source_real_upload_noop_wiring_contract_tests_id: input.activationPlan.real_upload_noop_wiring_contract_tests_id,
+      source_render_plan_id: input.activationPlan.render_plan_id,
+    },
+  };
+  const validation = validateRealUploadDisabledNoopWiringActivationResult(result);
+  if (!validation.ok) throw new Error(`Activation result validation failed: ${validation.blocking_reasons.join("; ")}`);
+  return result;
+}
+
+export function validateRealUploadNoopWiringSmokeTestResult(result: unknown): RealUploadDisabledNoopWiringValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!result || typeof result !== "object" || Array.isArray(result)) return { ok: false, blocking_reasons: ["Smoke test result must be an object"], warnings };
+  const r = result as Record<string, unknown>;
+  if (r.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (r.smoke_test_state !== "passed_noop_disabled" && r.smoke_test_state !== "blocked" && r.smoke_test_state !== "revoked") blocking_reasons.push("Invalid smoke test state");
+  const scope = r.smoke_test_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.noop_smoke_test_only !== true || scope.runtime_invoked !== false || scope.upload_invoked !== false || scope.network_invoked !== false || scope.platform_api_invoked !== false || scope.credentials_accessed !== false || scope.media_file_read !== false || scope.file_mutation_allowed !== false) {
+    blocking_reasons.push("Smoke test scope is unsafe");
+  }
+  if (!Array.isArray(r.noop_wiring_checks) || r.noop_wiring_checks.length === 0) blocking_reasons.push("At least one no-op wiring check is required");
+  for (const check of Array.isArray(r.noop_wiring_checks) ? r.noop_wiring_checks : []) {
+    const c = check as Record<string, unknown>;
+    if (c.runtime_invoked !== false || c.upload_invoked !== false || c.network_invoked !== false || c.credential_invoked !== false || c.media_read_invoked !== false || c.file_mutation_invoked !== false) blocking_reasons.push("No-op wiring check is unsafe");
+  }
+  blocking_reasons.push(...validateVo7abFalseBoundary(r.execution_boundary, VO7AB_UNSAFE_FALSE_KEYS, "Execution boundary"));
+  const validation = r.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_real_upload !== false || validation.runtime_enabled !== false || validation.upload_allowed !== false || validation.network_calls_allowed !== false || validation.credentials_accessed !== false || validation.media_file_read !== false) blocking_reasons.push("Validation boundary is unsafe");
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(result));
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadNoopWiringSmokeTestResult(input: { activationResult: RealUploadDisabledNoopWiringActivationResult; dryRun: true }): RealUploadNoopWiringSmokeTestResult {
+  if (input.dryRun !== true) throw new Error("VO-7AB no-op wiring smoke test requires dryRun=true");
+  const activationValidation = validateRealUploadDisabledNoopWiringActivationResult(input.activationResult);
+  if (!activationValidation.ok) throw new Error("Activation result validation failed");
+  if (input.activationResult.activation_result_state !== "disabled_noop_activation_recorded") throw new Error("Smoke test requires disabled no-op activation result");
+  const result: RealUploadNoopWiringSmokeTestResult = {
+    schema_version: "1.0",
+    real_upload_noop_wiring_smoke_test_result_id: `real-upload-noop-wiring-smoke-test-result-${crypto.randomUUID()}`,
+    real_upload_disabled_noop_wiring_activation_result_id: input.activationResult.real_upload_disabled_noop_wiring_activation_result_id,
+    real_upload_disabled_noop_wiring_activation_plan_id: input.activationResult.real_upload_disabled_noop_wiring_activation_plan_id,
+    render_plan_id: input.activationResult.render_plan_id,
+    project_id: input.activationResult.project_id,
+    platform: input.activationResult.platform,
+    created_at: new Date().toISOString(),
+    smoke_test_state: "passed_noop_disabled",
+    required_artifacts: {
+      real_upload_disabled_noop_wiring_activation_result_validated: true,
+      real_upload_disabled_noop_wiring_activation_plan_validated: true,
+    },
+    smoke_test_scope: {
+      noop_smoke_test_only: true,
+      runtime_invoked: false,
+      production_path_invoked: false,
+      upload_invoked: false,
+      network_invoked: false,
+      platform_api_invoked: false,
+      credentials_accessed: false,
+      media_file_read: false,
+      file_mutation_allowed: false,
+    },
+    noop_wiring_checks: [{ check_id: "noop-wiring-smoke-check-001", check_kind: "disabled-artifact-presence", check_state: "passed", safe_summary: "Disabled no-op wiring artifact reviewed without runtime invocation.", runtime_invoked: false, upload_invoked: false, network_invoked: false, credential_invoked: false, media_read_invoked: false, file_mutation_invoked: false, blocking_reasons: [], warnings: [] }],
+    execution_boundary: Object.fromEntries(VO7AB_UNSAFE_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { noop_wiring_smoke_test_complete: true, ready_for_future_real_upload_readiness_gate_v2: true, ready_for_real_upload: false, runtime_enabled: false, upload_allowed: false, network_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadNoopWiringSmokeTestResult", source_real_upload_disabled_noop_wiring_activation_result_id: input.activationResult.real_upload_disabled_noop_wiring_activation_result_id, source_real_upload_disabled_noop_wiring_activation_plan_id: input.activationResult.real_upload_disabled_noop_wiring_activation_plan_id, source_render_plan_id: input.activationResult.render_plan_id },
+  };
+  const validation = validateRealUploadNoopWiringSmokeTestResult(result);
+  if (!validation.ok) throw new Error(`Smoke test result validation failed: ${validation.blocking_reasons.join("; ")}`);
+  return result;
+}

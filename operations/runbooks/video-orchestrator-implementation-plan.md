@@ -3608,3 +3608,15 @@ interface RenderPlanValidationResult { ok, blocking_reasons, warnings }
 - Account registry lookup
 - Per-account cooldowns and duplicate prevention
 - Queuing and scheduling across accounts
+
+
+## VO-7AB — Real Upload Disabled No-Op Wiring Activation and Smoke Test
+
+VO-7AB adds two safety artifacts:
+
+- `real-upload-disabled-noop-wiring-activation-result`
+- `real-upload-noop-wiring-smoke-test-result`
+
+The activation result records only that disabled no-op wiring activation is eligible for future tests. The smoke test remains no-op and disabled; it verifies artifact shape without invoking runtime wiring or production paths.
+
+Safety boundaries remain unchanged: no upload, no platform API calls, no network calls, no credential/token/env/keychain access, no media reads, no file mutation, no runtime execution, no dependencies, no package metadata changes, and `ready_for_real_upload` remains false.

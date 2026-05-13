@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "real_upload_disabled_noop_wiring_activation_result_id": "real-upload-disabled-noop-wiring-activation-result-001",
+  "real_upload_disabled_noop_wiring_activation_plan_id": "real-upload-disabled-noop-wiring-activation-plan-001",
+  "real_upload_noop_wiring_readiness_review_id": "real-upload-noop-wiring-readiness-review-001",
+  "real_upload_noop_wiring_contract_tests_id": "real-upload-noop-wiring-contract-tests-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "activation_result_state": "disabled_noop_activation_recorded",
+  "required_artifacts": {
+    "real_upload_disabled_noop_wiring_activation_plan_validated": true,
+    "real_upload_noop_wiring_readiness_review_validated": true,
+    "real_upload_noop_wiring_contract_tests_validated": true
+  },
+  "activation_scope": {
+    "disabled_noop_activation_only": true,
+    "activation_recorded": true,
+    "activation_applied_to_runtime": false,
+    "runtime_feature_flag_created": false,
+    "runtime_feature_flag_enabled": false,
+    "production_imports_applied": false,
+    "automatic_invocation_enabled": false,
+    "live_execution_path_changed": false,
+    "upload_execution_path_changed": false,
+    "real_upload_requested": false
+  },
+  "disabled_activation_summary": {
+    "disabled_by_default": true,
+    "operator_activation_required": true,
+    "kill_switch_available": true,
+    "noop_wiring_available_for_future_tests": true,
+    "safe_summary": "Disabled no-op wiring activation was recorded as an artifact only.",
+    "blocking_reasons": [],
+    "warnings": ["No runtime wiring was applied."]
+  },
+  "kill_switch_status": {
+    "default_state_disabled": true,
+    "emergency_disable_supported": true,
+    "operator_reversible": true,
+    "credentials_required_for_disable": false,
+    "network_required_for_disable": false
+  },
+  "execution_boundary": {
+    "runtime_enabled": false,
+    "runtime_executed": false,
+    "upload_allowed": false,
+    "upload_execution_enabled": false,
+    "platform_api_calls_allowed": false,
+    "network_calls_allowed": false,
+    "credentials_accessed": false,
+    "token_accessed": false,
+    "keychain_accessed": false,
+    "env_accessed": false,
+    "media_file_read": false,
+    "file_mutation_allowed": false,
+    "dependencies_added": false,
+    "package_metadata_changed": false,
+    "ready_for_real_upload": false
+  },
+  "validation": {
+    "disabled_noop_wiring_activation_complete": true,
+    "ready_for_future_noop_wiring_smoke_test": true,
+    "ready_for_real_upload": false,
+    "runtime_enabled": false,
+    "upload_allowed": false,
+    "network_calls_allowed": false,
+    "credentials_accessed": false,
+    "media_file_read": false,
+    "blocking_reasons": [],
+    "warnings": []
+  },
+  "provenance": {
+    "generated_by": "createRealUploadDisabledNoopWiringActivationResult",
+    "source_real_upload_disabled_noop_wiring_activation_plan_id": "real-upload-disabled-noop-wiring-activation-plan-001",
+    "source_real_upload_noop_wiring_readiness_review_id": "real-upload-noop-wiring-readiness-review-001",
+    "source_real_upload_noop_wiring_contract_tests_id": "real-upload-noop-wiring-contract-tests-001",
+    "source_render_plan_id": "render-plan-001"
+  }
+}
