@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "controlled-runtime-implementation-final-boundary.schema.json",
+  "title": "Controlled Runtime Implementation Final Boundary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "controlled_runtime_implementation_final_boundary_id", "controlled_runtime_implementation_candidate_safe_report_id", "controlled_runtime_implementation_candidate_id", "render_plan_id", "project_id", "platform", "created_at", "final_boundary_state", "required_artifacts", "boundary_scope", "boundary_controls", "boundary_items", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "controlled_runtime_implementation_final_boundary_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_implementation_candidate_safe_report_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_implementation_candidate_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "final_boundary_state": { "type": "string", "enum": ["draft", "ready_for_operator_review", "approved_for_future_final_boundary_review", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["controlled_runtime_implementation_candidate_safe_report_validated", "controlled_runtime_implementation_candidate_validated"], "properties": { "controlled_runtime_implementation_candidate_safe_report_validated": { "type": "boolean", "const": true }, "controlled_runtime_implementation_candidate_validated": { "type": "boolean", "const": true } } },
+    "boundary_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "boundary_controls": { "type": "object", "additionalProperties": false, "required": ["final_boundary_only", "safe_stub_only", "single_upload_limit", "operator_kill_switch_required", "real_upload_still_blocked"], "properties": { "final_boundary_only": { "type": "boolean", "const": true }, "safe_stub_only": { "type": "boolean", "const": true }, "single_upload_limit": { "type": "integer", "const": 1 }, "operator_kill_switch_required": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "boundary_items": { "type": "array", "minItems": 5, "items": { "type": "object", "additionalProperties": false, "required": ["item_id", "item_kind", "safe_summary", "implemented_now"], "properties": { "item_id": { "type": "string" }, "item_kind": { "type": "string" }, "safe_summary": { "type": "string" }, "implemented_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_controlled_runtime_implementation_candidate_safe_report_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createControlledRuntimeImplementationFinalBoundary", "revokeControlledRuntimeImplementationFinalBoundary"] }, "source_controlled_runtime_implementation_candidate_safe_report_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

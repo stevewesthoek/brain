@@ -24749,3 +24749,60 @@ test("VO-7BG-VALIDATE: runtime implementation candidate safe report rejects raw 
   const validation = validateControlledRuntimeImplementationCandidateSafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7BH/VO-7BI/VO-7BJ: Runtime Implementation Final Boundary ──────────
+
+test("VO-7BH-SCHEMA: runtime implementation final boundary schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-implementation-final-boundary.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-final-boundary.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.boundary_items[0].implemented_now, false);
+});
+
+test("VO-7BH-VALIDATE: runtime implementation final boundary rejects implementation", async () => {
+  const { validateControlledRuntimeImplementationFinalBoundary } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-final-boundary.example.json"), "utf8"));
+  const unsafe = { ...example, boundary_items: [{ ...example.boundary_items[0], implemented_now: true }] };
+  const validation = validateControlledRuntimeImplementationFinalBoundary(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BI-SCHEMA: runtime implementation final boundary review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-implementation-final-boundary-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-final-boundary-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_items[0].implemented_now, false);
+});
+
+test("VO-7BI-VALIDATE: runtime implementation final boundary review rejects implementation", async () => {
+  const { validateControlledRuntimeImplementationFinalBoundaryReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-final-boundary-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_items: [{ ...example.review_items[0], implemented_now: true }] };
+  const validation = validateControlledRuntimeImplementationFinalBoundaryReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BJ-SCHEMA: runtime implementation final boundary safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-implementation-final-boundary-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-final-boundary-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7BJ-VALIDATE: runtime implementation final boundary safe report rejects raw material", async () => {
+  const { validateControlledRuntimeImplementationFinalBoundarySafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-implementation-final-boundary-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateControlledRuntimeImplementationFinalBoundarySafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});

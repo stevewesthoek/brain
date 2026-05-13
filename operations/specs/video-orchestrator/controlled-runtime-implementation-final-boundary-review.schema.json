@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "controlled-runtime-implementation-final-boundary-review.schema.json",
+  "title": "Controlled Runtime Implementation Final Boundary Review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "controlled_runtime_implementation_final_boundary_review_id", "controlled_runtime_implementation_final_boundary_id", "render_plan_id", "project_id", "platform", "created_at", "final_boundary_review_state", "required_artifacts", "review_scope", "review_controls", "review_items", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "controlled_runtime_implementation_final_boundary_review_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_implementation_final_boundary_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "final_boundary_review_state": { "type": "string", "enum": ["draft", "ready_for_operator_review", "approved_for_future_final_boundary_safe_report", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["controlled_runtime_implementation_final_boundary_validated"], "properties": { "controlled_runtime_implementation_final_boundary_validated": { "type": "boolean", "const": true } } },
+    "review_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "review_controls": { "type": "object", "additionalProperties": false, "required": ["review_only", "final_boundary_reviewed", "single_upload_limit", "operator_kill_switch_required", "real_upload_still_blocked"], "properties": { "review_only": { "type": "boolean", "const": true }, "final_boundary_reviewed": { "type": "boolean", "const": true }, "single_upload_limit": { "type": "integer", "const": 1 }, "operator_kill_switch_required": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "review_items": { "type": "array", "minItems": 5, "items": { "type": "object", "additionalProperties": false, "required": ["item_id", "item_kind", "review_state", "safe_summary", "implemented_now"], "properties": { "item_id": { "type": "string" }, "item_kind": { "type": "string" }, "review_state": { "type": "string", "enum": ["passed", "failed", "blocked", "deferred"] }, "safe_summary": { "type": "string" }, "implemented_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_controlled_runtime_implementation_final_boundary_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createControlledRuntimeImplementationFinalBoundaryReview", "revokeControlledRuntimeImplementationFinalBoundaryReview"] }, "source_controlled_runtime_implementation_final_boundary_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}
