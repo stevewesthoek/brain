@@ -21076,3 +21076,196 @@ export function createRuntimeStubStoreRetrievalSafeReport(input: { retrievalCont
     provenance: { generated_by: "createRuntimeStubStoreRetrievalSafeReport", source_runtime_stub_retrieval_contract_id: input.retrievalContract.runtime_stub_retrieval_contract_id, source_render_plan_id: input.store.render_plan_id },
   };
 }
+
+
+// ─── VO-7BT/VO-7BU/VO-7BV: Runtime Stub Manifest/Index Boundary ────────────
+
+export interface RuntimeStubManifest {
+  schema_version: "1.0";
+  runtime_stub_manifest_id: string;
+  runtime_stub_store_retrieval_safe_report_id: string;
+  runtime_stub_store_id: string;
+  noop_runtime_stub_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  manifest_state: "draft" | "created" | "ready_for_operator_review" | "approved_for_future_index_contract" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  manifest_scope: Record<string, unknown>;
+  manifest_controls: Record<string, unknown>;
+  manifest_entries: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubIndexContract {
+  schema_version: "1.0";
+  runtime_stub_index_contract_id: string;
+  runtime_stub_manifest_id: string;
+  runtime_stub_store_id: string;
+  noop_runtime_stub_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  index_contract_state: "draft" | "ready_for_operator_review" | "approved_for_future_manifest_index_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  index_scope: Record<string, unknown>;
+  index_controls: Record<string, unknown>;
+  index_entries: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeStubManifestIndexSafeReport {
+  schema_version: "1.0";
+  runtime_stub_manifest_index_safe_report_id: string;
+  runtime_stub_index_contract_id: string;
+  runtime_stub_manifest_id: string;
+  runtime_stub_store_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_stub_release_candidate" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeStubManifestIndexLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.manifest_controls || artifact.index_controls) as Record<string, unknown> | undefined;
+    if (controls && controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub manifest/index must keep real upload blocked");
+    }
+    if (controls && (controls.contains_runtime_callable === true || controls.contains_raw_payload === true || controls.contains_raw_response === true || controls.contains_secret_material === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime stub manifest/index contains unsafe material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 3) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.runtime_callable_present === true || record.raw_payload_present === true || record.secret_material_present === true || record.indexed_now === true || record.runtime_executed_now === true || record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe runtime/raw/secret/index material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateRuntimeStubManifest(manifest: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubManifestIndexLayer(manifest, "manifest_scope", "manifest_entries");
+}
+
+export function validateRuntimeStubIndexContract(contract: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubManifestIndexLayer(contract, "index_scope", "index_entries");
+}
+
+export function validateRuntimeStubManifestIndexSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeStubManifestIndexLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createRuntimeStubManifest(input: { storeRetrievalSafeReport: RuntimeStubStoreRetrievalSafeReport; store: RuntimeStubStore; decision?: "draft" | "approved_for_future_index_contract" | "rejected"; dryRun: true }): RuntimeStubManifest {
+  if (input.dryRun !== true) throw new Error("VO-7BT runtime stub manifest requires dryRun=true");
+  const reportValidation = validateRuntimeStubStoreRetrievalSafeReport(input.storeRetrievalSafeReport);
+  if (!reportValidation.ok) throw new Error("Runtime stub store/retrieval safe report validation failed");
+  if (input.storeRetrievalSafeReport.safe_report_state !== "approved_for_future_runtime_stub_manifest") throw new Error("Runtime stub manifest requires approved store/retrieval safe report");
+  if (input.storeRetrievalSafeReport.runtime_stub_store_id !== input.store.runtime_stub_store_id) throw new Error("Mismatched store/retrieval safe report and store");
+  const approved = input.decision === "approved_for_future_index_contract";
+  return {
+    schema_version: "1.0",
+    runtime_stub_manifest_id: `runtime-stub-manifest-${crypto.randomUUID()}`,
+    runtime_stub_store_retrieval_safe_report_id: input.storeRetrievalSafeReport.runtime_stub_store_retrieval_safe_report_id,
+    runtime_stub_store_id: input.store.runtime_stub_store_id,
+    noop_runtime_stub_id: input.store.noop_runtime_stub_id,
+    render_plan_id: input.store.render_plan_id,
+    project_id: input.store.project_id,
+    platform: input.store.platform,
+    created_at: new Date().toISOString(),
+    manifest_state: approved ? "approved_for_future_index_contract" : input.decision === "rejected" ? "rejected" : "created",
+    required_artifacts: { runtime_stub_store_retrieval_safe_report_validated: true, runtime_stub_store_validated: true },
+    manifest_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    manifest_controls: { manifest_only: true, indexes_summary_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    manifest_entries: [
+      { entry_id: "manifest-store", entry_kind: "store", artifact_id: input.store.runtime_stub_store_id, safe_summary: "Store summary only.", runtime_callable_present: false, raw_payload_present: false, secret_material_present: false },
+      { entry_id: "manifest-retrieval", entry_kind: "retrieval_contract", artifact_id: input.storeRetrievalSafeReport.runtime_stub_retrieval_contract_id, safe_summary: "Retrieval summary only.", runtime_callable_present: false, raw_payload_present: false, secret_material_present: false },
+      { entry_id: "manifest-report", entry_kind: "safe_report", artifact_id: input.storeRetrievalSafeReport.runtime_stub_store_retrieval_safe_report_id, safe_summary: "Safe report summary only.", runtime_callable_present: false, raw_payload_present: false, secret_material_present: false },
+    ],
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubManifest", source_runtime_stub_store_retrieval_safe_report_id: input.storeRetrievalSafeReport.runtime_stub_store_retrieval_safe_report_id, source_render_plan_id: input.store.render_plan_id },
+  };
+}
+
+export function createRuntimeStubIndexContract(input: { manifest: RuntimeStubManifest; store: RuntimeStubStore; decision?: "draft" | "approved_for_future_manifest_index_safe_report" | "rejected"; dryRun: true }): RuntimeStubIndexContract {
+  if (input.dryRun !== true) throw new Error("VO-7BU runtime stub index contract requires dryRun=true");
+  const manifestValidation = validateRuntimeStubManifest(input.manifest);
+  if (!manifestValidation.ok) throw new Error("Runtime stub manifest validation failed");
+  if (input.manifest.manifest_state !== "approved_for_future_index_contract") throw new Error("Index contract requires approved runtime stub manifest");
+  if (input.manifest.runtime_stub_store_id !== input.store.runtime_stub_store_id) throw new Error("Mismatched runtime stub manifest and store");
+  const approved = input.decision === "approved_for_future_manifest_index_safe_report";
+  return {
+    schema_version: "1.0",
+    runtime_stub_index_contract_id: `runtime-stub-index-contract-${crypto.randomUUID()}`,
+    runtime_stub_manifest_id: input.manifest.runtime_stub_manifest_id,
+    runtime_stub_store_id: input.store.runtime_stub_store_id,
+    noop_runtime_stub_id: input.store.noop_runtime_stub_id,
+    render_plan_id: input.store.render_plan_id,
+    project_id: input.store.project_id,
+    platform: input.store.platform,
+    created_at: new Date().toISOString(),
+    index_contract_state: approved ? "approved_for_future_manifest_index_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { runtime_stub_manifest_validated: true, runtime_stub_store_validated: true },
+    index_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    index_controls: { index_contract_only: true, indexes_summary_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    index_entries: input.manifest.manifest_entries.map((entry) => ({ entry_id: `index-${String(entry.entry_kind)}`, entry_kind: entry.entry_kind, artifact_id: entry.artifact_id, safe_summary: "Runtime stub index contract only.", indexed_now: false, runtime_executed_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubIndexContract", source_runtime_stub_manifest_id: input.manifest.runtime_stub_manifest_id, source_render_plan_id: input.store.render_plan_id },
+  };
+}
+
+export function createRuntimeStubManifestIndexSafeReport(input: { indexContract: RuntimeStubIndexContract; manifest: RuntimeStubManifest; decision?: "draft" | "approved_for_future_runtime_stub_release_candidate" | "rejected"; dryRun: true }): RuntimeStubManifestIndexSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7BV runtime stub manifest/index safe report requires dryRun=true");
+  const indexValidation = validateRuntimeStubIndexContract(input.indexContract);
+  if (!indexValidation.ok) throw new Error("Runtime stub index contract validation failed");
+  if (input.indexContract.index_contract_state !== "approved_for_future_manifest_index_safe_report") throw new Error("Manifest/index safe report requires approved index contract");
+  if (input.indexContract.runtime_stub_manifest_id !== input.manifest.runtime_stub_manifest_id) throw new Error("Mismatched index contract and manifest");
+  const approved = input.decision === "approved_for_future_runtime_stub_release_candidate";
+  const sections = ["manifest", "index", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_stub_manifest_index_safe_report_id: `runtime-stub-manifest-index-safe-report-${crypto.randomUUID()}`,
+    runtime_stub_index_contract_id: input.indexContract.runtime_stub_index_contract_id,
+    runtime_stub_manifest_id: input.manifest.runtime_stub_manifest_id,
+    runtime_stub_store_id: input.manifest.runtime_stub_store_id,
+    render_plan_id: input.manifest.render_plan_id,
+    project_id: input.manifest.project_id,
+    platform: input.manifest.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_stub_release_candidate" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_stub_index_contract_validated: true, runtime_stub_manifest_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    safe_report_sections: sections.map((kind) => ({ section_id: `manifest-index-safe-report-${kind}`, section_kind: kind, safe_summary: "Runtime stub manifest/index safe report only.", contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeStubManifestIndexSafeReport", source_runtime_stub_index_contract_id: input.indexContract.runtime_stub_index_contract_id, source_render_plan_id: input.manifest.render_plan_id },
+  };
+}

@@ -1788,3 +1788,11 @@ Status: complete.
 VO-7BQ adds a runtime stub store artifact, VO-7BR adds a runtime stub retrieval contract, and VO-7BS adds a store/retrieval safe report. These phases remain store/retrieval-contract/report artifacts only.
 
 They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+## Phase 5AZ — Runtime Stub Manifest, Index Contract, and Safe Report (VO-7BT/VO-7BU/VO-7BV)
+
+Status: complete.
+
+VO-7BT adds a runtime stub manifest artifact, VO-7BU adds a runtime stub index contract, and VO-7BV adds a manifest/index safe report. These phases remain manifest/index-contract/report artifacts only.
+
+They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.

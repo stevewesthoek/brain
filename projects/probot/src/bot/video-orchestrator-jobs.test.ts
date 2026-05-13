@@ -24977,3 +24977,60 @@ test("VO-7BS-VALIDATE: runtime stub store/retrieval safe report rejects raw mate
   const validation = validateRuntimeStubStoreRetrievalSafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7BT/VO-7BU/VO-7BV: Runtime Stub Manifest/Index Boundary ────────────
+
+test("VO-7BT-SCHEMA: runtime stub manifest schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-manifest.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-manifest.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.manifest_entries[0].runtime_callable_present, false);
+});
+
+test("VO-7BT-VALIDATE: runtime stub manifest rejects runtime callable", async () => {
+  const { validateRuntimeStubManifest } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-manifest.example.json"), "utf8"));
+  const unsafe = { ...example, manifest_entries: [{ ...example.manifest_entries[0], runtime_callable_present: true }] };
+  const validation = validateRuntimeStubManifest(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BU-SCHEMA: runtime stub index contract schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-index-contract.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-index-contract.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.index_entries[0].indexed_now, false);
+});
+
+test("VO-7BU-VALIDATE: runtime stub index contract rejects indexing now", async () => {
+  const { validateRuntimeStubIndexContract } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-index-contract.example.json"), "utf8"));
+  const unsafe = { ...example, index_entries: [{ ...example.index_entries[0], indexed_now: true }] };
+  const validation = validateRuntimeStubIndexContract(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BV-SCHEMA: runtime stub manifest/index safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-stub-manifest-index-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-manifest-index-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_runtime_callable, false);
+});
+
+test("VO-7BV-VALIDATE: runtime stub manifest/index safe report rejects raw material", async () => {
+  const { validateRuntimeStubManifestIndexSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-stub-manifest-index-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateRuntimeStubManifestIndexSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});

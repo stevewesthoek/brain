@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "runtime_stub_manifest_id": "runtime-stub-manifest-001",
+  "runtime_stub_store_retrieval_safe_report_id": "runtime-stub-store-retrieval-safe-report-001",
+  "runtime_stub_store_id": "runtime-stub-store-001",
+  "noop_runtime_stub_id": "noop-runtime-stub-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "manifest_state": "approved_for_future_index_contract",
+  "required_artifacts": { "runtime_stub_store_retrieval_safe_report_validated": true, "runtime_stub_store_validated": true },
+  "manifest_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "manifest_controls": { "manifest_only": true, "indexes_summary_only": true, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_raw_response": false, "contains_secret_material": false, "runtime_invocation_disabled": true, "real_upload_still_blocked": true },
+  "manifest_entries": [
+    { "entry_id": "manifest-store", "entry_kind": "store", "artifact_id": "runtime-stub-store-001", "safe_summary": "Store summary only.", "runtime_callable_present": false, "raw_payload_present": false, "secret_material_present": false },
+    { "entry_id": "manifest-retrieval", "entry_kind": "retrieval_contract", "artifact_id": "runtime-stub-retrieval-contract-001", "safe_summary": "Retrieval summary only.", "runtime_callable_present": false, "raw_payload_present": false, "secret_material_present": false },
+    { "entry_id": "manifest-report", "entry_kind": "safe_report", "artifact_id": "runtime-stub-store-retrieval-safe-report-001", "safe_summary": "Safe report summary only.", "runtime_callable_present": false, "raw_payload_present": false, "secret_material_present": false }
+  ],
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createRuntimeStubManifest", "source_runtime_stub_store_retrieval_safe_report_id": "runtime-stub-store-retrieval-safe-report-001", "source_render_plan_id": "render-plan-001" }
+}
