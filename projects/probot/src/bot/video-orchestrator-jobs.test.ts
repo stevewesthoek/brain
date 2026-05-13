@@ -24578,3 +24578,60 @@ test("VO-7AX-VALIDATE: controlled runtime activation rollback plan rejects execu
   const validation = validateControlledRuntimeActivationRollbackPlan(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7AY/VO-7AZ/VO-7BA: Go/No-Go, Final Safe Report, Boundary Summary ───
+
+test("VO-7AY-SCHEMA: controlled runtime activation go/no-go schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-activation-go-no-go.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-go-no-go.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.decision_controls.real_upload_still_blocked, true);
+});
+
+test("VO-7AY-VALIDATE: controlled runtime activation go/no-go rejects unsafe flags", async () => {
+  const { validateControlledRuntimeActivationGoNoGo } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-go-no-go.example.json"), "utf8"));
+  const unsafe = { ...example, decision_scope: { ...example.decision_scope, upload_execution_enabled_now: true } };
+  const validation = validateControlledRuntimeActivationGoNoGo(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7AZ-SCHEMA: controlled runtime activation final safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-activation-final-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-final-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7AZ-VALIDATE: controlled runtime activation final safe report rejects raw data", async () => {
+  const { validateControlledRuntimeActivationFinalSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-final-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateControlledRuntimeActivationFinalSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7BA-SCHEMA: controlled runtime activation boundary completion summary schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-activation-boundary-completion-summary.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-boundary-completion-summary.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.completion_findings.runtime_implementation_still_required, true);
+});
+
+test("VO-7BA-VALIDATE: controlled runtime activation boundary summary rejects unsafe readiness", async () => {
+  const { validateControlledRuntimeActivationBoundaryCompletionSummary } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-boundary-completion-summary.example.json"), "utf8"));
+  const unsafe = { ...example, validation: { ...example.validation, ready_for_real_upload: true } };
+  const validation = validateControlledRuntimeActivationBoundaryCompletionSummary(unsafe);
+  assert.equal(validation.ok, false);
+});

@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "controlled_runtime_activation_boundary_completion_summary_id": "controlled-runtime-activation-boundary-completion-summary-001",
+  "controlled_runtime_activation_final_safe_report_id": "controlled-runtime-activation-final-safe-report-001",
+  "controlled_runtime_activation_go_no_go_id": "controlled-runtime-activation-go-no-go-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "boundary_completion_state": "approved_for_future_runtime_activation_implementation_boundary",
+  "required_artifacts": { "controlled_runtime_activation_final_safe_report_validated": true, "controlled_runtime_activation_go_no_go_validated": true },
+  "summary_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "completion_findings": { "artifact_chain_complete": true, "runtime_implementation_still_required": true, "separate_activation_commit_required": true, "real_upload_still_blocked": true },
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createControlledRuntimeActivationBoundaryCompletionSummary", "source_controlled_runtime_activation_final_safe_report_id": "controlled-runtime-activation-final-safe-report-001", "source_render_plan_id": "render-plan-001" }
+}

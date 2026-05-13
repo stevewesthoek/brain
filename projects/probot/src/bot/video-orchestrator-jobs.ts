@@ -19802,3 +19802,184 @@ export function createControlledRuntimeActivationRollbackPlan(input: { finalRevi
     provenance: { generated_by: "createControlledRuntimeActivationRollbackPlan", source_controlled_runtime_activation_final_review_id: input.finalReview.controlled_runtime_activation_final_review_id, source_render_plan_id: input.candidate.render_plan_id },
   };
 }
+
+
+// ─── VO-7AY/VO-7AZ/VO-7BA: Go/No-Go, Final Safe Report, Boundary Summary ───
+
+export interface ControlledRuntimeActivationGoNoGo {
+  schema_version: "1.0";
+  controlled_runtime_activation_go_no_go_id: string;
+  controlled_runtime_activation_rollback_plan_id: string;
+  controlled_runtime_activation_final_review_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  go_no_go_state: "draft" | "go_candidate" | "no_go" | "approved_for_final_safe_activation_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  decision_scope: Record<string, unknown>;
+  decision_controls: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeActivationFinalSafeReport {
+  schema_version: "1.0";
+  controlled_runtime_activation_final_safe_report_id: string;
+  controlled_runtime_activation_go_no_go_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  final_safe_report_state: "draft" | "complete" | "approved_for_boundary_completion_summary" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeActivationBoundaryCompletionSummary {
+  schema_version: "1.0";
+  controlled_runtime_activation_boundary_completion_summary_id: string;
+  controlled_runtime_activation_final_safe_report_id: string;
+  controlled_runtime_activation_go_no_go_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  boundary_completion_state: "draft" | "complete" | "approved_for_future_runtime_activation_implementation_boundary" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  summary_scope: Record<string, unknown>;
+  completion_findings: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeCompletionArtifact(value: unknown, scopeKey: string, controlKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok && controlKey) {
+    const artifact = value as Record<string, unknown>;
+    const controls = artifact[controlKey] as Record<string, unknown> | undefined;
+    if (!controls || controls.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push(`${controlKey} must keep real upload blocked`);
+    }
+  }
+  return result;
+}
+
+export function validateControlledRuntimeActivationGoNoGo(decision: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeCompletionArtifact(decision, "decision_scope", "decision_controls");
+}
+
+export function validateControlledRuntimeActivationFinalSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  const result = validateRuntimeCompletionArtifact(report, "report_scope");
+  if (result.ok) {
+    const artifact = report as Record<string, unknown>;
+    if (!Array.isArray(artifact.safe_report_sections) || artifact.safe_report_sections.length < 4) {
+      result.ok = false;
+      result.blocking_reasons.push("Safe report sections are incomplete");
+    }
+    for (const section of Array.isArray(artifact.safe_report_sections) ? artifact.safe_report_sections : []) {
+      const rec = section as Record<string, unknown>;
+      if (rec.contains_raw_payload !== false || rec.contains_raw_response !== false || rec.contains_secret_material !== false) {
+        result.ok = false;
+        result.blocking_reasons.push("Safe report contains unsafe raw or secret material");
+      }
+    }
+  }
+  return result;
+}
+
+export function validateControlledRuntimeActivationBoundaryCompletionSummary(summary: unknown): RealUploadEnablementArtifactValidationResult {
+  const result = validateRuntimeCompletionArtifact(summary, "summary_scope");
+  if (result.ok) {
+    const findings = (summary as Record<string, unknown>).completion_findings as Record<string, unknown> | undefined;
+    if (!findings || findings.artifact_chain_complete !== true || findings.runtime_implementation_still_required !== true || findings.real_upload_still_blocked !== true) {
+      result.ok = false;
+      result.blocking_reasons.push("Boundary completion findings are incomplete");
+    }
+  }
+  return result;
+}
+
+export function createControlledRuntimeActivationGoNoGo(input: { rollbackPlan: ControlledRuntimeActivationRollbackPlan; finalReview: ControlledRuntimeActivationFinalReview; decision?: "draft" | "approved_for_final_safe_activation_report" | "no_go" | "rejected"; dryRun: true }): ControlledRuntimeActivationGoNoGo {
+  if (input.dryRun !== true) throw new Error("VO-7AY activation go/no-go requires dryRun=true");
+  const rollbackValidation = validateControlledRuntimeActivationRollbackPlan(input.rollbackPlan);
+  if (!rollbackValidation.ok) throw new Error("Rollback plan validation failed");
+  if (input.rollbackPlan.rollback_plan_state !== "approved_for_future_activation_go_no_go") throw new Error("Go/no-go requires approved rollback plan");
+  if (input.rollbackPlan.controlled_runtime_activation_final_review_id !== input.finalReview.controlled_runtime_activation_final_review_id) throw new Error("Mismatched rollback plan and final review");
+  const approved = input.decision === "approved_for_final_safe_activation_report";
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_go_no_go_id: `controlled-runtime-activation-go-no-go-${crypto.randomUUID()}`,
+    controlled_runtime_activation_rollback_plan_id: input.rollbackPlan.controlled_runtime_activation_rollback_plan_id,
+    controlled_runtime_activation_final_review_id: input.finalReview.controlled_runtime_activation_final_review_id,
+    render_plan_id: input.rollbackPlan.render_plan_id,
+    project_id: input.rollbackPlan.project_id,
+    platform: input.rollbackPlan.platform,
+    created_at: new Date().toISOString(),
+    go_no_go_state: approved ? "approved_for_final_safe_activation_report" : input.decision === "no_go" ? "no_go" : input.decision === "rejected" ? "rejected" : "go_candidate",
+    required_artifacts: { controlled_runtime_activation_rollback_plan_validated: true, controlled_runtime_activation_final_review_validated: true },
+    decision_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    decision_controls: { go_no_go_only: true, operator_kill_switch_required: true, single_upload_limit: 1, rollback_plan_validated: true, real_upload_still_blocked: true },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationGoNoGo", source_controlled_runtime_activation_rollback_plan_id: input.rollbackPlan.controlled_runtime_activation_rollback_plan_id, source_render_plan_id: input.rollbackPlan.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeActivationFinalSafeReport(input: { goNoGo: ControlledRuntimeActivationGoNoGo; decision?: "draft" | "approved_for_boundary_completion_summary" | "rejected"; dryRun: true }): ControlledRuntimeActivationFinalSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7AZ final safe activation report requires dryRun=true");
+  const decisionValidation = validateControlledRuntimeActivationGoNoGo(input.goNoGo);
+  if (!decisionValidation.ok) throw new Error("Go/no-go validation failed");
+  if (input.goNoGo.go_no_go_state !== "approved_for_final_safe_activation_report") throw new Error("Final safe report requires approved go/no-go");
+  const approved = input.decision === "approved_for_boundary_completion_summary";
+  const sections = ["boundaries", "controls", "rollback", "status"];
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_final_safe_report_id: `controlled-runtime-activation-final-safe-report-${crypto.randomUUID()}`,
+    controlled_runtime_activation_go_no_go_id: input.goNoGo.controlled_runtime_activation_go_no_go_id,
+    render_plan_id: input.goNoGo.render_plan_id,
+    project_id: input.goNoGo.project_id,
+    platform: input.goNoGo.platform,
+    created_at: new Date().toISOString(),
+    final_safe_report_state: approved ? "approved_for_boundary_completion_summary" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { controlled_runtime_activation_go_no_go_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    safe_report_sections: sections.map((kind) => ({ section_id: `safe-report-${kind}`, section_kind: kind, safe_summary: "Safe activation report summary only.", contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationFinalSafeReport", source_controlled_runtime_activation_go_no_go_id: input.goNoGo.controlled_runtime_activation_go_no_go_id, source_render_plan_id: input.goNoGo.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeActivationBoundaryCompletionSummary(input: { finalSafeReport: ControlledRuntimeActivationFinalSafeReport; goNoGo: ControlledRuntimeActivationGoNoGo; decision?: "draft" | "approved_for_future_runtime_activation_implementation_boundary" | "rejected"; dryRun: true }): ControlledRuntimeActivationBoundaryCompletionSummary {
+  if (input.dryRun !== true) throw new Error("VO-7BA boundary completion summary requires dryRun=true");
+  const reportValidation = validateControlledRuntimeActivationFinalSafeReport(input.finalSafeReport);
+  if (!reportValidation.ok) throw new Error("Final safe report validation failed");
+  if (input.finalSafeReport.final_safe_report_state !== "approved_for_boundary_completion_summary") throw new Error("Boundary completion summary requires approved final safe report");
+  if (input.finalSafeReport.controlled_runtime_activation_go_no_go_id !== input.goNoGo.controlled_runtime_activation_go_no_go_id) throw new Error("Mismatched final safe report and go/no-go");
+  const approved = input.decision === "approved_for_future_runtime_activation_implementation_boundary";
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_boundary_completion_summary_id: `controlled-runtime-activation-boundary-completion-summary-${crypto.randomUUID()}`,
+    controlled_runtime_activation_final_safe_report_id: input.finalSafeReport.controlled_runtime_activation_final_safe_report_id,
+    controlled_runtime_activation_go_no_go_id: input.goNoGo.controlled_runtime_activation_go_no_go_id,
+    render_plan_id: input.finalSafeReport.render_plan_id,
+    project_id: input.finalSafeReport.project_id,
+    platform: input.finalSafeReport.platform,
+    created_at: new Date().toISOString(),
+    boundary_completion_state: approved ? "approved_for_future_runtime_activation_implementation_boundary" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { controlled_runtime_activation_final_safe_report_validated: true, controlled_runtime_activation_go_no_go_validated: true },
+    summary_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    completion_findings: { artifact_chain_complete: true, runtime_implementation_still_required: true, separate_activation_commit_required: true, real_upload_still_blocked: true },
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationBoundaryCompletionSummary", source_controlled_runtime_activation_final_safe_report_id: input.finalSafeReport.controlled_runtime_activation_final_safe_report_id, source_render_plan_id: input.finalSafeReport.render_plan_id },
+  };
+}

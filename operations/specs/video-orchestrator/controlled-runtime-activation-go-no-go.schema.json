@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "controlled-runtime-activation-go-no-go.schema.json",
+  "title": "Controlled Runtime Activation Go No-Go",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "controlled_runtime_activation_go_no_go_id", "controlled_runtime_activation_rollback_plan_id", "controlled_runtime_activation_final_review_id", "render_plan_id", "project_id", "platform", "created_at", "go_no_go_state", "required_artifacts", "decision_scope", "decision_controls", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "controlled_runtime_activation_go_no_go_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_activation_rollback_plan_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_activation_final_review_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "go_no_go_state": { "type": "string", "enum": ["draft", "go_candidate", "no_go", "approved_for_final_safe_activation_report", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["controlled_runtime_activation_rollback_plan_validated", "controlled_runtime_activation_final_review_validated"], "properties": { "controlled_runtime_activation_rollback_plan_validated": { "type": "boolean", "const": true }, "controlled_runtime_activation_final_review_validated": { "type": "boolean", "const": true } } },
+    "decision_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "decision_controls": { "type": "object", "additionalProperties": false, "required": ["go_no_go_only", "operator_kill_switch_required", "single_upload_limit", "rollback_plan_validated", "real_upload_still_blocked"], "properties": { "go_no_go_only": { "type": "boolean", "const": true }, "operator_kill_switch_required": { "type": "boolean", "const": true }, "single_upload_limit": { "type": "integer", "const": 1 }, "rollback_plan_validated": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_controlled_runtime_activation_rollback_plan_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createControlledRuntimeActivationGoNoGo", "revokeControlledRuntimeActivationGoNoGo"] }, "source_controlled_runtime_activation_rollback_plan_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}
