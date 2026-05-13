@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "explicit-runtime-activation-design-safe-report.schema.json",
+  "title": "Explicit Runtime Activation Design Safe Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "explicit_runtime_activation_design_safe_report_id", "explicit_runtime_activation_design_review_id", "explicit_runtime_activation_design_boundary_id", "render_plan_id", "project_id", "platform", "created_at", "safe_report_state", "required_artifacts", "report_scope", "report_controls", "safe_report_sections", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "explicit_runtime_activation_design_safe_report_id": { "type": "string", "minLength": 1 },
+    "explicit_runtime_activation_design_review_id": { "type": "string", "minLength": 1 },
+    "explicit_runtime_activation_design_boundary_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "safe_report_state": { "type": "string", "enum": ["draft", "complete", "approved_for_future_runtime_activation_contract", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["explicit_runtime_activation_design_review_validated", "explicit_runtime_activation_design_boundary_validated"], "properties": { "explicit_runtime_activation_design_review_validated": { "type": "boolean", "const": true }, "explicit_runtime_activation_design_boundary_validated": { "type": "boolean", "const": true } } },
+    "report_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "report_controls": { "type": "object", "additionalProperties": false, "required": ["safe_report_only", "activation_design_only", "contains_runtime_callable", "contains_raw_payload", "contains_raw_response", "contains_secret_material", "runtime_wiring_implemented", "runtime_invocation_disabled", "real_upload_still_blocked"], "properties": { "safe_report_only": { "type": "boolean", "const": true }, "activation_design_only": { "type": "boolean", "const": true }, "contains_runtime_callable": { "type": "boolean", "const": false }, "contains_raw_payload": { "type": "boolean", "const": false }, "contains_raw_response": { "type": "boolean", "const": false }, "contains_secret_material": { "type": "boolean", "const": false }, "runtime_wiring_implemented": { "type": "boolean", "const": false }, "runtime_invocation_disabled": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "safe_report_sections": { "type": "array", "minItems": 4, "items": { "type": "object", "additionalProperties": false, "required": ["section_id", "section_kind", "safe_summary", "contains_runtime_callable", "contains_raw_payload", "contains_raw_response", "contains_secret_material", "runtime_enabled_now", "ready_for_real_upload_now"], "properties": { "section_id": { "type": "string" }, "section_kind": { "type": "string" }, "safe_summary": { "type": "string" }, "contains_runtime_callable": { "type": "boolean", "const": false }, "contains_raw_payload": { "type": "boolean", "const": false }, "contains_raw_response": { "type": "boolean", "const": false }, "contains_secret_material": { "type": "boolean", "const": false }, "runtime_enabled_now": { "type": "boolean", "const": false }, "ready_for_real_upload_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_explicit_runtime_activation_design_review_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createExplicitRuntimeActivationDesignSafeReport", "revokeExplicitRuntimeActivationDesignSafeReport"] }, "source_explicit_runtime_activation_design_review_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

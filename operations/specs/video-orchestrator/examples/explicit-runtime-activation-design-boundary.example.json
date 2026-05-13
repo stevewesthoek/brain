@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "explicit_runtime_activation_design_boundary_id": "explicit-runtime-activation-design-boundary-001",
+  "runtime_stub_next_phase_decision_record_id": "runtime-stub-next-phase-decision-record-001",
+  "runtime_stub_operator_handoff_checklist_id": "runtime-stub-operator-handoff-checklist-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "design_boundary_state": "approved_for_future_design_review",
+  "required_artifacts": { "runtime_stub_next_phase_decision_record_validated": true, "runtime_stub_operator_handoff_checklist_validated": true },
+  "design_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "design_controls": { "design_only": true, "activation_boundary_only": true, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_raw_response": false, "contains_secret_material": false, "runtime_wiring_implemented": false, "runtime_invocation_disabled": true, "real_upload_still_blocked": true },
+  "design_sections": [
+    { "section_id": "design-boundary-scope", "section_kind": "scope", "safe_summary": "Future explicit activation design boundary only.", "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false, "runtime_enabled_now": false, "ready_for_real_upload_now": false },
+    { "section_id": "design-boundary-interfaces", "section_kind": "interfaces", "safe_summary": "Interface design only; no callables or payloads.", "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false, "runtime_enabled_now": false, "ready_for_real_upload_now": false },
+    { "section_id": "design-boundary-credentials", "section_kind": "credentials", "safe_summary": "Credential access remains disabled.", "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false, "runtime_enabled_now": false, "ready_for_real_upload_now": false },
+    { "section_id": "design-boundary-status", "section_kind": "status", "safe_summary": "Real upload remains disabled.", "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false, "runtime_enabled_now": false, "ready_for_real_upload_now": false }
+  ],
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createExplicitRuntimeActivationDesignBoundary", "source_runtime_stub_next_phase_decision_record_id": "runtime-stub-next-phase-decision-record-001", "source_render_plan_id": "render-plan-001" }
+}

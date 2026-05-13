@@ -22614,3 +22614,190 @@ export function createRuntimeStubNextPhaseDecisionRecord(input: { checklist: Run
     provenance: { generated_by: "createRuntimeStubNextPhaseDecisionRecord", source_runtime_stub_operator_handoff_checklist_id: input.checklist.runtime_stub_operator_handoff_checklist_id, source_render_plan_id: input.checklist.render_plan_id },
   };
 }
+
+
+// ─── VO-7CR/VO-7CS/VO-7CT: Explicit Runtime Activation Design Boundary ─────
+
+export interface ExplicitRuntimeActivationDesignBoundary {
+  schema_version: "1.0";
+  explicit_runtime_activation_design_boundary_id: string;
+  runtime_stub_next_phase_decision_record_id: string;
+  runtime_stub_operator_handoff_checklist_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  design_boundary_state: "draft" | "designed" | "approved_for_future_design_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  design_scope: Record<string, unknown>;
+  design_controls: Record<string, unknown>;
+  design_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ExplicitRuntimeActivationDesignReview {
+  schema_version: "1.0";
+  explicit_runtime_activation_design_review_id: string;
+  explicit_runtime_activation_design_boundary_id: string;
+  runtime_stub_next_phase_decision_record_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  design_review_state: "draft" | "ready_for_operator_review" | "approved_for_future_design_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_controls: Record<string, unknown>;
+  review_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ExplicitRuntimeActivationDesignSafeReport {
+  schema_version: "1.0";
+  explicit_runtime_activation_design_safe_report_id: string;
+  explicit_runtime_activation_design_review_id: string;
+  explicit_runtime_activation_design_boundary_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_activation_contract" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  report_controls: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateExplicitRuntimeActivationDesignLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.design_controls || artifact.review_controls || artifact.report_controls) as Record<string, unknown> | undefined;
+    if (controls && (controls.real_upload_still_blocked !== true || controls.runtime_wiring_implemented === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Explicit runtime activation design must not implement runtime wiring or unblock real upload");
+    }
+    if (controls && (controls.contains_runtime_callable === true || controls.contains_raw_payload === true || controls.contains_raw_response === true || controls.contains_secret_material === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Explicit runtime activation design contains unsafe material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 4) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true || record.runtime_enabled_now === true || record.ready_for_real_upload_now === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe activation/runtime/ready material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateExplicitRuntimeActivationDesignBoundary(boundary: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateExplicitRuntimeActivationDesignLayer(boundary, "design_scope", "design_sections");
+}
+
+export function validateExplicitRuntimeActivationDesignReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateExplicitRuntimeActivationDesignLayer(review, "review_scope", "review_checks");
+}
+
+export function validateExplicitRuntimeActivationDesignSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateExplicitRuntimeActivationDesignLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createExplicitRuntimeActivationDesignBoundary(input: { decisionRecord: RuntimeStubNextPhaseDecisionRecord; checklist: RuntimeStubOperatorHandoffChecklist; decision?: "draft" | "approved_for_future_design_review" | "rejected"; dryRun: true }): ExplicitRuntimeActivationDesignBoundary {
+  if (input.dryRun !== true) throw new Error("VO-7CR explicit runtime activation design boundary requires dryRun=true");
+  const decisionValidation = validateRuntimeStubNextPhaseDecisionRecord(input.decisionRecord);
+  if (!decisionValidation.ok) throw new Error("Runtime stub next phase decision record validation failed");
+  if (input.decisionRecord.decision_state !== "approved_for_future_explicit_runtime_activation_design") throw new Error("Explicit runtime activation design boundary requires approved next phase decision record");
+  if (input.decisionRecord.runtime_stub_operator_handoff_checklist_id !== input.checklist.runtime_stub_operator_handoff_checklist_id) throw new Error("Mismatched next phase decision record and checklist");
+  const approved = input.decision === "approved_for_future_design_review";
+  const sections = ["scope", "interfaces", "credentials", "status"];
+  return {
+    schema_version: "1.0",
+    explicit_runtime_activation_design_boundary_id: `explicit-runtime-activation-design-boundary-${crypto.randomUUID()}`,
+    runtime_stub_next_phase_decision_record_id: input.decisionRecord.runtime_stub_next_phase_decision_record_id,
+    runtime_stub_operator_handoff_checklist_id: input.checklist.runtime_stub_operator_handoff_checklist_id,
+    render_plan_id: input.decisionRecord.render_plan_id,
+    project_id: input.decisionRecord.project_id,
+    platform: input.decisionRecord.platform,
+    created_at: new Date().toISOString(),
+    design_boundary_state: approved ? "approved_for_future_design_review" : input.decision === "rejected" ? "rejected" : "designed",
+    required_artifacts: { runtime_stub_next_phase_decision_record_validated: true, runtime_stub_operator_handoff_checklist_validated: true },
+    design_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    design_controls: { design_only: true, activation_boundary_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    design_sections: sections.map((kind) => ({ section_id: `design-boundary-${kind}`, section_kind: kind, safe_summary: "Explicit runtime activation design boundary only.", contains_runtime_callable: false, contains_raw_payload: false, contains_secret_material: false, runtime_enabled_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createExplicitRuntimeActivationDesignBoundary", source_runtime_stub_next_phase_decision_record_id: input.decisionRecord.runtime_stub_next_phase_decision_record_id, source_render_plan_id: input.decisionRecord.render_plan_id },
+  };
+}
+
+export function createExplicitRuntimeActivationDesignReview(input: { designBoundary: ExplicitRuntimeActivationDesignBoundary; decisionRecord: RuntimeStubNextPhaseDecisionRecord; decision?: "draft" | "approved_for_future_design_safe_report" | "rejected"; dryRun: true }): ExplicitRuntimeActivationDesignReview {
+  if (input.dryRun !== true) throw new Error("VO-7CS explicit runtime activation design review requires dryRun=true");
+  const boundaryValidation = validateExplicitRuntimeActivationDesignBoundary(input.designBoundary);
+  if (!boundaryValidation.ok) throw new Error("Explicit runtime activation design boundary validation failed");
+  if (input.designBoundary.design_boundary_state !== "approved_for_future_design_review") throw new Error("Explicit runtime activation design review requires approved design boundary");
+  if (input.designBoundary.runtime_stub_next_phase_decision_record_id !== input.decisionRecord.runtime_stub_next_phase_decision_record_id) throw new Error("Mismatched design boundary and decision record");
+  const approved = input.decision === "approved_for_future_design_safe_report";
+  const checks = ["scope", "interfaces", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    explicit_runtime_activation_design_review_id: `explicit-runtime-activation-design-review-${crypto.randomUUID()}`,
+    explicit_runtime_activation_design_boundary_id: input.designBoundary.explicit_runtime_activation_design_boundary_id,
+    runtime_stub_next_phase_decision_record_id: input.decisionRecord.runtime_stub_next_phase_decision_record_id,
+    render_plan_id: input.designBoundary.render_plan_id,
+    project_id: input.designBoundary.project_id,
+    platform: input.designBoundary.platform,
+    created_at: new Date().toISOString(),
+    design_review_state: approved ? "approved_for_future_design_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { explicit_runtime_activation_design_boundary_validated: true, runtime_stub_next_phase_decision_record_validated: true },
+    review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_controls: { review_only: true, design_review_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    review_checks: checks.map((kind) => ({ check_id: `review-${kind}`, check_kind: kind, check_state: "passed", safe_summary: "Explicit runtime activation design review only.", runtime_enabled_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createExplicitRuntimeActivationDesignReview", source_explicit_runtime_activation_design_boundary_id: input.designBoundary.explicit_runtime_activation_design_boundary_id, source_render_plan_id: input.designBoundary.render_plan_id },
+  };
+}
+
+export function createExplicitRuntimeActivationDesignSafeReport(input: { designReview: ExplicitRuntimeActivationDesignReview; designBoundary: ExplicitRuntimeActivationDesignBoundary; decision?: "draft" | "approved_for_future_runtime_activation_contract" | "rejected"; dryRun: true }): ExplicitRuntimeActivationDesignSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7CT explicit runtime activation design safe report requires dryRun=true");
+  const reviewValidation = validateExplicitRuntimeActivationDesignReview(input.designReview);
+  if (!reviewValidation.ok) throw new Error("Explicit runtime activation design review validation failed");
+  if (input.designReview.design_review_state !== "approved_for_future_design_safe_report") throw new Error("Explicit runtime activation design safe report requires approved design review");
+  if (input.designReview.explicit_runtime_activation_design_boundary_id !== input.designBoundary.explicit_runtime_activation_design_boundary_id) throw new Error("Mismatched design review and boundary");
+  const approved = input.decision === "approved_for_future_runtime_activation_contract";
+  const sections = ["boundary", "review", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    explicit_runtime_activation_design_safe_report_id: `explicit-runtime-activation-design-safe-report-${crypto.randomUUID()}`,
+    explicit_runtime_activation_design_review_id: input.designReview.explicit_runtime_activation_design_review_id,
+    explicit_runtime_activation_design_boundary_id: input.designBoundary.explicit_runtime_activation_design_boundary_id,
+    render_plan_id: input.designBoundary.render_plan_id,
+    project_id: input.designBoundary.project_id,
+    platform: input.designBoundary.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_activation_contract" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { explicit_runtime_activation_design_review_validated: true, explicit_runtime_activation_design_boundary_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    report_controls: { safe_report_only: true, activation_design_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    safe_report_sections: sections.map((kind) => ({ section_id: `design-safe-report-${kind}`, section_kind: kind, safe_summary: "Explicit runtime activation design safe report only.", contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_enabled_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createExplicitRuntimeActivationDesignSafeReport", source_explicit_runtime_activation_design_review_id: input.designReview.explicit_runtime_activation_design_review_id, source_render_plan_id: input.designBoundary.render_plan_id },
+  };
+}

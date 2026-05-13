@@ -25433,3 +25433,60 @@ test("VO-7CQ-VALIDATE: runtime stub next phase decision rejects runtime enableme
   const validation = validateRuntimeStubNextPhaseDecisionRecord(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7CR/VO-7CS/VO-7CT: Explicit Runtime Activation Design Boundary ─────
+
+test("VO-7CR-SCHEMA: explicit runtime activation design boundary schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/explicit-runtime-activation-design-boundary.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/explicit-runtime-activation-design-boundary.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.design_controls.runtime_wiring_implemented, false);
+});
+
+test("VO-7CR-VALIDATE: explicit runtime activation design boundary rejects runtime wiring", async () => {
+  const { validateExplicitRuntimeActivationDesignBoundary } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/explicit-runtime-activation-design-boundary.example.json"), "utf8"));
+  const unsafe = { ...example, design_controls: { ...example.design_controls, runtime_wiring_implemented: true } };
+  const validation = validateExplicitRuntimeActivationDesignBoundary(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CS-SCHEMA: explicit runtime activation design review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/explicit-runtime-activation-design-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/explicit-runtime-activation-design-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_checks[0].runtime_enabled_now, false);
+});
+
+test("VO-7CS-VALIDATE: explicit runtime activation design review rejects runtime enablement", async () => {
+  const { validateExplicitRuntimeActivationDesignReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/explicit-runtime-activation-design-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_checks: [{ ...example.review_checks[0], runtime_enabled_now: true }] };
+  const validation = validateExplicitRuntimeActivationDesignReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CT-SCHEMA: explicit runtime activation design safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/explicit-runtime-activation-design-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/explicit-runtime-activation-design-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7CT-VALIDATE: explicit runtime activation design safe report rejects raw material", async () => {
+  const { validateExplicitRuntimeActivationDesignSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/explicit-runtime-activation-design-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateExplicitRuntimeActivationDesignSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});
