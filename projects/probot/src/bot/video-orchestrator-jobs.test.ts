@@ -24186,3 +24186,71 @@ test("VO-7AE-CREATE: approved contracts keep all execution disabled", async () =
   assert.equal(contracts.execution_boundary.network_calls_allowed, false);
   assert.equal(contracts.validation.ready_for_real_upload, false);
 });
+
+
+// ─── VO-7AF/VO-7AG: Executor Contract Tests + Dry-Run Adapter Design ───────
+
+test("VO-7AF-SCHEMA: executor contract tests schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-executor-contract-tests.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-contract-tests.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.executor_contract_test_results.length, 7);
+});
+
+test("VO-7AF-VALIDATE: executor contract tests reject unsafe flags", async () => {
+  const { validateRealUploadExecutorContractTests } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-contract-tests.example.json"), "utf8"));
+  const unsafe = { ...example, executor_contract_test_results: [{ ...example.executor_contract_test_results[0], network_enabled: true }] };
+  const validation = validateRealUploadExecutorContractTests(unsafe);
+  assert.equal(validation.ok, false);
+  assert.ok(validation.blocking_reasons.length > 0);
+});
+
+test("VO-7AF-CREATE: approved contract tests keep real upload disabled", async () => {
+  const { createRealUploadExecutorContractTests } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const executorContracts = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-contracts.example.json"), "utf8"));
+  executorContracts.executor_contracts_state = "approved_for_future_executor_contract_tests";
+  const executorAdapterDesign = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-adapter-design.example.json"), "utf8"));
+  const tests = createRealUploadExecutorContractTests({ executorContracts, executorAdapterDesign, decision: "approved_for_future_dry_run_adapter_design", checklist_acknowledged: true, understands_contract_tests_only: true, understands_no_adapter_code_created: true, understands_real_upload_not_enabled: true, understands_no_network_calls: true, understands_no_platform_api_calls: true, understands_no_credentials_accessed: true, understands_no_media_reads: true, understands_future_dry_run_adapter_design_required: true, dryRun: true });
+  assert.equal(tests.executor_contract_tests_state, "approved_for_future_dry_run_adapter_design");
+  assert.equal(tests.execution_boundary.ready_for_real_upload, false);
+  assert.equal(tests.execution_boundary.network_calls_allowed, false);
+  assert.equal(tests.validation.ready_for_real_upload, false);
+});
+
+test("VO-7AG-SCHEMA: dry-run adapter design schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-dry-run-adapter-design.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-dry-run-adapter-design.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.dry_run_adapter_boundaries.local_simulation_only, true);
+});
+
+test("VO-7AG-VALIDATE: dry-run adapter design rejects unsafe flags", async () => {
+  const { validateRealUploadDryRunAdapterDesign } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-dry-run-adapter-design.example.json"), "utf8"));
+  const unsafe = { ...example, planned_dry_run_checks: [{ ...example.planned_dry_run_checks[0], platform_api_enabled: true }] };
+  const validation = validateRealUploadDryRunAdapterDesign(unsafe);
+  assert.equal(validation.ok, false);
+  assert.ok(validation.blocking_reasons.length > 0);
+});
+
+test("VO-7AG-CREATE: approved dry-run adapter design keeps all execution disabled", async () => {
+  const { createRealUploadDryRunAdapterDesign } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const executorContractTests = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-contract-tests.example.json"), "utf8"));
+  executorContractTests.executor_contract_tests_state = "approved_for_future_dry_run_adapter_design";
+  const executorContracts = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-contracts.example.json"), "utf8"));
+  const design = createRealUploadDryRunAdapterDesign({ executorContractTests, executorContracts, decision: "approved_for_future_dry_run_adapter_contracts", checklist_acknowledged: true, understands_design_only: true, understands_no_adapter_code_created: true, understands_real_upload_not_enabled: true, understands_no_network_calls: true, understands_no_platform_api_calls: true, understands_no_credentials_accessed: true, understands_no_media_reads: true, understands_future_dry_run_adapter_contracts_required: true, dryRun: true });
+  assert.equal(design.dry_run_adapter_design_state, "approved_for_future_dry_run_adapter_contracts");
+  assert.equal(design.execution_boundary.ready_for_real_upload, false);
+  assert.equal(design.execution_boundary.upload_allowed, false);
+  assert.equal(design.execution_boundary.network_calls_allowed, false);
+  assert.equal(design.validation.ready_for_real_upload, false);
+});

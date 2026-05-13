@@ -18580,3 +18580,178 @@ export function createRealUploadExecutorContracts(input: { executorAdapterDesign
   if (!validation.ok) throw new Error(`Executor contracts validation failed: ${validation.blocking_reasons.join("; ")}`);
   return contracts;
 }
+
+
+// ─── VO-7AF/VO-7AG: Executor Contract Tests + Dry-Run Adapter Design ───────
+
+export interface RealUploadExecutorContractTests {
+  schema_version: "1.0";
+  real_upload_executor_contract_tests_id: string;
+  real_upload_executor_contracts_id: string;
+  real_upload_executor_adapter_design_id: string;
+  real_upload_readiness_gate_v2_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  executor_contract_tests_state: "draft" | "blocked" | "tested" | "ready_for_operator_review" | "approved_for_future_dry_run_adapter_design" | "rejected" | "revoked";
+  executor_contract_tests_mode: "real_upload_executor_contract_tests_only" | "operator_review_real_upload_executor_contract_tests";
+  required_artifacts: Record<string, true>;
+  contract_tests_scope: Record<string, unknown>;
+  executor_contract_test_results: Array<Record<string, unknown>>;
+  operator_review: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadDryRunAdapterDesign {
+  schema_version: "1.0";
+  real_upload_dry_run_adapter_design_id: string;
+  real_upload_executor_contract_tests_id: string;
+  real_upload_executor_contracts_id: string;
+  real_upload_executor_adapter_design_id: string;
+  real_upload_readiness_gate_v2_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  dry_run_adapter_design_state: "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_dry_run_adapter_contracts" | "rejected" | "revoked";
+  dry_run_adapter_design_mode: "real_upload_dry_run_adapter_design_only" | "operator_review_real_upload_dry_run_adapter_design";
+  required_artifacts: Record<string, true>;
+  design_scope: Record<string, unknown>;
+  dry_run_adapter_boundaries: Record<string, unknown>;
+  planned_dry_run_checks: Array<Record<string, unknown>>;
+  operator_review: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadExecutorContractTestsValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[] }
+
+function validateExecutorArtifactFalseBoundary(value: unknown, label: string): string[] {
+  return validateVo7abFalseBoundary(value, VO7AD_FALSE_KEYS, label);
+}
+
+export function validateRealUploadExecutorContractTests(tests: unknown): RealUploadExecutorContractTestsValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!tests || typeof tests !== "object" || Array.isArray(tests)) return { ok: false, blocking_reasons: ["Executor contract tests must be an object"], warnings };
+  const t = tests as Record<string, unknown>;
+  if (t.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["draft", "blocked", "tested", "ready_for_operator_review", "approved_for_future_dry_run_adapter_design", "rejected", "revoked"].includes(String(t.executor_contract_tests_state))) blocking_reasons.push("Invalid executor contract tests state");
+  const scope = t.contract_tests_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.executor_contract_tests_only !== true || scope.adapter_code_created !== false || scope.runtime_enabled !== false || scope.upload_execution_enabled_now !== false || scope.network_calls_enabled_now !== false || scope.platform_api_calls_enabled_now !== false || scope.credential_access_enabled_now !== false || scope.media_read_enabled_now !== false || scope.dependencies_requested !== false || scope.package_metadata_changes_requested !== false) blocking_reasons.push("Executor contract tests scope is unsafe");
+  if (!Array.isArray(t.executor_contract_test_results) || t.executor_contract_test_results.length < 7) blocking_reasons.push("Executor contract test results are incomplete");
+  for (const result of Array.isArray(t.executor_contract_test_results) ? t.executor_contract_test_results : []) {
+    const r = result as Record<string, unknown>;
+    if (r.code_created !== false || r.runtime_enabled !== false || r.upload_enabled !== false || r.network_enabled !== false || r.platform_api_enabled !== false || r.credential_access_enabled !== false || r.media_read_enabled !== false || r.raw_payload_allowed !== false || r.raw_response_allowed !== false) blocking_reasons.push("Executor contract test result is unsafe");
+  }
+  blocking_reasons.push(...validateExecutorArtifactFalseBoundary(t.execution_boundary, "Execution boundary"));
+  const validation = t.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_real_upload !== false || validation.real_upload_enabled !== false || validation.adapter_code_created !== false || validation.upload_allowed !== false || validation.network_calls_allowed !== false || validation.platform_api_calls_allowed !== false || validation.credentials_accessed !== false || validation.media_file_read !== false) blocking_reasons.push("Validation boundary is unsafe");
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(tests));
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadExecutorContractTests(input: { executorContracts: RealUploadExecutorContracts; executorAdapterDesign: RealUploadExecutorAdapterDesign; decision?: "draft" | "approved_for_future_dry_run_adapter_design" | "rejected"; checklist_acknowledged?: boolean; understands_contract_tests_only?: boolean; understands_no_adapter_code_created?: boolean; understands_real_upload_not_enabled?: boolean; understands_no_network_calls?: boolean; understands_no_platform_api_calls?: boolean; understands_no_credentials_accessed?: boolean; understands_no_media_reads?: boolean; understands_future_dry_run_adapter_design_required?: boolean; dryRun: true }): RealUploadExecutorContractTests {
+  if (input.dryRun !== true) throw new Error("VO-7AF executor contract tests require dryRun=true");
+  const contractsValidation = validateRealUploadExecutorContracts(input.executorContracts);
+  if (!contractsValidation.ok) throw new Error("Executor contracts validation failed");
+  if (input.executorContracts.executor_contracts_state !== "approved_for_future_executor_contract_tests") throw new Error("Executor contract tests require approved executor contracts");
+  if (input.executorContracts.real_upload_executor_adapter_design_id !== input.executorAdapterDesign.real_upload_executor_adapter_design_id) throw new Error("Mismatched contracts and adapter design");
+  const decision = input.decision ?? "draft";
+  const approved = decision === "approved_for_future_dry_run_adapter_design";
+  if (approved) {
+    const acknowledgements = [input.checklist_acknowledged, input.understands_contract_tests_only, input.understands_no_adapter_code_created, input.understands_real_upload_not_enabled, input.understands_no_network_calls, input.understands_no_platform_api_calls, input.understands_no_credentials_accessed, input.understands_no_media_reads, input.understands_future_dry_run_adapter_design_required];
+    if (!acknowledgements.every(Boolean)) throw new Error("Approved VO-7AF contract tests require all operator acknowledgements");
+  }
+  const kinds = ["credential_boundary_contract", "media_read_boundary_contract", "payload_builder_contract", "platform_client_contract", "network_boundary_contract", "response_redaction_contract", "executor_orchestration_contract"];
+  const tests: RealUploadExecutorContractTests = {
+    schema_version: "1.0",
+    real_upload_executor_contract_tests_id: `real-upload-executor-contract-tests-${crypto.randomUUID()}`,
+    real_upload_executor_contracts_id: input.executorContracts.real_upload_executor_contracts_id,
+    real_upload_executor_adapter_design_id: input.executorAdapterDesign.real_upload_executor_adapter_design_id,
+    real_upload_readiness_gate_v2_id: input.executorAdapterDesign.real_upload_readiness_gate_v2_id,
+    render_plan_id: input.executorAdapterDesign.render_plan_id,
+    project_id: input.executorAdapterDesign.project_id,
+    platform: input.executorAdapterDesign.platform,
+    created_at: new Date().toISOString(),
+    executor_contract_tests_state: approved ? "approved_for_future_dry_run_adapter_design" : decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    executor_contract_tests_mode: "real_upload_executor_contract_tests_only",
+    required_artifacts: { real_upload_executor_contracts_validated: true, real_upload_executor_adapter_design_validated: true, real_upload_readiness_gate_v2_validated: true },
+    contract_tests_scope: { future_dry_run_adapter_design_requested: approved, executor_contract_tests_only: true, adapter_code_created: false, runtime_enabled: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    executor_contract_test_results: kinds.map((kind) => ({ test_id: `executor-contract-test-${kind}`, contract_kind: kind, test_state: "passed", safe_summary: "Executor contract shape checked without execution.", contract_shape_checked: true, code_created: false, runtime_enabled: false, upload_enabled: false, network_enabled: false, platform_api_enabled: false, credential_access_enabled: false, media_read_enabled: false, raw_payload_allowed: false, raw_response_allowed: false, blocking_reasons: [], warnings: [] })),
+    operator_review: { checklist_acknowledged: Boolean(input.checklist_acknowledged), understands_contract_tests_only: Boolean(input.understands_contract_tests_only), understands_no_adapter_code_created: Boolean(input.understands_no_adapter_code_created), understands_real_upload_not_enabled: Boolean(input.understands_real_upload_not_enabled), understands_no_network_calls: Boolean(input.understands_no_network_calls), understands_no_platform_api_calls: Boolean(input.understands_no_platform_api_calls), understands_no_credentials_accessed: Boolean(input.understands_no_credentials_accessed), understands_no_media_reads: Boolean(input.understands_no_media_reads), understands_future_dry_run_adapter_design_required: Boolean(input.understands_future_dry_run_adapter_design_required), decision_note_summary: "Executor contract tests only; real upload remains disabled." },
+    execution_boundary: Object.fromEntries(VO7AD_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { executor_contract_tests_complete: true, ready_for_future_dry_run_adapter_design: approved, ready_for_real_upload: false, real_upload_enabled: false, adapter_code_created: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadExecutorContractTests", source_real_upload_executor_contracts_id: input.executorContracts.real_upload_executor_contracts_id, source_real_upload_executor_adapter_design_id: input.executorAdapterDesign.real_upload_executor_adapter_design_id, source_real_upload_readiness_gate_v2_id: input.executorAdapterDesign.real_upload_readiness_gate_v2_id, source_render_plan_id: input.executorAdapterDesign.render_plan_id },
+  };
+  const validation = validateRealUploadExecutorContractTests(tests);
+  if (!validation.ok) throw new Error(`Executor contract tests validation failed: ${validation.blocking_reasons.join("; ")}`);
+  return tests;
+}
+
+export function validateRealUploadDryRunAdapterDesign(design: unknown): RealUploadExecutorContractTestsValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!design || typeof design !== "object" || Array.isArray(design)) return { ok: false, blocking_reasons: ["Dry-run adapter design must be an object"], warnings };
+  const d = design as Record<string, unknown>;
+  if (d.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["draft", "blocked", "ready_for_operator_review", "approved_for_future_dry_run_adapter_contracts", "rejected", "revoked"].includes(String(d.dry_run_adapter_design_state))) blocking_reasons.push("Invalid dry-run adapter design state");
+  const scope = d.design_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.dry_run_adapter_design_only !== true || scope.adapter_code_created !== false || scope.runtime_enabled !== false || scope.real_upload_enabled_now !== false || scope.upload_execution_enabled_now !== false || scope.network_calls_enabled_now !== false || scope.platform_api_calls_enabled_now !== false || scope.credential_access_enabled_now !== false || scope.media_read_enabled_now !== false || scope.dependencies_requested !== false || scope.package_metadata_changes_requested !== false) blocking_reasons.push("Dry-run adapter design scope is unsafe");
+  const boundaries = d.dry_run_adapter_boundaries as Record<string, unknown> | undefined;
+  if (!boundaries || boundaries.local_simulation_only !== true || boundaries.no_real_network_required !== true || boundaries.no_credentials_required !== true || boundaries.no_media_read_required !== true || boundaries.safe_payload_summary_only !== true || boundaries.safe_response_summary_only !== true || boundaries.real_upload_still_blocked !== true) blocking_reasons.push("Dry-run adapter boundaries are unsafe");
+  if (!Array.isArray(d.planned_dry_run_checks) || d.planned_dry_run_checks.length < 5) blocking_reasons.push("Planned dry-run checks are incomplete");
+  for (const check of Array.isArray(d.planned_dry_run_checks) ? d.planned_dry_run_checks : []) {
+    const c = check as Record<string, unknown>;
+    if (c.code_created !== false || c.runtime_enabled !== false || c.upload_enabled !== false || c.network_enabled !== false || c.platform_api_enabled !== false || c.credential_access_enabled !== false || c.media_read_enabled !== false || c.raw_payload_allowed !== false || c.raw_response_allowed !== false) blocking_reasons.push("Planned dry-run check is unsafe");
+  }
+  blocking_reasons.push(...validateExecutorArtifactFalseBoundary(d.execution_boundary, "Execution boundary"));
+  const validation = d.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_real_upload !== false || validation.real_upload_enabled !== false || validation.adapter_code_created !== false || validation.upload_allowed !== false || validation.network_calls_allowed !== false || validation.platform_api_calls_allowed !== false || validation.credentials_accessed !== false || validation.media_file_read !== false) blocking_reasons.push("Validation boundary is unsafe");
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(design));
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadDryRunAdapterDesign(input: { executorContractTests: RealUploadExecutorContractTests; executorContracts: RealUploadExecutorContracts; decision?: "draft" | "approved_for_future_dry_run_adapter_contracts" | "rejected"; checklist_acknowledged?: boolean; understands_design_only?: boolean; understands_no_adapter_code_created?: boolean; understands_real_upload_not_enabled?: boolean; understands_no_network_calls?: boolean; understands_no_platform_api_calls?: boolean; understands_no_credentials_accessed?: boolean; understands_no_media_reads?: boolean; understands_future_dry_run_adapter_contracts_required?: boolean; dryRun: true }): RealUploadDryRunAdapterDesign {
+  if (input.dryRun !== true) throw new Error("VO-7AG dry-run adapter design requires dryRun=true");
+  const testsValidation = validateRealUploadExecutorContractTests(input.executorContractTests);
+  if (!testsValidation.ok) throw new Error("Executor contract tests validation failed");
+  if (input.executorContractTests.executor_contract_tests_state !== "approved_for_future_dry_run_adapter_design") throw new Error("Dry-run adapter design requires approved executor contract tests");
+  if (input.executorContractTests.real_upload_executor_contracts_id !== input.executorContracts.real_upload_executor_contracts_id) throw new Error("Mismatched executor contract tests and contracts");
+  const decision = input.decision ?? "draft";
+  const approved = decision === "approved_for_future_dry_run_adapter_contracts";
+  if (approved) {
+    const acknowledgements = [input.checklist_acknowledged, input.understands_design_only, input.understands_no_adapter_code_created, input.understands_real_upload_not_enabled, input.understands_no_network_calls, input.understands_no_platform_api_calls, input.understands_no_credentials_accessed, input.understands_no_media_reads, input.understands_future_dry_run_adapter_contracts_required];
+    if (!acknowledgements.every(Boolean)) throw new Error("Approved VO-7AG dry-run adapter design requires all operator acknowledgements");
+  }
+  const checks = ["payload_shape_dry_run_check", "credential_boundary_dry_run_check", "network_boundary_dry_run_check", "media_boundary_dry_run_check", "response_redaction_dry_run_check", "executor_orchestration_dry_run_check"];
+  const design: RealUploadDryRunAdapterDesign = {
+    schema_version: "1.0",
+    real_upload_dry_run_adapter_design_id: `real-upload-dry-run-adapter-design-${crypto.randomUUID()}`,
+    real_upload_executor_contract_tests_id: input.executorContractTests.real_upload_executor_contract_tests_id,
+    real_upload_executor_contracts_id: input.executorContracts.real_upload_executor_contracts_id,
+    real_upload_executor_adapter_design_id: input.executorContracts.real_upload_executor_adapter_design_id,
+    real_upload_readiness_gate_v2_id: input.executorContracts.real_upload_readiness_gate_v2_id,
+    render_plan_id: input.executorContracts.render_plan_id,
+    project_id: input.executorContracts.project_id,
+    platform: input.executorContracts.platform,
+    created_at: new Date().toISOString(),
+    dry_run_adapter_design_state: approved ? "approved_for_future_dry_run_adapter_contracts" : decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    dry_run_adapter_design_mode: "real_upload_dry_run_adapter_design_only",
+    required_artifacts: { real_upload_executor_contract_tests_validated: true, real_upload_executor_contracts_validated: true, real_upload_executor_adapter_design_validated: true, real_upload_readiness_gate_v2_validated: true },
+    design_scope: { future_dry_run_adapter_contracts_requested: approved, dry_run_adapter_design_only: true, adapter_code_created: false, runtime_enabled: false, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    dry_run_adapter_boundaries: { local_simulation_only: true, no_real_network_required: true, no_credentials_required: true, no_media_read_required: true, safe_payload_summary_only: true, safe_response_summary_only: true, real_upload_still_blocked: true },
+    planned_dry_run_checks: checks.map((kind) => ({ check_id: `dry-run-check-${kind}`, check_kind: kind, safe_summary: "Dry-run adapter design check only.", code_created: false, runtime_enabled: false, upload_enabled: false, network_enabled: false, platform_api_enabled: false, credential_access_enabled: false, media_read_enabled: false, raw_payload_allowed: false, raw_response_allowed: false, blocking_reasons: [], warnings: [] })),
+    operator_review: { checklist_acknowledged: Boolean(input.checklist_acknowledged), understands_design_only: Boolean(input.understands_design_only), understands_no_adapter_code_created: Boolean(input.understands_no_adapter_code_created), understands_real_upload_not_enabled: Boolean(input.understands_real_upload_not_enabled), understands_no_network_calls: Boolean(input.understands_no_network_calls), understands_no_platform_api_calls: Boolean(input.understands_no_platform_api_calls), understands_no_credentials_accessed: Boolean(input.understands_no_credentials_accessed), understands_no_media_reads: Boolean(input.understands_no_media_reads), understands_future_dry_run_adapter_contracts_required: Boolean(input.understands_future_dry_run_adapter_contracts_required), decision_note_summary: "Dry-run adapter design only; real upload remains disabled." },
+    execution_boundary: Object.fromEntries(VO7AD_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { dry_run_adapter_design_complete: true, ready_for_future_dry_run_adapter_contracts: approved, ready_for_real_upload: false, real_upload_enabled: false, adapter_code_created: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadDryRunAdapterDesign", source_real_upload_executor_contract_tests_id: input.executorContractTests.real_upload_executor_contract_tests_id, source_real_upload_executor_contracts_id: input.executorContracts.real_upload_executor_contracts_id, source_real_upload_executor_adapter_design_id: input.executorContracts.real_upload_executor_adapter_design_id, source_real_upload_readiness_gate_v2_id: input.executorContracts.real_upload_readiness_gate_v2_id, source_render_plan_id: input.executorContracts.render_plan_id },
+  };
+  const validation = validateRealUploadDryRunAdapterDesign(design);
+  if (!validation.ok) throw new Error(`Dry-run adapter design validation failed: ${validation.blocking_reasons.join("; ")}`);
+  return design;
+}

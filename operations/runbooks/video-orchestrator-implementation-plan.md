@@ -3638,3 +3638,9 @@ No adapter code is created in this phase. Runtime adapter behavior, real upload,
 VO-7AE adds `real-upload-executor-contracts`, a contract-only artifact for the future executor adapter. It defines contracts for credential boundaries, media read boundaries, payload building, platform client boundaries, network boundaries, response redaction, and executor orchestration.
 
 No adapter code is created. Runtime behavior, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7AF/VO-7AG — Real Upload Executor Contract Tests and Dry-Run Adapter Design
+
+VO-7AF adds `real-upload-executor-contract-tests`, a contract-test artifact that checks the executor contract shapes without creating code or invoking runtime behavior. VO-7AG adds `real-upload-dry-run-adapter-design`, a design-only artifact for local simulation boundaries.
+
+Both phases remain non-executing. They do not create adapter code, enable runtime behavior, perform uploads, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, or change package metadata. `ready_for_real_upload` remains false.

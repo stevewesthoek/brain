@@ -1672,3 +1672,13 @@ VO-7AE adds real upload executor contract artifacts. It defines contracts for cr
 It does not create adapter code, enable runtime behavior, upload, call platform APIs, make network calls, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
 
 Approval only permits future executor contract test work.
+
+## Phase 5AL — Real Upload Executor Contract Tests and Dry-Run Adapter Design (VO-7AF/VO-7AG)
+
+Status: complete.
+
+VO-7AF adds executor contract test artifacts for the credential, media read, payload builder, platform client, network, response redaction, and executor orchestration contracts. VO-7AG adds a dry-run adapter design artifact for local simulation boundaries only.
+
+These phases do not create adapter code, enable runtime behavior, upload, call platform APIs, make network calls, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+Approval only permits future dry-run adapter contract work.
