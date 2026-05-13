@@ -315,6 +315,13 @@ import {
   getRealUploadStubNoopImplementationDesign,
   revokeRealUploadStubNoopImplementationDesign,
   getRealUploadStubNoopImplementationDesignReport,
+  createRealUploadNoopStubFilePlan,
+  validateRealUploadNoopStubFilePlan,
+  saveRealUploadNoopStubFilePlan,
+  listRealUploadNoopStubFilePlans,
+  getRealUploadNoopStubFilePlan,
+  revokeRealUploadNoopStubFilePlan,
+  getRealUploadNoopStubFilePlanReport,
   createRealUploadScaffoldContractTests,
   validateRealUploadScaffoldContractTests,
   saveRealUploadScaffoldContractTests,
@@ -363,6 +370,7 @@ import {
   type RealUploadStubContracts,
   type RealUploadStubContractTests,
   type RealUploadStubNoopImplementationDesign,
+  type RealUploadNoopStubFilePlan,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -23091,6 +23099,32 @@ function createSafeRealUploadStubNoopImplementationDesignFixture() {
   return { ...fixture, stubContractTests, design };
 }
 
+function createSafeRealUploadNoopStubFilePlanFixture() {
+  const fixture: any = createSafeRealUploadStubNoopImplementationDesignFixture();
+  const approvedFlags = {
+    checklist_acknowledged: true,
+    understands_noop_stub_file_plan_only: true,
+    understands_no_files_created_now: true,
+    understands_no_stub_files_created: true,
+    understands_no_implementation_code_created: true,
+    understands_no_runtime_execution: true,
+    understands_no_upload_enabled: true,
+    understands_no_credentials_accessed: true,
+    understands_no_network_calls: true,
+    understands_no_media_reads: true,
+    understands_no_dependencies_added: true,
+    understands_future_noop_stub_file_creation_phase_required: true,
+  };
+  const noopImplementationDesign = createRealUploadStubNoopImplementationDesign({ ...fixture, stubContractTests: fixture.stubContractTests, dryRun: true as true, decision: "approved_for_future_noop_stub_file_plan", checklist_acknowledged: true, understands_noop_implementation_design_only: true, understands_no_stub_files_created: true, understands_no_implementation_code_created: true, understands_no_runtime_execution: true, understands_no_upload_enabled: true, understands_no_credentials_accessed: true, understands_no_network_calls: true, understands_no_media_reads: true, understands_no_dependencies_added: true, understands_future_noop_stub_file_plan_phase_required: true });
+  const plan = createRealUploadNoopStubFilePlan({
+    ...fixture,
+    noopImplementationDesign,
+    stubContractTests: fixture.stubContractTests,
+    dryRun: true as true,
+  });
+  return { ...fixture, noopImplementationDesign, plan, approvedFlags };
+}
+
 test("VO-7U-SCHEMA-294: noop implementation design schema and example parse safely", () => {
   const repoRootForSpecs = getRepoRootForVideoOrchestratorSpecs();
   const schema = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/real-upload-stub-noop-implementation-design.schema.json"), "utf8")) as Record<string, unknown>;
@@ -23190,6 +23224,125 @@ test("VO-7U-REPORT-298: report counters remain zero and sanitize legacy data", (
     assert.equal(report.implementation_files_created, 0);
     assert.equal(report.runtime_files_created, 0);
     assert.equal(report.dependencies_added, 0);
+    assert.equal(report.upload_allowed, 0);
+    assert.equal(report.platform_api_calls_allowed, 0);
+    assert.equal(report.network_calls_allowed, 0);
+    assert.equal(report.credentials_accessed, 0);
+    assert.equal(report.media_file_read, 0);
+    assert.equal(report.file_mutation_allowed, 0);
+    assert.equal(JSON.stringify(report).includes("access_token"), false);
+    assert.equal(JSON.stringify(report).includes("../legacy-summary"), false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7V-SCHEMA-299: noop stub file plan schema and example parse safely", () => {
+  const repoRootForSpecs = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/real-upload-noop-stub-file-plan.schema.json"), "utf8")) as any;
+  const example = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/examples/real-upload-noop-stub-file-plan.example.json"), "utf8")) as any;
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.schema_version, "1.0");
+  assert.equal(example.noop_stub_file_plan_mode, "real_upload_noop_stub_file_plan_only");
+  assert.equal(Array.isArray(example.planned_stub_files), true);
+  assert.equal(example.planned_stub_files.length, 14);
+  assert.equal(example.planned_test_files.length > 0, true);
+  assert.equal(example.planned_export_surface.export_surface_planned, true);
+  assert.equal(schema.properties.file_creation_boundary.properties.files_created_now.const, false);
+  assert.equal(schema.properties.validation.properties.ready_for_real_upload.const, false);
+  assert.equal(JSON.stringify(example).includes("keychain://"), false);
+  assert.equal(JSON.stringify(example).includes("access_token"), false);
+  assert.equal(JSON.stringify(example).includes("refresh_token"), false);
+  assert.equal(JSON.stringify(example).includes("client_secret"), false);
+});
+
+test("VO-7V-CREATE-300: create noop stub file plan from safe artifacts and reject unsafe inputs", () => {
+  const fixture: any = createSafeRealUploadNoopStubFilePlanFixture();
+  try {
+    assert.throws(() => createRealUploadNoopStubFilePlan({ ...fixture, dryRun: false as false }), /dryRun=true required/);
+    const approvedFlags = {
+      checklist_acknowledged: true,
+      understands_noop_stub_file_plan_only: true,
+      understands_no_files_created_now: true,
+      understands_no_stub_files_created: true,
+      understands_no_implementation_code_created: true,
+      understands_no_runtime_execution: true,
+      understands_no_upload_enabled: true,
+      understands_no_credentials_accessed: true,
+      understands_no_network_calls: true,
+      understands_no_media_reads: true,
+      understands_no_dependencies_added: true,
+      understands_future_noop_stub_file_creation_phase_required: true,
+    };
+    assert.throws(() => createRealUploadNoopStubFilePlan({ ...fixture, ...approvedFlags, dryRun: true as true, decision: "approved_for_future_noop_stub_file_creation", noopImplementationDesign: { ...fixture.noopImplementationDesign, noop_implementation_design_state: "draft" } }), /noop implementation design must be approved for future noop stub file plan/);
+    assert.throws(() => createRealUploadNoopStubFilePlan({ ...fixture, ...approvedFlags, dryRun: true as true, decision: "approved_for_future_noop_stub_file_creation", checklist_acknowledged: false }), /acknowledgements required/);
+    const draftPlan = createRealUploadNoopStubFilePlan({ ...fixture, dryRun: true as true });
+    assert.equal(draftPlan.schema_version, "1.0");
+    assert.equal(draftPlan.noop_stub_file_plan_state, "draft");
+    assert.equal(draftPlan.validation.ready_for_real_upload, false);
+    const approvedPlan = createRealUploadNoopStubFilePlan({ ...fixture, ...approvedFlags, dryRun: true as true, decision: "approved_for_future_noop_stub_file_creation" });
+    assert.equal(approvedPlan.noop_stub_file_plan_state, "approved_for_future_noop_stub_file_creation");
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7V-VALIDATE-301: validator rejects missing or unsafe noop stub file plan shapes", () => {
+  const fixture: any = createSafeRealUploadNoopStubFilePlanFixture();
+  try {
+    const plan = fixture.plan;
+    assert.equal(validateRealUploadNoopStubFilePlan(plan).ok, true);
+    assert.equal(validateRealUploadNoopStubFilePlan({ ...plan, planned_stub_files: plan.planned_stub_files.filter((file: any) => file.file_kind !== "upload_scaffold_index_noop_stub_file") }).ok, false);
+    assert.equal(validateRealUploadNoopStubFilePlan({ ...plan, planned_stub_files: [...plan.planned_stub_files, plan.planned_stub_files[0]] }).ok, false);
+    assert.equal(validateRealUploadNoopStubFilePlan({ ...plan, runtime_boundary: { ...plan.runtime_boundary, no_external_effects: false as never } }).ok, false);
+    assert.equal(validateRealUploadNoopStubFilePlan({ ...plan, execution_boundary: { ...plan.execution_boundary, runtime_executed: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopStubFilePlan({ ...plan, planned_stub_files: plan.planned_stub_files.map((file: any) => file.file_kind === "credential_provider_noop_stub_file" ? { ...file, planned_path_summary: "../unsafe" } : file) }).ok, false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7V-STORE-302: store save list get revoke works and rejects unsafe data", () => {
+  const fixture: any = createSafeRealUploadNoopStubFilePlanFixture();
+  try {
+    const plan = fixture.plan;
+    saveRealUploadNoopStubFilePlan(plan);
+    assert.equal(getRealUploadNoopStubFilePlan(plan.real_upload_noop_stub_file_plan_id)?.real_upload_noop_stub_file_plan_id, plan.real_upload_noop_stub_file_plan_id);
+    assert.equal(listRealUploadNoopStubFilePlans({ project_id: plan.project_id }).some((item) => item.real_upload_noop_stub_file_plan_id === plan.real_upload_noop_stub_file_plan_id), true);
+    assert.equal(revokeRealUploadNoopStubFilePlan(plan.real_upload_noop_stub_file_plan_id, "paused for review").noop_stub_file_plan_state, "revoked");
+    assert.throws(() => saveRealUploadNoopStubFilePlan({ ...plan, real_upload_noop_stub_file_plan_id: "../unsafe" } as RealUploadNoopStubFilePlan), /Unsafe string detected/);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7V-REPORT-303: report counters remain zero and sanitize legacy data", () => {
+  const fixture: any = createSafeRealUploadNoopStubFilePlanFixture();
+  try {
+    const plan = fixture.plan;
+    saveRealUploadNoopStubFilePlan(plan);
+    const storePath = path.join(fixture.tempDir, "real-upload-noop-stub-file-plans.json");
+    fs.writeFileSync(storePath, JSON.stringify({
+      schema_version: "1.0",
+      created_at: "2026-05-12T00:00:00.000Z",
+      plans: [{
+        ...plan,
+        real_upload_noop_stub_file_plan_id: "../legacy-plan-001",
+        project_id: "../legacy-project",
+        planned_stub_files: plan.planned_stub_files.map((file: any) => ({ ...file, safe_summary: "../legacy-summary" })),
+        validation: { ...plan.validation, blocking_reasons: ["../legacy-blocker"] },
+      }],
+    }, null, 2));
+    const report = getRealUploadNoopStubFilePlanReport();
+    assert.equal(report.ready_for_real_upload, 0);
+    assert.equal(report.files_created_now, 0);
+    assert.equal(report.stub_files_created, 0);
+    assert.equal(report.test_files_created, 0);
+    assert.equal(report.implementation_code_created, 0);
+    assert.equal(report.implementation_files_created, 0);
+    assert.equal(report.runtime_files_created, 0);
+    assert.equal(report.dependencies_added, 0);
+    assert.equal(report.runtime_executed, 0);
     assert.equal(report.upload_allowed, 0);
     assert.equal(report.platform_api_calls_allowed, 0);
     assert.equal(report.network_calls_allowed, 0);
