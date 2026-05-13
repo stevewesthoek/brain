@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "controlled-runtime-activation-implementation-dry-run-review.schema.json",
+  "title": "Controlled Runtime Activation Implementation Dry-Run Review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "controlled_runtime_activation_implementation_dry_run_review_id", "controlled_runtime_activation_implementation_contract_id", "controlled_runtime_activation_implementation_plan_id", "render_plan_id", "project_id", "platform", "created_at", "implementation_dry_run_review_state", "required_artifacts", "review_scope", "review_checks", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "controlled_runtime_activation_implementation_dry_run_review_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_activation_implementation_contract_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_activation_implementation_plan_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "implementation_dry_run_review_state": { "type": "string", "enum": ["draft", "passed", "failed", "ready_for_operator_review", "approved_for_future_activation_candidate", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["controlled_runtime_activation_implementation_contract_validated", "controlled_runtime_activation_implementation_plan_validated"], "properties": { "controlled_runtime_activation_implementation_contract_validated": { "type": "boolean", "const": true }, "controlled_runtime_activation_implementation_plan_validated": { "type": "boolean", "const": true } } },
+    "review_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "review_checks": { "type": "array", "minItems": 5, "items": { "type": "object", "additionalProperties": false, "required": ["check_id", "check_kind", "check_state", "safe_summary", "implemented_now"], "properties": { "check_id": { "type": "string" }, "check_kind": { "type": "string" }, "check_state": { "type": "string", "enum": ["passed", "failed", "blocked", "deferred"] }, "safe_summary": { "type": "string" }, "implemented_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_controlled_runtime_activation_implementation_contract_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createControlledRuntimeActivationImplementationDryRunReview", "revokeControlledRuntimeActivationImplementationDryRunReview"] }, "source_controlled_runtime_activation_implementation_contract_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}

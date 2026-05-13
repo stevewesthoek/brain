@@ -24464,3 +24464,60 @@ test("VO-7AR-VALIDATE: runtime activation dry-run rejects enabled checks", async
   const validation = validateControlledRuntimeActivationDryRunResult(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7AS/VO-7AT/VO-7AU: Runtime Activation Implementation Planning ─────
+
+test("VO-7AS-SCHEMA: runtime activation implementation plan schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-activation-implementation-plan.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-implementation-plan.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.planned_changes[0].implemented_now, false);
+});
+
+test("VO-7AS-VALIDATE: runtime activation implementation plan rejects implementation now", async () => {
+  const { validateControlledRuntimeActivationImplementationPlan } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-implementation-plan.example.json"), "utf8"));
+  const unsafe = { ...example, planned_changes: [{ ...example.planned_changes[0], implemented_now: true }] };
+  const validation = validateControlledRuntimeActivationImplementationPlan(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7AT-SCHEMA: runtime activation implementation contract schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-activation-implementation-contract.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-implementation-contract.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.implementation_contracts[0].implemented_now, false);
+});
+
+test("VO-7AT-VALIDATE: runtime activation implementation contract rejects implementation now", async () => {
+  const { validateControlledRuntimeActivationImplementationContract } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-implementation-contract.example.json"), "utf8"));
+  const unsafe = { ...example, implementation_contracts: [{ ...example.implementation_contracts[0], implemented_now: true }] };
+  const validation = validateControlledRuntimeActivationImplementationContract(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7AU-SCHEMA: runtime activation implementation dry-run review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/controlled-runtime-activation-implementation-dry-run-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-implementation-dry-run-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_checks[0].implemented_now, false);
+});
+
+test("VO-7AU-VALIDATE: runtime activation implementation dry-run review rejects implementation now", async () => {
+  const { validateControlledRuntimeActivationImplementationDryRunReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/controlled-runtime-activation-implementation-dry-run-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_checks: [{ ...example.review_checks[0], implemented_now: true }] };
+  const validation = validateControlledRuntimeActivationImplementationDryRunReview(unsafe);
+  assert.equal(validation.ok, false);
+});

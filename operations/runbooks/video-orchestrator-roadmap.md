@@ -1716,3 +1716,11 @@ Status: complete.
 VO-7AP adds a controlled runtime activation request artifact, VO-7AQ adds a runtime activation safety contract, and VO-7AR adds a runtime activation dry-run result. These phases remain artifact/contract/dry-run only.
 
 They do not add runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+## Phase 5AQ — Runtime Activation Implementation Planning (VO-7AS/VO-7AT/VO-7AU)
+
+Status: complete.
+
+VO-7AS adds a runtime activation implementation plan, VO-7AT adds an implementation contract, and VO-7AU adds an implementation dry-run review. These phases plan and review future implementation only.
+
+They do not implement runtime wiring, enable real upload, enable upload execution, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.

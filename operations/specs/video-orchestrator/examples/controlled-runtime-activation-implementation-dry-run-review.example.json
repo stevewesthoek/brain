@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "controlled_runtime_activation_implementation_dry_run_review_id": "controlled-runtime-activation-implementation-dry-run-review-001",
+  "controlled_runtime_activation_implementation_contract_id": "controlled-runtime-activation-implementation-contract-001",
+  "controlled_runtime_activation_implementation_plan_id": "controlled-runtime-activation-implementation-plan-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "implementation_dry_run_review_state": "approved_for_future_activation_candidate",
+  "required_artifacts": { "controlled_runtime_activation_implementation_contract_validated": true, "controlled_runtime_activation_implementation_plan_validated": true },
+  "review_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "review_checks": [
+    { "check_id": "review-kill-switch", "check_kind": "kill_switch", "check_state": "passed", "safe_summary": "Review kill switch plan only.", "implemented_now": false },
+    { "check_id": "review-single-upload", "check_kind": "single_upload_limit", "check_state": "passed", "safe_summary": "Review single upload limit plan only.", "implemented_now": false },
+    { "check_id": "review-credential", "check_kind": "credential_boundary", "check_state": "passed", "safe_summary": "Review credential boundary plan only.", "implemented_now": false },
+    { "check_id": "review-network", "check_kind": "network_boundary", "check_state": "passed", "safe_summary": "Review network boundary plan only.", "implemented_now": false },
+    { "check_id": "review-media", "check_kind": "media_boundary", "check_state": "passed", "safe_summary": "Review media boundary plan only.", "implemented_now": false }
+  ],
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createControlledRuntimeActivationImplementationDryRunReview", "source_controlled_runtime_activation_implementation_contract_id": "controlled-runtime-activation-implementation-contract-001", "source_render_plan_id": "render-plan-001" }
+}

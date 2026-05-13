@@ -3674,3 +3674,9 @@ No runtime upload behavior is enabled. Network calls, platform API calls, creden
 VO-7AP adds `controlled-runtime-activation-request`, VO-7AQ adds `controlled-runtime-activation-safety-contract`, and VO-7AR adds `controlled-runtime-activation-dry-run-result`.
 
 These artifacts prepare and dry-run the runtime activation path without activating it. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7AS/VO-7AT/VO-7AU — Runtime Activation Implementation Planning
+
+VO-7AS adds `controlled-runtime-activation-implementation-plan`, VO-7AT adds `controlled-runtime-activation-implementation-contract`, and VO-7AU adds `controlled-runtime-activation-implementation-dry-run-review`.
+
+These artifacts prepare a future implementation path without implementing or activating it. Runtime wiring, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

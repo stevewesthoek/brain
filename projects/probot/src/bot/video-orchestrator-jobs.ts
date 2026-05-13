@@ -19468,3 +19468,170 @@ export function createControlledRuntimeActivationDryRunResult(input: { safetyCon
     provenance: { generated_by: "createControlledRuntimeActivationDryRunResult", source_controlled_runtime_activation_safety_contract_id: input.safetyContract.controlled_runtime_activation_safety_contract_id, source_render_plan_id: input.safetyContract.render_plan_id },
   };
 }
+
+
+// ─── VO-7AS/VO-7AT/VO-7AU: Runtime Activation Implementation Planning ─────
+
+export interface ControlledRuntimeActivationImplementationPlan {
+  schema_version: "1.0";
+  controlled_runtime_activation_implementation_plan_id: string;
+  controlled_runtime_activation_dry_run_result_id: string;
+  controlled_runtime_activation_safety_contract_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  implementation_plan_state: "draft" | "ready_for_operator_review" | "approved_for_future_implementation_contract" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  implementation_scope: Record<string, unknown>;
+  planned_changes: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeActivationImplementationContract {
+  schema_version: "1.0";
+  controlled_runtime_activation_implementation_contract_id: string;
+  controlled_runtime_activation_implementation_plan_id: string;
+  controlled_runtime_activation_dry_run_result_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  implementation_contract_state: "draft" | "ready_for_operator_review" | "approved_for_future_implementation_dry_run_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  implementation_contract_scope: Record<string, unknown>;
+  implementation_contracts: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface ControlledRuntimeActivationImplementationDryRunReview {
+  schema_version: "1.0";
+  controlled_runtime_activation_implementation_dry_run_review_id: string;
+  controlled_runtime_activation_implementation_contract_id: string;
+  controlled_runtime_activation_implementation_plan_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  implementation_dry_run_review_state: "draft" | "passed" | "failed" | "ready_for_operator_review" | "approved_for_future_activation_candidate" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeImplementationArtifact(value: unknown, scopeKey: string, itemKey: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const items = artifact[itemKey];
+    if (!Array.isArray(items) || items.length < 5) {
+      result.ok = false;
+      result.blocking_reasons.push(`${itemKey} is incomplete`);
+    }
+    for (const item of Array.isArray(items) ? items : []) {
+      const rec = item as Record<string, unknown>;
+      if (rec.implemented_now !== false) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} attempted implementation now`);
+      }
+    }
+  }
+  return result;
+}
+
+export function validateControlledRuntimeActivationImplementationPlan(plan: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeImplementationArtifact(plan, "implementation_scope", "planned_changes");
+}
+
+export function validateControlledRuntimeActivationImplementationContract(contract: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeImplementationArtifact(contract, "implementation_contract_scope", "implementation_contracts");
+}
+
+export function validateControlledRuntimeActivationImplementationDryRunReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeImplementationArtifact(review, "review_scope", "review_checks");
+}
+
+export function createControlledRuntimeActivationImplementationPlan(input: { dryRunResult: ControlledRuntimeActivationDryRunResult; decision?: "draft" | "approved_for_future_implementation_contract" | "rejected"; dryRun: true }): ControlledRuntimeActivationImplementationPlan {
+  if (input.dryRun !== true) throw new Error("VO-7AS runtime activation implementation plan requires dryRun=true");
+  const dryRunValidation = validateControlledRuntimeActivationDryRunResult(input.dryRunResult);
+  if (!dryRunValidation.ok) throw new Error("Controlled runtime activation dry-run validation failed");
+  if (input.dryRunResult.dry_run_state !== "passed") throw new Error("Implementation plan requires passed runtime activation dry-run");
+  const approved = input.decision === "approved_for_future_implementation_contract";
+  const kinds = ["kill_switch", "single_upload_limit", "credential_boundary", "network_boundary", "media_boundary"];
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_implementation_plan_id: `controlled-runtime-activation-implementation-plan-${crypto.randomUUID()}`,
+    controlled_runtime_activation_dry_run_result_id: input.dryRunResult.controlled_runtime_activation_dry_run_result_id,
+    controlled_runtime_activation_safety_contract_id: input.dryRunResult.controlled_runtime_activation_safety_contract_id,
+    render_plan_id: input.dryRunResult.render_plan_id,
+    project_id: input.dryRunResult.project_id,
+    platform: input.dryRunResult.platform,
+    created_at: new Date().toISOString(),
+    implementation_plan_state: approved ? "approved_for_future_implementation_contract" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_activation_dry_run_result_validated: true, controlled_runtime_activation_safety_contract_validated: true },
+    implementation_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    planned_changes: kinds.map((kind) => ({ change_id: `plan-${kind}`, change_kind: kind, safe_summary: "Runtime activation implementation plan item only.", implemented_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationImplementationPlan", source_controlled_runtime_activation_dry_run_result_id: input.dryRunResult.controlled_runtime_activation_dry_run_result_id, source_render_plan_id: input.dryRunResult.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeActivationImplementationContract(input: { implementationPlan: ControlledRuntimeActivationImplementationPlan; decision?: "draft" | "approved_for_future_implementation_dry_run_review" | "rejected"; dryRun: true }): ControlledRuntimeActivationImplementationContract {
+  if (input.dryRun !== true) throw new Error("VO-7AT runtime activation implementation contract requires dryRun=true");
+  const planValidation = validateControlledRuntimeActivationImplementationPlan(input.implementationPlan);
+  if (!planValidation.ok) throw new Error("Runtime activation implementation plan validation failed");
+  if (input.implementationPlan.implementation_plan_state !== "approved_for_future_implementation_contract") throw new Error("Implementation contract requires approved implementation plan");
+  const approved = input.decision === "approved_for_future_implementation_dry_run_review";
+  const kinds = ["kill_switch", "single_upload_limit", "credential_boundary", "network_boundary", "media_boundary"];
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_implementation_contract_id: `controlled-runtime-activation-implementation-contract-${crypto.randomUUID()}`,
+    controlled_runtime_activation_implementation_plan_id: input.implementationPlan.controlled_runtime_activation_implementation_plan_id,
+    controlled_runtime_activation_dry_run_result_id: input.implementationPlan.controlled_runtime_activation_dry_run_result_id,
+    render_plan_id: input.implementationPlan.render_plan_id,
+    project_id: input.implementationPlan.project_id,
+    platform: input.implementationPlan.platform,
+    created_at: new Date().toISOString(),
+    implementation_contract_state: approved ? "approved_for_future_implementation_dry_run_review" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_activation_implementation_plan_validated: true, controlled_runtime_activation_dry_run_result_validated: true },
+    implementation_contract_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    implementation_contracts: kinds.map((kind) => ({ contract_id: `contract-${kind}`, contract_kind: kind, safe_summary: "Runtime activation implementation contract item only.", implemented_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationImplementationContract", source_controlled_runtime_activation_implementation_plan_id: input.implementationPlan.controlled_runtime_activation_implementation_plan_id, source_render_plan_id: input.implementationPlan.render_plan_id },
+  };
+}
+
+export function createControlledRuntimeActivationImplementationDryRunReview(input: { implementationContract: ControlledRuntimeActivationImplementationContract; decision?: "draft" | "approved_for_future_activation_candidate" | "rejected"; dryRun: true }): ControlledRuntimeActivationImplementationDryRunReview {
+  if (input.dryRun !== true) throw new Error("VO-7AU runtime activation implementation dry-run review requires dryRun=true");
+  const contractValidation = validateControlledRuntimeActivationImplementationContract(input.implementationContract);
+  if (!contractValidation.ok) throw new Error("Runtime activation implementation contract validation failed");
+  if (input.implementationContract.implementation_contract_state !== "approved_for_future_implementation_dry_run_review") throw new Error("Implementation dry-run review requires approved implementation contract");
+  const approved = input.decision === "approved_for_future_activation_candidate";
+  const kinds = ["kill_switch", "single_upload_limit", "credential_boundary", "network_boundary", "media_boundary"];
+  return {
+    schema_version: "1.0",
+    controlled_runtime_activation_implementation_dry_run_review_id: `controlled-runtime-activation-implementation-dry-run-review-${crypto.randomUUID()}`,
+    controlled_runtime_activation_implementation_contract_id: input.implementationContract.controlled_runtime_activation_implementation_contract_id,
+    controlled_runtime_activation_implementation_plan_id: input.implementationContract.controlled_runtime_activation_implementation_plan_id,
+    render_plan_id: input.implementationContract.render_plan_id,
+    project_id: input.implementationContract.project_id,
+    platform: input.implementationContract.platform,
+    created_at: new Date().toISOString(),
+    implementation_dry_run_review_state: approved ? "approved_for_future_activation_candidate" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { controlled_runtime_activation_implementation_contract_validated: true, controlled_runtime_activation_implementation_plan_validated: true },
+    review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_checks: kinds.map((kind) => ({ check_id: `review-${kind}`, check_kind: kind, check_state: "passed", safe_summary: "Runtime activation implementation dry-run review only.", implemented_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createControlledRuntimeActivationImplementationDryRunReview", source_controlled_runtime_activation_implementation_contract_id: input.implementationContract.controlled_runtime_activation_implementation_contract_id, source_render_plan_id: input.implementationContract.render_plan_id },
+  };
+}

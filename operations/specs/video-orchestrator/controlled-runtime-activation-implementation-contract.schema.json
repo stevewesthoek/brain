@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "controlled-runtime-activation-implementation-contract.schema.json",
+  "title": "Controlled Runtime Activation Implementation Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "controlled_runtime_activation_implementation_contract_id", "controlled_runtime_activation_implementation_plan_id", "controlled_runtime_activation_dry_run_result_id", "render_plan_id", "project_id", "platform", "created_at", "implementation_contract_state", "required_artifacts", "implementation_contract_scope", "implementation_contracts", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "controlled_runtime_activation_implementation_contract_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_activation_implementation_plan_id": { "type": "string", "minLength": 1 },
+    "controlled_runtime_activation_dry_run_result_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "implementation_contract_state": { "type": "string", "enum": ["draft", "ready_for_operator_review", "approved_for_future_implementation_dry_run_review", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["controlled_runtime_activation_implementation_plan_validated", "controlled_runtime_activation_dry_run_result_validated"], "properties": { "controlled_runtime_activation_implementation_plan_validated": { "type": "boolean", "const": true }, "controlled_runtime_activation_dry_run_result_validated": { "type": "boolean", "const": true } } },
+    "implementation_contract_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "implementation_contracts": { "type": "array", "minItems": 5, "items": { "type": "object", "additionalProperties": false, "required": ["contract_id", "contract_kind", "safe_summary", "implemented_now"], "properties": { "contract_id": { "type": "string" }, "contract_kind": { "type": "string" }, "safe_summary": { "type": "string" }, "implemented_now": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_controlled_runtime_activation_implementation_plan_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createControlledRuntimeActivationImplementationContract", "revokeControlledRuntimeActivationImplementationContract"] }, "source_controlled_runtime_activation_implementation_plan_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}
