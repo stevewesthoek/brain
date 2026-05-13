@@ -324,6 +324,13 @@ import {
   getRealUploadNoopStubFilePlanReport,
   createRealUploadNoopStubFileCreationResult,
   validateRealUploadNoopStubFileCreationResult,
+  createRealUploadNoopStubWiringPlan,
+  validateRealUploadNoopStubWiringPlan,
+  saveRealUploadNoopStubWiringPlan,
+  listRealUploadNoopStubWiringPlans,
+  getRealUploadNoopStubWiringPlan,
+  revokeRealUploadNoopStubWiringPlan,
+  getRealUploadNoopStubWiringPlanReport,
   createRealUploadScaffoldContractTests,
   validateRealUploadScaffoldContractTests,
   saveRealUploadScaffoldContractTests,
@@ -373,6 +380,8 @@ import {
   type RealUploadStubContractTests,
   type RealUploadStubNoopImplementationDesign,
   type RealUploadNoopStubFilePlan,
+  type RealUploadNoopStubFileCreationResult,
+  type RealUploadNoopStubWiringPlan,
 } from "./video-orchestrator-jobs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -23405,6 +23414,132 @@ test("VO-7W-VALIDATE-306: validator rejects unsafe noop stub file creation resul
     assert.equal(validateRealUploadNoopStubFileCreationResult({ ...result, ready_for_real_upload: true }).ok, false);
     assert.equal(validateRealUploadNoopStubFileCreationResult({ ...result, execution_boundary: { ...result.execution_boundary, upload_allowed: true } }).ok, false);
     assert.equal(validateRealUploadNoopStubFileCreationResult({ ...result, created_files_summary: { ...result.created_files_summary, created_file_labels: ["../unsafe"] } }).ok, false);
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+function createSafeRealUploadNoopStubWiringPlanFixture() {
+  const fixture: any = createSafeRealUploadNoopStubFileCreationResultFixture();
+  const repoRootForSpecs = getRepoRootForVideoOrchestratorSpecs();
+  const noopStubFileCreationResult = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/examples/real-upload-noop-stub-file-creation-result.example.json"), "utf8")) as any;
+  const noopStubFilePlan = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/examples/real-upload-noop-stub-file-plan.example.json"), "utf8")) as any;
+  noopStubFilePlan.noop_stub_file_plan_state = "approved_for_future_noop_stub_file_creation";
+  noopStubFilePlan.validation.noop_stub_file_plan_complete = true;
+  noopStubFilePlan.validation.ready_for_future_noop_stub_file_creation = true;
+  const wiringTargetKinds = [
+    "credential_provider_noop_wiring_target",
+    "media_reference_resolver_noop_wiring_target",
+    "platform_adapter_noop_wiring_target",
+    "payload_builder_noop_wiring_target",
+    "network_client_noop_wiring_target",
+    "upload_executor_noop_wiring_target",
+    "retry_idempotency_noop_wiring_target",
+    "rollback_noop_wiring_target",
+    "post_upload_verification_noop_wiring_target",
+    "audit_event_noop_wiring_target",
+    "operator_confirmation_noop_wiring_target",
+    "emergency_stop_noop_wiring_target",
+    "status_reporter_noop_wiring_target",
+    "upload_scaffold_index_noop_wiring_target",
+  ] as const;
+  const wiringPlan = {
+    schema_version: "1.0",
+    real_upload_noop_stub_wiring_plan_id: `${noopStubFileCreationResult.real_upload_noop_stub_file_creation_result_id}-wiring-plan`,
+    real_upload_noop_stub_file_creation_result_id: noopStubFileCreationResult.real_upload_noop_stub_file_creation_result_id,
+    real_upload_noop_stub_file_plan_id: noopStubFilePlan.real_upload_noop_stub_file_plan_id,
+    real_upload_stub_noop_implementation_design_id: noopStubFilePlan.real_upload_stub_noop_implementation_design_id,
+    real_upload_stub_contract_tests_id: noopStubFilePlan.real_upload_stub_contract_tests_id,
+    real_upload_stub_contracts_id: noopStubFilePlan.real_upload_stub_contracts_id,
+    render_plan_id: noopStubFilePlan.render_plan_id,
+    project_id: noopStubFilePlan.project_id,
+    platform: noopStubFilePlan.platform,
+    created_at: noopStubFileCreationResult.created_at,
+    wiring_plan_state: "approved_for_future_noop_wiring_contracts",
+    wiring_plan_mode: "real_upload_noop_stub_wiring_plan_only",
+    required_artifacts: { real_upload_noop_stub_file_creation_result_validated: true, real_upload_noop_stub_file_plan_validated: true, real_upload_stub_noop_implementation_design_validated: true, real_upload_stub_contract_tests_validated: true, real_upload_stub_contracts_validated: true },
+    wiring_scope: { future_noop_wiring_contracts_requested: true, wiring_plan_only: true, wiring_applied_now: false, orchestrator_runtime_changed: false, live_execution_path_changed: false, upload_execution_path_changed: false, runtime_enabled: false, current_real_upload_requested: false, current_network_calls_requested: false, current_platform_api_calls_requested: false, current_credential_access_requested: false, current_media_read_requested: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    planned_wiring_targets: wiringTargetKinds.map((target_kind, index) => ({ wiring_target_id: `wiring-target-${index + 1}`, target_kind, target_state: "planned" as const, safe_summary: `${target_kind} wiring plan only.`, source_stub_kind: target_kind.replace("_noop_wiring_target", "_noop_stub_file"), import_planned: true, runtime_call_planned: false, runtime_call_enabled: false, upload_enabled: false, network_enabled: false, platform_api_enabled: false, credential_access_enabled: false, media_read_enabled: false, file_mutation_enabled: false, raw_payload_created: false, raw_response_stored: false, blocking_reasons: ["Wiring remains planned only."], warnings: [] })),
+    planned_import_surface: { import_surface_planned: true, new_imports_applied_now: false, production_path_imports_applied_now: false, runtime_exports_enabled: false, upload_execution_export_enabled: false, network_export_enabled: false, credential_export_enabled: false, media_read_export_enabled: false, safe_summary: "No-op stub wiring import surface remains planned only.", blocking_reasons: [], warnings: [] },
+    planned_orchestrator_touchpoints: [{ touchpoint_id: "touchpoint-1", touchpoint_kind: "orchestrator-entrypoint", touchpoint_state: "planned" as const, safe_summary: "Orchestrator touchpoint remains planned only.", production_code_changed_now: false, runtime_behavior_changed_now: false, live_execution_path_changed: false, automatic_invocation_enabled: false, upload_invocation_enabled: false, network_invocation_enabled: false, credential_invocation_enabled: false, media_read_invocation_enabled: false, blocking_reasons: ["No wiring applied now."], warnings: [] }],
+    no_op_runtime_boundary: { no_op_stubs_available: true, no_runtime_wiring_applied: true, no_automatic_invocation: true, no_runtime_execution: true, no_external_effects: true },
+    upload_boundary: { upload_allowed: false, upload_execution_enabled: false, upload_runtime_wiring_applied: false, real_upload_requested: false, ready_for_real_upload: false },
+    platform_api_boundary: { platform_api_calls_allowed: false, platform_api_calls_made: false, platform_adapter_runtime_wiring_applied: false, raw_account_ids_stored: false },
+    network_boundary: { network_calls_allowed: false, network_calls_made: false, network_client_runtime_wiring_applied: false, external_side_effects_allowed: false, external_side_effects_observed: false },
+    credential_boundary: { credentials_required: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, credential_provider_runtime_wiring_applied: false, credential_reference_stored: false, token_reference_stored: false, secret_material_stored: false },
+    media_boundary: { media_file_read: false, media_resolver_runtime_wiring_applied: false, raw_media_path_stored: false, media_file_modified: false, media_file_copied: false, media_file_moved: false, media_file_deleted: false },
+    file_mutation_boundary: { files_created_now: false, files_modified_now: false, runtime_files_created: false, runtime_files_modified: false, source_files_modified_for_runtime_wiring: false, file_mutation_allowed: false },
+    dependency_boundary: { dependencies_added: false, package_metadata_changed: false, package_dependency_changes: false, runtime_config_created: false, env_files_created: false, secrets_config_created: false, credential_config_created: false },
+    operator_review: { reviewed_by_label: "operator-001", checklist_acknowledged: true, understands_wiring_plan_only: true, understands_no_wiring_applied_now: true, understands_no_runtime_execution: true, understands_no_upload_enabled: true, understands_no_platform_api_calls: true, understands_no_network_calls: true, understands_no_credentials_accessed: true, understands_no_media_reads: true, understands_no_dependencies_added: true, understands_future_noop_wiring_contracts_phase_required: true, decision_note_summary: "No-op stub wiring plan approved for future contracts." },
+    execution_boundary: { wiring_applied_now: false, orchestrator_runtime_changed: false, live_execution_path_changed: false, upload_execution_path_changed: false, runtime_enabled: false, runtime_executed: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, media_file_read: false, file_mutation_allowed: false, dependencies_added: false, package_metadata_changed: false, ready_for_real_upload: false },
+    validation: { noop_stub_wiring_plan_complete: true, ready_for_future_noop_wiring_contracts: true, ready_for_real_upload: false, wiring_applied_now: false, orchestrator_runtime_changed: false, live_execution_path_changed: false, upload_execution_path_changed: false, runtime_enabled: false, runtime_executed: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, media_file_read: false, file_mutation_allowed: false, dependencies_added: false, package_metadata_changed: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadNoopStubWiringPlan", source_real_upload_noop_stub_file_creation_result_id: noopStubFileCreationResult.real_upload_noop_stub_file_creation_result_id, source_real_upload_noop_stub_file_plan_id: noopStubFilePlan.real_upload_noop_stub_file_plan_id, source_real_upload_stub_noop_implementation_design_id: noopStubFilePlan.real_upload_stub_noop_implementation_design_id, source_real_upload_stub_contract_tests_id: noopStubFilePlan.real_upload_stub_contract_tests_id, source_real_upload_stub_contracts_id: noopStubFilePlan.real_upload_stub_contracts_id, source_render_plan_id: noopStubFilePlan.render_plan_id },
+  } as any;
+  return { ...fixture, wiringPlan };
+}
+
+test("VO-7X-SCHEMA-307: noop stub wiring plan schema and example parse safely", () => {
+  const repoRootForSpecs = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/real-upload-noop-stub-wiring-plan.schema.json"), "utf8")) as any;
+  const example = JSON.parse(fs.readFileSync(path.join(repoRootForSpecs, "operations/specs/video-orchestrator/examples/real-upload-noop-stub-wiring-plan.example.json"), "utf8")) as any;
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.schema_version, "1.0");
+  assert.equal(example.wiring_plan_mode, "real_upload_noop_stub_wiring_plan_only");
+  assert.equal(example.planned_wiring_targets.length, 14);
+  assert.deepEqual(new Set(example.planned_wiring_targets.map((target: any) => target.target_kind)).size, 14);
+  assert.equal(example.planned_orchestrator_touchpoints.length > 0, true);
+  assert.equal(schema.properties.planned_wiring_targets.minItems, 14);
+  assert.equal(schema.properties.planned_wiring_targets.items.additionalProperties, false);
+  assert.equal(schema.properties.planned_wiring_targets.items.properties.runtime_call_enabled.const, false);
+  assert.equal(schema.properties.planned_wiring_targets.items.properties.upload_enabled.const, false);
+  assert.equal(schema.properties.planned_wiring_targets.items.properties.network_enabled.const, false);
+  assert.equal(schema.properties.planned_wiring_targets.items.properties.credential_access_enabled.const, false);
+  assert.equal(schema.properties.planned_wiring_targets.items.properties.media_read_enabled.const, false);
+  assert.equal(schema.properties.planned_wiring_targets.items.properties.file_mutation_enabled.const, false);
+  assert.equal(schema.properties.planned_wiring_targets.items.properties.raw_payload_created.const, false);
+  assert.equal(schema.properties.planned_wiring_targets.items.properties.raw_response_stored.const, false);
+  assert.equal(schema.properties.planned_import_surface.additionalProperties, false);
+  assert.equal(schema.properties.planned_orchestrator_touchpoints.items.additionalProperties, false);
+  assert.equal(schema.properties.no_op_runtime_boundary.properties.no_runtime_wiring_applied.const, true);
+  assert.equal(schema.properties.execution_boundary.properties.wiring_applied_now.const, false);
+  assert.equal(schema.properties.upload_boundary.properties.upload_allowed.const, false);
+  assert.equal(schema.properties.platform_api_boundary.properties.platform_api_calls_allowed.const, false);
+  assert.equal(schema.properties.network_boundary.properties.network_calls_allowed.const, false);
+  assert.equal(schema.properties.credential_boundary.properties.credentials_accessed.const, false);
+  assert.equal(schema.properties.media_boundary.properties.media_file_read.const, false);
+  assert.equal(schema.properties.file_mutation_boundary.properties.file_mutation_allowed.const, false);
+  assert.equal(schema.properties.dependency_boundary.properties.dependencies_added.const, false);
+  assert.equal(schema.properties.validation.properties.ready_for_real_upload.const, false);
+  assert.equal(JSON.stringify(example).includes("access_token"), false);
+  assert.equal(JSON.stringify(example).includes("videos.insert"), false);
+});
+
+test("VO-7X-CREATE-308: create noop stub wiring plan from approved inputs and reject unsafe inputs", () => {
+  const fixture: any = createSafeRealUploadNoopStubWiringPlanFixture();
+  try {
+    assert.throws(() => createRealUploadNoopStubWiringPlan({ noopStubFileCreationResult: fixture.creationResult, noopStubFilePlan: fixture.approvedPlan, dryRun: false as any }), /dryRun=true required/);
+    assert.throws(() => createRealUploadNoopStubWiringPlan({ noopStubFileCreationResult: fixture.creationResult, noopStubFilePlan: fixture.approvedPlan, dryRun: true as true, decision: "approved_for_future_noop_wiring_contracts", checklist_acknowledged: false }), /acknowledgements required/);
+    const draft = createRealUploadNoopStubWiringPlan({ noopStubFileCreationResult: fixture.creationResult, noopStubFilePlan: fixture.approvedPlan, dryRun: true as true, decision: "draft" });
+    assert.equal(draft.validation.ready_for_real_upload, false);
+    assert.equal(fixture.wiringPlan.wiring_plan_state, "approved_for_future_noop_wiring_contracts");
+  } finally {
+    cleanupTestRuntime(fixture.tempDir);
+  }
+});
+
+test("VO-7X-VALIDATE-309: validator rejects unsafe noop stub wiring plan shapes", () => {
+  const fixture: any = createSafeRealUploadNoopStubWiringPlanFixture();
+  try {
+    const plan = fixture.wiringPlan;
+    assert.equal(validateRealUploadNoopStubWiringPlan(plan).ok, true);
+    assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, execution_boundary: { ...plan.execution_boundary, wiring_applied_now: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, planned_wiring_targets: plan.planned_wiring_targets.map((target: any) => ({ ...target, target_kind: "credential_provider_noop_wiring_target" })) }).ok, false);
+    assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, planned_wiring_targets: plan.planned_wiring_targets.slice(1) }).ok, false);
+    assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, upload_boundary: { ...plan.upload_boundary, upload_allowed: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, network_boundary: { ...plan.network_boundary, network_calls_allowed: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, credential_boundary: { ...plan.credential_boundary, credentials_accessed: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, media_boundary: { ...plan.media_boundary, media_file_read: true as never } }).ok, false);
+    assert.equal(validateRealUploadNoopStubWiringPlan({ ...plan, validation: { ...plan.validation, ready_for_real_upload: true as never } }).ok, false);
   } finally {
     cleanupTestRuntime(fixture.tempDir);
   }

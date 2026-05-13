@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
 **Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B complete (operator review of generated local output). VO-7C complete (upload package design). VO-7D complete (platform upload request artifact). VO-7E complete (upload execution approval). VO-7F complete (upload execution design). VO-7G complete (dry-run upload spike simulation). VO-7H complete (real upload readiness assessment). VO-7I complete (real upload execution request). VO-7J complete (real upload strategy design). VO-7K complete (real upload execution plan). VO-7L complete (real upload dry-run execution simulator). VO-7M complete (final real upload preflight gate). VO-7N complete (real upload implementation design). VO-7O complete (real upload scaffold design). VO-7P complete (real upload scaffold contracts). VO-7Q complete (real upload scaffold contract tests). VO-7R complete (real upload scaffold stub design). VO-7S complete (real upload stub contracts). VO-7T complete (real upload stub contract tests). VO-7U complete (real upload stub no-op implementation design). VO-7V complete (real upload no-op stub file plan). VO-7W complete (real upload no-op stub file creation); detailed guide for phases 3B+  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B complete (operator review of generated local output). VO-7C complete (upload package design). VO-7D complete (platform upload request artifact). VO-7E complete (upload execution approval). VO-7F complete (upload execution design). VO-7G complete (dry-run upload spike simulation). VO-7H complete (real upload readiness assessment). VO-7I complete (real upload execution request). VO-7J complete (real upload strategy design). VO-7K complete (real upload execution plan). VO-7L complete (real upload dry-run execution simulator). VO-7M complete (final real upload preflight gate). VO-7N complete (real upload implementation design). VO-7O complete (real upload scaffold design). VO-7P complete (real upload scaffold contracts). VO-7Q complete (real upload scaffold contract tests). VO-7R complete (real upload scaffold stub design). VO-7S complete (real upload stub contracts). VO-7T complete (real upload stub contract tests). VO-7U complete (real upload stub no-op implementation design). VO-7V complete (real upload no-op stub file plan). VO-7W complete (real upload no-op stub file creation). VO-7X complete (real upload no-op stub wiring plan); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -270,6 +270,23 @@ This phase creates inert no-op stub source and test files only.
 
 **Next phase guidance**
 - If approved later, the next step may add future no-op stub wiring plan work, still without implementation or upload capability.
+
+### VO-7X: Real Upload No-Op Stub Wiring Plan
+
+This phase creates a wiring plan artifact only.
+
+**What it does**
+- Plans future no-op wiring contracts only.
+- Keeps runtime wiring, production path imports, automatic invocation, upload/API/network/credential/media behavior, dependencies, and package metadata changes disabled.
+
+**What it does not do**
+- Does not wire runtime behavior.
+- Does not call the no-op stub module from production paths.
+- Does not enable upload or platform/network/credential/media access.
+- Does not change dependencies or package metadata.
+
+**Next phase guidance**
+- If approved later, the next step may add future no-op wiring contracts work, still without runtime wiring or upload capability.
 
 ### VO-7C: Upload Package Design
 

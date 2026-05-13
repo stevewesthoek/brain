@@ -17117,6 +17117,239 @@ export function createRealUploadNoopStubFileCreationResult(input: { noopStubFile
   return result;
 }
 
+export type RealUploadNoopStubWiringPlanState = "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_noop_wiring_contracts" | "rejected" | "revoked";
+export type RealUploadNoopStubWiringPlanMode = "real_upload_noop_stub_wiring_plan_only" | "operator_review_real_upload_noop_stub_wiring_plan";
+export interface RealUploadNoopStubWiringPlan {
+  schema_version: string;
+  real_upload_noop_stub_wiring_plan_id: string;
+  real_upload_noop_stub_file_creation_result_id: string;
+  real_upload_noop_stub_file_plan_id: string;
+  real_upload_stub_noop_implementation_design_id: string;
+  real_upload_stub_contract_tests_id: string;
+  real_upload_stub_contracts_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  wiring_plan_state: RealUploadNoopStubWiringPlanState;
+  wiring_plan_mode: RealUploadNoopStubWiringPlanMode;
+  required_artifacts: {
+    real_upload_noop_stub_file_creation_result_validated: true;
+    real_upload_noop_stub_file_plan_validated: true;
+    real_upload_stub_noop_implementation_design_validated: true;
+    real_upload_stub_contract_tests_validated: true;
+    real_upload_stub_contracts_validated: true;
+  };
+  wiring_scope: {
+    future_noop_wiring_contracts_requested: boolean;
+    wiring_plan_only: true;
+    wiring_applied_now: false;
+    orchestrator_runtime_changed: false;
+    live_execution_path_changed: false;
+    upload_execution_path_changed: false;
+    runtime_enabled: false;
+    current_real_upload_requested: false;
+    current_network_calls_requested: false;
+    current_platform_api_calls_requested: false;
+    current_credential_access_requested: false;
+    current_media_read_requested: false;
+    dependencies_requested: false;
+    package_metadata_changes_requested: false;
+  };
+  planned_wiring_targets: Array<{
+    wiring_target_id: string;
+    target_kind: "credential_provider_noop_wiring_target" | "media_reference_resolver_noop_wiring_target" | "platform_adapter_noop_wiring_target" | "payload_builder_noop_wiring_target" | "network_client_noop_wiring_target" | "upload_executor_noop_wiring_target" | "retry_idempotency_noop_wiring_target" | "rollback_noop_wiring_target" | "post_upload_verification_noop_wiring_target" | "audit_event_noop_wiring_target" | "operator_confirmation_noop_wiring_target" | "emergency_stop_noop_wiring_target" | "status_reporter_noop_wiring_target" | "upload_scaffold_index_noop_wiring_target";
+    target_state: "planned" | "blocked" | "deferred" | "ready_for_future_noop_wiring_contracts";
+    safe_summary: string;
+    source_stub_kind: string;
+    import_planned: boolean;
+    runtime_call_planned: false;
+    runtime_call_enabled: false;
+    upload_enabled: false;
+    network_enabled: false;
+    platform_api_enabled: false;
+    credential_access_enabled: false;
+    media_read_enabled: false;
+    file_mutation_enabled: false;
+    raw_payload_created: false;
+    raw_response_stored: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  }>;
+  planned_import_surface: {
+    import_surface_planned: boolean;
+    new_imports_applied_now: false;
+    production_path_imports_applied_now: false;
+    runtime_exports_enabled: false;
+    upload_execution_export_enabled: false;
+    network_export_enabled: false;
+    credential_export_enabled: false;
+    media_read_export_enabled: false;
+    safe_summary: string;
+    blocking_reasons: string[];
+    warnings: string[];
+  };
+  planned_orchestrator_touchpoints: Array<{
+    touchpoint_id: string;
+    touchpoint_kind: string;
+    touchpoint_state: "planned" | "blocked" | "deferred" | "ready_for_future_noop_wiring_contracts";
+    safe_summary: string;
+    production_code_changed_now: false;
+    runtime_behavior_changed_now: false;
+    live_execution_path_changed: false;
+    automatic_invocation_enabled: false;
+    upload_invocation_enabled: false;
+    network_invocation_enabled: false;
+    credential_invocation_enabled: false;
+    media_read_invocation_enabled: false;
+    blocking_reasons: string[];
+    warnings: string[];
+  }>;
+  no_op_runtime_boundary: { no_op_stubs_available: boolean; no_runtime_wiring_applied: true; no_automatic_invocation: true; no_runtime_execution: true; no_external_effects: true };
+  upload_boundary: { upload_allowed: false; upload_execution_enabled: false; upload_runtime_wiring_applied: false; real_upload_requested: false; ready_for_real_upload: false };
+  platform_api_boundary: { platform_api_calls_allowed: false; platform_api_calls_made: false; platform_adapter_runtime_wiring_applied: false; raw_account_ids_stored: false };
+  network_boundary: { network_calls_allowed: false; network_calls_made: false; network_client_runtime_wiring_applied: false; external_side_effects_allowed: false; external_side_effects_observed: false };
+  credential_boundary: { credentials_required: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; credential_provider_runtime_wiring_applied: false; credential_reference_stored: false; token_reference_stored: false; secret_material_stored: false };
+  media_boundary: { media_file_read: false; media_resolver_runtime_wiring_applied: false; raw_media_path_stored: false; media_file_modified: false; media_file_copied: false; media_file_moved: false; media_file_deleted: false };
+  file_mutation_boundary: { files_created_now: false; files_modified_now: false; runtime_files_created: false; runtime_files_modified: false; source_files_modified_for_runtime_wiring: false; file_mutation_allowed: false };
+  dependency_boundary: { dependencies_added: false; package_metadata_changed: false; package_dependency_changes: false; runtime_config_created: false; env_files_created: false; secrets_config_created: false; credential_config_created: false };
+  operator_review: { reviewed_by_label?: string; checklist_acknowledged: boolean; understands_wiring_plan_only: boolean; understands_no_wiring_applied_now: boolean; understands_no_runtime_execution: boolean; understands_no_upload_enabled: boolean; understands_no_platform_api_calls: boolean; understands_no_network_calls: boolean; understands_no_credentials_accessed: boolean; understands_no_media_reads: boolean; understands_no_dependencies_added: boolean; understands_future_noop_wiring_contracts_phase_required: boolean; decision_note_summary?: string };
+  execution_boundary: { wiring_applied_now: false; orchestrator_runtime_changed: false; live_execution_path_changed: false; upload_execution_path_changed: false; runtime_enabled: false; runtime_executed: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; keychain_accessed: false; env_accessed: false; media_file_read: false; file_mutation_allowed: false; dependencies_added: false; package_metadata_changed: false; ready_for_real_upload: false };
+  validation: { noop_stub_wiring_plan_complete: boolean; ready_for_future_noop_wiring_contracts: boolean; ready_for_real_upload: false; wiring_applied_now: false; orchestrator_runtime_changed: false; live_execution_path_changed: false; upload_execution_path_changed: false; runtime_enabled: false; runtime_executed: false; upload_allowed: false; upload_execution_enabled: false; platform_api_calls_allowed: false; network_calls_allowed: false; credentials_accessed: false; token_accessed: false; media_file_read: false; file_mutation_allowed: false; dependencies_added: false; package_metadata_changed: false; blocking_reasons: string[]; warnings: string[] };
+  provenance: { generated_by: "createRealUploadNoopStubWiringPlan" | "revokeRealUploadNoopStubWiringPlan"; source_real_upload_noop_stub_file_creation_result_id: string; source_real_upload_noop_stub_file_plan_id: string; source_real_upload_stub_noop_implementation_design_id: string; source_real_upload_stub_contract_tests_id: string; source_real_upload_stub_contracts_id: string; source_render_plan_id: string };
+}
+
+const REAL_UPLOAD_NOOP_STUB_WIRING_TARGET_KINDS = [
+  "credential_provider_noop_wiring_target",
+  "media_reference_resolver_noop_wiring_target",
+  "platform_adapter_noop_wiring_target",
+  "payload_builder_noop_wiring_target",
+  "network_client_noop_wiring_target",
+  "upload_executor_noop_wiring_target",
+  "retry_idempotency_noop_wiring_target",
+  "rollback_noop_wiring_target",
+  "post_upload_verification_noop_wiring_target",
+  "audit_event_noop_wiring_target",
+  "operator_confirmation_noop_wiring_target",
+  "emergency_stop_noop_wiring_target",
+  "status_reporter_noop_wiring_target",
+  "upload_scaffold_index_noop_wiring_target",
+] as const;
+
+function safeRealUploadNoopWiringString(value: unknown, fallback = "No-op stub wiring plan remains disabled."): string {
+  if (typeof value !== "string") return fallback;
+  const text = value.trim();
+  if (!text || text.length > 160) return fallback;
+  const lower = text.toLowerCase();
+  if (lower.includes("://") || lower.includes("stdout") || lower.includes("stderr") || lower.includes("process.env") || lower.includes("access_token") || lower.includes("refresh_token") || lower.includes("client_secret") || lower.includes("bearer") || lower.includes("videos.insert") || lower.includes("youtube.videos().insert") || lower.includes("fetch(") || lower.includes("/users/") || lower.includes("../")) return fallback;
+  return text;
+}
+
+export interface RealUploadNoopStubWiringPlanValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[]; }
+export function validateRealUploadNoopStubWiringPlan(plan: unknown): RealUploadNoopStubWiringPlanValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (typeof plan !== "object" || plan === null) return { ok: false, blocking_reasons: ["No-op stub wiring plan must be an object"], warnings };
+  const r = plan as Record<string, unknown>;
+  const required = ["schema_version","real_upload_noop_stub_wiring_plan_id","real_upload_noop_stub_file_creation_result_id","real_upload_noop_stub_file_plan_id","real_upload_stub_noop_implementation_design_id","real_upload_stub_contract_tests_id","real_upload_stub_contracts_id","render_plan_id","project_id","platform","created_at","wiring_plan_state","wiring_plan_mode","required_artifacts","wiring_scope","planned_wiring_targets","planned_import_surface","planned_orchestrator_touchpoints","no_op_runtime_boundary","upload_boundary","platform_api_boundary","network_boundary","credential_boundary","media_boundary","file_mutation_boundary","dependency_boundary","operator_review","execution_boundary","validation","provenance"];
+  for (const key of required) if (!(key in r)) blocking_reasons.push("No-op stub wiring plan is missing a required field");
+  if (r.wiring_plan_state === "approved_for_future_noop_wiring_contracts" && (r.execution_boundary as any)?.ready_for_real_upload !== false) blocking_reasons.push("ready_for_real_upload must remain false");
+  const targets = Array.isArray(r.planned_wiring_targets) ? (r.planned_wiring_targets as Record<string, unknown>[]) : [];
+  if (targets.length < REAL_UPLOAD_NOOP_STUB_WIRING_TARGET_KINDS.length) blocking_reasons.push("No-op stub wiring plan must include all required wiring target kinds");
+  for (const kind of REAL_UPLOAD_NOOP_STUB_WIRING_TARGET_KINDS) {
+    if (!targets.some((t) => t.target_kind === kind)) blocking_reasons.push("Missing required wiring target kind");
+  }
+  if (new Set(targets.map((t) => t.target_kind)).size !== targets.length) blocking_reasons.push("Duplicate wiring target kind detected");
+  const plannedImportSurface = r.planned_import_surface as Record<string, unknown> | undefined;
+  if (!plannedImportSurface || plannedImportSurface.import_surface_planned !== true || plannedImportSurface.new_imports_applied_now !== false || plannedImportSurface.production_path_imports_applied_now !== false || plannedImportSurface.runtime_exports_enabled !== false || plannedImportSurface.upload_execution_export_enabled !== false || plannedImportSurface.network_export_enabled !== false || plannedImportSurface.credential_export_enabled !== false || plannedImportSurface.media_read_export_enabled !== false) blocking_reasons.push("Planned import surface is unsafe");
+  const plannedTouchpoints = Array.isArray(r.planned_orchestrator_touchpoints) ? (r.planned_orchestrator_touchpoints as Record<string, unknown>[]) : [];
+  if (plannedTouchpoints.some((touchpoint) => touchpoint.production_code_changed_now !== false || touchpoint.runtime_behavior_changed_now !== false || touchpoint.live_execution_path_changed !== false || touchpoint.automatic_invocation_enabled !== false || touchpoint.upload_invocation_enabled !== false || touchpoint.network_invocation_enabled !== false || touchpoint.credential_invocation_enabled !== false || touchpoint.media_read_invocation_enabled !== false)) blocking_reasons.push("Planned orchestrator touchpoint is unsafe");
+  const noOpBoundary = r.no_op_runtime_boundary as Record<string, unknown> | undefined;
+  if (!noOpBoundary || noOpBoundary.no_op_stubs_available !== true || noOpBoundary.no_runtime_wiring_applied !== true || noOpBoundary.no_automatic_invocation !== true || noOpBoundary.no_runtime_execution !== true || noOpBoundary.no_external_effects !== true) blocking_reasons.push("No-op runtime boundary is unsafe");
+  const uploadBoundary = r.upload_boundary as Record<string, unknown> | undefined;
+  if (!uploadBoundary || uploadBoundary.upload_allowed !== false || uploadBoundary.upload_execution_enabled !== false || uploadBoundary.upload_runtime_wiring_applied !== false || uploadBoundary.real_upload_requested !== false || uploadBoundary.ready_for_real_upload !== false) blocking_reasons.push("Upload boundary is unsafe");
+  const platformBoundary = r.platform_api_boundary as Record<string, unknown> | undefined;
+  if (!platformBoundary || platformBoundary.platform_api_calls_allowed !== false || platformBoundary.platform_api_calls_made !== false || platformBoundary.platform_adapter_runtime_wiring_applied !== false || platformBoundary.raw_account_ids_stored !== false) blocking_reasons.push("Platform API boundary is unsafe");
+  const networkBoundary = r.network_boundary as Record<string, unknown> | undefined;
+  if (!networkBoundary || networkBoundary.network_calls_allowed !== false || networkBoundary.network_calls_made !== false || networkBoundary.network_client_runtime_wiring_applied !== false || networkBoundary.external_side_effects_allowed !== false || networkBoundary.external_side_effects_observed !== false) blocking_reasons.push("Network boundary is unsafe");
+  const credentialBoundary = r.credential_boundary as Record<string, unknown> | undefined;
+  if (!credentialBoundary || credentialBoundary.credentials_required !== false || credentialBoundary.credentials_accessed !== false || credentialBoundary.token_accessed !== false || credentialBoundary.keychain_accessed !== false || credentialBoundary.env_accessed !== false || credentialBoundary.credential_provider_runtime_wiring_applied !== false || credentialBoundary.credential_reference_stored !== false || credentialBoundary.token_reference_stored !== false || credentialBoundary.secret_material_stored !== false) blocking_reasons.push("Credential boundary is unsafe");
+  const mediaBoundary = r.media_boundary as Record<string, unknown> | undefined;
+  if (!mediaBoundary || mediaBoundary.media_file_read !== false || mediaBoundary.media_resolver_runtime_wiring_applied !== false || mediaBoundary.raw_media_path_stored !== false || mediaBoundary.media_file_modified !== false || mediaBoundary.media_file_copied !== false || mediaBoundary.media_file_moved !== false || mediaBoundary.media_file_deleted !== false) blocking_reasons.push("Media boundary is unsafe");
+  const fileMutationBoundary = r.file_mutation_boundary as Record<string, unknown> | undefined;
+  if (!fileMutationBoundary || fileMutationBoundary.files_created_now !== false || fileMutationBoundary.files_modified_now !== false || fileMutationBoundary.runtime_files_created !== false || fileMutationBoundary.runtime_files_modified !== false || fileMutationBoundary.source_files_modified_for_runtime_wiring !== false || fileMutationBoundary.file_mutation_allowed !== false) blocking_reasons.push("File mutation boundary is unsafe");
+  const dependencyBoundary = r.dependency_boundary as Record<string, unknown> | undefined;
+  if (!dependencyBoundary || dependencyBoundary.dependencies_added !== false || dependencyBoundary.package_metadata_changed !== false || dependencyBoundary.package_dependency_changes !== false || dependencyBoundary.runtime_config_created !== false || dependencyBoundary.env_files_created !== false || dependencyBoundary.secrets_config_created !== false || dependencyBoundary.credential_config_created !== false) blocking_reasons.push("Dependency boundary is unsafe");
+  const executionBoundary = r.execution_boundary as Record<string, unknown> | undefined;
+  if (!executionBoundary || executionBoundary.wiring_applied_now !== false || executionBoundary.orchestrator_runtime_changed !== false || executionBoundary.live_execution_path_changed !== false || executionBoundary.upload_execution_path_changed !== false || executionBoundary.runtime_enabled !== false || executionBoundary.runtime_executed !== false || executionBoundary.upload_allowed !== false || executionBoundary.upload_execution_enabled !== false || executionBoundary.platform_api_calls_allowed !== false || executionBoundary.network_calls_allowed !== false || executionBoundary.credentials_accessed !== false || executionBoundary.token_accessed !== false || executionBoundary.keychain_accessed !== false || executionBoundary.env_accessed !== false || executionBoundary.media_file_read !== false || executionBoundary.file_mutation_allowed !== false || executionBoundary.dependencies_added !== false || executionBoundary.package_metadata_changed !== false || executionBoundary.ready_for_real_upload !== false) blocking_reasons.push("Execution boundary is unsafe");
+  const validation = r.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.noop_stub_wiring_plan_complete === false || validation.ready_for_future_noop_wiring_contracts === false || validation.ready_for_real_upload !== false || validation.wiring_applied_now !== false || validation.orchestrator_runtime_changed !== false || validation.live_execution_path_changed !== false || validation.upload_execution_path_changed !== false || validation.runtime_enabled !== false || validation.runtime_executed !== false || validation.upload_allowed !== false || validation.upload_execution_enabled !== false || validation.platform_api_calls_allowed !== false || validation.network_calls_allowed !== false || validation.credentials_accessed !== false || validation.token_accessed !== false || validation.media_file_read !== false || validation.file_mutation_allowed !== false || validation.dependencies_added !== false || validation.package_metadata_changed !== false) blocking_reasons.push("Validation flags are unsafe");
+  const text = JSON.stringify(plan);
+  if (text.includes("videos.insert") || text.includes("youtube.videos().insert") || text.includes("fetch(") || text.includes("process.env[") || text.includes("stdout") || text.includes("stderr") || text.includes("Bearer ") || text.includes("access_token") || text.includes("refresh_token") || text.includes("client_secret") || text.includes("keychain://") || text.includes("/Users/") || text.includes("https://") || text.includes("http://") || text.includes("../")) blocking_reasons.push("No-op stub wiring plan contains forbidden payload content");
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadNoopStubWiringPlan(input: { noopStubFileCreationResult: RealUploadNoopStubFileCreationResult; noopStubFilePlan: RealUploadNoopStubFilePlan; dryRun: true; decision?: "draft" | "approved_for_future_noop_wiring_contracts" | "rejected"; reviewed_by_label?: string; checklist_acknowledged?: boolean; understands_wiring_plan_only?: boolean; understands_no_wiring_applied_now?: boolean; understands_no_runtime_execution?: boolean; understands_no_upload_enabled?: boolean; understands_no_platform_api_calls?: boolean; understands_no_network_calls?: boolean; understands_no_credentials_accessed?: boolean; understands_no_media_reads?: boolean; understands_no_dependencies_added?: boolean; understands_future_noop_wiring_contracts_phase_required?: boolean }): RealUploadNoopStubWiringPlan {
+  if (input.dryRun !== true) throw new Error("dryRun=true required");
+  if (!input.noopStubFileCreationResult || typeof input.noopStubFileCreationResult !== "object" || input.noopStubFileCreationResult.creation_state !== "created_noop_stubs") throw new Error("noop stub file creation result must validate");
+  const planValidation = validateRealUploadNoopStubFilePlan(input.noopStubFilePlan);
+  if (!planValidation.ok) throw new Error("noop stub file plan must validate");
+  const approved = input.decision === "approved_for_future_noop_wiring_contracts";
+  if (approved) {
+    if (input.noopStubFileCreationResult.creation_state !== "created_noop_stubs") throw new Error("noop stub file creation result must be created_noop_stubs");
+    if (!input.checklist_acknowledged || !input.understands_wiring_plan_only || !input.understands_no_wiring_applied_now || !input.understands_no_runtime_execution || !input.understands_no_upload_enabled || !input.understands_no_platform_api_calls || !input.understands_no_network_calls || !input.understands_no_credentials_accessed || !input.understands_no_media_reads || !input.understands_no_dependencies_added || !input.understands_future_noop_wiring_contracts_phase_required) throw new Error("acknowledgements required");
+  }
+  const createdAt = input.noopStubFileCreationResult.created_at || new Date().toISOString();
+  const plan: RealUploadNoopStubWiringPlan = {
+    schema_version: "1.0",
+    real_upload_noop_stub_wiring_plan_id: `${input.noopStubFileCreationResult.real_upload_noop_stub_file_creation_result_id}-wiring-plan`,
+    real_upload_noop_stub_file_creation_result_id: input.noopStubFileCreationResult.real_upload_noop_stub_file_creation_result_id,
+    real_upload_noop_stub_file_plan_id: input.noopStubFilePlan.real_upload_noop_stub_file_plan_id,
+    real_upload_stub_noop_implementation_design_id: input.noopStubFilePlan.real_upload_stub_noop_implementation_design_id,
+    real_upload_stub_contract_tests_id: input.noopStubFilePlan.real_upload_stub_contract_tests_id,
+    real_upload_stub_contracts_id: input.noopStubFilePlan.real_upload_stub_contracts_id,
+    render_plan_id: input.noopStubFilePlan.render_plan_id,
+    project_id: input.noopStubFilePlan.project_id,
+    platform: input.noopStubFilePlan.platform,
+    created_at: createdAt,
+    wiring_plan_state: approved ? "approved_for_future_noop_wiring_contracts" : "draft",
+    wiring_plan_mode: "real_upload_noop_stub_wiring_plan_only",
+    required_artifacts: { real_upload_noop_stub_file_creation_result_validated: true, real_upload_noop_stub_file_plan_validated: true, real_upload_stub_noop_implementation_design_validated: true, real_upload_stub_contract_tests_validated: true, real_upload_stub_contracts_validated: true },
+    wiring_scope: { future_noop_wiring_contracts_requested: approved, wiring_plan_only: true, wiring_applied_now: false, orchestrator_runtime_changed: false, live_execution_path_changed: false, upload_execution_path_changed: false, runtime_enabled: false, current_real_upload_requested: false, current_network_calls_requested: false, current_platform_api_calls_requested: false, current_credential_access_requested: false, current_media_read_requested: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    planned_wiring_targets: REAL_UPLOAD_NOOP_STUB_WIRING_TARGET_KINDS.map((target_kind, index) => ({ wiring_target_id: `wiring-target-${index + 1}`, target_kind, target_state: "planned", safe_summary: safeRealUploadNoopWiringString(`${target_kind} wiring plan only.`), source_stub_kind: target_kind.replace("_noop_wiring_target", "_noop_stub_file"), import_planned: true, runtime_call_planned: false, runtime_call_enabled: false, upload_enabled: false, network_enabled: false, platform_api_enabled: false, credential_access_enabled: false, media_read_enabled: false, file_mutation_enabled: false, raw_payload_created: false, raw_response_stored: false, blocking_reasons: ["Wiring remains planned only."], warnings: [] })),
+    planned_import_surface: { import_surface_planned: true, new_imports_applied_now: false, production_path_imports_applied_now: false, runtime_exports_enabled: false, upload_execution_export_enabled: false, network_export_enabled: false, credential_export_enabled: false, media_read_export_enabled: false, safe_summary: "No-op stub wiring import surface remains planned only.", blocking_reasons: [], warnings: [] },
+    planned_orchestrator_touchpoints: [{ touchpoint_id: "touchpoint-1", touchpoint_kind: "orchestrator-entrypoint", touchpoint_state: "planned", safe_summary: "Orchestrator touchpoint remains planned only.", production_code_changed_now: false, runtime_behavior_changed_now: false, live_execution_path_changed: false, automatic_invocation_enabled: false, upload_invocation_enabled: false, network_invocation_enabled: false, credential_invocation_enabled: false, media_read_invocation_enabled: false, blocking_reasons: ["No wiring applied now."], warnings: [] }],
+    no_op_runtime_boundary: { no_op_stubs_available: true, no_runtime_wiring_applied: true, no_automatic_invocation: true, no_runtime_execution: true, no_external_effects: true },
+    upload_boundary: { upload_allowed: false, upload_execution_enabled: false, upload_runtime_wiring_applied: false, real_upload_requested: false, ready_for_real_upload: false },
+    platform_api_boundary: { platform_api_calls_allowed: false, platform_api_calls_made: false, platform_adapter_runtime_wiring_applied: false, raw_account_ids_stored: false },
+    network_boundary: { network_calls_allowed: false, network_calls_made: false, network_client_runtime_wiring_applied: false, external_side_effects_allowed: false, external_side_effects_observed: false },
+    credential_boundary: { credentials_required: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, credential_provider_runtime_wiring_applied: false, credential_reference_stored: false, token_reference_stored: false, secret_material_stored: false },
+    media_boundary: { media_file_read: false, media_resolver_runtime_wiring_applied: false, raw_media_path_stored: false, media_file_modified: false, media_file_copied: false, media_file_moved: false, media_file_deleted: false },
+    file_mutation_boundary: { files_created_now: false, files_modified_now: false, runtime_files_created: false, runtime_files_modified: false, source_files_modified_for_runtime_wiring: false, file_mutation_allowed: false },
+    dependency_boundary: { dependencies_added: false, package_metadata_changed: false, package_dependency_changes: false, runtime_config_created: false, env_files_created: false, secrets_config_created: false, credential_config_created: false },
+    operator_review: { reviewed_by_label: safeRealUploadNoopWiringString(input.reviewed_by_label || "operator-001", "operator-001"), checklist_acknowledged: !!input.checklist_acknowledged, understands_wiring_plan_only: !!input.understands_wiring_plan_only, understands_no_wiring_applied_now: !!input.understands_no_wiring_applied_now, understands_no_runtime_execution: !!input.understands_no_runtime_execution, understands_no_upload_enabled: !!input.understands_no_upload_enabled, understands_no_platform_api_calls: !!input.understands_no_platform_api_calls, understands_no_network_calls: !!input.understands_no_network_calls, understands_no_credentials_accessed: !!input.understands_no_credentials_accessed, understands_no_media_reads: !!input.understands_no_media_reads, understands_no_dependencies_added: !!input.understands_no_dependencies_added, understands_future_noop_wiring_contracts_phase_required: !!input.understands_future_noop_wiring_contracts_phase_required, decision_note_summary: approved ? "No-op stub wiring plan approved for future contracts." : "No-op stub wiring plan draft." },
+    execution_boundary: { wiring_applied_now: false, orchestrator_runtime_changed: false, live_execution_path_changed: false, upload_execution_path_changed: false, runtime_enabled: false, runtime_executed: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, keychain_accessed: false, env_accessed: false, media_file_read: false, file_mutation_allowed: false, dependencies_added: false, package_metadata_changed: false, ready_for_real_upload: false },
+    validation: { noop_stub_wiring_plan_complete: true, ready_for_future_noop_wiring_contracts: true, ready_for_real_upload: false, wiring_applied_now: false, orchestrator_runtime_changed: false, live_execution_path_changed: false, upload_execution_path_changed: false, runtime_enabled: false, runtime_executed: false, upload_allowed: false, upload_execution_enabled: false, platform_api_calls_allowed: false, network_calls_allowed: false, credentials_accessed: false, token_accessed: false, media_file_read: false, file_mutation_allowed: false, dependencies_added: false, package_metadata_changed: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadNoopStubWiringPlan", source_real_upload_noop_stub_file_creation_result_id: input.noopStubFileCreationResult.real_upload_noop_stub_file_creation_result_id, source_real_upload_noop_stub_file_plan_id: input.noopStubFilePlan.real_upload_noop_stub_file_plan_id, source_real_upload_stub_noop_implementation_design_id: input.noopStubFilePlan.real_upload_stub_noop_implementation_design_id, source_real_upload_stub_contract_tests_id: input.noopStubFilePlan.real_upload_stub_contract_tests_id, source_real_upload_stub_contracts_id: input.noopStubFilePlan.real_upload_stub_contracts_id, source_render_plan_id: input.noopStubFilePlan.render_plan_id },
+  };
+  const validation = validateRealUploadNoopStubWiringPlan(plan);
+  if (!validation.ok) throw new Error(`noop stub wiring plan failed validation: ${validation.blocking_reasons.join("; ")}`);
+  return plan;
+}
+
+type RealUploadNoopStubWiringPlanStoreEnvelope = { schema_version: "1.0"; created_at: string; plans: RealUploadNoopStubWiringPlan[] };
+type RealUploadNoopStubWiringPlanStoreSummaryItem = { real_upload_noop_stub_wiring_plan_id: string; wiring_plan_state: RealUploadNoopStubWiringPlanState; created_at: string; safe_summary: string; target_count: number; target_kinds: string[]; target_states: string[]; blocking_reasons: string[] };
+
+function getRealUploadNoopStubWiringPlanStorePath(): string { return path.join(getRuntimeDir(), "real-upload-noop-stub-wiring-plans.json"); }
+function loadRealUploadNoopStubWiringPlanStore(): RealUploadNoopStubWiringPlanStoreEnvelope { try { if (!fs.existsSync(getRealUploadNoopStubWiringPlanStorePath())) return { schema_version: "1.0", created_at: new Date().toISOString(), plans: [] }; return JSON.parse(fs.readFileSync(getRealUploadNoopStubWiringPlanStorePath(), "utf8")) as RealUploadNoopStubWiringPlanStoreEnvelope; } catch { return { schema_version: "1.0", created_at: new Date().toISOString(), plans: [] }; } }
+function saveRealUploadNoopStubWiringPlanStore(store: RealUploadNoopStubWiringPlanStoreEnvelope): void { fs.mkdirSync(path.dirname(getRealUploadNoopStubWiringPlanStorePath()), { recursive: true }); fs.writeFileSync(getRealUploadNoopStubWiringPlanStorePath(), JSON.stringify(store, null, 2)); }
+
+export function saveRealUploadNoopStubWiringPlan(plan: RealUploadNoopStubWiringPlan): void { const validation = validateRealUploadNoopStubWiringPlan(plan); if (!validation.ok) throw new Error("Unsafe no-op stub wiring plan cannot be stored"); const store = loadRealUploadNoopStubWiringPlanStore(); const plans = store.plans.filter((item) => item.real_upload_noop_stub_wiring_plan_id !== plan.real_upload_noop_stub_wiring_plan_id); plans.push(plan); plans.sort((a, b) => a.created_at.localeCompare(b.created_at) || a.real_upload_noop_stub_wiring_plan_id.localeCompare(b.real_upload_noop_stub_wiring_plan_id)); saveRealUploadNoopStubWiringPlanStore({ ...store, plans }); }
+export function listRealUploadNoopStubWiringPlans(options?: { project_id?: string; platform?: string; wiring_plan_state?: string; real_upload_noop_stub_file_creation_result_id?: string; real_upload_noop_stub_file_plan_id?: string }): RealUploadNoopStubWiringPlan[] { const store = loadRealUploadNoopStubWiringPlanStore(); return store.plans.filter((plan) => (!options?.project_id || plan.project_id === options.project_id) && (!options?.platform || plan.platform === options.platform) && (!options?.wiring_plan_state || plan.wiring_plan_state === options.wiring_plan_state) && (!options?.real_upload_noop_stub_file_creation_result_id || plan.real_upload_noop_stub_file_creation_result_id === options.real_upload_noop_stub_file_creation_result_id) && (!options?.real_upload_noop_stub_file_plan_id || plan.real_upload_noop_stub_file_plan_id === options.real_upload_noop_stub_file_plan_id)); }
+export function getRealUploadNoopStubWiringPlan(real_upload_noop_stub_wiring_plan_id: string): RealUploadNoopStubWiringPlan | null { return listRealUploadNoopStubWiringPlans().find((plan) => plan.real_upload_noop_stub_wiring_plan_id === real_upload_noop_stub_wiring_plan_id) || null; }
+export function revokeRealUploadNoopStubWiringPlan(real_upload_noop_stub_wiring_plan_id: string, reason: string): RealUploadNoopStubWiringPlan { const plan = getRealUploadNoopStubWiringPlan(real_upload_noop_stub_wiring_plan_id); if (!plan) throw new Error("No-op stub wiring plan not found"); const revoked = { ...plan, wiring_plan_state: "revoked" as const, validation: { ...plan.validation, ready_for_future_noop_wiring_contracts: false, blocking_reasons: [...plan.validation.blocking_reasons, safeRealUploadNoopWiringString(reason)] }, provenance: { ...plan.provenance, generated_by: "revokeRealUploadNoopStubWiringPlan" as const } }; saveRealUploadNoopStubWiringPlan(revoked); return revoked; }
+export function getRealUploadNoopStubWiringPlanReport(options?: { project_id?: string; platform?: string }): { total: number; by_state: Record<string, number>; blocked: number; ready_for_operator_review: number; approved_for_future_noop_wiring_contracts: number; rejected: number; revoked: number; noop_stub_wiring_plan_complete: number; ready_for_future_noop_wiring_contracts: number; ready_for_real_upload: 0; wiring_applied_now: 0; orchestrator_runtime_changed: 0; live_execution_path_changed: 0; upload_execution_path_changed: 0; runtime_enabled: 0; runtime_executed: 0; upload_allowed: 0; upload_execution_enabled: 0; platform_api_calls_allowed: 0; network_calls_allowed: 0; credentials_accessed: 0; token_accessed: 0; media_file_read: 0; file_mutation_allowed: 0; dependencies_added: 0; package_metadata_changed: 0; plans: Array<RealUploadNoopStubWiringPlanStoreSummaryItem>; } { const plans = listRealUploadNoopStubWiringPlans(options); const by_state: Record<string, number> = {}; let blocked = 0; let ready = 0; let approved = 0; let rejected = 0; let revoked = 0; let complete = 0; let readyFuture = 0; const summaries = plans.map((plan) => { by_state[plan.wiring_plan_state] = (by_state[plan.wiring_plan_state] ?? 0) + 1; if (plan.wiring_plan_state === "blocked") blocked++; if (plan.wiring_plan_state === "ready_for_operator_review") ready++; if (plan.wiring_plan_state === "approved_for_future_noop_wiring_contracts") approved++; if (plan.wiring_plan_state === "rejected") rejected++; if (plan.wiring_plan_state === "revoked") revoked++; if (plan.validation.noop_stub_wiring_plan_complete) complete++; if (plan.validation.ready_for_future_noop_wiring_contracts) readyFuture++; return { real_upload_noop_stub_wiring_plan_id: plan.real_upload_noop_stub_wiring_plan_id, wiring_plan_state: plan.wiring_plan_state, created_at: plan.created_at, safe_summary: safeRealUploadNoopWiringString(plan.operator_review.decision_note_summary || plan.planned_import_surface.safe_summary || "No-op stub wiring plan summary."), target_count: plan.planned_wiring_targets.length, target_kinds: plan.planned_wiring_targets.map((target) => target.target_kind), target_states: plan.planned_wiring_targets.map((target) => target.target_state), blocking_reasons: plan.validation.blocking_reasons.slice(0, 3) }; }); return { total: summaries.length, by_state, blocked, ready_for_operator_review: ready, approved_for_future_noop_wiring_contracts: approved, rejected, revoked, noop_stub_wiring_plan_complete: complete, ready_for_future_noop_wiring_contracts: readyFuture, ready_for_real_upload: 0, wiring_applied_now: 0, orchestrator_runtime_changed: 0, live_execution_path_changed: 0, upload_execution_path_changed: 0, runtime_enabled: 0, runtime_executed: 0, upload_allowed: 0, upload_execution_enabled: 0, platform_api_calls_allowed: 0, network_calls_allowed: 0, credentials_accessed: 0, token_accessed: 0, media_file_read: 0, file_mutation_allowed: 0, dependencies_added: 0, package_metadata_changed: 0, plans: summaries }; }
+
 // ─── VO-3B: Compatibility Wrappers ─────────────────────────────────────────
 
 export const saveLocalRenderPlan = saveRenderPlan;
