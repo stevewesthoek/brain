@@ -18497,3 +18497,86 @@ export function createRealUploadExecutorAdapterDesign(input: { readinessGate: Re
   if (!validation.ok) throw new Error(`Executor adapter design validation failed: ${validation.blocking_reasons.join("; ")}`);
   return design;
 }
+
+
+// ─── VO-7AE: Real Upload Executor Contracts ────────────────────────────────
+
+export interface RealUploadExecutorContracts {
+  schema_version: "1.0";
+  real_upload_executor_contracts_id: string;
+  real_upload_executor_adapter_design_id: string;
+  real_upload_readiness_gate_v2_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  executor_contracts_state: "draft" | "blocked" | "ready_for_operator_review" | "approved_for_future_executor_contract_tests" | "rejected" | "revoked";
+  executor_contracts_mode: "real_upload_executor_contracts_only" | "operator_review_real_upload_executor_contracts";
+  required_artifacts: Record<string, true>;
+  contracts_scope: Record<string, unknown>;
+  executor_contracts: Array<Record<string, unknown>>;
+  operator_review: Record<string, unknown>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RealUploadExecutorContractsValidationResult { ok: boolean; blocking_reasons: string[]; warnings: string[] }
+
+export function validateRealUploadExecutorContracts(contracts: unknown): RealUploadExecutorContractsValidationResult {
+  const blocking_reasons: string[] = [];
+  const warnings: string[] = [];
+  if (!contracts || typeof contracts !== "object" || Array.isArray(contracts)) return { ok: false, blocking_reasons: ["Executor contracts must be an object"], warnings };
+  const c = contracts as Record<string, unknown>;
+  if (c.schema_version !== "1.0") blocking_reasons.push("schema_version must be 1.0");
+  if (!["draft", "blocked", "ready_for_operator_review", "approved_for_future_executor_contract_tests", "rejected", "revoked"].includes(String(c.executor_contracts_state))) blocking_reasons.push("Invalid executor contracts state");
+  const scope = c.contracts_scope as Record<string, unknown> | undefined;
+  if (!scope || scope.executor_contracts_only !== true || scope.adapter_code_created !== false || scope.runtime_enabled !== false || scope.upload_execution_enabled_now !== false || scope.network_calls_enabled_now !== false || scope.platform_api_calls_enabled_now !== false || scope.credential_access_enabled_now !== false || scope.media_read_enabled_now !== false || scope.dependencies_requested !== false || scope.package_metadata_changes_requested !== false) blocking_reasons.push("Executor contracts scope is unsafe");
+  if (!Array.isArray(c.executor_contracts) || c.executor_contracts.length < 7) blocking_reasons.push("Executor contracts are incomplete");
+  for (const contract of Array.isArray(c.executor_contracts) ? c.executor_contracts : []) {
+    const item = contract as Record<string, unknown>;
+    if (item.code_created !== false || item.runtime_enabled !== false || item.upload_enabled !== false || item.network_enabled !== false || item.platform_api_enabled !== false || item.credential_access_enabled !== false || item.media_read_enabled !== false || item.raw_payload_allowed !== false || item.raw_response_allowed !== false) blocking_reasons.push("Executor contract is unsafe");
+  }
+  blocking_reasons.push(...validateVo7abFalseBoundary(c.execution_boundary, VO7AD_FALSE_KEYS, "Execution boundary"));
+  const validation = c.validation as Record<string, unknown> | undefined;
+  if (!validation || validation.ready_for_real_upload !== false || validation.real_upload_enabled !== false || validation.adapter_code_created !== false || validation.upload_allowed !== false || validation.network_calls_allowed !== false || validation.platform_api_calls_allowed !== false || validation.credentials_accessed !== false || validation.media_file_read !== false) blocking_reasons.push("Validation boundary is unsafe");
+  blocking_reasons.push(...recursivelyCheckForForbiddenPatterns(contracts));
+  return { ok: blocking_reasons.length === 0, blocking_reasons, warnings };
+}
+
+export function createRealUploadExecutorContracts(input: { executorAdapterDesign: RealUploadExecutorAdapterDesign; readinessGate: RealUploadReadinessGateV2; decision?: "draft" | "approved_for_future_executor_contract_tests" | "rejected"; checklist_acknowledged?: boolean; understands_contracts_only?: boolean; understands_no_adapter_code_created?: boolean; understands_real_upload_not_enabled?: boolean; understands_no_network_calls?: boolean; understands_no_platform_api_calls?: boolean; understands_no_credentials_accessed?: boolean; understands_no_media_reads?: boolean; understands_future_executor_contract_tests_required?: boolean; dryRun: true }): RealUploadExecutorContracts {
+  if (input.dryRun !== true) throw new Error("VO-7AE executor contracts require dryRun=true");
+  const designValidation = validateRealUploadExecutorAdapterDesign(input.executorAdapterDesign);
+  if (!designValidation.ok) throw new Error("Executor adapter design validation failed");
+  if (input.executorAdapterDesign.executor_adapter_design_state !== "approved_for_future_executor_contracts") throw new Error("Executor contracts require approved executor adapter design");
+  if (input.executorAdapterDesign.real_upload_readiness_gate_v2_id !== input.readinessGate.real_upload_readiness_gate_v2_id) throw new Error("Mismatched executor design and readiness gate");
+  const decision = input.decision ?? "draft";
+  const approved = decision === "approved_for_future_executor_contract_tests";
+  if (approved) {
+    const acknowledgements = [input.checklist_acknowledged, input.understands_contracts_only, input.understands_no_adapter_code_created, input.understands_real_upload_not_enabled, input.understands_no_network_calls, input.understands_no_platform_api_calls, input.understands_no_credentials_accessed, input.understands_no_media_reads, input.understands_future_executor_contract_tests_required];
+    if (!acknowledgements.every(Boolean)) throw new Error("Approved VO-7AE contracts require all operator acknowledgements");
+  }
+  const kinds = ["credential_boundary_contract", "media_read_boundary_contract", "payload_builder_contract", "platform_client_contract", "network_boundary_contract", "response_redaction_contract", "executor_orchestration_contract"];
+  const contracts: RealUploadExecutorContracts = {
+    schema_version: "1.0",
+    real_upload_executor_contracts_id: `real-upload-executor-contracts-${crypto.randomUUID()}`,
+    real_upload_executor_adapter_design_id: input.executorAdapterDesign.real_upload_executor_adapter_design_id,
+    real_upload_readiness_gate_v2_id: input.readinessGate.real_upload_readiness_gate_v2_id,
+    render_plan_id: input.readinessGate.render_plan_id,
+    project_id: input.readinessGate.project_id,
+    platform: input.readinessGate.platform,
+    created_at: new Date().toISOString(),
+    executor_contracts_state: approved ? "approved_for_future_executor_contract_tests" : decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    executor_contracts_mode: "real_upload_executor_contracts_only",
+    required_artifacts: { real_upload_executor_adapter_design_validated: true, real_upload_readiness_gate_v2_validated: true },
+    contracts_scope: { future_executor_contract_tests_requested: approved, executor_contracts_only: true, adapter_code_created: false, runtime_enabled: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    executor_contracts: kinds.map((kind) => ({ contract_id: `executor-contract-${kind}`, contract_kind: kind, safe_summary: "Executor contract only.", contract_defined: true, code_created: false, runtime_enabled: false, upload_enabled: false, network_enabled: false, platform_api_enabled: false, credential_access_enabled: false, media_read_enabled: false, raw_payload_allowed: false, raw_response_allowed: false, blocking_reasons: [], warnings: [] })),
+    operator_review: { checklist_acknowledged: Boolean(input.checklist_acknowledged), understands_contracts_only: Boolean(input.understands_contracts_only), understands_no_adapter_code_created: Boolean(input.understands_no_adapter_code_created), understands_real_upload_not_enabled: Boolean(input.understands_real_upload_not_enabled), understands_no_network_calls: Boolean(input.understands_no_network_calls), understands_no_platform_api_calls: Boolean(input.understands_no_platform_api_calls), understands_no_credentials_accessed: Boolean(input.understands_no_credentials_accessed), understands_no_media_reads: Boolean(input.understands_no_media_reads), understands_future_executor_contract_tests_required: Boolean(input.understands_future_executor_contract_tests_required), decision_note_summary: "Executor contracts only; real upload remains disabled." },
+    execution_boundary: Object.fromEntries(VO7AD_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { executor_contracts_complete: true, ready_for_future_executor_contract_tests: approved, ready_for_real_upload: false, real_upload_enabled: false, adapter_code_created: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRealUploadExecutorContracts", source_real_upload_executor_adapter_design_id: input.executorAdapterDesign.real_upload_executor_adapter_design_id, source_real_upload_readiness_gate_v2_id: input.readinessGate.real_upload_readiness_gate_v2_id, source_render_plan_id: input.readinessGate.render_plan_id },
+  };
+  const validation = validateRealUploadExecutorContracts(contracts);
+  if (!validation.ok) throw new Error(`Executor contracts validation failed: ${validation.blocking_reasons.join("; ")}`);
+  return contracts;
+}

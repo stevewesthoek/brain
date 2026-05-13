@@ -24126,3 +24126,63 @@ test("VO-7AD-CREATE: approved design keeps all execution disabled", async () => 
   assert.equal(design.execution_boundary.network_calls_allowed, false);
   assert.equal(design.validation.ready_for_real_upload, false);
 });
+
+
+// ─── VO-7AE: Real Upload Executor Contracts ────────────────────────────────
+
+test("VO-7AE-SCHEMA: executor contracts schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/real-upload-executor-contracts.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-contracts.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.executor_contracts.length, 7);
+});
+
+test("VO-7AE-VALIDATE: executor contracts reject unsafe execution flags", async () => {
+  const { validateRealUploadExecutorContracts } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-contracts.example.json"), "utf8"));
+  const unsafe = { ...example, execution_boundary: { ...example.execution_boundary, upload_allowed: true, network_calls_allowed: true } };
+  const validation = validateRealUploadExecutorContracts(unsafe);
+  assert.equal(validation.ok, false);
+  assert.ok(validation.blocking_reasons.length > 0);
+});
+
+test("VO-7AE-VALIDATE: executor contracts reject unsafe contract flags", async () => {
+  const { validateRealUploadExecutorContracts } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-contracts.example.json"), "utf8"));
+  const unsafe = { ...example, executor_contracts: [{ ...example.executor_contracts[0], raw_payload_allowed: true }] };
+  const validation = validateRealUploadExecutorContracts(unsafe);
+  assert.equal(validation.ok, false);
+  assert.ok(validation.blocking_reasons.length > 0);
+});
+
+test("VO-7AE-CREATE: dryRun false is blocked", async () => {
+  const { createRealUploadExecutorContracts } = await import("./video-orchestrator-jobs.js");
+  assert.throws(() => createRealUploadExecutorContracts({ executorAdapterDesign: {} as never, readinessGate: {} as never, dryRun: false as never }), /dryRun=true/);
+});
+
+test("VO-7AE-CREATE: approved contracts require acknowledgements", async () => {
+  const { createRealUploadExecutorContracts } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const executorAdapterDesign = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-adapter-design.example.json"), "utf8"));
+  executorAdapterDesign.executor_adapter_design_state = "approved_for_future_executor_contracts";
+  const readinessGate = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-readiness-gate-v2.example.json"), "utf8"));
+  assert.throws(() => createRealUploadExecutorContracts({ executorAdapterDesign, readinessGate, decision: "approved_for_future_executor_contract_tests", dryRun: true }), /acknowledgements/);
+});
+
+test("VO-7AE-CREATE: approved contracts keep all execution disabled", async () => {
+  const { createRealUploadExecutorContracts } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const executorAdapterDesign = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-executor-adapter-design.example.json"), "utf8"));
+  executorAdapterDesign.executor_adapter_design_state = "approved_for_future_executor_contracts";
+  const readinessGate = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/real-upload-readiness-gate-v2.example.json"), "utf8"));
+  const contracts = createRealUploadExecutorContracts({ executorAdapterDesign, readinessGate, decision: "approved_for_future_executor_contract_tests", checklist_acknowledged: true, understands_contracts_only: true, understands_no_adapter_code_created: true, understands_real_upload_not_enabled: true, understands_no_network_calls: true, understands_no_platform_api_calls: true, understands_no_credentials_accessed: true, understands_no_media_reads: true, understands_future_executor_contract_tests_required: true, dryRun: true });
+  assert.equal(contracts.executor_contracts_state, "approved_for_future_executor_contract_tests");
+  assert.equal(contracts.execution_boundary.ready_for_real_upload, false);
+  assert.equal(contracts.execution_boundary.adapter_code_created, false);
+  assert.equal(contracts.execution_boundary.network_calls_allowed, false);
+  assert.equal(contracts.validation.ready_for_real_upload, false);
+});

@@ -3632,3 +3632,9 @@ The gate is intentionally conservative: it keeps real upload disabled and requir
 VO-7AD adds `real-upload-executor-adapter-design`, a design-only artifact for a future real upload executor adapter. It identifies required boundaries for credentials, network calls, platform APIs, media reads, payload contracts, response redaction, dry-run-first execution, and executor orchestration.
 
 No adapter code is created in this phase. Runtime adapter behavior, real upload, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7AE — Real Upload Executor Contracts
+
+VO-7AE adds `real-upload-executor-contracts`, a contract-only artifact for the future executor adapter. It defines contracts for credential boundaries, media read boundaries, payload building, platform client boundaries, network boundaries, response redaction, and executor orchestration.
+
+No adapter code is created. Runtime behavior, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
