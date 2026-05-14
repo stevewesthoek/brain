@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "runtime_activation_dry_run_design_id": "runtime-activation-dry-run-design-001",
+  "runtime_activation_dry_run_safe_report_id": "runtime-activation-dry-run-safe-report-001",
+  "runtime_activation_dry_run_contract_id": "runtime-activation-dry-run-contract-001",
+  "render_plan_id": "render-plan-001",
+  "project_id": "video-orchestrator",
+  "platform": "youtube",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "dry_run_design_state": "approved_for_future_dry_run_design_review",
+  "required_artifacts": { "runtime_activation_dry_run_safe_report_validated": true, "runtime_activation_dry_run_contract_validated": true },
+  "design_scope": { "artifact_only": true, "future_next_phase_requested": true, "real_upload_enabled_now": false, "upload_execution_enabled_now": false, "network_calls_enabled_now": false, "platform_api_calls_enabled_now": false, "credential_access_enabled_now": false, "media_read_enabled_now": false, "dependencies_requested": false, "package_metadata_changes_requested": false },
+  "design_controls": { "design_only": true, "dry_run_design_only": true, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_raw_response": false, "contains_secret_material": false, "runtime_wiring_implemented": false, "runtime_invocation_disabled": true, "dry_run_execution_disabled": true, "real_upload_still_blocked": true },
+  "design_sections": [
+    { "section_id": "dry-run-design-scope", "section_kind": "scope", "safe_summary": "Dry-run design scope only; no runtime enabled.", "runtime_enabled_now": false, "dry_run_executed_now": false, "ready_for_real_upload_now": false, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false },
+    { "section_id": "dry-run-design-boundaries", "section_kind": "boundaries", "safe_summary": "Runtime invocation remains disabled.", "runtime_enabled_now": false, "dry_run_executed_now": false, "ready_for_real_upload_now": false, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false },
+    { "section_id": "dry-run-design-credentials", "section_kind": "credentials", "safe_summary": "Credentials remain inaccessible.", "runtime_enabled_now": false, "dry_run_executed_now": false, "ready_for_real_upload_now": false, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false },
+    { "section_id": "dry-run-design-status", "section_kind": "status", "safe_summary": "Real upload remains disabled.", "runtime_enabled_now": false, "dry_run_executed_now": false, "ready_for_real_upload_now": false, "contains_runtime_callable": false, "contains_raw_payload": false, "contains_secret_material": false }
+  ],
+  "execution_boundary": { "ready_for_real_upload": false, "real_upload_enabled": false, "runtime_enabled": false, "runtime_executed": false, "upload_allowed": false, "upload_execution_enabled": false, "platform_api_calls_allowed": false, "network_calls_allowed": false, "credentials_accessed": false, "token_accessed": false, "keychain_accessed": false, "env_accessed": false, "media_file_read": false, "file_mutation_allowed": false, "dependencies_added": false, "package_metadata_changed": false },
+  "validation": { "complete": true, "ready_for_next_phase": true, "ready_for_real_upload": false, "real_upload_enabled": false, "upload_allowed": false, "network_calls_allowed": false, "platform_api_calls_allowed": false, "credentials_accessed": false, "media_file_read": false, "blocking_reasons": [], "warnings": [] },
+  "provenance": { "generated_by": "createRuntimeActivationDryRunDesign", "source_runtime_activation_dry_run_safe_report_id": "runtime-activation-dry-run-safe-report-001", "source_render_plan_id": "render-plan-001" }
+}

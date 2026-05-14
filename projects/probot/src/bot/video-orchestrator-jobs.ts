@@ -23362,3 +23362,190 @@ export function createRuntimeActivationDryRunSafeReport(input: { dryRunReview: R
     provenance: { generated_by: "createRuntimeActivationDryRunSafeReport", source_runtime_activation_dry_run_review_id: input.dryRunReview.runtime_activation_dry_run_review_id, source_render_plan_id: input.dryRunContract.render_plan_id },
   };
 }
+
+
+// ─── VO-7DD/VO-7DE/VO-7DF: Runtime Activation Dry-Run Design Layer ─────────
+
+export interface RuntimeActivationDryRunDesign {
+  schema_version: "1.0";
+  runtime_activation_dry_run_design_id: string;
+  runtime_activation_dry_run_safe_report_id: string;
+  runtime_activation_dry_run_contract_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  dry_run_design_state: "draft" | "designed" | "approved_for_future_dry_run_design_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  design_scope: Record<string, unknown>;
+  design_controls: Record<string, unknown>;
+  design_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeActivationDryRunDesignReview {
+  schema_version: "1.0";
+  runtime_activation_dry_run_design_review_id: string;
+  runtime_activation_dry_run_design_id: string;
+  runtime_activation_dry_run_safe_report_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  dry_run_design_review_state: "draft" | "ready_for_operator_review" | "approved_for_future_dry_run_design_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_controls: Record<string, unknown>;
+  review_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeActivationDryRunDesignSafeReport {
+  schema_version: "1.0";
+  runtime_activation_dry_run_design_safe_report_id: string;
+  runtime_activation_dry_run_design_review_id: string;
+  runtime_activation_dry_run_design_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_activation_simulation_contract" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  report_controls: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeActivationDryRunDesignLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.design_controls || artifact.review_controls || artifact.report_controls) as Record<string, unknown> | undefined;
+    if (controls && (controls.real_upload_still_blocked !== true || controls.runtime_wiring_implemented === true || controls.dry_run_execution_disabled !== true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime activation dry-run design must not implement runtime wiring, execute dry-run, or unblock real upload");
+    }
+    if (controls && (controls.contains_runtime_callable === true || controls.contains_raw_payload === true || controls.contains_raw_response === true || controls.contains_secret_material === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime activation dry-run design contains unsafe material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 4) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true || record.runtime_enabled_now === true || record.dry_run_executed_now === true || record.ready_for_real_upload_now === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe dry-run-design/runtime/ready material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateRuntimeActivationDryRunDesign(design: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeActivationDryRunDesignLayer(design, "design_scope", "design_sections");
+}
+
+export function validateRuntimeActivationDryRunDesignReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeActivationDryRunDesignLayer(review, "review_scope", "review_checks");
+}
+
+export function validateRuntimeActivationDryRunDesignSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeActivationDryRunDesignLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createRuntimeActivationDryRunDesign(input: { dryRunSafeReport: RuntimeActivationDryRunSafeReport; dryRunContract: RuntimeActivationDryRunContract; decision?: "draft" | "approved_for_future_dry_run_design_review" | "rejected"; dryRun: true }): RuntimeActivationDryRunDesign {
+  if (input.dryRun !== true) throw new Error("VO-7DD runtime activation dry-run design requires dryRun=true");
+  const reportValidation = validateRuntimeActivationDryRunSafeReport(input.dryRunSafeReport);
+  if (!reportValidation.ok) throw new Error("Runtime activation dry-run safe report validation failed");
+  if (input.dryRunSafeReport.safe_report_state !== "approved_for_future_runtime_activation_dry_run_design") throw new Error("Runtime activation dry-run design requires approved dry-run safe report");
+  if (input.dryRunSafeReport.runtime_activation_dry_run_contract_id !== input.dryRunContract.runtime_activation_dry_run_contract_id) throw new Error("Mismatched dry-run safe report and contract");
+  const approved = input.decision === "approved_for_future_dry_run_design_review";
+  const sections = ["scope", "boundaries", "credentials", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_activation_dry_run_design_id: `runtime-activation-dry-run-design-${crypto.randomUUID()}`,
+    runtime_activation_dry_run_safe_report_id: input.dryRunSafeReport.runtime_activation_dry_run_safe_report_id,
+    runtime_activation_dry_run_contract_id: input.dryRunContract.runtime_activation_dry_run_contract_id,
+    render_plan_id: input.dryRunContract.render_plan_id,
+    project_id: input.dryRunContract.project_id,
+    platform: input.dryRunContract.platform,
+    created_at: new Date().toISOString(),
+    dry_run_design_state: approved ? "approved_for_future_dry_run_design_review" : input.decision === "rejected" ? "rejected" : "designed",
+    required_artifacts: { runtime_activation_dry_run_safe_report_validated: true, runtime_activation_dry_run_contract_validated: true },
+    design_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    design_controls: { design_only: true, dry_run_design_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, dry_run_execution_disabled: true, real_upload_still_blocked: true },
+    design_sections: sections.map((kind) => ({ section_id: `dry-run-design-${kind}`, section_kind: kind, safe_summary: "Runtime activation dry-run design only.", runtime_enabled_now: false, dry_run_executed_now: false, ready_for_real_upload_now: false, contains_runtime_callable: false, contains_raw_payload: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeActivationDryRunDesign", source_runtime_activation_dry_run_safe_report_id: input.dryRunSafeReport.runtime_activation_dry_run_safe_report_id, source_render_plan_id: input.dryRunContract.render_plan_id },
+  };
+}
+
+export function createRuntimeActivationDryRunDesignReview(input: { dryRunDesign: RuntimeActivationDryRunDesign; dryRunSafeReport: RuntimeActivationDryRunSafeReport; decision?: "draft" | "approved_for_future_dry_run_design_safe_report" | "rejected"; dryRun: true }): RuntimeActivationDryRunDesignReview {
+  if (input.dryRun !== true) throw new Error("VO-7DE runtime activation dry-run design review requires dryRun=true");
+  const designValidation = validateRuntimeActivationDryRunDesign(input.dryRunDesign);
+  if (!designValidation.ok) throw new Error("Runtime activation dry-run design validation failed");
+  if (input.dryRunDesign.dry_run_design_state !== "approved_for_future_dry_run_design_review") throw new Error("Runtime activation dry-run design review requires approved dry-run design");
+  if (input.dryRunDesign.runtime_activation_dry_run_safe_report_id !== input.dryRunSafeReport.runtime_activation_dry_run_safe_report_id) throw new Error("Mismatched dry-run design and safe report");
+  const approved = input.decision === "approved_for_future_dry_run_design_safe_report";
+  const checks = ["scope", "terms", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_activation_dry_run_design_review_id: `runtime-activation-dry-run-design-review-${crypto.randomUUID()}`,
+    runtime_activation_dry_run_design_id: input.dryRunDesign.runtime_activation_dry_run_design_id,
+    runtime_activation_dry_run_safe_report_id: input.dryRunSafeReport.runtime_activation_dry_run_safe_report_id,
+    render_plan_id: input.dryRunDesign.render_plan_id,
+    project_id: input.dryRunDesign.project_id,
+    platform: input.dryRunDesign.platform,
+    created_at: new Date().toISOString(),
+    dry_run_design_review_state: approved ? "approved_for_future_dry_run_design_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { runtime_activation_dry_run_design_validated: true, runtime_activation_dry_run_safe_report_validated: true },
+    review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_controls: { review_only: true, dry_run_design_review_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, dry_run_execution_disabled: true, real_upload_still_blocked: true },
+    review_checks: checks.map((kind) => ({ check_id: `dry-run-design-review-${kind}`, check_kind: kind, check_state: "passed", safe_summary: "Runtime activation dry-run design review only.", runtime_enabled_now: false, dry_run_executed_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeActivationDryRunDesignReview", source_runtime_activation_dry_run_design_id: input.dryRunDesign.runtime_activation_dry_run_design_id, source_render_plan_id: input.dryRunDesign.render_plan_id },
+  };
+}
+
+export function createRuntimeActivationDryRunDesignSafeReport(input: { dryRunDesignReview: RuntimeActivationDryRunDesignReview; dryRunDesign: RuntimeActivationDryRunDesign; decision?: "draft" | "approved_for_future_runtime_activation_simulation_contract" | "rejected"; dryRun: true }): RuntimeActivationDryRunDesignSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7DF runtime activation dry-run design safe report requires dryRun=true");
+  const reviewValidation = validateRuntimeActivationDryRunDesignReview(input.dryRunDesignReview);
+  if (!reviewValidation.ok) throw new Error("Runtime activation dry-run design review validation failed");
+  if (input.dryRunDesignReview.dry_run_design_review_state !== "approved_for_future_dry_run_design_safe_report") throw new Error("Runtime activation dry-run design safe report requires approved dry-run design review");
+  if (input.dryRunDesignReview.runtime_activation_dry_run_design_id !== input.dryRunDesign.runtime_activation_dry_run_design_id) throw new Error("Mismatched dry-run design review and design");
+  const approved = input.decision === "approved_for_future_runtime_activation_simulation_contract";
+  const sections = ["design", "review", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_activation_dry_run_design_safe_report_id: `runtime-activation-dry-run-design-safe-report-${crypto.randomUUID()}`,
+    runtime_activation_dry_run_design_review_id: input.dryRunDesignReview.runtime_activation_dry_run_design_review_id,
+    runtime_activation_dry_run_design_id: input.dryRunDesign.runtime_activation_dry_run_design_id,
+    render_plan_id: input.dryRunDesign.render_plan_id,
+    project_id: input.dryRunDesign.project_id,
+    platform: input.dryRunDesign.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_activation_simulation_contract" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_activation_dry_run_design_review_validated: true, runtime_activation_dry_run_design_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    report_controls: { safe_report_only: true, dry_run_design_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, dry_run_execution_disabled: true, real_upload_still_blocked: true },
+    safe_report_sections: sections.map((kind) => ({ section_id: `dry-run-design-safe-report-${kind}`, section_kind: kind, safe_summary: "Runtime activation dry-run design safe report only.", contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_enabled_now: false, dry_run_executed_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeActivationDryRunDesignSafeReport", source_runtime_activation_dry_run_design_review_id: input.dryRunDesignReview.runtime_activation_dry_run_design_review_id, source_render_plan_id: input.dryRunDesign.render_plan_id },
+  };
+}

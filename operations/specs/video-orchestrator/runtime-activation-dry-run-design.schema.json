@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "runtime-activation-dry-run-design.schema.json",
+  "title": "Runtime Activation Dry-Run Design",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "runtime_activation_dry_run_design_id", "runtime_activation_dry_run_safe_report_id", "runtime_activation_dry_run_contract_id", "render_plan_id", "project_id", "platform", "created_at", "dry_run_design_state", "required_artifacts", "design_scope", "design_controls", "design_sections", "execution_boundary", "validation", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "runtime_activation_dry_run_design_id": { "type": "string", "minLength": 1 },
+    "runtime_activation_dry_run_safe_report_id": { "type": "string", "minLength": 1 },
+    "runtime_activation_dry_run_contract_id": { "type": "string", "minLength": 1 },
+    "render_plan_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "platform": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "dry_run_design_state": { "type": "string", "enum": ["draft", "designed", "approved_for_future_dry_run_design_review", "rejected", "revoked", "blocked"] },
+    "required_artifacts": { "type": "object", "additionalProperties": false, "required": ["runtime_activation_dry_run_safe_report_validated", "runtime_activation_dry_run_contract_validated"], "properties": { "runtime_activation_dry_run_safe_report_validated": { "type": "boolean", "const": true }, "runtime_activation_dry_run_contract_validated": { "type": "boolean", "const": true } } },
+    "design_scope": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/scope" },
+    "design_controls": { "type": "object", "additionalProperties": false, "required": ["design_only", "dry_run_design_only", "contains_runtime_callable", "contains_raw_payload", "contains_raw_response", "contains_secret_material", "runtime_wiring_implemented", "runtime_invocation_disabled", "dry_run_execution_disabled", "real_upload_still_blocked"], "properties": { "design_only": { "type": "boolean", "const": true }, "dry_run_design_only": { "type": "boolean", "const": true }, "contains_runtime_callable": { "type": "boolean", "const": false }, "contains_raw_payload": { "type": "boolean", "const": false }, "contains_raw_response": { "type": "boolean", "const": false }, "contains_secret_material": { "type": "boolean", "const": false }, "runtime_wiring_implemented": { "type": "boolean", "const": false }, "runtime_invocation_disabled": { "type": "boolean", "const": true }, "dry_run_execution_disabled": { "type": "boolean", "const": true }, "real_upload_still_blocked": { "type": "boolean", "const": true } } },
+    "design_sections": { "type": "array", "minItems": 4, "items": { "type": "object", "additionalProperties": false, "required": ["section_id", "section_kind", "safe_summary", "runtime_enabled_now", "dry_run_executed_now", "ready_for_real_upload_now", "contains_runtime_callable", "contains_raw_payload", "contains_secret_material"], "properties": { "section_id": { "type": "string" }, "section_kind": { "type": "string" }, "safe_summary": { "type": "string" }, "runtime_enabled_now": { "type": "boolean", "const": false }, "dry_run_executed_now": { "type": "boolean", "const": false }, "ready_for_real_upload_now": { "type": "boolean", "const": false }, "contains_runtime_callable": { "type": "boolean", "const": false }, "contains_raw_payload": { "type": "boolean", "const": false }, "contains_secret_material": { "type": "boolean", "const": false } } } },
+    "execution_boundary": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/falseBoundary" },
+    "validation": { "$ref": "controlled-runtime-activation-request.schema.json#/$defs/validation" },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["generated_by", "source_runtime_activation_dry_run_safe_report_id", "source_render_plan_id"], "properties": { "generated_by": { "type": "string", "enum": ["createRuntimeActivationDryRunDesign", "revokeRuntimeActivationDryRunDesign"] }, "source_runtime_activation_dry_run_safe_report_id": { "type": "string" }, "source_render_plan_id": { "type": "string" } } }
+  }
+}
