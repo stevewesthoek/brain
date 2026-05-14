@@ -22988,3 +22988,190 @@ export function createRuntimeActivationContractSafeReport(input: { contractRevie
     provenance: { generated_by: "createRuntimeActivationContractSafeReport", source_runtime_activation_contract_review_id: input.contractReview.runtime_activation_contract_review_id, source_render_plan_id: input.contract.render_plan_id },
   };
 }
+
+
+// ─── VO-7CX/VO-7CY/VO-7CZ: Runtime Activation Readiness Contract Layer ─────
+
+export interface RuntimeActivationReadinessContract {
+  schema_version: "1.0";
+  runtime_activation_readiness_contract_id: string;
+  runtime_activation_contract_safe_report_id: string;
+  runtime_activation_contract_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  readiness_contract_state: "draft" | "created" | "approved_for_future_readiness_review" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  readiness_scope: Record<string, unknown>;
+  readiness_controls: Record<string, unknown>;
+  readiness_terms: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeActivationReadinessReview {
+  schema_version: "1.0";
+  runtime_activation_readiness_review_id: string;
+  runtime_activation_readiness_contract_id: string;
+  runtime_activation_contract_safe_report_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  readiness_review_state: "draft" | "ready_for_operator_review" | "approved_for_future_readiness_safe_report" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  review_scope: Record<string, unknown>;
+  review_controls: Record<string, unknown>;
+  review_checks: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+export interface RuntimeActivationReadinessSafeReport {
+  schema_version: "1.0";
+  runtime_activation_readiness_safe_report_id: string;
+  runtime_activation_readiness_review_id: string;
+  runtime_activation_readiness_contract_id: string;
+  render_plan_id: string;
+  project_id: string;
+  platform: string;
+  created_at: string;
+  safe_report_state: "draft" | "complete" | "approved_for_future_runtime_activation_dry_run_contract" | "rejected" | "revoked" | "blocked";
+  required_artifacts: Record<string, true>;
+  report_scope: Record<string, unknown>;
+  report_controls: Record<string, unknown>;
+  safe_report_sections: Array<Record<string, unknown>>;
+  execution_boundary: Record<string, false>;
+  validation: Record<string, unknown>;
+  provenance: Record<string, string>;
+}
+
+function validateRuntimeActivationReadinessLayer(value: unknown, scopeKey: string, itemKey?: string): RealUploadEnablementArtifactValidationResult {
+  const result = validateRealUploadEnablementSafety(value, scopeKey);
+  if (result.ok) {
+    const artifact = value as Record<string, unknown>;
+    const controls = (artifact.readiness_controls || artifact.review_controls || artifact.report_controls) as Record<string, unknown> | undefined;
+    if (controls && (controls.real_upload_still_blocked !== true || controls.runtime_wiring_implemented === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime activation readiness contract must not implement runtime wiring or unblock real upload");
+    }
+    if (controls && (controls.contains_runtime_callable === true || controls.contains_raw_payload === true || controls.contains_raw_response === true || controls.contains_secret_material === true)) {
+      result.ok = false;
+      result.blocking_reasons.push("Runtime activation readiness contract contains unsafe material");
+    }
+    if (itemKey) {
+      const items = artifact[itemKey];
+      if (!Array.isArray(items) || items.length < 4) {
+        result.ok = false;
+        result.blocking_reasons.push(`${itemKey} is incomplete`);
+      }
+      for (const item of Array.isArray(items) ? items : []) {
+        const record = item as Record<string, unknown>;
+        if (record.contains_runtime_callable === true || record.contains_raw_payload === true || record.contains_raw_response === true || record.contains_secret_material === true || record.runtime_enabled_now === true || record.ready_for_real_upload_now === true) {
+          result.ok = false;
+          result.blocking_reasons.push(`${itemKey} contains unsafe readiness/runtime/ready material`);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function validateRuntimeActivationReadinessContract(contract: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeActivationReadinessLayer(contract, "readiness_scope", "readiness_terms");
+}
+
+export function validateRuntimeActivationReadinessReview(review: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeActivationReadinessLayer(review, "review_scope", "review_checks");
+}
+
+export function validateRuntimeActivationReadinessSafeReport(report: unknown): RealUploadEnablementArtifactValidationResult {
+  return validateRuntimeActivationReadinessLayer(report, "report_scope", "safe_report_sections");
+}
+
+export function createRuntimeActivationReadinessContract(input: { contractSafeReport: RuntimeActivationContractSafeReport; contract: RuntimeActivationContract; decision?: "draft" | "approved_for_future_readiness_review" | "rejected"; dryRun: true }): RuntimeActivationReadinessContract {
+  if (input.dryRun !== true) throw new Error("VO-7CX runtime activation readiness contract requires dryRun=true");
+  const reportValidation = validateRuntimeActivationContractSafeReport(input.contractSafeReport);
+  if (!reportValidation.ok) throw new Error("Runtime activation contract safe report validation failed");
+  if (input.contractSafeReport.safe_report_state !== "approved_for_future_runtime_activation_readiness_contract") throw new Error("Runtime activation readiness contract requires approved contract safe report");
+  if (input.contractSafeReport.runtime_activation_contract_id !== input.contract.runtime_activation_contract_id) throw new Error("Mismatched contract safe report and contract");
+  const approved = input.decision === "approved_for_future_readiness_review";
+  const terms = ["scope", "boundaries", "credentials", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_activation_readiness_contract_id: `runtime-activation-readiness-contract-${crypto.randomUUID()}`,
+    runtime_activation_contract_safe_report_id: input.contractSafeReport.runtime_activation_contract_safe_report_id,
+    runtime_activation_contract_id: input.contract.runtime_activation_contract_id,
+    render_plan_id: input.contract.render_plan_id,
+    project_id: input.contract.project_id,
+    platform: input.contract.platform,
+    created_at: new Date().toISOString(),
+    readiness_contract_state: approved ? "approved_for_future_readiness_review" : input.decision === "rejected" ? "rejected" : "created",
+    required_artifacts: { runtime_activation_contract_safe_report_validated: true, runtime_activation_contract_validated: true },
+    readiness_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    readiness_controls: { readiness_contract_only: true, readiness_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    readiness_terms: terms.map((kind) => ({ term_id: `readiness-contract-${kind}`, term_kind: kind, safe_summary: "Runtime activation readiness contract only.", runtime_enabled_now: false, ready_for_real_upload_now: false, contains_runtime_callable: false, contains_raw_payload: false, contains_secret_material: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeActivationReadinessContract", source_runtime_activation_contract_safe_report_id: input.contractSafeReport.runtime_activation_contract_safe_report_id, source_render_plan_id: input.contract.render_plan_id },
+  };
+}
+
+export function createRuntimeActivationReadinessReview(input: { readinessContract: RuntimeActivationReadinessContract; contractSafeReport: RuntimeActivationContractSafeReport; decision?: "draft" | "approved_for_future_readiness_safe_report" | "rejected"; dryRun: true }): RuntimeActivationReadinessReview {
+  if (input.dryRun !== true) throw new Error("VO-7CY runtime activation readiness review requires dryRun=true");
+  const contractValidation = validateRuntimeActivationReadinessContract(input.readinessContract);
+  if (!contractValidation.ok) throw new Error("Runtime activation readiness contract validation failed");
+  if (input.readinessContract.readiness_contract_state !== "approved_for_future_readiness_review") throw new Error("Runtime activation readiness review requires approved readiness contract");
+  if (input.readinessContract.runtime_activation_contract_safe_report_id !== input.contractSafeReport.runtime_activation_contract_safe_report_id) throw new Error("Mismatched readiness contract and contract safe report");
+  const approved = input.decision === "approved_for_future_readiness_safe_report";
+  const checks = ["scope", "terms", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_activation_readiness_review_id: `runtime-activation-readiness-review-${crypto.randomUUID()}`,
+    runtime_activation_readiness_contract_id: input.readinessContract.runtime_activation_readiness_contract_id,
+    runtime_activation_contract_safe_report_id: input.contractSafeReport.runtime_activation_contract_safe_report_id,
+    render_plan_id: input.readinessContract.render_plan_id,
+    project_id: input.readinessContract.project_id,
+    platform: input.readinessContract.platform,
+    created_at: new Date().toISOString(),
+    readiness_review_state: approved ? "approved_for_future_readiness_safe_report" : input.decision === "rejected" ? "rejected" : "ready_for_operator_review",
+    required_artifacts: { runtime_activation_readiness_contract_validated: true, runtime_activation_contract_safe_report_validated: true },
+    review_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    review_controls: { review_only: true, readiness_review_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    review_checks: checks.map((kind) => ({ check_id: `readiness-review-${kind}`, check_kind: kind, check_state: "passed", safe_summary: "Runtime activation readiness review only.", runtime_enabled_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeActivationReadinessReview", source_runtime_activation_readiness_contract_id: input.readinessContract.runtime_activation_readiness_contract_id, source_render_plan_id: input.readinessContract.render_plan_id },
+  };
+}
+
+export function createRuntimeActivationReadinessSafeReport(input: { readinessReview: RuntimeActivationReadinessReview; readinessContract: RuntimeActivationReadinessContract; decision?: "draft" | "approved_for_future_runtime_activation_dry_run_contract" | "rejected"; dryRun: true }): RuntimeActivationReadinessSafeReport {
+  if (input.dryRun !== true) throw new Error("VO-7CZ runtime activation readiness safe report requires dryRun=true");
+  const reviewValidation = validateRuntimeActivationReadinessReview(input.readinessReview);
+  if (!reviewValidation.ok) throw new Error("Runtime activation readiness review validation failed");
+  if (input.readinessReview.readiness_review_state !== "approved_for_future_readiness_safe_report") throw new Error("Runtime activation readiness safe report requires approved readiness review");
+  if (input.readinessReview.runtime_activation_readiness_contract_id !== input.readinessContract.runtime_activation_readiness_contract_id) throw new Error("Mismatched readiness review and contract");
+  const approved = input.decision === "approved_for_future_runtime_activation_dry_run_contract";
+  const sections = ["contract", "review", "boundaries", "status"];
+  return {
+    schema_version: "1.0",
+    runtime_activation_readiness_safe_report_id: `runtime-activation-readiness-safe-report-${crypto.randomUUID()}`,
+    runtime_activation_readiness_review_id: input.readinessReview.runtime_activation_readiness_review_id,
+    runtime_activation_readiness_contract_id: input.readinessContract.runtime_activation_readiness_contract_id,
+    render_plan_id: input.readinessContract.render_plan_id,
+    project_id: input.readinessContract.project_id,
+    platform: input.readinessContract.platform,
+    created_at: new Date().toISOString(),
+    safe_report_state: approved ? "approved_for_future_runtime_activation_dry_run_contract" : input.decision === "rejected" ? "rejected" : "complete",
+    required_artifacts: { runtime_activation_readiness_review_validated: true, runtime_activation_readiness_contract_validated: true },
+    report_scope: { artifact_only: true, future_next_phase_requested: approved, real_upload_enabled_now: false, upload_execution_enabled_now: false, network_calls_enabled_now: false, platform_api_calls_enabled_now: false, credential_access_enabled_now: false, media_read_enabled_now: false, dependencies_requested: false, package_metadata_changes_requested: false },
+    report_controls: { safe_report_only: true, readiness_only: true, contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_wiring_implemented: false, runtime_invocation_disabled: true, real_upload_still_blocked: true },
+    safe_report_sections: sections.map((kind) => ({ section_id: `readiness-safe-report-${kind}`, section_kind: kind, safe_summary: "Runtime activation readiness safe report only.", contains_runtime_callable: false, contains_raw_payload: false, contains_raw_response: false, contains_secret_material: false, runtime_enabled_now: false, ready_for_real_upload_now: false })),
+    execution_boundary: Object.fromEntries(VO7_ENABLEMENT_FALSE_KEYS.map((key) => [key, false])) as Record<string, false>,
+    validation: { complete: true, ready_for_next_phase: approved, ready_for_real_upload: false, real_upload_enabled: false, upload_allowed: false, network_calls_allowed: false, platform_api_calls_allowed: false, credentials_accessed: false, media_file_read: false, blocking_reasons: [], warnings: [] },
+    provenance: { generated_by: "createRuntimeActivationReadinessSafeReport", source_runtime_activation_readiness_review_id: input.readinessReview.runtime_activation_readiness_review_id, source_render_plan_id: input.readinessContract.render_plan_id },
+  };
+}

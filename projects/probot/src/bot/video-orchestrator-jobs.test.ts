@@ -25547,3 +25547,60 @@ test("VO-7CW-VALIDATE: runtime activation contract safe report rejects raw mater
   const validation = validateRuntimeActivationContractSafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7CX/VO-7CY/VO-7CZ: Runtime Activation Readiness Contract Layer ─────
+
+test("VO-7CX-SCHEMA: runtime activation readiness contract schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-activation-readiness-contract.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-readiness-contract.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.readiness_controls.runtime_wiring_implemented, false);
+});
+
+test("VO-7CX-VALIDATE: runtime activation readiness contract rejects runtime wiring", async () => {
+  const { validateRuntimeActivationReadinessContract } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-readiness-contract.example.json"), "utf8"));
+  const unsafe = { ...example, readiness_controls: { ...example.readiness_controls, runtime_wiring_implemented: true } };
+  const validation = validateRuntimeActivationReadinessContract(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CY-SCHEMA: runtime activation readiness review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-activation-readiness-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-readiness-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_checks[0].runtime_enabled_now, false);
+});
+
+test("VO-7CY-VALIDATE: runtime activation readiness review rejects runtime enablement", async () => {
+  const { validateRuntimeActivationReadinessReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-readiness-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_checks: [{ ...example.review_checks[0], runtime_enabled_now: true }] };
+  const validation = validateRuntimeActivationReadinessReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7CZ-SCHEMA: runtime activation readiness safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-activation-readiness-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-readiness-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7CZ-VALIDATE: runtime activation readiness safe report rejects raw material", async () => {
+  const { validateRuntimeActivationReadinessSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-readiness-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateRuntimeActivationReadinessSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});
