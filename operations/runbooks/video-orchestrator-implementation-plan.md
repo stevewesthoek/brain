@@ -3806,3 +3806,9 @@ These artifacts define a future runtime activation dry-run contract boundary wit
 VO-7DD adds `runtime-activation-dry-run-design`, VO-7DE adds `runtime-activation-dry-run-design-review`, and VO-7DF adds `runtime-activation-dry-run-design-safe-report`.
 
 These artifacts define a future runtime activation dry-run design boundary without implementing runtime behavior or executing a dry-run. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, runtime enablement, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7DG/VO-7DH/VO-7DI — Runtime Activation Simulation Contract, Review, and Safe Report
+
+VO-7DG adds `runtime-activation-simulation-contract`, VO-7DH adds `runtime-activation-simulation-review`, and VO-7DI adds `runtime-activation-simulation-safe-report`.
+
+These artifacts define a future runtime activation simulation boundary without implementing runtime behavior or executing a simulation. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, runtime enablement, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
