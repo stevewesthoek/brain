@@ -17,7 +17,7 @@ Most subdirs here are the source behind home directory symlinks or other runtime
 | `shell/` | shell config (`.zshrc` source) |
 | `git/` | `~/.config/git/ignore` |
 | `ghostty/` | `~/.config/ghostty/config` |
-| `starship/` | `~/.config/starship.toml` |
+| `starship/` | `~/.config/starship.toml`; optional Codex-safe companion config `~/.config/starship-codex.toml` documented in `operations/runbooks/codex-starship-compatible-prompt.md` |
 | `mcp/` | standalone MCP server definitions |
 | `docker/` | Docker daemon config |
 | `ssh/` | SSH config templates |

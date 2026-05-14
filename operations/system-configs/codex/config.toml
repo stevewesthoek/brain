@@ -47,6 +47,21 @@ enabled = true
 [plugins."remotion@openai-curated"]
 enabled = true
 
+[plugins."slack@openai-curated"]
+enabled = true
+
+[plugins."gmail@openai-curated"]
+enabled = true
+
+[plugins."google-calendar@openai-curated"]
+enabled = true
+
+[plugins."openai-developers@openai-curated"]
+enabled = true
+
+[plugins."hyperframes@openai-curated"]
+enabled = true
+
 [plugins."browser-use@openai-bundled"]
 enabled = true
 
@@ -95,15 +110,21 @@ trust_level = "trusted"
 [projects."/Users/Office/Repos/stevewesthoek/mind"]
 trust_level = "trusted"
 
+[projects."/Users/Office/Repos/stevewesthoek/tradebot"]
+trust_level = "trusted"
+
+[projects."/Users/Office/Repos/yeshuaacademy/web/finance"]
+trust_level = "trusted"
+
 [tui.model_availability_nux]
 "gpt-5.5" = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-08T18:18:53Z"
+last_updated = "2026-05-14T10:54:55Z"
 source_type = "local"
 source = "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-05-02T22:54:27Z"
+last_updated = "2026-05-14T09:54:27Z"
 source_type = "local"
 source = "/Users/Office/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
