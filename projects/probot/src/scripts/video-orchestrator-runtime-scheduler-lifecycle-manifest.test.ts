@@ -1,0 +1,49 @@
+import { test } from "node:test";
+import assert from "node:assert";
+import { createRuntimeSchedulerLifecycleManifest, renderRuntimeSchedulerLifecycleManifest } from "./video-orchestrator-runtime-scheduler-lifecycle-manifest.js";
+
+test("VO-7FT-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-1: lists runtime scheduler lifecycle stages without side effects", () => {
+  const manifest = createRuntimeSchedulerLifecycleManifest();
+
+  assert.equal(manifest.schema_version, "1.0");
+  assert.equal(manifest.manifest_only, true);
+  assert.equal(manifest.stages.length >= 10, true);
+  assert.equal(manifest.stages.some((stage) => stage.id === "cli-entrypoint"), true);
+  assert.equal(manifest.stages.some((stage) => stage.id === "terminal-summary"), true);
+  assert.equal(manifest.stages.every((stage) => stage.side_effects_enabled === false), true);
+  assert.equal(manifest.manual_boundaries.length, 4);
+  assert.equal(manifest.safety.package_json_edited, false);
+  assert.equal(manifest.safety.live_scheduler_executed, false);
+  assert.equal(manifest.safety.upload_executed, false);
+  assert.equal(manifest.safety.network_calls_made, false);
+  assert.equal(manifest.safety.credential_accessed, false);
+  assert.equal(manifest.safety.media_read_performed, false);
+  assert.equal(manifest.safety.files_written, false);
+  assert.equal(manifest.safety.git_add_executed, false);
+  assert.equal(manifest.safety.committed_now, false);
+  assert.equal(manifest.safety.pushed_now, false);
+});
+
+test("VO-7FT-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-2: marks manual boundary stages", () => {
+  const manifest = createRuntimeSchedulerLifecycleManifest();
+  const boundaryIds = manifest.stages.filter((stage) => stage.state === "manual_boundary").map((stage) => stage.id);
+
+  assert.equal(boundaryIds.includes("package-script-approval-gate"), true);
+  assert.equal(boundaryIds.includes("release-checklist"), true);
+  assert.equal(boundaryIds.includes("release-handoff"), true);
+  assert.equal(boundaryIds.includes("release-archive"), true);
+  assert.equal(boundaryIds.includes("terminal-summary"), true);
+});
+
+test("VO-7FU-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-REVIEW-1: renderer is safe and explicit", () => {
+  const text = renderRuntimeSchedulerLifecycleManifest(createRuntimeSchedulerLifecycleManifest());
+
+  assert.equal(text.includes("runtime scheduler lifecycle manifest"), true);
+  assert.equal(text.includes("Package metadata changes require separate explicit approval."), true);
+  assert.equal(text.includes("Live scheduler activation requires separate explicit approval."), true);
+  assert.equal(text.includes("package.json edited: false"), true);
+  assert.equal(text.includes("Live scheduler executed: false"), true);
+  assert.equal(text.includes("access_token"), false);
+  assert.equal(text.includes("client_secret"), false);
+  assert.equal(text.includes("api_key"), false);
+});
