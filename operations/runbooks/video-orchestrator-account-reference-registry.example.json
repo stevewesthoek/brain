@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "store_id": "video-orchestrator-account-reference-registry-example",
+  "project_id": "example-project",
+  "generated_at": "2026-05-14T00:00:00.000Z",
+  "reference_only": true,
+  "entries": [
+    {
+      "reference_id": "example-project-youtube-main-oauth",
+      "project_id": "example-project",
+      "platform": "youtube",
+      "account_id": "youtube-main",
+      "account_label": "main",
+      "reference_label": "YouTube Main OAuth Reference",
+      "auth_mode": "oauth",
+      "auth_status": "needs_setup",
+      "reference_target": "keychain",
+      "reference_name": "example-project.youtube.youtube-main.oauth",
+      "setup": {
+        "oauth_connect_url": "https://accounts.google.com/o/oauth2/v2/auth",
+        "api_key_setup_url": null,
+        "manual_setup_summary": "Create or select a Google Cloud OAuth client, then connect through the approved dashboard OAuth flow. Do not paste secrets into this file."
+      },
+      "enabled": true,
+      "next_action": "Connect this YouTube account through the approved dashboard OAuth flow."
+    },
+    {
+      "reference_id": "example-project-pinterest-main-api-reference",
+      "project_id": "example-project",
+      "platform": "pinterest",
+      "account_id": "pinterest-main",
+      "account_label": "main",
+      "reference_label": "Pinterest Main API Reference",
+      "auth_mode": "api_key",
+      "auth_status": "needs_setup",
+      "reference_target": "env_reference",
+      "reference_name": "example-project.pinterest.pinterest-main.api-reference",
+      "setup": {
+        "oauth_connect_url": null,
+        "api_key_setup_url": "https://developers.pinterest.com/apps/",
+        "manual_setup_summary": "Create a Pinterest app and store the actual credential only in the approved backend store. This file records the reference name only."
+      },
+      "enabled": true,
+      "next_action": "Create the platform app, then attach the reference through the approved dashboard credential flow."
+    },
+    {
+      "reference_id": "example-project-tiktok-main-oauth",
+      "project_id": "example-project",
+      "platform": "tiktok",
+      "account_id": "tiktok-main",
+      "account_label": "main",
+      "reference_label": "TikTok Main OAuth Reference",
+      "auth_mode": "oauth",
+      "auth_status": "needs_setup",
+      "reference_target": "keychain",
+      "reference_name": "example-project.tiktok.tiktok-main.oauth",
+      "setup": {
+        "oauth_connect_url": "https://developers.tiktok.com/",
+        "api_key_setup_url": null,
+        "manual_setup_summary": "Register or select a TikTok developer app, then connect through the approved dashboard OAuth flow. Do not paste secrets into this file."
+      },
+      "enabled": false,
+      "next_action": "Enable after platform policy, cadence, and OAuth boundaries are reviewed."
+    }
+  ],
+  "safety": {
+    "sensitive_values_included": false,
+    "sensitive_read_performed": false,
+    "sensitive_write_performed": false,
+    "oauth_exchange_executed": false,
+    "env_written": false,
+    "file_written": true
+  },
+  "notes": [
+    "This file is an example/reference artifact only.",
+    "Do not store tokens, client secrets, raw API keys, OAuth authorization codes, or private credentials here.",
+    "Use reference_name to point the dashboard/backend to an approved credential location without exposing the sensitive value."
+  ]
+}
