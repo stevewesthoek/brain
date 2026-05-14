@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+ (Revised)
 
-**Date Updated:** 2026-05-13 (VO-7AA Complete)  
-**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) complete. Phase 5F—Final Production Render Execution Request (VO-6E) complete. Phase 5G—Controlled Production Render Spike (VO-7A) complete. Phase 5H—Operator Review of Generated Local Output (VO-7B) complete. Phase 5I—Upload Package Design (VO-7C) complete. Phase 5J—Platform Upload Request Artifact (VO-7D) complete. Phase 5K—Upload Execution Approval (VO-7E) complete. Phase 5L—Upload Execution Design (VO-7F) complete. Phase 5M—Dry-Run Upload Spike Simulation (VO-7G) complete. Phase 5N—Real Upload Readiness Assessment (VO-7H) complete. Phase 5O—Real Upload Execution Request (VO-7I) complete. Phase 5P—Real Upload Strategy Design (VO-7J) complete. Phase 5Q—Real Upload Execution Plan (VO-7K) complete. Phase 5R—Real Upload Dry-Run Execution Simulator (VO-7L) complete. Phase 5S—Final Real Upload Preflight Gate (VO-7M) complete. Phase 5T—Real Upload Implementation Design (VO-7N) complete. Phase 5U—Real Upload Scaffold Design (VO-7O) complete. Phase 5V—Real Upload Scaffold Contracts (VO-7P) complete. Phase 5W—Real Upload Scaffold Contract Tests (VO-7Q) complete. Phase 5X—Real Upload Scaffold Stub Design (VO-7R) complete. Phase 5Y—Real Upload Stub Contracts (VO-7S) complete. Phase 5Z—Real Upload Stub Contract Tests (VO-7T) complete. Phase 5AA—Real Upload Stub No-Op Implementation Design (VO-7U) complete. Phase 5AB—Real Upload No-Op Stub File Plan (VO-7V) complete. Phase 5AC—Real Upload No-Op Stub File Creation (VO-7W) complete. Phase 5AD—Real Upload No-Op Stub Wiring Plan (VO-7X) complete. Phase 5AE—Real Upload No-Op Wiring Contracts (VO-7Y) complete. Phase 5AF—Real Upload No-Op Wiring Contract Tests (VO-7Z) complete. Phase 5AG—Real Upload No-Op Wiring Readiness Review and Activation Plan (VO-7AA) complete.  
+**Date Updated:** 2026-05-14 (VO-7DC Complete; manual confirmation required before git add/commit)  
+**Status:** Phase 0–1 complete (smart routing, 4 local models). Phase 2A–2E complete (project distribution, packages, drafts, content briefs). Phase 3A–3D complete (media validation, render planning, file existence validation, manifest consistency checks). Phase 3E complete (render execution gate, manual export bundle, operator approval workflow). Phase 3F complete (operator approval records, render-readiness freeze snapshots). Phase 4A complete (render executor contract, dry-run command manifest). Phase 4B complete (renderer preflight environment checks). Phase 4C complete (renderer binary discovery manifests). Phase 4D complete (operator-approved renderer version check plan). Phase 4E complete (mock renderer execution result contract). Phase 4F—Real Renderer Execution Spike Gate (VO-5A) complete. Phase 5A—Real Renderer Execution Approval Record (VO-5B) complete. Phase 5B—Explicit Local Render Spike, Test-Only Asset, Operator-Gated (VO-6A) complete. Phase 5C—Controlled Production Render Design (VO-6B) complete. Phase 5D—Source Media Inventory and Read-Only Validation (VO-6C) complete. Phase 5E—Output Directory Approval and Write Boundary (VO-6D) complete. Phase 5F—Final Production Render Execution Request (VO-6E) complete. Phase 5G—Controlled Production Render Spike (VO-7A) complete. Phase 5H—Operator Review of Generated Local Output (VO-7B) complete. Phase 5I—Upload Package Design (VO-7C) complete. Phase 5J—Platform Upload Request Artifact (VO-7D) complete. Phase 5K—Upload Execution Approval (VO-7E) complete. Phase 5L—Upload Execution Design (VO-7F) complete. Phase 5M—Dry-Run Upload Spike Simulation (VO-7G) complete. Phase 5N—Real Upload Readiness Assessment (VO-7H) complete. Phase 5O—Real Upload Execution Request (VO-7I) complete. Phase 5P—Real Upload Strategy Design (VO-7J) complete. Phase 5Q—Real Upload Execution Plan (VO-7K) complete. Phase 5R—Real Upload Dry-Run Execution Simulator (VO-7L) complete. Phase 5S—Final Real Upload Preflight Gate (VO-7M) complete. Phase 5T—Real Upload Implementation Design (VO-7N) complete. Phase 5U—Real Upload Scaffold Design (VO-7O) complete. Phase 5V—Real Upload Scaffold Contracts (VO-7P) complete. Phase 5W—Real Upload Scaffold Contract Tests (VO-7Q) complete. Phase 5X—Real Upload Scaffold Stub Design (VO-7R) complete. Phase 5Y—Real Upload Stub Contracts (VO-7S) complete. Phase 5Z—Real Upload Stub Contract Tests (VO-7T) complete. Phase 5AA—Real Upload Stub No-Op Implementation Design (VO-7U) complete. Phase 5AB—Real Upload No-Op Stub File Plan (VO-7V) complete. Phase 5AC—Real Upload No-Op Stub File Creation (VO-7W) complete. Phase 5AD—Real Upload No-Op Stub Wiring Plan (VO-7X) complete. Phase 5AE—Real Upload No-Op Wiring Contracts (VO-7Y) complete. Phase 5AF—Real Upload No-Op Wiring Contract Tests (VO-7Z) complete. Phase 5AG—Real Upload No-Op Wiring Readiness Review and Activation Plan (VO-7AA) complete. Phase 5AH—Disabled No-Op Wiring Activation Result and Smoke-Test Helpers (VO-7AB) complete. Phase 5AI—Real Upload Readiness Gate V2 Helpers (VO-7AC) complete. Phase 5AJ—Real Upload Executor Adapter Design Helpers (VO-7AD) complete. Phase 5AK—Real Upload Executor Contracts and Contract Tests (VO-7AE) complete. Phase 5AL—Real Upload Dry-Run Adapter Design, Contracts, and Contract Tests (VO-7AF) complete. Phase 5AM—Real Upload Final Operator Checklist (VO-7AG) complete. Phase 5AN—Real Upload Enablement Request, Safety Plan, and Review Gate (VO-7AH) complete. Phase 5AO—Controlled Real Upload Enablement and Preflight (VO-7AI) complete. Phase 5AP—Controlled Runtime Activation Request, Safety Contract, and Dry Run (VO-7AJ) complete. Phase 5AQ—Controlled Runtime Activation Implementation Plan, Contract, and Dry-Run Review (VO-7AK) complete. Phase 5AR—Controlled Runtime Activation Candidate, Final Review, and Rollback Plan (VO-7AL) complete. Phase 5AS—Controlled Runtime Activation Go/No-Go, Final Safe Report, and Boundary Completion Summary (VO-7AM) complete. Phase 5AT—Controlled Runtime Implementation Boundary Request, Safety Contract, and Dry Run (VO-7AN) complete. Phase 5AU—Controlled Runtime Implementation Candidate, Review, and Safe Report (VO-7AO) complete. Phase 5AV—Controlled Runtime Implementation Final Boundary, Review, and Safe Report (VO-7AP) complete. Phase 5AW—Real Runtime Stub Boundary Request, Contract, and Dry-Run Report (VO-7AQ) complete. Phase 5AX—No-Op Runtime Stub, Review, and Safe Report (VO-7AR) complete. Phase 5AY—Runtime Stub Store, Retrieval Contract, and Store/Retrieval Safe Report (VO-7AS) complete. Phase 5AZ—Runtime Stub Manifest, Index Contract, and Manifest/Index Safe Report (VO-7AT) complete. Phase 5BA—Runtime Stub Release Candidate, Review, and Safe Report (VO-7AU) complete. Phase 5BB—Runtime Stub Final Gate, Review, and Safe Report (VO-7AV) complete. Phase 5BC—Runtime Stub Completion Summary, Review, and Safe Report (VO-7AW) complete. Phase 5BD—Runtime Stub Closeout, Review, and Safe Report (VO-7AX) complete. Phase 5BE—Runtime Stub Archive, Review, and Final Summary (VO-7AY) complete. Phase 5BF—Runtime Stub Sequence Integrity Audit, Regression Report, and Final Handoff (VO-7AZ) complete. Phase 5BG—Runtime Stub Sequence Index, Operator Handoff Checklist, and Next Phase Decision Record (VO-7BA) complete. Phase 5BH—Explicit Runtime Activation Design Boundary, Review, and Safe Report (VO-7BB) complete. Phase 5BI—Runtime Activation Contract, Review, and Safe Report (VO-7BC) complete. Phase 5BJ—Runtime Activation Readiness Contract, Review, and Safe Report (VO-7BD) complete. Phase 5BK—Runtime Activation Dry-Run Contract, Review, and Safe Report (VO-7BE) complete. Phase 5BL—Runtime Activation Dry-Run Design, Review, and Safe Report (VO-7BF) complete. Phase 5BM—Runtime Activation Simulation Contract, Review, and Safe Report (VO-7BG) complete. Phase 5BN—Runtime Activation Rehearsal Contract, Review, and Safe Report (VO-7BH) complete. Phase 5BO—Runtime Activation Final Boundary, Review, and Safe Report (VO-7BI) complete. Phase 5BP—Runtime Activation Closeout, Review, and Safe Report (VO-7BJ) complete. Phase 5BQ—Runtime Activation Archive, Review, and Safe Report (VO-7BK) complete. Phase 5BR—Runtime Activation Handoff, Review, and Safe Report (VO-7BL) complete. Phase 5BS—Runtime Activation Sequence Summary, Review, and Safe Report (VO-7BM) complete. Phase 5BT—Runtime Activation Completion Report, Review, and Safe Report (VO-7BN) complete. Phase 5BU—Runtime Activation Final Handoff, Review, and Safe Report (VO-7BO) complete. Phase 5BV—Runtime Activation Terminal Summary, Review, and Safe Report (VO-7BP) complete. Phase 5BW—Runtime Activation Sequence Index and Terminal Handoff Documentation (VO-7BQ) complete. Phase 5BX—Controlled Runtime Wiring Design-Only Plan (VO-7BR) complete. Phase 5BY—Disabled Runtime Activation Entrypoint (VO-7BS) complete. Phase 5BZ—Disabled Runtime Activation Entrypoint Review and Safe Report (VO-7BT) complete. Phase 5CA—Disabled Dry-Run Invocation Design, Review, and Safe Report (VO-7BU) complete. Phase 5CB—Disabled Dry-Run Invocation Result and Review (VO-7BV) complete. Phase 5CC—Says the Bible Migration Architecture Decision and Option D Reframe (VO-7BW) complete. Phase 5CD—Project/Platform/Account Model Design (VO-7BX) complete. Phase 5CE—Says the Bible Legacy Mapping and Migration Bridge Design (VO-7BY) complete. Phase 5CF—YouTube Platform Policy, Scheduling, Quota, and Resume Design (VO-7BZ) complete. Phase 5CG—Account/OAuth UI Flow Design (VO-7CA) complete. Phase 5CH—YouTube Preflight Contracts (VO-7CB) complete. Phase 5CI—YouTube Preflight Review and Safe Report (VO-7CC) complete. Phase 5CJ—YouTube Live Preflight Implementation Boundary (VO-7CD) complete. Phase 5CK—YouTube Live Preflight Implementation Planning (VO-7CE) complete. Phase 5CL—YouTube Live Preflight Implementation (VO-7CF) complete. Phase 5CM—YouTube Live Preflight Review, Safe Report, and First Controlled Upload Boundary (VO-7CG) complete. Phase 5CN—First Controlled YouTube Upload Implementation (VO-7CH) complete. Phase 5CO—First Controlled YouTube Upload Review and Safe Report (VO-7CI) complete. Phase 5CP—YouTube Repeatability/Automation Planning (VO-7CJ) complete. Phase 5CQ—YouTube Repeatability/Automation Review and Safe Report (VO-7CK) complete. Phase 5CR—YouTube Repeatability Implementation (VO-7CL) complete. Phase 5CS—YouTube Repeatability Implementation Review and Safe Report (VO-7CM) complete. Phase 5CT—YouTube Automation Expansion (VO-7CN) complete. Phase 5CU—YouTube Automation Expansion Review and Safe Report (VO-7CO) complete. Phase 5CV—YouTube Multi-Account/Platform Expansion (VO-7CP) complete. Phase 5CW—YouTube Multi-Account/Platform Expansion Review and Safe Report (VO-7CQ) complete. Phase 5CX—YouTube Bulk Execution Boundary (VO-7CR) complete. Phase 5CY—YouTube Bulk Execution Boundary Review and Safe Report (VO-7CS) complete. Phase 5CZ—YouTube Controlled Bulk Execution (VO-7CT) complete. Phase 5DA—YouTube Controlled Bulk Execution Review and Safe Report (VO-7CU) complete. Phase 5DB—YouTube Delete/Metadata Boundary Planning (VO-7CV) complete. Phase 5DC—YouTube Delete/Metadata Boundary Review and Safe Report (VO-7CW) complete. Phase 5DD—YouTube Delete/Metadata Implementation (VO-7CX) complete. Phase 5DE—YouTube Delete/Metadata Implementation Review and Safe Report (VO-7CY) complete. Phase 5DF—YouTube Commit/Push Boundary Planning (VO-7CZ) complete. Phase 5DG—YouTube Commit/Push Boundary Review and Safe Report (VO-7DA) complete. Phase 5DH—YouTube Staging/Commit Plan (VO-7DB) complete. Phase 5DI—YouTube Staging/Commit Review and Safe Report (VO-7DC) complete; manual confirmation required before git add/commit.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Architecture:** Local-first production + platform adapters (not fully local publishing)
 
@@ -418,6 +418,2061 @@ This phase reviews the no-op wiring contract tests and creates a disabled-by-def
 
 **Next phase guidance**
 - If approved later, the next step may add future disabled no-op wiring activation work, still without runtime wiring or upload capability.
+
+### VO-7AB: Disabled No-Op Wiring Activation Result and Smoke-Test Helpers
+
+This phase adds inert TypeScript helpers for recording a disabled no-op wiring activation result and a local-only smoke-test result.
+
+**What it does**
+- Records disabled no-op activation results from an existing activation plan reference.
+- Records smoke-test result artifacts that assert the no-op wiring boundary remains disabled.
+- Adds revocation helpers for activation and smoke-test records.
+- Adds tests for blocked activation, safe smoke-test boundaries, sanitization, and revocation.
+- Keeps all execution, upload, network, platform API, credential, token, keychain, env, media-read, file-mutation, dependency, and package-metadata capability flags false.
+
+**What it does not do**
+- Does not apply runtime wiring.
+- Does not create or enable feature flags.
+- Does not import no-op upload stubs into production execution paths.
+- Does not invoke runtime upload flows.
+- Does not upload or call platform APIs.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- The existing package `npm test -- --test-name-pattern ...` path still uses a fixed test-file list and currently fails on unrelated pre-existing tests; no package metadata was changed to include the new test file.
+
+**Next phase guidance**
+- If approved later, the next step may add a future real-upload readiness gate v2 artifact based on the disabled smoke-test result, still without upload, API, network, credential, or media-file access.
+
+### VO-7AC: Real Upload Readiness Gate V2 Helpers
+
+This phase implements the existing real-upload readiness gate v2 contract as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates a readiness gate v2 artifact from a passed disabled no-op wiring smoke-test result.
+- Supports operator-reviewed approval only for a future executor-adapter design phase.
+- Records remaining gates for executor adapter design, executor contracts, dry-run adapter, credential boundary, network boundary, media-read boundary, and final operator checklist.
+- Adds reject and revoke helpers.
+- Adds tests for ready, approved, blocked, incomplete-review, remaining-gate, sanitization, rejected, and revoked paths.
+- Keeps real upload blocked even when future executor-adapter design is marked ready.
+
+**What it does not do**
+- Does not upload.
+- Does not enable real upload.
+- Does not enable runtime execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add a future real upload executor-adapter design artifact based on readiness gate v2, still design-only and still without upload, API, network, credential, media-read, dependency, package-metadata, or runtime execution capability.
+
+### VO-7AD: Real Upload Executor Adapter Design Helpers
+
+This phase implements the existing real-upload executor adapter design contract as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates a design-only executor adapter artifact from a validated readiness gate v2 artifact.
+- Plans seven adapter module boundaries: credential boundary, media-read boundary, payload builder, platform client, network boundary, response redaction, and executor orchestration.
+- Supports operator-reviewed approval only for a future executor-contracts phase.
+- Adds reject and revoke helpers.
+- Adds tests for ready, approved, blocked, incomplete-review, planned-module, boundary, sanitization, rejected, and revoked paths.
+- Keeps adapter code creation and runtime adapter enablement disabled.
+
+**What it does not do**
+- Does not create adapter implementation code.
+- Does not upload.
+- Does not enable real upload.
+- Does not enable runtime adapter execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add future executor contract artifacts based on this design, still contract-only and still without adapter implementation code, upload, API, network, credential, media-read, dependency, package-metadata, or runtime execution capability.
+
+### VO-7AE: Real Upload Executor Contracts and Contract Tests
+
+This phase implements the existing real-upload executor contracts and executor contract-test contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates contract-only executor contracts from a validated executor adapter design artifact.
+- Defines seven safe contract records: credential boundary, media-read boundary, payload builder, platform client, network boundary, response redaction, and executor orchestration.
+- Creates contract-test result artifacts that check only safe contract shapes.
+- Supports operator-reviewed approval only for future contract-test and future dry-run adapter design phases.
+- Adds revoke helpers for contracts and contract tests.
+- Adds tests for ready, approved, blocked, contract coverage, contract-test shape checks, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not create adapter implementation code.
+- Does not execute contract tests against runtime code.
+- Does not upload.
+- Does not enable real upload.
+- Does not enable runtime adapter execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payloads or raw responses.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add future dry-run adapter design artifacts based on the contract-test result, still design-only and still without adapter implementation code, upload, API, network, credential, media-read, dependency, package-metadata, raw payload/response, or runtime execution capability.
+
+### VO-7AF: Real Upload Dry-Run Adapter Design, Contracts, and Contract Tests
+
+This phase implements the existing dry-run adapter design, dry-run adapter contracts, and dry-run adapter contract-test contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates a dry-run adapter design artifact from validated executor contract-test results.
+- Plans six safe dry-run checks: payload shape, credential boundary, network boundary, media boundary, response redaction, and executor orchestration.
+- Creates dry-run adapter contract artifacts and dry-run adapter contract-test artifacts.
+- Supports progression only toward a future final operator checklist phase.
+- Adds revoke helpers for design, contracts, and contract tests.
+- Adds tests for ready, approved, blocked, coverage, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not create dry-run adapter implementation code.
+- Does not execute a dry-run adapter.
+- Does not upload.
+- Does not enable real upload.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payloads or raw responses.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add a final operator checklist artifact based on the dry-run adapter contract-test result, still without upload, API, network, credential, media-read, raw payload/response, dependency, package-metadata, adapter implementation, or runtime execution capability.
+
+### VO-7AG: Real Upload Final Operator Checklist
+
+This phase implements the existing final operator checklist contract as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates a final operator checklist artifact from approved dry-run adapter contract-test results.
+- Requires explicit operator acknowledgements for checklist-only scope, real upload remaining disabled, future enablement request requirement, no credential access, no network calls, no media reads, no platform API calls, and no dependency additions.
+- Allows only a future real-upload enablement request marker when all acknowledgements and prerequisites are complete.
+- Keeps all remaining real-upload blocks explicit: enablement request, credential boundary, network boundary, media-read boundary, platform API boundary, separate commit, and real upload still blocked.
+- Adds reject and revoke helpers.
+- Adds tests for approved, incomplete acknowledgement, blocked prerequisite, remaining-block, disabled next-phase request, sanitization, reject, and revoke paths.
+
+**What it does not do**
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute a dry-run or runtime adapter.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payloads or raw responses.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add a future real-upload enablement request artifact, still requiring separate explicit boundaries and still without upload, API, network, credential, media-read, raw payload/response, dependency, package-metadata, adapter implementation, or runtime execution capability.
+
+### VO-7AH: Real Upload Enablement Request, Safety Plan, and Review Gate
+
+This phase implements the existing enablement request, enablement safety plan, and enablement review gate contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates an enablement request artifact from an approved final operator checklist.
+- Requires operator acknowledgements that the request is request-only and real upload remains disabled.
+- Creates an enablement safety plan artifact with planned controls for separate activation commit, operator kill switch, dry-run-first behavior, single-upload limit, and safe reporting.
+- Plans runtime boundaries for credential, network, platform API, media-read, and kill-switch controls, all disabled now.
+- Creates an enablement review gate artifact that can only approve a future controlled enablement artifact.
+- Adds revoke helpers for request, safety plan, and review gate.
+- Adds tests for approved, incomplete acknowledgement, blocked prerequisite, planned controls, review gate, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute a runtime adapter.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payloads or raw responses.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add a controlled enablement artifact based on the review gate, still without upload execution or automatic runtime invocation and still requiring separate explicit activation safeguards.
+
+### VO-7AI: Controlled Real Upload Enablement and Preflight
+
+This phase implements the existing controlled real-upload enablement and controlled enablement preflight-result contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates a controlled enablement artifact from an approved enablement review gate and safety plan.
+- Keeps controlled enablement artifact-only and allows only a future enablement preflight marker.
+- Records required controls: single-upload limit, operator kill switch, dry-run-first, separate runtime activation, safe reporting, and real upload still blocked.
+- Creates preflight result artifacts that check only planned controls and boundaries, all disabled now.
+- Allows only a future runtime activation artifact marker after preflight.
+- Adds revoke helpers for controlled enablement and preflight result.
+- Adds tests for approved, blocked, preflight-passed, preflight-blocked, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payloads or raw responses.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add a controlled runtime activation artifact based on the preflight result, still without upload execution and still requiring separate explicit runtime activation safeguards.
+
+### VO-7AJ: Controlled Runtime Activation Request, Safety Contract, and Dry Run
+
+This phase implements the existing controlled runtime activation request, safety contract, and dry-run result contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates a controlled runtime activation request from a passed controlled real-upload enablement preflight result.
+- Records requested runtime controls: single-upload limit, operator kill switch, dry-run-first, runtime activation contract, runtime activation dry run, and real upload still blocked.
+- Creates a runtime activation safety contract with safety contracts for kill switch, single-upload limit, credential boundary, network boundary, and media boundary.
+- Creates runtime activation dry-run results that check only planned runtime safety controls, all disabled now.
+- Allows only a future activation candidate marker after dry run.
+- Adds revoke helpers for request, safety contract, and dry-run result.
+- Adds tests for approved, blocked, safety contract, dry-run passed, dry-run blocked, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add controlled runtime activation candidate/review artifacts based on the dry-run result, still without upload execution and still requiring explicit operator review and rollback safeguards.
+
+### VO-7AK: Controlled Runtime Activation Implementation Plan, Contract, and Dry-Run Review
+
+This phase implements the existing controlled runtime activation implementation plan, implementation contract, and implementation dry-run review contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates implementation plan artifacts from passed controlled runtime activation dry-run results.
+- Records planned implementation changes for kill switch, single-upload limit, credential boundary, network boundary, and media boundary, all with `implemented_now: false`.
+- Creates implementation contract artifacts that remain contract-only and do not implement runtime changes.
+- Creates implementation dry-run review artifacts that check only the planned implementation contract and plan.
+- Allows only a future activation candidate marker after implementation dry-run review.
+- Adds revoke helpers for implementation plan, contract, and dry-run review.
+- Adds tests for approved, blocked, planned-change, contract, review, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add controlled runtime activation candidate, final review, and rollback plan artifacts based on the implementation dry-run review, still without upload execution and still requiring explicit go/no-go review.
+
+### VO-7AL: Controlled Runtime Activation Candidate, Final Review, and Rollback Plan
+
+This phase implements the existing controlled runtime activation candidate, final review, and rollback plan contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates activation candidate artifacts from approved implementation dry-run review and implementation contract artifacts.
+- Records candidate controls: single-upload limit, operator kill switch, rollback plan required, final review required, separate runtime activation commit required, and real upload still blocked.
+- Creates final review artifacts that review only the candidate and allow only a future rollback plan marker.
+- Creates rollback plan artifacts with planned rollback steps for disabling runtime activation, revoking approval, stopping upload execution, and safe reporting, all with `executed_now: false`.
+- Allows only a future activation go/no-go marker after rollback plan approval.
+- Adds revoke helpers for candidate, final review, and rollback plan.
+- Adds tests for approved, blocked, control coverage, rollback-step coverage, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not execute rollback steps.
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add controlled runtime activation go/no-go and final safe-report artifacts based on the rollback plan, still without upload execution and still requiring explicit operator activation outside this artifact chain.
+
+### VO-7AM: Controlled Runtime Activation Go/No-Go, Final Safe Report, and Boundary Completion Summary
+
+This phase implements the existing controlled runtime activation go/no-go, final safe report, and boundary completion summary contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates go/no-go artifacts from approved rollback plan and final review artifacts.
+- Supports explicit no-go decisions that stop next-phase progression without enabling upload.
+- Creates final safe report artifacts with safe report sections for boundaries, controls, rollback, and status.
+- Ensures final safe report sections contain no raw payload, raw response, or secret material.
+- Creates boundary completion summary artifacts that mark the artifact chain complete while still requiring runtime implementation and a separate activation commit.
+- Allows only a future runtime activation implementation boundary marker after boundary summary.
+- Adds revoke helpers for go/no-go, final safe report, and boundary completion summary.
+- Adds tests for approved, no-go, blocked, safe report, boundary summary, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store secret material in reports.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add a runtime activation implementation boundary artifact based on the boundary completion summary, still without upload execution and still requiring explicit operator activation outside this artifact chain.
+
+### VO-7AN: Controlled Runtime Implementation Boundary Request, Safety Contract, and Dry Run
+
+This phase implements the existing controlled runtime implementation boundary request, safety contract, and dry-run contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates implementation boundary request artifacts from approved boundary completion summaries.
+- Records safe-stub-only implementation controls with single-upload limit, operator kill switch, and real upload still blocked.
+- Creates implementation boundary safety contract artifacts with safe-stub-only controls and no raw payload or raw response storage.
+- Creates implementation boundary dry-run artifacts that check boundary contracts for kill switch, single-upload limit, credential boundary, network boundary, and media boundary.
+- Keeps all boundary contracts and dry-run checks at `implemented_now: false`.
+- Allows only a future implementation candidate marker after boundary dry run.
+- Adds revoke helpers for boundary request, safety contract, and dry run.
+- Adds tests for approved, blocked, safe-stub contract coverage, dry-run coverage, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add controlled runtime implementation candidate/review/safe-report artifacts based on the boundary dry-run result, still without implementing runtime changes or upload execution.
+
+### VO-7AO: Controlled Runtime Implementation Candidate, Review, and Safe Report
+
+This phase implements the existing controlled runtime implementation candidate, candidate review, and candidate safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates implementation candidate artifacts from passed implementation boundary dry-run results and boundary safety contracts.
+- Records candidate controls: candidate-only, safe-stub-only, single-upload limit, operator kill switch, and real upload still blocked.
+- Creates candidate item records for kill switch, single-upload limit, credential boundary, network boundary, and media boundary, all with `implemented_now: false`.
+- Creates candidate review artifacts that review candidate items only and keep every item unimplemented.
+- Creates candidate safe report artifacts with sections for boundaries, controls, review, and status.
+- Ensures candidate safe reports contain no raw payload, raw response, or secret material.
+- Allows only a future runtime implementation final boundary marker after candidate safe report.
+- Adds revoke helpers for candidate, candidate review, and candidate safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store secret material in reports.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add controlled runtime implementation final boundary, final boundary review, and final boundary safe report artifacts, still without implementing runtime changes or upload execution.
+
+### VO-7AP: Controlled Runtime Implementation Final Boundary, Review, and Safe Report
+
+This phase implements the existing controlled runtime implementation final boundary, final boundary review, and final boundary safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates final boundary artifacts from approved implementation candidate safe reports and implementation candidate artifacts.
+- Records final boundary controls: final-boundary-only, safe-stub-only, single-upload limit, operator kill switch, and real upload still blocked.
+- Creates final boundary item records for kill switch, single-upload limit, credential boundary, network boundary, and media boundary, all with `implemented_now: false`.
+- Creates final boundary review artifacts that review final boundary items only and keep every item unimplemented.
+- Creates final boundary safe report artifacts with sections for boundaries, controls, review, and status.
+- Ensures final boundary safe reports contain no raw payload, raw response, or secret material.
+- Allows only a future real runtime stub boundary marker after final boundary safe report.
+- Adds revoke helpers for final boundary, final boundary review, and final boundary safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store secret material in reports.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add real runtime stub boundary artifacts based on the final boundary safe report, still without upload execution and still without platform API, credential, or media-read behavior.
+
+### VO-7AQ: Real Runtime Stub Boundary Request, Contract, and Dry-Run Report
+
+This phase implements the existing real runtime stub boundary request, contract, and dry-run report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates real runtime stub boundary request artifacts from approved final boundary safe reports and final boundary artifacts.
+- Records stub controls: request-only, runtime-stub-only, no-op runtime required, single-upload limit, operator kill switch, and real upload still blocked.
+- Creates stub boundary contract artifacts with no-op runtime controls and no raw payload or raw response storage.
+- Creates stub contract item records for kill switch, single-upload limit, credential boundary, network boundary, and media boundary, all with `implemented_now: false` and `runtime_executed_now: false`.
+- Creates stub boundary dry-run report artifacts with dry-run results for the same boundary items, all with `implemented_now: false` and `runtime_executed_now: false`.
+- Allows only a future no-op runtime stub marker after the dry-run report.
+- Adds revoke helpers for stub boundary request, contract, and dry-run report.
+- Adds tests for approved, blocked, contract coverage, dry-run coverage, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store secret material in reports.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add no-op runtime stub artifacts based on the stub boundary dry-run report, still without upload execution and still without platform API, credential, or media-read behavior.
+
+### VO-7AR: No-Op Runtime Stub, Review, and Safe Report
+
+This phase implements the existing no-op runtime stub, no-op runtime stub review, and no-op runtime stub safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates no-op runtime stub artifacts from approved real runtime stub boundary dry-run reports and contracts.
+- Records no-op controls: no-op stub only, runtime invocation disabled, network client absent, platform adapter absent, credential provider absent, media resolver absent, single-upload limit, operator kill switch, and real upload still blocked.
+- Creates no-op stub items for kill switch, single-upload limit, credential boundary, network boundary, and media boundary, all with `implemented_now: false` and `runtime_executed_now: false`.
+- Creates no-op runtime stub review artifacts that remain review-only and keep runtime invocation/dependency surfaces absent.
+- Creates no-op runtime stub safe report artifacts with sections for boundaries, controls, review, and status.
+- Ensures no-op reports contain no raw payload, raw response, or secret material.
+- Allows only a future runtime stub store marker after safe report.
+- Adds revoke helpers for no-op runtime stub, review, and safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store secret material in reports.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime stub store/retrieval artifacts based on the no-op runtime stub safe report, still without upload execution and still without platform API, credential, or media-read behavior.
+
+### VO-7AS: Runtime Stub Store, Retrieval Contract, and Store/Retrieval Safe Report
+
+This phase implements the existing runtime stub store, runtime stub retrieval contract, and runtime stub store/retrieval safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime stub store artifacts from approved no-op runtime stub safe reports and no-op runtime stubs.
+- Stores only a safe summary of the no-op runtime stub.
+- Explicitly records that no runtime callable, raw payload, raw response, or secret material is stored.
+- Creates retrieval contract artifacts that retrieve summary-only metadata and never retrieve executable runtime callables, raw payloads, raw responses, or secret material.
+- Creates retrieval checks for summary-only retrieval, runtime callable boundary, raw material boundary, and secret boundary, all with `retrieved_now: false` and `runtime_executed_now: false`.
+- Creates store/retrieval safe report artifacts with sections for store, retrieval, boundaries, and status.
+- Ensures store/retrieval safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime stub manifest marker after the safe report.
+- Adds revoke helpers for store, retrieval contract, and store/retrieval safe report.
+- Adds tests for approved, blocked, summary-only store, non-executable retrieval, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not store runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store or retrieve secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime stub manifest/index artifacts based on the store/retrieval safe report, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7AT: Runtime Stub Manifest, Index Contract, and Manifest/Index Safe Report
+
+This phase implements the existing runtime stub manifest, runtime stub index contract, and runtime stub manifest/index safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime stub manifest artifacts from approved store/retrieval safe reports and runtime stub stores.
+- Indexes only safe summary artifacts for the store, retrieval contract, and safe report.
+- Explicitly records that manifest entries contain no runtime callable, raw payload, or secret material.
+- Creates runtime stub index contract artifacts that remain contract-only and summary-only.
+- Creates index entries for store, manifest, and safe report with `indexed_now: false` and `runtime_executed_now: false`.
+- Creates manifest/index safe report artifacts with sections for manifest, index, boundaries, and status.
+- Ensures manifest/index safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime stub release candidate marker after the safe report.
+- Adds revoke helpers for manifest, index contract, and manifest/index safe report.
+- Adds tests for approved, blocked, summary-only manifest/index, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, or retrieve secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime stub release candidate/review/safe-report artifacts based on the manifest/index safe report, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7AU: Runtime Stub Release Candidate, Review, and Safe Report
+
+This phase implements the existing runtime stub release candidate, release candidate review, and release candidate safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime stub release candidate artifacts from approved manifest/index safe reports and runtime stub manifests.
+- Records release candidate controls: release-candidate-only, summary-only, no runtime callable, no raw payload, no raw response, no secret material, runtime invocation disabled, and real upload still blocked.
+- Creates release candidate entries for manifest, index contract, and safe report, all with `released_now: false`.
+- Creates release candidate review artifacts that remain review-only and mark entries as passed only when prerequisites are valid.
+- Creates release candidate safe report artifacts with sections for candidate, review, boundaries, and status.
+- Ensures release candidate safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime stub final gate marker after the safe report.
+- Adds revoke helpers for release candidate, review, and safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not release anything.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, or release secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime stub final gate/review/safe-report artifacts based on the release candidate safe report, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7AV: Runtime Stub Final Gate, Review, and Safe Report
+
+This phase implements the existing runtime stub final gate, final gate review, and final gate safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime stub final gate artifacts from approved release candidate safe reports and release candidate artifacts.
+- Records final gate controls: final-gate-only, summary-only, no runtime callable, no raw payload, no raw response, no secret material, runtime invocation disabled, and real upload still blocked.
+- Creates final gate checks for candidate, review, boundaries, and status, all with `opened_now: false` and `runtime_executed_now: false`.
+- Creates final gate review artifacts that remain review-only and keep all checks unopened and unexecuted.
+- Creates final gate safe report artifacts with sections for gate, review, boundaries, and status.
+- Ensures final gate safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime stub completion summary marker after the safe report.
+- Adds revoke helpers for final gate, final gate review, and final gate safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not open the final gate.
+- Does not release anything.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not make the system ready for real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, or release secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime stub completion summary/review/safe-report artifacts based on the final gate safe report, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7AW: Runtime Stub Completion Summary, Review, and Safe Report
+
+This phase implements the existing runtime stub completion summary, completion review, and completion safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime stub completion summary artifacts from approved final gate safe reports and final gate artifacts.
+- Records completion controls: summary-only, completion-only, no runtime callable, no raw payload, no raw response, no secret material, runtime invocation disabled, and real upload still blocked.
+- Creates completion items for final gate, release candidate, boundaries, and status, all with `runtime_executed_now: false` and `ready_for_real_upload_now: false`.
+- Creates completion review artifacts that remain review-only and keep all items unexecuted and not ready for real upload.
+- Creates completion safe report artifacts with sections for summary, review, boundaries, and status.
+- Ensures completion safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime stub closeout marker after the safe report.
+- Adds revoke helpers for completion summary, completion review, and completion safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, or release secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime stub closeout/review/safe-report artifacts based on the completion safe report, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7AX: Runtime Stub Closeout, Review, and Safe Report
+
+This phase implements the existing runtime stub closeout, closeout review, and closeout safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime stub closeout artifacts from approved completion safe reports and completion summary artifacts.
+- Records closeout controls: closeout-only, summary-only, no runtime callable, no raw payload, no raw response, no secret material, runtime invocation disabled, and real upload still blocked.
+- Creates closeout items for completion, final gate, boundaries, and status, all with `closed_now: false`, `runtime_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates closeout review artifacts that remain review-only and keep all items not closed now, unexecuted, and not ready for real upload.
+- Creates closeout safe report artifacts with sections for closeout, review, boundaries, and status.
+- Ensures closeout safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime stub archive marker after the safe report.
+- Adds revoke helpers for closeout, closeout review, and closeout safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not close anything now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, or release secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime stub archive/review/final-summary artifacts based on the closeout safe report, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7AY: Runtime Stub Archive, Review, and Final Summary
+
+This phase implements the existing runtime stub archive, archive review, and archive final summary contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime stub archive artifacts from approved closeout safe reports and closeout artifacts.
+- Records archive controls: archive-only, summary-only, no runtime callable, no raw payload, no raw response, no secret material, runtime invocation disabled, and real upload still blocked.
+- Creates archive items for closeout, completion, boundaries, and status, all with `archived_now: false`, `runtime_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates archive review artifacts that remain review-only and keep all items not archived now, unexecuted, and not ready for real upload.
+- Creates archive final summary artifacts with sections for archive, review, boundaries, and status.
+- Marks the runtime stub sequence complete only as an artifact state, while keeping `ready_for_next_phase: false` and `ready_for_real_upload: false`.
+- Ensures archive final summaries contain no runtime callable, raw payload, raw response, or secret material.
+- Adds revoke helpers for archive, archive review, and archive final summary.
+- Adds tests for approved, blocked, review, final summary, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not archive anything now.
+- Does not mark the system ready for real upload.
+- Does not request a future next phase from the final summary.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, or archive secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime stub sequence integrity/regression/final-handoff artifacts based on the archive final summary, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7AZ: Runtime Stub Sequence Integrity Audit, Regression Report, and Final Handoff
+
+This phase implements the existing runtime stub sequence integrity audit, sequence regression report, and sequence final handoff contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates sequence integrity audit artifacts from approved archive final summaries and archive artifacts.
+- Records audit controls: audit-only, sequence-integrity-only, no runtime callable, no raw payload, no raw response, no secret material, runtime invocation disabled, and real upload still blocked.
+- Creates integrity audit checks for boundary chain, store chain, release chain, closeout chain, and final status, all with `runtime_executed_now: false` and `ready_for_real_upload_now: false`.
+- Creates sequence regression report artifacts from approved integrity audits and archive final summaries.
+- Creates regression checks for schema chain, example chain, validator chain, test chain, and final status, all unexecuted and not ready for real upload.
+- Creates sequence final handoff artifacts from approved regression reports and integrity audits.
+- Marks the runtime stub sequence handed off only as an artifact state, while keeping `ready_for_next_phase: false` and `ready_for_real_upload: false`.
+- Adds revoke helpers for sequence integrity audit, sequence regression report, and sequence final handoff.
+- Adds tests for approved, blocked, regression, final handoff, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not mark the system ready for real upload.
+- Does not request a future next phase from final handoff.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement runtime changes.
+- Does not enable real upload.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime stub sequence index and operator handoff decision artifacts based on the sequence final handoff, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BA: Runtime Stub Sequence Index, Operator Handoff Checklist, and Next Phase Decision Record
+
+This phase implements the existing runtime stub sequence index, operator handoff checklist, and next phase decision record contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates sequence index artifacts from approved sequence final handoffs and archive final summaries.
+- Indexes operator-safe summaries for no-op runtime stub, runtime stub store, manifest, release candidate, archive final summary, and sequence final handoff.
+- Records index controls: index-only, operator-summary-only, no runtime callable, no raw payload, no raw response, no secret material, runtime invocation disabled, and real upload still blocked.
+- Creates operator handoff checklist artifacts with checked items for index, final handoff, boundaries, real upload, and next phase, all with `operator_action_required_now: false`, `runtime_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates next phase decision records that can defer, stop the runtime stub track, or approve only a future explicit runtime activation design artifact.
+- Keeps every decision option and selected decision at `would_enable_runtime_now: false`, `would_enable_real_upload_now: false`, `runtime_enabled_now: false`, and `ready_for_real_upload_now: false`.
+- Adds revoke helpers for sequence index, operator handoff checklist, and next phase decision record.
+- Adds tests for approved, blocked, deferred decision, default future-design decision, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not require operator action now.
+- Does not mark the system ready for real upload.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement runtime changes.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add explicit runtime activation design boundary/review/safe-report artifacts based on the next phase decision record, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BB: Explicit Runtime Activation Design Boundary, Review, and Safe Report
+
+This phase implements the existing explicit runtime activation design boundary, design review, and design safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates explicit runtime activation design boundary artifacts from approved next phase decision records and operator handoff checklists.
+- Records design controls: design-only, activation-boundary-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, and real upload still blocked.
+- Creates design sections for scope, interfaces, credentials, and status, all with `runtime_enabled_now: false` and `ready_for_real_upload_now: false`.
+- Creates design review artifacts that remain review-only and keep all checks from enabling runtime or real upload.
+- Creates design safe report artifacts with sections for boundary, review, boundaries, and status.
+- Ensures design safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation contract marker after the safe report.
+- Adds revoke helpers for design boundary, design review, and design safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation contract/review/safe-report artifacts based on the explicit runtime activation design safe report, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BC: Runtime Activation Contract, Review, and Safe Report
+
+This phase implements the existing runtime activation contract, contract review, and contract safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime activation contract artifacts from approved explicit runtime activation design safe reports and design boundaries.
+- Records contract controls: contract-only, activation-contract-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, and real upload still blocked.
+- Creates contract terms for scope, boundaries, credentials, and status, all with `runtime_enabled_now: false` and `ready_for_real_upload_now: false`.
+- Creates contract review artifacts that remain review-only and keep all checks from enabling runtime or real upload.
+- Creates contract safe report artifacts with sections for contract, review, boundaries, and status.
+- Ensures contract safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation readiness contract marker after the safe report.
+- Adds revoke helpers for runtime activation contract, contract review, and contract safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation readiness contract/review/safe-report artifacts based on the runtime activation contract safe report, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BD: Runtime Activation Readiness Contract, Review, and Safe Report
+
+This phase implements the existing runtime activation readiness contract, readiness review, and readiness safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime activation readiness contract artifacts from approved runtime activation contract safe reports and runtime activation contracts.
+- Records readiness controls: readiness-contract-only, readiness-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, and real upload still blocked.
+- Creates readiness terms for scope, boundaries, credentials, and status, all with `runtime_enabled_now: false` and `ready_for_real_upload_now: false`.
+- Creates readiness review artifacts that remain review-only and keep all checks from enabling runtime or real upload.
+- Creates readiness safe report artifacts with sections for contract, review, boundaries, and status.
+- Ensures readiness safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation dry-run contract marker after the safe report.
+- Adds revoke helpers for runtime activation readiness contract, readiness review, and readiness safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation dry-run contract/review/safe-report artifacts based on the readiness safe report, still without upload execution and still without runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BE: Runtime Activation Dry-Run Contract, Review, and Safe Report
+
+This phase implements the existing runtime activation dry-run contract, dry-run review, and dry-run safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime activation dry-run contract artifacts from approved runtime activation readiness safe reports and readiness contracts.
+- Records dry-run controls: dry-run-contract-only, dry-run-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, and real upload still blocked.
+- Creates dry-run terms for scope, boundaries, credentials, and status, all with `runtime_enabled_now: false`, `dry_run_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates dry-run review artifacts that remain review-only and keep all checks from enabling runtime, executing dry runs, or enabling real upload.
+- Creates dry-run safe report artifacts with sections for contract, review, boundaries, and status.
+- Ensures dry-run safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation dry-run design marker after the safe report.
+- Adds revoke helpers for runtime activation dry-run contract, dry-run review, and dry-run safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not execute a dry run.
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation dry-run design/review/safe-report artifacts based on the dry-run safe report, still without dry-run execution, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BF: Runtime Activation Dry-Run Design, Review, and Safe Report
+
+This phase implements the existing runtime activation dry-run design, dry-run design review, and dry-run design safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime activation dry-run design artifacts from approved runtime activation dry-run safe reports and dry-run contracts.
+- Records dry-run design controls: design-only, dry-run-design-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, dry-run execution disabled, and real upload still blocked.
+- Creates dry-run design sections for scope, boundaries, credentials, and status, all with `runtime_enabled_now: false`, `dry_run_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates dry-run design review artifacts that remain review-only and keep all checks from enabling runtime, executing dry runs, or enabling real upload.
+- Creates dry-run design safe report artifacts with sections for design, review, boundaries, and status.
+- Ensures dry-run design safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation simulation contract marker after the safe report.
+- Adds revoke helpers for runtime activation dry-run design, dry-run design review, and dry-run design safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not execute a dry run.
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation simulation contract/review/safe-report artifacts based on the dry-run design safe report, still without dry-run execution, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BG: Runtime Activation Simulation Contract, Review, and Safe Report
+
+This phase implements the existing runtime activation simulation contract, simulation review, and simulation safe report contracts as inert TypeScript helpers and tests.
+
+**What it does**
+- Creates runtime activation simulation contract artifacts from approved runtime activation dry-run design safe reports and dry-run design artifacts.
+- Records simulation controls: simulation-contract-only, simulation-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, simulation execution disabled, and real upload still blocked.
+- Creates simulation terms for scope, boundaries, credentials, and status, all with `runtime_enabled_now: false`, `simulation_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates simulation review artifacts that remain review-only and keep all checks from enabling runtime, executing simulations, or enabling real upload.
+- Creates simulation safe report artifacts with sections for contract, review, boundaries, and status.
+- Ensures simulation safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation rehearsal contract marker after the safe report.
+- Adds revoke helpers for runtime activation simulation contract, simulation review, and simulation safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not execute a simulation.
+- Does not execute a dry run.
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation rehearsal contract/review/safe-report artifacts based on the simulation safe report, still without simulation execution, dry-run execution, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BH: Runtime Activation Rehearsal Contract, Review, and Safe Report
+
+This phase implements a runtime activation rehearsal contract, rehearsal review, and rehearsal safe report helper layer as inert TypeScript helpers and tests after the simulation safe report boundary.
+
+**What it does**
+- Creates runtime activation rehearsal contract artifacts from approved runtime activation simulation safe reports and simulation contracts.
+- Records rehearsal controls: rehearsal-contract-only, rehearsal-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, rehearsal execution disabled, and real upload still blocked.
+- Creates rehearsal terms for scope, boundaries, credentials, and status, all with `runtime_enabled_now: false`, `rehearsal_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates rehearsal review artifacts that remain review-only and keep all checks from enabling runtime, executing rehearsals, or enabling real upload.
+- Creates rehearsal safe report artifacts with sections for contract, review, boundaries, and status.
+- Ensures rehearsal safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation final-boundary marker after the safe report.
+- Adds revoke helpers for runtime activation rehearsal contract, rehearsal review, and rehearsal safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not execute a rehearsal.
+- Does not execute a simulation.
+- Does not execute a dry run.
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation final-boundary/review/safe-report artifacts based on the rehearsal safe report, still without rehearsal execution, simulation execution, dry-run execution, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BI: Runtime Activation Final Boundary, Review, and Safe Report
+
+This phase implements a runtime activation final-boundary, final-boundary review, and final-boundary safe report helper layer as inert TypeScript helpers and tests after the rehearsal safe report boundary.
+
+**What it does**
+- Creates runtime activation final-boundary artifacts from approved runtime activation rehearsal safe reports and rehearsal contracts.
+- Records final-boundary controls: final-boundary-only, boundary-review-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, final boundary not opened, and real upload still blocked.
+- Creates final-boundary terms for scope, runtime, credentials, and status, all with `runtime_enabled_now: false`, `boundary_opened_now: false`, and `ready_for_real_upload_now: false`.
+- Creates final-boundary review artifacts that remain review-only and keep all checks from enabling runtime, opening the boundary, or enabling real upload.
+- Creates final-boundary safe report artifacts with sections for boundary, review, runtime, and status.
+- Ensures final-boundary safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation closeout marker after the safe report.
+- Adds revoke helpers for runtime activation final-boundary, final-boundary review, and final-boundary safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not open the final boundary.
+- Does not execute a rehearsal.
+- Does not execute a simulation.
+- Does not execute a dry run.
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation closeout/review/safe-report artifacts based on the final-boundary safe report, still without opening the boundary, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BJ: Runtime Activation Closeout, Review, and Safe Report
+
+This phase implements a runtime activation closeout, closeout review, and closeout safe report helper layer as inert TypeScript helpers and tests after the final-boundary safe report boundary.
+
+**What it does**
+- Creates runtime activation closeout artifacts from approved runtime activation final-boundary safe reports and final-boundary artifacts.
+- Records closeout controls: closeout-only, closeout-record-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, closeout not executed now, and real upload still blocked.
+- Creates closeout terms for scope, runtime, credentials, and status, all with `runtime_enabled_now: false`, `closeout_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates closeout review artifacts that remain review-only and keep all checks from enabling runtime, executing closeout, or enabling real upload.
+- Creates closeout safe report artifacts with sections for closeout, review, runtime, and status.
+- Ensures closeout safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation archive marker after the safe report.
+- Adds revoke helpers for runtime activation closeout, closeout review, and closeout safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not execute closeout.
+- Does not open the final boundary.
+- Does not execute a rehearsal.
+- Does not execute a simulation.
+- Does not execute a dry run.
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation archive/review/safe-report artifacts based on the closeout safe report, still without closeout execution, archive execution, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BK: Runtime Activation Archive, Review, and Safe Report
+
+This phase implements a runtime activation archive, archive review, and archive safe report helper layer as inert TypeScript helpers and tests after the closeout safe report boundary.
+
+**What it does**
+- Creates runtime activation archive artifacts from approved runtime activation closeout safe reports and closeout artifacts.
+- Records archive controls: archive-only, archive-record-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, archive not executed now, and real upload still blocked.
+- Creates archive terms for scope, runtime, credentials, and status, all with `runtime_enabled_now: false`, `archive_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates archive review artifacts that remain review-only and keep all checks from enabling runtime, executing archive behavior, or enabling real upload.
+- Creates archive safe report artifacts with sections for archive, review, runtime, and status.
+- Ensures archive safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation handoff marker after the safe report.
+- Adds revoke helpers for runtime activation archive, archive review, and archive safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not execute archive behavior.
+- Does not execute closeout.
+- Does not open the final boundary.
+- Does not execute a rehearsal.
+- Does not execute a simulation.
+- Does not execute a dry run.
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation handoff/review/safe-report artifacts based on the archive safe report, still without archive execution, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BL: Runtime Activation Handoff, Review, and Safe Report
+
+This phase implements a runtime activation handoff, handoff review, and handoff safe report helper layer as inert TypeScript helpers and tests after the archive safe report boundary.
+
+**What it does**
+- Creates runtime activation handoff artifacts from approved runtime activation archive safe reports and archive artifacts.
+- Records handoff controls: handoff-only, handoff-record-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, handoff not executed now, and real upload still blocked.
+- Creates handoff terms for scope, runtime, credentials, and status, all with `runtime_enabled_now: false`, `handoff_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates handoff review artifacts that remain review-only and keep all checks from enabling runtime, executing handoff behavior, or enabling real upload.
+- Creates handoff safe report artifacts with sections for handoff, review, runtime, and status.
+- Ensures handoff safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation sequence-summary marker after the safe report.
+- Adds revoke helpers for runtime activation handoff, handoff review, and handoff safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not execute handoff behavior.
+- Does not execute archive behavior.
+- Does not execute closeout.
+- Does not open the final boundary.
+- Does not execute a rehearsal.
+- Does not execute a simulation.
+- Does not execute a dry run.
+- Does not implement runtime wiring.
+- Does not enable runtime now.
+- Does not enable real upload now.
+- Does not mark the system ready for real upload.
+- Does not execute runtime behavior.
+- Does not open the final gate.
+- Does not release anything.
+- Does not archive anything now.
+- Does not store runtime callables.
+- Does not index runtime callables.
+- Does not retrieve runtime callables.
+- Does not implement upload execution.
+- Does not upload.
+- Does not execute runtime activation.
+- Does not enable runtime execution.
+- Does not add a network client, platform adapter, credential provider, or media resolver.
+- Does not call platform APIs or make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not permit raw payload or raw response storage.
+- Does not store, index, retrieve, release, archive, or hand off secret material.
+- Does not apply runtime wiring, feature flags, production imports, file mutation, dependency changes, or package metadata changes.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation sequence-summary/review/safe-report artifacts based on the handoff safe report, still without handoff execution, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BM: Runtime Activation Sequence Summary, Review, and Safe Report
+
+This phase implements a runtime activation sequence-summary, review, and safe report helper layer as inert TypeScript helpers and tests after the handoff safe report boundary.
+
+**What it does**
+- Creates runtime activation sequence-summary artifacts from approved runtime activation handoff safe reports and handoff artifacts.
+- Records sequence-summary controls: sequence-summary-only, summary-record-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, summary not finalized now, and real upload still blocked.
+- Creates sequence-summary terms for scope, runtime, credentials, and status, all with `runtime_enabled_now: false`, `summary_finalized_now: false`, and `ready_for_real_upload_now: false`.
+- Creates sequence-summary review artifacts that remain review-only and keep all checks from enabling runtime, finalizing summaries, or enabling real upload.
+- Creates sequence-summary safe report artifacts with sections for summary, review, runtime, and status.
+- Ensures sequence-summary safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation completion-report marker after the safe report.
+- Adds revoke helpers for runtime activation sequence-summary, review, and safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not finalize sequence summaries.
+- Does not execute handoff behavior.
+- Does not execute archive behavior.
+- Does not execute closeout.
+- Does not open the final boundary.
+- Does not execute a rehearsal, simulation, or dry run.
+- Does not implement runtime wiring or enable runtime, real upload, upload execution, network, platform API, credential, env, keychain, token, or media-read behavior.
+- Does not store runtime callables, raw payloads, raw responses, or secret material.
+- Does not change dependencies, package metadata, feature flags, production imports, or file mutation paths.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation completion-report/review/safe-report artifacts based on the sequence-summary safe report, still without summary finalization, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BN: Runtime Activation Completion Report, Review, and Safe Report
+
+This phase implements a runtime activation completion-report, review, and safe report helper layer as inert TypeScript helpers and tests after the sequence-summary safe report boundary.
+
+**What it does**
+- Creates runtime activation completion-report artifacts from approved runtime activation sequence-summary safe reports and sequence-summary artifacts.
+- Records completion-report controls: completion-report-only, completion-record-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, completion not finalized now, and real upload still blocked.
+- Creates completion-report terms for scope, runtime, credentials, and status, all with `runtime_enabled_now: false`, `completion_finalized_now: false`, and `ready_for_real_upload_now: false`.
+- Creates completion-report review artifacts that remain review-only and keep all checks from enabling runtime, finalizing completion reports, or enabling real upload.
+- Creates completion-report safe report artifacts with sections for completion, review, runtime, and status.
+- Ensures completion-report safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation final-handoff marker after the safe report.
+- Adds revoke helpers for runtime activation completion-report, review, and safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not finalize completion reports.
+- Does not finalize sequence summaries.
+- Does not execute handoff, archive, closeout, rehearsal, simulation, or dry-run behavior.
+- Does not implement runtime wiring or enable runtime, real upload, upload execution, network, platform API, credential, env, keychain, token, or media-read behavior.
+- Does not store runtime callables, raw payloads, raw responses, or secret material.
+- Does not change dependencies, package metadata, feature flags, production imports, or file mutation paths.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation final-handoff/review/safe-report artifacts based on the completion-report safe report, still without completion finalization, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BO: Runtime Activation Final Handoff, Review, and Safe Report
+
+This phase implements a runtime activation final-handoff, review, and safe report helper layer as inert TypeScript helpers and tests after the completion-report safe report boundary.
+
+**What it does**
+- Creates runtime activation final-handoff artifacts from approved runtime activation completion-report safe reports and completion-report artifacts.
+- Records final-handoff controls: final-handoff-only, final-handoff-record-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, final handoff not executed now, and real upload still blocked.
+- Creates final-handoff terms for scope, runtime, credentials, and status, all with `runtime_enabled_now: false`, `final_handoff_executed_now: false`, and `ready_for_real_upload_now: false`.
+- Creates final-handoff review artifacts that remain review-only and keep all checks from enabling runtime, executing final handoff, or enabling real upload.
+- Creates final-handoff safe report artifacts with sections for handoff, review, runtime, and status.
+- Ensures final-handoff safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Allows only a future runtime activation terminal-summary marker after the safe report.
+- Adds revoke helpers for runtime activation final-handoff, review, and safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not execute final handoff.
+- Does not finalize completion reports or sequence summaries.
+- Does not execute handoff, archive, closeout, rehearsal, simulation, or dry-run behavior.
+- Does not implement runtime wiring or enable runtime, real upload, upload execution, network, platform API, credential, env, keychain, token, or media-read behavior.
+- Does not store runtime callables, raw payloads, raw responses, or secret material.
+- Does not change dependencies, package metadata, feature flags, production imports, or file mutation paths.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Next phase guidance**
+- If approved later, the next step may add runtime activation terminal-summary/review/safe-report artifacts based on the final-handoff safe report, still without final-handoff execution, upload execution, runtime callable, platform API, credential, or media-read behavior.
+
+### VO-7BP: Runtime Activation Terminal Summary, Review, and Safe Report
+
+This phase implements a runtime activation terminal-summary, review, and safe report helper layer as inert TypeScript helpers and tests after the final-handoff safe report boundary.
+
+**What it does**
+- Creates runtime activation terminal-summary artifacts from approved runtime activation final-handoff safe reports and final-handoff artifacts.
+- Records terminal-summary controls: terminal-summary-only, terminal-record-only, no runtime callable, no raw payload, no raw response, no secret material, no runtime wiring implemented, runtime invocation disabled, terminal summary not finalized now, and real upload still blocked.
+- Creates terminal-summary terms for scope, runtime, credentials, and status, all with `runtime_enabled_now: false`, `terminal_summary_finalized_now: false`, and `ready_for_real_upload_now: false`.
+- Creates terminal-summary review artifacts that remain review-only and keep all checks from enabling runtime, finalizing terminal summaries, or enabling real upload.
+- Creates terminal-summary safe report artifacts with sections for summary, review, runtime, and status.
+- Ensures terminal-summary safe reports contain no runtime callable, raw payload, raw response, or secret material.
+- Marks the inert runtime activation sequence as reaching the terminal boundary without marking any next phase ready.
+- Adds revoke helpers for runtime activation terminal-summary, review, and safe report.
+- Adds tests for approved, blocked, review, safe report, sanitization, and revocation paths.
+
+**What it does not do**
+- Does not finalize terminal summaries.
+- Does not execute final handoff.
+- Does not finalize completion reports or sequence summaries.
+- Does not execute handoff, archive, closeout, rehearsal, simulation, or dry-run behavior.
+- Does not implement runtime wiring or enable runtime, real upload, upload execution, network, platform API, credential, env, keychain, token, or media-read behavior.
+- Does not store runtime callables, raw payloads, raw responses, or secret material.
+- Does not change dependencies, package metadata, feature flags, production imports, or file mutation paths.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+- New tests are present under `projects/probot/src/bot`, but the package `npm test` script still uses a fixed test-file list and was not changed.
+
+**Terminal boundary**
+- The runtime activation helper sequence has reached an inert terminal boundary. Any future implementation after this point should require a fresh roadmap decision and explicit operator approval before adding runtime wiring, runtime invocation, upload execution, platform API access, credentials, media reads, dependency changes, or package metadata changes.
+
+### VO-7BQ: Runtime Activation Sequence Index and Terminal Handoff Documentation
+
+This phase adds an operator-facing sequence index and terminal handoff note for the completed runtime activation helper chain.
+
+**What it does**
+- Creates `operations/runbooks/1778776044891-video-orchestrator-runtime-activation-sequence-index.md`.
+- Indexes VO-7BG through VO-7BP helper files and test files.
+- Records terminal boundary invariants for runtime, real upload, upload execution, network, platform API, credentials, media reads, runtime callables, raw payloads, raw responses, secret material, dependencies, package metadata, production imports, and feature-flag wiring.
+- Documents validation status and the fixed package test-list caveat.
+- Captures the operator decision boundary for any future runtime/upload work.
+
+**What it does not do**
+- Does not add runtime wiring.
+- Does not add runtime invocation.
+- Does not enable real upload or upload execution.
+- Does not add platform API, network, credential, env, keychain, token, or media-read behavior.
+- Does not change dependencies or package metadata.
+- Does not create raw payload, raw response, or secret storage.
+
+**Validation**
+- Documentation artifact write was verified on disk by BuildFlow.
+
+**Next phase guidance**
+- If approved later, the next step may create a controlled runtime activation implementation design only, still without runtime wiring, runtime invocation, upload execution, platform API access, credentials, media reads, dependency changes, package metadata changes, or production imports.
+
+### VO-7BR: Controlled Runtime Wiring Design-Only Plan
+
+This phase adds a controlled runtime wiring implementation design plan only.
+
+**What it does**
+- Creates `operations/runbooks/1778776083129-video-orchestrator-controlled-runtime-wiring-design-plan.md`.
+- Defines a future disabled runtime entrypoint shape.
+- Defines required guards for any future runtime wiring implementation.
+- Defines forbidden first-implementation behaviors.
+- Defines a suggested future phase sequence for disabled no-op runtime wiring, review, safe report, and dry-run invocation design.
+- Captures validation guidance for the next implementation-only phase.
+
+**What it does not do**
+- Does not implement runtime wiring.
+- Does not add production imports.
+- Does not add feature flags.
+- Does not add callable runtime paths.
+- Does not enable runtime invocation.
+- Does not enable real upload or upload execution.
+- Does not add platform API, network, credential, env, keychain, token, or media-read behavior.
+- Does not change dependencies or package metadata.
+- Does not store raw payloads, raw responses, or secret material.
+
+**Validation**
+- Design artifact write was verified on disk by BuildFlow.
+
+**Next phase guidance**
+- Option C begins after this point. Controlled runtime wiring implementation requires explicit operator confirmation before changing source code that adds runtime entrypoint behavior, even if disabled and no-op.
+
+### VO-7BS: Disabled Runtime Activation Entrypoint
+
+This phase implements the first controlled runtime wiring source file as a disabled no-op entrypoint only.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-runtime-activation-entrypoint.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-runtime-activation-entrypoint.test.ts`.
+- Defines a local disabled runtime activation result helper.
+- Keeps `runtime_invoked`, `upload_executed`, `platform_api_called`, `network_called`, `credentials_accessed`, `token_accessed`, `keychain_accessed`, `env_accessed`, and `media_read` false.
+- Keeps raw payload, raw response, secret material, and runtime callable markers false.
+- Adds revocation behavior that remains disabled.
+- Adds tests for disabled behavior, sanitization, and revocation.
+
+**What it does not do**
+- Does not add production imports.
+- Does not register CLI commands, HTTP routes, webhooks, cron jobs, queue consumers, or scheduler hooks.
+- Does not invoke runtime behavior.
+- Does not enable runtime execution.
+- Does not enable real upload or upload execution.
+- Does not call platform APIs or network.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+**Next phase guidance**
+- If approved later, the next controlled runtime wiring step may add a disabled entrypoint review and safe report helper, still without production imports, automatic invocation, upload execution, platform API access, credentials, media reads, dependency changes, or package metadata changes.
+
+### VO-7BT: Disabled Runtime Activation Entrypoint Review and Safe Report
+
+This phase implements review and safe-report helpers for the disabled runtime activation entrypoint.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-runtime-activation-entrypoint-review.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-runtime-activation-entrypoint-review.test.ts`.
+- Reviews disabled runtime activation entrypoint results only.
+- Creates disabled runtime activation entrypoint safe reports.
+- Allows only a future disabled dry-run invocation design marker.
+- Keeps production imports, automatic invocation, runtime invocation, upload execution, platform APIs, network, credentials, and media reads disabled.
+- Adds revocation helpers and tests.
+
+**What it does not do**
+- Does not add production imports.
+- Does not register CLI commands, HTTP routes, webhooks, cron jobs, queue consumers, or scheduler hooks.
+- Does not invoke runtime behavior.
+- Does not enable runtime execution.
+- Does not enable real upload or upload execution.
+- Does not call platform APIs or network.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+**Next phase guidance**
+- If approved later, the next controlled runtime wiring step may add disabled dry-run invocation design helpers, still without actual dry-run invocation, production imports, automatic invocation, upload execution, platform API access, credentials, media reads, dependency changes, or package metadata changes.
+
+### VO-7BU: Disabled Dry-Run Invocation Design, Review, and Safe Report
+
+This phase implements disabled dry-run invocation design, review, and safe-report helpers after the disabled runtime entrypoint safe report.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-runtime-dry-run-invocation-design.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-runtime-dry-run-invocation-design.test.ts`.
+- Designs disabled dry-run invocation only.
+- Creates review and safe-report artifacts for the disabled dry-run invocation design.
+- Allows only a future disabled dry-run invocation result marker.
+- Keeps dry-run invocation, runtime invocation, upload execution, platform APIs, network, credentials, and media reads disabled.
+- Adds revocation helpers and tests.
+
+**What it does not do**
+- Does not execute a dry-run invocation.
+- Does not add production imports.
+- Does not register CLI commands, HTTP routes, webhooks, cron jobs, queue consumers, or scheduler hooks.
+- Does not invoke runtime behavior.
+- Does not enable runtime execution.
+- Does not enable real upload or upload execution.
+- Does not call platform APIs or network.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes after a test typing repair.
+
+**Next phase guidance**
+- If approved later, the next controlled runtime wiring step may add a disabled dry-run invocation result helper, still without actual dry-run invocation, production imports, automatic invocation, upload execution, platform API access, credentials, media reads, dependency changes, or package metadata changes.
+
+### VO-7BV: Disabled Dry-Run Invocation Result and Review
+
+This phase implements disabled dry-run invocation result and review helpers after the disabled dry-run invocation design safe report.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-runtime-dry-run-invocation-result.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-runtime-dry-run-invocation-result.test.ts`.
+- Records a disabled dry-run invocation result only.
+- Reviews the disabled dry-run invocation result.
+- Allows only a future disabled runtime wiring closeout marker.
+- Keeps dry-run invocation, runtime invocation, upload execution, platform APIs, network, credentials, and media reads disabled.
+- Adds revocation helpers and tests.
+
+**What it does not do**
+- Does not execute a dry-run invocation.
+- Does not add production imports.
+- Does not register CLI commands, HTTP routes, webhooks, cron jobs, queue consumers, or scheduler hooks.
+- Does not invoke runtime behavior.
+- Does not enable runtime execution.
+- Does not enable real upload or upload execution.
+- Does not call platform APIs or network.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+**Next phase guidance**
+- Option C has reached a disabled runtime wiring closeout boundary. Option D would require controlled real upload implementation details and explicit operator confirmation of target platform, credential strategy, media-read boundary, network/platform API boundary, kill-switch behavior, and single-upload constraints.
+
+### VO-7BW: Says the Bible Migration Architecture Decision and Option D Reframe
+
+This phase pauses real-upload implementation and records the architecture decision for how the existing Says the Bible pipeline should relate to the Video Orchestrator.
+
+**What it does**
+- Creates `operations/runbooks/1778778167625-video-orchestrator-says-the-bible-migration-architecture.md`.
+- Records that the existing Says the Bible pipeline remains operational and unchanged.
+- Records that Video Orchestrator becomes the long-term canonical production house for all projects, platforms, and platform accounts.
+- Defines the short-term coexistence model: old Says the Bible pipeline plus new Video Orchestrator pipeline.
+- Defines the future migration model: Says the Bible becomes one project configuration inside Video Orchestrator after parity is proven.
+- Clarifies media boundary examples: allowed generated render artifacts only, no arbitrary filesystem reads.
+- Clarifies network/platform API boundary examples: exact platform operations only, no arbitrary outbound calls or mass updates.
+- Reframes Option D away from immediate upload execution and toward staged platform/account architecture, YouTube adapter preflight design, credential/media/network preflight, then one separately approved controlled YouTube upload.
+- Records minimum kill-switch gates: global upload gate, per-project gate, per-platform-account gate, and first-upload operator/idempotency gate.
+- Records recommendation for one upload attempt first because external uploads consume quota and can create duplicate public/scheduled channel state.
+
+**What it does not do**
+- Does not modify the Says the Bible repo.
+- Does not copy the Says the Bible pipeline into Brain.
+- Does not execute YouTube upload behavior.
+- Does not add platform API, network, credential, env, keychain, token, media-read, dependency, or package metadata behavior.
+- Does not create or expose secrets.
+
+**Revised Option D phase order**
+1. Project/platform/account credential model and dashboard UI design.
+2. Says the Bible read-only adapter/migration mapping design.
+3. YouTube platform policy and schedule/quota/resume design.
+4. YouTube credential/media/network preflight helpers.
+5. One separately approved scheduled/private YouTube upload attempt.
+6. Migration bridge that represents Says the Bible as a project in Video Orchestrator while keeping the old pipeline unchanged.
+
+**Validation**
+- Architecture artifact write was verified on disk by BuildFlow.
+- Roadmap implementation is paused before any real-upload execution.
+
+**Next phase guidance**
+- Resume implementation with the revised Option D Stage 1: project/platform/account credential model and dashboard UI design artifacts. This stage should still be design/schema/UI-planning only unless separately approved for database migrations, secrets handling, OAuth callbacks, or package metadata changes.
+
+### VO-7BX: Project/Platform/Account Model Design
+
+This phase implements inert project/platform/account model design helpers and tests for the unified Video Orchestrator account architecture.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-account-model-design.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-account-model-design.test.ts`.
+- Models projects with multiple platform accounts.
+- Models multiple accounts per platform for one project.
+- Models safe credential references without raw token or secret material.
+- Models dashboard sections for Projects, Platform Accounts, Credential Health, OAuth Connect, API Setup Instructions, Account Limits, and Upload Gates.
+- Defaults Says the Bible to YouTube, Pinterest, and Facebook account-model examples.
+- Creates review and safe-report helpers for the account model design.
+- Allows only a future Says the Bible legacy mapping design marker.
+
+**What it does not do**
+- Does not add database migrations.
+- Does not implement dashboard UI routes or components.
+- Does not add OAuth callbacks or token exchange.
+- Does not read or write credentials, tokens, keychain entries, env vars, or secret stores.
+- Does not call network or platform APIs.
+- Does not read media files.
+- Does not enable upload execution.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes after a narrow TypeScript typing repair.
+
+**Next phase guidance**
+- Resume with VO-7BY: Says the Bible legacy mapping and migration bridge design. Keep it read-only/design-only and do not mutate the Says the Bible repo.
+
+### VO-7BY: Says the Bible Legacy Mapping and Migration Bridge Design
+
+This phase implements inert Says the Bible legacy mapping and migration bridge design helpers and tests.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-says-the-bible-mapping-design.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-says-the-bible-mapping-design.test.ts`.
+- Maps read-only legacy surfaces from Says the Bible to future Video Orchestrator abstractions:
+  - YouTube upload script → platform adapter.
+  - YouTube OAuth setup → credential reference.
+  - YouTube/DB sync → upload lifecycle.
+  - YouTube thumbnail sync → platform policy.
+  - Pipeline docs/control tower → project configuration.
+  - `production/output/<slug>` → media artifact boundary.
+- Creates review and safe-report helpers.
+- Allows only a future YouTube platform policy design marker.
+
+**What it does not do**
+- Does not mutate the Says the Bible repo.
+- Does not call legacy pipeline scripts.
+- Does not copy credentials or token files.
+- Does not read media files.
+- Does not call network or platform APIs.
+- Does not execute upload behavior.
+- Does not enable a migration bridge.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+**Next phase guidance**
+- Resume with VO-7BZ: YouTube platform policy, scheduling, quota, and resume design. Keep it policy/design-only with no network, API, credential, or media access.
+
+### VO-7BZ: YouTube Platform Policy, Scheduling, Quota, and Resume Design
+
+This phase implements inert YouTube platform policy, scheduling, quota, and resume design helpers and tests.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-platform-policy.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-platform-policy.test.ts`.
+- Defines scheduled-first/private-fallback upload policy.
+- Defines one-upload-first attempt limit.
+- Defines idempotency and duplicate-prevention requirements.
+- Defines retry/resume behavior for quota and rate-limit windows.
+- Defines upload attempt states: planned, preflighted, queued, uploading, uploaded, scheduled, blocked, retryable, failed, canceled.
+- Records current YouTube docs constraints used by the design: scheduled publication requires private status, unverified API-project uploads may be restricted to private, and `videos.insert` quota is budgeted as 100 units.
+- Creates review and safe-report helpers.
+- Allows only a future credential/OAuth UI design marker.
+
+**What it does not do**
+- Does not call YouTube APIs.
+- Does not make network calls.
+- Does not access credentials, tokens, env vars, keychain, or media files.
+- Does not execute uploads.
+- Does not enforce policy at runtime.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes after a narrow interface repair.
+
+**Next phase guidance**
+- Resume with VO-7CA: credential/OAuth UI flow design. Keep it design-only and do not implement routes, token exchange, secret storage, env writes, dashboard components, or package metadata changes unless separately approved.
+
+### VO-7CA: Account/OAuth UI Flow Design
+
+This phase implements inert account/OAuth UI flow design helpers and tests.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-account-ui-flow-design.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-account-ui-flow-design.test.ts`.
+- Uses a neutral filename because BuildFlow correctly blocked a credential-like filename as a secret-path risk.
+- Designs dashboard sections for Projects, Platform Accounts, Connection Health, OAuth Connect, API Setup Instructions, Account Limits, and Upload Gates.
+- Designs redacted connection states: disconnected, setup_required, auth_started, connected, expired, revoked, invalid_scope, blocked.
+- Creates review and safe-report helpers.
+- Allows only a future YouTube preflight-contracts marker.
+
+**What it does not do**
+- Does not add routes or dashboard components.
+- Does not add OAuth callbacks.
+- Does not exchange tokens.
+- Does not read or write secrets, tokens, env vars, keychain entries, or secret stores.
+- Does not call network or platform APIs.
+- Does not read media files.
+- Does not execute upload behavior.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+**Next phase guidance**
+- Resume with VO-7CB: YouTube credential/media/network preflight contracts. Use neutral filenames if secret-path policy blocks credential-like paths. Keep the phase contract-only and do not perform live preflight, credential access, media reads, network calls, or YouTube API calls.
+
+### VO-7CB: YouTube Preflight Contracts
+
+This phase implements inert YouTube preflight contract helpers and tests.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-preflight-contracts.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-preflight-contracts.test.ts`.
+- Defines declared-only boundaries for account reference, media reference, network operation, platform method, schedule policy, idempotency, single attempt, and redaction.
+- Records intended future YouTube method as `videos.insert`, scheduled-first/private-fallback publish mode, and one-attempt limit.
+- Keeps all live preflight, secret, token, env, keychain, media, network, platform API, upload, raw payload, and raw response behavior disabled.
+
+**What it does not do**
+- Does not perform live preflight.
+- Does not access secrets, tokens, env vars, keychain entries, or secret stores.
+- Does not read media files.
+- Does not call network or YouTube APIs.
+- Does not execute upload behavior.
+- Does not store raw payloads or raw responses.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7CC: YouTube Preflight Review and Safe Report
+
+This phase reviews the YouTube preflight contracts and creates a safe report.
+
+**What it does**
+- Adds review and safe-report helpers in `projects/probot/src/bot/video-orchestrator-youtube-preflight-contracts.ts`.
+- Reviews all declared preflight boundaries.
+- Produces a safe report that can only approve a future live-preflight implementation boundary.
+- Keeps all live preflight, secret, token, env, keychain, media, network, platform API, upload, raw payload, and raw response behavior disabled.
+
+**What it does not do**
+- Does not perform live preflight.
+- Does not access secrets, tokens, env vars, keychain entries, or secret stores.
+- Does not read media files.
+- Does not call network or YouTube APIs.
+- Does not execute upload behavior.
+- Does not store raw payloads or raw responses.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+**Next phase guidance**
+- Resume with VO-7CD: live preflight implementation boundary. This is an approval-boundary phase only; stop before any secret access, media read, network call, YouTube API call, live preflight, package metadata change, or upload execution.
+
+### VO-7CD: YouTube Live Preflight Implementation Boundary
+
+This phase implements inert live-preflight implementation boundary helpers and tests.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-live-preflight-boundary.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-live-preflight-boundary.test.ts`.
+- Defines the boundary controls needed before any future live preflight implementation: exact files, secret access, media stat, media read, network call, platform API call, redaction, storage, and rollback.
+- Records that explicit operator confirmation is required before any live preflight implementation.
+- Adds review helpers for the boundary.
+
+**What it does not do**
+- Does not implement live preflight.
+- Does not approve exact implementation files.
+- Does not access secrets, tokens, env vars, keychain entries, or secret stores.
+- Does not stat or read media files.
+- Does not call network or YouTube APIs.
+- Does not execute upload behavior.
+- Does not store raw payloads or raw responses.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+**Manual boundary**
+- Stop here. The next step would cross into live preflight implementation planning and requires explicit operator confirmation of exact files and allowed operations before any secret, media, network, platform API, package metadata, or upload behavior is introduced.
+
+### VO-7CE: YouTube Live Preflight Implementation Planning
+
+This phase implements inert live YouTube preflight implementation planning helpers and tests after operator approval for planning only.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-live-preflight-plan.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-live-preflight-plan.test.ts`.
+- Plans exact future files for live preflight implementation:
+  - `projects/probot/src/bot/video-orchestrator-youtube-live-preflight.ts`.
+  - `projects/probot/src/bot/video-orchestrator-youtube-live-preflight.test.ts`.
+  - `operations/runbooks/video-orchestrator-roadmap.md`.
+- Designs future secret/token/keychain/env access boundaries as safe-reference/redacted-output only.
+- Designs future media stat/read boundaries while keeping media stat/read disabled now.
+- Designs a future YouTube account/channel identity check that must return redacted summaries only.
+- Designs future outbound network/API preflight boundaries without enabling network/API calls now.
+- Designs future redaction, safe-summary storage, and rollback requirements.
+- Creates plan review and safe-report helpers.
+- Produces a safe report requiring explicit confirmation before live preflight implementation.
+
+**What it does not do**
+- Does not implement live preflight.
+- Does not access secrets, tokens, env vars, keychain entries, or secret stores.
+- Does not stat or read media files.
+- Does not call network or YouTube APIs.
+- Does not execute upload behavior.
+- Does not store raw payloads or raw responses.
+- Does not change dependencies or package metadata.
+- Does not commit or push.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes after a narrow tuple typing repair.
+
+**Manual boundary**
+- Stop here. The next step would implement live preflight code and requires explicit operator confirmation before any secret/token/env/keychain design becomes code that accesses values, before any media stat/read occurs, before any network/API call occurs, and before any upload-related execution is introduced.
+
+### VO-7CF: YouTube Live Preflight Implementation
+
+This phase implements the approved live YouTube preflight code using dependency-injected adapters only.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-live-preflight.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-live-preflight.test.ts`.
+- Allows live preflight to check redacted account references through an injected account probe.
+- Allows token/account status summaries through an injected account probe.
+- Allows stat-only media validation through an injected media probe.
+- Allows YouTube channel/account identity preflight through an injected YouTube probe.
+- Allows YouTube-only network/API preflight through the injected YouTube probe.
+- Allows safe-summary storage through an injected summary store.
+- Keeps upload execution, real upload, raw payload storage, raw response storage, and secret material exposure disabled.
+
+**What it does not do**
+- Does not implement or call `videos.insert`.
+- Does not upload media.
+- Does not include a concrete YouTube API client.
+- Does not include concrete secret, env, keychain, or token readers.
+- Does not include concrete media readers beyond the injected stat contract.
+- Does not change dependencies or package metadata.
+- Does not commit or push.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes after a narrow optional-property/boundary typing repair.
+
+### VO-7CG: YouTube Live Preflight Review, Safe Report, and First Controlled Upload Boundary
+
+This phase adds review, safe-report, and first controlled upload boundary helpers after live preflight.
+
+**What it does**
+- Adds live preflight review helpers.
+- Adds live preflight safe-report helpers.
+- Adds first controlled upload boundary helpers.
+- Requires explicit operator confirmation before first controlled upload implementation.
+- Records single-upload-attempt-only and scheduled-first/private-fallback constraints.
+- Keeps upload execution, real upload, media upload payload creation, raw payload storage, raw response storage, and `videos.insert` execution disabled.
+
+**What it does not do**
+- Does not implement first upload code.
+- Does not execute upload behavior.
+- Does not call `videos.insert`.
+- Does not create upload payloads.
+- Does not read media for upload.
+- Does not change dependencies or package metadata.
+- Does not commit or push.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+**Manual boundary**
+- Stop here. The next step would implement first controlled YouTube upload behavior and requires explicit operator confirmation before media upload payload creation, upload execution, `videos.insert`, scheduled publish mutation, raw response handling, or any real upload attempt.
 
 ### VO-7C: Upload Package Design
 
@@ -1900,3 +3955,391 @@ Status: complete.
 VO-7DG adds a runtime activation simulation contract, VO-7DH adds a simulation review, and VO-7DI adds a simulation safe report. These phases remain simulation-contract/review/report artifacts only.
 
 They do not implement runtime wiring, enable runtime, enable real upload, enable upload execution, execute dry-runs or simulations, make network calls, call platform APIs, access credentials/tokens/env/keychain, read media, mutate files, add dependencies, modify package metadata, or make `ready_for_real_upload` true.
+
+### VO-7CH: First Controlled YouTube Upload Implementation
+
+This phase implements the first controlled YouTube upload path after explicit operator approval.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-first-controlled-upload.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-first-controlled-upload.test.ts`.
+- Adds a single injected-adapter upload path for one `videos.insert` attempt.
+- Allows media-read upload payload creation only for one approved render artifact.
+- Enforces one project, one platform account, one render artifact, one upload attempt.
+- Uses scheduled-first/private fallback metadata with `privacy_status: private`.
+- Blocks bulk uploads, deletes, unrelated metadata changes, raw payload storage, and raw response storage.
+- Stores only safe summaries when a safe-summary adapter is provided.
+
+**What it does not do**
+- Does not add bulk upload automation.
+- Does not add repeat upload scheduling.
+- Does not delete videos.
+- Does not mutate unrelated metadata.
+- Does not store raw payloads or raw platform responses.
+- Does not change dependencies or package metadata.
+- Does not commit or push.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes after safe typing repairs.
+
+### VO-7CI: First Controlled YouTube Upload Review and Safe Report
+
+This phase adds review and safe-report helpers for the first controlled upload result.
+
+**What it does**
+- Reviews the first controlled upload result.
+- Produces a safe report with uploaded video id, scheduled/private status, and one-attempt evidence as safe summaries.
+- Requires operator review before repeatability, automation, bulk scheduling, deletes, or unrelated metadata updates.
+
+**What it does not do**
+- Does not approve repeatability.
+- Does not approve automation.
+- Does not approve bulk uploads.
+- Does not approve deletes.
+- Does not approve unrelated metadata changes.
+- Does not change dependencies or package metadata.
+- Does not commit or push.
+
+**Manual boundary**
+- Stop here. The next step would cross into repeatability/automation review or multi-upload expansion and requires explicit operator review of the first controlled upload result.
+
+### VO-7CJ: YouTube Repeatability/Automation Planning
+
+This phase implements repeatability/automation planning helpers after operator review of the first controlled upload result.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-repeatability-automation-plan.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-repeatability-automation-plan.test.ts`.
+- Plans idempotency, schedule windows, quota/rate-limit resume, single-account queues, duplicate prevention, safe-summary storage, operator gates, bulk-upload guards, delete guards, unrelated-metadata guards, and rollback.
+- Keeps all repeatability implementation and automation disabled.
+
+**What it does not do**
+- Does not implement repeat uploads.
+- Does not execute repeat uploads.
+- Does not enable automation.
+- Does not enable or execute bulk uploads.
+- Does not enable or execute deletes.
+- Does not enable unrelated metadata changes.
+- Does not read media, call network/platform APIs, or execute uploads.
+- Does not change dependencies or package metadata.
+- Does not commit or push.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7CK: YouTube Repeatability/Automation Review and Safe Report
+
+This phase reviews repeatability/automation planning and creates a safe report.
+
+**What it does**
+- Reviews all repeatability/automation planning items.
+- Produces a safe report requiring explicit operator confirmation before repeatability implementation.
+- Keeps repeat upload execution, automation, bulk scheduling, deletes, and unrelated metadata changes disabled.
+
+**Manual boundary**
+- Stop here. The next step would cross into repeatability implementation and requires explicit operator confirmation before any repeat upload execution, automation, bulk scheduling, deletes, unrelated metadata changes, media reads, network/API calls, commits, or pushes.
+
+### VO-7CL: YouTube Repeatability Implementation
+
+This phase implements repeatability readiness helpers after explicit operator approval.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-repeatability-implementation.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-repeatability-implementation.test.ts`.
+- Runs idempotency, schedule-window, and quota/resume readiness checks through injected adapters.
+- Stores only safe summaries when a safe-summary adapter is provided.
+- Keeps repeat upload execution, automation, bulk uploads, deletes, and unrelated metadata changes disabled.
+
+**What it does not do**
+- Does not execute repeat uploads.
+- Does not enable automation.
+- Does not enable or execute bulk uploads.
+- Does not enable or execute deletes.
+- Does not enable unrelated metadata changes.
+- Does not change dependencies or package metadata.
+- Does not commit or push.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7CM: YouTube Repeatability Implementation Review and Safe Report
+
+This phase reviews repeatability implementation results and creates a safe report.
+
+**What it does**
+- Reviews repeatability readiness results.
+- Produces a safe report requiring explicit operator confirmation before automation expansion.
+- Keeps repeat upload execution, automation, bulk scheduling, deletes, and unrelated metadata changes disabled.
+
+**Manual boundary**
+- Stop here. The next step would cross into automation expansion or broader scheduling and requires explicit operator confirmation before automation, repeated upload execution, bulk scheduling, deletes, unrelated metadata updates, commits, or pushes.
+
+### VO-7CN: YouTube Automation Expansion
+
+This phase implements single-account automation expansion readiness helpers after explicit operator approval.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-automation-expansion.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-automation-expansion.test.ts`.
+- Checks a single-account queue through injected adapters.
+- Checks queue readiness without executing uploads.
+- Stores only safe summaries when a safe-summary adapter is provided.
+- Keeps repeat upload execution, automation execution, bulk uploads, deletes, unrelated metadata changes, multi-account expansion, and multi-platform expansion disabled.
+
+**What it does not do**
+- Does not execute uploads.
+- Does not execute automation.
+- Does not enable bulk uploads.
+- Does not delete videos.
+- Does not mutate unrelated metadata.
+- Does not enable multi-account or multi-platform expansion.
+- Does not change dependencies or package metadata.
+- Does not commit or push.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7CO: YouTube Automation Expansion Review and Safe Report
+
+This phase reviews automation expansion readiness and creates a safe report.
+
+**What it does**
+- Reviews single-account queue readiness.
+- Produces a safe report requiring explicit operator confirmation before multi-account/platform expansion.
+- Keeps upload execution, bulk scheduling, deletes, unrelated metadata changes, multi-account expansion, and multi-platform expansion disabled.
+
+**Manual boundary**
+- Stop here. The next step would cross into multi-account/platform expansion and requires explicit operator confirmation before multi-account queues, multi-platform queues, bulk execution, deletes, unrelated metadata changes, commits, or pushes.
+
+### VO-7CP: YouTube Multi-Account/Platform Expansion
+
+This phase implements multi-account/platform expansion readiness helpers after explicit operator approval.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-multi-account-platform-expansion.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-multi-account-platform-expansion.test.ts`.
+- Checks account/platform queues through injected adapters.
+- Checks expansion readiness without executing uploads.
+- Stores only safe summaries when a safe-summary adapter is provided.
+- Keeps upload execution, bulk uploads, deletes, and unrelated metadata changes disabled.
+
+**What it does not do**
+- Does not execute uploads.
+- Does not execute bulk uploads.
+- Does not enable delete capability.
+- Does not mutate unrelated metadata.
+- Does not change dependencies or package metadata.
+- Does not commit or push.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7CQ: YouTube Multi-Account/Platform Expansion Review and Safe Report
+
+This phase reviews multi-account/platform expansion readiness and creates a safe report.
+
+**What it does**
+- Reviews cross-account/platform queue readiness.
+- Produces a safe report requiring explicit operator confirmation before bulk execution boundary work.
+- Keeps upload execution, bulk uploads, deletes, and unrelated metadata changes disabled.
+
+**Manual boundary**
+- Stop here. The next step would cross into bulk execution boundary work and requires explicit operator confirmation before bulk execution, delete capability, unrelated metadata mutation, commits, or pushes.
+
+### VO-7CR: YouTube Bulk Execution Boundary
+
+This phase implements bulk execution boundary helpers after explicit operator approval.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-bulk-execution-boundary.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-bulk-execution-boundary.test.ts`.
+- Plans and validates boundary controls for batch size, cadence, quota, idempotency, duplicate prevention, account partition, platform partition, delete guard, metadata guard, manual pause, and rollback.
+- Keeps actual bulk uploads, deletes, unrelated metadata changes, commits, and pushes disabled.
+- Stores only safe summaries when a safe-summary adapter is provided.
+
+**What it does not do**
+- Does not execute bulk uploads.
+- Does not execute deletes.
+- Does not mutate unrelated metadata.
+- Does not commit or push.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7CS: YouTube Bulk Execution Boundary Review and Safe Report
+
+This phase reviews bulk execution boundary controls and creates a safe report.
+
+**What it does**
+- Reviews the bulk execution boundary result.
+- Produces a safe report requiring explicit operator confirmation before controlled bulk execution.
+- Keeps actual bulk uploads, deletes, unrelated metadata changes, commits, and pushes disabled.
+
+**Manual boundary**
+- Stop here. The next step would cross into controlled bulk execution and requires explicit operator confirmation before any actual bulk uploads, deletes, unrelated metadata changes, commits, or pushes.
+
+### VO-7CT: YouTube Controlled Bulk Execution
+
+This phase implements controlled bulk execution helpers after explicit operator approval.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-controlled-bulk-execution.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-controlled-bulk-execution.test.ts`.
+- Executes a bounded set of approved queue items through injected adapters.
+- Enforces `max_items_to_execute` and safe result summaries.
+- Supports completed and partial controlled bulk execution outcomes.
+- Keeps deletes, unrelated metadata changes, commits, and pushes disabled.
+
+**What it does not do**
+- Does not execute deletes.
+- Does not mutate unrelated metadata.
+- Does not commit or push.
+- Does not store raw payloads or raw platform responses.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7CU: YouTube Controlled Bulk Execution Review and Safe Report
+
+This phase reviews controlled bulk execution results and creates a safe report.
+
+**What it does**
+- Reviews controlled bulk execution results, attempted count, uploaded count, and safety flags.
+- Produces a safe report requiring explicit operator confirmation before delete/metadata boundary work.
+- Keeps deletes, unrelated metadata changes, commits, and pushes disabled.
+
+**Manual boundary**
+- Stop here. The next step would cross into delete/metadata boundary work and requires explicit operator confirmation before any delete capability, unrelated metadata mutation, commits, or pushes.
+
+### VO-7CV: YouTube Delete/Metadata Boundary Planning
+
+This phase implements delete/metadata boundary planning helpers after explicit operator approval.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-delete-metadata-boundary-plan.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-delete-metadata-boundary-plan.test.ts`.
+- Plans controls for delete intent, metadata intent, scope limits, approval gates, dry-run requirements, audit logs, redaction, rollback, and no-commit/no-push guardrails.
+- Keeps actual deletes, unrelated metadata changes, commits, and pushes disabled.
+
+**What it does not do**
+- Does not execute deletes.
+- Does not mutate unrelated metadata.
+- Does not commit or push.
+- Does not store raw payloads or raw platform responses.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7CW: YouTube Delete/Metadata Boundary Review and Safe Report
+
+This phase reviews delete/metadata boundary planning and creates a safe report.
+
+**What it does**
+- Reviews all planned delete/metadata boundary controls.
+- Produces a safe report requiring explicit operator confirmation before delete/metadata implementation.
+- Keeps actual deletes, unrelated metadata changes, commits, and pushes disabled.
+
+**Manual boundary**
+- Stop here. The next step would cross into delete/metadata implementation and requires explicit operator confirmation before any actual delete capability, unrelated metadata mutation, commits, or pushes.
+
+### VO-7CX: YouTube Delete/Metadata Implementation
+
+This phase implements delete/metadata implementation checks after explicit operator approval.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-delete-metadata-implementation.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-delete-metadata-implementation.test.ts`.
+- Lists planned delete/metadata intents through injected adapters.
+- Checks implementation readiness without executing deletes or unrelated metadata mutations.
+- Stores only safe summaries when a safe-summary adapter is provided.
+- Keeps actual deletes, unrelated metadata changes, commits, and pushes disabled.
+
+**What it does not do**
+- Does not execute deletes.
+- Does not mutate unrelated metadata.
+- Does not commit or push.
+- Does not store raw payloads or raw platform responses.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7CY: YouTube Delete/Metadata Implementation Review and Safe Report
+
+This phase reviews delete/metadata implementation checks and creates a safe report.
+
+**What it does**
+- Reviews planned delete/metadata intents and readiness results.
+- Produces a safe report requiring explicit operator confirmation before commit/push boundary work.
+- Keeps actual deletes, unrelated metadata changes, commits, and pushes disabled.
+
+**Manual boundary**
+- Stop here. The next step would cross into commit/push boundary work and requires explicit operator confirmation before staging, committing, pushing, or any destructive cleanup.
+
+### VO-7CZ: YouTube Commit/Push Boundary Planning
+
+This phase implements commit/push boundary planning helpers after explicit operator approval.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-commit-push-boundary-plan.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-commit-push-boundary-plan.test.ts`.
+- Plans controls for git status review, changed-file allowlisting, staging plan, commit message, no-push default, validation evidence, destructive-cleanup guard, rollback notes, and operator confirmation.
+- Keeps staging, commits, pushes, and destructive cleanup disabled.
+
+**What it does not do**
+- Does not stage files.
+- Does not commit.
+- Does not push.
+- Does not perform destructive cleanup.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7DA: YouTube Commit/Push Boundary Review and Safe Report
+
+This phase reviews commit/push boundary planning and creates a safe report.
+
+**What it does**
+- Reviews all planned commit/push boundary controls.
+- Produces a safe report requiring explicit operator confirmation before staging, committing, or pushing.
+- Keeps staging, commits, pushes, and destructive cleanup disabled.
+
+**Manual boundary**
+- Stop here. The next step would cross into staging/commit/push workflow and requires explicit operator confirmation before any git add, git commit, git push, or destructive cleanup.
+
+### VO-7DB: YouTube Staging/Commit Plan
+
+This phase implements staging/commit planning helpers after explicit operator approval.
+
+**What it does**
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-staging-commit-plan.ts`.
+- Creates `projects/probot/src/bot/video-orchestrator-youtube-staging-commit-plan.test.ts`.
+- Plans future staging candidates for YouTube Video Orchestrator source files, tests, roadmap, and implementation plan updates.
+- Records a recommended commit message and validation evidence.
+- Keeps git add, commit, and push disabled.
+
+**What it does not do**
+- Does not stage files.
+- Does not commit.
+- Does not push.
+- Does not perform destructive cleanup.
+- Does not change dependencies or package metadata.
+
+**Validation**
+- `npm run typecheck` in `projects/probot` passes.
+
+### VO-7DC: YouTube Staging/Commit Review and Safe Report
+
+This phase reviews staging/commit planning and creates a safe report.
+
+**What it does**
+- Reviews planned future staging candidates.
+- Produces a safe report requiring explicit operator confirmation before git add or commit.
+- Keeps git add, commit, and push disabled.
+
+**Manual boundary**
+- Stop here. The next step would cross into git add/commit workflow and requires explicit operator confirmation before any staging, commit, or push.

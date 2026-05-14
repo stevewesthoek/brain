@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan (Revised)
 
-**Date:** 2026-05-12 (VO-5B Complete)  
-**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B complete (operator review of generated local output). VO-7C complete (upload package design). VO-7D complete (platform upload request artifact). VO-7E complete (upload execution approval). VO-7F complete (upload execution design). VO-7G complete (dry-run upload spike simulation). VO-7H complete (real upload readiness assessment). VO-7I complete (real upload execution request). VO-7J complete (real upload strategy design). VO-7K complete (real upload execution plan). VO-7L complete (real upload dry-run execution simulator). VO-7M complete (final real upload preflight gate). VO-7N complete (real upload implementation design). VO-7O complete (real upload scaffold design). VO-7P complete (real upload scaffold contracts). VO-7Q complete (real upload scaffold contract tests). VO-7R complete (real upload scaffold stub design). VO-7S complete (real upload stub contracts). VO-7T complete (real upload stub contract tests). VO-7U complete (real upload stub no-op implementation design). VO-7V complete (real upload no-op stub file plan). VO-7W complete (real upload no-op stub file creation). VO-7X complete (real upload no-op stub wiring plan); detailed guide for phases 3B+  
+**Date:** 2026-05-14 (VO-7DC Complete; manual confirmation required before git add/commit)  
+**Status:** VO-3F complete (operator approval records, render-readiness freeze). VO-4A complete (render executor contract, dry-run command manifest). VO-4B complete (renderer preflight environment checks). VO-4C complete (renderer binary discovery manifests). VO-4D complete (operator-approved renderer version check plan). VO-4E complete (mock renderer execution result contract). VO-5A complete (real renderer execution spike gate). VO-5B complete (real renderer execution approval record). VO-6A complete (explicit local render spike, test-only asset, operator-gated). VO-6B complete (controlled production render design). VO-6C complete (source media inventory and read-only validation). VO-6D complete (output directory approval and write boundary). VO-6E complete (final production render execution request). VO-7A complete (controlled production render spike). VO-7B complete (operator review of generated local output). VO-7C complete (upload package design). VO-7D complete (platform upload request artifact). VO-7E complete (upload execution approval). VO-7F complete (upload execution design). VO-7G complete (dry-run upload spike simulation). VO-7H complete (real upload readiness assessment). VO-7I complete (real upload execution request). VO-7J complete (real upload strategy design). VO-7K complete (real upload execution plan). VO-7L complete (real upload dry-run execution simulator). VO-7M complete (final real upload preflight gate). VO-7N complete (real upload implementation design). VO-7O complete (real upload scaffold design). VO-7P complete (real upload scaffold contracts). VO-7Q complete (real upload scaffold contract tests). VO-7R complete (real upload scaffold stub design). VO-7S complete (real upload stub contracts). VO-7T complete (real upload stub contract tests). VO-7U complete (real upload stub no-op implementation design). VO-7V complete (real upload no-op stub file plan). VO-7W complete (real upload no-op stub file creation). VO-7X complete (real upload no-op stub wiring plan). VO-7BV complete (disabled dry-run invocation result and review). VO-7BW complete (Says the Bible migration architecture decision and Option D reframe). VO-7BX complete (project/platform/account model design). VO-7BY complete (Says the Bible legacy mapping design). VO-7BZ complete (YouTube platform policy design). VO-7CA complete (account/OAuth UI flow design). VO-7CB complete (YouTube preflight contracts). VO-7CC complete (YouTube preflight review and safe report). VO-7CD complete (live preflight implementation boundary). VO-7CE complete (live preflight implementation planning). VO-7CF complete (live preflight implementation). VO-7CG complete (live preflight review, safe report, and first controlled upload boundary). VO-7CH complete (first controlled YouTube upload implementation). VO-7CI complete (first controlled YouTube upload review and safe report). VO-7CJ complete (repeatability/automation planning). VO-7CK complete (repeatability/automation review and safe report). VO-7CL complete (repeatability implementation). VO-7CM complete (repeatability implementation review and safe report). VO-7CN complete (automation expansion). VO-7CO complete (automation expansion review and safe report). VO-7CP complete (multi-account/platform expansion). VO-7CQ complete (multi-account/platform expansion review and safe report). VO-7CR complete (bulk execution boundary). VO-7CS complete (bulk execution boundary review and safe report). VO-7CT complete (controlled bulk execution). VO-7CU complete (controlled bulk execution review and safe report). VO-7CV complete (delete/metadata boundary planning). VO-7CW complete (delete/metadata boundary review and safe report). VO-7CX complete (delete/metadata implementation). VO-7CY complete (delete/metadata implementation review and safe report). VO-7CZ complete (commit/push boundary planning). VO-7DA complete (commit/push boundary review and safe report). VO-7DB complete (staging/commit planning). VO-7DC complete (staging/commit review and safe report; manual confirmation required before git add/commit); detailed guide for phases 3B+  
 **Architecture:** Local-first production + platform adapters  
 **Timeline:** 6 months (May 2026 — October 2026)  
 **Effort Estimate:** ~50 hours Claude Code (adjusted for adapter complexity)
@@ -18,7 +18,43 @@ Revised implementation plan for a local-first video production studio. The syste
 
 **Key change from previous plan:** Separate production (local) from publishing (adapter-dependent). Phases 2A–2B deliver complete production packages; Phases 3–5 add adapters and multi-account support.
 
+**Current Option D reframe:** After VO-7BV, real-upload implementation is paused. The Says the Bible repo was inspected read-only and confirmed to contain an existing working YouTube pipeline surface. The Video Orchestrator should not duplicate that pipeline as a project-specific clone. It should become the reusable production house for all projects/platforms/accounts, while the existing Says the Bible pipeline remains unchanged until a future migration cutover. The revised implementation plan is captured in `operations/runbooks/1778778246046-video-orchestrator-option-d-revised-implementation-plan.md`; the architecture decision is captured in `operations/runbooks/1778778167625-video-orchestrator-says-the-bible-migration-architecture.md`.
+
+**Revised next phases after VO-7BV:**
+- VO-7BW: Says the Bible migration architecture decision and Option D reframe — complete.
+- VO-7BX: Project/platform/account model design.
+- VO-7BY: Says the Bible legacy mapping and migration bridge design.
+- VO-7BZ: YouTube platform policy, scheduling, quota, and resume design.
+- VO-7CA: Credential/OAuth UI flow design.
+- VO-7CB: YouTube credential/media/network preflight contracts.
+- VO-7CC: YouTube preflight review and safe report.
+- VO-7CD: Live preflight implementation boundary — complete.
+- VO-7CE: Live preflight implementation planning — complete.
+- VO-7CF: Live preflight implementation — complete.
+- VO-7CG: Live preflight review, safe report, and first controlled YouTube upload boundary — complete; manual confirmation required before upload implementation.
+
 **Local infrastructure cost:** $0 (excluding electricity, storage, optional paid APIs)
+
+### VO-7BW: Says the Bible Migration Architecture Decision and Option D Reframe
+
+This phase pauses implementation before real upload execution and records the architecture decision that Video Orchestrator will become the canonical reusable pipeline while the Says the Bible legacy pipeline remains unchanged until migration.
+
+**What it does**
+- Creates a migration architecture note in `operations/runbooks/1778778167625-video-orchestrator-says-the-bible-migration-architecture.md`.
+- Creates a revised Option D implementation plan and task breakdown in `operations/runbooks/1778778246046-video-orchestrator-option-d-revised-implementation-plan.md`.
+- Records that Says the Bible remains the old working pipeline and Video Orchestrator is built beside it.
+- Defines future migration from Says the Bible to Video Orchestrator only after parity is proven.
+- Reframes Option D to start with project/account/platform modeling and preflight work, not immediate upload execution.
+
+**What it does not do**
+- Does not mutate the Says the Bible repo.
+- Does not copy the legacy upload pipeline into Brain.
+- Does not execute YouTube upload behavior.
+- Does not access credentials, tokens, env vars, keychain, media files, network, or platform APIs.
+- Does not add dependencies or modify package metadata.
+
+**Next phase guidance**
+- Resume implementation with VO-7BX: project/platform/account model design. Keep it schema/design/helper-only unless database migrations, dashboard UI implementation, OAuth callback routes, secret writes, package metadata changes, or real platform calls are separately approved.
 
 ### VO-6A: Explicit Local Render Spike, Test-Only Asset, Operator-Gated
 
