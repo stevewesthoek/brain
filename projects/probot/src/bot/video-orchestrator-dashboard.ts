@@ -413,13 +413,26 @@ export function renderAccountHealthPanel(accountHealth: AccountHealthStatus | nu
   return html;
 }
 
-export function renderAccountsAndCredentialsPanel(accounts: SafeDashboardAccount[] | null | undefined, oauthClientConfig: OAuthClientConfig | null | undefined): string {
+function isSafeEmbeddedVideoOrchestratorAccountUiHtml(value: string | null | undefined): value is string {
+  return Boolean(value)
+    && value!.includes('Video Orchestrator Accounts')
+    && !value!.includes('[CREDENTIAL_REFERENCE]')
+    && !value!.includes('[CLIENT_SECRET]')
+    && !value!.includes('[TOKEN]')
+    && !value!.toLowerCase().includes('keychain://')
+    && !/(access[_-]?token|refresh[_-]?token|client[_-]?secret|authorization[_-]?code|credential[_-]?reference)\s*[:=]/i.test(value!);
+}
+
+export function renderAccountsAndCredentialsPanel(accounts: SafeDashboardAccount[] | null | undefined, oauthClientConfig: OAuthClientConfig | null | undefined, accountUiHtml: string | null | undefined = null): string {
   const clientConfigured = Boolean(oauthClientConfig?.configured);
   const clientId = oauthClientConfig?.client_id ?? null;
   const youtubeAccounts = accounts?.filter(a => a.platform === 'youtube') ?? [];
 
   let html='<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px">';
   html+='<h3 style="margin:0 0 8px 0;font-size:0.95em;color:var(--text);font-weight:600">YouTube Setup</h3>';
+  if(isSafeEmbeddedVideoOrchestratorAccountUiHtml(accountUiHtml)){
+    html+=accountUiHtml;
+  }
 
   const noticeMsg = clientConfigured ? 'OAuth app configured. You can add YouTube channels.' : 'Save OAuth Client ID first.';
   html+='<div id="vo-credentials-notice" style="margin-bottom:16px;padding:10px 12px;border-radius:6px;background:rgba(52,211,153,0.08);border-left:3px solid #34d399;color:var(--text);font-size:0.9em">'+escapeHtml(noticeMsg)+'</div>';

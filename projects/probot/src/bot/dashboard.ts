@@ -55,6 +55,8 @@ import {
   type YouTubeLifecycleSummary,
 } from "./video-orchestrator-dashboard.js";
 import { getVideoJobsStatus, type VideoJobsStatus } from "./video-orchestrator-jobs.js";
+import { createVideoOrchestratorDashboardAccountUiModelFromRegistry } from "./video-orchestrator-dashboard-account-ui-adapter.js";
+import { renderVideoOrchestratorDashboardAccountUi } from "./video-orchestrator-dashboard-account-ui.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -302,12 +304,16 @@ async function getVideoOrchestratorAccountCenterStatus(): Promise<{
   ok: true;
   accounts: SafeDashboardAccount[];
   oauth_client_config: OAuthClientConfig;
+  account_ui_html: string;
   paths: ReturnType<typeof getDefaultVideoOrchestratorPaths>;
 }> {
+  const registry = loadLocalAccountRegistry();
+  const accountUiModel = createVideoOrchestratorDashboardAccountUiModelFromRegistry(registry);
   return {
     ok: true,
     accounts: listSafeAccountsFromRegistry(),
     oauth_client_config: loadYoutubeOAuthClientConfig(),
+    account_ui_html: renderVideoOrchestratorDashboardAccountUi(accountUiModel),
     paths: getDefaultVideoOrchestratorPaths(),
   };
 }
