@@ -3794,3 +3794,9 @@ These artifacts define a future runtime activation contract boundary without imp
 VO-7CX adds `runtime-activation-readiness-contract`, VO-7CY adds `runtime-activation-readiness-review`, and VO-7CZ adds `runtime-activation-readiness-safe-report`.
 
 These artifacts define a future runtime activation readiness contract boundary without implementing runtime behavior. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, runtime enablement, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.
+
+## VO-7DA/VO-7DB/VO-7DC — Runtime Activation Dry-Run Contract, Review, and Safe Report
+
+VO-7DA adds `runtime-activation-dry-run-contract`, VO-7DB adds `runtime-activation-dry-run-review`, and VO-7DC adds `runtime-activation-dry-run-safe-report`.
+
+These artifacts define a future runtime activation dry-run contract boundary without implementing runtime behavior or executing a dry-run. Runtime callables, raw payloads, raw responses, and secret material are not included. Runtime wiring, runtime enablement, upload execution, network calls, platform API calls, credential/token/env/keychain access, media reads, file mutation, dependencies, and package metadata changes remain disabled. `ready_for_real_upload` remains false.

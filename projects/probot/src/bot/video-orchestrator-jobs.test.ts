@@ -25604,3 +25604,60 @@ test("VO-7CZ-VALIDATE: runtime activation readiness safe report rejects raw mate
   const validation = validateRuntimeActivationReadinessSafeReport(unsafe);
   assert.equal(validation.ok, false);
 });
+
+
+// ─── VO-7DA/VO-7DB/VO-7DC: Runtime Activation Dry-Run Contract Layer ───────
+
+test("VO-7DA-SCHEMA: runtime activation dry-run contract schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-activation-dry-run-contract.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-dry-run-contract.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.dry_run_terms[0].dry_run_executed_now, false);
+});
+
+test("VO-7DA-VALIDATE: runtime activation dry-run contract rejects dry-run execution", async () => {
+  const { validateRuntimeActivationDryRunContract } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-dry-run-contract.example.json"), "utf8"));
+  const unsafe = { ...example, dry_run_terms: [{ ...example.dry_run_terms[0], dry_run_executed_now: true }] };
+  const validation = validateRuntimeActivationDryRunContract(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7DB-SCHEMA: runtime activation dry-run review schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-activation-dry-run-review.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-dry-run-review.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.review_checks[0].runtime_enabled_now, false);
+});
+
+test("VO-7DB-VALIDATE: runtime activation dry-run review rejects runtime enablement", async () => {
+  const { validateRuntimeActivationDryRunReview } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-dry-run-review.example.json"), "utf8"));
+  const unsafe = { ...example, review_checks: [{ ...example.review_checks[0], runtime_enabled_now: true }] };
+  const validation = validateRuntimeActivationDryRunReview(unsafe);
+  assert.equal(validation.ok, false);
+});
+
+test("VO-7DC-SCHEMA: runtime activation dry-run safe report schema and example parse", () => {
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const schema = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/runtime-activation-dry-run-safe-report.schema.json"), "utf8"));
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-dry-run-safe-report.example.json"), "utf8"));
+  assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(example.execution_boundary.ready_for_real_upload, false);
+  assert.equal(example.safe_report_sections[0].contains_secret_material, false);
+});
+
+test("VO-7DC-VALIDATE: runtime activation dry-run safe report rejects raw material", async () => {
+  const { validateRuntimeActivationDryRunSafeReport } = await import("./video-orchestrator-jobs.js");
+  const root = getRepoRootForVideoOrchestratorSpecs();
+  const example = JSON.parse(fs.readFileSync(path.join(root, "operations/specs/video-orchestrator/examples/runtime-activation-dry-run-safe-report.example.json"), "utf8"));
+  const unsafe = { ...example, safe_report_sections: [{ ...example.safe_report_sections[0], contains_secret_material: true }] };
+  const validation = validateRuntimeActivationDryRunSafeReport(unsafe);
+  assert.equal(validation.ok, false);
+});
