@@ -1,6 +1,6 @@
 # Video Orchestrator Phase 3Y — MacBook oMLX Sidecar Worker
 
-**Status:** Optional, opt-in sidecar scaffold  
+**Status:** Standard local sidecar scaffold, enabled by operator config  
 **Scope:** Low-risk local text tasks only  
 **Not required for:** production uploads, media generation, transcription, posting, or the Mac mini control plane
 
@@ -8,9 +8,9 @@
 
 ## Purpose
 
-Phase 3Y adds a safe distributed local worker-node scaffold so the Video Orchestrator can route selected `llm_text` jobs to an oMLX server running on a MacBook over a trusted Thunderbolt Bridge network.
+Phase 3Y adds a safe distributed local worker-node scaffold so the Video Orchestrator can route selected `llm_text` jobs to an oMLX server running on a MacBook over a trusted Thunderbolt Bridge or private LAN network.
 
-The Mac mini remains the control plane. The MacBook is a secondary local worker for text-only inference.
+The Mac mini remains the control plane. The MacBook is a standard expected local worker for text-only inference, while still degrading safely if it is sleeping, unplugged, or temporarily unreachable.
 
 ---
 
@@ -21,19 +21,21 @@ The Mac mini remains the control plane. The MacBook is a secondary local worker 
   - manifest/package generation
   - upload/posting control
   - fallback oMLX provider
+  - sidecar health checks, leasing, dispatch, result ingestion, and retry/skip decisions
 - MacBook:
-  - optional oMLX sidecar server
+  - expected M1 16 GB oMLX sidecar server
   - low-risk text tasks only
+  - returns structured results to the Mac mini for normal pipeline continuation
   - no secrets, credentials, upload, or media generation
 - Transport:
   - Thunderbolt Bridge / private RFC1918 LAN only
-  - explicit opt-in required for remote calls
+  - enabled through local worker-node configuration
 
 Apple supports IP over Thunderbolt between Macs. Use a private static address pair such as:
 - Mac mini: `10.10.10.1`
 - MacBook: `10.10.10.2`
 
-The exact IPs do not matter; the network must remain private and controlled.
+The operator may also use a private LAN address, for example the current MacBook endpoint `192.168.2.2`. The exact IPs do not matter; the network must remain private and controlled.
 
 ---
 
@@ -41,10 +43,11 @@ The exact IPs do not matter; the network must remain private and controlled.
 
 - Defines a local worker-node schema for oMLX sidecars
 - Allows an explicit `trusted_thunderbolt_lan` network scope
-- Validates that sidecar jobs are opt-in
+- Validates that sidecar jobs are enabled through local worker-node configuration
 - Supports health checks against a configurable models endpoint
 - Keeps runtime support limited to `metadata_variants` for now
 - Preserves safe fallback to local oMLX or skip-with-warning
+- Ensures the Mac mini records sidecar dispatch/results and resumes the pipeline using the returned artifact shape
 
 ---
 
@@ -58,8 +61,8 @@ The exact IPs do not matter; the network must remain private and controlled.
 - No credential handling
 - No `.env` changes
 - No broad firewall exposure
-- No requirement that the MacBook be online
-- No production dependency on remote oMLX
+- No hard failure when the MacBook is offline
+- No production dependency that can dead-letter the pipeline when remote oMLX is unavailable
 
 ---
 
@@ -85,7 +88,7 @@ Important fields:
 - `media_generation_allowed: false`
 - `upload_allowed: false`
 
-`enabled` defaults to `false`. Sidecar routing stays disabled unless explicitly turned on.
+`enabled` is operator-controlled. For this workspace, the M1 MacBook should be treated as an expected local worker once configured, but every sidecar task must still have `local_or_skip` or equivalent fallback behavior so the pipeline keeps moving if the MacBook is temporarily unavailable.
 
 ---
 
@@ -143,12 +146,15 @@ If the node is unavailable:
 - the job falls back to the local oMLX path if configured
 - otherwise it skips with a warning
 - production does not fail
+- the scheduler should retry future eligible jobs after the next successful health check
+
+The Mac mini is authoritative: it leases the job, sends only the allowed payload, receives the structured result, stores the result in the normal job/artifact path, and marks the sidecar step succeeded, skipped, or degraded. The MacBook never owns queue state.
 
 ---
 
 ## Night Scheduler Usage
 
-Use the sidecar for low-risk batch text jobs during night windows when the MacBook is available.
+Use the sidecar for low-risk batch text jobs during night windows and daytime queue-drain windows when the MacBook is available.
 
 Suggested usage:
 - route only `llm_text` jobs
@@ -162,7 +168,7 @@ Operational note:
 - the display may sleep, but the computer itself should not
 - if the MacBook sleeps, the sidecar is unavailable and jobs should fall back or skip safely
 
-The sidecar is optional and non-blocking.
+The sidecar is expected local capacity, but it remains non-blocking by design. This prevents one sleeping or unreachable machine from stopping the production studio.
 
 ---
 

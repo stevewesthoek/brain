@@ -1583,29 +1583,33 @@ Mac Mini M4 Pro (24GB RAM, M4 Pro CPU)
 ---
 
 ### Phase 3Y: MacBook oMLX Sidecar Worker
-**Goal:** Route opt-in low-risk text jobs to a trusted MacBook oMLX node over Thunderbolt Bridge without making remote execution required
+**Goal:** Route low-risk text jobs from the Mac mini control plane to the expected M1 MacBook oMLX sidecar over trusted Thunderbolt/private LAN, with safe fallback when the sidecar is temporarily unavailable
 
 **Deliverables:**
 - local worker-node schema for oMLX sidecars
 - trusted Thunderbolt/LAN node validation and health checks
-- opt-in routing for low-risk `llm_text` jobs
+- configured routing for low-risk `llm_text` jobs to the M1 MacBook sidecar, using a private endpoint such as `192.168.2.2`
+- M4-owned job leasing, dispatch, result ingestion, and pipeline continuation
 - secret-field guards for remote payloads
 - local fallback/skip when the MacBook sidecar is unavailable
+- recovery behavior so future eligible jobs resume on the MacBook after health checks pass
 
 **Behavior:**
 - Only text tasks remain eligible
 - No secrets, credentials, posting, uploads, or media generation
 - The Mac mini remains the control plane
-- Remote sidecar calls are opt-in and non-blocking
+- The MacBook is expected local capacity once configured, but remote sidecar calls remain non-blocking so a sleeping/offline sidecar cannot stop production
 
 **Testing:**
 - [ ] Localhost oMLX still works or skips safely
 - [ ] Trusted Thunderbolt/LAN endpoint is rejected unless explicitly enabled
 - [ ] Secret-shaped payload keys are blocked before a network call
 - [ ] Unavailable sidecar falls back locally or skips safely
+- [ ] Recovered sidecar resumes receiving future eligible jobs after a healthy check
+- [ ] Sidecar results are stored through the same artifact contract as local oMLX results
 
 **Success Criteria:**
-- One optional MacBook oMLX sidecar node can serve safe text jobs
+- One expected MacBook oMLX sidecar node can serve safe text jobs
 - Production continues when the MacBook is offline
 
 ---

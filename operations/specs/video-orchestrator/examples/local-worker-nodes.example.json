@@ -7,7 +7,7 @@
       "role": "llm_text_sidecar",
       "enabled": false,
       "provider": "omlx",
-      "base_url": "http://10.10.10.2:8000/v1",
+      "base_url": "http://192.168.2.2:8000/v1",
       "network_scope": "trusted_thunderbolt_lan",
       "allowed_tasks": [
         "metadata_variants",

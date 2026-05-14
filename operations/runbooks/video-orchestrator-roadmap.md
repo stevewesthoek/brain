@@ -3685,21 +3685,23 @@ CREATE TABLE events (
 ## Phase 3Y: MacBook oMLX Sidecar Worker
 
 **Timeline:** June 20–July 15, 2026 (4 weeks)  
-**Goal:** Add an opt-in trusted Thunderbolt/LAN worker-node path for low-risk local text tasks
+**Goal:** Add the expected M1 MacBook local worker-node path so the Mac mini can delegate low-risk text tasks over trusted Thunderbolt/private LAN while remaining the control plane
 
 ### 3.1: Sidecar Node Registry
 
 **Deliverables:**
 - local worker-node schema for oMLX sidecars
-- example MacBook node config
+- example MacBook node config using a private endpoint such as `192.168.2.2`
 - allowed task list for future text-only work
+- explicit node role: expected local text sidecar, not a generic remote executor
 
 ### 3.2: Routing and Health Checks
 
 **Deliverables:**
 - trusted Thunderbolt/LAN endpoint validation
 - short-timeout health check against the models endpoint
-- explicit opt-in for remote sidecar calls
+- local worker-node enablement for sidecar calls
+- M4-controlled dispatch, result ingestion, and safe retry/skip state
 - secret-field guards before any remote payload is sent
 
 ### 3.3: Safety Rules
@@ -3708,12 +3710,14 @@ CREATE TABLE events (
 - No secrets, OAuth, posting, uploads, or media generation
 - Only low-risk text tasks are eligible
 - The Mac mini remains the control plane
-- Remote sidecar use is optional and non-blocking
+- The MacBook is expected local capacity once configured, but unavailable sidecar calls must not dead-letter the pipeline
+- The scheduler should skip or fall back when unavailable, then resume using the MacBook after health checks pass again
 
 ### 3.4: Success Criteria
 - ✅ The worker can route allowed text jobs to an enabled MacBook sidecar
+- ✅ The Mac mini records sidecar dispatch/results and continues the pipeline with returned artifacts
 - ✅ Public IPs and untrusted endpoints are rejected
-- ✅ Sidecar unavailability falls back locally or skips safely
+- ✅ Sidecar unavailability falls back locally or skips safely and future jobs resume after recovery
 
 ---
 
