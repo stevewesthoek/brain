@@ -13,9 +13,13 @@ The `/video` orchestrator will evolve into a **local production control center**
 
 - ✅ **Generates production-ready packages** for 7+ platforms (not direct posting)
 - ✅ **Local Media Pipeline:** Script generation, TTS, image/video generation, composition, captions, thumbnails — all on Mac mini
+- ✅ **Provider-Agnostic Modules:** Every production step must hand off through stable artifacts/contracts so local models, AWS services, third-party APIs, and future machines can be swapped without rewriting the pipeline
+- ✅ **Local-Default / Cloud-Upgrade Routing:** Use the Mac mini first when quality, deadline, and capacity allow; use AWS or another cloud provider only when local output is too slow, too low quality, impossible, or the queue will miss an operational deadline
+- ✅ **Cloud AI Video Exception:** Generative AI video clips may default to cloud providers such as Amazon Bedrock Nova Reel because the Mac mini is not expected to produce comparable quality/throughput for that workload
 - ✅ **Platform Adapters:** Publishing through authorized APIs, n8n, browser-assisted, or manual fallback
 - ✅ **Multi-Account Support:** Safe scheduling across many accounts with duplicate-content prevention and cooldowns
 - ✅ **Resource-Aware:** Smart scheduling for heavy models (FLUX, LoRA) at night; posting jobs parallel to generation
+- ✅ **Cost-Aware:** Track monthly cloud spend against an operator-controlled cap, initially `$500/month` for the whole Video Orchestrator, with per-project/channel visibility but no per-channel hard cap
 - ✅ **Resumable:** Mid-pipeline recovery, state tracking, audit logs
 - ✅ **Learning Loop:** Track performance snapshots; optionally improve future batches
 
@@ -37,6 +41,13 @@ The `/video` orchestrator will evolve into a **local production control center**
 - Account registry (OS Keychain)
 - Performance metrics (local snapshots)
 
+### Modular Provider Infrastructure
+- Stable handoff artifacts between stages: brief → script → shot list → storyboard/reference assets → clips → voice → captions → render plan → package → upload request
+- Provider registry per stage: local default, AWS upgrade, future third-party provider, manual fallback
+- Provider routing policy: quality requirement, cost estimate, queue deadline, local night-window capacity, language requirements, brand consistency requirements, and explicit platform constraints
+- Provider credentials live in OS Keychain or provider-specific secure stores; runtime/local files may hold non-secret configuration only
+- The pipeline must not depend on one model vendor, API, machine, or platform surface
+
 ### Publishing Infrastructure (Adapter-Dependent)
 - **Authorized APIs:** YouTube, Bluesky (when credentials/auth available)
 - **n8n Wrappers:** Optional centralization layer for authorized APIs
@@ -47,8 +58,11 @@ The `/video` orchestrator will evolve into a **local production control center**
 ### Resource Management
 - **Resource Classes:** cpu_light, media_encode, image_fast, image_heavy, talking_head, posting, analytics
 - **Scheduling Constraint:** Only one heavy model job at a time (FLUX, LoRA → night mode preferred)
+- **Local Night Window:** Default local AI production window is 01:00–07:00 Europe/Lisbon; outside that window local heavy AI should run only by explicit operator action
+- **Cloud Overflow:** AWS can run any time, but should be used for overflow only when local night capacity cannot meet real posting deadlines, or when the required quality/workload cannot reasonably be produced locally
 - **Parallelism:** FFmpeg 2–3 concurrent encodes; posting jobs in separate pool
 - **Memory:** Track 24 GB shared memory; do not assume all 4 models run concurrently
+- **Machine Safety:** Prefer queue degradation, deferral, or cloud overflow over pushing the Mac mini to crash-risk resource limits
 
 ---
 
@@ -3444,6 +3458,200 @@ CREATE TABLE events (
 - ✅ Local registry and snapshot update automatically after save/connect
 - ✅ Dashboard remains read-only for upload actions
 
+## Phase 4D: Provider Routing + Cost Guardrails
+
+**Timeline:** October 22–November 5, 2026 (2 weeks)  
+**Goal:** Make the Video Orchestrator explicitly provider-agnostic and cost-aware before adding AWS generation calls
+
+### 4D.1: Provider Registry
+
+**Deliverables:**
+- production-stage provider registry covering script, voice, captions, images, AI video clips, assembly/render, QA, storage, and publishing
+- provider roles: `local_default`, `cloud_upgrade`, `cloud_required`, `manual_fallback`, `disabled`
+- provider priority and fallback rules by project/channel, language, format, and stage
+- stable provider handoff contracts so providers can be swapped without changing downstream stages
+
+### 4D.2: Routing Policy
+
+**Deliverables:**
+- local-first routing policy with explicit cloud qualifiers
+- queue deadline and local night-window capacity model
+- quality threshold and provider capability metadata
+- overflow rules for urgent posts only; future scheduled work should prefer night-batch local execution when possible
+
+### 4D.3: Budget Layer
+
+**Deliverables:**
+- global monthly Video Orchestrator cloud cap, initially `$500/month`
+- dashboard-visible monthly spend progress bar that resets on the first day of each month
+- per-project/channel spend breakdown for visibility
+- estimated cost fields on cloud-capable jobs before execution
+- hard block when the global cap is reached unless the operator explicitly changes the cap
+
+### 4D.4: Behavior
+
+**Behavior:**
+- Local remains the default for all stages except AI video clips that require cloud quality/throughput
+- AWS is an upgrade path, not the default production engine
+- No AWS generation calls are added in this phase
+- No upload capability is changed
+- No secrets are stored in the repo
+
+### 4D.5: Success Criteria
+- ✅ Every major production stage has a provider slot and fallback strategy
+- ✅ The dashboard exposes a configurable monthly cloud cap and spend indicator
+- ✅ A job can explain why it is routed local, cloud, manual, or blocked
+- ✅ Provider swap boundaries are documented before AWS runtime adapters are added
+
+## Phase 4E: AWS Capability Health Center
+
+**Timeline:** November 5–November 12, 2026 (1 week)  
+**Goal:** Add safe AWS readiness visibility without generating media or spending meaningful cloud budget
+
+### 4E.1: AWS Account and Service Health
+
+**Deliverables:**
+- safe AWS provider account configuration under ignored runtime/local paths
+- Bedrock model-access checks for approved regions and models
+- S3 bucket/prefix readiness checks for cloud-generated artifacts
+- optional IAM/role readiness checks for MediaConvert and future async jobs
+- dashboard health panel for AWS provider readiness
+
+### 4E.2: Supported AWS Service Map
+
+**Deliverables:**
+- Bedrock Nova Reel: cloud-required/default for AI video clips when selected by routing
+- Bedrock Nova Canvas: cloud upgrade for thumbnails, storyboards, and first-frame/reference images
+- Bedrock LLMs: cloud upgrade for hard scripts, theological/script QA, prompt optimization, and multilingual planning
+- Polly: cloud upgrade/fallback for voiceover
+- Transcribe: cloud upgrade/fallback for captions and transcript timing
+- Translate: cloud upgrade/fallback for multilingual localization
+- MediaConvert: cloud upgrade for final export/transcoding when local FFmpeg is a bottleneck
+- Rekognition: cloud upgrade for publish-stage QA/moderation/tagging
+- Deadline Cloud: future render-farm option for Blender/3D/VFX, not an early implementation target
+- Step Functions, Lambda, SQS/SNS, and S3: future cloud orchestration/storage support when async volume justifies it
+
+### 4E.3: Behavior
+
+**Behavior:**
+- No model invocation is required
+- No media is generated
+- No upload capability is changed
+- No AWS secrets are committed or displayed
+
+### 4E.4: Success Criteria
+- ✅ The operator can see which AWS services are configured, missing, blocked, or disabled
+- ✅ Bedrock/S3 readiness is visible before paid generation adapters are built
+- ✅ The dashboard remains credential-redacted
+
+## Phase 4F: Nova Canvas Storyboard and Thumbnail Adapter
+
+**Timeline:** November 12–November 26, 2026 (2 weeks)  
+**Goal:** Add the first AWS creative-generation adapter on a low-cost still-image surface
+
+### 4F.1: Still Image Generation
+
+**Deliverables:**
+- provider adapter contract for storyboard frames, thumbnail candidates, reference frames, and static visual assets
+- cost estimate before generation
+- project/brand style inputs for consistent visual identity
+- S3/local artifact handoff into the existing package manifest flow
+
+### 4F.2: Routing
+
+**Behavior:**
+- Local SDXL/FLUX remains default for ordinary images when quality is acceptable and night capacity exists
+- Nova Canvas is used for premium thumbnails, reference frames for Nova Reel, overload, multilingual/localized variants, or quality-critical assets
+- Generated images should be reusable across platforms and formats before generating duplicate assets
+
+### 4F.3: Success Criteria
+- ✅ One storyboard/thumbnail job can route to local or Nova Canvas by policy
+- ✅ Costs and outputs are recorded per project/channel
+- ✅ Downstream pipeline receives the same artifact shape regardless of provider
+
+## Phase 4G: Nova Reel Controlled Clip Adapter
+
+**Timeline:** November 26–December 17, 2026 (3 weeks)  
+**Goal:** Add controlled cloud AI video clip generation for workloads the Mac mini cannot produce well
+
+### 4G.1: Clip Generation
+
+**Deliverables:**
+- async Nova Reel job adapter with S3 output and lifecycle polling
+- text-to-video and image-to-video request artifact contracts
+- cost estimate and provider routing reason for every request
+- reusable clip metadata for multi-platform crops/edits
+
+### 4G.2: Routing
+
+**Behavior:**
+- Nova Reel may be the default provider for AI video clips because local quality/throughput is expected to be insufficient
+- Avoid regenerating the same concept per platform; generate one adaptable master clip where possible
+- Respect monthly cloud cap and project/channel spend visibility
+- Do not require manual approval for every paid generation once budget/routing guardrails are in place
+
+### 4G.3: Success Criteria
+- ✅ One controlled AI clip can be generated, tracked, and handed to the local composition pipeline
+- ✅ The job records cost, provider, prompt summary, S3 output reference, and lifecycle state without exposing secrets
+- ✅ No publishing/upload behavior is changed
+
+## Phase 4H: Cloud Export and QA Adapters
+
+**Timeline:** December 17–January 7, 2027 (3 weeks)  
+**Goal:** Add cloud upgrades for final export, captions/localization, voice, and publish-stage QA where local execution is insufficient
+
+### 4H.1: MediaConvert Export
+
+**Deliverables:**
+- MediaConvert adapter for platform-ready output variants when local FFmpeg is a bottleneck
+- local FFmpeg remains default for routine assembly and simple crops
+- cost and runtime comparison against local FFmpeg
+
+### 4H.2: Polly, Transcribe, Translate, Rekognition
+
+**Deliverables:**
+- Polly voice fallback/upgrade for selected voices/languages
+- Transcribe fallback/upgrade for long, noisy, or urgent captions
+- Translate/localization adapter for multilingual scripts, metadata, and captions
+- Rekognition QA/moderation/tagging pass for selected publish-bound assets
+
+### 4H.3: Success Criteria
+- ✅ Cloud export/QA services can be selected by policy without changing package shape
+- ✅ Local remains default unless quality, deadline, language, or queue constraints justify cloud use
+- ✅ Per-service and per-channel costs are visible
+
+## Phase 4I: Multi-Channel Factory Routing Optimizer
+
+**Timeline:** January 7–January 28, 2027 (3 weeks)  
+**Goal:** Turn provider routing into a scalable multi-channel factory policy
+
+### 4I.1: Project/Channel Economics
+
+**Deliverables:**
+- per-project/channel cost reports
+- provider mix reports: local, AWS, manual, blocked
+- throughput reports for local night-window capacity and cloud overflow
+- reusable master-asset strategy for make-once/distribute-many workflows
+
+### 4I.2: Consistency and Brand Configuration
+
+**Deliverables:**
+- project-level style/voice/thumbnail/character consistency profiles
+- language profile support for English-first output with future multilingual variants
+- centralized dashboard configuration for provider priorities and quality thresholds
+
+### 4I.3: Future Advanced Rendering
+
+**Deliverables:**
+- Deadline Cloud/3D/VFX placeholder in provider registry
+- no implementation until Blender/3D/VFX requirements are concrete
+- architecture remains ready for render-farm expansion
+
+### 4I.4: Success Criteria
+- ✅ The pipeline can support three starter projects/channels with five posts/week each across multiple platforms
+- ✅ The system prefers local night-batch production and uses AWS only for quality, deadline, overflow, or cloud-required clip generation
+- ✅ Consistency profiles make outputs predictable across writing, voice, thumbnails, clips, overlays, and platform variants
+
 ---
 
 ## Phase 3X: Optional oMLX Local LLM Provider MVP
@@ -3666,11 +3874,20 @@ Validate each tier by benchmarking; actual throughput depends on content complex
 
 ## Cost Summary
 
-**Local Infrastructure:** $0
+**Local Infrastructure:** $0 cloud spend
 - Docker + PostgreSQL: free
 - Worker process: free
 - Whisper.cpp: free
 - Python scripts: free
+- Mac mini night production window: 01:00–07:00 Europe/Lisbon, local-first unless the operator explicitly starts heavy local work outside the window
+
+**Cloud Budget Layer:**
+- Initial Video Orchestrator cloud cap: `$500/month` across all projects/channels
+- Dashboard should show a monthly progress bar that resets on the first day of each month
+- Per-project/channel spend is tracked for insight, but no per-channel hard cap is required initially
+- AWS credits are an efficiency resource, not a reason to move local-capable work to cloud
+- Cloud spend is justified by one of: local quality failure, local capacity/deadline failure, cloud-required AI video clip generation, multilingual/voice/QA requirement, or operator policy override
+- Generate master assets once and adapt/crop/package them for multiple platforms whenever possible
 
 **Not Included (User Responsibility):**
 - Electricity and wear from sustained local workloads
