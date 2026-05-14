@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "artifact_id": "video-orchestrator-runtime-scheduler-queue-example",
+  "project_id": "example-project",
+  "generated_at": "2026-05-14T00:00:00.000Z",
+  "proposed_path": "operations/runbooks/video-orchestrator-runtime-scheduler-queue.example.json",
+  "dry_run_only": true,
+  "queue_result_id": "example-dry-run-queue-result",
+  "items": [
+    {
+      "queue_item_id": "example-project-youtube-video-001",
+      "project_id": "example-project",
+      "platform": "youtube",
+      "account_id": "youtube-main",
+      "content_id": "video-001",
+      "desired_publish_at": "2026-05-15T10:00:00.000Z",
+      "state": "queued_dry_run",
+      "adapter_id": "youtube-api",
+      "resume_supported": true,
+      "previous_attempt_count": 0,
+      "next_action": "Eligible for future runtime scheduler implementation after explicit approval."
+    },
+    {
+      "queue_item_id": "example-project-tiktok-video-002",
+      "project_id": "example-project",
+      "platform": "tiktok",
+      "account_id": "tiktok-main",
+      "content_id": "video-002",
+      "desired_publish_at": "2026-05-15T12:00:00.000Z",
+      "state": "deferred",
+      "adapter_id": "tiktok-api",
+      "resume_supported": false,
+      "previous_attempt_count": 0,
+      "next_action": "Defer until scheduling/resume boundaries are complete for this adapter."
+    },
+    {
+      "queue_item_id": "example-project-manual-video-003",
+      "project_id": "example-project",
+      "platform": "manual",
+      "account_id": "manual-export",
+      "content_id": "video-003",
+      "desired_publish_at": "2026-05-15T14:00:00.000Z",
+      "state": "manual_fallback",
+      "adapter_id": "manual-export",
+      "resume_supported": true,
+      "previous_attempt_count": 1,
+      "next_action": "Create manual export package and let operator publish outside runtime automation."
+    }
+  ],
+  "safety": {
+    "file_written": true,
+    "live_scheduler_executed": false,
+    "upload_executed": false,
+    "network_calls_made": false,
+    "credential_accessed": false,
+    "media_read_performed": false
+  },
+  "notes": [
+    "This is an example dry-run queue artifact only.",
+    "It does not schedule jobs, upload media, call platform APIs, read credentials, or read media files.",
+    "Do not place tokens, API keys, OAuth codes, client secrets, media file paths, or private account credentials in this artifact."
+  ]
+}
