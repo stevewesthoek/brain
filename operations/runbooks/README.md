@@ -8,3 +8,4 @@ Short, repeatable procedures for operational tasks.
 - cloudflare.md
 - mcp-centralization.md
 - n8n.md
+- codex-starship-config.md
