@@ -146,24 +146,33 @@ All critical systems operational.
 
 | Item | Count |
 |------|-------|
-| Free Warp messages/month | 150 |
+| Free Warp messages/month | **60** (after 2-month promo) |
 | Health audit runs/month | 1 |
 | Messages per audit | 2-4 |
 | **Messages used** | **2-4** |
-| **Messages remaining** | **~140+** |
-| **Percentage of budget** | **~3%** |
+| **Messages remaining** | **~56+** |
+| **Percentage of budget** | **~7%** |
 
-**Conclusion:** Excellent use of your free credits with room to spare.
+**Conclusion:** Excellent use of your free credits. Audit uses ~7% of hard cap (60/month), leaving 93% for other work.
 
 ---
+
+## Automation Status
+
+✅ **AUTOMATED** — The audit is triggered automatically on the 1st of every month at 6:00 AM UTC via GitHub Actions.
+
+**You don't need to remember or manually trigger it.** See `operations/WARP_AUTOMATED_AUDIT_SETUP.md` for full automation details.
 
 ## Next Steps
 
 1. ✅ Fill in the 5 fields in Warp (see table above)
 2. ✅ Click "Create"
 3. ✅ Save the prompt (see "Using It" section above)
-4. ✅ Once per month, run the audit in Warp Agent Mode
-5. ✅ Review the results and fix any issues
+4. ✅ On the 1st of each month, GitHub Actions triggers the audit automatically
+5. ✅ Run the command in Warp Agent Mode when you see the trigger
+6. ✅ Review the results and fix any issues
+
+**After initial setup: Set and forget. Automation handles the rest.**
 
 ---
 

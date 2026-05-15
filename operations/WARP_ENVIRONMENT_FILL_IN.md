@@ -58,8 +58,9 @@ Execute: bash operations/scripts/warp-health-audit.sh
 - ✓ Report any issues found
 - ✓ Give you a summary
 
-**Uses:** 2-4 of your 150 free messages  
-**Time:** ~30 seconds
+**Uses:** 2-4 of your 60 free messages/month (hard cap after 2-month promo)  
+**Time:** ~30 seconds  
+**Cost:** ~7% of monthly budget (leaves 93% for other work)
 
 ---
 
