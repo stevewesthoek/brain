@@ -66,11 +66,12 @@ export function createRuntimeSchedulerLifecycleManifest(): RuntimeSchedulerLifec
       stage("persistent-store-implementation-scaffold-plan", "Runtime scheduler persistent-store implementation scaffold plan", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-implementation-scaffold-plan.ts", "manual_boundary"),
       stage("persistent-store-pure-scaffold", "Runtime scheduler persistent-store pure scaffold", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-pure-scaffold.ts", "manual_boundary"),
       stage("persistent-store-pure-scaffold-review", "Runtime scheduler persistent-store pure scaffold review", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-pure-scaffold-review.ts", "manual_boundary"),
+      stage("persistent-store-pure-scaffold-terminal-handoff", "Runtime scheduler persistent-store pure scaffold terminal handoff", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-pure-scaffold-terminal-handoff.ts", "manual_boundary"),
     ],
     manual_boundaries: [
       "Package metadata changes require separate explicit approval; the summary-only runtime scheduler package script has been approved and installed.",
       "Live scheduler activation requires separate explicit approval.",
-      "Persistent scheduler writes require separate explicit approval; persistent-store approval, contract, adapter-plan, adapter-skeleton, dry-run fixture, validation, review-summary, terminal-handoff, operator-decision, decision-closeout, implementation-design, scaffold-plan, pure-scaffold, and pure-scaffold-review packets are available for operator confirmation.",
+      "Persistent scheduler writes require separate explicit approval; persistent-store approval, contract, adapter-plan, adapter-skeleton, dry-run fixture, validation, review-summary, terminal-handoff, operator-decision, decision-closeout, implementation-design, scaffold-plan, pure-scaffold, pure-scaffold-review, and pure-scaffold-terminal-handoff packets are available for operator confirmation.",
       "Uploads, network calls, credential access, and media reads remain disabled in this lifecycle.",
     ],
     safety: { package_json_edited: true, live_scheduler_executed: false, upload_executed: false, network_calls_made: false, credential_accessed: false, media_read_performed: false, files_written: false, git_add_executed: false, committed_now: false, pushed_now: false },
