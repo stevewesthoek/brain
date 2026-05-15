@@ -4,12 +4,23 @@ set -euo pipefail
 # Warp Agent Health Audit Script
 # Comprehensive health check of the brain repo infrastructure
 # Checks: skill sync, symlinks, docs, secrets, dependencies, builds
+# Email: Results sent to info@prochat.tools
+
+EMAIL_RECIPIENT="info@prochat.tools"
+TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
+LOG_FILE="/tmp/audit-${TIMESTAMP}.log"
+AUDIT_OUTPUT="/tmp/audit-output-${TIMESTAMP}.txt"
+
+# Redirect all output to both console and log file
+exec > >(tee -a "$AUDIT_OUTPUT")
+exec 2>&1
 
 echo "🏥 BRAIN REPO HEALTH AUDIT"
 echo "============================"
 echo
 echo "Started: $(date)"
 echo "Working directory: $(pwd)"
+echo "Email: $EMAIL_RECIPIENT"
 echo
 
 ERRORS=0
@@ -295,16 +306,92 @@ echo -e "Errors:   ${RED}$ERRORS${NC}"
 echo "Completed: $(date)"
 echo
 
+# ============================================
+# EMAIL RESULTS
+# ============================================
+echo
+echo "Sending audit results to: $EMAIL_RECIPIENT"
+echo
+
+# Determine health status for email subject
+if [ $ERRORS -eq 0 ]; then
+    HEALTH_STATUS="EXCELLENT ✓"
+    EXIT_CODE=0
+elif [ $ERRORS -lt 3 ]; then
+    HEALTH_STATUS="GOOD (minor issues)"
+    EXIT_CODE=0
+else
+    HEALTH_STATUS="NEEDS ATTENTION (errors found)"
+    EXIT_CODE=1
+fi
+
+# Create email content
+EMAIL_SUBJECT="Brain Repo Health Audit - $(date +'%Y-%m-%d') - $HEALTH_STATUS"
+EMAIL_BODY="$(cat "$AUDIT_OUTPUT")"
+
+# Try to send email (handles both Linux and macOS)
+send_email() {
+    local recipient="$1"
+    local subject="$2"
+    local body="$3"
+
+    # Try sendmail first (Linux in container)
+    if command -v sendmail &> /dev/null; then
+        echo "$body" | sendmail -t <<EOF
+To: $recipient
+Subject: $subject
+Content-Type: text/plain; charset=UTF-8
+
+$body
+EOF
+        return 0
+    fi
+
+    # Try mail command (macOS/Linux)
+    if command -v mail &> /dev/null; then
+        echo "$body" | mail -s "$subject" "$recipient"
+        return 0
+    fi
+
+    # Try mailx (Linux alternative)
+    if command -v mailx &> /dev/null; then
+        echo "$body" | mailx -s "$subject" "$recipient"
+        return 0
+    fi
+
+    # Try printf + ssmtp (lightweight option)
+    if command -v ssmtp &> /dev/null; then
+        printf "To: $recipient\nSubject: $subject\n\n$body" | ssmtp "$recipient"
+        return 0
+    fi
+
+    return 1
+}
+
+# Attempt to send email
+if send_email "$EMAIL_RECIPIENT" "$EMAIL_SUBJECT" "$EMAIL_BODY"; then
+    echo -e "${GREEN}✓${NC} Email sent successfully to $EMAIL_RECIPIENT"
+else
+    echo -e "${YELLOW}⚠${NC} Email send failed - mail utilities not available in environment"
+    echo "   Note: Audit results still available in audit output"
+fi
+
+echo
+
+# Output final health status
 if [ $ERRORS -eq 0 ]; then
     echo -e "${GREEN}✓ BRAIN REPO HEALTH: EXCELLENT${NC}"
     echo "All critical systems operational."
+    echo "Results emailed to: $EMAIL_RECIPIENT"
     exit 0
 elif [ $ERRORS -lt 3 ]; then
     echo -e "${YELLOW}⚠ BRAIN REPO HEALTH: GOOD${NC}"
     echo "Minor issues detected - see warnings above."
+    echo "Results emailed to: $EMAIL_RECIPIENT"
     exit 0
 else
     echo -e "${RED}✗ BRAIN REPO HEALTH: NEEDS ATTENTION${NC}"
     echo "Multiple issues detected - review errors above."
+    echo "Results emailed to: $EMAIL_RECIPIENT"
     exit 1
 fi

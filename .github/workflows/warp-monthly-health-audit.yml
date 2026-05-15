@@ -23,6 +23,13 @@ jobs:
       - name: Checkout brain repo
         uses: actions/checkout@v4
 
+      - name: Install mail utilities (for audit results email)
+        run: |
+          # Install mail utilities for sending audit results to info@prochat.tools
+          apt-get update -qq
+          apt-get install -y -qq mailutils
+          echo "✓ Mail utilities installed (for audit email)"
+
       - name: Check if audit script exists
         run: |
           if [ ! -f "operations/scripts/warp-health-audit.sh" ]; then
@@ -43,10 +50,12 @@ jobs:
             "description": "Monthly automated health check of brain repo infrastructure",
             "timestamp": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
             "triggered_by": "GitHub Actions workflow",
-            "schedule": "First day of every month at 06:00 UTC"
+            "schedule": "First day of every month at 06:00 UTC",
+            "email_recipient": "info@prochat.tools",
+            "email_subject": "Brain Repo Health Audit Results"
           }
           EOF
-          echo "✓ Trigger payload created"
+          echo "✓ Trigger payload created with email config"
           cat /tmp/warp-audit-trigger.json
 
       - name: Log scheduled audit trigger

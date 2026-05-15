@@ -9,7 +9,7 @@ Fill in these 5 fields in Warp:
 - **Description:** `Monthly infrastructure health check for brain repo - verifies skill sync, symlinks, documentation, git status, and reports issues`
 - **Repo(s):** `stevewesthoek/brain`
 - **Docker image:** `node:24-alpine`
-- **Setup command:** `apk add --no-cache python3 bash git curl && cd /workspace && npm install`
+- **Setup command:** `apk add --no-cache python3 bash git curl mailx && cd /workspace && npm install`
 
 Click Create. Done.
 

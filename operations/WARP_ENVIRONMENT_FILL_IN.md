@@ -24,8 +24,10 @@ node:24-alpine
 
 ### 5. Setup command(s) Field
 ```bash
-apk add --no-cache python3 bash git curl && cd /workspace && npm install
+apk add --no-cache python3 bash git curl mailx && cd /workspace && npm install
 ```
+
+**Note:** `mailx` is included to enable email delivery of audit results to info@prochat.tools
 
 ---
 

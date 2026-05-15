@@ -36,7 +36,7 @@ Open your Warp account and go to **Environments**
 | 2 | **Description** | `Monthly infrastructure health check for brain repo - verifies skill sync, symlinks, documentation, git status, and reports issues` |
 | 3 | **Repo(s)** | `stevewesthoek/brain` |
 | 4 | **Docker image reference** | `node:24-alpine` |
-| 5 | **Setup command(s)** | `apk add --no-cache python3 bash git curl && cd /workspace && npm install` |
+| 5 | **Setup command(s)** | `apk add --no-cache python3 bash git curl mailx && cd /workspace && npm install` |
 
 ### Step 4: Click "Create"
 
