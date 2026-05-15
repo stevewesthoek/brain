@@ -14,7 +14,7 @@ export interface RuntimeSchedulerLifecycleManifest {
   stages: RuntimeSchedulerLifecycleStage[];
   manual_boundaries: string[];
   safety: {
-    package_json_edited: false;
+    package_json_edited: boolean;
     live_scheduler_executed: false;
     upload_executed: false;
     network_calls_made: false;
@@ -45,6 +45,7 @@ export function createRuntimeSchedulerLifecycleManifest(): RuntimeSchedulerLifec
       stage("cli-entrypoint", "Runtime scheduler CLI entrypoint", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler.mjs"),
       stage("package-script-plan", "Package script proposal", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-package-script-plan.ts"),
       stage("package-script-approval-gate", "Package script approval gate", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-package-script-approval-gate.ts", "manual_boundary"),
+      stage("package-script-installed", "Approved package script installed", "projects/probot/package.json"),
       stage("smoke-matrix", "Runtime scheduler smoke matrix", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-smoke-matrix.ts"),
       stage("release-checklist", "Runtime scheduler release checklist", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-release-checklist.ts", "manual_boundary"),
       stage("release-handoff", "Runtime scheduler release handoff", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-release-handoff.ts", "manual_boundary"),
@@ -52,12 +53,12 @@ export function createRuntimeSchedulerLifecycleManifest(): RuntimeSchedulerLifec
       stage("terminal-summary", "Runtime scheduler terminal summary", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-terminal-summary.ts", "manual_boundary"),
     ],
     manual_boundaries: [
-      "Package metadata changes require separate explicit approval.",
+      "Package metadata changes require separate explicit approval; the summary-only runtime scheduler package script has been approved and installed.",
       "Live scheduler activation requires separate explicit approval.",
       "Persistent scheduler writes require separate explicit approval.",
       "Uploads, network calls, credential access, and media reads remain disabled in this lifecycle.",
     ],
-    safety: { package_json_edited: false, live_scheduler_executed: false, upload_executed: false, network_calls_made: false, credential_accessed: false, media_read_performed: false, files_written: false, git_add_executed: false, committed_now: false, pushed_now: false },
+    safety: { package_json_edited: true, live_scheduler_executed: false, upload_executed: false, network_calls_made: false, credential_accessed: false, media_read_performed: false, files_written: false, git_add_executed: false, committed_now: false, pushed_now: false },
   };
 }
 

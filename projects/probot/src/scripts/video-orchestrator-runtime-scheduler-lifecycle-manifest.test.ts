@@ -10,9 +10,10 @@ test("VO-7FT-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-1: lists runtime scheduler lif
   assert.equal(manifest.stages.length >= 10, true);
   assert.equal(manifest.stages.some((stage) => stage.id === "cli-entrypoint"), true);
   assert.equal(manifest.stages.some((stage) => stage.id === "terminal-summary"), true);
+  assert.equal(manifest.stages.some((stage) => stage.id === "package-script-installed"), true);
   assert.equal(manifest.stages.every((stage) => stage.side_effects_enabled === false), true);
   assert.equal(manifest.manual_boundaries.length, 4);
-  assert.equal(manifest.safety.package_json_edited, false);
+  assert.equal(manifest.safety.package_json_edited, true);
   assert.equal(manifest.safety.live_scheduler_executed, false);
   assert.equal(manifest.safety.upload_executed, false);
   assert.equal(manifest.safety.network_calls_made, false);
@@ -39,9 +40,9 @@ test("VO-7FU-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-REVIEW-1: renderer is safe and
   const text = renderRuntimeSchedulerLifecycleManifest(createRuntimeSchedulerLifecycleManifest());
 
   assert.equal(text.includes("runtime scheduler lifecycle manifest"), true);
-  assert.equal(text.includes("Package metadata changes require separate explicit approval."), true);
+  assert.equal(text.includes("Package metadata changes require separate explicit approval; the summary-only runtime scheduler package script has been approved and installed."), true);
   assert.equal(text.includes("Live scheduler activation requires separate explicit approval."), true);
-  assert.equal(text.includes("package.json edited: false"), true);
+  assert.equal(text.includes("package.json edited: true"), true);
   assert.equal(text.includes("Live scheduler executed: false"), true);
   assert.equal(text.includes("access_token"), false);
   assert.equal(text.includes("client_secret"), false);
