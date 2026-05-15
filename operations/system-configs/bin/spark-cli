@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stable local entrypoint for Spark CLI usage across Claude Code, Codex, Gemini CLI, Kiro, Cursor, and Antigravity.
+# Spark CLI is an IPC-based client for the Spark Desktop email app.
+# Default path matches the current machine; override only for debugging.
+
+spark_bin="${SPARK_CLI_BIN:-/usr/local/bin/spark}"
+
+exec "${spark_bin}" "$@"

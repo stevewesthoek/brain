@@ -66,3 +66,28 @@ The `--check` command verifies that every active skill is visible at the top-lev
 - Local-only secrets: keep them in ignored overlay files such as `shell/.zshrc.local`, not in tracked config
 - Do not edit casually: SQLite files, `history.jsonl`, `auth.json`, `.tmp` folders, `log/` directories, session archives
 - Do not delete: anything that is a symlink target; see `brain/CLAUDE.md` under "Do not break"
+
+## CLI Wrapper Pattern
+
+The `bin/` directory contains stable wrapper scripts for CLIs that need to be accessible across multiple AI/IDE consumers:
+
+| Wrapper | Binary | Purpose | Availability |
+|---------|--------|---------|----------------|
+| `aws-cli` | `/usr/local/bin/aws` | AWS CLI with unified entry point | Claude Code, Codex, Gemini CLI, etc. |
+| `azure-cli` | `/opt/homebrew/bin/az` | Azure CLI wrapper | all consumers |
+| `cloudflare-cli` | Cloudflare CLI binary | multi-account Cloudflare management | all consumers |
+| `spark-cli` | `/usr/local/bin/spark` | Spark email client CLI | all consumers + skills |
+| Other cloud wrappers | various | GCP, Hetzner, Tailscale, etc. | all consumers |
+
+**Entry point symlinks:**
+- Wrappers live in `bin/` (tracked in git)
+- Symlinks exist in `~/.local/bin/` pointing to wrappers
+- All consumers can call the wrapper by name (e.g., `spark-cli`)
+
+**Why this pattern?**
+- Single source of truth for all AI/IDE consumers
+- Environment variable overrides for debugging (e.g., `SPARK_CLI_BIN=/path/to/spark`)
+- Portable across machines (wrappers don't hardcode paths)
+- Consistent with other CLI patterns in the system
+
+See `operations/runbooks/spark-cli.md` for the Spark CLI universal installation walkthrough.

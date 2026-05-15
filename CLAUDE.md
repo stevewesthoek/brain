@@ -210,6 +210,44 @@ ProBot now features a **safe update system** that:
 
 **See:** `operations/runbooks/probot-updates.md` for complete procedure, troubleshooting, and manual recovery steps.
 
+## Spark CLI (Email/Calendar/Contacts)
+
+**Spark CLI** provides universal access to Spark email client data (emails, calendar, contacts, meetings, teams) across all AI/IDE consumers.
+
+**Installation:** Universal wrapper pattern — stable entry point across Claude Code, Codex, Gemini CLI, Kiro, Cursor, Antigravity.
+
+**Entry points:**
+- CLI consumers (Claude Code, Codex, Gemini CLI): `spark-cli <command>` (e.g., `spark-cli accounts`, `spark-cli search "topic"`)
+- IDE consumers (Kiro, Cursor, Antigravity): Use `/use-spark` skill instead
+
+**Requirements:**
+- Spark Desktop app must be running (IPC-based client only)
+- macOS only
+- Cannot run in sandboxes, containers, or remote sessions
+- Requires live Spark Desktop process on the local machine
+
+**Key commands:**
+```bash
+spark-cli accounts                    # list accounts + access levels
+spark-cli emails                      # list inbox
+spark-cli search "topic"              # semantic search with bodies
+spark-cli thread 1234                 # read full thread
+spark-cli events --week               # calendar this week
+spark-cli availability --tomorrow --attendees alice@co.com  # find free time
+spark-cli draft --to alice@co.com --subject "Hi" --body "Message"  # compose
+spark-cli action archive 1234         # archive email
+spark-cli team "Team Name"            # team info
+```
+
+**Documentation:** See `operations/runbooks/spark-cli.md` for full reference, version tracking, updates, and troubleshooting. See `ai/skills/custom/spark/SKILL.md` for comprehensive command reference.
+
+**Installation files:**
+- Wrapper: `operations/system-configs/bin/spark-cli` (symlinked to `~/.local/bin/spark-cli`)
+- Skill: `ai/skills/custom/spark/SKILL.md` (symlinked via `ai/skills/active/spark`)
+- Distributed to: Claude Code, Codex, Gemini CLI, Kiro, Cursor, Antigravity
+
+**Verification:** Run `operations/system-configs/bin/verify-spark-cli-installation.sh` to check all consumers.
+
 ## Container runtime
 
 **OrbStack** is the default local container runtime on this Mac. It replaces Docker Desktop.
