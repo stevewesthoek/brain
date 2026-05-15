@@ -206,6 +206,7 @@ Key skills:
 Related architecture:
 
 ```text
+operations/runbooks/skill-profile-onboarding.md
 operations/runbooks/research-repo-google-drive-architecture.md
 operations/runbooks/media-acquisition-yt-dlp.md
 operations/runbooks/scripture-source-stack.md
