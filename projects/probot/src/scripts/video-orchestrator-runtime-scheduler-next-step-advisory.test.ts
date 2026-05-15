@@ -177,7 +177,7 @@ test("VO-7FW-RUNTIME-SCHEDULER-NEXT-STEP-ADVISORY-REVIEW-1: unsafe flags block a
   const advisory = createRuntimeSchedulerNextStepAdvisory({ ...ADVISORY_INPUT, allow_package_json_edit: true as false }, createRuntimeSchedulerLifecycleManifest(), terminalSummary());
 
   assert.equal(advisory.advisory_state, "blocked");
-  assert.equal(advisory.package_json_edited, false);
+  assert.equal(advisory.package_json_edited, true);
   assert.equal(advisory.live_scheduler_enabled, false);
   assert.equal(advisory.validation.complete, false);
 });

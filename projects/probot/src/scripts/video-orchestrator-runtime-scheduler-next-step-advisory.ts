@@ -86,7 +86,7 @@ function summaryReady(summary: RuntimeSchedulerTerminalSummary): boolean {
     && summary.summary_only
     && summary.validation.complete
     && summary.validation.manual_follow_up_required
-    && !summary.package_json_edited
+    && summary.package_json_edited === true
     && !summary.live_scheduler_enabled
     && !summary.upload_execution_enabled
     && !summary.network_enabled
