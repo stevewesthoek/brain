@@ -6,7 +6,7 @@
 	<dict>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Info.plist</key>
 		<data>
-		5RF7kk5MhWq8q66JrslxffO+Ymo=
+		Juz4+voli3ptgxSzWzqW9jfoVTQ=
 		</data>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
 		<data>
@@ -38,7 +38,7 @@
 		</data>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Info.plist</key>
 		<data>
-		St+zQicfXrrR21a69tDEUK1pQzU=
+		OCmwnF3JQ5y8nlFmuVRWYRgcfWs=
 		</data>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
 		<data>
@@ -51,7 +51,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			+jgDMFAVe1CCMh3tdLPERJz84dWV3bIfBYoRxyBkjJ0=
+			fEZggyToRFWbadge4oXXc2H8DU4FCfSkt6KRQrMGanA=
 			</data>
 		</dict>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
@@ -107,7 +107,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			xB948bHrdJj/c9OHQ9VyeG8VGgBuhvFchxydv3Umi+Y=
+			dKV5inuXbLG0ZN/g/VO9by0ut598eQKNJ+VJTfyXQ3Q=
 			</data>
 		</dict>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
@@ -115,13 +115,6 @@
 			<key>hash2</key>
 			<data>
 			oHQY5f4SjiJM03lkvCHFA7eqL1dee0knRoR4rYcyFP4=
-			</data>
-		</dict>
-		<key>embedded.provisionprofile</key>
-		<dict>
-			<key>hash2</key>
-			<data>
-			Ro0GlzbgO49p+/LrjHiUQDIeGXQzPNtWcsvPqOA02CU=
 			</data>
 		</dict>
 	</dict>
