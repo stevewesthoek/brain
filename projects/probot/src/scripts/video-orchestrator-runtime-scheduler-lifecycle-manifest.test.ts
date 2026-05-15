@@ -20,6 +20,7 @@ test("VO-7FT-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-1: lists runtime scheduler lif
   assert.equal(manifest.stages.some((stage) => stage.id === "persistent-store-validation"), true);
   assert.equal(manifest.stages.some((stage) => stage.id === "persistent-store-review-summary"), true);
   assert.equal(manifest.stages.some((stage) => stage.id === "persistent-store-terminal-handoff"), true);
+  assert.equal(manifest.stages.some((stage) => stage.id === "persistent-store-operator-decision"), true);
   assert.equal(manifest.stages.every((stage) => stage.side_effects_enabled === false), true);
   assert.equal(manifest.manual_boundaries.length, 4);
   assert.equal(manifest.safety.package_json_edited, true);
@@ -52,6 +53,7 @@ test("VO-7FT-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-2: marks manual boundary stage
   assert.equal(boundaryIds.includes("persistent-store-validation"), true);
   assert.equal(boundaryIds.includes("persistent-store-review-summary"), true);
   assert.equal(boundaryIds.includes("persistent-store-terminal-handoff"), true);
+  assert.equal(boundaryIds.includes("persistent-store-operator-decision"), true);
 });
 
 test("VO-7FU-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-REVIEW-1: renderer is safe and explicit", () => {
@@ -60,7 +62,7 @@ test("VO-7FU-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-REVIEW-1: renderer is safe and
   assert.equal(text.includes("runtime scheduler lifecycle manifest"), true);
   assert.equal(text.includes("Package metadata changes require separate explicit approval; the summary-only runtime scheduler package script has been approved and installed."), true);
   assert.equal(text.includes("Live scheduler activation requires separate explicit approval."), true);
-  assert.equal(text.includes("persistent-store approval, contract, adapter-plan, adapter-skeleton, dry-run fixture, validation, review-summary, and terminal-handoff packets are available"), true);
+  assert.equal(text.includes("persistent-store approval, contract, adapter-plan, adapter-skeleton, dry-run fixture, validation, review-summary, terminal-handoff, and operator-decision packets are available"), true);
   assert.equal(text.includes("package.json edited: true"), true);
   assert.equal(text.includes("Live scheduler executed: false"), true);
   assert.equal(text.includes("access_token"), false);
