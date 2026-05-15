@@ -140,16 +140,16 @@ function terminalSummary() {
   return createRuntimeSchedulerTerminalSummary(SUMMARY_INPUT, archive);
 }
 
-test("VO-7FV-RUNTIME-SCHEDULER-NEXT-STEP-ADVISORY-1: recommends package script approval without side effects", () => {
+test("VO-7FV-RUNTIME-SCHEDULER-NEXT-STEP-ADVISORY-1: recognizes installed package script without side effects", () => {
   const advisory = createRuntimeSchedulerNextStepAdvisory(ADVISORY_INPUT, createRuntimeSchedulerLifecycleManifest(), terminalSummary());
 
   assert.equal(advisory.schema_version, "1.0");
   assert.equal(advisory.advisory_state, "manual_action_required");
   assert.equal(advisory.advisory_only, true);
   assert.equal(advisory.requested_next_step, "approve_package_script");
-  assert.equal(advisory.recommendation.includes("package.json script edit"), true);
-  assert.equal(advisory.required_confirmation.includes("I approve editing projects/probot/package.json"), true);
-  assert.equal(advisory.package_json_edited, false);
+  assert.equal(advisory.recommendation.includes("package script is already installed"), true);
+  assert.equal(advisory.required_confirmation.includes("No package script edit approval needed"), true);
+  assert.equal(advisory.package_json_edited, true);
   assert.equal(advisory.live_scheduler_enabled, false);
   assert.equal(advisory.upload_execution_enabled, false);
   assert.equal(advisory.network_enabled, false);
@@ -188,7 +188,7 @@ test("VO-7FW-RUNTIME-SCHEDULER-NEXT-STEP-ADVISORY-REVIEW-2: renderer and revocat
   const revoked = revokeRuntimeSchedulerNextStepAdvisory(advisory);
 
   assert.equal(rendered.includes("runtime scheduler next-step advisory"), true);
-  assert.equal(rendered.includes("package.json edited: false"), true);
+  assert.equal(rendered.includes("package.json edited: true"), true);
   assert.equal(rendered.includes("Live scheduler enabled: false"), true);
   assert.equal(rendered.includes("access_token"), false);
   assert.equal(rendered.includes("client_secret"), false);

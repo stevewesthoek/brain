@@ -29,7 +29,7 @@ export interface RuntimeSchedulerNextStepAdvisory {
   requested_next_step: RuntimeSchedulerNextStepKind;
   recommendation: string;
   required_confirmation: string;
-  package_json_edited: false;
+  package_json_edited: boolean;
   live_scheduler_enabled: false;
   upload_execution_enabled: false;
   network_enabled: false;
@@ -67,7 +67,8 @@ function manifestReady(manifest: RuntimeSchedulerLifecycleManifest): boolean {
   return manifest.schema_version === "1.0"
     && manifest.manifest_only
     && manifest.manual_boundaries.length > 0
-    && !manifest.safety.package_json_edited
+    && manifest.safety.package_json_edited === true
+    && manifest.stages.some((stage) => stage.id === "package-script-installed")
     && !manifest.safety.live_scheduler_executed
     && !manifest.safety.upload_executed
     && !manifest.safety.network_calls_made
@@ -98,7 +99,7 @@ function summaryReady(summary: RuntimeSchedulerTerminalSummary): boolean {
 }
 
 function recommendationFor(kind: RuntimeSchedulerNextStepKind): { recommendation: string; required_confirmation: string } {
-  if (kind === "approve_package_script") return { recommendation: "Review and explicitly approve a package.json script edit for the runtime scheduler CLI.", required_confirmation: "I approve editing projects/probot/package.json to add the runtime scheduler script only." };
+  if (kind === "approve_package_script") return { recommendation: "The summary-only package script is already installed; review persistent scheduler store planning next before live runtime activation.", required_confirmation: "No package script edit approval needed; keep package.json unchanged." };
   if (kind === "approve_persistent_store") return { recommendation: "Review persistent scheduler store design before enabling any file or database writes.", required_confirmation: "I approve persistent scheduler store implementation planning only, with no writes until separately approved." };
   if (kind === "approve_live_scheduler") return { recommendation: "Keep live scheduler disabled until package script and persistent store boundaries are approved and validated.", required_confirmation: "I approve live scheduler implementation planning only, with no uploads, network calls, credential access, or media reads." };
   return { recommendation: "Keep the runtime scheduler disabled and continue with manual review only.", required_confirmation: "No implementation approval; keep runtime scheduler disabled." };
@@ -115,7 +116,7 @@ export function createRuntimeSchedulerNextStepAdvisory(input: RuntimeSchedulerNe
     requested_next_step: input.requested_next_step,
     recommendation: ready ? advisory.recommendation : "Resolve blocked manifest/terminal summary or unsafe advisory input before continuing.",
     required_confirmation: ready ? advisory.required_confirmation : "No confirmation available while blocked.",
-    package_json_edited: false,
+    package_json_edited: manifest.safety.package_json_edited,
     live_scheduler_enabled: false,
     upload_execution_enabled: false,
     network_enabled: false,
