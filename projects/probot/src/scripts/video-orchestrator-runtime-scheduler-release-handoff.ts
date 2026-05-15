@@ -27,7 +27,7 @@ export interface RuntimeSchedulerReleaseHandoff {
   release_notes: string;
   checklist_state: RuntimeSchedulerReleaseChecklist["checklist_state"];
   checklist_item_count: number;
-  package_json_edited: false;
+  package_json_edited: boolean;
   live_scheduler_enabled: false;
   upload_execution_enabled: false;
   network_enabled: false;
@@ -68,7 +68,7 @@ function checklistReady(checklist: RuntimeSchedulerReleaseChecklist): boolean {
     && checklist.checklist_only
     && checklist.validation.complete
     && checklist.validation.ready_for_manual_release_review
-    && !checklist.package_json_edited
+    && checklist.package_json_edited === true
     && !checklist.live_scheduler_enabled
     && !checklist.upload_execution_enabled
     && !checklist.network_enabled
@@ -90,7 +90,7 @@ export function createRuntimeSchedulerReleaseHandoff(input: RuntimeSchedulerRele
     release_notes: safe(input.release_notes, "Runtime scheduler CLI is prepared for manual release review."),
     checklist_state: checklist.checklist_state,
     checklist_item_count: checklist.items.length,
-    package_json_edited: false,
+    package_json_edited: checklist.package_json_edited,
     live_scheduler_enabled: false,
     upload_execution_enabled: false,
     network_enabled: false,
@@ -100,8 +100,8 @@ export function createRuntimeSchedulerReleaseHandoff(input: RuntimeSchedulerRele
     git_add_executed: false,
     committed_now: false,
     pushed_now: false,
-    next_manual_step: ready ? "Review the release checklist, then explicitly approve package metadata edits before adding a package.json script." : "Resolve blocked checklist or unsafe handoff inputs before continuing.",
-    validation: { complete: ready, ready_for_operator_handoff: ready, blocking_reasons: ready ? [] : ["Runtime scheduler release handoff input or checklist was unsafe/incomplete."], warnings: ["Handoff only; package.json edits and live scheduler activation remain blocked until separately approved."] },
+    next_manual_step: ready ? "Review persistent scheduler store planning before approving any writes or live scheduler activation." : "Resolve blocked checklist or unsafe handoff inputs before continuing.",
+    validation: { complete: ready, ready_for_operator_handoff: ready, blocking_reasons: ready ? [] : ["Runtime scheduler release handoff input or checklist was unsafe/incomplete."], warnings: ["Handoff only; package script is installed, but persistent scheduler writes and live scheduler activation remain blocked until separately approved."] },
   };
 }
 

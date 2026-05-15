@@ -26,7 +26,7 @@ export interface RuntimeSchedulerTerminalSummary {
   source_archive_state: RuntimeSchedulerReleaseArchive["archive_state"];
   source_commit_hint: string;
   manual_follow_up_count: number;
-  package_json_edited: false;
+  package_json_edited: boolean;
   live_scheduler_enabled: false;
   upload_execution_enabled: false;
   network_enabled: false;
@@ -67,7 +67,7 @@ function archiveReady(archive: RuntimeSchedulerReleaseArchive): boolean {
     && archive.archive_only
     && archive.validation.complete
     && archive.validation.archived_for_manual_follow_up
-    && !archive.package_json_edited
+    && archive.package_json_edited === true
     && !archive.live_scheduler_enabled
     && !archive.upload_execution_enabled
     && !archive.network_enabled
@@ -89,7 +89,7 @@ export function createRuntimeSchedulerTerminalSummary(input: RuntimeSchedulerTer
     source_archive_state: archive.archive_state,
     source_commit_hint: safe(archive.source_commit_hint, "commit-not-recorded"),
     manual_follow_up_count: ready ? archive.manual_follow_up.length : 0,
-    package_json_edited: false,
+    package_json_edited: archive.package_json_edited,
     live_scheduler_enabled: false,
     upload_execution_enabled: false,
     network_enabled: false,
@@ -99,7 +99,7 @@ export function createRuntimeSchedulerTerminalSummary(input: RuntimeSchedulerTer
     git_add_executed: false,
     committed_now: false,
     pushed_now: false,
-    final_boundary: ready ? "Stop before package.json edits, persistent scheduler writes, live scheduler activation, uploads, network calls, credential access, or media reads." : "Resolve blocked archive or unsafe summary input before continuing.",
+    final_boundary: ready ? "Stop before persistent scheduler writes, live scheduler activation, uploads, network calls, credential access, or media reads." : "Resolve blocked archive or unsafe summary input before continuing.",
     validation: { complete: ready, manual_follow_up_required: ready, blocking_reasons: ready ? [] : ["Runtime scheduler terminal summary input or source archive was unsafe/incomplete."], warnings: ["Terminal summary only; no package metadata edits, live scheduler activation, file writes, or git actions are enabled by this module."] },
   };
 }

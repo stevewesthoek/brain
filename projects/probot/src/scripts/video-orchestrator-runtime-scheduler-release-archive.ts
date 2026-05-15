@@ -26,7 +26,7 @@ export interface RuntimeSchedulerReleaseArchive {
   archive_only: true;
   source_commit_hint: string;
   handoff_state: RuntimeSchedulerReleaseHandoff["handoff_state"];
-  package_json_edited: false;
+  package_json_edited: boolean;
   live_scheduler_enabled: false;
   upload_execution_enabled: false;
   network_enabled: false;
@@ -68,7 +68,7 @@ function handoffReady(handoff: RuntimeSchedulerReleaseHandoff): boolean {
     && handoff.handoff_only
     && handoff.validation.complete
     && handoff.validation.ready_for_operator_handoff
-    && !handoff.package_json_edited
+    && handoff.package_json_edited === true
     && !handoff.live_scheduler_enabled
     && !handoff.upload_execution_enabled
     && !handoff.network_enabled
@@ -89,7 +89,7 @@ export function createRuntimeSchedulerReleaseArchive(input: RuntimeSchedulerRele
     archive_only: true,
     source_commit_hint: safe(input.source_commit_hint, "commit-not-recorded"),
     handoff_state: handoff.handoff_state,
-    package_json_edited: false,
+    package_json_edited: handoff.package_json_edited,
     live_scheduler_enabled: false,
     upload_execution_enabled: false,
     network_enabled: false,
@@ -101,7 +101,7 @@ export function createRuntimeSchedulerReleaseArchive(input: RuntimeSchedulerRele
     pushed_now: false,
     manual_follow_up: ready ? [
       "Review the runtime scheduler release handoff.",
-      "Explicitly approve package metadata edits before adding package.json scripts.",
+      "Review persistent scheduler store planning before enabling scheduler writes.",
       "Explicitly approve live scheduler activation before enabling runtime scheduling.",
     ] : ["Resolve blocked release handoff or unsafe archive input before continuing."],
     validation: { complete: ready, archived_for_manual_follow_up: ready, blocking_reasons: ready ? [] : ["Runtime scheduler release archive input or handoff was unsafe/incomplete."], warnings: ["Archive only; no package metadata edits, live scheduler activation, file writes, or git actions are enabled by this module."] },

@@ -129,7 +129,7 @@ test("VO-7FR-RUNTIME-SCHEDULER-TERMINAL-SUMMARY-1: creates terminal manual-follo
   assert.equal(summary.source_archive_state, "archived_for_manual_follow_up");
   assert.equal(summary.source_commit_hint, "6b6f3740");
   assert.equal(summary.manual_follow_up_count, 3);
-  assert.equal(summary.package_json_edited, false);
+  assert.equal(summary.package_json_edited, true);
   assert.equal(summary.live_scheduler_enabled, false);
   assert.equal(summary.upload_execution_enabled, false);
   assert.equal(summary.network_enabled, false);
@@ -158,9 +158,9 @@ test("VO-7FS-RUNTIME-SCHEDULER-TERMINAL-SUMMARY-REVIEW-1: renderer is safe and e
 
   assert.equal(text.includes("runtime scheduler terminal summary"), true);
   assert.equal(text.includes("Source commit hint: 6b6f3740"), true);
-  assert.equal(text.includes("package.json edited: false"), true);
+  assert.equal(text.includes("package.json edited: true"), true);
   assert.equal(text.includes("Live scheduler enabled: false"), true);
-  assert.equal(text.includes("Stop before package.json edits"), true);
+  assert.equal(text.includes("Stop before persistent scheduler writes"), true);
   assert.equal(text.includes("access_token"), false);
   assert.equal(text.includes("client_secret"), false);
   assert.equal(text.includes("api_key"), false);

@@ -32,7 +32,7 @@ export interface RuntimeSchedulerReleaseChecklist {
   release_id: string;
   checklist_state: RuntimeSchedulerReleaseChecklistState;
   checklist_only: true;
-  package_json_edited: false;
+  package_json_edited: boolean;
   live_scheduler_enabled: false;
   upload_execution_enabled: false;
   network_enabled: false;
@@ -111,7 +111,7 @@ export function createRuntimeSchedulerReleaseChecklist(input: RuntimeSchedulerRe
   const matrixOk = matrixReady(matrix);
   const items: RuntimeSchedulerReleaseChecklistItem[] = [
     { id: "input", label: "Checklist input is safe", complete: inputOk, evidence: inputOk ? "All runtime/write/git toggles are disabled." : "Input toggles or identifiers are incomplete." },
-    { id: "approval-gate", label: "Package script approval gate is ready", complete: gateOk, evidence: gateOk ? "Gate requires explicit package metadata approval and has not edited package.json." : "Approval gate is blocked, mismatched, or unsafe." },
+    { id: "approval-gate", label: "Package script approval gate was completed", complete: gateOk, evidence: gateOk ? "Gate evidence is complete; the summary-only package script has since been installed." : "Approval gate is blocked, mismatched, or unsafe." },
     { id: "smoke-matrix", label: "Smoke matrix is side-effect-free", complete: matrixOk, evidence: matrixOk ? "Smoke matrix rows expect no scheduling, upload, network, credential, media, file, or git side effects." : "Smoke matrix is incomplete or unsafe." },
   ];
   const ready = items.every((item) => item.complete);
@@ -120,7 +120,7 @@ export function createRuntimeSchedulerReleaseChecklist(input: RuntimeSchedulerRe
     release_id: safe(input.release_id, "runtime-scheduler-release-checklist"),
     checklist_state: ready ? "ready_for_manual_release_review" : "blocked",
     checklist_only: true,
-    package_json_edited: false,
+    package_json_edited: true,
     live_scheduler_enabled: false,
     upload_execution_enabled: false,
     network_enabled: false,
@@ -131,7 +131,7 @@ export function createRuntimeSchedulerReleaseChecklist(input: RuntimeSchedulerRe
     committed_now: false,
     pushed_now: false,
     items,
-    validation: { complete: ready, ready_for_manual_release_review: ready, blocking_reasons: ready ? [] : ["Runtime scheduler release checklist has incomplete or unsafe evidence."], warnings: ["Checklist only; manual review and explicit package metadata approval are still required before package.json edits or live scheduler changes."] },
+    validation: { complete: ready, ready_for_manual_release_review: ready, blocking_reasons: ready ? [] : ["Runtime scheduler release checklist has incomplete or unsafe evidence."], warnings: ["Checklist only; package script is installed, but persistent scheduler writes and live scheduler activation still require separate explicit approval."] },
   };
 }
 

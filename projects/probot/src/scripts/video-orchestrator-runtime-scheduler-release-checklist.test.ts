@@ -71,7 +71,7 @@ test("VO-7FL-RUNTIME-SCHEDULER-RELEASE-CHECKLIST-1: creates manual release check
   assert.equal(checklist.checklist_only, true);
   assert.equal(checklist.items.length, 3);
   assert.equal(checklist.items.every((item) => item.complete), true);
-  assert.equal(checklist.package_json_edited, false);
+  assert.equal(checklist.package_json_edited, true);
   assert.equal(checklist.live_scheduler_enabled, false);
   assert.equal(checklist.upload_execution_enabled, false);
   assert.equal(checklist.network_enabled, false);
@@ -99,7 +99,7 @@ test("VO-7FM-RUNTIME-SCHEDULER-RELEASE-CHECKLIST-REVIEW-1: rendered checklist is
   const text = renderRuntimeSchedulerReleaseChecklist(createRuntimeSchedulerReleaseChecklist(CHECKLIST_INPUT, gate(), createRuntimeSchedulerSmokeMatrix()));
 
   assert.equal(text.includes("runtime scheduler release checklist"), true);
-  assert.equal(text.includes("package.json edited: false"), true);
+  assert.equal(text.includes("package.json edited: true"), true);
   assert.equal(text.includes("Live scheduler enabled: false"), true);
   assert.equal(text.includes("access_token"), false);
   assert.equal(text.includes("client_secret"), false);
