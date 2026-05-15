@@ -175,13 +175,16 @@ Address before next commit/deploy.
 
 ## Cost Analysis
 
-| Per Run | Frequency | Monthly Cost |
-|---------|-----------|--------------|
-| 2-4 messages | 1x/month | 2-4 messages |
-| **Total available** | — | **150 messages** |
-| **Remaining** | — | **~140+ messages** |
+| Item | Value |
+|------|-------|
+| Per Run | 2-4 messages |
+| Frequency | 1x/month |
+| Monthly Cost | 2-4 messages |
+| **Hard Cap** | **60 messages/month** (after 2-month promo) |
+| **Messages Remaining** | **~56+ messages** |
+| **Percentage Used** | **~7%** |
 
-**Conclusion:** You have plenty of free credits for this use case.
+**Conclusion:** Excellent use of your budget. Audit uses only 7% of the hard cap, leaving 93% for other work.
 
 ---
 
