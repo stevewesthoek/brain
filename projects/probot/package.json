@@ -18,7 +18,8 @@
     "probot:video:schedule-month": "tsx src/scripts/video-orchestrator-scheduler.mjs schedule-month",
     "probot:video:run-due": "tsx src/scripts/video-orchestrator-scheduler.mjs run-due",
     "probot:video:plan-projects": "tsx src/scripts/video-orchestrator-project-scheduler.mjs",
-    "probot:video:package-drafts": "tsx src/scripts/video-orchestrator-package-drafts.mjs"
+    "probot:video:package-drafts": "tsx src/scripts/video-orchestrator-package-drafts.mjs",
+    "probot:video:runtime-scheduler": "tsx src/scripts/video-orchestrator-runtime-scheduler.mjs summary"
   },
   "dependencies": {
     "@slack/bolt": "^4.6.0",
