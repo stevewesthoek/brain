@@ -1,0 +1,20 @@
+# Power user profile
+# Goal: broader skill surface for sessions where context budget warnings are acceptable.
+# This is the previous "default" set: all core orchestrators + heavy tool skills.
+# Use this profile when you need design, video, research-acquisition, and DevOps tools simultaneously.
+
+code
+design
+video
+research
+memory
+review
+qa
+handoff
+careful
+gh
+firecrawl
+playwright
+ffmpeg
+n8n
+autoresearch

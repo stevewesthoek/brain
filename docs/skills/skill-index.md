@@ -8,18 +8,24 @@ This index preserves existing skill names. It does not rename, delete, or merge 
 
 ## Core Always-On Orchestrators
 
-| Skill | Role | Default Active | Notes |
-|---|---|---:|---|
-| `code` | General code work and repo implementation | Yes | Main engineering entry point |
-| `design` | High-level design orchestration | Yes | Routes to dormant design subskills when needed |
-| `video` | High-level video production orchestration | Yes | Routes to video production subskills and package workflows |
-| `research` | High-level research orchestration | Yes | Routes to web, Bible research, source synthesis, and durable research notes |
-| `memory` | Memory and long-term context | Yes | Core context capability |
-| `review` | Review and critique | Yes | General review entry point |
-| `qa` | Quality assurance | Yes | General validation entry point |
-| `handoff` | Handoff prompts and cross-agent work | Yes | Useful across Claude Code, Codex, Gemini |
-| `careful` | Caution and high-risk work guardrails | Yes | Default safety skill |
-| `guard` | Guardrails and safety checks | Yes | Default safety skill |
+| Skill | Role | Default Active | Profile | Notes |
+|---|---|---:|---|---|
+| `code` | General code work and repo implementation | Yes | default | Main engineering entry point |
+| `research` | High-level research orchestration | Yes | default | Routes to web, Bible research, source synthesis, and durable research notes |
+| `memory` | Memory and long-term context | Yes | default | Core context capability |
+| `review` | Review and critique | Yes | default | General review entry point |
+| `qa` | Quality assurance | Yes | default | General validation entry point |
+| `handoff` | Handoff prompts and cross-agent work | Yes | default | Useful across Claude Code, Codex, Gemini |
+| `careful` | Caution and high-risk work guardrails | Yes | default | Default safety skill |
+| `design` | High-level design orchestration | No | design, power | Routes to dormant design subskills when needed |
+| `video` | High-level video production orchestration | No | video, power | Routes to video production subskills and package workflows |
+| `guard` | Guardrails and safety checks | No | design, power | Extended safety checks for specific domains |
+| `gh` | GitHub CLI operations | No | deploy, power | GitHub issue/PR/workflow management |
+| `firecrawl` | Web scraping and research acquisition | No | research, power | Research data scraping and web automation |
+| `playwright` | Browser automation and testing | No | research, power | Web testing and complex automation |
+| `ffmpeg` | Audio/video encoding and composition | No | video, power | Media format conversion and mixing |
+| `n8n` | Workflow automation platform | No | deploy, power | Workflow orchestration and integration |
+| `autoresearch` | Autonomous research workflows | No | research, power | Automated research iteration and optimization |
 
 ---
 
@@ -33,7 +39,35 @@ Path:
 docs/skills/profiles/default.txt
 ```
 
-Target size: about 20 active skills.
+Target size: about 7 active skills (minimal, truly always-on).
+
+**Philosophy:** Default includes only core orchestrators and safety skills. Heavy domain orchestrators (`design`, `video`) and tool skills (`gh`, `firecrawl`, `playwright`, `ffmpeg`, `n8n`, `autoresearch`) are dormant to reduce skill context pressure on Codex. They remain available through domain-specific profiles and natural-language routing.
+
+Includes:
+
+```text
+code, research, memory, review, qa, handoff, careful
+```
+
+When a user requests design, video, research-acquisition, or DevOps work, natural-language routing should either:
+1. Recommend switching to the relevant domain profile (design, video, research, deploy), or
+2. Use the dormant source documentation directly if available.
+
+If a listed skill source does not exist yet, the switcher will fail rather than silently skipping it.
+
+---
+
+## Power Profile
+
+Use for general power-user sessions where skill context budget warnings are acceptable.
+
+Path:
+
+```text
+docs/skills/profiles/power.txt
+```
+
+This is the previous broader "default" set: all core orchestrators + heavy tool skills. Use this profile when you need to work across design, video, research-acquisition, and DevOps simultaneously, and don't mind the context pressure warning.
 
 Includes:
 
@@ -41,8 +75,6 @@ Includes:
 code, design, video, research, memory, review, qa, handoff, careful,
 gh, firecrawl, playwright, ffmpeg, n8n, autoresearch
 ```
-
-If a listed skill source does not exist yet, the switcher will fail rather than silently skipping it.
 
 ---
 

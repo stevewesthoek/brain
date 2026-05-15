@@ -1,20 +1,13 @@
 # Default active skill profile
-# Goal: very small always-on surface for natural-language routing.
+# Goal: truly minimal always-on surface. ~7 core skills for ordinary work.
 # Source skills are not deleted; dormant skills remain in ai/skills/custom and ai/skills/vendors.
-# Keep only daily orchestrators and common tools here. Maintenance/setup skills live in domain profiles.
+# Heavy orchestrators (design, video) and tool skills (gh, firecrawl, etc.) move to domain profiles.
+# Natural-language routing will recommend dormant profiles when needed.
 
 code
-design
-video
 research
 memory
 review
 qa
 handoff
 careful
-gh
-firecrawl
-playwright
-ffmpeg
-n8n
-autoresearch
