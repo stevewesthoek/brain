@@ -61,11 +61,12 @@ export function createRuntimeSchedulerLifecycleManifest(): RuntimeSchedulerLifec
       stage("persistent-store-review-summary", "Runtime scheduler persistent-store review summary", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-review-summary.ts", "manual_boundary"),
       stage("persistent-store-terminal-handoff", "Runtime scheduler persistent-store terminal handoff", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-terminal-handoff.ts", "manual_boundary"),
       stage("persistent-store-operator-decision", "Runtime scheduler persistent-store operator decision packet", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-operator-decision-packet.ts", "manual_boundary"),
+      stage("persistent-store-decision-closeout", "Runtime scheduler persistent-store decision closeout", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-decision-closeout.ts", "manual_boundary"),
     ],
     manual_boundaries: [
       "Package metadata changes require separate explicit approval; the summary-only runtime scheduler package script has been approved and installed.",
       "Live scheduler activation requires separate explicit approval.",
-      "Persistent scheduler writes require separate explicit approval; persistent-store approval, contract, adapter-plan, adapter-skeleton, dry-run fixture, validation, review-summary, terminal-handoff, and operator-decision packets are available for operator confirmation.",
+      "Persistent scheduler writes require separate explicit approval; persistent-store approval, contract, adapter-plan, adapter-skeleton, dry-run fixture, validation, review-summary, terminal-handoff, operator-decision, and decision-closeout packets are available for operator confirmation.",
       "Uploads, network calls, credential access, and media reads remain disabled in this lifecycle.",
     ],
     safety: { package_json_edited: true, live_scheduler_executed: false, upload_executed: false, network_calls_made: false, credential_accessed: false, media_read_performed: false, files_written: false, git_add_executed: false, committed_now: false, pushed_now: false },
