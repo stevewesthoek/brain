@@ -52,11 +52,12 @@ export function createRuntimeSchedulerLifecycleManifest(): RuntimeSchedulerLifec
       stage("release-archive", "Runtime scheduler release archive", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-release-archive.ts", "manual_boundary"),
       stage("terminal-summary", "Runtime scheduler terminal summary", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-terminal-summary.ts", "manual_boundary"),
       stage("persistent-store-approval", "Runtime scheduler persistent-store approval packet", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-approval.ts", "manual_boundary"),
+      stage("persistent-store-contract", "Runtime scheduler persistent-store contract", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-contract.ts", "manual_boundary"),
     ],
     manual_boundaries: [
       "Package metadata changes require separate explicit approval; the summary-only runtime scheduler package script has been approved and installed.",
       "Live scheduler activation requires separate explicit approval.",
-      "Persistent scheduler writes require separate explicit approval; persistent-store approval packet is available for operator confirmation.",
+      "Persistent scheduler writes require separate explicit approval; persistent-store approval and contract packets are available for operator confirmation.",
       "Uploads, network calls, credential access, and media reads remain disabled in this lifecycle.",
     ],
     safety: { package_json_edited: true, live_scheduler_executed: false, upload_executed: false, network_calls_made: false, credential_accessed: false, media_read_performed: false, files_written: false, git_add_executed: false, committed_now: false, pushed_now: false },
