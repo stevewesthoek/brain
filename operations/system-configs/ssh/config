@@ -1,99 +1,81 @@
-# SSH to Dokploy over Tailscale
-#Host dokploy
-#  HostName 100.108.85.31
-#  User master
-#  Port 22
-#  IdentitiesOnly yes
-#  IdentityFile ~/.ssh/dokploy_master_key.pem
-
-# SSH to Dokploy server via Cloudflare Tunnel
-#Host dokploy
-#  HostName ssh_dokploy.prochat.tools
-#  ProxyCommand /opt/homebrew/bin/cloudflared access ssh --hostname %h
-#  User master
-#  IdentityFile ~/.ssh/dokploy_master_key.pem
-#  IdentitiesOnly yes
-
-#Host Dokploy
-#    HostName dokploy.prochat.tools
-#    User master
-#    IdentityFile ~/.ssh/dokploy_master_key.pem
-#    IdentitiesOnly yes # Optional: Ensures only this identity file is tried
-
+# ============================================================
+# Dokploy @ Azure via Tailscale
+# ============================================================
 Host dokploy
   HostName 100.83.38.48
   User master
+  Port 22
   IdentityFile ~/.ssh/id_ed25519
   IdentitiesOnly yes
   ServerAliveInterval 30
   ServerAliveCountMax 3
+  ConnectTimeout 5
 
-# Supabase via Tailscale (preferred)
+# ============================================================
+# Supabase @ Azure via Tailscale
+# ============================================================
 Host supabase
   HostName 100.71.31.88
   User master
-  IdentitiesOnly yes
-  IdentityFile ~/.ssh/id_ed25519
-
-# SSH to Supabase server via Cloudflare Tunnel
-#Host supabase
-#  HostName ssh_supabase.prochat.tools
-#  ProxyCommand /opt/homebrew/bin/cloudflared access ssh --hostname %h
-#  User master
-
-# SSH to CloudPanel server via Cloudflare Tunnel
-Host cloudpanel
-  HostName ssh_cp.prochat.tools
-  ProxyCommand /opt/homebrew/bin/cloudflared access ssh --hostname %h
-  User master
+  Port 22
   IdentityFile ~/.ssh/id_ed25519
   IdentitiesOnly yes
-
-# If you still need direct SSH access via the old hostname (cp.prochat.tools)
-# and it's an A record (not through tunnel), keep this block.
-# Otherwise, you can remove it.
-Host CloudPanel
-    User root
-    Hostname cp.prochat.tools
-    Port 22
-    IdentityFile ~/.ssh/id_ed25519
-    IdentitiesOnly yes
-
-Host *
-  AddKeysToAgent yes
-  UseKeychain yes
-  IdentityFile ~/.ssh/id_ed25519
-
-# M4 Mac (Tailscale by default)
-Host office
-  HostName 100.86.124.66
-  User office
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
   ConnectTimeout 5
-  ServerAliveInterval 15
-  ServerAliveCountMax 2
 
-# Prefer Thunderbolt when directly connected (overrides HostName above)
-Match host office exec "/usr/bin/nc -G 1 -z 192.168.2.1 22"
-  HostName 192.168.2.1
-  ConnectTimeout 2
-
-Host github-personal
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/github_personal
-  IdentitiesOnly yes
-
-Host github-demo
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/github_demo
-  IdentitiesOnly yes
-
-Host cloudpanel-aws
+# ============================================================
+# CloudPanel @ AWS
+# ============================================================
+Host cloudpanel
   HostName 13.135.227.0
   User ubuntu
+  Port 22
   IdentityFile ~/.ssh/cloudpanel-aws-key.pem
   IdentitiesOnly yes
   ServerAliveInterval 30
   ServerAliveCountMax 3
   ConnectTimeout 5
+
+# ============================================================
+# M4 Mac Mini Pro / Office machine
+# ============================================================
+# General M4 access.
+# This alias points back to this M4 machine.
+# Keep it for consistency with scripts, testing, and shared config habits.
+# Default: Tailscale.
+# Terminal SSH prefers Thunderbolt when 192.168.2.1:22 is reachable.
+Host office
+  HostName 100.86.124.66
+  User office
+  Port 22
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  HostKeyAlias office-m4
+  ConnectTimeout 5
+  ServerAliveInterval 15
+  ServerAliveCountMax 2
+
+# Thunderbolt override for terminal SSH.
+# If 192.168.2.1:22 is reachable, terminal SSH uses Thunderbolt.
+Match host office exec "/usr/bin/nc -G 1 -z 192.168.2.1 22"
+  HostName 192.168.2.1
+  ConnectTimeout 2
+
+# ============================================================
+# Global SSH defaults
+# ============================================================
+# Applies to every Host unless overridden above.
+#
+# AddKeysToAgent: Automatically adds used SSH keys to the ssh-agent.
+#   
+# UseKeychain: macOS-specific. Lets SSH store/use key passphrases from Keychain.
+#   
+# IdentityFile: Default SSH key to try when a host does not define its own key.
+#   
+# Keep this block at the bottom. OpenSSH uses the first value it gets for many
+# options, so specific host rules should appear above general defaults.
+Host *
+  AddKeysToAgent yes
+  UseKeychain yes
+  IdentityFile ~/.ssh/id_ed25519

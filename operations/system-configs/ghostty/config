@@ -1,55 +1,18 @@
-# This is the configuration file for Ghostty.
-#
-# This template file has been automatically created at the following
-# path since Ghostty couldn't find any existing config files on your system:
-#
-#   /Users/Steve/Library/Application Support/com.mitchellh.ghostty/config
-#
-# The template does not set any default options, since Ghostty ships
-# with sensible defaults for all options. Users should only need to set
-# options that they want to change from the default.
-#
-# Run `ghostty +show-config --default --docs` to view a list of
-# all available config options and their default values.
-#
-# Additionally, each config option is also explained in detail
-# on Ghostty's website, at https://ghostty.org/docs/config.
-#
-# Ghostty can reload the configuration while running by using the menu
-# options or the bound key (default: Command + Shift + comma on macOS and
-# Control + Shift + comma on other platforms). Not all config options can
-# be reloaded while running; some only apply to new windows and others may
-# require a full restart to take effect.
-
-# Config syntax crash course
-# ==========================
-# The config file consists of simple key-value pairs, separated by equals signs.
-# Any line beginning with a # is a comment. It's not possible to put a comment
-# after a config option, since it would be interpreted as part of the value.
-
 font-family = JetBrainsMono Nerd Font
 font-size = 15
-
 font-feature = calt,liga
-#font-feature = -calt,-liga,-dlig    # example: kill ligatures
 
 theme = Cobalt2
 
-resize-overlay-duration = 4s 200ms
-
 working-directory = "~/Repos/stevewesthoek/brain"
 
+background-opacity = 0.85
 background-blur = 70
 
 window-padding-x = 30
 window-padding-y = 30
-
-# Keep native frame (so corners/edges are resizable)
 window-decoration = auto
-background-opacity = 0.85
-
-# Hide the macOS titlebar (no traffic lights / title bar)
-macos-titlebar-style = transparent 
+macos-titlebar-style = transparent
 
 confirm-close-surface = false
 clipboard-trim-trailing-spaces = true
@@ -60,11 +23,10 @@ shell-integration = detect
 cursor-style = block
 
 selection-foreground = cell-foreground
-# selection-background = #36424C
-selection-background = #000000
+selection-background = cell-background
 
 scroll-to-bottom = keystroke,no-output
 grapheme-width-method = unicode
 
-# Reflow wrapped lines when terminal is resized
 resize-overlay = after-first
+resize-overlay-duration = 4s 200ms
