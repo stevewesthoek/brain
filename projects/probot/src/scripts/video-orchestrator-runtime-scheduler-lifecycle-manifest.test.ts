@@ -49,6 +49,7 @@ test("VO-7FT-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-1: lists runtime scheduler lif
   assert.equal(manifest.stages.some((stage) => stage.id === "persistent-store-runtime-import-implementation-terminal-handoff"), true);
   assert.equal(manifest.stages.some((stage) => stage.id === "persistent-store-runtime-import-implementation-operator-decision"), true);
   assert.equal(manifest.stages.some((stage) => stage.id === "persistent-store-runtime-import-implementation-decision-closeout"), true);
+  assert.equal(manifest.stages.some((stage) => stage.id === "persistent-store-runtime-import-code-wiring-plan"), true);
   assert.equal(manifest.stages.every((stage) => stage.side_effects_enabled === false), true);
   assert.equal(manifest.manual_boundaries.length, 4);
   assert.equal(manifest.safety.package_json_edited, true);
@@ -110,6 +111,7 @@ test("VO-7FT-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-2: marks manual boundary stage
   assert.equal(boundaryIds.includes("persistent-store-runtime-import-implementation-terminal-handoff"), true);
   assert.equal(boundaryIds.includes("persistent-store-runtime-import-implementation-operator-decision"), true);
   assert.equal(boundaryIds.includes("persistent-store-runtime-import-implementation-decision-closeout"), true);
+  assert.equal(boundaryIds.includes("persistent-store-runtime-import-code-wiring-plan"), true);
 });
 
 test("VO-7FU-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-REVIEW-1: renderer is safe and explicit", () => {
@@ -118,7 +120,7 @@ test("VO-7FU-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-REVIEW-1: renderer is safe and
   assert.equal(text.includes("runtime scheduler lifecycle manifest"), true);
   assert.equal(text.includes("Package metadata changes require separate explicit approval; the summary-only runtime scheduler package script has been approved and installed."), true);
   assert.equal(text.includes("Live scheduler activation requires separate explicit approval."), true);
-  assert.equal(text.includes("persistent-store approval, contract, adapter-plan, adapter-skeleton, dry-run fixture, validation, review-summary, terminal-handoff, operator-decision, decision-closeout, implementation-design, scaffold-plan, pure-scaffold, pure-scaffold-review, pure-scaffold-terminal-handoff, pure-scaffold-operator-decision, pure-scaffold-decision-closeout, pure-scaffold-integration-plan, pure-scaffold-integration-review, pure-scaffold-integration-terminal-handoff, pure-scaffold-integration-operator-decision, pure-scaffold-integration-decision-closeout, executable-integration-plan, executable-integration-review, executable-integration-terminal-handoff, executable-integration-operator-decision, executable-integration-decision-closeout, runtime-import-plan, runtime-import-review, runtime-import-terminal-handoff, runtime-import-operator-decision, runtime-import-decision-closeout, runtime-import-implementation-plan, runtime-import-implementation-review, runtime-import-implementation-terminal-handoff, runtime-import-implementation-operator-decision, and runtime-import-implementation-decision-closeout packets are available"), true);
+  assert.equal(text.includes("persistent-store approval, contract, adapter-plan, adapter-skeleton, dry-run fixture, validation, review-summary, terminal-handoff, operator-decision, decision-closeout, implementation-design, scaffold-plan, pure-scaffold, pure-scaffold-review, pure-scaffold-terminal-handoff, pure-scaffold-operator-decision, pure-scaffold-decision-closeout, pure-scaffold-integration-plan, pure-scaffold-integration-review, pure-scaffold-integration-terminal-handoff, pure-scaffold-integration-operator-decision, pure-scaffold-integration-decision-closeout, executable-integration-plan, executable-integration-review, executable-integration-terminal-handoff, executable-integration-operator-decision, executable-integration-decision-closeout, runtime-import-plan, runtime-import-review, runtime-import-terminal-handoff, runtime-import-operator-decision, runtime-import-decision-closeout, runtime-import-implementation-plan, runtime-import-implementation-review, runtime-import-implementation-terminal-handoff, runtime-import-implementation-operator-decision, runtime-import-implementation-decision-closeout, and runtime-import-code-wiring-plan packets are available"), true);
   assert.equal(text.includes("package.json edited: true"), true);
   assert.equal(text.includes("Live scheduler executed: false"), true);
   assert.equal(text.includes("access_token"), false);
