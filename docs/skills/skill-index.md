@@ -26,6 +26,7 @@ This index preserves existing skill names. It does not rename, delete, or merge 
 | `ffmpeg` | Audio/video encoding and composition | No | video, power | Media format conversion and mixing |
 | `n8n` | Workflow automation platform | No | deploy, power | Workflow orchestration and integration |
 | `autoresearch` | Autonomous research workflows | No | research, power | Automated research iteration and optimization |
+| `spark` | Spark email/calendar/contact CLI | No | productivity, power | Mailbox, calendar, contacts, meetings, scheduling; personal-data sensitive, not default-active |
 
 ---
 
@@ -75,6 +76,30 @@ Includes:
 code, design, video, research, memory, review, qa, handoff, careful,
 gh, firecrawl, playwright, ffmpeg, n8n, autoresearch
 ```
+
+---
+
+## Productivity Profile
+
+Path:
+
+```text
+docs/skills/profiles/productivity.txt
+```
+
+Use when working with email, calendar, contacts, meetings, scheduling, or Spark mailbox data.
+
+Key skills:
+
+| Skill | Use |
+|---|---|
+| `spark` | Spark CLI for email, calendar, contacts, meetings, availability, and scheduling |
+| `memory` | Remember communication preferences and follow-up context |
+| `review` | Review drafted replies and scheduling decisions |
+| `handoff` | Prepare handoff prompts or summaries for another agent |
+| `careful` | Personal-data and credential-boundary guardrails |
+
+Important: `spark` is a real source skill at `ai/skills/custom/spark/SKILL.md`. It is intentionally dormant in the default profile because it is large and personal-data sensitive. It is preserved in the `productivity` and `power` profiles.
 
 ---
 

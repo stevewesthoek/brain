@@ -41,6 +41,7 @@ Do not add heavy domain orchestrators or tool skills to default unless there is 
 - `research.txt` for research, source acquisition, browser/scraping, Bible research, Scripture sources, and media source retrieval.
 - `video.txt` for video production, metadata/transcript acquisition, rendering, and publishing preparation.
 - `design.txt` for web/UI/UX/brand/motion/reference work.
+- `productivity.txt` for Spark email, calendar, contacts, meetings, and scheduling workflows.
 - `deploy.txt` for infrastructure, deployment, cloud, Docker, GitHub, and hosting workflows.
 
 ---
@@ -226,3 +227,29 @@ Do not solve context pressure by deleting skills. Use profiles.
 Kiro uses entry symlinks rather than a root symlink. `sync-ai-skills.mjs` may warn about stale Kiro entries that no longer correspond to active skills. The sync check can still pass if every active skill is reachable.
 
 If stale Kiro entries become confusing, clean them deliberately in a separate maintenance pass. Do not mix Kiro cleanup with unrelated skill onboarding.
+
+Manual cleanup command for stale Kiro entries after applying the 7-skill default profile:
+
+```bash
+cd /Users/Office/Repos/stevewesthoek/brain
+
+rm -f \
+  operations/system-configs/kiro/skills/autoresearch \
+  operations/system-configs/kiro/skills/brain-universal-capability-install \
+  operations/system-configs/kiro/skills/design \
+  operations/system-configs/kiro/skills/ffmpeg \
+  operations/system-configs/kiro/skills/firecrawl \
+  operations/system-configs/kiro/skills/gh \
+  operations/system-configs/kiro/skills/guard \
+  operations/system-configs/kiro/skills/n8n \
+  operations/system-configs/kiro/skills/playwright \
+  operations/system-configs/kiro/skills/setup-deploy \
+  operations/system-configs/kiro/skills/skill-creator \
+  operations/system-configs/kiro/skills/skill-prune \
+  operations/system-configs/kiro/skills/spark \
+  operations/system-configs/kiro/skills/video
+
+node tools/scripts/sync-ai-skills.mjs --check
+```
+
+`operations/system-configs/kiro/**` may be protected by some write policies. If an agent cannot modify it directly, the human operator should run the cleanup command locally.

@@ -1,0 +1,9 @@
+# Productivity profile
+# Activates personal productivity and communication skills.
+# Use when the user asks about email, calendar, contacts, meetings, scheduling, or Spark mailbox data.
+
+memory
+review
+handoff
+careful
+spark

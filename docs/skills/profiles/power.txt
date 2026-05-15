@@ -18,3 +18,4 @@ playwright
 ffmpeg
 n8n
 autoresearch
+spark
