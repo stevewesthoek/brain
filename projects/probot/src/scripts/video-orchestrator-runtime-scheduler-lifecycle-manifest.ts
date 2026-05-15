@@ -49,6 +49,7 @@ export function createRuntimeSchedulerLifecycleManifest(): RuntimeSchedulerLifec
       stage("smoke-matrix", "Runtime scheduler smoke matrix", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-smoke-matrix.ts"),
       stage("release-checklist", "Runtime scheduler release checklist", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-release-checklist.ts", "manual_boundary"),
       stage("release-handoff", "Runtime scheduler release handoff", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-release-handoff.ts", "manual_boundary"),
+      stage("handoff-artifacts-manifest", "Runtime scheduler handoff artifacts manifest", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-handoff-artifacts-manifest.ts", "manual_boundary"),
       stage("release-archive", "Runtime scheduler release archive", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-release-archive.ts", "manual_boundary"),
       stage("terminal-summary", "Runtime scheduler terminal summary", "projects/probot/src/scripts/video-orchestrator-runtime-scheduler-terminal-summary.ts", "manual_boundary"),
       stage("persistent-store-approval", "Runtime scheduler persistent-store approval packet", "projects/probot/src/bot/video-orchestrator-runtime-scheduler-persistent-store-approval.ts", "manual_boundary"),

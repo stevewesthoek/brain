@@ -10,6 +10,7 @@ test("VO-7FT-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-1: lists runtime scheduler lif
   assert.equal(manifest.stages.length >= 10, true);
   assert.equal(manifest.stages.some((stage) => stage.id === "cli-entrypoint"), true);
   assert.equal(manifest.stages.some((stage) => stage.id === "terminal-summary"), true);
+  assert.equal(manifest.stages.some((stage) => stage.id === "handoff-artifacts-manifest"), true);
   assert.equal(manifest.stages.some((stage) => stage.id === "package-script-installed"), true);
   assert.equal(manifest.stages.some((stage) => stage.id === "persistent-store-approval"), true);
   assert.equal(manifest.stages.some((stage) => stage.id === "persistent-store-contract"), true);
@@ -37,6 +38,7 @@ test("VO-7FT-RUNTIME-SCHEDULER-LIFECYCLE-MANIFEST-2: marks manual boundary stage
   assert.equal(boundaryIds.includes("package-script-approval-gate"), true);
   assert.equal(boundaryIds.includes("release-checklist"), true);
   assert.equal(boundaryIds.includes("release-handoff"), true);
+  assert.equal(boundaryIds.includes("handoff-artifacts-manifest"), true);
   assert.equal(boundaryIds.includes("release-archive"), true);
   assert.equal(boundaryIds.includes("terminal-summary"), true);
   assert.equal(boundaryIds.includes("persistent-store-approval"), true);
