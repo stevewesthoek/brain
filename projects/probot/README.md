@@ -4,6 +4,30 @@ ProBot is a lightweight, always-on local Slack and Telegram control plane for th
 
 It is intentionally not a general-purpose agent platform. The goal is fast remote access to trusted local workflows with a small, auditable codebase and low idle resource usage.
 
+## Architecture Direction — Dashboard Freeze
+
+As of 2026-05-16, the ProBot dashboard is deprecated as a primary product UI.
+
+The accepted direction is documented in:
+
+- `../../docs/system/obsidian-brain-core-roadmap.md`
+- `../../docs/system/obsidian-brain-core-implementation-plan.md`
+
+Obsidian is the target primary human cockpit. ProBot should not receive new dashboard product features. Reusable ProBot backend capabilities may be migrated into the future Brain Core local API, including Slack/Telegram adapters, session ranking, local app lifecycle logic, approval handling, and selected status adapters.
+
+Dashboard changes are allowed only when they support diagnostics, migration, or safe decommissioning.
+
+## Current Direction: Dashboard Freeze
+
+The ProBot dashboard is deprecated as a primary UI. Obsidian is the target primary human cockpit, backed by a small local Brain Core API.
+
+Canonical roadmap:
+
+- `../../docs/system/obsidian-brain-core-roadmap.md`
+- `../../docs/system/obsidian-brain-core-implementation-plan.md`
+
+Do not add new product dashboard features here. During migration, ProBot may provide reusable backend capabilities such as Slack/Telegram adapters, session ranking, local app lifecycle logic, approvals, and selected status adapters. New dashboard or machine-control work should target Brain Core and Obsidian.
+
 ## Goals
 
 - Slack-first remote control with Telegram as a fallback

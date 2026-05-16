@@ -90,9 +90,34 @@ This table is the contract. If a tool reads the docs and finds no pointer to a n
 - `runtime/cache/` and `runtime/local/` are local-support folders, not canonical truth.
 - runtime bootstrap files should point to canonical docs instead of duplicating them.
 
-## Runtime & ProBot
+## Obsidian-First Brain Core Direction
 
-All runtime glue now lives under `runtime/`. The local ProBot daemon is the always-on teleport layer for Claude, Codex, and Brain — there is no separate OpenClaw workspace anymore.
+The accepted roadmap is to make Obsidian the only primary human dashboard for personal, business, machine, workflow, and orchestrator operation.
+
+Canonical docs:
+
+- `docs/system/obsidian-brain-core-roadmap.md` — architecture roadmap and boundaries
+- `docs/system/obsidian-brain-core-implementation-plan.md` — execution plan and migration phases
+
+The ProBot dashboard is deprecated as a primary UI. Future machine-control work should target a small local Brain Core API consumed by Obsidian, while retaining only reusable ProBot backend capabilities during migration.
+
+## Runtime, ProBot, and Obsidian-First Brain Core
+
+As of 2026-05-16, the accepted architecture direction is Obsidian-first:
+
+- Obsidian / `mind` is the target primary human cockpit.
+- ProBot dashboard is deprecated as a primary UI and should not receive new product features.
+- A future Brain Core local API should replace the dashboard as the machine boundary.
+- Slack and Telegram, if retained, should become thin fallback clients over Brain Core.
+
+Read first for the new direction:
+
+- `docs/system/obsidian-brain-core-roadmap.md`
+- `docs/system/obsidian-brain-core-implementation-plan.md`
+- `projects/probot/README.md` for the dashboard-freeze notice
+
+
+All runtime glue now lives under `runtime/`. The local ProBot daemon is the current always-on teleport layer for Claude, Codex, and Brain — there is no separate OpenClaw workspace anymore.
 
 If you need to understand the runtime setup:
 - Read `projects/probot/SPEC.md` for the Telegram command center architecture.

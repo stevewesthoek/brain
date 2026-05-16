@@ -306,3 +306,56 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Rationale: Video Orchestrator roadmap is a living document. Recording Remotion here prevents rediscovery work and signals to future sessions that this assessment has been made and deferred consciously.
 - Reference: `operations/runbooks/video-orchestrator-roadmap.md` Phase 5 section, `ai/skills/custom/video/SKILL.md` Workflow C notes.
 - Rollback: Remove Remotion mention from roadmap and video skill if the assessment is revisited and reversed.
+
+
+---
+
+## 2026-05-16 — Obsidian-first Brain Core replaces ProBot dashboard as primary machine UI
+
+**Decision:** Obsidian is the only target primary human dashboard for personal, business, machine, workflow, and orchestrator operation. The ProBot dashboard is deprecated as a primary UI and should not receive new product features.
+
+**Rationale:** The system needs one human cockpit but not one monolith. Obsidian already owns the human operating layer in `mind`; Brain owns machine logic, skills, configs, and automations. The ProBot dashboard duplicated Obsidian's role and accumulated mixed responsibilities: UI, routing, local app controls, Video Orchestrator panels, status rendering, OAuth/account UI, and diagnostics.
+
+**Direction:** Build a small local Brain Core API as the machine boundary. Obsidian consumes Brain Core through markdown dashboards first and a small `brain-console` Obsidian plugin later. Video Orchestrator remains the runtime authority for video production. Skills remain execution workflows. Slack and Telegram, if retained, become thin fallback clients over Brain Core.
+
+**Documentation:**
+
+- `docs/system/obsidian-brain-core-roadmap.md`
+- `docs/system/obsidian-brain-core-implementation-plan.md`
+- `projects/probot/README.md` dashboard-freeze notice
+
+**Guardrails:**
+
+- Do not add new product dashboard features to ProBot.
+- Do not put secrets, OAuth internals, direct platform uploads, broad shell execution, or runtime database writes into Obsidian.
+- Reuse ProBot code only for clean backend capabilities such as Slack/Telegram adapters, session ranking, local app lifecycle logic, approvals, and status adapters.
+- Start Brain Core read-only before adding controlled actions.
+- Keep the number of Obsidian dashboard notes small and human-oriented.
+
+---
+
+## 2026-05-16 — Obsidian-First Brain Core Direction
+
+**Decision:** Obsidian is the only primary human dashboard for personal, business, machine, workflow, and orchestrator operation. The ProBot dashboard is deprecated as a primary UI.
+
+**Rationale:** The ProBot dashboard duplicates the role Obsidian should own and has grown into a mixed-responsibility surface. The long-term foundation should use one human cockpit with a small local machine API underneath it, not multiple parallel dashboards.
+
+**Target architecture:**
+
+```text
+Obsidian = cockpit
+mind     = human memory, strategy, tasks, projects, research
+brain    = machine logic, skills, configs, automations, local control
+Brain Core = local API and safety boundary
+orchestrators = durable domain runtimes
+skills   = execution workflows
+```
+
+**Implementation direction:** Build a small local Brain Core service that exposes structured, safe APIs for machine status, sessions, repos, skills, local apps, approvals, and orchestrators. Obsidian will consume those APIs through minimal dashboards and later a small Obsidian integration/plugin.
+
+**ProBot rule:** Do not add new product dashboard features to ProBot. Reuse only clean backend capabilities during migration, such as Slack/Telegram adapters, session ranking, local app lifecycle logic, approvals, and selected status adapters.
+
+**Canonical docs:**
+
+- `docs/system/obsidian-brain-core-roadmap.md`
+- `docs/system/obsidian-brain-core-implementation-plan.md`
