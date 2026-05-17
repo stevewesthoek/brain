@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { classifyRequestedKind } from './action-allowlist.js';
 import type {
   BrainCoreActionRequestResult,
   BrainCoreApprovalAuditEvent,
@@ -13,21 +15,24 @@ let nextApprovalNumber = 1;
 let nextAuditNumber = 1;
 
 export function requestAction(kind = 'manual-request'): BrainCoreActionRequestResult {
+  const classified = classifyRequestedKind(kind);
   const approval: BrainCoreApprovalSummary = {
     id: `approval-${nextApprovalNumber++}`,
-    kind: normalizeKind(kind),
-    status: 'pending',
+    kind: classified.normalizedKind,
+    status: classified.supported ? 'pending' : 'rejected',
     expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     source: 'memory',
   };
 
   approvals.set(approval.id, approval);
-  recordAuditEvent(approval, 'requested');
+  recordAuditEvent(approval, classified.supported ? 'requested' : 'rejected');
 
   return {
     approval,
     executed: false,
-    message: 'Action request recorded. Brain Core creates approval records and audit events only; it does not execute actions yet.',
+    message: classified.supported
+      ? 'Action request recorded. Brain Core creates approval records and audit events only; it does not execute actions yet.'
+      : `${classified.rejectionReason || 'Unsupported approval request kind.'} Brain Core recorded a rejected approval only.`,
   };
 }
 
@@ -101,12 +106,15 @@ function recordAuditEvent(
     kind: approval.kind,
     createdAt: new Date().toISOString(),
     persisted: false,
+    executed: false,
+    source: 'memory',
   };
 
   const persisted = appendAuditEvent(auditEvent);
   auditEvents.push({
     ...auditEvent,
     persisted,
+    source: persisted ? 'jsonl' : 'memory',
   });
 }
 
@@ -118,7 +126,7 @@ function appendAuditEvent(event: BrainCoreApprovalAuditEvent): boolean {
 
   const dir = path.dirname(auditPath);
   fs.mkdirSync(dir, { recursive: true });
-  fs.appendFileSync(auditPath, `${JSON.stringify({ ...event, persisted: true })}\n`);
+  fs.appendFileSync(auditPath, `${JSON.stringify({ ...event, persisted: true, executed: false, source: 'jsonl' })}\n`);
   return true;
 }
 
@@ -151,6 +159,8 @@ function parseAuditEvent(line: string): BrainCoreApprovalAuditEvent | undefined 
       kind: value.kind,
       createdAt: value.createdAt,
       persisted: value.persisted === true,
+      executed: false,
+      source: 'jsonl',
     };
   } catch {
     return undefined;
@@ -159,18 +169,27 @@ function parseAuditEvent(line: string): BrainCoreApprovalAuditEvent | undefined 
 
 function getAuditPath(): string | undefined {
   const rawPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  if (!rawPath || rawPath.includes('..')) {
+  const resolvedPath = rawPath ? path.resolve(rawPath) : getDefaultAuditPath();
+  if (!isSafeAuditPath(resolvedPath)) {
     return undefined;
   }
 
-  return path.resolve(rawPath);
+  return resolvedPath;
 }
 
-function normalizeKind(kind: string): string {
-  return kind
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80) || 'manual-request';
+function isSafeAuditPath(resolvedPath: string): boolean {
+  const normalized = resolvedPath.replace(/\\/g, '/').toLowerCase();
+  if (normalized.includes('..')) {
+    return false;
+  }
+
+  const disallowedSegments = ['/mind/', '/.env', '/.git/', '/node_modules/', '/dist/', '/build/'];
+  return !disallowedSegments.some((segment) => normalized.includes(segment));
+}
+
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PACKAGE_ROOT = path.resolve(MODULE_DIR, '..', '..');
+
+export function getDefaultAuditPath(): string {
+  return path.resolve(PACKAGE_ROOT, 'runtime/local/brain-core/approval-audit.jsonl');
 }

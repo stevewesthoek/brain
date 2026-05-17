@@ -34,10 +34,15 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
     readEndpoints: [...READ_ENDPOINTS],
     approvalRequestEndpoints: [...APPROVAL_REQUEST_ENDPOINTS],
     executableActionsEnabled: false,
+    approvalAuditPersistenceSupported: true,
+    modelRouterReportSupported: true,
+    obsidianPluginInstalled: false,
+    liveSchedulerVerified: false,
     notes: [
       'Brain Core is local-only by default.',
       'Approval request endpoints record intent and audit events but do not execute actions.',
       'Scheduler, video, local-app, and orchestrator adapters remain placeholders until live read-only sources are validated.',
+      'Approval audit persistence is supported only through a safe runtime JSONL path outside Mind, .env, .git, node_modules, dist, and build.',
     ],
   };
 }

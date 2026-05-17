@@ -57,6 +57,7 @@ curl http://127.0.0.1:4877/scheduler/latest-run
 curl http://127.0.0.1:4877/scheduler/jobs
 curl http://127.0.0.1:4877/video/status
 curl http://127.0.0.1:4877/approvals
+curl http://127.0.0.1:4877/approvals/audit
 ```
 
 ## Obsidian integration health
@@ -101,6 +102,9 @@ If the integration is unhealthy, Obsidian should remain readable and show a Brai
 - Approval endpoints currently record and decide only; they return `executed: false`.
 - `GET /approvals/audit` exposes approval audit events.
 - Optional audit persistence uses `BRAIN_CORE_APPROVAL_AUDIT_PATH` as a JSONL file path. Use a safe ignored runtime path; do not store audit logs in Mind notes.
+- Audit path validation rejects `..`, `mind`, `.env`, `.git`, `node_modules`, `dist`, and `build`. Unsafe paths fall back to memory-only audit events.
+- Approval request kinds are normalized through a strict scaffold. Allowlisted scheduler/session/skill/local-app requests plus `manual-request` and `custom-*` are recorded; unsupported kinds are rejected without execution.
+- Audit events always include `executed: false` and a `source` of `memory` or `jsonl`.
 - Scheduler endpoints are read-only. They return placeholders until `runtime/local/model-router/latest.json` exists, or until `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH` points to a safe JSON report.
 - Video/local-app endpoints are placeholders until real adapters are separately validated.
 

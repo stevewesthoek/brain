@@ -20,10 +20,18 @@ if [[ ! -d "$ROUTER_DIR" ]]; then
   MESSAGE="model-router package directory not found"
   EXIT_CODE=1
 else
-  if ! npm --prefix "$ROUTER_DIR" run ci >/tmp/model-router-dry-run-report.log 2>&1; then
-    STATUS="failed"
-    MESSAGE="model-router ci failed; see /tmp/model-router-dry-run-report.log"
-    EXIT_CODE=1
+  if [[ -n "${MODEL_ROUTER_MIND_ROOT:-}" ]]; then
+    if ! npx --yes --prefix "$ROUTER_DIR" tsx "$ROUTER_DIR/src/cli/dry-run-report.ts" >/tmp/model-router-dry-run-report.log 2>&1; then
+      STATUS="failed"
+      MESSAGE="model-router dry-run report failed; see /tmp/model-router-dry-run-report.log"
+      EXIT_CODE=1
+    fi
+  else
+    if ! npm --prefix "$ROUTER_DIR" run ci >/tmp/model-router-dry-run-report.log 2>&1; then
+      STATUS="failed"
+      MESSAGE="model-router ci failed; see /tmp/model-router-dry-run-report.log"
+      EXIT_CODE=1
+    fi
   fi
 fi
 

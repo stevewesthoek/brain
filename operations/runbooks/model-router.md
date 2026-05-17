@@ -17,6 +17,8 @@ Current capability:
 - dry-run memory loop planning
 - dry-run hygiene loop planning
 - dry-run drift/error planning
+- stat-only Mind path snapshot collection
+- report-only scheduler output when `MODEL_ROUTER_MIND_ROOT` is configured
 
 No write/apply implementation exists yet.
 
@@ -97,6 +99,14 @@ The Office Nightly Scheduler should eventually run:
 5. write/apply only after explicit safety gates are met
 
 Initial scheduler integration should call dry-run planners only and report results through Brain Core `/scheduler/latest-run` and `/scheduler/jobs`.
+
+When `MODEL_ROUTER_MIND_ROOT` is set, the report helper should:
+
+- create a stat-only snapshot from the configured Mind root
+- call `createMindContractDryRunResult(...)`
+- generate loop plans for all dry-run jobs
+- write `runtime/local/model-router/latest.json`
+- avoid mutating Mind
 
 ## Do not do yet
 

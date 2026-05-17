@@ -197,6 +197,34 @@ Type-check note:
 
 - BuildFlow `type_check_cli` is not applicable to this repo layout at this time; it attempted `pnpm --dir packages/cli type-check` and failed because `packages/cli` does not exist.
 
+## Brain Core and model-router hardening — 2026-05-17
+
+Implemented a safer approval-audit scaffold and a stat-only model-router snapshot/report path.
+
+Brain Core changes:
+
+- `GET /approvals/audit` remains read-only and now surfaces `executed: false` plus `source: memory|jsonl`.
+- `BRAIN_CORE_APPROVAL_AUDIT_PATH` now rejects unsafe paths containing `..`, `mind`, `.env`, `.git`, `node_modules`, `dist`, or `build`.
+- Approval requests are normalized through a strict allowlist scaffold; unsupported kinds are rejected without execution.
+- Capability output now advertises approval-audit persistence support, model-router report support, and the current read-only/offline state of the scheduler and Obsidian plugin integration.
+
+Model-router changes:
+
+- Added a stat-only Mind snapshot collector for trusted roots.
+- Added a report-only CLI path for the nightly scheduler helper when `MODEL_ROUTER_MIND_ROOT` is configured.
+- Added tests for the new snapshot helper and kept planner behavior read-only.
+
+Validation:
+
+- `npm run --prefix projects/brain-core ci` passed after installing local package dependencies.
+- `npm run --prefix projects/model-router ci` passed after installing local package dependencies.
+- `python3 -m json.tool operations/automations/n8n/workflows/mind-inbox-fixed.json` passed.
+
+Known remaining noise:
+
+- `tools/firecrawl/logs/firecrawl.log` remains unrelated.
+- `mind` still has unrelated Obsidian/plugin/task churn and was not cleaned in this slice.
+
 ## Brain Core Phase 1 continuation — 2026-05-16
 
 Created a read-only Brain Core scaffold in `brain`:

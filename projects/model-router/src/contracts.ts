@@ -67,6 +67,7 @@ export interface MindPathStatus {
   sizeBytes?: number;
   lineCount?: number;
   modifiedAt?: string;
+  followedSymlink?: boolean;
 }
 
 export type MindSaveToMindTarget = 'legacy-01-inbox' | 'capture-inbox' | 'unknown';

@@ -26,3 +26,4 @@ export {
   createMindContractDryRunResult,
 } from './jobs.js';
 export { createMindRouterLoopPlan } from './plans.js';
+export { createMindPathSnapshotFromRoot } from './snapshot.js';

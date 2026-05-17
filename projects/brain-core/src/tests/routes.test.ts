@@ -101,12 +101,24 @@ test('GET /orchestrators returns placeholder orchestrator list', async () => {
 
 test('GET /capabilities returns manifest with executable actions disabled', async () => {
   const response = await exercise({ method: 'GET', url: '/capabilities' });
-  const body = JSON.parse(response.body) as { readEndpoints: string[]; approvalRequestEndpoints: string[]; executableActionsEnabled: boolean };
+  const body = JSON.parse(response.body) as {
+    readEndpoints: string[];
+    approvalRequestEndpoints: string[];
+    executableActionsEnabled: boolean;
+    approvalAuditPersistenceSupported: boolean;
+    modelRouterReportSupported: boolean;
+    obsidianPluginInstalled: boolean;
+    liveSchedulerVerified: boolean;
+  };
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.readEndpoints.includes('/orchestrators'), true);
   assert.equal(body.approvalRequestEndpoints.includes('/sessions/:id/resume'), true);
   assert.equal(body.executableActionsEnabled, false);
+  assert.equal(body.approvalAuditPersistenceSupported, true);
+  assert.equal(body.modelRouterReportSupported, true);
+  assert.equal(body.obsidianPluginInstalled, false);
+  assert.equal(body.liveSchedulerVerified, false);
 });
 
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
@@ -244,23 +256,92 @@ test('GET /approvals returns placeholder approvals list before action requests',
 });
 
 test('POST /actions/request creates an approval record without executing', async () => {
-  const response = await exercise({ method: 'POST', url: '/actions/request?kind=restart-probot' });
+  const response = await exercise({ method: 'POST', url: '/actions/request?kind=manual-request' });
   const body = JSON.parse(response.body) as { approval: { id: string; kind: string; status: string }; executed: boolean };
 
   assert.equal(response.statusCode, 202);
-  assert.equal(body.approval.kind, 'restart-probot');
+  assert.equal(body.approval.kind, 'manual-request');
   assert.equal(body.approval.status, 'pending');
   assert.equal(body.executed, false);
 });
 
 test('GET /approvals/audit returns approval audit events', async () => {
-  await exercise({ method: 'POST', url: '/actions/request?kind=audit-test' });
+  await exercise({ method: 'POST', url: '/actions/request?kind=custom-audit-test' });
   const response = await exercise({ method: 'GET', url: '/approvals/audit' });
-  const body = JSON.parse(response.body) as { events: Array<{ event: string; kind: string; persisted: boolean }> };
+  const body = JSON.parse(response.body) as {
+    events: Array<{ event: string; kind: string; persisted: boolean; executed: boolean; source: string }>;
+  };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.events.some((event) => event.event === 'requested' && event.kind === 'audit-test'), true);
+  assert.equal(body.events.some((event) => event.event === 'requested' && event.kind === 'custom-audit-test'), true);
   assert.equal(typeof body.events[0]?.persisted, 'boolean');
+  assert.equal(body.events.every((event) => event.executed === false), true);
+});
+
+test('approval audit JSONL persistence writes to a safe runtime path', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-approval-audit');
+  const auditPath = path.join(testDir, 'approval-audit.jsonl');
+  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
+
+  try {
+    const response = await exercise({ method: 'POST', url: '/actions/request?kind=approval-jsonl-test' });
+    const body = JSON.parse(response.body) as { approval: { id: string } };
+    const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
+    const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ approvalId: string; source: string; persisted: boolean; executed: boolean }> };
+
+    assert.equal(response.statusCode, 202);
+    assert.equal(fs.existsSync(auditPath), true);
+    assert.equal(auditBody.events.some((event) => event.approvalId === body.approval.id && event.source === 'jsonl'), true);
+    assert.equal(auditBody.events.every((event) => event.executed === false), true);
+    assert.equal(auditBody.events.some((event) => event.persisted === true), true);
+  } finally {
+    if (previousAuditPath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('invalid approval audit path falls back to memory and does not throw', async () => {
+  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = '/Users/Office/Repos/stevewesthoek/mind/.env/approval-audit.jsonl';
+
+  try {
+    const response = await exercise({ method: 'POST', url: '/actions/request?kind=custom-approval-fallback-test' });
+    const body = JSON.parse(response.body) as { approval: { status: string } };
+    const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
+    const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ kind: string; source: string }> };
+
+    assert.equal(response.statusCode, 202);
+    assert.equal(body.approval.status, 'pending');
+    assert.equal(
+      auditBody.events.some((event) => event.kind === 'custom-approval-fallback-test' && event.source === 'memory'),
+      true,
+    );
+  } finally {
+    if (previousAuditPath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
+    }
+  }
+});
+
+test('POST /actions/request rejects unsupported custom kinds without executing', async () => {
+  const response = await exercise({ method: 'POST', url: '/actions/request?kind=unsafe-kernel-hook' });
+  const body = JSON.parse(response.body) as { approval: { kind: string; status: string }; executed: boolean; message: string };
+
+  assert.equal(response.statusCode, 202);
+  assert.equal(body.approval.kind, 'unsafe-kernel-hook');
+  assert.equal(body.approval.status, 'rejected');
+  assert.equal(body.executed, false);
+  assert.equal(body.message.includes('Unsupported approval request kind'), true);
 });
 
 test('roadmap POST targets create approval requests without executing', async () => {
@@ -303,6 +384,15 @@ test('POST /approvals/:id/reject marks approval rejected without executing', asy
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.approval.status, 'rejected');
+  assert.equal(body.executed, false);
+});
+
+test('POST /approvals/:id/approve records missing audit event when approval does not exist', async () => {
+  const response = await exercise({ method: 'POST', url: '/approvals/approval-missing/approve' });
+  const body = JSON.parse(response.body) as { approval: { status: string }; executed: boolean };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.approval.status, 'expired');
   assert.equal(body.executed, false);
 });
 

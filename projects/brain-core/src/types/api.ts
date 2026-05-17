@@ -87,6 +87,10 @@ export interface BrainCoreCapabilitySummary {
   readEndpoints: string[];
   approvalRequestEndpoints: string[];
   executableActionsEnabled: false;
+  approvalAuditPersistenceSupported: boolean;
+  modelRouterReportSupported: boolean;
+  obsidianPluginInstalled: boolean;
+  liveSchedulerVerified: boolean;
   notes: string[];
 }
 
@@ -117,6 +121,8 @@ export interface BrainCoreApprovalAuditEvent {
   kind: string;
   createdAt: string;
   persisted: boolean;
+  executed: false;
+  source: 'memory' | 'jsonl';
 }
 
 export interface BrainCoreErrorResponse {

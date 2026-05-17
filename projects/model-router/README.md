@@ -36,6 +36,8 @@ The first implemented helpers are:
 
 - a read-only contract checker for `mind-drift-error-loop`
 - a read-only loop planner for `mind-compile-loop`, `mind-memory-loop`, `mind-hygiene-loop`, and `mind-drift-error-loop`
+- a stat-only Mind path snapshot collector for trusted roots
+- an optional report-only CLI path used by the nightly scheduler helper
 
 The model-router package now has its own `package.json`, `tsconfig.json`, and dependency-free tests.
 
@@ -52,6 +54,7 @@ It accepts a snapshot of known `mind` paths and reports:
 - whether the archive phase remains blocked by incomplete failure-buffer verification
 
 This is intentionally not a filesystem walker yet. The caller must provide observed path status from a trusted adapter, Brain Core, scheduler job, or BuildFlow validation step.
+The snapshot helper rejects unsafe roots containing `.env`, `.git`, `node_modules`, `dist`, or `build`.
 
 The loop planner also accepts an observed path snapshot and creates dry-run actions only. Current planned action kinds include:
 
