@@ -29,6 +29,15 @@ export interface DashboardSnapshot {
   stbToVideoMigrationSummary?: { parityStatus?: string; blocked: boolean };
   saysTheBibleProjectSummary?: { status?: string; health: string; platformCount: number };
   probotLegacySummary?: { status?: string; health: string };
+  stbLiveStatusSummary?: { source: string; status: string; health: string; ageHours?: number };
+  videoModuleProgressSummary?: { percent: number; implemented: number; partial: number; planned: number };
+  migrationParitySummary?: { percent: number; mappedCount: number; totalCount: number };
+  agentCount: number;
+  externalExecutorCount: number;
+  plannedAgentCount: number;
+  blockedAgentCount: number;
+  modelRouterAgentSummary?: { status: string; health: string };
+  claudeCodexExecutorSummary?: { count: number };
 }
 
 export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreUrl: string): DashboardSnapshot {
@@ -126,6 +135,40 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   // Next action
   const nextAction = deriveNextAction(state, attentionLevel);
 
+  // Live status summaries
+  const stbLiveStatusSummary = state.stbStatus ? {
+    source: state.stbStatus.source,
+    status: state.stbStatus.status,
+    health: state.stbStatus.health,
+    ageHours: state.stbStatus.lastRunAgeHours,
+  } : undefined;
+
+  const videoModuleProgressSummary = state.videoOrchestratorStatus ? {
+    percent: state.videoOrchestratorStatus.moduleProgress.percent,
+    implemented: state.videoOrchestratorStatus.moduleProgress.implemented,
+    partial: state.videoOrchestratorStatus.moduleProgress.partial,
+    planned: state.videoOrchestratorStatus.moduleProgress.planned,
+  } : undefined;
+
+  const migrationParitySummary = state.stbVideoMigrationStatus ? {
+    percent: state.stbVideoMigrationStatus.parityPercent,
+    mappedCount: (state.stbVideoMigrationStatus.modules ?? []).filter(m => m.status === 'mapped').length,
+    totalCount: state.stbVideoMigrationStatus.modules?.length ?? 0,
+  } : undefined;
+
+  // Agent analysis
+  const agentCount = (state.agents ?? []).length;
+  const externalExecutorCount = (state.agents ?? []).filter(a => a.owner === 'external-tool').length;
+  const plannedAgentCount = (state.agents ?? []).filter(a => a.status === 'planned').length;
+  const blockedAgentCount = (state.agents ?? []).filter(a => a.status === 'blocked').length;
+  const modelRouterAgent = (state.agents ?? []).find(a => a.id === 'model-router-agent');
+  const modelRouterAgentSummary = modelRouterAgent ? {
+    status: modelRouterAgent.status,
+    health: modelRouterAgent.health,
+  } : undefined;
+  const claudeCodexCount = (state.agents ?? []).filter(a => ['claude-code-executor', 'codex-executor'].includes(a.id)).length;
+  const claudeCodexExecutorSummary = claudeCodexCount > 0 ? { count: claudeCodexCount } : undefined;
+
   return {
     connectionStatus,
     attentionLevel,
@@ -151,6 +194,15 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     stbToVideoMigrationSummary,
     saysTheBibleProjectSummary,
     probotLegacySummary,
+    stbLiveStatusSummary,
+    videoModuleProgressSummary,
+    migrationParitySummary,
+    agentCount,
+    externalExecutorCount,
+    plannedAgentCount,
+    blockedAgentCount,
+    modelRouterAgentSummary,
+    claudeCodexExecutorSummary,
   };
 }
 

@@ -133,6 +133,68 @@ export interface BrainCorePlatformSummary {
   pipelineIds?: string[];
 }
 
+export interface BrainCoreStbPipelineStatus {
+  id: 'stb-pipeline-status';
+  pipelineId: 'stb-daily-pipeline';
+  projectId: 'says-the-bible';
+  source: 'runtime-file' | 'probot-status' | 'static-registry' | 'unavailable';
+  status: 'operational' | 'stale' | 'error' | 'unknown';
+  health: BrainCoreHealth;
+  lastRunAt?: string;
+  lastRunAgeHours?: number;
+  queueCount?: number;
+  failureCount?: number;
+  currentItem?: string;
+  summary: string;
+  evidence: Array<{ label: string; path?: string; value: string }>;
+  limitations: string[];
+  actions: { canPreview: boolean; canRequestRun: boolean; requiresApproval: boolean };
+}
+
+export interface BrainCoreVideoOrchestratorStatus {
+  id: 'video-orchestrator-status';
+  orchestratorId: 'video-orchestrator';
+  pipelineId: 'video-upload-pipeline';
+  status: 'operational' | 'partial' | 'planned' | 'blocked' | 'unknown';
+  health: BrainCoreHealth;
+  moduleProgress: { total: number; implemented: number; partial: number; planned: number; blocked: number; percent: number };
+  modules: Array<{ id: string; name: string; status: 'implemented' | 'partial' | 'planned' | 'blocked' | 'unknown'; summary: string }>;
+  supportedProjects: string[];
+  supportedPlatforms: string[];
+  queueCount?: number;
+  lastRunAt?: string;
+  summary: string;
+  limitations: string[];
+  actions: { canPreview: boolean; canRequestRun: boolean; requiresApproval: boolean };
+}
+
+export interface BrainCoreStbVideoMigrationStatus {
+  id: 'stb-to-video-migration-status';
+  sourcePipelineId: 'stb-daily-pipeline';
+  targetPipelineId: 'video-upload-pipeline';
+  status: 'mapping' | 'partial' | 'dual-run' | 'ready' | 'complete' | 'blocked';
+  health: BrainCoreHealth;
+  parityPercent: number;
+  decommissionBlocked: true;
+  nextSafeTask: string;
+  modules: Array<{ stbConcept: string; videoModule: string; status: 'mapped' | 'partial' | 'planned' | 'blocked'; validation: string }>;
+  summary: string;
+  blockers: string[];
+}
+
+export interface BrainCoreAgentSummary {
+  id: string;
+  name: string;
+  role: 'orchestrator' | 'executor' | 'researcher' | 'maintainer' | 'reviewer' | 'dashboard' | 'unknown';
+  status: 'available' | 'planned' | 'external' | 'blocked' | 'unknown';
+  health: BrainCoreHealth;
+  owner: 'brain-core' | 'model-router' | 'external-tool' | 'planned';
+  description: string;
+  relatedOrchestratorId?: string;
+  skills: string[];
+  actions: { canRun: boolean; canRequestRun: boolean; requiresApproval: boolean };
+}
+
 export interface BrainCoreCapabilitySummary {
   readEndpoints: string[];
   approvalRequestEndpoints: string[];
@@ -472,6 +534,15 @@ export interface BrainCoreRoutes {
   };
   '/platforms': {
     platforms: BrainCorePlatformSummary[];
+  };
+  '/stb/status': BrainCoreStbPipelineStatus;
+  '/video-orchestrator/status': BrainCoreVideoOrchestratorStatus;
+  '/stb-video-migration/status': BrainCoreStbVideoMigrationStatus;
+  '/agents': {
+    agents: BrainCoreAgentSummary[];
+  };
+  '/agents/:id': {
+    agent: BrainCoreAgentSummary;
   };
   '/capabilities': BrainCoreCapabilitySummary;
   '/approvals/audit': {

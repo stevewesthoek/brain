@@ -21,6 +21,10 @@ import {
   readBrainCorePipelines,
   readBrainCoreProjects,
   readBrainCorePlatforms,
+  readBrainCoreStbStatus,
+  readBrainCoreVideoOrchestratorStatus,
+  readBrainCoreStbVideoMigrationStatus,
+  readBrainCoreAgents,
   type BrainCoreApprovalSummary,
   type BrainCoreApprovalStoreSummary,
   type BrainCoreCapabilitySummary,
@@ -39,6 +43,10 @@ import {
   type BrainCorePipelineSummary,
   type BrainCoreProjectSummary,
   type BrainCorePlatformSummary,
+  type BrainCoreStbPipelineStatus,
+  type BrainCoreVideoOrchestratorStatus,
+  type BrainCoreStbVideoMigrationStatus,
+  type BrainCoreAgentSummary,
 } from './client.js';
 import {
   deriveDashboardSnapshot,
@@ -69,6 +77,10 @@ export interface BrainConsoleViewState {
   pipelines?: BrainCorePipelineSummary[];
   projects?: BrainCoreProjectSummary[];
   platforms?: BrainCorePlatformSummary[];
+  stbStatus?: BrainCoreStbPipelineStatus;
+  videoOrchestratorStatus?: BrainCoreVideoOrchestratorStatus;
+  stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
+  agents?: BrainCoreAgentSummary[];
   warning?: string;
   offline?: boolean;
   refreshedAt?: Date;
@@ -82,7 +94,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -103,9 +115,13 @@ export async function loadBrainConsoleViewState(
     readBrainCorePipelines(baseUrl),
     readBrainCoreProjects(baseUrl),
     readBrainCorePlatforms(baseUrl),
+    readBrainCoreStbStatus(baseUrl),
+    readBrainCoreVideoOrchestratorStatus(baseUrl),
+    readBrainCoreStbVideoMigrationStatus(baseUrl),
+    readBrainCoreAgents(baseUrl),
   ]);
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents].every(
     (result) => result.value === undefined,
   );
 
@@ -148,6 +164,10 @@ export async function loadBrainConsoleViewState(
     pipelines: pipelines.value?.pipelines,
     projects: projects.value?.projects,
     platforms: platforms.value?.platforms,
+    stbStatus: stbStatus.value,
+    videoOrchestratorStatus: videoOrchestratorStatus.value,
+    stbVideoMigrationStatus: stbVideoMigrationStatus.value,
+    agents: agents.value?.agents,
     warning: normalized.warning ?? normalized.error,
     offline,
     refreshedAt: new Date(),
@@ -199,6 +219,12 @@ export function renderBrainConsoleView(
     renderCard(grid, 'Pipelines', renderPipelinesCard(state, snapshot));
     renderCard(grid, 'Projects', renderProjectsCard(state, snapshot));
     renderCard(grid, 'Platforms', renderPlatformsCard(state, snapshot));
+
+    // Live status panels
+    renderCard(grid, 'STB Live Status', renderStbLiveStatusCard(state, snapshot));
+    renderCard(grid, 'Video Orchestrator', renderVideoOrchestratorCard(state, snapshot));
+    renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
+    renderCard(grid, 'Agents (Read-Only)', renderAgentViewCard(state, snapshot));
 
     // Activity panel
     renderActivityPanel(shell, state);
@@ -547,6 +573,99 @@ function renderPlatformsCard(state: BrainConsoleViewState, snapshot: DashboardSn
   const localCount = state.platforms.filter(p => p.category === 'local').length;
   list.createEl('li', { text: `Social: ${socialCount}` });
   list.createEl('li', { text: `Local: ${localCount}` });
+
+  return card;
+}
+
+function renderStbLiveStatusCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const card = document.createElement('div');
+
+  if (!state.stbStatus) {
+    card.textContent = 'No STB status available';
+    return card;
+  }
+
+  const list = card.createEl('ul');
+  const statusItem = list.createEl('li', { text: `Status: ${state.stbStatus.status}` });
+  if (state.stbStatus.status === 'error') {
+    statusItem.addClass('brain-console__list-error');
+  }
+
+  list.createEl('li', { text: `Health: ${state.stbStatus.health}` });
+  list.createEl('li', { text: `Source: ${state.stbStatus.source}` });
+
+  if (state.stbStatus.lastRunAgeHours) {
+    list.createEl('li', { text: `Last run: ${state.stbStatus.lastRunAgeHours}h ago` });
+  }
+
+  if (state.stbStatus.limitations.length > 0) {
+    list.createEl('li', { text: `Limitations: ${state.stbStatus.limitations.length}` });
+  }
+
+  return card;
+}
+
+function renderVideoOrchestratorCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const card = document.createElement('div');
+
+  if (!state.videoOrchestratorStatus) {
+    card.textContent = 'No video status available';
+    return card;
+  }
+
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Progress: ${state.videoOrchestratorStatus.moduleProgress.percent}%` });
+  list.createEl('li', { text: `Implemented: ${state.videoOrchestratorStatus.moduleProgress.implemented}/${state.videoOrchestratorStatus.moduleProgress.total}` });
+
+  if (state.videoOrchestratorStatus.moduleProgress.partial > 0) {
+    list.createEl('li', { text: `Partial: ${state.videoOrchestratorStatus.moduleProgress.partial}` });
+  }
+
+  if (state.videoOrchestratorStatus.moduleProgress.planned > 0) {
+    list.createEl('li', { text: `Planned: ${state.videoOrchestratorStatus.moduleProgress.planned}` });
+  }
+
+  list.createEl('li', { text: `Platforms: ${state.videoOrchestratorStatus.supportedPlatforms.length}` });
+
+  return card;
+}
+
+function renderMigrationStatusCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const card = document.createElement('div');
+
+  if (!state.stbVideoMigrationStatus) {
+    card.textContent = 'No migration status available';
+    return card;
+  }
+
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Parity: ${state.stbVideoMigrationStatus.parityPercent}%` });
+  list.createEl('li', { text: `Mapped modules: ${(state.stbVideoMigrationStatus.modules ?? []).filter(m => m.status === 'mapped').length}/${state.stbVideoMigrationStatus.modules.length}` });
+
+  const blockedItem = list.createEl('li', { text: `Decomm Blocked: ${state.stbVideoMigrationStatus.decommissionBlocked ? 'yes' : 'no'}` });
+  if (state.stbVideoMigrationStatus.decommissionBlocked) {
+    blockedItem.addClass('brain-console__list-warning');
+  }
+
+  return card;
+}
+
+function renderAgentViewCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const card = document.createElement('div');
+
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Total agents: ${snapshot.agentCount}` });
+  list.createEl('li', { text: `External executors: ${snapshot.externalExecutorCount}` });
+
+  if (snapshot.plannedAgentCount > 0) {
+    list.createEl('li', { text: `Planned: ${snapshot.plannedAgentCount}` });
+  }
+
+  if (snapshot.modelRouterAgentSummary) {
+    list.createEl('li', { text: `Model Router: ${snapshot.modelRouterAgentSummary.health}` });
+  }
+
+  list.createEl('li', { text: 'Agent runtime is read-only (planned)', cls: 'brain-console__list-note' });
 
   return card;
 }

@@ -179,6 +179,63 @@ export interface BrainCorePlatformSummary {
   pipelineIds?: string[];
 }
 
+export interface BrainCoreStbPipelineStatus {
+  id: 'stb-pipeline-status';
+  pipelineId: 'stb-daily-pipeline';
+  projectId: 'says-the-bible';
+  source: string;
+  status: string;
+  health: string;
+  lastRunAt?: string;
+  lastRunAgeHours?: number;
+  summary: string;
+  evidence: Array<{ label: string; path?: string; value: string }>;
+  limitations: string[];
+  actions: { canPreview: boolean; canRequestRun: boolean; requiresApproval: boolean };
+}
+
+export interface BrainCoreVideoOrchestratorStatus {
+  id: 'video-orchestrator-status';
+  orchestratorId: 'video-orchestrator';
+  pipelineId: string;
+  status: string;
+  health: string;
+  moduleProgress: { total: number; implemented: number; partial: number; planned: number; percent: number };
+  modules: Array<{ id: string; name: string; status: string; summary: string }>;
+  supportedProjects: string[];
+  supportedPlatforms: string[];
+  summary: string;
+  limitations: string[];
+  actions: { canPreview: boolean; canRequestRun: boolean; requiresApproval: boolean };
+}
+
+export interface BrainCoreStbVideoMigrationStatus {
+  id: 'stb-to-video-migration-status';
+  sourcePipelineId: string;
+  targetPipelineId: string;
+  status: string;
+  health: string;
+  parityPercent: number;
+  decommissionBlocked: boolean;
+  nextSafeTask: string;
+  modules: Array<{ stbConcept: string; videoModule: string; status: string }>;
+  summary: string;
+  blockers: string[];
+}
+
+export interface BrainCoreAgentSummary {
+  id: string;
+  name: string;
+  role: string;
+  status: string;
+  health: string;
+  owner: string;
+  description: string;
+  relatedOrchestratorId?: string;
+  skills: string[];
+  actions: { canRun: boolean; canRequestRun: boolean; requiresApproval: boolean };
+}
+
 export interface BrainCoreApprovalSummary {
   id: string;
   kind: string;
@@ -281,6 +338,10 @@ export interface BrainConsoleSnapshot {
   pipelines?: BrainCorePipelineSummary[];
   projects?: BrainCoreProjectSummary[];
   platforms?: BrainCorePlatformSummary[];
+  stbStatus?: BrainCoreStbPipelineStatus;
+  videoOrchestratorStatus?: BrainCoreVideoOrchestratorStatus;
+  stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
+  agents?: BrainCoreAgentSummary[];
 }
 
 export interface HttpResult<T> {
@@ -309,7 +370,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
   let normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const endpointErrors: EndpointError[] = [];
 
-  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms] = await Promise.all([
+  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents] = await Promise.all([
     fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
     fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
     fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizedBaseUrl, '/runtime/reports'),
@@ -327,6 +388,10 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     fetchJson<{ pipelines?: BrainCorePipelineSummary[] }>(normalizedBaseUrl, '/pipelines'),
     fetchJson<{ projects?: BrainCoreProjectSummary[] }>(normalizedBaseUrl, '/projects'),
     fetchJson<{ platforms?: BrainCorePlatformSummary[] }>(normalizedBaseUrl, '/platforms'),
+    fetchJson<BrainCoreStbPipelineStatus>(normalizedBaseUrl, '/stb/status'),
+    fetchJson<BrainCoreVideoOrchestratorStatus>(normalizedBaseUrl, '/video-orchestrator/status'),
+    fetchJson<BrainCoreStbVideoMigrationStatus>(normalizedBaseUrl, '/stb-video-migration/status'),
+    fetchJson<{ agents?: BrainCoreAgentSummary[] }>(normalizedBaseUrl, '/agents'),
   ]);
 
   // Collect endpoint errors for diagnostics
@@ -348,6 +413,10 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     ['/pipelines', pipelines],
     ['/projects', projects],
     ['/platforms', platforms],
+    ['/stb/status', stbStatus],
+    ['/video-orchestrator/status', videoOrchestratorStatus],
+    ['/stb-video-migration/status', stbVideoMigrationStatus],
+    ['/agents', agents],
   ];
 
   endpointPairs.forEach(([pathname, result]) => {
@@ -407,6 +476,10 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     pipelines: pipelines.value?.pipelines,
     projects: projects.value?.projects,
     platforms: platforms.value?.platforms,
+    stbStatus: stbStatus.value,
+    videoOrchestratorStatus: videoOrchestratorStatus.value,
+    stbVideoMigrationStatus: stbVideoMigrationStatus.value,
+    agents: agents.value?.agents,
     endpointErrors: endpointErrors.length > 0 ? endpointErrors : undefined,
   };
 }
@@ -511,6 +584,30 @@ export async function readBrainCorePlatforms(
   baseUrl: string,
 ): Promise<HttpResult<{ platforms?: BrainCorePlatformSummary[] }>> {
   return fetchJson<{ platforms?: BrainCorePlatformSummary[] }>(normalizeBaseUrl(baseUrl), '/platforms');
+}
+
+export async function readBrainCoreStbStatus(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreStbPipelineStatus>> {
+  return fetchJson<import('./client.js').BrainCoreStbPipelineStatus>(normalizeBaseUrl(baseUrl), '/stb/status');
+}
+
+export async function readBrainCoreVideoOrchestratorStatus(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoOrchestratorStatus>> {
+  return fetchJson<import('./client.js').BrainCoreVideoOrchestratorStatus>(normalizeBaseUrl(baseUrl), '/video-orchestrator/status');
+}
+
+export async function readBrainCoreStbVideoMigrationStatus(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreStbVideoMigrationStatus>> {
+  return fetchJson<import('./client.js').BrainCoreStbVideoMigrationStatus>(normalizeBaseUrl(baseUrl), '/stb-video-migration/status');
+}
+
+export async function readBrainCoreAgents(
+  baseUrl: string,
+): Promise<HttpResult<{ agents?: BrainCoreAgentSummary[] }>> {
+  return fetchJson<{ agents?: BrainCoreAgentSummary[] }>(normalizeBaseUrl(baseUrl), '/agents');
 }
 
 // Import requestUrl from obsidian at runtime (to avoid bundling issues, it's imported in main.ts)

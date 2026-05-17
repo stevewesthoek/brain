@@ -24,6 +24,10 @@ import { getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '..
 import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
 import { getVideoStatus, listVideoQueue } from '../adapters/video.js';
+import { getStbPipelineStatus } from '../adapters/stb-status.js';
+import { getVideoOrchestratorStatus } from '../adapters/video-orchestrator-status.js';
+import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
+import { getAgent, listAgents } from '../adapters/agents.js';
 import { createStatusAdapter } from '../adapters/status.js';
 import { isLocalRequest } from '../security/localhost.js';
 import { redactingJsonReplacer } from '../security/redaction.js';
@@ -90,6 +94,18 @@ export async function routeRequest(
       return;
     case '/platforms':
       sendJson(response, 200, { platforms: listPlatforms() });
+      return;
+    case '/stb/status':
+      sendJson(response, 200, getStbPipelineStatus());
+      return;
+    case '/video-orchestrator/status':
+      sendJson(response, 200, getVideoOrchestratorStatus());
+      return;
+    case '/stb-video-migration/status':
+      sendJson(response, 200, getStbVideoMigrationStatus());
+      return;
+    case '/agents':
+      sendJson(response, 200, { agents: listAgents() });
       return;
     case '/capabilities':
       sendJson(response, 200, getCapabilities());
@@ -183,6 +199,21 @@ export async function routeRequest(
           } satisfies BrainCoreErrorResponse);
           return;
         }
+        const agentMatch = /^\/agents\/([^/]+)$/.exec(url.pathname);
+        if (agentMatch) {
+          const agent = getAgent(agentMatch[1] ?? '');
+          if (agent) {
+            sendJson(response, 200, { agent });
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Agent not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
         const executionPlanMatch = /^\/execution\/plans\/([^/]+)$/.exec(url.pathname);
         if (executionPlanMatch) {
           const plan = getExecutionPlan(executionPlanMatch[1] ?? '');
@@ -232,7 +263,7 @@ export async function routeRequest(
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
   }
