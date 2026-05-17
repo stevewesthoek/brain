@@ -4,18 +4,20 @@
 
 ## Executive Summary
 
-Current Mind repo state is heavily dirty and must be isolated category by category.
+Current Mind repo state is now limited to `.obsidian` plugin/config churn after the legacy task migration and empty placeholder cleanup.
 
 - Modified tracked files: 1
-- Deleted tracked files: 742
-- Untracked files/directories: 9
+- Deleted tracked files: 0
+- Untracked files/directories: 4
 - Known dirty categories:
-  - `.obsidian` churn
-  - migrated `04-tasks/**` into `03-projects/04-tasks/`
-  - untracked `06-resources/research/notes/bible/denominations/`
-  - unrelated `05-areas/theological-studies/dance-of-life/README.md`
-- Low-risk cleanup result:
+  - `.obsidian/community-plugins.json` modified
+  - `.obsidian/plugins/custom-sort/`
+  - `.obsidian/plugins/ghostty-terminal/`
+  - `.obsidian/plugins/obsidian-icon-folder/`
+- Cleanups already completed:
   - `01-inbox/*.base` editor artifacts were reviewed and deleted
+  - `04-tasks/**` legacy tree was migrated into `03-projects/04-tasks/**`
+  - empty `06-resources/research/notes/bible/denominations/catholism.md` placeholder was deleted
 
 ## Category Inventory
 
@@ -23,16 +25,24 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 
 - Risk: high
 - Likely source/cause: Obsidian plugin/config drift or local vault settings changes
-- Recommended decision: ignore until manual review
+- Recommended decision: manual review by exact path; commit only reviewed plugin enablement if explicitly approved
 - Review report: `operations/reports/mind-obsidian-churn-review-2026-05-18.md`
 - Exact-path review: `operations/reports/mind-obsidian-exact-path-review-2026-05-18.md`
+- Resolution report: `operations/reports/mind-obsidian-resolution-2026-05-18.md`
 - Safe diagnostic commands:
   - `git diff -- .obsidian`
   - `git diff --stat -- .obsidian`
   - `git diff --name-only -- .obsidian`
 - Safe staging commands if approved later:
   - `git add -- .obsidian/community-plugins.json`
-  - `git add -- .obsidian/bookmarks.json`
+  - `git add -- .obsidian/plugins/custom-sort/main.js`
+  - `git add -- .obsidian/plugins/custom-sort/manifest.json`
+  - `git add -- .obsidian/plugins/ghostty-terminal/main.js`
+  - `git add -- .obsidian/plugins/ghostty-terminal/manifest.json`
+  - `git add -- .obsidian/plugins/ghostty-terminal/styles.css`
+  - `git add -- .obsidian/plugins/obsidian-icon-folder/main.js`
+  - `git add -- .obsidian/plugins/obsidian-icon-folder/manifest.json`
+  - `git add -- .obsidian/plugins/obsidian-icon-folder/styles.css`
 - Rollback commands:
   - `git restore --staged -- .obsidian`
   - `git restore -- .obsidian`
@@ -68,7 +78,7 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 
 ### 4. Untracked `03-projects/04-tasks/`
 
-- Risk: migrated into the project task mirror
+- Risk: resolved via migration commit
 - Likely source/cause: mirror/import tree or duplicated task structure
 - Recommended decision: migration completed; no further action unless a reverse migration is required
 - Review report: `operations/reports/mind-project-task-mirror-review-2026-05-18.md`
@@ -80,10 +90,11 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 
 ### 5. Untracked `06-resources/research/notes/bible/denominations/`
 
-- Risk: medium
-- Likely source/cause: research import or bulk note creation
-- Recommended decision: move to source import review
+- Risk: low after empty placeholder deletion
+- Likely source/cause: empty placeholder or abandoned import stub
+- Recommended decision: no action unless real content is later added
 - Review report: `operations/reports/mind-research-import-review-2026-05-18.md`
+- Resolution report: `operations/reports/mind-research-placeholder-resolution-2026-05-18.md`
 - Safe diagnostic commands:
   - `git ls-files --others --exclude-standard -- 06-resources/research/notes/bible/denominations`
   - `git diff --name-only -- 06-resources/research/notes/bible/denominations`

@@ -8,7 +8,7 @@ Document how to isolate the unrelated dirty state in the `mind` repo without sta
 
 - `.obsidian` churn
 - migrated `04-tasks/**` into `03-projects/04-tasks/`
-- untracked `06-resources/research/notes/bible/denominations/`
+- empty `06-resources/research/notes/bible/denominations/` placeholder removed
 - unrelated `05-areas/theological-studies/dance-of-life/README.md` change
 
 See also:
@@ -23,6 +23,8 @@ See also:
 - `operations/reports/mind-legacy-task-deletion-review-2026-05-18.md`
 - `operations/reports/mind-project-task-mirror-review-2026-05-18.md`
 - `operations/reports/mind-research-import-review-2026-05-18.md`
+- `operations/reports/mind-obsidian-resolution-2026-05-18.md`
+- `operations/reports/mind-research-placeholder-resolution-2026-05-18.md`
 
 ## Rules for future cleanup
 
@@ -30,6 +32,7 @@ See also:
 - Never use `git add .` or `git add -A`.
 - Never stage legacy task deletions without explicit review.
 - Never stage `.obsidian` plugin/config churn without explicit review.
+- Empty research placeholders may be deleted if confirmed zero-byte/trivial.
 - Keep Mind OS safe docs separate from unrelated churn.
 - Prefer one commit per category when the user approves cleanup.
 

@@ -1082,3 +1082,10 @@ Validation:
 - Sample hash spot-checks matched across representative task categories.
 - No `.obsidian` or research files were staged.
 - Model-router did not perform the migration; this was a human-approved repo migration commit.
+
+## Vault cleanup follow-up — 2026-05-18
+
+- The empty `bookmarks.json` artifact was deleted during the current vault cleanup pass.
+- The empty research placeholder under `06-resources/research/notes/bible/denominations/` was deleted during the current vault cleanup pass.
+- The remaining Mind vault churn is limited to `.obsidian` plugin/config state.
+- Brain Console plugin scaffold remains in Brain and was not installed into Mind.
