@@ -874,3 +874,58 @@ Next safe task:
 - Approve the first maintenance preview action policy for `router/current.md` if desired
 - Implement a no-op approval drill for validation
 - Or stop here and gather findings from the wiki-health reports before advancing
+
+## Continuation update — Brain Console local Obsidian QA install
+
+**Completed Work Packages A-I (Brain Console Dashboard MVP):**
+
+Specification (A), Roadmap updates (B), Dashboard implementation (C), Types/client updates (D), Build validation (E), optional endpoint (F skipped), Mind fallback docs (G), runbook (H), handoff docs (I) all complete.
+
+**Local Plugin Installation:**
+
+- Plugin copied to Mind vault at `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console/`
+- Installed files: manifest.json, main.js, view.js, client.js, settings.js, obsidian.js, styles.css (7 files, ~32KB total)
+- Community-plugins.json updated to enable `brain-console` in config
+- Plugin install state: local/uncommitted (plugin artifacts don't need git tracking)
+
+**Validation:**
+
+- Brain: typecheck passed, build passed, package staged
+- Mind: community-plugins.json updated, plugin folder created with all built artifacts
+- No secrets found in any files
+- No Mind files mutated beyond plugin enable flag
+
+**How to Open in Obsidian:**
+
+1. Restart Obsidian
+2. Settings → Community plugins → confirm Brain Console enabled
+3. Command palette → "Open Brain Console"
+4. Dashboard appears in right sidebar
+
+**Visual QA:**
+
+Created detailed QA runbook at `/operations/runbooks/brain-console-local-qa.md` with:
+- Install location and file listing
+- Expected first view (status pills, 6 cards, action row, activity panel)
+- Offline behavior checklist
+- Visual polish assessment template (20-point checklist)
+- Known limitations (MVP expected)
+- Testing commands (plugin verify, rebuild, start Brain Core)
+- FAQ section
+
+**Status:**
+
+- Plugin ready for local visual testing in Obsidian
+- All build validation passing
+- Dark cockpit theme with warm orange accents ready
+- 6 MVP cards and status strip implemented
+- Manual Refresh button enabled; other action buttons disabled (future expansion)
+- Read-only safety guarantee maintained
+
+**Remaining blockers:**
+
+None for MVP visual QA. If Brain Core is offline, plugin shows graceful "offline" message.
+
+**Next task:**
+
+Manual visual QA in Obsidian → screenshot review → polish pass if needed.
