@@ -86,6 +86,14 @@ BRAIN_CORE_HOST=127.0.0.1
 BRAIN_CORE_PORT=4877
 ```
 
+## Operations runbook
+
+Restore, health-check, and rollback instructions live in:
+
+```text
+operations/runbooks/brain-core.md
+```
+
 ## Brain Console integration contract
 
 `src/obsidian.ts` exposes a read-only widget snapshot contract for a future Obsidian `brain-console` plugin or integration layer.

@@ -22,12 +22,30 @@ export type BrainConsoleWidgetId =
   | 'brain-video-queue'
   | 'brain-approvals';
 
+const EXPECTED_WIDGET_IDS: BrainConsoleWidgetId[] = [
+  'brain-status',
+  'brain-sessions',
+  'brain-repos',
+  'brain-skills',
+  'brain-scheduler',
+  'brain-local-apps',
+  'brain-video-queue',
+  'brain-approvals',
+];
+
 export interface BrainConsoleWidget<TData> {
   id: BrainConsoleWidgetId;
   title: string;
   endpoint: keyof BrainCoreRoutes;
   phase: 'read-only';
   data: TData;
+}
+
+export interface BrainConsoleHealthCheck {
+  ok: boolean;
+  expectedWidgetCount: number;
+  actualWidgetCount: number;
+  missingWidgetIds: BrainConsoleWidgetId[];
 }
 
 export interface BrainConsoleSnapshot {
@@ -120,5 +138,18 @@ export function createBrainConsoleSnapshot(input: {
         data: { approvals: input.approvals },
       },
     ],
+  };
+}
+
+
+export function checkBrainConsoleSnapshotHealth(snapshot: BrainConsoleSnapshot): BrainConsoleHealthCheck {
+  const actualIds = new Set(snapshot.widgets.map((widget) => widget.id));
+  const missingWidgetIds = EXPECTED_WIDGET_IDS.filter((id) => !actualIds.has(id));
+
+  return {
+    ok: missingWidgetIds.length === 0 && snapshot.widgets.length === EXPECTED_WIDGET_IDS.length,
+    expectedWidgetCount: EXPECTED_WIDGET_IDS.length,
+    actualWidgetCount: snapshot.widgets.length,
+    missingWidgetIds,
   };
 }

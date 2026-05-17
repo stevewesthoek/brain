@@ -661,3 +661,39 @@ Current Phase 6 status:
 - Direct dashboard code comments were skipped.
 - No dashboard code was deleted or changed.
 - Future dashboard removal should happen only after Brain Core + Obsidian parity is proven and the legacy file can be reviewed separately.
+
+## Brain Core Phase 7 hardening slice — 2026-05-17
+
+Completed a safe hardening/documentation slice.
+
+New file:
+
+```text
+operations/runbooks/brain-core.md
+```
+
+Updated files:
+
+```text
+projects/brain-core/README.md
+projects/brain-core/src/obsidian.ts
+projects/brain-core/src/tests/obsidian.test.ts
+```
+
+What changed:
+
+- Added a Brain Core restore, health-check, safety, and rollback runbook.
+- Added `BrainConsoleHealthCheck` and `checkBrainConsoleSnapshotHealth(...)`.
+- Added test coverage for the Brain Console health-check contract.
+- Linked the Brain Core README to the new runbook.
+
+Validation:
+
+- `npm run ci` in `projects/brain-core` passed.
+- CI included typecheck and 19 Node route/adapter/widget/health tests.
+
+Remaining Phase 7 work:
+
+- Add real packaging/install guidance for the future Obsidian plugin once its location is confirmed.
+- Add persistent audit storage for approvals before any executable actions are enabled.
+- Keep generated `projects/brain-core/dist/` unstaged unless a package build artifact policy is explicitly chosen.
