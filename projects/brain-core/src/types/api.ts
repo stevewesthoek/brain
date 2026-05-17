@@ -48,7 +48,7 @@ export interface BrainCoreSchedulerStatus {
 export interface BrainCoreSchedulerJobSummary {
   id: string;
   name: string;
-  status: 'placeholder' | 'disabled' | 'unknown';
+  status: 'placeholder' | 'disabled' | 'unknown' | 'ok' | 'failed';
   mutationRequired: boolean;
 }
 
