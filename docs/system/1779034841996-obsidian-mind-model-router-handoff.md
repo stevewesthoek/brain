@@ -641,3 +641,54 @@ Still blocked:
 - No Mind mutation route is enabled.
 - No apply route is enabled.
 - No preview artifact is written to Mind.
+
+
+## Continuation update — Brain Core preview artifact compatibility
+
+Fixed the Brain Core preview artifact reader so it can read the artifact shape produced by the model-router preview writer.
+
+Issue found:
+
+```text
+model-router preview artifacts use previewId
+Brain Core preview artifact reader expected id
+```
+
+Changed files:
+
+```text
+projects/brain-core/src/adapters/preview-artifacts.ts
+projects/brain-core/src/tests/preview-artifacts.test.ts
+```
+
+Behavior added:
+
+- Brain Core now accepts both `id` and `previewId` preview artifact identifiers.
+- `/execution/mind-previews` can list artifacts produced by model-router.
+- `/execution/mind-previews/latest` can surface the newest model-router preview artifact.
+- `/execution/mind-previews/:id` can read model-router preview artifacts by their `previewId`.
+- Existing `id`-shaped fixture artifacts remain supported.
+
+Validation:
+
+```text
+npm run --prefix projects/brain-core ci
+result: passed, 60 tests
+
+npm run --prefix projects/model-router ci
+result: passed, 24 tests
+
+security_scan_paths forbidden_secret_material projects/brain-core/src/adapters/preview-artifacts.ts projects/brain-core/src/tests/preview-artifacts.test.ts
+result: passed, findings: []
+```
+
+Safety status:
+
+```text
+no apply endpoint added
+no broad execution added
+no Mind mutation added
+no Mind files changed
+writesToMind remains false for preview routes
+externalSideEffects remains false for preview routes
+```

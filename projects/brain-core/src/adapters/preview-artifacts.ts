@@ -32,9 +32,10 @@ function readMindPreviewDetail(id: string): BrainCoreMindPreviewDetail | undefin
   const filePath = path.join(root, `${id}.json`);
   if (!fs.existsSync(filePath)) return undefined;
   try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Partial<BrainCoreMindPreviewDetail>;
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Partial<BrainCoreMindPreviewDetail> & { previewId?: unknown };
+    const id = getPreviewId(parsed);
     if (
-      !parsed.id ||
+      !id ||
       !parsed.actionKind ||
       !parsed.targetPath ||
       !parsed.createdAt ||
@@ -45,7 +46,7 @@ function readMindPreviewDetail(id: string): BrainCoreMindPreviewDetail | undefin
       return undefined;
     }
     return {
-      id: parsed.id,
+      id,
       actionKind: parsed.actionKind,
       targetPath: parsed.targetPath,
       createdAt: parsed.createdAt,
@@ -71,9 +72,10 @@ function readMindPreviewDetail(id: string): BrainCoreMindPreviewDetail | undefin
 
 function readPreview(filePath: string, now: Date): BrainCoreMindPreviewSummary | null {
   try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Partial<BrainCoreMindPreviewDetail>;
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Partial<BrainCoreMindPreviewDetail> & { previewId?: unknown };
+    const id = getPreviewId(parsed);
     if (
-      !parsed.id ||
+      !id ||
       !parsed.actionKind ||
       !parsed.targetPath ||
       !parsed.createdAt ||
@@ -84,7 +86,7 @@ function readPreview(filePath: string, now: Date): BrainCoreMindPreviewSummary |
       return null;
     }
     return {
-      id: parsed.id,
+      id,
       actionKind: parsed.actionKind,
       targetPath: parsed.targetPath,
       createdAt: parsed.createdAt,
@@ -108,4 +110,10 @@ function resolveSafePreviewRoot(): string | undefined {
     return undefined;
   }
   return path.resolve(configured);
+}
+
+function getPreviewId(parsed: Partial<BrainCoreMindPreviewDetail> & { previewId?: unknown }): string | undefined {
+  if (typeof parsed.id === 'string' && parsed.id.length > 0) return parsed.id;
+  if (typeof parsed.previewId === 'string' && parsed.previewId.length > 0) return parsed.previewId;
+  return undefined;
 }
