@@ -86,7 +86,7 @@ const ACTIONS_REGISTRY: BrainCoreActionSummary[] = [
     id: 'model-router-dry-run',
     kind: 'model-router-dry-run',
     label: 'Model Router Dry Run',
-    description: 'Generate model-router context report without applying changes',
+    description: 'Generate model-router context report without applying changes. Request approval does not execute; approval allows report-only dry-run if gates pass (env flag disabled by default).',
     targetType: 'agent',
     targetId: 'model-router',
     status: 'approval-required',
@@ -94,7 +94,7 @@ const ACTIONS_REGISTRY: BrainCoreActionSummary[] = [
     requiresApproval: true,
     canRequestApproval: true,
     canExecuteNow: false,
-    reason: 'Approval request creates a pending approval record. Execution requires explicit feature flag and approval gate.',
+    reason: 'Request approval creates pending approval record only (does not execute). Approval delegates to existing guarded execution path. Output: Brain-owned runtime/local/model-router. Apply/write disabled.',
     safety: SHELL_EXECUTION,
   },
 
@@ -260,11 +260,37 @@ const ACTIONS_REGISTRY: BrainCoreActionSummary[] = [
 ];
 
 export function listActionSummaries(): BrainCoreActionSummary[] {
-  return [...ACTIONS_REGISTRY];
+  return [...ACTIONS_REGISTRY].map((action) => enrichActionWithReadiness(action));
 }
 
 export function getActionSummary(id: string): BrainCoreActionSummary | undefined {
-  return ACTIONS_REGISTRY.find((a) => a.id === id);
+  const action = ACTIONS_REGISTRY.find((a) => a.id === id);
+  return action ? enrichActionWithReadiness(action) : undefined;
+}
+
+function enrichActionWithReadiness(action: BrainCoreActionSummary): BrainCoreActionSummary {
+  if (action.kind !== 'model-router-dry-run') {
+    return action;
+  }
+
+  const blockers: string[] = [];
+  const flagEnabled = process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION === 'true';
+  if (!flagEnabled) {
+    blockers.push('BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION not enabled');
+  }
+
+  const readiness: import('../types/api.js').BrainCoreActionReadiness = {
+    status: blockers.length === 0 ? 'ready' : 'blocked',
+    blockers,
+    executionWillWriteToMind: false,
+    executionWillApplyChanges: false,
+    executionKind: 'report-only',
+  };
+
+  return {
+    ...action,
+    readiness,
+  };
 }
 
 export async function requestActionApprovalById(id: string): Promise<BrainCoreActionRequest> {

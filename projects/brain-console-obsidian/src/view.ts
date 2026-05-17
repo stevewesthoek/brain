@@ -696,6 +696,26 @@ function renderActionPreviewCard(state: BrainConsoleViewState, settings: BrainCo
       btn.addEventListener('click', () => {
         void requestActionApproval(action.id, settings.brainCoreUrl);
       });
+
+      // Display readiness status if available
+      const readiness = (action as any).readiness;
+      if (readiness) {
+        if (readiness.status === 'blocked' && readiness.blockers?.length > 0) {
+          const blockerText = readiness.blockers.join('; ');
+          item.createEl('span', { text: ` [⚠ ${blockerText}]`, cls: 'brain-console__readiness-blocked' });
+        } else if (readiness.status === 'ready') {
+          item.createEl('span', { text: ' [✓ ready]', cls: 'brain-console__readiness-ready' });
+        }
+
+        // Show latest approval status if available
+        if (readiness.latestApprovalStatus) {
+          const statusEmoji = readiness.latestApprovalStatus === 'approved' ? '✓' :
+                             readiness.latestApprovalStatus === 'rejected' ? '✗' :
+                             readiness.latestApprovalStatus === 'expired' ? '⏱' : '⏳';
+          const ageText = readiness.latestRequestAgeMinutes !== undefined ? ` (${readiness.latestRequestAgeMinutes}m ago)` : '';
+          item.createEl('span', { text: ` ${statusEmoji} ${readiness.latestApprovalStatus}${ageText}`, cls: 'brain-console__latest-approval' });
+        }
+      }
     });
   }
 
@@ -703,7 +723,8 @@ function renderActionPreviewCard(state: BrainConsoleViewState, settings: BrainCo
   if (blocked.length > 0) {
     list.createEl('li', { text: `Blocked: ${blocked.length}` });
     blocked.slice(0, 2).forEach((action) => {
-      list.createEl('li', { text: `  • ${action.label}`, cls: 'brain-console__list-sub' });
+      const item = list.createEl('li', { text: `  • ${action.label}`, cls: 'brain-console__list-sub' });
+      item.createEl('span', { text: ` — ${action.reason}`, cls: 'brain-console__block-reason' });
     });
     if (blocked.length > 2) {
       list.createEl('li', { text: `  ... and ${blocked.length - 2} more`, cls: 'brain-console__list-note' });
@@ -727,8 +748,17 @@ async function requestActionApproval(actionId: string, brainCoreUrl: string): Pr
       console.error(`Action request failed: ${result.error}`, result.detail);
       return;
     }
-    if (result.value?.executionDidRun === false) {
-      console.log(`Action approval requested: ${actionId}. Execution did not run.`);
+    const request = result.value;
+    if (request?.status === 'requested') {
+      console.log(`✓ Action approval requested: ${actionId}`);
+      if (request.approvalId) {
+        console.log(`  Approval ID: ${request.approvalId}`);
+      }
+      console.log(`  ⚠ Execution did not run (approval process only)`);
+    } else if (request?.status === 'blocked') {
+      console.warn(`⚠ Action request blocked: ${request.summary}`);
+    } else if (request?.status === 'invalid') {
+      console.error(`✗ Invalid action request: ${request.summary}`);
     }
   } catch (err) {
     console.error(`Error requesting action approval: ${err}`);

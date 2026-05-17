@@ -353,3 +353,80 @@ test('GET /actions/video-status-refresh is read-only available', async () => {
   assert.equal(body.action.status, 'available');
   assert.equal(body.action.requiresApproval, false);
 });
+
+test('GET /actions/model-router-dry-run includes readiness status', async () => {
+  const response = await exercise({ method: 'GET', url: '/actions/model-router-dry-run' });
+  const body = JSON.parse(response.body) as {
+    action: {
+      id: string;
+      readiness?: {
+        status: string;
+        blockers: string[];
+        executionWillWriteToMind: boolean;
+        executionWillApplyChanges: boolean;
+        executionKind: string;
+      };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.action.readiness, 'model-router-dry-run should have readiness field');
+  assert.ok(['ready', 'blocked'].includes(body.action.readiness!.status), 'readiness status should be ready or blocked');
+  assert.ok(Array.isArray(body.action.readiness!.blockers), 'blockers should be an array');
+  assert.equal(body.action.readiness!.executionWillWriteToMind, false, 'should never write to mind');
+  assert.equal(body.action.readiness!.executionWillApplyChanges, false, 'should never apply changes');
+  assert.equal(body.action.readiness!.executionKind, 'report-only', 'execution kind should be report-only');
+});
+
+test('GET /actions returns all actions with readiness for model-router-dry-run', async () => {
+  const response = await exercise({ method: 'GET', url: '/actions' });
+  const body = JSON.parse(response.body) as {
+    actions: Array<{
+      id: string;
+      readiness?: object;
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+
+  const modelRouterAction = body.actions.find((a) => a.id === 'model-router-dry-run');
+  assert.ok(modelRouterAction, 'model-router-dry-run action should exist');
+  assert.ok(modelRouterAction!.readiness, 'model-router-dry-run should have readiness in list response');
+});
+
+test('GET /actions/model-router-dry-run readiness respects execution flag', async () => {
+  const flagName = 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+  const originalValue = process.env[flagName];
+
+  try {
+    // Test with flag disabled (default)
+    delete process.env[flagName];
+    let response = await exercise({ method: 'GET', url: '/actions/model-router-dry-run' });
+    let body = JSON.parse(response.body) as {
+      action: { readiness?: { status: string; blockers: string[] } };
+    };
+
+    assert.equal(body.action.readiness!.status, 'blocked', 'should be blocked without execution flag');
+    assert.ok(
+      body.action.readiness!.blockers.some((b) => b.includes('BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION')),
+      'should include flag name in blockers',
+    );
+
+    // Test with flag enabled
+    process.env[flagName] = 'true';
+    response = await exercise({ method: 'GET', url: '/actions/model-router-dry-run' });
+    body = JSON.parse(response.body) as {
+      action: { readiness?: { status: string; blockers: string[] } };
+    };
+
+    assert.equal(body.action.readiness!.status, 'ready', 'should be ready with execution flag enabled');
+    assert.equal(body.action.readiness!.blockers.length, 0, 'should have no blockers with flag enabled');
+  } finally {
+    // Restore original value
+    if (originalValue !== undefined) {
+      process.env[flagName] = originalValue;
+    } else {
+      delete process.env[flagName];
+    }
+  }
+});

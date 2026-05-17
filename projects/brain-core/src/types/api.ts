@@ -445,6 +445,19 @@ export interface BrainCoreActionSafety {
   requiresHumanReview: boolean;
 }
 
+export interface BrainCoreActionReadiness {
+  status: 'ready' | 'blocked';
+  blockers: string[];
+  executionWillWriteToMind: false;
+  executionWillApplyChanges: false;
+  executionKind: 'report-only' | 'unknown';
+  latestApprovalStatus?: 'pending' | 'approved' | 'rejected' | 'expired';
+  latestApprovalId?: string;
+  latestRequestAgeMinutes?: number;
+  latestPreviewReportPath?: string;
+  latestPreviewReportAgeMinutes?: number;
+}
+
 export interface BrainCoreActionSummary {
   id: string;
   kind: BrainCoreActionKind;
@@ -459,6 +472,7 @@ export interface BrainCoreActionSummary {
   canExecuteNow: false;
   reason: string;
   safety: BrainCoreActionSafety;
+  readiness?: BrainCoreActionReadiness;
 }
 
 export interface BrainCoreActionRequest {
