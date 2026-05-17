@@ -3,11 +3,13 @@ import path from "node:path";
 import os from "node:os";
 import type { Config } from "../config.js";
 import {
+  readBrainCoreLocalApps,
   readBrainCoreApprovals,
   readBrainCoreCapabilities,
   readBrainCoreRuntimeReports,
   readBrainCoreSchedulerJobs,
   readBrainCoreSessions,
+  readBrainCoreVideo,
   readBrainCoreStatus,
 } from "./brain-core-client.js";
 import { buildSessionOverview } from "./sessions.js";
@@ -32,6 +34,8 @@ export async function getStatusSummary(config: Config): Promise<string> {
   const brainCoreStatus = await readBrainCoreStatus(config.brainCoreUrl);
   const brainCoreCapabilities = await readBrainCoreCapabilities(config.brainCoreUrl);
   const brainCoreRuntimeReports = await readBrainCoreRuntimeReports(config.brainCoreUrl);
+  const brainCoreVideo = await readBrainCoreVideo(config.brainCoreUrl);
+  const brainCoreLocalApps = await readBrainCoreLocalApps(config.brainCoreUrl);
   const brainCoreSessions = await readBrainCoreSessions(config.brainCoreUrl);
   const brainCoreSchedulerJobs = await readBrainCoreSchedulerJobs(config.brainCoreUrl);
   const brainCoreApprovals = await readBrainCoreApprovals(config.brainCoreUrl);
@@ -49,6 +53,8 @@ export async function getStatusSummary(config: Config): Promise<string> {
     brainCoreStatus.line,
     brainCoreCapabilities.line,
     brainCoreRuntimeReports.line,
+    brainCoreVideo.line,
+    brainCoreLocalApps.line,
     `Telegram: local polling active, ${config.telegramAllowedUserIds.length} allowed user(s)`,
     config.slackBotToken && config.slackAppToken
       ? `Slack: Socket Mode configured, ${config.slackAllowedUserIds.length || "all"} allowed user(s)`

@@ -19,6 +19,23 @@ export interface BrainCoreRuntimeReportSummary {
   latestRunStatus: 'ok' | 'failed' | 'unknown';
 }
 
+export interface BrainCoreVideoStatusResponse {
+  status: 'placeholder' | 'not-configured' | 'ok' | 'failed' | 'unknown';
+  enabled: boolean;
+  queueDepth: number;
+  latestRunAt?: string;
+  source?: 'placeholder' | 'runtime-report';
+  message: string;
+}
+
+export interface BrainCoreVideoQueueResponse {
+  queue: Array<{ id: string; title: string; status: string; source?: string }>;
+}
+
+export interface BrainCoreLocalAppsResponse {
+  apps: Array<{ id: string; name: string; status: string; actionsSupported: boolean; source?: string }>;
+}
+
 export interface BrainCoreRuntimeReportsResponse {
   reports: BrainCoreRuntimeReportSummary[];
 }
@@ -50,6 +67,19 @@ export interface BrainCoreCapabilitySummary {
 export interface BrainCoreRuntimeReportsSummary {
   available: boolean;
   reports: BrainCoreRuntimeReportSummary[];
+  line: string;
+}
+
+export interface BrainCoreVideoSummary {
+  available: boolean;
+  status: string;
+  queueDepth: number;
+  line: string;
+}
+
+export interface BrainCoreLocalAppsSummary {
+  available: boolean;
+  count: number;
   line: string;
 }
 
@@ -108,6 +138,31 @@ export async function readBrainCoreRuntimeReports(baseUrl: string): Promise<Brai
     available: true,
     reports: response.reports,
     line: `Brain Core runtime reports: ${response.reports.map((report) => `${report.id}=${report.status}`).join(', ')}`,
+  };
+}
+
+export async function readBrainCoreVideo(baseUrl: string): Promise<BrainCoreVideoSummary> {
+  const response = await readJson<BrainCoreVideoStatusResponse>(baseUrl, '/video/status');
+  if (!response) {
+    return { available: false, status: 'unavailable', queueDepth: 0, line: 'Brain Core video: unavailable' };
+  }
+  return {
+    available: true,
+    status: response.status,
+    queueDepth: response.queueDepth,
+    line: `Brain Core video: ${response.status} · queueDepth=${response.queueDepth}`,
+  };
+}
+
+export async function readBrainCoreLocalApps(baseUrl: string): Promise<BrainCoreLocalAppsSummary> {
+  const response = await readJson<BrainCoreLocalAppsResponse>(baseUrl, '/local-apps');
+  if (!response) {
+    return { available: false, count: 0, line: 'Brain Core local apps: unavailable' };
+  }
+  return {
+    available: true,
+    count: response.apps.length,
+    line: `Brain Core local apps: ${response.apps.length}`,
   };
 }
 

@@ -6,7 +6,7 @@ import type {
   BrainCoreRuntimeReportStatus,
 } from '../types/api.js';
 
-const DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build', '/mind/', '/mind\\', '/Mind/'];
+const DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build'];
 
 export function listRuntimeReports(): BrainCoreRuntimeReportSummary[] {
   return [
@@ -17,15 +17,18 @@ export function listRuntimeReports(): BrainCoreRuntimeReportSummary[] {
       fallbackMessage: 'Model-router dry-run report not connected yet.',
     }),
     readApprovalAuditReport(),
-    {
+    readJsonRuntimeReport({
       id: 'video',
-      status: 'missing',
-      path: 'runtime/local/video/latest.json',
-      latestRunStatus: 'unknown',
-      message: 'Video runtime report not connected yet',
-      writesToMind: false,
-      executableActions: false,
-    },
+      envPath: process.env.BRAIN_CORE_VIDEO_REPORT_PATH,
+      defaultPath: path.resolve(process.cwd(), 'runtime/local/video/latest.json'),
+      fallbackMessage: 'Video runtime report not connected yet.',
+    }),
+    readJsonRuntimeReport({
+      id: 'local-apps',
+      envPath: process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH,
+      defaultPath: path.resolve(process.cwd(), 'runtime/local/local-apps/latest.json'),
+      fallbackMessage: 'Local apps runtime report not connected yet.',
+    }),
   ];
 }
 
@@ -93,7 +96,7 @@ function readApprovalAuditReport(): BrainCoreRuntimeReportSummary {
 }
 
 function readJsonRuntimeReport(input: {
-  id: 'model-router';
+  id: BrainCoreRuntimeReportSummary['id'];
   envPath: string | undefined;
   defaultPath: string;
   fallbackMessage: string;
@@ -158,8 +161,12 @@ function invalidRuntimeReport(
 }
 
 function resolveSafeRuntimePath(rawPath: string): string | undefined {
-  const normalized = rawPath.replace(/\\/g, '/').toLowerCase();
-  if (DISALLOWED_SEGMENTS.some((segment) => normalized.includes(segment))) {
+  const normalized = rawPath.replace(/\\/g, '/');
+  const segments = normalized.split('/').map((segment) => segment.toLowerCase());
+  if (DISALLOWED_SEGMENTS.some((segment) => segments.includes(segment))) {
+    return undefined;
+  }
+  if (segments.includes('mind')) {
     return undefined;
   }
 

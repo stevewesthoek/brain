@@ -274,12 +274,156 @@ test('GET /video/status returns read-only placeholder video state', async () => 
   assert.equal(body.source, 'placeholder');
 });
 
+test('GET /video/status and /video/queue read from safe video runtime report when configured', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-video-report');
+  const reportPath = path.join(testDir, 'latest.json');
+  const previousPath = process.env.BRAIN_CORE_VIDEO_REPORT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify({
+      status: 'ok',
+      enabled: true,
+      latestRunAt: '2026-05-18T00:00:00.000Z',
+      message: 'read-only report',
+      queue: [{ id: 'video-1', title: 'Example', status: 'queued' }],
+      writesToMind: false,
+      executableActions: false,
+    }),
+  );
+  process.env.BRAIN_CORE_VIDEO_REPORT_PATH = reportPath;
+
+  try {
+    const statusResponse = await exercise({ method: 'GET', url: '/video/status' });
+    const statusBody = JSON.parse(statusResponse.body) as { status: string; enabled: boolean; queueDepth: number; source: string };
+    const queueResponse = await exercise({ method: 'GET', url: '/video/queue' });
+    const queueBody = JSON.parse(queueResponse.body) as { queue: Array<{ id: string; title: string; status: string; source: string }> };
+
+    assert.equal(statusResponse.statusCode, 200);
+    assert.equal(statusBody.status, 'ok');
+    assert.equal(statusBody.enabled, true);
+    assert.equal(statusBody.queueDepth, 1);
+    assert.equal(statusBody.source, 'runtime-report');
+    assert.equal(queueBody.queue.length, 1);
+    assert.equal(queueBody.queue[0]?.id, 'video-1');
+    assert.equal(queueBody.queue[0]?.source, 'runtime-report');
+  } finally {
+    if (previousPath === undefined) {
+      delete process.env.BRAIN_CORE_VIDEO_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_VIDEO_REPORT_PATH = previousPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
 test('GET /video/queue returns read-only queue list', async () => {
   const response = await exercise({ method: 'GET', url: '/video/queue' });
   const body = JSON.parse(response.body) as { queue: unknown[] };
 
   assert.equal(response.statusCode, 200);
   assert.equal(Array.isArray(body.queue), true);
+});
+
+test('GET /local-apps reads from safe local-apps runtime report when configured', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-local-apps-report');
+  const reportPath = path.join(testDir, 'latest.json');
+  const previousPath = process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify({
+      status: 'ok',
+      apps: [{ id: 'probot', name: 'ProBot', status: 'running', actionsSupported: false }],
+      writesToMind: false,
+      executableActions: false,
+    }),
+  );
+  process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH = reportPath;
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/local-apps' });
+    const body = JSON.parse(response.body) as { apps: Array<{ id: string; name: string; status: string; actionsSupported: boolean; source: string }> };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.apps.length, 1);
+    assert.equal(body.apps[0]?.id, 'probot');
+    assert.equal(body.apps[0]?.status, 'running');
+    assert.equal(body.apps[0]?.actionsSupported, false);
+    assert.equal(body.apps[0]?.source, 'runtime-report');
+  } finally {
+    if (previousPath === undefined) {
+      delete process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH = previousPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /video/status falls back to failed read-only state when runtime report is invalid', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-video-invalid');
+  const reportPath = path.join(testDir, 'latest.json');
+  const previousPath = process.env.BRAIN_CORE_VIDEO_REPORT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify({ status: 'ok', writesToMind: false, executableActions: true }),
+  );
+  process.env.BRAIN_CORE_VIDEO_REPORT_PATH = reportPath;
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/video/status' });
+    const body = JSON.parse(response.body) as { status: string; enabled: boolean; source: string; message: string };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'failed');
+    assert.equal(body.enabled, false);
+    assert.equal(body.source, 'runtime-report');
+    assert.equal(body.message.includes('unsupported execution flags'), true);
+  } finally {
+    if (previousPath === undefined) {
+      delete process.env.BRAIN_CORE_VIDEO_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_VIDEO_REPORT_PATH = previousPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /local-apps falls back to invalid runtime-report placeholder when report is invalid', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-local-apps-invalid');
+  const reportPath = path.join(testDir, 'latest.json');
+  const previousPath = process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify({ status: 'ok', writesToMind: false, executableActions: true }));
+  process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH = reportPath;
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/local-apps' });
+    const body = JSON.parse(response.body) as { apps: Array<{ id: string; status: string; actionsSupported: boolean; source: string }> };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.apps[0]?.id, 'local-apps-report');
+    assert.equal(body.apps[0]?.status, 'unknown');
+    assert.equal(body.apps[0]?.actionsSupported, false);
+    assert.equal(body.apps[0]?.source, 'runtime-report');
+  } finally {
+    if (previousPath === undefined) {
+      delete process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH = previousPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
 });
 
 test('GET /approvals returns placeholder approvals list before action requests', async () => {

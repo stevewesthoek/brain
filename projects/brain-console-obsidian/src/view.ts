@@ -1,21 +1,27 @@
-import { ItemView } from 'obsidian';
+import { ItemView } from './obsidian.js';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
 import {
   readBrainCoreApprovals,
   readBrainCoreCapabilities,
+  readBrainCoreLocalApps,
   readBrainCoreRepos,
   readBrainCoreRuntimeReports,
   readBrainCoreSchedulerJobs,
   readBrainCoreSchedulerStatus,
   readBrainCoreSessions,
+  readBrainCoreVideoQueue,
+  readBrainCoreVideoStatus,
   readBrainCoreStatus,
   type BrainCoreApprovalSummary,
   type BrainCoreCapabilitySummary,
+  type BrainCoreLocalAppSummary,
   type BrainCoreRepoSummary,
   type BrainCoreRuntimeReportSummary,
   type BrainCoreSchedulerJobSummary,
   type BrainCoreSchedulerStatus,
   type BrainCoreSessionSummary,
+  type BrainCoreVideoQueueItem,
+  type BrainCoreVideoStatus,
   type BrainCoreStatus,
 } from './client.js';
 
@@ -23,6 +29,9 @@ export interface BrainConsoleViewState {
   status?: BrainCoreStatus;
   capabilities?: BrainCoreCapabilitySummary;
   runtimeReports?: BrainCoreRuntimeReportSummary[];
+  videoStatus?: BrainCoreVideoStatus;
+  videoQueue?: BrainCoreVideoQueueItem[];
+  localApps?: BrainCoreLocalAppSummary[];
   schedulerStatus?: BrainCoreSchedulerStatus;
   schedulerJobs?: BrainCoreSchedulerJobSummary[];
   sessions?: BrainCoreSessionSummary[];
@@ -37,10 +46,13 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
+    readBrainCoreVideoStatus(baseUrl),
+    readBrainCoreVideoQueue(baseUrl),
+    readBrainCoreLocalApps(baseUrl),
     readBrainCoreSchedulerStatus(baseUrl),
     readBrainCoreSchedulerJobs(baseUrl),
     readBrainCoreSessions(baseUrl),
@@ -48,7 +60,7 @@ export async function loadBrainConsoleViewState(
     readBrainCoreApprovals(baseUrl),
   ]);
 
-  const offline = [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals].every(
     (result) => result.value === undefined,
   );
 
@@ -56,6 +68,9 @@ export async function loadBrainConsoleViewState(
     status: status.value,
     capabilities: capabilities.value,
     runtimeReports: runtimeReports.value?.reports,
+    videoStatus: videoStatus.value,
+    videoQueue: videoQueue.value?.queue,
+    localApps: localApps.value?.apps,
     schedulerStatus: schedulerStatus.value,
     schedulerJobs: schedulerJobs.value?.jobs,
     sessions: sessions.value?.sessions,
@@ -118,6 +133,8 @@ export function renderBrainConsoleView(
     ['Legacy migration', state.capabilities?.mindWorkspace?.legacyTaskMigrationStatus ?? 'unknown'],
   ]);
   renderSection(grid, 'Runtime reports', describeRuntimeReports(state.runtimeReports));
+  renderSection(grid, 'Video', describeVideo(state.videoStatus, state.videoQueue));
+  renderSection(grid, 'Local apps', describeLocalApps(state.localApps));
   renderSection(grid, 'Scheduler', describeScheduler(state.schedulerStatus, state.schedulerJobs));
   renderSection(grid, 'Sessions / repos / approvals', describeCollections(state.sessions, state.repos, state.approvals));
 }
@@ -135,13 +152,35 @@ function renderSection(parent: HTMLElement, title: string, entries: Array<[strin
 
 function describeRuntimeReports(reports: BrainCoreRuntimeReportSummary[] | undefined): Array<[string, string]> {
   const byId = new Map((reports ?? []).map((report) => [report.id, report]));
-  return ['model-router', 'approval-audit', 'video'].map((id) => {
+  return ['model-router', 'approval-audit', 'video', 'local-apps'].map((id) => {
     const report = byId.get(id as BrainCoreRuntimeReportSummary['id']);
     if (!report) {
       return [id, 'Unavailable'];
     }
     return [id, `${report.status} · writesToMind=${report.writesToMind} · executed=${report.executableActions}`];
   });
+}
+
+function describeVideo(
+  status: BrainCoreVideoStatus | undefined,
+  queue: BrainCoreVideoQueueItem[] | undefined,
+): Array<[string, string]> {
+  const queueItems = queue ?? [];
+  return [
+    ['Status', status ? `${status.status} · enabled=${status.enabled}` : 'Unavailable'],
+    ['Queue depth', String(status?.queueDepth ?? queueItems.length)],
+    ['Latest run', status?.latestRunAt ?? 'unknown'],
+    ['Top queue items', queueItems.slice(0, 3).map((item) => `${item.title}:${item.status}`).join(', ') || 'none'],
+  ];
+}
+
+function describeLocalApps(apps: BrainCoreLocalAppSummary[] | undefined): Array<[string, string]> {
+  const items = apps ?? [];
+  return [
+    ['App count', String(items.length)],
+    ['Status summary', items.slice(0, 3).map((app) => `${app.name}:${app.status}`).join(', ') || 'none'],
+    ['Actions supported', String(items.some((app) => app.actionsSupported))],
+  ];
 }
 
 function describeScheduler(

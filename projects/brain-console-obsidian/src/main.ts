@@ -1,4 +1,4 @@
-import { ItemView, Notice, Plugin, PluginSettingTab, Setting, type WorkspaceLeaf } from 'obsidian';
+import { ItemView, Notice, Plugin, PluginSettingTab, Setting, type WorkspaceLeaf } from './obsidian.js';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
 import { loadBrainConsoleViewState, renderBrainConsoleView } from './view.js';
 

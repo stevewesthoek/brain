@@ -3,10 +3,6 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "Bundler",
-    "baseUrl": ".",
-    "paths": {
-      "obsidian": ["./src/obsidian-shim"]
-    },
     "lib": ["ES2022", "DOM"],
     "strict": true,
     "skipLibCheck": true,
@@ -17,5 +13,5 @@
     "noEmitOnError": true,
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts"]
+  "include": ["src/**/*.ts"]
 }

@@ -89,6 +89,30 @@ export interface BrainCoreRepoSummary {
   source: 'env' | 'placeholder';
 }
 
+export interface BrainCoreLocalAppSummary {
+  id: string;
+  name: string;
+  status: 'placeholder' | 'unknown' | 'disabled' | 'running' | 'stopped';
+  source: 'placeholder' | 'runtime-report';
+  actionsSupported: boolean;
+}
+
+export interface BrainCoreVideoStatus {
+  status: 'placeholder' | 'not-configured' | 'ok' | 'failed' | 'unknown';
+  enabled: boolean;
+  queueDepth: number;
+  latestRunAt?: string;
+  source: 'placeholder' | 'runtime-report';
+  message: string;
+}
+
+export interface BrainCoreVideoQueueItem {
+  id: string;
+  title: string;
+  status: 'placeholder' | 'queued' | 'running' | 'failed' | 'done';
+  source: 'placeholder' | 'runtime-report';
+}
+
 export interface BrainCoreApprovalSummary {
   id: string;
   kind: string;
@@ -101,6 +125,9 @@ export interface BrainConsoleSnapshot {
   status?: BrainCoreStatus;
   capabilities?: BrainCoreCapabilitySummary;
   runtimeReports?: BrainCoreRuntimeReportSummary[];
+  videoStatus?: BrainCoreVideoStatus;
+  videoQueue?: BrainCoreVideoQueueItem[];
+  localApps?: BrainCoreLocalAppSummary[];
   schedulerStatus?: BrainCoreSchedulerStatus;
   schedulerJobs?: BrainCoreSchedulerJobSummary[];
   sessions?: BrainCoreSessionSummary[];
@@ -127,11 +154,19 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     fetchJson<{ repos?: BrainCoreRepoSummary[] }>(normalizedBaseUrl, '/repos'),
     fetchJson<{ approvals?: BrainCoreApprovalSummary[] }>(normalizedBaseUrl, '/approvals'),
   ]);
+  const [videoStatus, videoQueue, localApps] = await Promise.all([
+    readBrainCoreVideoStatus(normalizedBaseUrl),
+    readBrainCoreVideoQueue(normalizedBaseUrl),
+    readBrainCoreLocalApps(normalizedBaseUrl),
+  ]);
 
   return {
     status: status.value,
     capabilities: capabilities.value,
     runtimeReports: runtimeReports.value?.reports,
+    videoStatus: videoStatus.value,
+    videoQueue: videoQueue.value?.queue,
+    localApps: localApps.value?.apps,
     schedulerStatus: schedulerStatus.value,
     schedulerJobs: schedulerJobs.value?.jobs,
     sessions: sessions.value?.sessions,
@@ -176,6 +211,18 @@ export async function readBrainCoreRepos(baseUrl: string): Promise<HttpResult<{ 
 
 export async function readBrainCoreApprovals(baseUrl: string): Promise<HttpResult<{ approvals?: BrainCoreApprovalSummary[] }>> {
   return fetchJson<{ approvals?: BrainCoreApprovalSummary[] }>(normalizeBaseUrl(baseUrl), '/approvals');
+}
+
+export async function readBrainCoreVideoStatus(baseUrl: string): Promise<HttpResult<BrainCoreVideoStatus>> {
+  return fetchJson<BrainCoreVideoStatus>(normalizeBaseUrl(baseUrl), '/video/status');
+}
+
+export async function readBrainCoreVideoQueue(baseUrl: string): Promise<HttpResult<{ queue?: BrainCoreVideoQueueItem[] }>> {
+  return fetchJson<{ queue?: BrainCoreVideoQueueItem[] }>(normalizeBaseUrl(baseUrl), '/video/queue');
+}
+
+export async function readBrainCoreLocalApps(baseUrl: string): Promise<HttpResult<{ apps?: BrainCoreLocalAppSummary[] }>> {
+  return fetchJson<{ apps?: BrainCoreLocalAppSummary[] }>(normalizeBaseUrl(baseUrl), '/local-apps');
 }
 
 async function fetchJson<T>(baseUrl: string, pathname: string): Promise<HttpResult<T>> {

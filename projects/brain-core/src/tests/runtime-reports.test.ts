@@ -7,18 +7,24 @@ import { listRuntimeReports } from '../adapters/runtime-reports.js';
 test('runtime reports return missing by default', () => {
   const previousModelRouterPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
   const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+  const previousVideoPath = process.env.BRAIN_CORE_VIDEO_REPORT_PATH;
+  const previousLocalAppsPath = process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
   process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = '/tmp/brain-core-missing-model-router.json';
   process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = '/tmp/brain-core-missing-approval-audit.jsonl';
+  process.env.BRAIN_CORE_VIDEO_REPORT_PATH = '/tmp/brain-core-missing-video.json';
+  process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH = '/tmp/brain-core-missing-local-apps.json';
 
   try {
     const reports = listRuntimeReports();
     const modelRouter = reports.find((report) => report.id === 'model-router');
     const approvalAudit = reports.find((report) => report.id === 'approval-audit');
     const video = reports.find((report) => report.id === 'video');
+    const localApps = reports.find((report) => report.id === 'local-apps');
 
     assert.equal(modelRouter?.status, 'missing');
     assert.equal(approvalAudit?.status, 'missing');
     assert.equal(video?.status, 'missing');
+    assert.equal(localApps?.status, 'missing');
     assert.equal(reports.every((report) => report.writesToMind === false), true);
     assert.equal(reports.every((report) => report.executableActions === false), true);
   } finally {
@@ -31,6 +37,16 @@ test('runtime reports return missing by default', () => {
       delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
     } else {
       process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
+    }
+    if (previousVideoPath === undefined) {
+      delete process.env.BRAIN_CORE_VIDEO_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_VIDEO_REPORT_PATH = previousVideoPath;
+    }
+    if (previousLocalAppsPath === undefined) {
+      delete process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH = previousLocalAppsPath;
     }
   }
 });
@@ -97,5 +113,63 @@ test('runtime reports reject unsafe paths and return invalid', () => {
     } else {
       process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousModelRouterPath;
     }
+  }
+});
+
+test('runtime reports honor configured video and local-apps JSON paths', () => {
+  const baseDir = '/tmp/codex-runtime-video-local-apps-test';
+  const videoPath = path.join(baseDir, 'runtime', 'local', 'video', 'latest.json');
+  const localAppsPath = path.join(baseDir, 'runtime', 'local', 'local-apps', 'latest.json');
+  const previousVideoPath = process.env.BRAIN_CORE_VIDEO_REPORT_PATH;
+  const previousLocalAppsPath = process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
+
+  fs.rmSync(baseDir, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(videoPath), { recursive: true });
+  fs.mkdirSync(path.dirname(localAppsPath), { recursive: true });
+  fs.writeFileSync(
+    videoPath,
+    JSON.stringify({
+      status: 'ok',
+      enabled: true,
+      latestRunAt: '2026-05-18T00:00:00.000Z',
+      message: 'read-only report',
+      queue: [{ id: 'video-1', title: 'Example', status: 'queued' }],
+      writesToMind: false,
+      executableActions: false,
+    }),
+  );
+  fs.writeFileSync(
+    localAppsPath,
+    JSON.stringify({
+      status: 'ok',
+      apps: [{ id: 'probot', name: 'ProBot', status: 'running', actionsSupported: false }],
+      writesToMind: false,
+      executableActions: false,
+    }),
+  );
+  process.env.BRAIN_CORE_VIDEO_REPORT_PATH = videoPath;
+  process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH = localAppsPath;
+
+  try {
+    const reports = listRuntimeReports();
+    const video = reports.find((report) => report.id === 'video');
+    const localApps = reports.find((report) => report.id === 'local-apps');
+
+    assert.equal(video?.status, 'available');
+    assert.equal(localApps?.status, 'available');
+    assert.equal(reports.every((report) => report.writesToMind === false), true);
+    assert.equal(reports.every((report) => report.executableActions === false), true);
+  } finally {
+    if (previousVideoPath === undefined) {
+      delete process.env.BRAIN_CORE_VIDEO_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_VIDEO_REPORT_PATH = previousVideoPath;
+    }
+    if (previousLocalAppsPath === undefined) {
+      delete process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH = previousLocalAppsPath;
+    }
+    fs.rmSync(baseDir, { recursive: true, force: true });
   }
 });

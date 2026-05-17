@@ -55,16 +55,17 @@ export interface BrainCoreSchedulerJobSummary {
 export interface BrainCoreLocalAppSummary {
   id: string;
   name: string;
-  status: 'placeholder' | 'unknown' | 'disabled';
-  source: 'placeholder';
+  status: 'placeholder' | 'unknown' | 'disabled' | 'running' | 'stopped';
+  source: 'placeholder' | 'runtime-report';
   actionsSupported: boolean;
 }
 
 export interface BrainCoreVideoStatus {
-  status: 'placeholder' | 'not-configured';
+  status: 'placeholder' | 'not-configured' | 'ok' | 'failed' | 'unknown';
   enabled: boolean;
   queueDepth: number;
-  source: 'placeholder';
+  latestRunAt?: string;
+  source: 'placeholder' | 'runtime-report';
   message: string;
 }
 
@@ -72,7 +73,7 @@ export interface BrainCoreVideoQueueItem {
   id: string;
   title: string;
   status: 'placeholder' | 'queued' | 'running' | 'failed' | 'done';
-  source: 'placeholder';
+  source: 'placeholder' | 'runtime-report';
 }
 
 export interface BrainCoreOrchestratorSummary {
@@ -155,7 +156,7 @@ export interface BrainCoreErrorResponse {
   };
 }
 
-export type BrainCoreRuntimeReportId = 'model-router' | 'approval-audit' | 'video';
+export type BrainCoreRuntimeReportId = 'model-router' | 'approval-audit' | 'video' | 'local-apps';
 
 export type BrainCoreRuntimeReportStatus = 'available' | 'missing' | 'invalid';
 
