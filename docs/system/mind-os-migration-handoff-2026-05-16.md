@@ -713,6 +713,23 @@ What changed:
 - Added a Brain Core restore, health-check, safety, and rollback runbook.
 - Added `BrainConsoleHealthCheck` and `checkBrainConsoleSnapshotHealth(...)`.
 - Added test coverage for the Brain Console health-check contract.
+
+## Brain Console scaffold and ProBot command alias note — 2026-05-17
+
+Validated the standalone Brain Console plugin scaffold in `projects/brain-console-obsidian/`:
+
+- `npm install --prefix projects/brain-console-obsidian`
+- `npm run --prefix projects/brain-console-obsidian typecheck`
+- `npm run --prefix projects/brain-console-obsidian build`
+
+Safety boundaries preserved:
+
+- the plugin remains outside the live Mind vault
+- no note writes
+- no automatic POST calls
+- no `mind/.obsidian/plugins/` installation
+
+ProBot command aliases remain documented, not wired, because the Slack and Telegram handlers are still too split for a low-risk insertion point. The desired aliases live in `operations/specs/probot-brain-core-thin-client-commands.md`.
 - Linked the Brain Core README to the new runbook.
 
 Validation:
@@ -1006,6 +1023,7 @@ What changed:
 - Approval requests and audit records remain non-executing scaffolds. Rejected requests are recorded with `executed: false`; unsupported kinds are rejected without creating approval records.
 - Mind workspace isolation guidance now lives in `operations/runbooks/mind-workspace-isolation.md` for later category-by-category cleanup of unrelated dirty state.
 - ProBot is being reduced to a thin GET-only client over Brain Core, and the Brain Console plugin remains standalone until manually approved for vault installation.
+- The ProBot Brain Core command alias mapping is documented in `operations/specs/probot-brain-core-thin-client-commands.md` because the live command handlers are still too tangled for a low-risk insertion.
 - Default report path: `runtime/local/model-router/latest.json`.
 - Override path: `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH`.
 - `/scheduler/jobs` now includes `model-router-dry-run` in addition to Mind loop job placeholders.
