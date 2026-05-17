@@ -35,7 +35,11 @@ export {
   MIND_PREVIEW_BLOCKED_SUFFIXES,
   applyApprovedMindWritePreview,
   createMindWritePreview,
+  createMindPreviewArtifact,
   evaluateMindPreviewPolicy,
+  listMindPreviewArtifacts,
+  readMindPreviewArtifact,
+  writeMindPreviewArtifact,
 } from './preview.js';
 export type {
   CreateMindWritePreviewInput,
@@ -43,7 +47,13 @@ export type {
   MindPreviewActionKind,
   MindPreviewOperation,
   MindPreviewPolicyResult,
+  MindPreviewArtifact,
+  MindPreviewArtifactSummary,
   MindWriteApplyInput,
   MindWriteApplyResult,
   MindWritePreview,
+  ListMindPreviewArtifactsInput,
+  ReadMindPreviewArtifactInput,
+  WriteMindPreviewArtifactInput,
+  WriteMindPreviewArtifactResult,
 } from './preview.js';

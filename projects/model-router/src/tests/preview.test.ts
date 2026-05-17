@@ -1,9 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   applyApprovedMindWritePreview,
+  createMindPreviewArtifact,
   createMindWritePreview,
   evaluateMindPreviewPolicy,
+  listMindPreviewArtifacts,
+  readMindPreviewArtifact,
+  writeMindPreviewArtifact,
 } from '../preview.js';
 
 const now = new Date('2026-05-17T12:00:00.000Z');
@@ -376,4 +382,85 @@ test('existing preview behavior remains report-only', () => {
 
   assert.equal(preview.writesToMind, false);
   assert.equal(preview.externalSideEffects, false);
+});
+
+test('preview artifacts are written only under Brain runtime/local/model-router/previews', () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-preview-artifacts');
+  const preview = createMindWritePreview({
+    actionKind: 'model-router-update-current-context',
+    targetPath: 'router/current.md',
+    operation: 'overwrite',
+    oldContent: '# Current\n',
+    newContent: '# Current\n\nPreview artifact\n',
+    now,
+  });
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  const result = writeMindPreviewArtifact({
+    preview,
+    runtimeRoot: path.join(testDir, 'runtime', 'local', 'model-router', 'previews'),
+  });
+
+  assert.equal(result.artifact.writesToMind, false);
+  assert.equal(result.artifact.externalSideEffects, false);
+  assert.equal(result.artifactPath.startsWith(path.join(testDir, 'runtime', 'local', 'model-router', 'previews')), true);
+  assert.equal(fs.existsSync(result.artifactPath), true);
+  const summaries = listMindPreviewArtifacts({
+    runtimeRoot: path.join(testDir, 'runtime', 'local', 'model-router', 'previews'),
+    now,
+  });
+  assert.equal(summaries.length, 1);
+  assert.equal(summaries[0]?.previewId, result.artifact.previewId);
+  assert.equal(summaries[0]?.targetPath, 'router/current.md');
+  assert.equal(summaries[0]?.expired, false);
+  fs.rmSync(testDir, { recursive: true, force: true });
+});
+
+test('preview artifacts reject unsafe paths', () => {
+  const preview = createMindWritePreview({
+    actionKind: 'model-router-update-current-context',
+    targetPath: 'router/current.md',
+    operation: 'overwrite',
+    oldContent: '# Current\n',
+    newContent: '# Current\n\nPreview artifact\n',
+    now,
+  });
+
+  assert.throws(
+    () =>
+      writeMindPreviewArtifact({
+        preview,
+        runtimeRoot: path.join(process.cwd(), 'mind', 'runtime', 'local', 'model-router', 'previews'),
+      }),
+    /Unsafe preview runtime path/,
+  );
+});
+
+test('preview artifact reader reports expiry and missing ids safely', () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-preview-expiry');
+  const preview = createMindWritePreview({
+    actionKind: 'model-router-update-current-context',
+    targetPath: 'router/current.md',
+    operation: 'overwrite',
+    oldContent: '# Current\n',
+    newContent: '# Current\n\nPreview artifact\n',
+    now,
+  });
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  const created = createMindPreviewArtifact({ preview, expiresAt: new Date('2026-05-17T11:00:00.000Z') });
+  const previewDir = path.join(testDir, 'runtime', 'local', 'model-router', 'previews');
+  fs.mkdirSync(previewDir, { recursive: true });
+  fs.writeFileSync(path.join(previewDir, `${created.previewId}.json`), `${JSON.stringify(created, null, 2)}\n`);
+
+  const summary = readMindPreviewArtifact({
+    previewId: created.previewId,
+    runtimeRoot: previewDir,
+    now: new Date('2026-05-17T12:00:00.000Z'),
+  });
+  assert.equal(summary?.expired, true);
+  assert.equal(summary?.writesToMind, false);
+  assert.equal(summary?.externalSideEffects, false);
+  assert.equal(readMindPreviewArtifact({ previewId: 'missing', runtimeRoot: previewDir, now }), null);
+  fs.rmSync(testDir, { recursive: true, force: true });
 });

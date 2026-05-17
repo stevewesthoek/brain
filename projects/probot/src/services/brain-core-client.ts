@@ -54,6 +54,30 @@ export interface BrainCoreMindPreviewPolicyResponse {
   docs: Array<{ path: string; description: string }>;
 }
 
+export interface BrainCoreMindPreviewSummary {
+  id: string;
+  actionKind: string;
+  targetPath: string;
+  createdAt: string;
+  expiresAt: string;
+  expired: boolean;
+  allowedRoot: boolean;
+  blockedRoot: boolean;
+  writesToMind: false;
+  externalSideEffects: false;
+}
+
+export interface BrainCoreMindPreviewDetail extends BrainCoreMindPreviewSummary {
+  operation: string;
+  oldHash: string | null;
+  newHash: string;
+  lineCountBefore: number;
+  lineCountAfter: number;
+  maxLines: number | null;
+  unifiedDiff: string;
+  policyReasons: string[];
+}
+
 export interface BrainCoreRuntimeReportSummary {
   id: string;
   status: 'available' | 'missing' | 'invalid';
@@ -188,6 +212,13 @@ export interface BrainCoreMindPreviewPolicySummary {
   applyRouteEnabled: boolean;
   writesToMind: boolean;
   externalSideEffects: boolean;
+  line: string;
+}
+
+export interface BrainCoreMindPreviewsSummary {
+  available: boolean;
+  count: number;
+  latest?: BrainCoreMindPreviewSummary;
   line: string;
 }
 
@@ -394,6 +425,24 @@ export async function readBrainCoreMindPreviewPolicy(baseUrl: string): Promise<B
     writesToMind: response.writesToMind,
     externalSideEffects: response.externalSideEffects,
     line: `Brain Core mind preview policy: ${response.status} · first=${response.firstProposedTarget} · applyRoute=${response.applyRouteEnabled}`,
+  };
+}
+
+export async function readBrainCoreMindPreviews(baseUrl: string): Promise<BrainCoreMindPreviewsSummary> {
+  const response = await readJson<{ previews?: BrainCoreMindPreviewSummary[] }>(baseUrl, '/execution/mind-previews');
+  if (!response) {
+    return {
+      available: false,
+      count: 0,
+      line: 'Brain Core mind previews: unavailable',
+    };
+  }
+  const latest = response.previews?.[0];
+  return {
+    available: true,
+    count: response.previews?.length ?? 0,
+    ...(latest ? { latest } : {}),
+    line: `Brain Core mind previews: ${(response.previews?.length ?? 0)} · latest=${latest?.targetPath ?? 'none'}`,
   };
 }
 

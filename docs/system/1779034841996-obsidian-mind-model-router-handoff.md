@@ -609,3 +609,35 @@ Blocked state remains:
 - Mind apply remains metadata-only and not executable through Brain Core.
 - Broad shell execution remains disabled.
 - Any future Mind write still requires a separate approval-backed route and validation drill.
+
+## 2026-05-17 preview artifact continuation
+
+Implemented in this continuation:
+
+- Added Brain-owned preview artifact serialization and read helpers under `projects/model-router`.
+- Exposed read-only Brain Core preview artifact endpoints:
+  - `GET /execution/mind-previews`
+  - `GET /execution/mind-previews/latest`
+  - `GET /execution/mind-previews/:id`
+- Surfaced preview count and latest target in Brain Console and ProBot status text.
+
+Storage path:
+
+- Default runtime root: `runtime/local/model-router/previews/`
+- The writer/reader reject unsafe paths and never target Mind.
+
+Preview identity:
+
+- `previewId` is derived from safe preview fields and is suitable for approval references.
+- Previews expire separately from approvals; expired previews are reported as expired but remain readable.
+
+Validation:
+
+- Model-router preview tests cover safe write path, unsafe path rejection, expiry, and non-writing metadata.
+- Brain Core route tests cover empty state, listing, latest/detail lookup, and unsafe configuration handling.
+
+Still blocked:
+
+- No Mind mutation route is enabled.
+- No apply route is enabled.
+- No preview artifact is written to Mind.

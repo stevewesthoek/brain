@@ -5,6 +5,11 @@ import { listApprovals } from '../adapters/approvals.js';
 import { getCapabilities } from '../adapters/capabilities.js';
 import { listOrchestrators } from '../adapters/orchestrators.js';
 import { listLocalApps } from '../adapters/local-apps.js';
+import {
+  listMindPreviewSummaries,
+  readLatestMindPreviewDetail,
+  readMindPreviewDetailById,
+} from '../adapters/preview-artifacts.js';
 import { listRuntimeReports } from '../adapters/runtime-reports.js';
 import { listRepos } from '../adapters/repos.js';
 import { getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
@@ -105,6 +110,15 @@ export async function routeRequest(
     case '/execution/mind-preview-policy':
       sendJson(response, 200, getMindPreviewPolicy());
       return;
+    case '/execution/mind-previews':
+      sendJson(response, 200, { previews: listMindPreviewSummaries() });
+      return;
+    case '/execution/mind-previews/latest':
+      {
+        const preview = readLatestMindPreviewDetail();
+        sendJson(response, 200, preview ? { status: 'available', preview } : { status: 'empty' });
+        return;
+      }
     case '/approvals/audit':
       sendJson(response, 200, { events: listApprovalAuditEvents() });
       return;
@@ -128,11 +142,26 @@ export async function routeRequest(
           } satisfies BrainCoreErrorResponse);
           return;
         }
+        const previewMatch = /^\/execution\/mind-previews\/([^/]+)$/.exec(url.pathname);
+        if (previewMatch) {
+          const preview = readMindPreviewDetailById(previewMatch[1] ?? '');
+          if (preview) {
+            sendJson(response, 200, { preview });
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Mind preview artifact not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
       }
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
   }

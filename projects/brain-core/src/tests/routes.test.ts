@@ -719,6 +719,102 @@ test('GET /execution/mind-preview-policy returns preview-only policy metadata', 
   );
 });
 
+test('GET /execution/mind-previews returns empty list when no preview artifacts exist', async () => {
+  const previous = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = path.join(process.cwd(), '.buildflow-test-mind-previews-missing');
+  try {
+    const response = await exercise({ method: 'GET', url: '/execution/mind-previews' });
+    const body = JSON.parse(response.body) as { previews: Array<{ writesToMind: boolean; externalSideEffects: boolean }> };
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.previews.length, 0);
+  } finally {
+    if (previous === undefined) delete process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+    else process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previous;
+  }
+});
+
+test('GET /execution/mind-previews/latest returns empty state when no preview artifacts exist', async () => {
+  const previous = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = path.join(process.cwd(), '.buildflow-test-mind-previews-empty');
+  try {
+    const response = await exercise({ method: 'GET', url: '/execution/mind-previews/latest' });
+    const body = JSON.parse(response.body) as { status: string; preview?: { writesToMind: boolean } };
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'empty');
+    assert.equal(body.preview, undefined);
+  } finally {
+    if (previous === undefined) delete process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+    else process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previous;
+  }
+});
+
+test('GET /execution/mind-previews/:id returns not found for unknown id', async () => {
+  const response = await exercise({ method: 'GET', url: '/execution/mind-previews/preview-missing' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /execution/mind-previews lists safe fixture preview artifacts', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-mind-previews');
+  const previewDir = path.join(testDir, 'runtime', 'local', 'model-router', 'previews');
+  const previous = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(previewDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(previewDir, 'preview-test.json'),
+    JSON.stringify({
+      id: 'preview-test',
+      actionKind: 'model-router-update-current-context',
+      targetPath: 'router/current.md',
+      createdAt: '2026-05-17T12:00:00.000Z',
+      expiresAt: '2026-05-18T12:00:00.000Z',
+      expired: false,
+      allowedRoot: true,
+      blockedRoot: false,
+      operation: 'overwrite',
+      oldHash: 'old',
+      newHash: 'new',
+      lineCountBefore: 1,
+      lineCountAfter: 2,
+      maxLines: 150,
+      unifiedDiff: 'diff',
+      policyReasons: [],
+      writesToMind: false,
+      externalSideEffects: false,
+    }),
+  );
+  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previewDir;
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/execution/mind-previews' });
+    const body = JSON.parse(response.body) as { previews: Array<{ id: string; writesToMind: boolean; externalSideEffects: boolean }> };
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.previews.length, 1);
+    assert.equal(body.previews[0]?.id, 'preview-test');
+    assert.equal(body.previews[0]?.writesToMind, false);
+    assert.equal(body.previews[0]?.externalSideEffects, false);
+  } finally {
+    if (previous === undefined) delete process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+    else process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previous;
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /execution/mind-previews ignores unsafe preview path configuration', async () => {
+  const previous = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = '/Users/Office/Repos/stevewesthoek/mind/runtime/local/model-router/previews';
+  try {
+    const response = await exercise({ method: 'GET', url: '/execution/mind-previews' });
+    const body = JSON.parse(response.body) as { previews: unknown[] };
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.previews.length, 0);
+  } finally {
+    if (previous === undefined) delete process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+    else process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previous;
+  }
+});
+
 test('GET /execution/plans/:kind returns the execution plan by kind', async () => {
   const response = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-model-router-dry-run' });
   const body = JSON.parse(response.body) as { plan: { kind: string; summary: string; executed: boolean; wouldExecute: boolean } };

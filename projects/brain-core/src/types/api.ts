@@ -246,6 +246,30 @@ export interface BrainCoreMindPreviewPolicy {
   docs: BrainCoreMindPreviewPolicyDocument[];
 }
 
+export interface BrainCoreMindPreviewSummary {
+  id: string;
+  actionKind: 'model-router-update-current-context';
+  targetPath: string;
+  createdAt: string;
+  expiresAt: string;
+  expired: boolean;
+  allowedRoot: boolean;
+  blockedRoot: boolean;
+  writesToMind: false;
+  externalSideEffects: false;
+}
+
+export interface BrainCoreMindPreviewDetail extends BrainCoreMindPreviewSummary {
+  operation: 'patch' | 'overwrite' | 'create';
+  oldHash: string | null;
+  newHash: string;
+  lineCountBefore: number;
+  lineCountAfter: number;
+  maxLines: number | null;
+  unifiedDiff: string;
+  policyReasons: string[];
+}
+
 export interface BrainCoreExecutionReadiness {
   executionEnabled: false;
   modelRouterDryRunExecutionFlagEnabled: boolean;
@@ -340,6 +364,16 @@ export interface BrainCoreRoutes {
     plans: BrainCoreExecutionPlan[];
   };
   '/execution/mind-preview-policy': BrainCoreMindPreviewPolicy;
+  '/execution/mind-previews': {
+    previews: BrainCoreMindPreviewSummary[];
+  };
+  '/execution/mind-previews/latest': {
+    preview?: BrainCoreMindPreviewDetail;
+    status: 'empty' | 'available';
+  };
+  '/execution/mind-previews/:id': {
+    preview: BrainCoreMindPreviewDetail;
+  };
   '/execution/readiness': BrainCoreExecutionReadiness;
   '/execution/plans/:kind': {
     plan?: BrainCoreExecutionPlan;

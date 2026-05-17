@@ -48,6 +48,7 @@ export interface BrainConsoleViewState {
   executionPlans?: BrainCoreExecutionPlan[];
   executionReadiness?: BrainCoreExecutionReadiness;
   mindPreviewPolicy?: import('./client.js').BrainCoreMindPreviewPolicy;
+  mindPreviews?: import('./client.js').BrainCoreMindPreviewSummary[];
   warning?: string;
   offline?: boolean;
 }
@@ -163,6 +164,7 @@ export function renderBrainConsoleView(
   renderSection(grid, 'Approval gate', describeApprovalGate(state.approvalStore));
   renderSection(grid, 'Execution readiness', describeExecutionReadiness(state.executionReadiness, state.executionPlans));
   renderSection(grid, 'Mind preview policy', describeMindPreviewPolicy(state.mindPreviewPolicy));
+  renderSection(grid, 'Mind previews', describeMindPreviews(state.mindPreviews, state.mindPreviewPolicy));
 }
 
 function renderSection(parent: HTMLElement, title: string, entries: Array<[string, string]>): void {
@@ -302,6 +304,19 @@ function describeMindPreviewPolicy(
     ['Writes to Mind', String(policy.writesToMind)],
     ['External side effects', String(policy.externalSideEffects)],
     ['Blocked prefixes', policy.blockedPrefixes.slice(0, 4).join(', ') || 'none'],
+  ];
+}
+
+function describeMindPreviews(
+  previews: BrainConsoleViewState['mindPreviews'],
+  policy: BrainConsoleViewState['mindPreviewPolicy'],
+): Array<[string, string]> {
+  const items = previews ?? [];
+  return [
+    ['Preview count', String(items.length)],
+    ['Latest preview', items[0]?.targetPath ?? 'none'],
+    ['Latest expired', String(items[0]?.expired ?? false)],
+    ['Apply route enabled', String(policy?.applyRouteEnabled ?? false)],
   ];
 }
 

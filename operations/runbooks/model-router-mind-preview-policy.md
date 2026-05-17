@@ -8,6 +8,8 @@ Use the Brain Core metadata endpoint:
 
 ```bash
 curl -fsS http://127.0.0.1:4877/execution/mind-preview-policy
+curl -fsS http://127.0.0.1:4877/execution/mind-previews
+curl -fsS http://127.0.0.1:4877/execution/mind-previews/latest
 ```
 
 Expected fields:
@@ -25,6 +27,8 @@ Expected fields:
 - `applyRouteEnabled: false` means there is no enabled Brain Core apply route.
 - `writesToMind: false` means no Mind mutation is authorized by the metadata surface.
 - `blockedPrefixes` identifies paths that remain off-limits, including `.obsidian/` and legacy numbered folders.
+- Preview artifacts live under `runtime/local/model-router/previews/` and are Brain-owned only.
+- `previewId` values are deterministic from safe preview fields and can be used for approval references later.
 
 ## Related docs
 

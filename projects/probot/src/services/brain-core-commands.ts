@@ -4,6 +4,7 @@ import {
   readBrainCoreExecutionPlans,
   readBrainCoreExecutionReadiness,
   readBrainCoreMindPreviewPolicy,
+  readBrainCoreMindPreviews,
   readBrainCoreRuntimeReports,
   readBrainCoreSchedulerJobs,
   readBrainCoreSessions,
@@ -77,6 +78,7 @@ export async function handleBrainCoreCommand(text: string, brainCoreUrl: string)
   const executionPlans = await readBrainCoreExecutionPlans(brainCoreUrl);
   const executionReadiness = await readBrainCoreExecutionReadiness(brainCoreUrl);
   const mindPreviewPolicy = await readBrainCoreMindPreviewPolicy(brainCoreUrl);
+  const mindPreviews = await readBrainCoreMindPreviews(brainCoreUrl);
 
   if (subcommand === "status") {
     return [status.line, capabilities.line].join("\n");
@@ -98,9 +100,11 @@ export async function handleBrainCoreCommand(text: string, brainCoreUrl: string)
       approvals.line,
       executionReadiness.line,
       mindPreviewPolicy.line,
+      mindPreviews.line,
       `Execution gate: ${executionReadiness.executionEnabled ? "enabled" : "disabled"} · first candidate: ${executionPlans.firstCandidate}`,
       `Model-router execution flag: ${executionReadiness.modelRouterDryRunExecutionFlagEnabled ? "enabled (still gated)" : "disabled"} · ${executionReadiness.modelRouterDryRunExecutionFlagName}`,
       `Mind preview policy: ${mindPreviewPolicy.status} · apply route: ${mindPreviewPolicy.applyRouteEnabled ? "enabled" : "disabled"}`,
+      `Mind previews: ${mindPreviews.count} · latest: ${mindPreviews.latest?.targetPath ?? "none"}`,
       `Executable actions: ${capabilities.executableActionsEnabled ? "enabled" : "disabled"}`,
     ].join("\n");
   }
@@ -110,8 +114,10 @@ export async function handleBrainCoreCommand(text: string, brainCoreUrl: string)
     reports.line,
     executionReadiness.line,
     mindPreviewPolicy.line,
+    mindPreviews.line,
     `Model-router execution flag: ${executionReadiness.modelRouterDryRunExecutionFlagEnabled ? "enabled (still gated)" : "disabled"} · ${executionReadiness.modelRouterDryRunExecutionFlagName}`,
     `Mind preview policy: ${mindPreviewPolicy.status} · apply route: ${mindPreviewPolicy.applyRouteEnabled ? "enabled" : "disabled"}`,
+    `Mind previews: ${mindPreviews.count} · latest: ${mindPreviews.latest?.targetPath ?? "none"}`,
     `Executable actions: ${capabilities.executableActionsEnabled ? "enabled" : "disabled"}`,
   ].join("\n");
 }
