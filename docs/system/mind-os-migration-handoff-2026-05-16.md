@@ -956,3 +956,36 @@ Validation:
 
 - `npm run ci` in `projects/brain-core` should pass with the runtime report adapter test included.
 - Firecrawl log output remains unrelated and unstaged.
+
+## Brain Core scheduler runtime-report bridge — 2026-05-17
+
+Completed the next safe Brain Core scheduler reporting slice.
+
+Updated files:
+
+```text
+projects/brain-core/src/adapters/scheduler.ts
+projects/brain-core/src/tests/routes.test.ts
+projects/brain-core/src/types/api.ts
+operations/runbooks/brain-core.md
+mind/live/machine.md
+```
+
+What changed:
+
+- Brain Core `/scheduler/status` and `/scheduler/latest-run` now read the model-router dry-run runtime report when present.
+- Default report path: `runtime/local/model-router/latest.json`.
+- Override path: `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH`.
+- `/scheduler/jobs` now includes `model-router-dry-run` in addition to Mind loop job placeholders.
+
+Safety boundary:
+
+- Read-only report loading only.
+- No scheduler jobs are triggered from Brain Core.
+- No logs are read.
+- No Mind files are written, moved, deleted, archived, compacted, split, or rewritten.
+
+Validation:
+
+- `npm run ci` in `projects/brain-core` passed.
+- CI included typecheck and 24 Node route/adapter/widget/health/audit/action-target tests.
