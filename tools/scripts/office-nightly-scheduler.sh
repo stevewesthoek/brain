@@ -326,6 +326,21 @@ run_gws_token_refresh() {
   run_job "gws-token-refresh" "$timeout_seconds" "$command" "$token_log"
 }
 
+run_model_router_dry_run_report() {
+  local timeout_seconds="${MODEL_ROUTER_DRY_RUN_TIMEOUT_SECONDS:-300}"
+  local report_script="${MODEL_ROUTER_DRY_RUN_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/model-router-dry-run-report.sh}"
+  local report_log="$LOG_DIR/model-router-dry-run.log"
+  local command
+
+  if [[ ! -f "$report_script" ]]; then
+    log "skipping job=model-router-dry-run reason=missing_script path=$report_script"
+    return 0
+  fi
+
+  command="$(printf 'bash %q >> %q 2>&1' "$report_script" "$report_log")"
+  run_job "model-router-dry-run" "$timeout_seconds" "$command" "$report_log"
+}
+
 render_runtime_report() {
   if [[ -x "$REPORT_SCRIPT" ]]; then
     OFFICE_SCHEDULER_STATE_DIR="$STATE_DIR" \
@@ -444,6 +459,9 @@ main() {
 
   # GWS token refresh — daily, keeps auth fresh for skill-prune emails, never stops chain
   run_gws_token_refresh || log "warning gws-token-refresh failed but chain continues"
+
+  # Model Router dry-run report — validates planner package and writes runtime report only; never stops chain
+  run_model_router_dry_run_report || log "warning model-router-dry-run failed but chain continues"
 
   # ING Bank Statement download — runs on the 1st of each month, never stops chain
   run_ing_bank_statement_download || log "warning ing-bank-statement-download failed but chain continues"

@@ -105,3 +105,29 @@ Initial scheduler integration should call dry-run planners only and report resul
 - Do not auto-compact notes.
 - Do not run model-router from Obsidian directly.
 - Do not treat planned writes as executed writes.
+
+
+## Nightly scheduler integration
+
+A report-only scheduler helper exists at:
+
+```text
+tools/scripts/model-router-dry-run-report.sh
+```
+
+The Office nightly scheduler calls it as `model-router-dry-run` after `gws-token-refresh`.
+
+Runtime outputs:
+
+```text
+runtime/local/model-router/latest.md
+runtime/local/model-router/latest.json
+```
+
+Scheduler log:
+
+```text
+~/Library/Logs/office-scheduler/model-router-dry-run.log
+```
+
+This job runs `npm run ci` in `projects/model-router` and writes a runtime status report. It does not inspect or mutate Mind files.

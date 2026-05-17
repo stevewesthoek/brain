@@ -846,3 +846,79 @@ Validation:
 
 - `npm run ci` in `projects/model-router` passed.
 - CI included typecheck and 4 Node dry-run planner tests.
+
+## Office scheduler model-router dry-run integration — 2026-05-17
+
+Completed a safe scheduler integration slice.
+
+New script:
+
+```text
+tools/scripts/model-router-dry-run-report.sh
+```
+
+Updated files:
+
+```text
+tools/scripts/office-nightly-scheduler.sh
+operations/infrastructure/scheduler-inventory.md
+```
+
+What changed:
+
+- Added a non-blocking `model-router-dry-run` nightly chain member.
+- The job runs `projects/model-router` CI and writes runtime report files under `runtime/local/model-router/`.
+- The job is report-only and never stops the scheduler chain.
+- The job does not write, move, delete, archive, compact, split, or rewrite Mind files.
+- The scheduler inventory now documents the job and its report-only safety boundary.
+
+Validation planned/performed:
+
+- `npm run ci` in `projects/model-router` remains the validation command for the job.
+- Shell script safety review preserved the no-Mind-write boundary.
+
+Generated/runtime outputs remain unstaged and should not be committed.
+
+## Office nightly scheduler model-router report integration — 2026-05-17
+
+Completed a safe report-only scheduler integration slice.
+
+New file:
+
+```text
+tools/scripts/model-router-dry-run-report.sh
+```
+
+Updated files:
+
+```text
+tools/scripts/office-nightly-scheduler.sh
+operations/infrastructure/scheduler-inventory.md
+operations/runbooks/model-router.md
+```
+
+What changed:
+
+- Added `model-router-dry-run` to the Office nightly scheduler chain.
+- The job runs after `gws-token-refresh`.
+- The job is non-blocking and never stops the nightly chain.
+- The helper runs `npm run ci` in `projects/model-router` and writes runtime status files only.
+
+Runtime outputs:
+
+```text
+runtime/local/model-router/latest.md
+runtime/local/model-router/latest.json
+```
+
+Safety boundary:
+
+- Report-only validation.
+- No Mind files are inspected or mutated by this helper.
+- No files are written, moved, deleted, archived, compacted, split, or rewritten in Mind.
+- No action execution was enabled.
+
+Validation:
+
+- `npm run ci` in `projects/model-router` passed before scheduler integration.
+- The scheduler shell script was patched but not executed by BuildFlow; live scheduler execution still needs local runtime verification.
