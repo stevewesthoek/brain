@@ -132,6 +132,8 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
     };
     executionGate: {
       executionEnabled: boolean;
+      modelRouterDryRunExecutionFlagEnabled: boolean;
+      modelRouterDryRunExecutionFlagName: string;
       candidateActionKinds: string[];
       readinessEndpoint: string;
       plansEndpoint: string;
@@ -163,6 +165,8 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.probot.commandAliasesEnabled, true);
   assert.equal(body.probot.actionsEnabled, false);
   assert.equal(body.executionGate.executionEnabled, false);
+  assert.equal(body.executionGate.modelRouterDryRunExecutionFlagEnabled, false);
+  assert.equal(body.executionGate.modelRouterDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
   assert.equal(body.executionGate.firstCandidate, 'scheduler-run-model-router-dry-run');
   assert.equal(body.executionGate.readinessEndpoint, '/execution/readiness');
   assert.equal(body.executionGate.plansEndpoint, '/execution/plans');
@@ -611,13 +615,15 @@ test('POST /scheduler/jobs/model-router-dry-run/request-run uses execution plan 
 
 test('GET /execution/plans returns the future first execution candidate', async () => {
   const response = await exercise({ method: 'GET', url: '/execution/plans' });
-  const body = JSON.parse(response.body) as { plans: Array<{ kind: string; candidate: boolean; executionEnabled: boolean; wouldExecute: boolean; executed: boolean; writesToMind: boolean }> };
+  const body = JSON.parse(response.body) as { plans: Array<{ kind: string; candidate: boolean; executionEnabled: boolean; modelRouterDryRunExecutionFlagEnabled: boolean; modelRouterDryRunExecutionFlagName: string; wouldExecute: boolean; executed: boolean; writesToMind: boolean }> };
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.plans.length, 1);
   assert.equal(body.plans[0]?.kind, 'scheduler-run-model-router-dry-run');
   assert.equal(body.plans[0]?.candidate, true);
   assert.equal(body.plans[0]?.executionEnabled, false);
+  assert.equal(body.plans[0]?.modelRouterDryRunExecutionFlagEnabled, false);
+  assert.equal(body.plans[0]?.modelRouterDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
   assert.equal(body.plans[0]?.wouldExecute, false);
   assert.equal(body.plans[0]?.executed, false);
   assert.equal(body.plans[0]?.writesToMind, false);
@@ -642,10 +648,12 @@ test('GET /execution/plans/:kind returns not found for unknown kind', async () =
   assert.equal(body.error.code, 'not_found');
 });
 
-test('GET /execution/readiness returns execution disabled and blockers', async () => {
+test('GET /execution/readiness returns execution disabled and blockers with the feature flag off by default', async () => {
   const response = await exercise({ method: 'GET', url: '/execution/readiness' });
   const body = JSON.parse(response.body) as {
     executionEnabled: boolean;
+    modelRouterDryRunExecutionFlagEnabled: boolean;
+    modelRouterDryRunExecutionFlagName: string;
     candidateCount: number;
     readyCandidateCount: number;
     blockers: string[];
@@ -655,11 +663,59 @@ test('GET /execution/readiness returns execution disabled and blockers', async (
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.executionEnabled, false);
+  assert.equal(body.modelRouterDryRunExecutionFlagEnabled, false);
+  assert.equal(body.modelRouterDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
   assert.equal(body.candidateCount, 1);
   assert.equal(body.readyCandidateCount, 0);
   assert.equal(body.writesToMind, false);
   assert.equal(body.executableActions, false);
-  assert.equal(body.blockers.includes('execution disabled globally'), true);
+  assert.equal(body.blockers.includes('execution feature flag disabled'), true);
+});
+
+test('GET /execution/readiness reports the feature flag when enabled but keeps execution disabled', async () => {
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+  process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = 'true';
+
+  try {
+    const readinessResponse = await exercise({ method: 'GET', url: '/execution/readiness' });
+    const readinessBody = JSON.parse(readinessResponse.body) as {
+      executionEnabled: boolean;
+      modelRouterDryRunExecutionFlagEnabled: boolean;
+      readyCandidateCount: number;
+      blockers: string[];
+      executableActions: boolean;
+    };
+    const capabilitiesResponse = await exercise({ method: 'GET', url: '/capabilities' });
+    const capabilitiesBody = JSON.parse(capabilitiesResponse.body) as {
+      executableActionsEnabled: boolean;
+      executionGate: { executionEnabled: boolean; modelRouterDryRunExecutionFlagEnabled: boolean };
+    };
+    const planResponse = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-model-router-dry-run' });
+    const planBody = JSON.parse(planResponse.body) as {
+      plan: { executionEnabled: boolean; modelRouterDryRunExecutionFlagEnabled: boolean; wouldExecute: boolean; executed: boolean };
+    };
+
+    assert.equal(readinessResponse.statusCode, 200);
+    assert.equal(readinessBody.modelRouterDryRunExecutionFlagEnabled, true);
+    assert.equal(readinessBody.executionEnabled, false);
+    assert.equal(readinessBody.readyCandidateCount, 0);
+    assert.equal(readinessBody.executableActions, false);
+    assert.equal(readinessBody.blockers.includes('execution feature flag disabled'), false);
+    assert.equal(readinessBody.blockers.includes('durable approval store not proven for this request'), true);
+    assert.equal(capabilitiesBody.executableActionsEnabled, false);
+    assert.equal(capabilitiesBody.executionGate.executionEnabled, false);
+    assert.equal(capabilitiesBody.executionGate.modelRouterDryRunExecutionFlagEnabled, true);
+    assert.equal(planBody.plan.modelRouterDryRunExecutionFlagEnabled, true);
+    assert.equal(planBody.plan.executionEnabled, false);
+    assert.equal(planBody.plan.wouldExecute, false);
+    assert.equal(planBody.plan.executed, false);
+  } finally {
+    if (previousFlag === undefined) {
+      delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+    } else {
+      process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = previousFlag;
+    }
+  }
 });
 
 test('GET /approvals/audit returns approval audit events', async () => {

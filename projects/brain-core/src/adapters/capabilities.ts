@@ -1,3 +1,4 @@
+import { getExecutionCandidateKinds, getExecutionReadiness } from './execution-plans.js';
 import type { BrainCoreCapabilitySummary } from '../types/api.js';
 
 export const READ_ENDPOINTS = [
@@ -30,6 +31,8 @@ export const APPROVAL_REQUEST_ENDPOINTS = [
 ] as const;
 
 export function getCapabilities(): BrainCoreCapabilitySummary {
+  const executionReadiness = getExecutionReadiness();
+
   return {
     readEndpoints: [...READ_ENDPOINTS],
     approvalRequestEndpoints: [...APPROVAL_REQUEST_ENDPOINTS],
@@ -66,7 +69,9 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
     },
     executionGate: {
       executionEnabled: false,
-      candidateActionKinds: ['scheduler-run-model-router-dry-run'],
+      modelRouterDryRunExecutionFlagEnabled: executionReadiness.modelRouterDryRunExecutionFlagEnabled,
+      modelRouterDryRunExecutionFlagName: executionReadiness.modelRouterDryRunExecutionFlagName,
+      candidateActionKinds: getExecutionCandidateKinds(),
       readinessEndpoint: '/execution/readiness',
       plansEndpoint: '/execution/plans',
       firstCandidate: 'scheduler-run-model-router-dry-run',

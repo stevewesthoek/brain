@@ -115,6 +115,8 @@ export interface BrainCoreCapabilitySummary {
   };
   executionGate: {
     executionEnabled: false;
+    modelRouterDryRunExecutionFlagEnabled: boolean;
+    modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
     candidateActionKinds: string[];
     readinessEndpoint: '/execution/readiness';
     plansEndpoint: '/execution/plans';
@@ -186,6 +188,8 @@ export interface BrainCoreExecutionPlan {
   kind: 'scheduler-run-model-router-dry-run';
   candidate: true;
   executionEnabled: false;
+  modelRouterDryRunExecutionFlagEnabled: boolean;
+  modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
   wouldExecute: false;
   executed: false;
   riskLevel: 'low';
@@ -202,6 +206,8 @@ export interface BrainCoreExecutionPlan {
 
 export interface BrainCoreExecutionReadiness {
   executionEnabled: false;
+  modelRouterDryRunExecutionFlagEnabled: boolean;
+  modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];

@@ -4,8 +4,17 @@ import type {
 } from '../types/api.js';
 
 const CANDIDATE_KINDS = ['scheduler-run-model-router-dry-run'] as const;
+const MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
 
 export type BrainCoreExecutionCandidateKind = typeof CANDIDATE_KINDS[number];
+
+export function isModelRouterDryRunExecutionFlagEnabled(): boolean {
+  return process.env[MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
+}
+
+export function getModelRouterDryRunExecutionFlagName(): typeof MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG {
+  return MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG;
+}
 
 export function listExecutionPlans(): BrainCoreExecutionPlan[] {
   return [createModelRouterDryRunPlan()];
@@ -16,15 +25,26 @@ export function getExecutionPlan(kind: string): BrainCoreExecutionPlan | undefin
 }
 
 export function getExecutionReadiness(): BrainCoreExecutionReadiness {
+  const modelRouterDryRunExecutionFlagEnabled = isModelRouterDryRunExecutionFlagEnabled();
+  const blockers = [
+    'durable approval store not proven for this request',
+    'durable audit not proven for this request',
+    'approved approval record not proven for this request',
+    'manual operator approval UX not verified',
+    'rollback drill not performed',
+  ];
+
+  if (!modelRouterDryRunExecutionFlagEnabled) {
+    blockers.unshift('execution feature flag disabled');
+  }
+
   return {
     executionEnabled: false,
+    modelRouterDryRunExecutionFlagEnabled,
+    modelRouterDryRunExecutionFlagName: getModelRouterDryRunExecutionFlagName(),
     candidateCount: listExecutionPlans().length,
     readyCandidateCount: 0,
-    blockers: [
-      'execution disabled globally',
-      'manual operator approval UX not verified',
-      'rollback drill not performed',
-    ],
+    blockers,
     writesToMind: false,
     executableActions: false,
   };
@@ -44,6 +64,8 @@ function createModelRouterDryRunPlan(): BrainCoreExecutionPlan {
     kind: 'scheduler-run-model-router-dry-run',
     candidate: true,
     executionEnabled: false,
+    modelRouterDryRunExecutionFlagEnabled: isModelRouterDryRunExecutionFlagEnabled(),
+    modelRouterDryRunExecutionFlagName: getModelRouterDryRunExecutionFlagName(),
     wouldExecute: false,
     executed: false,
     riskLevel: 'low',
