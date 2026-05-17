@@ -144,11 +144,11 @@ function toLatestRunStatus(status: string | undefined): 'ok' | 'failed' | 'unkno
 
 function toJobStatus(status: string | undefined): BrainCoreSchedulerJobSummary['status'] {
   if (status === 'success') {
-    return 'placeholder';
+    return 'ok';
   }
 
   if (status === 'failed') {
-    return 'unknown';
+    return 'failed';
   }
 
   return 'placeholder';

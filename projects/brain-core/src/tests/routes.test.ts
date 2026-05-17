@@ -171,13 +171,40 @@ test('GET /scheduler/latest-run reads model-router runtime report when configure
 
 test('GET /scheduler/jobs returns placeholder model-router jobs', async () => {
   const response = await exercise({ method: 'GET', url: '/scheduler/jobs' });
-  const body = JSON.parse(response.body) as { jobs: Array<{ id: string; mutationRequired: boolean }> };
+  const body = JSON.parse(response.body) as { jobs: Array<{ id: string; mutationRequired: boolean; status: string }> };
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.jobs.length, 5);
   assert.equal(body.jobs[0]?.id, 'mind-compile-loop');
   assert.equal(typeof body.jobs[0]?.mutationRequired, 'boolean');
   assert.equal(body.jobs.some((job) => job.id === 'model-router-dry-run'), true);
+});
+
+test('GET /scheduler/jobs reports model-router dry-run ok status when runtime report exists', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-scheduler-jobs');
+  const reportPath = path.join(testDir, 'latest.json');
+  const previousReportPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify({ status: 'success' }));
+  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = reportPath;
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/scheduler/jobs' });
+    const body = JSON.parse(response.body) as { jobs: Array<{ id: string; status: string }> };
+    const modelRouterJob = body.jobs.find((job) => job.id === 'model-router-dry-run');
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(modelRouterJob?.status, 'ok');
+  } finally {
+    if (previousReportPath === undefined) {
+      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousReportPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
 });
 
 test('GET /local-apps returns placeholder local app list', async () => {
