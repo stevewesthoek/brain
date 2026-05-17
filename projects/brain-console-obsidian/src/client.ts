@@ -1,93 +1,186 @@
-export interface BrainConsoleClientSummary {
-  status: string;
-  sessions: string;
-  repos: string;
-  orchestrators: string;
-  capabilities: string;
-  scheduler: string;
-  localApps: string;
-  video: string;
-  approvals: string;
-  runtimeReports: string;
+export interface BrainCoreStatus {
+  service: 'brain-core';
+  mode: 'read-only';
+  ok: boolean;
+  startedAt?: string;
+  uptimeSeconds?: number;
+  version?: string;
+  host?: string;
 }
 
-interface BrainCoreJsonResponse {
-  ok?: boolean;
-  executableActionsEnabled?: boolean;
-  reports?: Array<{ id?: string; status?: string }>;
-  sessions?: unknown[];
-  approvals?: unknown[];
-  jobs?: unknown[];
+export interface BrainCoreCapabilitySummary {
+  readEndpoints: string[];
+  approvalRequestEndpoints: string[];
+  executableActionsEnabled: boolean;
+  approvalAuditPersistenceSupported: boolean;
+  runtimeReportsSupported: boolean;
+  runtimeReportEndpoint: string;
+  modelRouterReportSupported: boolean;
+  obsidianPluginInstalled: boolean;
+  liveSchedulerVerified: boolean;
+  mindWorkspace?: {
+    legacyTaskMigrationStatus?: string;
+    legacyTaskMigrationCommit?: string;
+    cleanupInventory?: string;
+    workspaceIsolationRunbook?: string;
+    remainingKnownDirtyCategories?: string[];
+  };
+  brainConsole?: {
+    scaffoldStatus?: string;
+    installedInMindVault?: boolean;
+    projectPath?: string;
+    packageStatus?: string;
+    manualInstallRequired?: boolean;
+  };
+  probot?: {
+    thinClientStatus?: string;
+    commandAliasesEnabled?: boolean;
+    actionsEnabled?: boolean;
+  };
+  notes: string[];
 }
 
-export async function readBrainConsoleSummary(baseUrl: string): Promise<BrainConsoleClientSummary> {
+export type BrainCoreRuntimeReportId = 'model-router' | 'approval-audit' | 'video';
+
+export interface BrainCoreRuntimeReportSummary {
+  id: BrainCoreRuntimeReportId;
+  status: 'available' | 'missing' | 'invalid';
+  path: string;
+  latestRunStatus: 'ok' | 'failed' | 'unknown';
+  message: string;
+  writesToMind: false;
+  executableActions: false;
+}
+
+export interface BrainCoreSchedulerStatus {
+  status: 'not-configured' | 'placeholder' | 'runtime-report';
+  enabled: boolean;
+  latestRunAt?: string;
+  latestRunStatus?: 'ok' | 'failed' | 'unknown';
+  source: 'placeholder' | 'runtime-report';
+  message: string;
+}
+
+export interface BrainCoreSchedulerJobSummary {
+  id: string;
+  name: string;
+  status: 'placeholder' | 'disabled' | 'unknown' | 'ok' | 'failed';
+  mutationRequired: boolean;
+}
+
+export interface BrainCoreSessionSummary {
+  id: string;
+  tool: 'claude' | 'codex' | 'gemini' | 'unknown';
+  repo?: string;
+  title: string;
+  updatedAt?: string;
+  age?: string;
+  intent?: string;
+  score?: number;
+  source: 'placeholder' | 'adapter';
+}
+
+export interface BrainCoreRepoSummary {
+  alias: string;
+  path: string;
+  exists: boolean;
+  handoffPath?: string;
+  handoffExists: boolean;
+  source: 'env' | 'placeholder';
+}
+
+export interface BrainCoreApprovalSummary {
+  id: string;
+  kind: string;
+  status: 'placeholder' | 'pending' | 'approved' | 'rejected' | 'expired';
+  expiresAt?: string;
+  source: 'placeholder' | 'memory';
+}
+
+export interface BrainConsoleSnapshot {
+  status?: BrainCoreStatus;
+  capabilities?: BrainCoreCapabilitySummary;
+  runtimeReports?: BrainCoreRuntimeReportSummary[];
+  schedulerStatus?: BrainCoreSchedulerStatus;
+  schedulerJobs?: BrainCoreSchedulerJobSummary[];
+  sessions?: BrainCoreSessionSummary[];
+  repos?: BrainCoreRepoSummary[];
+  approvals?: BrainCoreApprovalSummary[];
+}
+
+interface HttpResult<T> {
+  value?: T;
+  error?: string;
+}
+
+const REQUEST_TIMEOUT_MS = 1_500;
+
+export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainConsoleSnapshot> {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-  const [status, sessions, repos, orchestrators, capabilities, scheduler, localApps, video, approvals, runtimeReports] = await Promise.all([
-    readLine(normalizedBaseUrl, '/status', 'Brain Core unavailable'),
-    readLine(normalizedBaseUrl, '/sessions', 'Brain Core sessions unavailable'),
-    readLine(normalizedBaseUrl, '/repos', 'Brain Core repos unavailable'),
-    readLine(normalizedBaseUrl, '/orchestrators', 'Brain Core orchestrators unavailable'),
-    readLine(normalizedBaseUrl, '/capabilities', 'Brain Core capabilities unavailable'),
-    readLine(normalizedBaseUrl, '/scheduler/status', 'Brain Core scheduler unavailable'),
-    readLine(normalizedBaseUrl, '/local-apps', 'Brain Core local apps unavailable'),
-    readLine(normalizedBaseUrl, '/video/status', 'Brain Core video unavailable'),
-    readLine(normalizedBaseUrl, '/approvals', 'Brain Core approvals unavailable'),
-    readLine(normalizedBaseUrl, '/runtime/reports', 'Brain Core runtime reports unavailable'),
+  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals] = await Promise.all([
+    fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
+    fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
+    fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizedBaseUrl, '/runtime/reports'),
+    fetchJson<BrainCoreSchedulerStatus>(normalizedBaseUrl, '/scheduler/status'),
+    fetchJson<{ jobs?: BrainCoreSchedulerJobSummary[] }>(normalizedBaseUrl, '/scheduler/jobs'),
+    fetchJson<{ sessions?: BrainCoreSessionSummary[] }>(normalizedBaseUrl, '/sessions'),
+    fetchJson<{ repos?: BrainCoreRepoSummary[] }>(normalizedBaseUrl, '/repos'),
+    fetchJson<{ approvals?: BrainCoreApprovalSummary[] }>(normalizedBaseUrl, '/approvals'),
   ]);
 
   return {
-    status,
-    sessions,
-    repos,
-    orchestrators,
-    capabilities,
-    scheduler,
-    localApps,
-    video,
-    approvals,
-    runtimeReports,
+    status: status.value,
+    capabilities: capabilities.value,
+    runtimeReports: runtimeReports.value?.reports,
+    schedulerStatus: schedulerStatus.value,
+    schedulerJobs: schedulerJobs.value?.jobs,
+    sessions: sessions.value?.sessions,
+    repos: repos.value?.repos,
+    approvals: approvals.value?.approvals,
   };
 }
 
-async function readLine(baseUrl: string, pathname: string, fallback: string): Promise<string> {
-  const response = await readJson(baseUrl, pathname);
-  if (!response) {
-    return fallback;
-  }
-
-  if (pathname === '/status') {
-    return `status: ${String(response.ok ?? false)}`;
-  }
-
-  if (pathname === '/capabilities') {
-    return `capabilities: executableActionsEnabled=${String(response.executableActionsEnabled ?? false)}`;
-  }
-
-  if (pathname === '/runtime/reports') {
-    const reports = Array.isArray(response.reports) ? response.reports : [];
-    return `runtime-reports: ${
-      reports
-        .map((report) => `${String(report.id ?? 'unknown')}=${String(report.status ?? 'unknown')}`)
-        .join(', ') || 'none'
-    }`;
-  }
-
-  if (Array.isArray(response.sessions)) {
-    return `${pathname.slice(1)}: ${response.sessions.length}`;
-  }
-  if (Array.isArray(response.approvals)) {
-    return `${pathname.slice(1)}: ${response.approvals.length}`;
-  }
-  if (Array.isArray(response.jobs)) {
-    return `${pathname.slice(1)}: ${response.jobs.length}`;
-  }
-
-  return `${pathname.slice(1)}: ok`;
+export async function readBrainCoreStatus(baseUrl: string): Promise<HttpResult<BrainCoreStatus>> {
+  return fetchJson<BrainCoreStatus>(normalizeBaseUrl(baseUrl), '/status');
 }
 
-async function readJson(baseUrl: string, pathname: string): Promise<BrainCoreJsonResponse | undefined> {
+export async function readBrainCoreCapabilities(baseUrl: string): Promise<HttpResult<BrainCoreCapabilitySummary>> {
+  return fetchJson<BrainCoreCapabilitySummary>(normalizeBaseUrl(baseUrl), '/capabilities');
+}
+
+export async function readBrainCoreRuntimeReports(
+  baseUrl: string,
+): Promise<HttpResult<{ reports?: BrainCoreRuntimeReportSummary[] }>> {
+  return fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizeBaseUrl(baseUrl), '/runtime/reports');
+}
+
+export async function readBrainCoreSchedulerStatus(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreSchedulerStatus>> {
+  return fetchJson<BrainCoreSchedulerStatus>(normalizeBaseUrl(baseUrl), '/scheduler/status');
+}
+
+export async function readBrainCoreSchedulerJobs(
+  baseUrl: string,
+): Promise<HttpResult<{ jobs?: BrainCoreSchedulerJobSummary[] }>> {
+  return fetchJson<{ jobs?: BrainCoreSchedulerJobSummary[] }>(normalizeBaseUrl(baseUrl), '/scheduler/jobs');
+}
+
+export async function readBrainCoreSessions(baseUrl: string): Promise<HttpResult<{ sessions?: BrainCoreSessionSummary[] }>> {
+  return fetchJson<{ sessions?: BrainCoreSessionSummary[] }>(normalizeBaseUrl(baseUrl), '/sessions');
+}
+
+export async function readBrainCoreRepos(baseUrl: string): Promise<HttpResult<{ repos?: BrainCoreRepoSummary[] }>> {
+  return fetchJson<{ repos?: BrainCoreRepoSummary[] }>(normalizeBaseUrl(baseUrl), '/repos');
+}
+
+export async function readBrainCoreApprovals(baseUrl: string): Promise<HttpResult<{ approvals?: BrainCoreApprovalSummary[] }>> {
+  return fetchJson<{ approvals?: BrainCoreApprovalSummary[] }>(normalizeBaseUrl(baseUrl), '/approvals');
+}
+
+async function fetchJson<T>(baseUrl: string, pathname: string): Promise<HttpResult<T>> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 1_000);
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
     const response = await fetch(`${baseUrl}${pathname}`, {
@@ -99,12 +192,12 @@ async function readJson(baseUrl: string, pathname: string): Promise<BrainCoreJso
     });
 
     if (!response.ok) {
-      return undefined;
+      return { error: `HTTP ${response.status}` };
     }
 
-    return (await response.json()) as BrainCoreJsonResponse;
-  } catch {
-    return undefined;
+    return { value: (await response.json()) as T };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'request failed' };
   } finally {
     clearTimeout(timeout);
   }

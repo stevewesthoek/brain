@@ -122,6 +122,8 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
       scaffoldStatus: string;
       installedInMindVault: boolean;
       projectPath: string;
+      packageStatus?: string;
+      manualInstallRequired?: boolean;
     };
     probot: {
       thinClientStatus: string;
@@ -148,6 +150,8 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.brainConsole.scaffoldStatus, 'validated');
   assert.equal(body.brainConsole.installedInMindVault, false);
   assert.equal(body.brainConsole.projectPath, 'projects/brain-console-obsidian');
+  assert.equal(body.brainConsole.packageStatus, 'buildable');
+  assert.equal(body.brainConsole.manualInstallRequired, true);
   assert.equal(body.probot.thinClientStatus, 'wired');
   assert.equal(body.probot.commandAliasesEnabled, true);
   assert.equal(body.probot.actionsEnabled, false);

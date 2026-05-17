@@ -104,6 +104,8 @@ export interface BrainCoreCapabilitySummary {
     scaffoldStatus: 'validated' | 'pending' | 'blocked';
     installedInMindVault: false;
     projectPath: string;
+    packageStatus?: 'buildable' | 'pending' | 'blocked';
+    manualInstallRequired?: true;
   };
   probot: {
     thinClientStatus: 'wired' | 'pending' | 'blocked';

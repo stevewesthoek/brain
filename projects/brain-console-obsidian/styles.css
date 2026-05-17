@@ -2,3 +2,87 @@
   font-family: ui-sans-serif, system-ui, sans-serif;
   padding: 12px;
 }
+
+.brain-console__shell {
+  display: grid;
+  gap: 14px;
+}
+
+.brain-console__header {
+  display: grid;
+  gap: 8px;
+}
+
+.brain-console__header h2,
+.brain-console__section h3 {
+  margin: 0;
+}
+
+.brain-console__status-line,
+.brain-console__banner,
+.brain-console__warning,
+.brain-console__offline {
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.brain-console__banner {
+  background: rgba(84, 91, 255, 0.12);
+  border: 1px solid rgba(84, 91, 255, 0.2);
+}
+
+.brain-console__warning {
+  background: rgba(255, 177, 0, 0.12);
+  border: 1px solid rgba(255, 177, 0, 0.2);
+}
+
+.brain-console__offline {
+  background: rgba(255, 99, 99, 0.12);
+  border: 1px solid rgba(255, 99, 99, 0.2);
+}
+
+.brain-console__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.brain-console__refresh {
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.brain-console__grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.brain-console__section {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--background-primary);
+}
+
+.brain-console__section dl {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.brain-console__row {
+  display: grid;
+  gap: 4px;
+}
+
+.brain-console__row dt {
+  font-size: 0.84rem;
+  opacity: 0.7;
+}
+
+.brain-console__row dd {
+  margin: 0;
+  font-weight: 600;
+  word-break: break-word;
+}

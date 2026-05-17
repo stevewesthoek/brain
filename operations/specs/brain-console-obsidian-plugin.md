@@ -8,6 +8,8 @@ Render Brain Core status inside Obsidian without copying runtime state into Mark
 
 Code was not written into the live `mind/.obsidian` folder in this slice. The standalone plugin project under `projects/brain-console-obsidian/` is now validated locally, but it remains outside the live Mind vault until explicit installation approval.
 
+The plugin is buildable, packageable, and still intentionally separated from the live vault. Remaining Mind `.obsidian` plugin state stays local/uncommitted.
+
 ## Source of truth
 
 Brain Core endpoint base URL:
@@ -126,6 +128,7 @@ Minimum implementation:
 - manual refresh button
 - offline state when `/status` fails
 - no persisted runtime cache in notes
+- package/build output under `projects/brain-console-obsidian/release/` for manual install only
 
 ## Validation checklist
 
@@ -137,3 +140,4 @@ Before installing into `mind/.obsidian/plugins/`:
 - No secrets are stored in plugin settings.
 - No runtime logs are written to Mind.
 - No approval POST endpoint is called without a manual user click.
+- `projects/brain-console-obsidian/release/` contains only reviewed install files.

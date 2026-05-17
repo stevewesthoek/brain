@@ -1089,3 +1089,5 @@ Validation:
 - The empty research placeholder under `06-resources/research/notes/bible/denominations/` was deleted during the current vault cleanup pass.
 - The remaining Mind vault churn is limited to `.obsidian` plugin/config state.
 - Brain Console plugin scaffold remains in Brain and was not installed into Mind.
+- The Brain Console plugin is now buildable/packageable in Brain, with manual install still required for any Mind vault use.
+- Brain Core capabilities now advertise the Brain Console package as buildable and manually install-required.

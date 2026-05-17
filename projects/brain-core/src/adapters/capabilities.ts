@@ -56,6 +56,8 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
       scaffoldStatus: 'validated',
       installedInMindVault: false,
       projectPath: 'projects/brain-console-obsidian',
+      packageStatus: 'buildable',
+      manualInstallRequired: true,
     },
     probot: {
       thinClientStatus: 'wired',

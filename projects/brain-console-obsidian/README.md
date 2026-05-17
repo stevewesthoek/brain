@@ -6,6 +6,7 @@ Validation status:
 
 - `npm run typecheck` passes
 - `npm run build` passes
+- `npm run package` emits a local `release/` bundle for manual install
 
 ## Intended structure
 
@@ -33,6 +34,15 @@ projects/brain-console-obsidian/
 - Manual refresh only.
 - Offline state is shown when Brain Core is unavailable.
 - Runtime reports and capabilities are read from Brain Core, not copied into Mind notes.
+- Manual installation into `mind/.obsidian/plugins/` is required and should be approved separately.
+
+## Manual install path
+
+1. Run `npm run build`.
+2. Run `npm run package`.
+3. Copy the reviewed plugin files from `release/` into a manually approved Obsidian plugin folder.
+4. Verify Brain Core `/status`, `/capabilities`, and `/runtime/reports` render correctly.
+5. Verify the plugin stays read-only and does not call POST endpoints automatically.
 
 ## Current status
 
