@@ -2,7 +2,7 @@
 
 ## Status
 
-**Design only. Execution remains disabled. No implementation yet.**
+**Feature-flag scaffold implemented. Execution remains disabled. No execution path is implemented yet.**
 
 This document specifies how to enable execution for the first action (`scheduler-run-model-router-dry-run`) when explicit approval is given.
 
@@ -190,14 +190,16 @@ When execution occurs, a new audit event is created:
 
 ## Current Phase
 
-**Phase 0: Design Only**
+**Phase 1: Feature Flag Scaffold Implemented**
 
 - Execution is disabled by default
-- Feature flag is designed but not implemented
+- Feature flag parsing is implemented
+- `/execution/readiness`, `/execution/plans`, and `/capabilities` expose flag state
+- Brain Console and ProBot display flag state read-only
 - Approval store/audit is verified operational
-- No code changes yet
-- No CLI flag yet
-- No operator training yet
+- No execution path is implemented yet
+- No CLI execution trigger exists
+- Operator rollback drill is documented in `operations/runbooks/brain-core-approval-gates.md`
 
 ## Future Phases
 
@@ -258,16 +260,25 @@ When execution occurs, a new audit event is created:
 
 ## Acceptance Criteria
 
-Before implementation can proceed:
+Current scaffold status:
 
-- [ ] Explicit user approval of this design
-- [ ] Rollback drill procedure written and tested
-- [ ] Brain Console updated to display flag state
-- [ ] ProBot status includes execution flag state
-- [ ] All 48 unit tests still pass
-- [ ] New feature flag tests added and passing
-- [ ] Operator runbook updated
-- [ ] Incident response playbook prepared
+- [x] Explicit user approval to implement the scaffold and continue safe roadmap work
+- [x] Rollback drill procedure written as an operator checklist
+- [x] Rollback drill behavior covered by feature-flag tests and read-only endpoint checks
+- [x] Brain Console updated to display flag state
+- [x] ProBot status includes execution flag state
+- [x] Brain Core CI passes with 49 tests
+- [x] New feature flag tests added and passing
+- [x] Operator runbook updated
+- [x] Incident response playbook prepared: `operations/runbooks/brain-core-first-action-incident-response.md`
+
+Before any future execution path can proceed:
+
+- [ ] Explicit user approval to implement an execution path, not just the scaffold
+- [ ] Live rollback drill performed against a local Brain Core process
+- [ ] Incident response playbook reviewed
+- [ ] Exact one-action execution path implemented and tested
+- [ ] Execution still limited to `scheduler-run-model-router-dry-run` only
 
 ## References
 
