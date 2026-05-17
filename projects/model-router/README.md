@@ -32,7 +32,12 @@ Initial scaffold only. No live scheduler job or destructive migration logic is i
 
 ## Current dry-run capability
 
-The first implemented helper is a read-only contract checker for `mind-drift-error-loop`.
+The first implemented helpers are:
+
+- a read-only contract checker for `mind-drift-error-loop`
+- a read-only loop planner for `mind-compile-loop`, `mind-memory-loop`, `mind-hygiene-loop`, and `mind-drift-error-loop`
+
+The model-router package now has its own `package.json`, `tsconfig.json`, and dependency-free tests.
 
 It accepts a snapshot of known `mind` paths and reports:
 
@@ -48,6 +53,32 @@ It accepts a snapshot of known `mind` paths and reports:
 
 This is intentionally not a filesystem walker yet. The caller must provide observed path status from a trusted adapter, Brain Core, scheduler job, or BuildFlow validation step.
 
+The loop planner also accepts an observed path snapshot and creates dry-run actions only. Current planned action kinds include:
+
+- `compile-capture`
+- `promote-memory`
+- `summarize-file`
+- `split-file`
+- `archive-stale-capture`
+- `review-failed-capture`
+- `verify-contract`
+
+Planner output is blocked from execution by design. It reports `plannedWrites` as intended targets, but no write/apply implementation exists yet.
+
 ## Safety posture
 
 The first implementation is read-only/dry-run. Writes should be explicit, small, logged, and reversible. Legacy numbered folders must not be moved, archived, deleted, or rewritten until validation and explicit archive approval.
+
+## Validation
+
+```bash
+npm run ci
+```
+
+Current CI covers:
+
+- TypeScript typecheck
+- compile loop planning
+- memory loop planning
+- hygiene loop anti-clutter planning
+- drift/error contract verification planning

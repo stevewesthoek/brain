@@ -4,21 +4,25 @@ export {
   MIND_REQUIRED_INDEX_FILES,
   MIND_REQUIRED_PATHS,
   MIND_ROUTER_CONTRACT_FILES,
-} from './contracts';
+} from './contracts.js';
 export type {
   MindContractDryRunResult,
   MindContractSnapshot,
   MindFailureBufferStatus,
   MindPathKind,
   MindPathStatus,
+  MindRouterLoopPlan,
+  MindRouterPlanAction,
+  MindRouterPlanActionKind,
   MindSaveToMindTarget,
   MindRouterJobId,
   MindRouterJobResult,
   MindRouterMode,
-} from './contracts';
+} from './contracts.js';
 export {
   MIND_ROUTER_JOBS,
   createAllDryRunResults,
   createDryRunResult,
   createMindContractDryRunResult,
-} from './jobs';
+} from './jobs.js';
+export { createMindRouterLoopPlan } from './plans.js';

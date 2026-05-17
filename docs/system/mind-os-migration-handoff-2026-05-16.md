@@ -797,3 +797,52 @@ Validation:
 
 - `npm run ci` in `projects/brain-core` passed.
 - CI included typecheck and 23 Node route/adapter/widget/health/audit/action-target tests.
+
+## Model-router dry-run loop planner — 2026-05-17
+
+Completed the next safe model-router roadmap slice.
+
+New package/config files:
+
+```text
+projects/model-router/package.json
+projects/model-router/tsconfig.json
+projects/model-router/src/types/node-shims.d.ts
+```
+
+New planner/test files:
+
+```text
+projects/model-router/src/plans.ts
+projects/model-router/src/tests/plans.test.ts
+```
+
+Updated files:
+
+```text
+projects/model-router/README.md
+projects/model-router/src/contracts.ts
+projects/model-router/src/index.ts
+projects/model-router/src/jobs.ts
+```
+
+What changed:
+
+- Added optional `lineCount` to observed Mind path snapshots.
+- Added anti-clutter limits from the roadmap.
+- Added typed dry-run action plans for compile, memory, hygiene, and drift/error loops.
+- Added `createMindRouterLoopPlan(...)`.
+- Added dependency-free tests for compile capture routing, memory promotion/compaction, hygiene anti-clutter planning, and drift/error contract verification.
+
+Safety boundary:
+
+- Planner is dry-run only.
+- No files are written, moved, deleted, archived, or rewritten.
+- Legacy numbered folders remain read-only.
+- Planned write paths are advisory only; no apply/write implementation exists.
+- Compile/hygiene execution remains blocked until failure-buffer behavior is real-error verified and write/apply policy is separately approved.
+
+Validation:
+
+- `npm run ci` in `projects/model-router` passed.
+- CI included typecheck and 4 Node dry-run planner tests.

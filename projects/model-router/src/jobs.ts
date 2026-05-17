@@ -4,14 +4,14 @@ import type {
   MindPathStatus,
   MindRouterJobId,
   MindRouterJobResult,
-} from './contracts';
+} from './contracts.js';
 import {
   MIND_LEGACY_READ_ONLY_PATHS,
   MIND_LIVE_FILES,
   MIND_REQUIRED_INDEX_FILES,
   MIND_REQUIRED_PATHS,
   MIND_ROUTER_CONTRACT_FILES,
-} from './contracts';
+} from './contracts.js';
 
 export const MIND_ROUTER_JOBS: MindRouterJobId[] = [
   'mind-compile-loop',

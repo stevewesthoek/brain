@@ -65,6 +65,7 @@ export interface MindPathStatus {
   kind: MindPathKind;
   exists: boolean;
   sizeBytes?: number;
+  lineCount?: number;
   modifiedAt?: string;
 }
 
@@ -104,4 +105,37 @@ export interface MindContractDryRunResult extends MindRouterJobResult {
   liveDeploymentVerified: boolean;
   failureBufferStatus: MindFailureBufferStatus;
   failureBufferReadyForArchivePhase: boolean;
+}
+
+
+export const MIND_ANTI_CLUTTER_LIMITS = {
+  'router/current.md': { maxLines: 150 },
+  'TODAY.md': { maxLines: 200 },
+  'live/tasks.md': { maxLines: 300 },
+  'live/projects.md': { maxLines: 250 },
+  'wiki/*.md': { maxLines: 500 },
+  'capture/inbox/': { maxAgeDays: 7 },
+  'capture/failed/': { maxAgeDays: 3 },
+} as const;
+
+export type MindRouterPlanActionKind =
+  | 'compile-capture'
+  | 'promote-memory'
+  | 'summarize-file'
+  | 'split-file'
+  | 'archive-stale-capture'
+  | 'review-failed-capture'
+  | 'verify-contract';
+
+export interface MindRouterPlanAction {
+  kind: MindRouterPlanActionKind;
+  path: string;
+  reason: string;
+  targetPath?: string;
+  risk: 'low' | 'medium' | 'high';
+}
+
+export interface MindRouterLoopPlan extends MindRouterJobResult {
+  actions: MindRouterPlanAction[];
+  blockedBy: string[];
 }
