@@ -147,6 +147,8 @@ export function renderBrainConsoleView(
     ['ProBot aliases enabled', String(state.capabilities?.probot?.commandAliasesEnabled ?? false)],
     ['Legacy migration', state.capabilities?.mindWorkspace?.legacyTaskMigrationStatus ?? 'unknown'],
     ['Execution gate', state.capabilities?.executionGate?.executionEnabled === false ? 'disabled' : 'unknown'],
+    ['Model-router execution flag', formatFlagState(state.capabilities?.executionGate?.modelRouterDryRunExecutionFlagEnabled)],
+    ['Execution flag name', state.capabilities?.executionGate?.modelRouterDryRunExecutionFlagName ?? 'unknown'],
     ['First candidate', state.capabilities?.executionGate?.firstCandidate ?? 'unknown'],
   ]);
   renderSection(grid, 'Runtime reports', describeRuntimeReports(state.runtimeReports));
@@ -267,6 +269,8 @@ function describeExecutionReadiness(
 
   return [
     ['Execution enabled', String(readiness.executionEnabled)],
+    ['Model-router execution flag', formatFlagState(readiness.modelRouterDryRunExecutionFlagEnabled)],
+    ['Execution flag name', readiness.modelRouterDryRunExecutionFlagName ?? firstPlan?.modelRouterDryRunExecutionFlagName ?? 'unknown'],
     ['Candidates', String(readiness.candidateCount)],
     ['Ready candidates', String(readiness.readyCandidateCount)],
     ['Blockers', readiness.blockers.slice(0, 3).join(', ') || 'none'],
@@ -276,4 +280,14 @@ function describeExecutionReadiness(
 
 function formatStatus(value: string): string {
   return value === 'online' ? 'online' : 'offline';
+}
+
+function formatFlagState(value: boolean | undefined): string {
+  if (value === true) {
+    return 'enabled flag, execution still gated';
+  }
+  if (value === false) {
+    return 'disabled';
+  }
+  return 'unknown';
 }

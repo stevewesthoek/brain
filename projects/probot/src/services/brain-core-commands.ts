@@ -96,6 +96,7 @@ export async function handleBrainCoreCommand(text: string, brainCoreUrl: string)
       approvals.line,
       executionReadiness.line,
       `Execution gate: ${executionReadiness.executionEnabled ? "enabled" : "disabled"} · first candidate: ${executionPlans.firstCandidate}`,
+      `Model-router execution flag: ${executionReadiness.modelRouterDryRunExecutionFlagEnabled ? "enabled (still gated)" : "disabled"} · ${executionReadiness.modelRouterDryRunExecutionFlagName}`,
       `Executable actions: ${capabilities.executableActionsEnabled ? "enabled" : "disabled"}`,
     ].join("\n");
   }
@@ -104,6 +105,7 @@ export async function handleBrainCoreCommand(text: string, brainCoreUrl: string)
     schedulerJobs.line,
     reports.line,
     executionReadiness.line,
+    `Model-router execution flag: ${executionReadiness.modelRouterDryRunExecutionFlagEnabled ? "enabled (still gated)" : "disabled"} · ${executionReadiness.modelRouterDryRunExecutionFlagName}`,
     `Executable actions: ${capabilities.executableActionsEnabled ? "enabled" : "disabled"}`,
   ].join("\n");
 }

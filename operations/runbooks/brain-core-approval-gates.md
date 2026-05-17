@@ -54,3 +54,79 @@ The following must exist first:
 - Do not call real action endpoints expecting side effects.
 - Do not write approval or audit logs into Mind.
 - Do not store secrets in approval settings or runtime files.
+
+
+## Feature flag operator display
+
+The first-action feature flag is now implemented as a read-only signal:
+
+```bash
+BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=false
+```
+
+Operator surfaces should show both values separately:
+
+- feature flag state: enabled/disabled
+- execution state: enabled/disabled
+
+Important: `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=true` is not enough to execute anything. It only removes the feature-flag blocker. Execution remains disabled until all other gates are proven for the exact request:
+
+1. safe localhost request
+2. durable approval store available
+3. durable audit JSONL available
+4. unexpired approval with status `approved`
+5. exact action kind `scheduler-run-model-router-dry-run`
+6. safe runtime output path under Brain `runtime/local/`
+7. exact command allowlist match
+8. rollback plan present
+9. operator UX confirms the action and resulting state
+
+Brain Console and ProBot must display the flag state as an operator warning, not as permission to execute.
+
+## Rollback drill checklist for the first action
+
+Before any future execution implementation is allowed, complete this drill without running the action:
+
+```bash
+unset BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION
+curl -fsS http://127.0.0.1:4877/execution/readiness
+curl -fsS http://127.0.0.1:4877/capabilities
+```
+
+Expected result:
+
+```text
+executionEnabled=false
+modelRouterDryRunExecutionFlagEnabled=false
+executableActions=false
+readyCandidateCount=0
+```
+
+Then simulate the flag-on operator view without executing:
+
+```bash
+BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=true npm run --prefix projects/brain-core dev
+curl -fsS http://127.0.0.1:4877/execution/readiness
+curl -fsS http://127.0.0.1:4877/execution/plans/scheduler-run-model-router-dry-run
+curl -fsS http://127.0.0.1:4877/capabilities
+```
+
+Expected result:
+
+```text
+modelRouterDryRunExecutionFlagEnabled=true
+executionEnabled=false
+wouldExecute=false
+executed=false
+executableActions=false
+readyCandidateCount=0
+```
+
+Rollback procedure:
+
+1. Stop Brain Core.
+2. Unset `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION` or set it to `false`.
+3. Restart Brain Core.
+4. Recheck `/execution/readiness` and `/capabilities`.
+5. Preserve approval store and audit logs; do not delete audit evidence.
+6. Remove only generated runtime dry-run reports if a future execution implementation ever creates them and cleanup is explicitly required.

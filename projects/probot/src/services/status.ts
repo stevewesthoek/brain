@@ -74,6 +74,7 @@ export async function getStatusSummary(config: Config): Promise<string> {
     brainCoreExecutionPlans.line,
     brainCoreExecutionReadiness.line,
     `Execution gate: ${brainCoreExecutionReadiness.executionEnabled ? 'enabled' : 'disabled'} · first candidate: ${brainCoreExecutionPlans.firstCandidate}`,
+    `Model-router execution flag: ${brainCoreExecutionReadiness.modelRouterDryRunExecutionFlagEnabled ? 'enabled (still gated)' : 'disabled'} · ${brainCoreExecutionReadiness.modelRouterDryRunExecutionFlagName}`,
     latest ? `Latest thread: ${latest.tool} · ${latest.projectLabel} · ${latest.headline}` : "Latest thread: none detected",
     `Notes captured today: ${todayNotes}`,
     `Allowed roots: ${config.allowedRoots.length}`,

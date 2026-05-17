@@ -39,6 +39,8 @@ export interface BrainCoreCapabilitySummary {
   };
   executionGate?: {
     executionEnabled?: boolean;
+    modelRouterDryRunExecutionFlagEnabled?: boolean;
+    modelRouterDryRunExecutionFlagName?: string;
     candidateActionKinds?: string[];
     readinessEndpoint?: string;
     plansEndpoint?: string;
@@ -148,6 +150,8 @@ export interface BrainCoreExecutionPlan {
   kind: string;
   candidate: boolean;
   executionEnabled: false;
+  modelRouterDryRunExecutionFlagEnabled?: boolean;
+  modelRouterDryRunExecutionFlagName?: string;
   wouldExecute: false;
   executed: false;
   riskLevel: 'low' | 'medium' | 'high';
@@ -164,6 +168,8 @@ export interface BrainCoreExecutionPlan {
 
 export interface BrainCoreExecutionReadiness {
   executionEnabled: false;
+  modelRouterDryRunExecutionFlagEnabled?: boolean;
+  modelRouterDryRunExecutionFlagName?: string;
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];

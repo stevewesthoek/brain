@@ -11,14 +11,31 @@ export interface BrainCoreStatusResponse {
 export interface BrainCoreCapabilitiesResponse {
   executableActionsEnabled: boolean;
   runtimeReportsSupported?: boolean;
+  executionGate?: {
+    executionEnabled?: boolean;
+    modelRouterDryRunExecutionFlagEnabled?: boolean;
+    modelRouterDryRunExecutionFlagName?: string;
+    firstCandidate?: string;
+  };
 }
 
 export interface BrainCoreExecutionPlanResponse {
-  plans: Array<{ kind: string; candidate: boolean; executionEnabled: boolean; wouldExecute: boolean; executed: boolean; summary: string }>;
+  plans: Array<{
+    kind: string;
+    candidate: boolean;
+    executionEnabled: boolean;
+    modelRouterDryRunExecutionFlagEnabled?: boolean;
+    modelRouterDryRunExecutionFlagName?: string;
+    wouldExecute: boolean;
+    executed: boolean;
+    summary: string;
+  }>;
 }
 
 export interface BrainCoreExecutionReadinessResponse {
   executionEnabled: boolean;
+  modelRouterDryRunExecutionFlagEnabled?: boolean;
+  modelRouterDryRunExecutionFlagName?: string;
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];
@@ -81,6 +98,8 @@ export interface BrainCoreCapabilitySummary {
   available: boolean;
   executableActionsEnabled: boolean;
   runtimeReportsSupported: boolean;
+  modelRouterDryRunExecutionFlagEnabled: boolean;
+  modelRouterDryRunExecutionFlagName: string;
   line: string;
 }
 
@@ -132,12 +151,16 @@ export interface BrainCoreExecutionPlansSummary {
   available: boolean;
   count: number;
   firstCandidate: string;
+  modelRouterDryRunExecutionFlagEnabled: boolean;
+  modelRouterDryRunExecutionFlagName: string;
   line: string;
 }
 
 export interface BrainCoreExecutionReadinessSummary {
   available: boolean;
   executionEnabled: boolean;
+  modelRouterDryRunExecutionFlagEnabled: boolean;
+  modelRouterDryRunExecutionFlagName: string;
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];
@@ -162,13 +185,24 @@ export async function readBrainCoreStatusLine(baseUrl: string): Promise<string> 
 export async function readBrainCoreCapabilities(baseUrl: string): Promise<BrainCoreCapabilitySummary> {
   const response = await readJson<BrainCoreCapabilitiesResponse>(baseUrl, '/capabilities');
   if (!response) {
-    return { available: false, executableActionsEnabled: false, runtimeReportsSupported: false, line: 'Brain Core capabilities: unavailable' };
+    return {
+      available: false,
+      executableActionsEnabled: false,
+      runtimeReportsSupported: false,
+      modelRouterDryRunExecutionFlagEnabled: false,
+      modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION',
+      line: 'Brain Core capabilities: unavailable',
+    };
   }
+  const modelRouterDryRunExecutionFlagEnabled = response.executionGate?.modelRouterDryRunExecutionFlagEnabled === true;
+  const modelRouterDryRunExecutionFlagName = response.executionGate?.modelRouterDryRunExecutionFlagName ?? 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
   return {
     available: true,
     executableActionsEnabled: response.executableActionsEnabled,
     runtimeReportsSupported: response.runtimeReportsSupported === true,
-    line: `Brain Core capabilities: executableActionsEnabled=${response.executableActionsEnabled} runtimeReportsSupported=${response.runtimeReportsSupported === true}`,
+    modelRouterDryRunExecutionFlagEnabled,
+    modelRouterDryRunExecutionFlagName,
+    line: `Brain Core capabilities: executableActionsEnabled=${response.executableActionsEnabled} runtimeReportsSupported=${response.runtimeReportsSupported === true} modelRouterDryRunFlag=${modelRouterDryRunExecutionFlagEnabled}`,
   };
 }
 
@@ -261,14 +295,26 @@ export async function readBrainCoreApprovalStore(baseUrl: string): Promise<Brain
 export async function readBrainCoreExecutionPlans(baseUrl: string): Promise<BrainCoreExecutionPlansSummary> {
   const response = await readJson<BrainCoreExecutionPlanResponse>(baseUrl, '/execution/plans');
   if (!response) {
-    return { available: false, count: 0, firstCandidate: 'none', line: 'Brain Core execution plans: unavailable' };
+    return {
+      available: false,
+      count: 0,
+      firstCandidate: 'none',
+      modelRouterDryRunExecutionFlagEnabled: false,
+      modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION',
+      line: 'Brain Core execution plans: unavailable',
+    };
   }
-  const firstCandidate = response.plans[0]?.kind ?? 'none';
+  const firstPlan = response.plans[0];
+  const firstCandidate = firstPlan?.kind ?? 'none';
+  const modelRouterDryRunExecutionFlagEnabled = firstPlan?.modelRouterDryRunExecutionFlagEnabled === true;
+  const modelRouterDryRunExecutionFlagName = firstPlan?.modelRouterDryRunExecutionFlagName ?? 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
   return {
     available: true,
     count: response.plans.length,
     firstCandidate,
-    line: `Brain Core execution plans: ${response.plans.length} · first=${firstCandidate}`,
+    modelRouterDryRunExecutionFlagEnabled,
+    modelRouterDryRunExecutionFlagName,
+    line: `Brain Core execution plans: ${response.plans.length} · first=${firstCandidate} · modelRouterDryRunFlag=${modelRouterDryRunExecutionFlagEnabled}`,
   };
 }
 
@@ -278,19 +324,25 @@ export async function readBrainCoreExecutionReadiness(baseUrl: string): Promise<
     return {
       available: false,
       executionEnabled: false,
+      modelRouterDryRunExecutionFlagEnabled: false,
+      modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION',
       candidateCount: 0,
       readyCandidateCount: 0,
       blockers: [],
       line: 'Brain Core execution readiness: unavailable',
     };
   }
+  const modelRouterDryRunExecutionFlagEnabled = response.modelRouterDryRunExecutionFlagEnabled === true;
+  const modelRouterDryRunExecutionFlagName = response.modelRouterDryRunExecutionFlagName ?? 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
   return {
     available: true,
     executionEnabled: response.executionEnabled,
+    modelRouterDryRunExecutionFlagEnabled,
+    modelRouterDryRunExecutionFlagName,
     candidateCount: response.candidateCount,
     readyCandidateCount: response.readyCandidateCount,
     blockers: response.blockers,
-    line: `Brain Core execution readiness: enabled=${response.executionEnabled} candidates=${response.candidateCount} ready=${response.readyCandidateCount}`,
+    line: `Brain Core execution readiness: enabled=${response.executionEnabled} modelRouterDryRunFlag=${modelRouterDryRunExecutionFlagEnabled} candidates=${response.candidateCount} ready=${response.readyCandidateCount}`,
   };
 }
 
