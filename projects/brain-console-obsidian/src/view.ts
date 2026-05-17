@@ -29,6 +29,9 @@ import {
   readBrainCoreAgents,
   readBrainCoreActions,
   readBrainCoreMaintenancePreviewDetail,
+  readBrainCoreAgentRuns,
+  readBrainCoreAgentEvents,
+  readBrainCoreRecoveryItems,
   requestBrainCoreActionApproval,
   type BrainCoreApprovalSummary,
   type BrainCoreApprovalDetail,
@@ -55,6 +58,9 @@ import {
   type BrainCoreAgentSummary,
   type BrainCoreModelRouterReportDetail,
   type BrainCoreMaintenancePreviewDetail,
+  type BrainCoreAgentRunSummary,
+  type BrainCoreAgentEventSummary,
+  type BrainCoreRecoveryItemSummary,
 } from './client.js';
 import {
   deriveDashboardSnapshot,
@@ -268,6 +274,11 @@ export function renderBrainConsoleView(
     renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
     renderCard(grid, 'Agents (Read-Only)', renderAgentViewCard(state, snapshot));
     renderCard(grid, 'Action Preview', renderActionPreviewCard(state, settings));
+
+    // Phase 4G Agent View Ledgers
+    renderCard(grid, 'Agent View', renderAgentViewLedgerCard(state));
+    renderCard(grid, 'Approval Audit Trail', renderApprovalAuditTrailCard(state));
+    renderCard(grid, 'Recovery / Blockers', renderRecoveryPanelCard(state));
 
     // Detail panels
     if (state.approvalDetail) {
@@ -936,6 +947,190 @@ function renderMaintenancePreviewDetailCard(detail: import('./client.js').BrainC
       list.createEl('li', { text: `${action.title} (${action.risk})` });
     });
   }
-  
+
+  return el;
+}
+
+function renderAgentViewLedgerCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+
+  // Operating mode note
+  const note = el.createEl('div', { cls: 'brain-console__list-note' });
+  note.textContent = '● Read-only ledger · Approval-gated · Execution disabled';
+
+  // Count summary
+  const counts = el.createDiv({ cls: 'brain-console__row' });
+  counts.createEl('dt', { text: 'Total Runs' });
+  counts.createEl('dd', { text: `${state.agentRuns?.length ?? 0}` });
+
+  if (state.agentRuns && state.agentRuns.length > 0) {
+    const blocked = state.agentRuns.filter(r => r.status === 'blocked').length;
+    const completed = state.agentRuns.filter(r => r.status === 'completed').length;
+
+    if (blocked > 0) {
+      const blockedRow = el.createDiv({ cls: 'brain-console__row' });
+      blockedRow.createEl('dt', { text: 'Blocked' });
+      blockedRow.createEl('dd', { text: `${blocked}`, cls: 'brain-console__list-warning' });
+    }
+    if (completed > 0) {
+      const completedRow = el.createDiv({ cls: 'brain-console__row' });
+      completedRow.createEl('dt', { text: 'Completed' });
+      completedRow.createEl('dd', { text: `${completed}`, cls: 'brain-console__list-item-highlight' });
+    }
+  }
+
+  // Latest runs (max 5)
+  if (state.agentRuns && state.agentRuns.length > 0) {
+    el.createEl('hr');
+    el.createEl('strong', { text: 'Latest Runs (read-only):' });
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+
+    const maxRuns = Math.min(5, state.agentRuns.length);
+    for (let i = 0; i < maxRuns; i++) {
+      const run = state.agentRuns[i];
+      const li = list.createEl('li');
+
+      const title = li.createEl('strong', { text: run.title });
+      li.appendText(` (${run.agentId})`);
+
+      const details = li.createEl('div', { cls: 'brain-console__list-note' });
+      const parts: string[] = [];
+      parts.push(run.status);
+      if (run.ageMinutes !== undefined) parts.push(`${run.ageMinutes}m old`);
+      if (run.targetId) parts.push(`→ ${run.targetId}`);
+      details.textContent = parts.join(' · ');
+
+      if (run.blockers.length > 0) {
+        const blocker = li.createEl('div', { cls: 'brain-console__list-warning', text: `⚠ ${run.blockers[0]}` });
+      }
+
+      // Safety chips
+      const safety = li.createEl('div', { cls: 'brain-console__list-note' });
+      const chips: string[] = [];
+      if (!run.safety.writesToMind) chips.push('no Mind write');
+      if (!run.safety.executesShell) chips.push('no shell');
+      if (!run.safety.mutatesRuntime) chips.push('no runtime mutation');
+      if (!run.safety.executionEnabled) chips.push('execution disabled');
+      if (run.safety.requiresApproval) chips.push('approval required');
+      safety.textContent = chips.join(' · ');
+    }
+  } else {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No agent runs available yet.' });
+  }
+
+  const footer = el.createEl('div', { cls: 'brain-console__list-note' });
+  footer.innerHTML = '<em>Agent runtime is not autonomous. This view is a read-only ledger derived from approvals, reports, and status scans.</em>';
+
+  return el;
+}
+
+function renderApprovalAuditTrailCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+
+  if (!state.agentEvents || state.agentEvents.length === 0) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No approval audit events available yet.' });
+    return el;
+  }
+
+  // Latest audit events (max 8)
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  const maxEvents = Math.min(8, state.agentEvents.length);
+
+  for (let i = 0; i < maxEvents; i++) {
+    const event = state.agentEvents[i];
+    const li = list.createEl('li');
+
+    // Event type with severity color
+    const typeSpan = li.createEl('span', { cls: 'brain-console__list-item-highlight' });
+    typeSpan.textContent = event.type.toUpperCase();
+
+    if (event.severity === 'error') {
+      li.classList.add('brain-console__list-error');
+    } else if (event.severity === 'warning') {
+      li.classList.add('brain-console__list-warning');
+    }
+
+    // Timestamp and approval ID
+    const meta = li.createEl('div', { cls: 'brain-console__list-note' });
+    const parts: string[] = [];
+    if (event.createdAt) {
+      const timeStr = formatRelativeTime(new Date(event.createdAt));
+      parts.push(timeStr);
+    }
+    if (event.relatedApprovalId) parts.push(`#${event.relatedApprovalId}`);
+    if (event.summary) parts.push(event.summary);
+    meta.textContent = parts.join(' · ');
+  }
+
+  return el;
+}
+
+function renderRecoveryPanelCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+
+  if (!state.recoveryItems || state.recoveryItems.length === 0) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No recovery blockers detected.' });
+    return el;
+  }
+
+  // Summary counts
+  const errorCount = state.recoveryItems.filter(i => i.severity === 'error').length;
+  const warningCount = state.recoveryItems.filter(i => i.severity === 'warning').length;
+
+  if (errorCount > 0 || warningCount > 0) {
+    const summary = el.createDiv({ cls: 'brain-console__row' });
+    if (errorCount > 0) {
+      const errRow = el.createDiv({ cls: 'brain-console__row' });
+      errRow.createEl('dt', { text: 'Errors' });
+      errRow.createEl('dd', { text: `${errorCount}`, cls: 'brain-console__list-error' });
+    }
+    if (warningCount > 0) {
+      const warnRow = el.createDiv({ cls: 'brain-console__row' });
+      warnRow.createEl('dt', { text: 'Warnings' });
+      warnRow.createEl('dd', { text: `${warningCount}`, cls: 'brain-console__list-warning' });
+    }
+  }
+
+  el.createEl('hr');
+
+  // Top recovery items (max 8)
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  const maxItems = Math.min(8, state.recoveryItems.length);
+
+  for (let i = 0; i < maxItems; i++) {
+    const item = state.recoveryItems[i];
+    const li = list.createEl('li');
+
+    if (item.severity === 'error') {
+      li.classList.add('brain-console__list-error');
+    } else if (item.severity === 'warning') {
+      li.classList.add('brain-console__list-warning');
+    }
+
+    // Title
+    const titleSpan = li.createEl('strong', { text: item.title });
+
+    // Source and severity badge
+    const badge = li.createEl('span', { cls: 'brain-console__list-note' });
+    badge.textContent = ` [${item.source}]`;
+
+    // Blocker
+    if (item.blocker) {
+      const blockerDiv = li.createEl('div', { cls: 'brain-console__list-sub', text: `⚠ ${item.blocker}` });
+    }
+
+    // Next safe step
+    if (item.nextSafeStep) {
+      const stepDiv = li.createEl('div', { cls: 'brain-console__list-sub', text: `→ ${item.nextSafeStep}` });
+    }
+
+    // Safety flags
+    const safetyDiv = li.createEl('div', { cls: 'brain-console__list-note' });
+    const safetyChips: string[] = [];
+    if (!item.safety.canAutoFix) safetyChips.push('no auto-fix');
+    if (!item.safety.writesToMind) safetyChips.push('no Mind write');
+    safetyDiv.textContent = safetyChips.join(' · ');
+  }
+
   return el;
 }

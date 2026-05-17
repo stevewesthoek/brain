@@ -362,3 +362,28 @@
   color: var(--cockpit-text-primary);
   font-weight: 600;
 }
+
+/* List item severity styles */
+.brain-console__list-error {
+  color: #ef4444;
+}
+
+.brain-console__list-warning {
+  color: #f59e0b;
+}
+
+.brain-console__list-note {
+  color: var(--cockpit-text-tertiary);
+  font-size: 0.8rem;
+  display: block;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.brain-console__list-sub {
+  color: var(--cockpit-text-secondary);
+  font-size: 0.85rem;
+  margin-left: 12px;
+  display: block;
+  margin-top: 2px;
+}

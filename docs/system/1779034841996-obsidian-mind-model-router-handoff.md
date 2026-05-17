@@ -1779,3 +1779,67 @@ projects/brain-console-obsidian/dist/main.js (rebuilt, 208.7 KB)
 projects/brain-console-obsidian/release/manifest.json (reinstalled to mind vault)
 ```
 
+## Continuation update — Agent View panels and recovery ledgers (Phase 4G)
+
+Implemented:
+
+- **Agent View ledger panel**: Read-only agent run summaries with status, age, target, blockers, and safety flags. Shows latest 5 runs with operating mode note: "Agent runtime is not autonomous. This view is a read-only ledger derived from approvals, reports, and status scans."
+- **Approval Audit Trail panel**: Latest 8 approval audit events with type (requested/approved/rejected/executed), severity (info/warning/error), timestamp, approval ID, and event summary.
+- **Recovery / Blockers panel**: Top 8 recovery items prioritized by severity (error/warning/info). Shows source (action/approval/report/stb/video/scheduler), blocker description, next safe step, and safety flags (no auto-fix, no Mind write).
+- **Defensive loading**: All three new panels degrade gracefully if endpoints timeout. Dashboard still loads if /agent-runs, /agent-events, or /recovery fail. No uncaught exceptions from undefined arrays.
+- **Compact CSS styling**: Added `.brain-console__list-note`, `.brain-console__list-error`, `.brain-console__list-warning`, `.brain-console__list-sub` classes. Reused existing `.brain-console__list-item-highlight`. All panels respect 280px minimum card width and 0.85rem typography baseline.
+
+Validation:
+
+- Brain Core CI: 118 tests passed (6 Phase 4G agent/recovery/audit tests + 112 existing).
+- Brain Console typecheck: passed (no errors).
+- Brain Console build: passed (239.2 KB bundled, +31KB from Agent View/Audit/Recovery panels).
+- Brain Console package: succeeded.
+- Plugin reinstalled to mind vault (.obsidian/plugins/brain-console/).
+- Endpoint smoke tests: /agent-runs, /agent-events, /recovery all return valid JSON (0 items when no approvals exist).
+- ProBot typecheck: passed.
+
+Safety status:
+
+- All three panels are read-only inspection only (no run/retry/fix/apply/start/stop buttons).
+- No POST calls from panels.
+- No Mind mutation paths exposed.
+- No shell execution capability.
+- No autonomous agent runtime.
+- Safety flags hardcoded in all rows (writesToMind=false, executesShell=false, mutatesRuntime=false, executionEnabled=false).
+- Recovery items show canAutoFix=false, writesToMind=false.
+- No raw JSONL, full logs, or unsafe paths exposed.
+
+Remaining blockers:
+
+- Broad Mind mutation remains blocked.
+- Legacy folder archival remains blocked.
+- Any future apply flow still requires separately approved write/apply policy.
+- Agent execution remains blocked (execution-disabled).
+- Recovery auto-fix remains blocked (canAutoFix=false).
+
+Next safe task:
+
+- Expand dashboard navigation with tabs or detail expansion controls for report/approval/agent view drill-down (if needed).
+- Or implement operator runbooks for next-safe-step recovery actions (read-only guidance only, no execute buttons).
+
+## Files changed for Phase 4G
+
+Brain:
+
+```text
+projects/brain-console-obsidian/src/view.ts (added Agent View/Audit Trail/Recovery render functions, imports, state field usage)
+projects/brain-console-obsidian/styles.css (added .brain-console__list-note, .brain-console__list-error, .brain-console__list-warning, .brain-console__list-sub)
+projects/brain-console-obsidian/dist/main.js (rebuilt, 239.2 KB)
+projects/brain-console-obsidian/release/manifest.json (updated)
+projects/brain-console-obsidian/release/main.js (updated)
+projects/brain-console-obsidian/release/styles.css (updated)
+docs/system/1779034841996-obsidian-mind-model-router-handoff.md (this update)
+```
+
+Mind:
+
+```text
+.obsidian/plugins/brain-console/ (updated local plugin install)
+```
+
