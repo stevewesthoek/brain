@@ -28,3 +28,22 @@ export {
 export { createMindRouterLoopPlan } from './plans.js';
 export { createMindPathSnapshotFromRoot } from './snapshot.js';
 export { createModelRouterDryRunReport } from './report.js';
+export {
+  MIND_PREVIEW_ALLOWED_TARGETS,
+  MIND_PREVIEW_BLOCKED_EXACT_PATHS,
+  MIND_PREVIEW_BLOCKED_PREFIXES,
+  MIND_PREVIEW_BLOCKED_SUFFIXES,
+  applyApprovedMindWritePreview,
+  createMindWritePreview,
+  evaluateMindPreviewPolicy,
+} from './preview.js';
+export type {
+  CreateMindWritePreviewInput,
+  MindPreviewApprovalRecord,
+  MindPreviewActionKind,
+  MindPreviewOperation,
+  MindPreviewPolicyResult,
+  MindWriteApplyInput,
+  MindWriteApplyResult,
+  MindWritePreview,
+} from './preview.js';

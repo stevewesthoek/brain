@@ -637,7 +637,29 @@ test('POST /scheduler/jobs/model-router-dry-run/request-run uses execution plan 
 
 test('GET /execution/plans returns the future first execution candidate', async () => {
   const response = await exercise({ method: 'GET', url: '/execution/plans' });
-  const body = JSON.parse(response.body) as { plans: Array<{ kind: string; candidate: boolean; executionEnabled: boolean; modelRouterDryRunExecutionFlagEnabled: boolean; modelRouterDryRunExecutionFlagName: string; wouldExecute: boolean; executed: boolean; writesToMind: boolean }> };
+  const body = JSON.parse(response.body) as {
+    plans: Array<{
+      kind: string;
+      candidate: boolean;
+      executionEnabled: boolean;
+      modelRouterDryRunExecutionFlagEnabled: boolean;
+      modelRouterDryRunExecutionFlagName: string;
+      wouldExecute: boolean;
+      executed: boolean;
+      writesToMind: boolean;
+      mindPreviewPolicy: {
+        status: string;
+        firstProposedAction: string;
+        firstProposedTarget: string;
+        writesToMind: boolean;
+        externalSideEffects: boolean;
+        applyRouteEnabled: boolean;
+        allowedTargets: string[];
+        blockedPrefixes: string[];
+        requiredGates: string[];
+      };
+    }>;
+  };
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.plans.length, 1);
@@ -649,6 +671,16 @@ test('GET /execution/plans returns the future first execution candidate', async 
   assert.equal(body.plans[0]?.wouldExecute, false);
   assert.equal(body.plans[0]?.executed, false);
   assert.equal(body.plans[0]?.writesToMind, false);
+  assert.equal(body.plans[0]?.mindPreviewPolicy.status, 'preview-only');
+  assert.equal(body.plans[0]?.mindPreviewPolicy.firstProposedAction, 'model-router-update-current-context');
+  assert.equal(body.plans[0]?.mindPreviewPolicy.firstProposedTarget, 'router/current.md');
+  assert.equal(body.plans[0]?.mindPreviewPolicy.writesToMind, false);
+  assert.equal(body.plans[0]?.mindPreviewPolicy.externalSideEffects, false);
+  assert.equal(body.plans[0]?.mindPreviewPolicy.applyRouteEnabled, false);
+  assert.equal(body.plans[0]?.mindPreviewPolicy.allowedTargets.includes('router/current.md'), true);
+  assert.equal(body.plans[0]?.mindPreviewPolicy.blockedPrefixes.includes('.obsidian/'), true);
+  assert.equal(body.plans[0]?.mindPreviewPolicy.blockedPrefixes.includes('03-projects/'), true);
+  assert.equal(body.plans[0]?.mindPreviewPolicy.requiredGates.includes('fresh preview hash referenced by approval'), true);
 });
 
 test('GET /execution/plans/:kind returns the execution plan by kind', async () => {

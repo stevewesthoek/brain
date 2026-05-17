@@ -6,6 +6,49 @@ import type {
 const CANDIDATE_KINDS = ['scheduler-run-model-router-dry-run'] as const;
 const MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
 
+const MIND_PREVIEW_ALLOWED_TARGETS = [
+  'router/current.md',
+  'capture/inbox/',
+  'capture/failed/',
+  'live/tasks.md',
+  'live/projects.md',
+  'live/decisions.md',
+  'sources/index.md',
+  'wiki/index.md',
+] as const;
+
+const MIND_PREVIEW_BLOCKED_PREFIXES = [
+  '.git/',
+  '.obsidian/',
+  'node_modules/',
+  'dist/',
+  'build/',
+  'coverage/',
+  'runtime/',
+  'logs/',
+  '01-inbox/',
+  '02-strategy/',
+  '03-projects/',
+  '04-tasks/',
+  '05-areas/',
+  '06-resources/',
+  '07-templates/',
+  '08-archive/',
+  'archive/old/',
+] as const;
+
+const MIND_PREVIEW_REQUIRED_GATES = [
+  'localhost-only request',
+  'exact action kind allowlist',
+  'durable approval store under Brain runtime/local',
+  'durable approval audit under Brain runtime/local',
+  'fresh preview hash referenced by approval',
+  'target path inside allowed preview target list',
+  'target path outside blocked roots',
+  'single-file apply only after future explicit approval',
+  'post-apply validation and rollback notes before mutation',
+] as const;
+
 export type BrainCoreExecutionCandidateKind = typeof CANDIDATE_KINDS[number];
 
 export function isModelRouterDryRunExecutionFlagEnabled(): boolean {
@@ -77,6 +120,17 @@ function createModelRouterDryRunPlan(): BrainCoreExecutionPlan {
     requiresRollbackPlan: true,
     rollbackPlan: 'Remove generated runtime/local/model-router report files if needed; no Mind content is changed.',
     summary: 'Report-only model-router dry-run candidate. Safe first execution-gate target remains disabled.',
+    mindPreviewPolicy: {
+      status: 'preview-only',
+      firstProposedAction: 'model-router-update-current-context',
+      firstProposedTarget: 'router/current.md',
+      writesToMind: false,
+      externalSideEffects: false,
+      applyRouteEnabled: false,
+      allowedTargets: [...MIND_PREVIEW_ALLOWED_TARGETS],
+      blockedPrefixes: [...MIND_PREVIEW_BLOCKED_PREFIXES],
+      requiredGates: [...MIND_PREVIEW_REQUIRED_GATES],
+    },
     steps: [
       {
         id: 'validate-model-router',

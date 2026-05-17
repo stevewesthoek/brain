@@ -195,6 +195,18 @@ export interface BrainCoreExecutionPlanStep {
   willRunNow: false;
 }
 
+export interface BrainCoreMindPreviewPolicySummary {
+  status: 'preview-only';
+  firstProposedAction: 'model-router-update-current-context';
+  firstProposedTarget: 'router/current.md';
+  writesToMind: false;
+  externalSideEffects: false;
+  applyRouteEnabled: false;
+  allowedTargets: string[];
+  blockedPrefixes: string[];
+  requiredGates: string[];
+}
+
 export interface BrainCoreExecutionPlan {
   kind: 'scheduler-run-model-router-dry-run';
   candidate: true;
@@ -212,6 +224,7 @@ export interface BrainCoreExecutionPlan {
   requiresRollbackPlan: true;
   rollbackPlan: string;
   summary: string;
+  mindPreviewPolicy: BrainCoreMindPreviewPolicySummary;
   steps: BrainCoreExecutionPlanStep[];
 }
 
