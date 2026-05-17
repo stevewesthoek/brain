@@ -1843,3 +1843,58 @@ Mind:
 .obsidian/plugins/brain-console/ (updated local plugin install)
 ```
 
+## Continuation update — Brain Console section navigation (Phase 5)
+
+Implemented:
+
+- **Section tabs:** 8-tab navigation system for Brain Console dashboard: Overview, Apps, Orchestrators, Pipelines, Projects, Reports, Agents, Recovery.
+- **Overview section:** Command center with "What Needs Attention" card (recovery errors, wiki health, blocked agents, migrations, approvals, maintenance), "Next Safe Step" card (actionable guidance), and overview metrics/status.
+- **Reports section:** Consolidated report panels including Runtime Reports, Wiki Health, Model Router Report Details, Maintenance Preview Details, Approval Details.
+- **Agents section:** Agent View ledger (read-only, approval-gated), Approval Audit Trail, agent events, external executor visibility.
+- **Recovery section:** Recovery/Blockers panel with error/warning grouping, blocker details, next safe steps.
+- **Registry sections:** Apps/Orchestrators/Pipelines/Projects sections with existing card layouts moved into tabs.
+- **Defensive loading:** Graceful handling of missing data (undefined arrays, failed endpoints, empty states).
+- **Tab state management:** In-memory activeSection tracking in BrainConsoleView class; tab switches rerender active section without reloading all data; refresh button still loads all data.
+- **CSS styling:** Section tab bar (~60 lines added), active tab styling, section content grid, responsive tab labels (hidden <600px, visible ≥600px).
+- **Safety verification:** No autonomous agent execution, no model-router apply/write, no Mind writes, no run/retry/fix/apply/start/stop buttons.
+
+Validation:
+
+- Brain Console typecheck: passed.
+- Brain Console build: passed (`254.3 KB dist/main.js`).
+- Brain Console package: staged at `release/` (manifest.json, main.js, styles.css).
+- No unsafe buttons or execution paths introduced.
+- No secrets found in changed files.
+
+Files changed:
+
+```text
+projects/brain-console-obsidian/src/view.ts (added BrainConsoleSectionId type, activeSection state field, tab configuration, section dispatch, 8 section render functions, overview/metrics cards)
+projects/brain-console-obsidian/src/main.ts (added activeSection instance field, tab click handler via registerDomEvent, activeSection passed to loadBrainConsoleViewState)
+projects/brain-console-obsidian/styles.css (added .brain-console__section-tabs, .brain-console__section-tab, .brain-console__section-tab.active, .brain-console__tab-icon, .brain-console__tab-label, .brain-console__section-content, .brain-console__dashboard-grid)
+projects/brain-console-obsidian/dist/main.js (rebuilt)
+projects/brain-console-obsidian/release/manifest.json (updated)
+projects/brain-console-obsidian/release/main.js (updated)
+projects/brain-console-obsidian/release/styles.css (updated)
+docs/system/1779034841996-obsidian-mind-model-router-handoff.md (this update)
+```
+
+Mind:
+
+```text
+.obsidian/plugins/brain-console/ (reinstalled local plugin with tab navigation)
+```
+
+Safety status:
+
+- No Mind write/apply path enabled.
+- No Brain Core mutation endpoint added.
+- No autonomous agent execution.
+- No run/retry/fix/apply buttons.
+- All views remain read-only; approval requests are tracked but do not execute actions.
+
+Next safe task (Phase 5 complete):
+
+- Optional visual polish pass or expand read-only operator guidance panels for top recovery items.
+- Consider optional drill-down/expansion toggles for long panels (Phase H equivalent).
+

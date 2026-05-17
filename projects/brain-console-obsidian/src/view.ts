@@ -70,6 +70,8 @@ import {
   type DashboardSnapshot,
 } from './dashboard.js';
 
+export type BrainConsoleSectionId = 'overview' | 'apps' | 'orchestrators' | 'pipelines' | 'projects' | 'reports' | 'agents' | 'recovery';
+
 export interface BrainConsoleViewState {
   status?: BrainCoreStatus;
   capabilities?: BrainCoreCapabilitySummary;
@@ -108,6 +110,7 @@ export interface BrainConsoleViewState {
   brainCoreUrl?: string;
   statusError?: string;
   endpointErrors?: import('./client.js').EndpointError[];
+  activeSection?: BrainConsoleSectionId;
 }
 
 export async function loadBrainConsoleViewState(
@@ -224,6 +227,23 @@ export async function loadBrainConsoleViewState(
   };
 }
 
+interface SectionTabConfig {
+  id: BrainConsoleSectionId;
+  label: string;
+  icon: string;
+}
+
+const SECTION_TABS: SectionTabConfig[] = [
+  { id: 'overview', label: 'Overview', icon: '◆' },
+  { id: 'apps', label: 'Apps', icon: '■' },
+  { id: 'orchestrators', label: 'Orchestrators', icon: '▲' },
+  { id: 'pipelines', label: 'Pipelines', icon: '→' },
+  { id: 'projects', label: 'Projects', icon: '◉' },
+  { id: 'reports', label: 'Reports', icon: '📋' },
+  { id: 'agents', label: 'Agents', icon: '◈' },
+  { id: 'recovery', label: 'Recovery', icon: '⚠' },
+];
+
 export function renderBrainConsoleView(
   container: HTMLElement,
   state: BrainConsoleViewState,
@@ -235,6 +255,7 @@ export function renderBrainConsoleView(
   container.addClass('brain-console--cockpit');
 
   const snapshot = deriveDashboardSnapshot(state, settings.brainCoreUrl);
+  const activeSection = state.activeSection ?? 'overview';
 
   const shell = container.createDiv({ cls: 'brain-console__shell' });
 
@@ -251,49 +272,150 @@ export function renderBrainConsoleView(
   if (snapshot.connectionStatus === 'offline') {
     renderOfflineState(shell, state.brainCoreUrl || settings.brainCoreUrl, state.statusError, state.endpointErrors);
   } else {
-    // Dashboard grid with cards
-    const grid = shell.createDiv({ cls: 'brain-console__dashboard-grid' });
+    // Section tabs
+    renderSectionTabs(shell, activeSection);
 
-    renderCard(grid, 'Wiki Health', renderWikiHealthCard(state));
-    renderCard(grid, 'Runtime Reports', renderRuntimeReportsCard(state));
-    renderCard(grid, 'Maintenance', renderMaintenanceCard(state));
-    renderCard(grid, 'Approvals', renderApprovalsCard(state));
-    renderCard(grid, 'Scheduler', renderSchedulerCard(state));
-    renderCard(grid, 'Brain Core', renderBrainCoreCard(state));
-    renderCard(grid, 'Next Action', renderNextActionCard(snapshot));
-
-    // Registry panels
-    renderCard(grid, 'Orchestrators', renderOrchestratorsCard(state, snapshot));
-    renderCard(grid, 'Pipelines', renderPipelinesCard(state, snapshot));
-    renderCard(grid, 'Projects', renderProjectsCard(state, snapshot));
-    renderCard(grid, 'Platforms', renderPlatformsCard(state, snapshot));
-
-    // Live status panels
-    renderCard(grid, 'STB Live Status', renderStbLiveStatusCard(state, snapshot));
-    renderCard(grid, 'Video Orchestrator', renderVideoOrchestratorCard(state, snapshot));
-    renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
-    renderCard(grid, 'Agents (Read-Only)', renderAgentViewCard(state, snapshot));
-    renderCard(grid, 'Action Preview', renderActionPreviewCard(state, settings));
-
-    // Phase 4G Agent View Ledgers
-    renderCard(grid, 'Agent View', renderAgentViewLedgerCard(state));
-    renderCard(grid, 'Approval Audit Trail', renderApprovalAuditTrailCard(state));
-    renderCard(grid, 'Recovery / Blockers', renderRecoveryPanelCard(state));
-
-    // Detail panels
-    if (state.approvalDetail) {
-      renderCard(grid, 'Approval Details', renderApprovalDetailCard(state.approvalDetail));
-    }
-    if (state.modelRouterReportDetail) {
-      renderCard(grid, 'Model Router Report', renderModelRouterReportDetailCard(state.modelRouterReportDetail));
-    }
-    if (state.maintenancePreviewDetail) {
-      renderCard(grid, 'Maintenance Preview', renderMaintenancePreviewDetailCard(state.maintenancePreviewDetail));
-    }
+    // Active section content
+    renderActiveSectionContent(shell, activeSection, state, snapshot, settings);
 
     // Activity panel
     renderActivityPanel(shell, state);
   }
+}
+
+function renderSectionTabs(shell: HTMLElement, activeSection: BrainConsoleSectionId): void {
+  const tabBar = shell.createDiv({ cls: 'brain-console__section-tabs' });
+
+  for (const tab of SECTION_TABS) {
+    const btn = tabBar.createEl('button', { cls: 'brain-console__section-tab' });
+    if (tab.id === activeSection) {
+      btn.addClass('active');
+    }
+    btn.setAttribute('data-section-id', tab.id);
+    btn.setAttribute('title', tab.label);
+    btn.createEl('span', { cls: 'brain-console__tab-icon', text: tab.icon });
+    btn.createEl('span', { cls: 'brain-console__tab-label', text: tab.label });
+  }
+}
+
+function renderActiveSectionContent(
+  shell: HTMLElement,
+  activeSection: BrainConsoleSectionId,
+  state: BrainConsoleViewState,
+  snapshot: DashboardSnapshot,
+  settings: BrainConsoleSettings,
+): void {
+  const content = shell.createDiv({ cls: 'brain-console__section-content' });
+
+  switch (activeSection) {
+    case 'overview':
+      renderOverviewSection(content, state, snapshot);
+      break;
+    case 'apps':
+      renderAppsSection(content, state, snapshot);
+      break;
+    case 'orchestrators':
+      renderOrchestratorsSection(content, state, snapshot);
+      break;
+    case 'pipelines':
+      renderPipelinesSection(content, state, snapshot);
+      break;
+    case 'projects':
+      renderProjectsSection(content, state, snapshot);
+      break;
+    case 'reports':
+      renderReportsSection(content, state, snapshot);
+      break;
+    case 'agents':
+      renderAgentsSection(content, state, snapshot);
+      break;
+    case 'recovery':
+      renderRecoverySection(content, state, snapshot);
+      break;
+  }
+}
+
+function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  // What needs attention
+  renderCard(grid, 'What Needs Attention', renderWhatNeedsAttentionCard(state, snapshot));
+
+  // Next safe step
+  renderCard(grid, 'Next Safe Step', renderNextSafeStepCard(state, snapshot));
+
+  // Metric counts
+  renderCard(grid, 'Metrics', renderOverviewMetricsCard(snapshot));
+
+  // Status overview
+  renderCard(grid, 'Status', renderOverviewStatusCard(state));
+}
+
+function renderAppsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  renderCard(grid, 'Brain Core', renderBrainCoreCard(state));
+  renderCard(grid, 'Scheduler', renderSchedulerCard(state));
+  renderCard(grid, 'Local Apps', renderLocalAppsCard(state));
+}
+
+function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  renderCard(grid, 'Orchestrators', renderOrchestratorsCard(state, snapshot));
+
+  const videoOrch = state.orchestrators?.find(o => o.id === 'video-orchestrator');
+  if (videoOrch) {
+    renderCard(grid, 'Video Orchestrator', renderVideoOrchestratorCard(state, snapshot));
+  }
+}
+
+function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  renderCard(grid, 'Pipelines', renderPipelinesCard(state, snapshot));
+  renderCard(grid, 'STB Live Status', renderStbLiveStatusCard(state, snapshot));
+  renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
+}
+
+function renderProjectsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  renderCard(grid, 'Projects', renderProjectsCard(state, snapshot));
+  renderCard(grid, 'Platforms', renderPlatformsCard(state, snapshot));
+}
+
+function renderReportsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  renderCard(grid, 'Runtime Reports', renderRuntimeReportsCard(state));
+  renderCard(grid, 'Wiki Health', renderWikiHealthCard(state));
+
+  if (state.modelRouterReportDetail) {
+    renderCard(grid, 'Model Router Report', renderModelRouterReportDetailCard(state.modelRouterReportDetail));
+  }
+
+  if (state.maintenancePreviewDetail) {
+    renderCard(grid, 'Maintenance Preview', renderMaintenancePreviewDetailCard(state.maintenancePreviewDetail));
+  }
+
+  if (state.approvalDetail) {
+    renderCard(grid, 'Approval Details', renderApprovalDetailCard(state.approvalDetail));
+  }
+}
+
+function renderAgentsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  renderCard(grid, 'Agent View', renderAgentViewLedgerCard(state));
+  renderCard(grid, 'Approval Audit Trail', renderApprovalAuditTrailCard(state));
+  renderCard(grid, 'Agents (Summary)', renderAgentViewCard(state, snapshot));
+}
+
+function renderRecoverySection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  renderCard(grid, 'Recovery / Blockers', renderRecoveryPanelCard(state));
 }
 
 function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRefresh?: () => void): void {
@@ -525,6 +647,152 @@ function renderNextActionCard(snapshot: DashboardSnapshot): HTMLElement {
   if (snapshot.attentionLevel === 'review') metric.style.color = '#f97316';
   if (snapshot.attentionLevel === 'watch') metric.style.color = '#eab308';
   if (snapshot.attentionLevel === 'clear') metric.style.color = '#22c55e';
+
+  return container;
+}
+
+function renderWhatNeedsAttentionCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const issues: string[] = [];
+
+  // Recovery errors
+  if (snapshot.recoveryItemErrorCount > 0) {
+    issues.push(`${snapshot.recoveryItemErrorCount} recovery error${snapshot.recoveryItemErrorCount > 1 ? 's' : ''}`);
+  }
+
+  // Wiki health
+  if (snapshot.wikiHealthErrors > 0) {
+    issues.push(`${snapshot.wikiHealthErrors} wiki error${snapshot.wikiHealthErrors > 1 ? 's' : ''}`);
+  }
+
+  // Blocked agents
+  if (snapshot.agentRunBlockedCount > 0) {
+    issues.push(`${snapshot.agentRunBlockedCount} blocked agent run${snapshot.agentRunBlockedCount > 1 ? 's' : ''}`);
+  }
+
+  // Migration blocked
+  if (snapshot.migrationBlockedCount > 0) {
+    issues.push(`${snapshot.migrationBlockedCount} migration blocked`);
+  }
+
+  // Pending approvals
+  if (snapshot.approvalsCount > 0) {
+    issues.push(`${snapshot.approvalsCount} approval${snapshot.approvalsCount > 1 ? 's' : ''} pending`);
+  }
+
+  // Maintenance previews
+  if (snapshot.maintenanceCount > 0) {
+    issues.push(`${snapshot.maintenanceCount} maintenance in queue`);
+  }
+
+  if (issues.length === 0) {
+    const metric = container.createEl('div', { cls: 'brain-console__metric', text: '✓ clear' });
+    metric.style.color = '#22c55e';
+    container.createEl('p', { cls: 'brain-console__detail', text: 'No urgent issues detected.' });
+  } else {
+    const list = container.createEl('ul', { cls: 'brain-console__list' });
+    issues.forEach(issue => {
+      list.createEl('li', { text: issue });
+    });
+  }
+
+  return container;
+}
+
+function renderNextSafeStepCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  let step = 'No action needed.';
+
+  // Top recovery blocker
+  if (snapshot.recoveryItemErrorCount > 0 && state.recoveryItems?.length) {
+    const topError = state.recoveryItems.find(i => i.severity === 'error');
+    if (topError?.nextSafeStep) {
+      step = topError.nextSafeStep;
+    } else {
+      step = 'Review recovery blockers.';
+    }
+  } else if (snapshot.wikiHealthErrors > 0) {
+    step = 'Review wiki health report.';
+  } else if (snapshot.migrationBlockedCount > 0) {
+    step = 'Review STB to video migration status.';
+  } else if (snapshot.approvalsCount > 0) {
+    step = 'Review pending approvals.';
+  } else if (snapshot.maintenanceCount > 0) {
+    step = 'Review maintenance queue.';
+  }
+
+  container.createEl('div', { cls: 'brain-console__metric', text: '→' });
+  container.createEl('p', { cls: 'brain-console__detail', text: step });
+
+  return container;
+}
+
+function renderOverviewMetricsCard(snapshot: DashboardSnapshot): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const metrics = [
+    { label: 'Approvals', value: snapshot.approvalsCount },
+    { label: 'Maintenance', value: snapshot.maintenanceCount },
+    { label: 'Agent runs', value: snapshot.agentRunCount },
+    { label: 'Recovery items', value: snapshot.recoveryItemCount },
+    { label: 'Actions', value: snapshot.actionCount },
+    { label: 'Reports', value: snapshot.approvalsCount > 0 ? '▸' : '○' },
+  ];
+
+  const list = container.createEl('ul', { cls: 'brain-console__list' });
+  metrics.forEach(m => {
+    list.createEl('li', { text: `${m.label}: ${m.value}` });
+  });
+
+  return container;
+}
+
+function renderOverviewStatusCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const online = state.status?.ok === true;
+  const statusText = online ? 'online' : 'offline';
+  const statusColor = online ? '#22c55e' : '#ef4444';
+
+  const metric = container.createEl('div', { cls: 'brain-console__metric', text: statusText });
+  metric.style.color = statusColor;
+
+  container.createEl('p', { cls: 'brain-console__detail', text: `v${state.status?.version ?? '?'}` });
+
+  const mrReport = state.runtimeReports?.find(r => r.id === 'model-router');
+  if (mrReport?.wikiHealth) {
+    const wikiText = mrReport.wikiHealth.ok
+      ? 'Wiki: ✓ ok'
+      : `Wiki: ${mrReport.wikiHealth.errorCount}e ${mrReport.wikiHealth.warningCount}w`;
+    container.createEl('p', { cls: 'brain-console__detail', text: wikiText });
+  }
+
+  return container;
+}
+
+function renderLocalAppsCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  if (!state.localApps || state.localApps.length === 0) {
+    container.createEl('div', { cls: 'brain-console__list-note', text: 'No local apps available' });
+    return container;
+  }
+
+  const list = container.createEl('ul', { cls: 'brain-console__list' });
+  state.localApps.slice(0, 5).forEach(app => {
+    list.createEl('li', { text: `${app.name}` });
+  });
+
+  if (state.localApps.length > 5) {
+    list.createEl('li', { cls: 'brain-console__list-note', text: `... and ${state.localApps.length - 5} more` });
+  }
 
   return container;
 }

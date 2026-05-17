@@ -1,6 +1,6 @@
 import { ItemView, Notice, Plugin, PluginSettingTab, Setting, requestUrl, type WorkspaceLeaf } from 'obsidian';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
-import { loadBrainConsoleViewState, renderBrainConsoleView } from './view.js';
+import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSectionId } from './view.js';
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
@@ -79,6 +79,7 @@ class BrainConsoleSettingTab extends PluginSettingTab {
 
 class BrainConsoleView extends ItemView {
   private readonly plugin: BrainConsolePlugin;
+  private activeSection: BrainConsoleSectionId = 'overview';
 
   constructor(leaf: WorkspaceLeaf, plugin: BrainConsolePlugin) {
     super(leaf);
@@ -107,12 +108,25 @@ class BrainConsoleView extends ItemView {
       void this.refresh();
     });
 
+    // Attach tab click handler to container
+    this.registerDomEvent(this.contentEl, 'click', (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('brain-console__section-tab')) {
+        const sectionId = target.getAttribute('data-section-id') as BrainConsoleSectionId | null;
+        if (sectionId) {
+          this.activeSection = sectionId;
+          void this.refresh();
+        }
+      }
+    });
+
     await this.refresh();
   }
 
   async refresh(): Promise<void> {
     const settings = await this.plugin.getSettings();
     const current = await loadBrainConsoleViewState(settings);
+    current.activeSection = this.activeSection;
     renderBrainConsoleView(this.contentEl, current, settings, () => {
       void this.refresh();
     });
