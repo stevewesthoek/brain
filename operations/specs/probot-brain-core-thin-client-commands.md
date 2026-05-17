@@ -40,6 +40,7 @@ The current ProBot command layer is split between Slack and Telegram handlers pl
 - The resolver is intentionally framework-agnostic and only uses Brain Core GET helpers.
 - A very small shared dispatch hook was added in the Slack DM text path and Telegram `message:text` path.
 - Legacy slash-command behavior still remains intact.
+- The aliases are now wired as a small read-only escape hatch, not a primary dashboard surface.
 
 ## Exact code locations to refactor later
 

@@ -736,6 +736,11 @@ An alias resolver now exists at `projects/probot/src/services/brain-core-command
 The Slack DM text path and Telegram `message:text` path now both short-circuit `brain ...` messages into that resolver before the legacy command handling continues.
 
 Current Mind dirty-state isolation reporting lives in `operations/reports/mind-dirty-state-isolation-2026-05-17.md`.
+
+The fresh Mind inventory and cleanup matrix now live in:
+
+- `operations/reports/mind-dirty-state-inventory-2026-05-18.md`
+- `operations/reports/mind-cleanup-decision-matrix-2026-05-18.md`
 - Linked the Brain Core README to the new runbook.
 
 Validation:

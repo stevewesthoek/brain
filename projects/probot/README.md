@@ -33,6 +33,8 @@ Desired read-only Brain Core command aliases for the thin-client direction are:
 
 These should remain GET-only and fail soft when Brain Core is offline.
 
+They are now wired through the Slack DM text path and Telegram `message:text` path as a small read-only escape hatch, not as a new dashboard surface.
+
 ## Current Direction: Dashboard Freeze
 
 The ProBot dashboard is deprecated as a primary UI. Obsidian is the target primary human cockpit, backed by a small local Brain Core API.

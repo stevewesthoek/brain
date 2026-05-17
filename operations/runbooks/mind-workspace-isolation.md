@@ -15,7 +15,8 @@ Document how to isolate the unrelated dirty state in the `mind` repo without sta
 
 See also:
 
-- `operations/reports/mind-dirty-state-isolation-2026-05-17.md`
+- `operations/reports/mind-dirty-state-inventory-2026-05-18.md`
+- `operations/reports/mind-cleanup-decision-matrix-2026-05-18.md`
 
 ## Rules for future cleanup
 
