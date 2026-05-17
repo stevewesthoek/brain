@@ -43,6 +43,12 @@ export interface DashboardSnapshot {
   blockedActionCount: number;
   plannedActionCount: number;
   approvalRequiredActionCount: number;
+  agentRunCount: number;
+  agentRunBlockedCount: number;
+  agentRunPlannedCount: number;
+  recoveryItemCount: number;
+  recoveryItemErrorCount: number;
+  recoveryItemWarningCount: number;
 }
 
 export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreUrl: string): DashboardSnapshot {
@@ -181,6 +187,16 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const plannedActionCount = (state.actions ?? []).filter(a => a.status === 'planned').length;
   const approvalRequiredActionCount = (state.actions ?? []).filter(a => a.requiresApproval).length;
 
+  // Agent run analysis (Phase 4G)
+  const agentRunCount = (state.agentRuns ?? []).length;
+  const agentRunBlockedCount = (state.agentRuns ?? []).filter(r => r.status === 'blocked').length;
+  const agentRunPlannedCount = (state.agentRuns ?? []).filter(r => r.status === 'planned').length;
+
+  // Recovery item analysis (Phase 4G)
+  const recoveryItemCount = (state.recoveryItems ?? []).length;
+  const recoveryItemErrorCount = (state.recoveryItems ?? []).filter(i => i.severity === 'error').length;
+  const recoveryItemWarningCount = (state.recoveryItems ?? []).filter(i => i.severity === 'warning').length;
+
   return {
     connectionStatus,
     attentionLevel,
@@ -220,6 +236,12 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     blockedActionCount,
     plannedActionCount,
     approvalRequiredActionCount,
+    agentRunCount,
+    agentRunBlockedCount,
+    agentRunPlannedCount,
+    recoveryItemCount,
+    recoveryItemErrorCount,
+    recoveryItemWarningCount,
   };
 }
 
