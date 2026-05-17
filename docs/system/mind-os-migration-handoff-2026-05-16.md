@@ -536,3 +536,48 @@ Next safe Phase 3 work:
 
 - Build an actual Obsidian plugin only when plugin folder write policy and packaging location are confirmed.
 - Until then, Mind documents the integration contract and remains readable without live API data.
+
+## Brain Core Phase 4 approval boundary — 2026-05-17
+
+Completed a safe approval-aware action boundary slice.
+
+New file:
+
+```text
+projects/brain-core/src/adapters/actions.ts
+```
+
+Updated files:
+
+```text
+projects/brain-core/src/adapters/approvals.ts
+projects/brain-core/src/api/routes.ts
+projects/brain-core/src/tests/routes.test.ts
+projects/brain-core/src/types/api.ts
+projects/brain-core/README.md
+```
+
+Implemented local-only POST routes:
+
+```text
+POST /actions/request?kind=<safe-action-kind>
+POST /approvals/:id/approve
+POST /approvals/:id/reject
+```
+
+Safety boundary:
+
+- Requests create in-memory approval records only.
+- Approval/rejection updates approval status only.
+- All responses return `executed: false`.
+- No shell commands are run.
+- No local apps are started/stopped/restarted.
+- No scheduler jobs are triggered.
+- No sessions are resumed.
+- No external systems are mutated.
+- Approval storage is in-memory only in this slice.
+
+Validation:
+
+- `npm run ci` in `projects/brain-core` passed.
+- CI included typecheck and 18 Node route/adapter/widget tests.

@@ -80,7 +80,19 @@ export interface BrainCoreApprovalSummary {
   kind: string;
   status: 'placeholder' | 'pending' | 'approved' | 'rejected' | 'expired';
   expiresAt?: string;
-  source: 'placeholder';
+  source: 'placeholder' | 'memory';
+}
+
+export interface BrainCoreActionRequestResult {
+  approval: BrainCoreApprovalSummary;
+  executed: false;
+  message: string;
+}
+
+export interface BrainCoreApprovalDecisionResult {
+  approval: BrainCoreApprovalSummary;
+  executed: false;
+  message: string;
 }
 
 export interface BrainCoreErrorResponse {
@@ -116,4 +128,7 @@ export interface BrainCoreRoutes {
   '/approvals': {
     approvals: BrainCoreApprovalSummary[];
   };
+  '/actions/request': BrainCoreActionRequestResult;
+  '/approvals/:id/approve': BrainCoreApprovalDecisionResult;
+  '/approvals/:id/reject': BrainCoreApprovalDecisionResult;
 }

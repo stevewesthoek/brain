@@ -43,7 +43,17 @@ Current `/local-apps` is a read-only placeholder list for local services that ma
 
 Current `/video/status` and `/video/queue` are read-only placeholders for the future Video Orchestrator adapter. They do not inspect media folders, start renders, or upload files.
 
-Current `/approvals` is a read-only placeholder for the future approval store adapter. Approval mutation endpoints are intentionally absent in Phase 1.
+Current `/approvals` reads the in-memory Phase 4 approval request store, returning a placeholder when no requests exist.
+
+Current mutation surface is intentionally minimal:
+
+```text
+POST /actions/request?kind=<safe-action-kind>
+POST /approvals/:id/approve
+POST /approvals/:id/reject
+```
+
+These endpoints are local-only, approval-aware scaffolding. They create or update approval records but always return `executed: false`; they do not run shell commands, start/stop apps, trigger scheduler jobs, resume sessions, or mutate external systems.
 
 These adapters intentionally do not import ProBot dashboard code. Future slices should migrate richer read-only backend logic from ProBot without importing dashboard rendering or browser state.
 

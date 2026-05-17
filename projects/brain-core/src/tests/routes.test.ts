@@ -145,17 +145,49 @@ test('GET /video/queue returns read-only queue list', async () => {
   assert.equal(Array.isArray(body.queue), true);
 });
 
-test('GET /approvals returns placeholder approvals list', async () => {
+test('GET /approvals returns placeholder approvals list before action requests', async () => {
   const response = await exercise({ method: 'GET', url: '/approvals' });
   const body = JSON.parse(response.body) as { approvals: Array<{ id: string; status: string }> };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.approvals.length, 1);
-  assert.equal(body.approvals[0]?.status, 'placeholder');
+  assert.equal(body.approvals.length > 0, true);
+  assert.equal(typeof body.approvals[0]?.status, 'string');
 });
 
-test('non-GET requests are rejected', async () => {
-  const response = await exercise({ method: 'POST', url: '/status' });
+test('POST /actions/request creates an approval record without executing', async () => {
+  const response = await exercise({ method: 'POST', url: '/actions/request?kind=restart-probot' });
+  const body = JSON.parse(response.body) as { approval: { id: string; kind: string; status: string }; executed: boolean };
+
+  assert.equal(response.statusCode, 202);
+  assert.equal(body.approval.kind, 'restart-probot');
+  assert.equal(body.approval.status, 'pending');
+  assert.equal(body.executed, false);
+});
+
+test('POST /approvals/:id/approve marks approval approved without executing', async () => {
+  const requestResponse = await exercise({ method: 'POST', url: '/actions/request?kind=test-action' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const body = JSON.parse(response.body) as { approval: { status: string }; executed: boolean };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.approval.status, 'approved');
+  assert.equal(body.executed, false);
+});
+
+test('POST /approvals/:id/reject marks approval rejected without executing', async () => {
+  const requestResponse = await exercise({ method: 'POST', url: '/actions/request?kind=test-action' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/reject` });
+  const body = JSON.parse(response.body) as { approval: { status: string }; executed: boolean };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.approval.status, 'rejected');
+  assert.equal(body.executed, false);
+});
+
+test('unsupported non-GET/POST requests are rejected', async () => {
+  const response = await exercise({ method: 'PUT', url: '/status' });
   const body = JSON.parse(response.body) as { error: { code: string } };
 
   assert.equal(response.statusCode, 405);

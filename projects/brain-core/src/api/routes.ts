@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { decideApproval, requestAction } from '../adapters/actions.js';
 import { listApprovals } from '../adapters/approvals.js';
 import { listLocalApps } from '../adapters/local-apps.js';
 import { listRepos } from '../adapters/repos.js';
@@ -33,11 +34,16 @@ export async function routeRequest(
   const method = request.method || 'GET';
   const url = new URL(request.url || '/', 'http://127.0.0.1');
 
+  if (method === 'POST') {
+    routePostRequest(url, response);
+    return;
+  }
+
   if (method !== 'GET') {
     sendJson(response, 405, {
       error: {
         code: 'method_not_allowed',
-        message: 'Brain Core Phase 1 is read-only and only supports GET.',
+        message: 'Brain Core supports GET plus approval-aware POST request/decision endpoints only.',
       },
     } satisfies BrainCoreErrorResponse);
     return;
@@ -85,6 +91,29 @@ export async function routeRequest(
         },
       } satisfies BrainCoreErrorResponse);
   }
+}
+
+function routePostRequest(url: URL, response: ServerResponse): void {
+  if (url.pathname === '/actions/request') {
+    const kind = url.searchParams.get('kind') || 'manual-request';
+    sendJson(response, 202, requestAction(kind));
+    return;
+  }
+
+  const approvalMatch = /^\/approvals\/([^/]+)\/(approve|reject)$/.exec(url.pathname);
+  if (approvalMatch) {
+    const approvalId = approvalMatch[1] ?? '';
+    const decision = approvalMatch[2] === 'approve' ? 'approve' : 'reject';
+    sendJson(response, 200, decideApproval(approvalId, decision));
+    return;
+  }
+
+  sendJson(response, 404, {
+    error: {
+      code: 'not_found',
+      message: 'POST route not found. Available POST routes: /actions/request, /approvals/:id/approve, /approvals/:id/reject.',
+    },
+  } satisfies BrainCoreErrorResponse);
 }
 
 function sendJson(response: ServerResponse, statusCode: number, body: unknown): void {
