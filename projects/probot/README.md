@@ -37,6 +37,7 @@ They are now wired through the Slack DM text path and Telegram `message:text` pa
 Status summaries now also include the read-only `video` and `local-apps` runtime reports when Brain Core exposes them.
 Those runtime summaries were live-verified against the local Brain Core server on `http://127.0.0.1:4877` during the current roadmap pass.
 ProBot status also includes approval-store health when Brain Core exposes `/approvals/store`, still with execution disabled.
+ProBot status also includes the read-only execution readiness view from `/execution/readiness` plus the first candidate from `/execution/plans`, still with execution disabled.
 
 ## Current Direction: Dashboard Freeze
 

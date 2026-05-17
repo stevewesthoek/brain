@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { decideApproval, getApprovalStoreSummary, listApprovalAuditEvents, requestAction } from '../adapters/actions.js';
+import { getExecutionPlan, getExecutionReadiness, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
 import { getCapabilities } from '../adapters/capabilities.js';
 import { listOrchestrators } from '../adapters/orchestrators.js';
@@ -95,6 +96,12 @@ export async function routeRequest(
     case '/approvals/store':
       sendJson(response, 200, getApprovalStoreSummary());
       return;
+    case '/execution/plans':
+      sendJson(response, 200, { plans: listExecutionPlans() });
+      return;
+    case '/execution/readiness':
+      sendJson(response, 200, getExecutionReadiness());
+      return;
     case '/approvals/audit':
       sendJson(response, 200, { events: listApprovalAuditEvents() });
       return;
@@ -102,10 +109,27 @@ export async function routeRequest(
       sendJson(response, 200, { reports: listRuntimeReports() });
       return;
     default:
+      {
+        const executionPlanMatch = /^\/execution\/plans\/([^/]+)$/.exec(url.pathname);
+        if (executionPlanMatch) {
+          const plan = getExecutionPlan(executionPlanMatch[1] ?? '');
+          if (plan) {
+            sendJson(response, 200, { plan });
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Execution plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+      }
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
   }

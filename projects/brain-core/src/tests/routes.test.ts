@@ -130,6 +130,13 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
       commandAliasesEnabled: boolean;
       actionsEnabled: boolean;
     };
+    executionGate: {
+      executionEnabled: boolean;
+      candidateActionKinds: string[];
+      readinessEndpoint: string;
+      plansEndpoint: string;
+      firstCandidate: string;
+    };
   };
 
   assert.equal(response.statusCode, 200);
@@ -155,6 +162,11 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.probot.thinClientStatus, 'wired');
   assert.equal(body.probot.commandAliasesEnabled, true);
   assert.equal(body.probot.actionsEnabled, false);
+  assert.equal(body.executionGate.executionEnabled, false);
+  assert.equal(body.executionGate.firstCandidate, 'scheduler-run-model-router-dry-run');
+  assert.equal(body.executionGate.readinessEndpoint, '/execution/readiness');
+  assert.equal(body.executionGate.plansEndpoint, '/execution/plans');
+  assert.equal(body.executionGate.candidateActionKinds.includes('scheduler-run-model-router-dry-run'), true);
 });
 
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
@@ -440,10 +452,32 @@ test('GET /approvals/store returns read-only store health', async () => {
   const body = JSON.parse(response.body) as { enabled: boolean; status: string; recordCount: number; writesToMind: boolean; executableActions: boolean };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.enabled, true);
+  assert.equal(body.enabled, false);
+  assert.equal(body.status, 'memory');
   assert.equal(body.writesToMind, false);
   assert.equal(body.executableActions, false);
   assert.equal(typeof body.recordCount, 'number');
+});
+
+test('GET /approvals/store reports unsafe for invalid configured path', async () => {
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = '/Users/Office/Repos/stevewesthoek/mind/.obsidian/approvals.json';
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/approvals/store' });
+    const body = JSON.parse(response.body) as { enabled: boolean; status: string; recordCount: number };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.enabled, false);
+    assert.equal(body.status, 'unsafe');
+    assert.equal(body.recordCount, 0);
+  } finally {
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+  }
 });
 
 test('POST /actions/request persists approval records when the store path is configured', async () => {
@@ -474,6 +508,66 @@ test('POST /actions/request persists approval records when the store path is con
   }
 });
 
+test('GET /approvals/store returns invalid for corrupted persisted store', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-approval-store-invalid');
+  const storePath = path.join(testDir, 'approvals.json');
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(storePath, '{not-json');
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/approvals/store' });
+    const body = JSON.parse(response.body) as { enabled: boolean; status: string; recordCount: number };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.enabled, true);
+    assert.equal(body.status, 'invalid');
+    assert.equal(body.recordCount, 0);
+  } finally {
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('POST /actions/request surfaces store summary when approval store is enabled', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-approval-store-summary');
+  const storePath = path.join(testDir, 'approvals.json');
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
+
+  try {
+    const response = await exercise({ method: 'POST', url: '/actions/request?kind=manual-request' });
+    const body = JSON.parse(response.body) as { preview: { wouldExecute: boolean }; policy: { executionEnabled: boolean }; executed: boolean };
+    const storeResponse = await exercise({ method: 'GET', url: '/approvals/store' });
+    const storeBody = JSON.parse(storeResponse.body) as { enabled: boolean; status: string; recordCount: number };
+
+    assert.equal(response.statusCode, 202);
+    assert.equal(body.preview.wouldExecute, false);
+    assert.equal(body.policy.executionEnabled, false);
+    assert.equal(body.executed, false);
+    assert.equal(storeBody.enabled, true);
+    assert.equal(storeBody.status, 'available');
+    assert.equal(storeBody.recordCount > 0, true);
+  } finally {
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
 test('POST /actions/request creates an approval record without executing', async () => {
   const response = await exercise({ method: 'POST', url: '/actions/request?kind=manual-request' });
   const body = JSON.parse(response.body) as {
@@ -491,6 +585,81 @@ test('POST /actions/request creates an approval record without executing', async
   assert.equal(body.policy.executionEnabled, false);
   assert.equal(body.policy.executionGate, 'disabled-until-explicit-enable');
   assert.equal(body.executed, false);
+});
+
+test('POST /scheduler/jobs/model-router-dry-run/request-run uses execution plan preview metadata without executing', async () => {
+  const response = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+  const body = JSON.parse(response.body) as {
+    approval: { kind: string; status: string };
+    preview: { kind: string; summary: string; wouldExecute: boolean; writesToMind: boolean };
+    policy: { executionEnabled: boolean; requiresDurableAudit: boolean; requiresRollbackPlan: boolean };
+    executed: boolean;
+  };
+
+  assert.equal(response.statusCode, 202);
+  assert.equal(body.approval.kind, 'scheduler-run-model-router-dry-run');
+  assert.equal(body.approval.status, 'pending');
+  assert.equal(body.preview.kind, 'scheduler-run-model-router-dry-run');
+  assert.equal(body.preview.summary.toLowerCase().includes('report-only model-router dry-run'), true);
+  assert.equal(body.preview.wouldExecute, false);
+  assert.equal(body.preview.writesToMind, false);
+  assert.equal(body.policy.executionEnabled, false);
+  assert.equal(body.policy.requiresDurableAudit, true);
+  assert.equal(body.policy.requiresRollbackPlan, true);
+  assert.equal(body.executed, false);
+});
+
+test('GET /execution/plans returns the future first execution candidate', async () => {
+  const response = await exercise({ method: 'GET', url: '/execution/plans' });
+  const body = JSON.parse(response.body) as { plans: Array<{ kind: string; candidate: boolean; executionEnabled: boolean; wouldExecute: boolean; executed: boolean; writesToMind: boolean }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plans.length, 1);
+  assert.equal(body.plans[0]?.kind, 'scheduler-run-model-router-dry-run');
+  assert.equal(body.plans[0]?.candidate, true);
+  assert.equal(body.plans[0]?.executionEnabled, false);
+  assert.equal(body.plans[0]?.wouldExecute, false);
+  assert.equal(body.plans[0]?.executed, false);
+  assert.equal(body.plans[0]?.writesToMind, false);
+});
+
+test('GET /execution/plans/:kind returns the execution plan by kind', async () => {
+  const response = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-model-router-dry-run' });
+  const body = JSON.parse(response.body) as { plan: { kind: string; summary: string; executed: boolean; wouldExecute: boolean } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.kind, 'scheduler-run-model-router-dry-run');
+  assert.equal(body.plan.executed, false);
+  assert.equal(body.plan.wouldExecute, false);
+  assert.equal(body.plan.summary.toLowerCase().includes('report-only model-router dry-run'), true);
+});
+
+test('GET /execution/plans/:kind returns not found for unknown kind', async () => {
+  const response = await exercise({ method: 'GET', url: '/execution/plans/unknown-kind' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /execution/readiness returns execution disabled and blockers', async () => {
+  const response = await exercise({ method: 'GET', url: '/execution/readiness' });
+  const body = JSON.parse(response.body) as {
+    executionEnabled: boolean;
+    candidateCount: number;
+    readyCandidateCount: number;
+    blockers: string[];
+    writesToMind: boolean;
+    executableActions: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.executionEnabled, false);
+  assert.equal(body.candidateCount, 1);
+  assert.equal(body.readyCandidateCount, 0);
+  assert.equal(body.writesToMind, false);
+  assert.equal(body.executableActions, false);
+  assert.equal(body.blockers.includes('execution disabled globally'), true);
 });
 
 test('GET /approvals/audit returns approval audit events', async () => {

@@ -15,12 +15,24 @@ export function getDefaultApprovalStorePath(): string {
 
 export function getApprovalStorePath(): string | undefined {
   const configuredPath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const resolved = configuredPath ? resolveSafeStorePath(configuredPath) : getDefaultApprovalStorePath();
-  return resolved;
+  return configuredPath ? resolveSafeStorePath(configuredPath) : undefined;
 }
 
 export function readApprovalStore(): BrainCoreApprovalStoreSummary & { records: BrainCoreApprovalRecord[] } {
-  const resolvedPath = getApprovalStorePath();
+  const configuredPath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+  if (!configuredPath) {
+    return {
+      enabled: false,
+      status: 'memory',
+      path: DEFAULT_RELATIVE_PATH,
+      recordCount: 0,
+      writesToMind: false,
+      executableActions: false,
+      records: [],
+    };
+  }
+
+  const resolvedPath = resolveSafeStorePath(configuredPath);
   if (!resolvedPath) {
     return {
       enabled: false,

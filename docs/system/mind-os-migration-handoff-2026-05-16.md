@@ -218,6 +218,7 @@ Brain Core changes:
 - `BRAIN_CORE_APPROVAL_AUDIT_PATH` now rejects unsafe paths containing `..`, `mind`, `.env`, `.git`, `node_modules`, `dist`, or `build`.
 - Approval requests are normalized through a strict allowlist scaffold; unsupported kinds are rejected without execution.
 - Capability output now advertises approval-audit persistence support, model-router report support, and the current read-only/offline state of the scheduler and Obsidian plugin integration.
+- Brain Core now also exposes read-only execution readiness for the first future candidate, `scheduler-run-model-router-dry-run`, via `/execution/plans` and `/execution/readiness`. Execution remains disabled.
 
 Model-router changes:
 

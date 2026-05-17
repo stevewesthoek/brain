@@ -5,6 +5,8 @@ import {
   readBrainCoreApprovalStore,
   readBrainCoreCapabilities,
   readBrainCoreLocalApps,
+  readBrainCoreExecutionPlans,
+  readBrainCoreExecutionReadiness,
   readBrainCoreRepos,
   readBrainCoreRuntimeReports,
   readBrainCoreSchedulerJobs,
@@ -17,6 +19,8 @@ import {
   type BrainCoreApprovalStoreSummary,
   type BrainCoreCapabilitySummary,
   type BrainCoreLocalAppSummary,
+  type BrainCoreExecutionPlan,
+  type BrainCoreExecutionReadiness,
   type BrainCoreRepoSummary,
   type BrainCoreRuntimeReportSummary,
   type BrainCoreSchedulerJobSummary,
@@ -40,6 +44,8 @@ export interface BrainConsoleViewState {
   repos?: BrainCoreRepoSummary[];
   approvals?: BrainCoreApprovalSummary[];
   approvalStore?: BrainCoreApprovalStoreSummary;
+  executionPlans?: BrainCoreExecutionPlan[];
+  executionReadiness?: BrainCoreExecutionReadiness;
   warning?: string;
   offline?: boolean;
 }
@@ -49,7 +55,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -62,6 +68,8 @@ export async function loadBrainConsoleViewState(
     readBrainCoreRepos(baseUrl),
     readBrainCoreApprovals(baseUrl),
     readBrainCoreApprovalStore(baseUrl),
+    readBrainCoreExecutionPlans(baseUrl),
+    readBrainCoreExecutionReadiness(baseUrl),
   ]);
 
   const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore].every(
@@ -81,6 +89,8 @@ export async function loadBrainConsoleViewState(
     repos: repos.value?.repos,
     approvals: approvals.value?.approvals,
     approvalStore: approvalStore.value,
+    executionPlans: executionPlans.value?.plans,
+    executionReadiness: executionReadiness.value,
     warning: normalized.warning ?? normalized.error,
     offline,
   };
@@ -136,6 +146,8 @@ export function renderBrainConsoleView(
     ['Brain Console installed in Mind', String(state.capabilities?.brainConsole?.installedInMindVault ?? false)],
     ['ProBot aliases enabled', String(state.capabilities?.probot?.commandAliasesEnabled ?? false)],
     ['Legacy migration', state.capabilities?.mindWorkspace?.legacyTaskMigrationStatus ?? 'unknown'],
+    ['Execution gate', state.capabilities?.executionGate?.executionEnabled === false ? 'disabled' : 'unknown'],
+    ['First candidate', state.capabilities?.executionGate?.firstCandidate ?? 'unknown'],
   ]);
   renderSection(grid, 'Runtime reports', describeRuntimeReports(state.runtimeReports));
   renderSection(grid, 'Video', describeVideo(state.videoStatus, state.videoQueue));
@@ -143,6 +155,7 @@ export function renderBrainConsoleView(
   renderSection(grid, 'Scheduler', describeScheduler(state.schedulerStatus, state.schedulerJobs));
   renderSection(grid, 'Sessions / repos / approvals', describeCollections(state.sessions, state.repos, state.approvals));
   renderSection(grid, 'Approval gate', describeApprovalGate(state.approvalStore));
+  renderSection(grid, 'Execution readiness', describeExecutionReadiness(state.executionReadiness, state.executionPlans));
 }
 
 function renderSection(parent: HTMLElement, title: string, entries: Array<[string, string]>): void {
@@ -235,6 +248,29 @@ function describeApprovalGate(
     ['Records', String(approvalStore.recordCount)],
     ['Execution enabled', String(false)],
     ['Gate', 'disabled-until-explicit-enable'],
+  ];
+}
+
+function describeExecutionReadiness(
+  readiness: BrainConsoleViewState['executionReadiness'],
+  plans: BrainCoreExecutionPlan[] | undefined,
+): Array<[string, string]> {
+  const firstPlan = plans?.[0];
+  if (!readiness) {
+    return [
+      ['Execution enabled', 'false'],
+      ['Candidates', 'Unavailable'],
+      ['Ready candidates', 'Unavailable'],
+      ['Blockers', 'Unavailable'],
+    ];
+  }
+
+  return [
+    ['Execution enabled', String(readiness.executionEnabled)],
+    ['Candidates', String(readiness.candidateCount)],
+    ['Ready candidates', String(readiness.readyCandidateCount)],
+    ['Blockers', readiness.blockers.slice(0, 3).join(', ') || 'none'],
+    ['First candidate', firstPlan?.kind ?? 'none'],
   ];
 }
 

@@ -1,6 +1,8 @@
 import {
   readBrainCoreApprovals,
   readBrainCoreCapabilities,
+  readBrainCoreExecutionPlans,
+  readBrainCoreExecutionReadiness,
   readBrainCoreRuntimeReports,
   readBrainCoreSchedulerJobs,
   readBrainCoreSessions,
@@ -71,6 +73,8 @@ export async function handleBrainCoreCommand(text: string, brainCoreUrl: string)
     readBrainCoreSchedulerJobs(brainCoreUrl),
     readBrainCoreApprovals(brainCoreUrl),
   ]);
+  const executionPlans = await readBrainCoreExecutionPlans(brainCoreUrl);
+  const executionReadiness = await readBrainCoreExecutionReadiness(brainCoreUrl);
 
   if (subcommand === "status") {
     return [status.line, capabilities.line].join("\n");
@@ -88,12 +92,18 @@ export async function handleBrainCoreCommand(text: string, brainCoreUrl: string)
   }
 
   if (subcommand === "approvals") {
-    return [approvals.line, `Executable actions: ${capabilities.executableActionsEnabled ? "enabled" : "disabled"}`].join("\n");
+    return [
+      approvals.line,
+      executionReadiness.line,
+      `Execution gate: ${executionReadiness.executionEnabled ? "enabled" : "disabled"} · first candidate: ${executionPlans.firstCandidate}`,
+      `Executable actions: ${capabilities.executableActionsEnabled ? "enabled" : "disabled"}`,
+    ].join("\n");
   }
 
   return [
     schedulerJobs.line,
     reports.line,
+    executionReadiness.line,
     `Executable actions: ${capabilities.executableActionsEnabled ? "enabled" : "disabled"}`,
   ].join("\n");
 }

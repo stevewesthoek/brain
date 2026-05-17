@@ -31,6 +31,10 @@ GET /local-apps
 GET /video/status
 GET /video/queue
 GET /approvals
+GET /approvals/store
+GET /execution/plans
+GET /execution/plans/:kind
+GET /execution/readiness
 ```
 
 Current `/sessions` scans optional directories configured by `BRAIN_CORE_SESSION_DIRS`, `CLAUDE_PROJECTS_DIR`, `CODEX_SESSIONS_DIR`, and `GEMINI_SESSIONS_DIR`. It recursively discovers session-like files, infers the tool from names/paths, adds age and intent labels, applies simple recency/intent scoring, and returns a placeholder when no readable session directory is configured.
@@ -54,6 +58,8 @@ Those report-backed local app and video surfaces were live-verified over `http:/
 Current `/approvals` reads the in-memory Phase 4 approval request store, returning a placeholder when no requests exist.
 
 Current `/approvals/store` exposes read-only approval-store health and record counts. When `BRAIN_CORE_APPROVAL_STORE_PATH` points to a safe JSON file, Brain Core persists approval records there; otherwise it falls back to memory.
+
+Current `/execution/plans`, `/execution/plans/:kind`, and `/execution/readiness` expose a read-only execution-gate scaffold. The first candidate is `scheduler-run-model-router-dry-run`, but Brain Core still reports `executionEnabled: false`, `wouldExecute: false`, and `executed: false`.
 
 Current mutation surface is intentionally minimal:
 
@@ -135,4 +141,5 @@ This is not an Obsidian plugin yet. It is the audited data shape that a plugin c
 - Approval-request endpoints are local-only `POST` routes that always return `executed: false`.
 - Non-local requests are rejected.
 - Runtime state should be returned from adapters, not duplicated into markdown.
+- Execution-readiness endpoints are read-only and do not enable execution.
 - Executable mutation behavior must wait for persistent audit storage, explicit UX, and separate approval.

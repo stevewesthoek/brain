@@ -13,6 +13,17 @@ export interface BrainCoreCapabilitiesResponse {
   runtimeReportsSupported?: boolean;
 }
 
+export interface BrainCoreExecutionPlanResponse {
+  plans: Array<{ kind: string; candidate: boolean; executionEnabled: boolean; wouldExecute: boolean; executed: boolean; summary: string }>;
+}
+
+export interface BrainCoreExecutionReadinessResponse {
+  executionEnabled: boolean;
+  candidateCount: number;
+  readyCandidateCount: number;
+  blockers: string[];
+}
+
 export interface BrainCoreRuntimeReportSummary {
   id: string;
   status: 'available' | 'missing' | 'invalid';
@@ -114,6 +125,22 @@ export interface BrainCoreApprovalStoreSummary {
   available: boolean;
   status: string;
   recordCount: number;
+  line: string;
+}
+
+export interface BrainCoreExecutionPlansSummary {
+  available: boolean;
+  count: number;
+  firstCandidate: string;
+  line: string;
+}
+
+export interface BrainCoreExecutionReadinessSummary {
+  available: boolean;
+  executionEnabled: boolean;
+  candidateCount: number;
+  readyCandidateCount: number;
+  blockers: string[];
   line: string;
 }
 
@@ -228,6 +255,42 @@ export async function readBrainCoreApprovalStore(baseUrl: string): Promise<Brain
     status: response.status,
     recordCount: response.recordCount,
     line: `Brain Core approval store: ${response.status} · records=${response.recordCount}`,
+  };
+}
+
+export async function readBrainCoreExecutionPlans(baseUrl: string): Promise<BrainCoreExecutionPlansSummary> {
+  const response = await readJson<BrainCoreExecutionPlanResponse>(baseUrl, '/execution/plans');
+  if (!response) {
+    return { available: false, count: 0, firstCandidate: 'none', line: 'Brain Core execution plans: unavailable' };
+  }
+  const firstCandidate = response.plans[0]?.kind ?? 'none';
+  return {
+    available: true,
+    count: response.plans.length,
+    firstCandidate,
+    line: `Brain Core execution plans: ${response.plans.length} · first=${firstCandidate}`,
+  };
+}
+
+export async function readBrainCoreExecutionReadiness(baseUrl: string): Promise<BrainCoreExecutionReadinessSummary> {
+  const response = await readJson<BrainCoreExecutionReadinessResponse>(baseUrl, '/execution/readiness');
+  if (!response) {
+    return {
+      available: false,
+      executionEnabled: false,
+      candidateCount: 0,
+      readyCandidateCount: 0,
+      blockers: [],
+      line: 'Brain Core execution readiness: unavailable',
+    };
+  }
+  return {
+    available: true,
+    executionEnabled: response.executionEnabled,
+    candidateCount: response.candidateCount,
+    readyCandidateCount: response.readyCandidateCount,
+    blockers: response.blockers,
+    line: `Brain Core execution readiness: enabled=${response.executionEnabled} candidates=${response.candidateCount} ready=${response.readyCandidateCount}`,
   };
 }
 

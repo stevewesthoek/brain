@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classifyRequestedKind } from './action-allowlist.js';
+import { getExecutionPlanPreview } from './execution-plans.js';
 import {
   getApprovalStorePath,
   persistApprovalStore,
@@ -89,7 +90,7 @@ export function getApprovalStoreSummary(): BrainCoreApprovalStoreSummary {
     enabled: store.enabled,
     status: store.status,
     path: store.path,
-    recordCount: store.recordCount,
+    recordCount: store.enabled || store.status !== 'memory' ? store.recordCount : approvals.size,
     writesToMind: false,
     executableActions: false,
   };
@@ -211,7 +212,7 @@ function normalizeApprovalForRead(record: BrainCoreApprovalRecord): BrainCoreApp
       commands: [],
     },
     policy: createPolicy(),
-    source: 'memory',
+    source: record.source === 'json' ? 'json' : 'memory',
   };
 }
 
@@ -237,8 +238,10 @@ function toAuditApprovalSummary(record: BrainCoreApprovalRecord): BrainCoreAppro
 }
 
 function createPreview(kind: string): BrainCoreApprovalPreview {
+  const executionPlanPreview = kind === 'scheduler-run-model-router-dry-run' ? getExecutionPlanPreview(kind) : undefined;
   const summary =
-    kind.startsWith('scheduler-run-')
+    executionPlanPreview ??
+    (kind.startsWith('scheduler-run-')
       ? `Queue scheduler dry-run request for ${kind.replace('scheduler-run-', '')}`
       : kind.startsWith('skill-profile-')
         ? `Select skill profile ${kind.replace('skill-profile-', '')}`
@@ -246,7 +249,7 @@ function createPreview(kind: string): BrainCoreApprovalPreview {
           ? `Prepare session resume request for ${kind.replace('session-resume-', '')}`
           : kind.startsWith('local-app-')
             ? `Prepare local app lifecycle request for ${kind.replace('local-app-', '')}`
-            : kind;
+            : kind);
 
   return {
     kind,

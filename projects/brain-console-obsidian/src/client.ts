@@ -37,10 +37,17 @@ export interface BrainCoreCapabilitySummary {
     commandAliasesEnabled?: boolean;
     actionsEnabled?: boolean;
   };
+  executionGate?: {
+    executionEnabled?: boolean;
+    candidateActionKinds?: string[];
+    readinessEndpoint?: string;
+    plansEndpoint?: string;
+    firstCandidate?: string;
+  };
   notes: string[];
 }
 
-export type BrainCoreRuntimeReportId = 'model-router' | 'approval-audit' | 'video';
+export type BrainCoreRuntimeReportId = 'model-router' | 'approval-audit' | 'video' | 'local-apps';
 
 export interface BrainCoreRuntimeReportSummary {
   id: BrainCoreRuntimeReportId;
@@ -130,6 +137,40 @@ export interface BrainCoreApprovalStoreSummary {
   executableActions: false;
 }
 
+export interface BrainCoreExecutionPlanStep {
+  id: string;
+  description: string;
+  commandPreview: string;
+  willRunNow: false;
+}
+
+export interface BrainCoreExecutionPlan {
+  kind: string;
+  candidate: boolean;
+  executionEnabled: false;
+  wouldExecute: false;
+  executed: false;
+  riskLevel: 'low' | 'medium' | 'high';
+  writesToMind: false;
+  externalSideEffects: false;
+  requiresApproval: true;
+  requiresDurableApprovalStore: true;
+  requiresDurableAudit: true;
+  requiresRollbackPlan: true;
+  rollbackPlan: string;
+  summary: string;
+  steps: BrainCoreExecutionPlanStep[];
+}
+
+export interface BrainCoreExecutionReadiness {
+  executionEnabled: false;
+  candidateCount: number;
+  readyCandidateCount: number;
+  blockers: string[];
+  writesToMind: false;
+  executableActions: false;
+}
+
 export interface BrainConsoleSnapshot {
   status?: BrainCoreStatus;
   capabilities?: BrainCoreCapabilitySummary;
@@ -143,6 +184,8 @@ export interface BrainConsoleSnapshot {
   repos?: BrainCoreRepoSummary[];
   approvals?: BrainCoreApprovalSummary[];
   approvalStore?: BrainCoreApprovalStoreSummary;
+  executionPlans?: BrainCoreExecutionPlan[];
+  executionReadiness?: BrainCoreExecutionReadiness;
 }
 
 interface HttpResult<T> {
@@ -154,7 +197,7 @@ const REQUEST_TIMEOUT_MS = 1_500;
 
 export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainConsoleSnapshot> {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore] = await Promise.all([
+  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness] = await Promise.all([
     fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
     fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
     fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizedBaseUrl, '/runtime/reports'),
@@ -164,6 +207,8 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     fetchJson<{ repos?: BrainCoreRepoSummary[] }>(normalizedBaseUrl, '/repos'),
     fetchJson<{ approvals?: BrainCoreApprovalSummary[] }>(normalizedBaseUrl, '/approvals'),
     fetchJson<BrainCoreApprovalStoreSummary>(normalizedBaseUrl, '/approvals/store'),
+    fetchJson<{ plans?: BrainCoreExecutionPlan[] }>(normalizedBaseUrl, '/execution/plans'),
+    fetchJson<BrainCoreExecutionReadiness>(normalizedBaseUrl, '/execution/readiness'),
   ]);
   const [videoStatus, videoQueue, localApps] = await Promise.all([
     readBrainCoreVideoStatus(normalizedBaseUrl),
@@ -184,6 +229,8 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     repos: repos.value?.repos,
     approvals: approvals.value?.approvals,
     approvalStore: approvalStore.value,
+    executionPlans: executionPlans.value?.plans,
+    executionReadiness: executionReadiness.value,
   };
 }
 
@@ -227,6 +274,18 @@ export async function readBrainCoreApprovals(baseUrl: string): Promise<HttpResul
 
 export async function readBrainCoreApprovalStore(baseUrl: string): Promise<HttpResult<BrainCoreApprovalStoreSummary>> {
   return fetchJson<BrainCoreApprovalStoreSummary>(normalizeBaseUrl(baseUrl), '/approvals/store');
+}
+
+export async function readBrainCoreExecutionPlans(
+  baseUrl: string,
+): Promise<HttpResult<{ plans?: BrainCoreExecutionPlan[] }>> {
+  return fetchJson<{ plans?: BrainCoreExecutionPlan[] }>(normalizeBaseUrl(baseUrl), '/execution/plans');
+}
+
+export async function readBrainCoreExecutionReadiness(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreExecutionReadiness>> {
+  return fetchJson<BrainCoreExecutionReadiness>(normalizeBaseUrl(baseUrl), '/execution/readiness');
 }
 
 export async function readBrainCoreVideoStatus(baseUrl: string): Promise<HttpResult<BrainCoreVideoStatus>> {

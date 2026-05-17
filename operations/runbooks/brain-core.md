@@ -59,6 +59,9 @@ curl http://127.0.0.1:4877/scheduler/jobs
 curl http://127.0.0.1:4877/video/status
 curl http://127.0.0.1:4877/approvals
 curl http://127.0.0.1:4877/approvals/audit
+curl http://127.0.0.1:4877/approvals/store
+curl http://127.0.0.1:4877/execution/plans
+curl http://127.0.0.1:4877/execution/readiness
 ```
 
 ## Obsidian integration health
@@ -103,6 +106,7 @@ If the integration is unhealthy, Obsidian should remain readable and show a Brai
 - Approval endpoints currently record and decide only; they return `executed: false`.
 - `GET /approvals/audit` exposes approval audit events.
 - `GET /approvals/store` exposes read-only approval-store health and record counts.
+- `GET /execution/plans` and `GET /execution/readiness` expose the first future execution candidate as read-only metadata only. They do not enable execution.
 - `GET /runtime/reports` exposes read-only runtime report summaries for model-router, approval-audit, video, and local-apps. It never reads Mind content and always reports `writesToMind: false` and `executableActions: false`.
 - Optional audit persistence uses `BRAIN_CORE_APPROVAL_AUDIT_PATH` as a JSONL file path. Use a safe ignored runtime path; do not store audit logs in Mind notes.
 - Audit path validation rejects `..`, `mind`, `.env`, `.git`, `node_modules`, `dist`, and `build`. Unsafe paths fall back to memory-only audit events.

@@ -113,6 +113,13 @@ export interface BrainCoreCapabilitySummary {
     commandAliasesEnabled: boolean;
     actionsEnabled: false;
   };
+  executionGate: {
+    executionEnabled: false;
+    candidateActionKinds: string[];
+    readinessEndpoint: '/execution/readiness';
+    plansEndpoint: '/execution/plans';
+    firstCandidate: 'scheduler-run-model-router-dry-run';
+  };
   notes: string[];
 }
 
@@ -164,6 +171,40 @@ export interface BrainCoreApprovalStoreSummary {
   status: BrainCoreApprovalStoreStatus;
   path: string;
   recordCount: number;
+  writesToMind: false;
+  executableActions: false;
+}
+
+export interface BrainCoreExecutionPlanStep {
+  id: string;
+  description: string;
+  commandPreview: string;
+  willRunNow: false;
+}
+
+export interface BrainCoreExecutionPlan {
+  kind: 'scheduler-run-model-router-dry-run';
+  candidate: true;
+  executionEnabled: false;
+  wouldExecute: false;
+  executed: false;
+  riskLevel: 'low';
+  writesToMind: false;
+  externalSideEffects: false;
+  requiresApproval: true;
+  requiresDurableApprovalStore: true;
+  requiresDurableAudit: true;
+  requiresRollbackPlan: true;
+  rollbackPlan: string;
+  summary: string;
+  steps: BrainCoreExecutionPlanStep[];
+}
+
+export interface BrainCoreExecutionReadiness {
+  executionEnabled: false;
+  candidateCount: number;
+  readyCandidateCount: number;
+  blockers: string[];
   writesToMind: false;
   executableActions: false;
 }
@@ -245,6 +286,13 @@ export interface BrainCoreRoutes {
     approvals: BrainCoreApprovalSummary[];
   };
   '/approvals/store': BrainCoreApprovalStoreSummary;
+  '/execution/plans': {
+    plans: BrainCoreExecutionPlan[];
+  };
+  '/execution/readiness': BrainCoreExecutionReadiness;
+  '/execution/plans/:kind': {
+    plan?: BrainCoreExecutionPlan;
+  };
   '/orchestrators': {
     orchestrators: BrainCoreOrchestratorSummary[];
   };

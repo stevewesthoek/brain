@@ -20,6 +20,9 @@ Document the desired read-only ProBot aliases over Brain Core without forcing a 
 - `GET /sessions`
 - `GET /scheduler/jobs`
 - `GET /approvals`
+- `GET /approvals/store`
+- `GET /execution/plans`
+- `GET /execution/readiness`
 
 ## Safety rules
 
@@ -55,5 +58,6 @@ The current ProBot command layer is split between Slack and Telegram handlers pl
 - `brain reports` should show runtime report summaries.
 - `brain sessions` should show session counts or summaries.
 - `brain approvals` should show approval counts.
+- `brain approvals` should also surface approval-store health and the execution-readiness blocker summary.
 
 All responses should remain read-only and should not invoke approval POST routes.

@@ -9,6 +9,7 @@ Brain Core approval handling is currently read-only and non-executing.
 - Approval audit JSONL persistence can be enabled with `BRAIN_CORE_APPROVAL_AUDIT_PATH`.
 - All responses still return `executed: false`.
 - Execution remains disabled.
+- Read-only execution readiness endpoints exist for the first future candidate, `scheduler-run-model-router-dry-run`, but they still report `executionEnabled: false`.
 
 ## Safe runtime paths
 
@@ -23,6 +24,9 @@ These paths are Brain-owned runtime state only. Do not store them in Mind.
 curl http://127.0.0.1:4877/approvals
 curl http://127.0.0.1:4877/approvals/audit
 curl http://127.0.0.1:4877/approvals/store
+curl http://127.0.0.1:4877/execution/plans
+curl http://127.0.0.1:4877/execution/plans/scheduler-run-model-router-dry-run
+curl http://127.0.0.1:4877/execution/readiness
 ```
 
 In dev/test, the POST request routes can still be exercised as approval-request scaffolding, but they must not execute actions.

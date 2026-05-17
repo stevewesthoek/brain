@@ -64,6 +64,13 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
       commandAliasesEnabled: true,
       actionsEnabled: false,
     },
+    executionGate: {
+      executionEnabled: false,
+      candidateActionKinds: ['scheduler-run-model-router-dry-run'],
+      readinessEndpoint: '/execution/readiness',
+      plansEndpoint: '/execution/plans',
+      firstCandidate: 'scheduler-run-model-router-dry-run',
+    },
     notes: [
       'Brain Core is local-only by default.',
       'Approval request endpoints record intent and audit events but do not execute actions.',

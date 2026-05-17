@@ -6,6 +6,8 @@ import {
   readBrainCoreLocalApps,
   readBrainCoreApprovals,
   readBrainCoreApprovalStore,
+  readBrainCoreExecutionPlans,
+  readBrainCoreExecutionReadiness,
   readBrainCoreCapabilities,
   readBrainCoreRuntimeReports,
   readBrainCoreSchedulerJobs,
@@ -41,6 +43,8 @@ export async function getStatusSummary(config: Config): Promise<string> {
   const brainCoreSchedulerJobs = await readBrainCoreSchedulerJobs(config.brainCoreUrl);
   const brainCoreApprovals = await readBrainCoreApprovals(config.brainCoreUrl);
   const brainCoreApprovalStore = await readBrainCoreApprovalStore(config.brainCoreUrl);
+  const brainCoreExecutionPlans = await readBrainCoreExecutionPlans(config.brainCoreUrl);
+  const brainCoreExecutionReadiness = await readBrainCoreExecutionReadiness(config.brainCoreUrl);
   const sessions = await buildSessionOverview(
     config.claudeProjectsDir,
     config.codexSessionsDir,
@@ -67,6 +71,9 @@ export async function getStatusSummary(config: Config): Promise<string> {
     brainCoreSchedulerJobs.line,
     brainCoreApprovals.line,
     brainCoreApprovalStore.line,
+    brainCoreExecutionPlans.line,
+    brainCoreExecutionReadiness.line,
+    `Execution gate: ${brainCoreExecutionReadiness.executionEnabled ? 'enabled' : 'disabled'} · first candidate: ${brainCoreExecutionPlans.firstCandidate}`,
     latest ? `Latest thread: ${latest.tool} · ${latest.projectLabel} · ${latest.headline}` : "Latest thread: none detected",
     `Notes captured today: ${todayNotes}`,
     `Allowed roots: ${config.allowedRoots.length}`,
