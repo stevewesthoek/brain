@@ -441,3 +441,21 @@ If Phase 2 goes wrong:
 - Claude Code and Codex are external agentic executors (not wrapped by Brain)
 - Skills are reusable capabilities (not the OS container; agents use skills, not vice versa)
 
+---
+
+## Current Next Safe Implementation Slice
+
+After Brain Console section navigation (Phase 5 complete as of 2026-05-18):
+
+**Next slice:** Phase P1 — Post Orchestrator Read-Only Status Scaffold
+
+**Why:** Consolidate scattered post orchestration across Proofly/Xgrow into Brain Post Orchestrator. Add read-only visibility first (no publishing, no code changes to Proofly/Xgrow).
+
+**Scope:**
+- Brain Core endpoints for post orchestrator status
+- Brain Console "Posts" section showing pipeline status
+- Proofly/Xgrow shown as "planning" modules
+- Publishing clearly marked disabled
+
+**See:** `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md` and `docs/system/obsidian-mind-model-router-roadmap.md` (Post Orchestrator Consolidation section)
+

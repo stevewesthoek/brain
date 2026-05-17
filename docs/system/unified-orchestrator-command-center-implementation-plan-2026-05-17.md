@@ -1412,3 +1412,205 @@ Get explicit user approval and switch one platform at a time.
 - Video Orchestrator is production-ready for Says the Bible content
 - ProBot marked as legacy
 - All decommission safeguards enforced
+
+---
+
+## Post Orchestrator Implementation Phases
+
+After Brain Console section navigation (Phase 5 complete), the next safe implementation slice is to add Post Orchestrator read-only infrastructure alongside existing pipeline/orchestrator/project visibility.
+
+### Phase P1: Post Orchestrator Read-Only Status Scaffold (NEXT — 2026-05-19+)
+
+**Objective:** Add Post Orchestrator status endpoints and Brain Console visibility. No publishing, no Proofly/Xgrow code changes, no execution.
+
+**Brain Core additions:**
+
+1. **New adapter:** `projects/brain-core/src/adapters/post-orchestrator.ts`
+   - PostOrchestratorStatus interface
+   - readPostOrchestratorStatus() function
+   - Static/derived data:
+     - orchestrationStatus: 'planned' | 'partial' | 'operational'
+     - proofly: { status, lastSyncAt, contractVersion }
+     - xgrow: { status, lastSyncAt, contractVersion }
+     - publishing: { enabled: false, reason: 'approval-gated and security review pending' }
+     - scheduleHealth: 'operational' | 'degraded'
+     - analyticsHealth: 'planned'
+
+2. **New endpoints:** `projects/brain-core/src/api/routes.ts`
+   - GET /post-orchestrator/status
+   - GET /post-orchestrator/contracts (service contract versions)
+   - GET /post-orchestrator/integrations (Proofly/Xgrow readiness)
+   - GET /post-orchestrator/recovery (blockers and next steps)
+
+3. **Types:** `projects/brain-core/src/types/api.ts`
+   - PostOrchestratorStatus
+   - PostOrchestratorContract
+   - PostOrchestratorIntegration
+   - PostOrchestratorRecoveryItem
+
+**Brain Console additions:**
+
+1. **Client reader:** `projects/brain-console-obsidian/src/client.ts`
+   - readBrainCorePostOrchestratorStatus()
+
+2. **Dashboard snapshot:** `projects/brain-console-obsidian/src/dashboard.ts`
+   - postOrchestratorStatus field
+   - postOrchestratorOperational flag
+   - proofly/xgrow integration status flags
+
+3. **New section:** `projects/brain-console-obsidian/src/view.ts`
+   - renderPostsSection()
+   - renderPostOrchestratorStatusCard()
+   - renderPlatformReadinessCard()
+   - renderPublishingDisabledCard()
+   - renderProoflyIntegrationCard()
+   - renderXgrowIntegrationCard()
+   - renderPostQueueSummaryCard()
+   - renderRecoveryCard()
+
+4. **Dashboard integration:**
+   - Add "Posts" or "Post Orchestrator" tab to SECTION_TABS
+   - Dispatch to renderPostsSection() when active
+   - Update section tab styling if needed
+
+5. **Styling:** `projects/brain-console-obsidian/styles.css`
+   - Card styles for Post Orchestrator (reuse existing patterns)
+   - Platform grid if showing platform readiness
+   - Publishing disabled state styling (prominent)
+
+**Data is static/inventory-based:**
+- All values come from Brain Core adapter
+- No live integration with Proofly/Xgrow yet
+- Publishing always shows "disabled (approval-gated)"
+- Status shows "planned" or "partial"
+
+**Tests:**
+
+1. **Unit tests:** `projects/brain-core/tests/post-orchestrator.test.ts`
+   - POST /post-orchestrator/status returns valid structure
+   - All fields present and typed correctly
+   - Static data matches expectations
+   - Error handling for missing data
+
+2. **Integration tests:** Brain Console client can read status without crash
+
+**Safety boundaries:**
+- ❌ No Proofly code changes
+- ❌ No Xgrow code changes
+- ❌ No actual Proofly asset requests
+- ❌ No actual Xgrow optimization requests
+- ❌ No publishing to platforms
+- ❌ No scheduler changes
+- ❌ Read-only visibility only
+
+**Exit criteria:**
+- ✅ Brain Console shows "Posts" or "Post Orchestrator" section
+- ✅ Proofly and Xgrow visible as "planned" or "integrating" modules
+- ✅ Publishing state clearly marked "disabled (approval-gated)"
+- ✅ All tests pass
+- ✅ No Proofly/Xgrow code modified
+- ✅ No secrets exposed
+- ✅ Documentation updated (handoff section)
+
+**Likely files changed:**
+```
+projects/brain-core/src/adapters/post-orchestrator.ts (new)
+projects/brain-core/src/api/routes.ts (add endpoints)
+projects/brain-core/src/types/api.ts (add types)
+projects/brain-core/tests/post-orchestrator.test.ts (new)
+projects/brain-console-obsidian/src/client.ts (add reader)
+projects/brain-console-obsidian/src/dashboard.ts (add snapshot fields)
+projects/brain-console-obsidian/src/view.ts (add section and cards)
+projects/brain-console-obsidian/styles.css (add styles if needed)
+docs/system/1779034841996-obsidian-mind-model-router-handoff.md (continuation update)
+```
+
+---
+
+### Phase P2: Service Contract Validation (2026-05-26+)
+
+**Objective:** Define and validate service contracts with Proofly and Xgrow. Build stubs/mocks to test request/response cycle without live integration.
+
+**Tasks:**
+- Proofly contract: AssetRequest → AssetResult (HTTP endpoint stub)
+- Xgrow contract: OptimizationRequest → OptimizationResult (HTTP endpoint stub)
+- Measure latency, error modes, retry scenarios
+- Refine contracts based on real behavior
+- Update Brain Core to support contract versioning
+
+**Exit criteria:**
+- Service contracts documented and versioned
+- Stub endpoints respond correctly
+- Latency measurements taken
+- Error handling validated
+- Contract version mismatch detected safely
+
+---
+
+### Phase P3: Dry-Run Post Pipeline (2026-06-02+)
+
+**Objective:** End-to-end dry-run of post generation, asset generation, and optimization. No persistence, no publishing.
+
+**Tasks:**
+- Brain Post Orchestrator draft generation (AI-based)
+- Proofly asset request via contract (fetch asset result)
+- Xgrow optimization request via contract (fetch optimization result)
+- Combine into preview
+- Display in Brain Console
+- No publishing to platforms
+
+**Exit criteria:**
+- Drafts generate successfully
+- Proofly assets fetch and display
+- Xgrow optimization applies to copy
+- Preview shows combined result
+- No errors, no side effects
+
+---
+
+### Phase P4: Approval-Gated Scheduling (2026-06-09+)
+
+**Objective:** User approves post in Brain Console. Create schedule item (no publication yet).
+
+**Tasks:**
+- Approval request workflow
+- PostScheduleItem creation (approval-gated)
+- Scheduled list display in Brain Console
+- Approval tracking and audit trail
+
+**Exit criteria:**
+- Approval gate works
+- Schedule items created and visible
+- Audit trail captures approvals
+- No platform publishing yet
+
+---
+
+### Phase P5: Platform Publishing (2026-06-16+)
+
+**Objective:** Integrate platform publishing. ONLY after explicit user approval and Playwright security review.
+
+**Tasks:**
+- Platform-specific auth management (isolated in Xgrow or separate system)
+- Rate limiting and backoff logic
+- Fallback and retry logic
+- Platform-specific error handling
+- Publishing coordination (sequencing, timeouts)
+
+**Exit criteria:**
+- Posts publish to platforms (dry-run first)
+- Rate limits respected
+- Errors handled gracefully
+- Audit trail complete
+
+---
+
+### Phase P6-P10: Dual-Run, Parity, Decommission
+
+See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md` for full decommission strategy.
+
+---
+
+**Related documents:**
+- `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md` (full architecture)
+- `docs/system/obsidian-mind-model-router-roadmap.md` (post orchestrator roadmap)

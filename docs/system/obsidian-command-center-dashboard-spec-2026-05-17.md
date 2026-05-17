@@ -337,7 +337,74 @@ Operational and canonical-future pipelines with migration tracking.
   - Next phase: name + task
   - Action: view detailed migration plan
 
-#### Tab 5: **Projects/Domains** (Phase 3)
+#### Tab 5: **Posts** (Phase Post-1 — Read-Only Status)
+Social content and post orchestration pipeline (planned).
+
+**Cards:**
+- Post Orchestrator Status (new section)
+  - Brain Post Orchestrator: planned / partial / operational
+  - Proofly integration: planned / ready
+  - Xgrow integration: planned / ready
+  - Publishing: ⛔ DISABLED (approval-gated, security review pending)
+  - Last inventory refresh: timestamp
+
+- Platform Readiness (new section)
+  - Twitter: connected / rate-limited / offline
+  - LinkedIn: connected / rate-limited / offline
+  - Facebook: connected / rate-limited / offline
+  - YouTube: connected / rate-limited / offline
+  - (status indicators for each platform)
+
+- Post Pipeline Summary (new section)
+  - Posts pending: count
+  - Awaiting approval: count
+  - Scheduled (7 days): count
+  - Recent failures: count
+
+- Proofly Asset Provider (new section)
+  - Integration status: planned / integrating / ready
+  - Recent requests: count (this week)
+  - Avg turnaround: duration
+  - Failures: count
+  - Last sync: timestamp
+
+- Xgrow Optimization Provider (new section)
+  - Integration status: planned / integrating / ready
+  - Requests this week: count
+  - Avg hook score: number
+  - Platform recommendations: top 3
+  - Last sync: timestamp
+
+- Publishing Disabled (prominent section)
+  - Status: ⛔ DISABLED
+  - Reason: "Approval policy and Playwright security review in progress"
+  - When enabled: "After explicit user approval, dry-run validation complete"
+  - Current mode: "Preview-only, no platform calls"
+  - Timeline: "See Post Orchestrator roadmap in docs"
+
+- Recovery / Blockers (new section)
+  - Failed events: count
+  - Failed asset requests: count
+  - Failed optimizations: count
+  - Top blocker: description
+  - Next safe step: action
+
+**No execution buttons:**
+- ❌ No "Publish Now"
+- ❌ No "Skip Approval"
+- ❌ No "Retry Failed"
+- ❌ No "Force Sync"
+- All state changes require approval gate.
+
+**Data sources:**
+- Brain Core `/post-orchestrator/status`
+- Brain Core `/post-orchestrator/integrations`
+- Brain Core `/post-orchestrator/contracts`
+- Brain Core `/post-orchestrator/recovery`
+
+---
+
+#### Tab 6: **Projects/Domains** (Phase 3)
 Active projects, business domains, and platforms.
 
 **Cards:**

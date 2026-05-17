@@ -1898,3 +1898,38 @@ Next safe task (Phase 5 complete):
 - Optional visual polish pass or expand read-only operator guidance panels for top recovery items.
 - Consider optional drill-down/expansion toggles for long panels (Phase H equivalent).
 
+## Continuation update — Post Orchestrator / Proofly / Xgrow consolidation roadmap (2026-05-18)
+
+Strategic direction established:
+
+- **Brain** becomes canonical post orchestration engine (event ingestion, scheduling, publishing, approvals, analytics)
+- **Proofly** shifts to social proof asset generation module (visual templates, brand systems)
+- **Xgrow** shifts to growth optimization module (copy/timing/virality analysis)
+- No physical repo merge, no decommissioning, no Proofly/Xgrow code changes yet
+- Service contracts defined (PostEvent, PostDraft, ProoflyAssetRequest/Result, XgrowOptimizationRequest/Result, PostScheduleItem, PostAnalyticsResult)
+- Publishing remains disabled (approval-gated, Playwright security review pending)
+
+Documents created/updated:
+
+- NEW: `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md` — Full architecture, service contracts, risks, decommission gates
+- UPDATED: `docs/system/obsidian-mind-model-router-roadmap.md` — Added Post Orchestrator consolidation roadmap (10 phases, 4-8 months)
+- UPDATED: `docs/system/unified-orchestrator-command-center-implementation-plan-2026-05-17.md` — Added Phase P1-P10 Post Orchestrator phases
+- UPDATED: `docs/system/obsidian-command-center-dashboard-spec-2026-05-17.md` — Added Posts section (post orchestrator status, platform readiness, publishing disabled state)
+
+Next safe implementation slice:
+
+**Phase P1 — Post Orchestrator Read-Only Status Scaffold** (2026-05-19+)
+- Brain Core endpoints: `/post-orchestrator/status`, `/post-orchestrator/contracts`, `/post-orchestrator/integrations`, `/post-orchestrator/recovery`
+- Brain Console "Posts" dashboard section with 6 cards (Orchestrator Status, Platform Readiness, Post Queue, Proofly Integration, Xgrow Integration, Publishing Disabled)
+- Static/inventory data only (no execution, no Proofly/Xgrow changes)
+- Tests pass, docs updated
+
+Safety status:
+
+- No Proofly code changes yet
+- No Xgrow code changes yet
+- No physical repo merge
+- No decommissioning started
+- Publishing remains disabled
+- All new code is read-only
+

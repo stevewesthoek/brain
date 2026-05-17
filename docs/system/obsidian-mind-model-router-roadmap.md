@@ -177,6 +177,153 @@ All orchestrators expose read-only status through Brain Core. Execution requests
 - ✅ Each STB module successfully rebuilt into video orchestrator equivalent
 - ✅ User explicitly approves production switch before cutover
 - ✅ Migration progress visible in Brain Console dashboard
+
+## Post Orchestrator / Proofly / Xgrow Consolidation Roadmap
+
+**Strategic Direction:** Brain owns canonical post orchestration. Proofly and Xgrow remain operational as specialized modules (social proof assets, growth optimization) but no longer own duplicate scheduling/publishing/approval/analytics systems.
+
+### Current State
+
+- **Proofly**: Independent social proof product surface with scheduling/publishing logic
+- **Xgrow**: Independent growth optimization system with posting automation and Playwright
+- **Brain**: Emerging orchestration engine (scheduler, approvals, reports, dashboard)
+- **Problem**: Three separate orchestration systems = inconsistent approval gates, conflicting schedules, fragmented audit trails, impossible to see unified post lifecycle
+
+### Target Architecture
+
+**Brain Post Orchestrator:**
+- Event ingestion (GitHub, product events, video renders, blogs, manual)
+- Workflow sequencing (draft → asset → optimize → approve → schedule → publish)
+- Canonical scheduler (not Xgrow, not Proofly)
+- Approval gates and audit trail
+- Publishing coordination (rate limiting, fallbacks, error handling)
+- Analytics feedback loop
+- Dashboard visibility
+
+**Proofly (module, not orchestrator):**
+- Social proof / product asset generation only
+- Branded screenshots, milestone cards, MRR visuals, achievement visuals
+- Asset rendering templates
+- Branded UI/export
+
+**Xgrow (module, not orchestrator):**
+- Growth strategy and optimization logic only
+- Hook/copy analysis, virality scoring, timing recommendations
+- Audience segmentation, engagement prediction
+- Analytics interpretation and feedback
+
+### Non-Negotiables for This Consolidation
+
+1. **No physical repo merge yet** — Keep Proofly and Xgrow separate. Use service contracts. Prove boundaries first.
+2. **No decommissioning Proofly or Xgrow** — Both remain operational. Only decommission duplicate orchestration after parity.
+3. **No breaking changes to Proofly/Xgrow** — They adapt via contracts (HTTP API calls). Existing APIs unchanged.
+4. **Preserve all existing functionality** — Until Brain Post Orchestrator proves equivalent capability.
+5. **Dual-run validation required** — Both systems run in parallel. Outputs compared. Only after validation can old system be decommissioned.
+6. **Publishing remains disabled initially** — Approval-gated, no Playwright posting until security review complete.
+
+### Consolidation Phases
+
+**Phase 0 — Preserve Current Systems (CURRENT)**
+- ✅ Proofly operational as-is
+- ✅ Xgrow operational as-is
+- ✅ No repo merge
+- ✅ No deletion
+- ✅ Architecture documented (see `post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md`)
+
+**Phase 1 — Inventory and Boundary Mapping**
+- Read Proofly code: product surface, asset logic, scheduler/publishing logic
+- Read Xgrow code: optimization logic, posting automation, scheduler/publishing logic
+- Identify what stays (Proofly visual templates, Xgrow algorithms) vs what moves (orchestration)
+- Document service boundaries
+
+**Phase 2 — Service Contract Design**
+- PostEvent, PostDraft, ProoflyAssetRequest/Result, XgrowOptimizationRequest/Result, PostScheduleItem, PostAnalyticsResult
+- HTTP API contracts defined
+- Latency, error modes, retry logic specified
+
+**Phase 3 — Brain Post Orchestrator Read-Only Registry (NEXT — See Phase P1 in implementation plan)**
+- Brain Core endpoints: `/post-orchestrator/status`, `/post-orchestrator/contracts`, `/post-orchestrator/integrations`, `/post-orchestrator/recovery`
+- Brain Console "Posts" or "Post Orchestrator" section
+- Static data: "planned/partial", integrations marked as "planning"
+- Publishing clearly marked "disabled (approval-gated)"
+- No code changes to Proofly/Xgrow
+- No execution
+
+**Phase 4 — Brain Console Post Orchestrator Dashboard**
+- Post queue preview
+- Asset pipeline preview
+- Optimization preview
+- Approval readiness status
+- Recovery/blockers
+
+**Phase 5 — Dry-Run Post Pipeline**
+- Generate draft preview only
+- Request Proofly asset preview (via contract, no persistence)
+- Request Xgrow optimization preview (via contract, no persistence)
+- No publishing
+
+**Phase 6 — Approval-Gated Scheduling**
+- Create schedule item only after approval
+- No platform publishing yet
+- Scheduled list visible in Brain Console
+
+**Phase 7 — Platform Publishing Integration**
+- ONLY after explicit approval policy review
+- ONLY after Playwright security review
+- ONLY after dry-run validation
+- Integrate platform delivery with rate limiting and fallback
+
+**Phase 8 — Analytics Feedback Loop**
+- Read-only analytics import from platforms
+- Xgrow optimization feedback
+- Performance tracking in Brain Console
+
+**Phase 9 — Dual-Run and Parity**
+- Compare old Proofly/Xgrow orchestration vs Brain Post Orchestrator
+- Validate quality, reliability, audit trails
+- Measure performance, error rates, user satisfaction
+
+**Phase 10 — Decommission Duplicate Orchestration**
+- ONLY with explicit user approval
+- Keep product surfaces (Proofly UI, Xgrow intelligence) where useful
+- Archive orchestration code from old systems
+- Update documentation
+
+### Decommission Gates
+
+Decommission old Proofly/Xgrow orchestration ONLY when ALL of:
+
+1. ✅ Brain Post Orchestrator has equivalent event ingestion, drafting, scheduling, publishing, analytics
+2. ✅ Service contracts proven (Proofly responds, Xgrow responds, latency acceptable, errors handled)
+3. ✅ Brain Console shows full post pipeline end-to-end
+4. ✅ Approval workflow is visible and audit trail is captured
+5. ✅ Dual-run outputs are compared and validated (same posts, same timing, same metrics)
+6. ✅ User explicitly approves decommission in writing
+7. ✅ Rollback plan is documented and tested
+8. ✅ No active posts affected by the migration
+
+### Timeline
+
+| Phase | Deliverable | Duration | Status |
+|---|---|---|---|
+| 0 | Architecture review + roadmap expansion | 1 week | CURRENT (2026-05-18) |
+| 1 | Inventory Proofly/Xgrow orchestration logic | 1-2 weeks | NEXT |
+| 2 | Service contract design | 1 week | After Phase 1 |
+| 3 | Brain Post Orchestrator read-only status scaffold | 1-2 weeks | After Phase 2 |
+| 4 | Brain Console Post Orchestrator section | 1 week | After Phase 3 |
+| 5 | Dry-run post pipeline (preview-only) | 2-3 weeks | After Phase 4 |
+| 6 | Approval-gated scheduling | 1-2 weeks | After Phase 5 |
+| 7 | Platform publishing (after security review) | 2-3 weeks | After Phase 6 |
+| 8 | Analytics feedback loop | 1-2 weeks | After Phase 7 |
+| 9 | Dual-run validation | 2-4 weeks | After Phase 8 |
+| 10 | Decommission (after explicit approval) | 1-2 weeks | After Phase 9 |
+
+**Total estimate:** 4-8 months (depends on contract validation speed and dual-run results)
+
+### Related Documents
+
+- `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md` — Full architecture review and service contracts
+- `docs/system/unified-orchestrator-command-center-implementation-plan-2026-05-17.md` — Brain implementation phases (includes Post Orchestrator P1 as next slice)
 - ✅ All decommission safeguards are enforced
 - ✅ Rollback capability preserved until decommission approval
 
