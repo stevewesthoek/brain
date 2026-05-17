@@ -4,9 +4,9 @@
 
 ## Current counts
 
-- Deleted tracked `04-tasks/**`: 744 files
-- Untracked `03-projects/04-tasks/**`: 743 files
-- Known mismatch: 744 deleted vs 743 untracked mirror files
+- Deleted tracked `04-tasks/**`: 742 files
+- Untracked `03-projects/04-tasks/**`: 742 files
+- Known mismatch: none after path normalization
 
 ## Summary by category
 
@@ -19,7 +19,7 @@
 
 ## Likely reason for mismatch
 
-Most likely one file was renamed, filtered, or excluded during the mirror creation. The metadata alone does not prove which file differs.
+The latest path-only preservation export shows no remaining path mismatch. The earlier one-file discrepancy appears to have been a stale snapshot rather than a live tree difference.
 
 ## Option A - Restore old tree and discard mirror
 
@@ -45,6 +45,12 @@ Most likely one file was renamed, filtered, or excluded during the mirror creati
 
 - Choose Option A to restore, or Option C to archive first
 - Do not choose Option B without explicit approval
+
+## Preservation update
+
+- A preservation tag was created and pushed before any migration decision.
+- A metadata-only export of both trees was produced.
+- The current live path comparison shows equality between deleted and mirror path sets.
 
 ## Decision impact
 

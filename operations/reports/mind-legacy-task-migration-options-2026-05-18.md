@@ -5,11 +5,11 @@
 ## Known facts
 
 - Deleted tracked legacy tree: `04-tasks/**`
-  - Count: 744 files
+  - Count: 742 files
   - Risk: high
   - Current state: deleted in the Mind working tree
 - Untracked project mirror: `03-projects/04-tasks/**`
-  - Count: 743 files
+  - Count: 742 files
   - Approximate size: 3.0 MB
   - Risk: high
   - Current state: untracked and likely mirrors the deleted legacy tree
@@ -78,6 +78,7 @@ Risk:
 ## Recommended default
 
 - No action until the user chooses A, B, or C.
+- The preservation tag and export should be retained as rollback evidence before any future migration.
 
 ## Questions to ask the user
 

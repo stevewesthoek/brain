@@ -1,0 +1,123 @@
+# Mind Legacy Task Preservation Counts
+
+- Deleted 04-tasks count: 742
+- Untracked mirror count: 742
+- Raw mismatch: 0
+
+## Deleted counts by subfolder
+- business-tasks: 256
+- buy: 30
+- church-tasks: 6
+- family-tasks: 14
+- personal-tasks: 436
+
+## Mirror counts by subfolder
+- business-tasks: 256
+- buy: 30
+- church-tasks: 6
+- family-tasks: 14
+- personal-tasks: 436
+
+## First 50 deleted
+- 04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md
+- 04-tasks/business-tasks/0242-maak-vragenlijst-voor-henk.md
+- 04-tasks/business-tasks/0243-make-logo-for-suriname-groeit.md
+- 04-tasks/business-tasks/0244-react-to-telnyx.md
+- 04-tasks/business-tasks/0245-cancel-blush.md
+- 04-tasks/business-tasks/0246-send-out-invoices-tdp.md
+- 04-tasks/business-tasks/0247-contact-suzanne-login-stripe.md
+- 04-tasks/business-tasks/0248-make-6-promotion-video-animations-suriname-groeit.md
+- 04-tasks/business-tasks/0249-make-first-draft-youtube-plan-and-present-to-cris-.md
+- 04-tasks/business-tasks/0250-finish-website-suzys-catering.md
+- 04-tasks/business-tasks/0251-make-kow-check-ing-logo.md
+- 04-tasks/business-tasks/0252-kow-check-ing-3d-animatie.md
+- 04-tasks/business-tasks/0253-make-audio-voice-radio-commercial.md
+- 04-tasks/business-tasks/0254-make-sg-logo-3-dimensional.md
+- 04-tasks/business-tasks/0255-make-free-essentials-guide-yt-channel.md
+- 04-tasks/business-tasks/0256-call-accountant-register-prochat-company-in-portug.md
+- 04-tasks/business-tasks/0257-update-prochat-logo.md
+- 04-tasks/business-tasks/0258-make-social-media-plan-royalties-voor-iedereen.md
+- 04-tasks/business-tasks/0259-boek-afspraak-met-antero.md
+- 04-tasks/business-tasks/0260-focus-op-magazijnbedrijven-met-veel-producten.md
+- 04-tasks/business-tasks/0261-make-an-onboarding-scripts.md
+- 04-tasks/business-tasks/0262-call-ghl-and-get-questions-answered.md
+- 04-tasks/business-tasks/0263-volg-de-dakdekkers-website-op.md
+- 04-tasks/business-tasks/0264-make-the-prochat-business-logo-in-the-right-ghl-fo.md
+- 04-tasks/business-tasks/0265-make-a-retention-strategy.md
+- 04-tasks/business-tasks/0266-make-a-footer-with-all-the-important-links-at-the-.md
+- 04-tasks/business-tasks/0267-make-a-kpi-review-checklist.md
+- 04-tasks/business-tasks/0268-daily-prospecting.md
+- 04-tasks/business-tasks/0269-make-a-list-of-handy-links-to-keep-close-by-hand-f.md
+- 04-tasks/business-tasks/0270-make-a-arkware-website-initial-one-page-draft.md
+- 04-tasks/business-tasks/0271-plaats-een-review-element-op-prochat.md
+- 04-tasks/business-tasks/0272-maak-een-offer-voor-magazijnbedrijven.md
+- 04-tasks/business-tasks/0273-make-an-ascension-strategy.md
+- 04-tasks/business-tasks/0274-check-out-these-companies-and-research-them-as-the.md
+- 04-tasks/business-tasks/0275-kow-check-ing-taken.md
+- 04-tasks/business-tasks/0276-make-free-guide-gre-with-gammaapp.md
+- 04-tasks/business-tasks/0277-factuur-opmaken-voor-freek.md
+- 04-tasks/business-tasks/0278-cancel-ai-employee.md
+- 04-tasks/business-tasks/0279-downgrade-ghl.md
+- 04-tasks/business-tasks/0280-update-buon-seme.md
+- 04-tasks/business-tasks/0281-maak-eerste-draft-funnel-cledeslys.md
+- 04-tasks/business-tasks/0282-call-radhamesh.md
+- 04-tasks/business-tasks/0283-contact-opnemen-met-jasper.md
+- 04-tasks/business-tasks/0284-renew-feelgoodwithana-yeshuaacademy.md
+- 04-tasks/business-tasks/0285-contact-a-lead-warm-up-a-prospect.md
+- 04-tasks/business-tasks/0286-add-playstore-and-appstore-logos-in-footer-just-li.md
+- 04-tasks/business-tasks/0287-contact-3-prospects-warm-up-3-inner-circle.md
+- 04-tasks/business-tasks/0288-maak-een-link-in-bio-page-voor-prochat.md
+- 04-tasks/business-tasks/0289-contact-opnemen-met-contact-freek.md
+- 04-tasks/business-tasks/0290-finish-automation-jon.md
+
+## First 50 mirror
+- 03-projects/04-tasks/business-tasks/0241-read-book-the-one-things-by-gary-keller.md
+- 03-projects/04-tasks/business-tasks/0242-maak-vragenlijst-voor-henk.md
+- 03-projects/04-tasks/business-tasks/0243-make-logo-for-suriname-groeit.md
+- 03-projects/04-tasks/business-tasks/0244-react-to-telnyx.md
+- 03-projects/04-tasks/business-tasks/0245-cancel-blush.md
+- 03-projects/04-tasks/business-tasks/0246-send-out-invoices-tdp.md
+- 03-projects/04-tasks/business-tasks/0247-contact-suzanne-login-stripe.md
+- 03-projects/04-tasks/business-tasks/0248-make-6-promotion-video-animations-suriname-groeit.md
+- 03-projects/04-tasks/business-tasks/0249-make-first-draft-youtube-plan-and-present-to-cris-.md
+- 03-projects/04-tasks/business-tasks/0250-finish-website-suzys-catering.md
+- 03-projects/04-tasks/business-tasks/0251-make-kow-check-ing-logo.md
+- 03-projects/04-tasks/business-tasks/0252-kow-check-ing-3d-animatie.md
+- 03-projects/04-tasks/business-tasks/0253-make-audio-voice-radio-commercial.md
+- 03-projects/04-tasks/business-tasks/0254-make-sg-logo-3-dimensional.md
+- 03-projects/04-tasks/business-tasks/0255-make-free-essentials-guide-yt-channel.md
+- 03-projects/04-tasks/business-tasks/0256-call-accountant-register-prochat-company-in-portug.md
+- 03-projects/04-tasks/business-tasks/0257-update-prochat-logo.md
+- 03-projects/04-tasks/business-tasks/0258-make-social-media-plan-royalties-voor-iedereen.md
+- 03-projects/04-tasks/business-tasks/0259-boek-afspraak-met-antero.md
+- 03-projects/04-tasks/business-tasks/0260-focus-op-magazijnbedrijven-met-veel-producten.md
+- 03-projects/04-tasks/business-tasks/0261-make-an-onboarding-scripts.md
+- 03-projects/04-tasks/business-tasks/0262-call-ghl-and-get-questions-answered.md
+- 03-projects/04-tasks/business-tasks/0263-volg-de-dakdekkers-website-op.md
+- 03-projects/04-tasks/business-tasks/0264-make-the-prochat-business-logo-in-the-right-ghl-fo.md
+- 03-projects/04-tasks/business-tasks/0265-make-a-retention-strategy.md
+- 03-projects/04-tasks/business-tasks/0266-make-a-footer-with-all-the-important-links-at-the-.md
+- 03-projects/04-tasks/business-tasks/0267-make-a-kpi-review-checklist.md
+- 03-projects/04-tasks/business-tasks/0268-daily-prospecting.md
+- 03-projects/04-tasks/business-tasks/0269-make-a-list-of-handy-links-to-keep-close-by-hand-f.md
+- 03-projects/04-tasks/business-tasks/0270-make-a-arkware-website-initial-one-page-draft.md
+- 03-projects/04-tasks/business-tasks/0271-plaats-een-review-element-op-prochat.md
+- 03-projects/04-tasks/business-tasks/0272-maak-een-offer-voor-magazijnbedrijven.md
+- 03-projects/04-tasks/business-tasks/0273-make-an-ascension-strategy.md
+- 03-projects/04-tasks/business-tasks/0274-check-out-these-companies-and-research-them-as-the.md
+- 03-projects/04-tasks/business-tasks/0275-kow-check-ing-taken.md
+- 03-projects/04-tasks/business-tasks/0276-make-free-guide-gre-with-gammaapp.md
+- 03-projects/04-tasks/business-tasks/0277-factuur-opmaken-voor-freek.md
+- 03-projects/04-tasks/business-tasks/0278-cancel-ai-employee.md
+- 03-projects/04-tasks/business-tasks/0279-downgrade-ghl.md
+- 03-projects/04-tasks/business-tasks/0280-update-buon-seme.md
+- 03-projects/04-tasks/business-tasks/0281-maak-eerste-draft-funnel-cledeslys.md
+- 03-projects/04-tasks/business-tasks/0282-call-radhamesh.md
+- 03-projects/04-tasks/business-tasks/0283-contact-opnemen-met-jasper.md
+- 03-projects/04-tasks/business-tasks/0284-renew-feelgoodwithana-yeshuaacademy.md
+- 03-projects/04-tasks/business-tasks/0285-contact-a-lead-warm-up-a-prospect.md
+- 03-projects/04-tasks/business-tasks/0286-add-playstore-and-appstore-logos-in-footer-just-li.md
+- 03-projects/04-tasks/business-tasks/0287-contact-3-prospects-warm-up-3-inner-circle.md
+- 03-projects/04-tasks/business-tasks/0288-maak-een-link-in-bio-page-voor-prochat.md
+- 03-projects/04-tasks/business-tasks/0289-contact-opnemen-met-contact-freek.md
+- 03-projects/04-tasks/business-tasks/0290-finish-automation-jon.md

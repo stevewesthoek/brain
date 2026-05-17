@@ -7,7 +7,7 @@
 Current Mind repo state is heavily dirty and must be isolated category by category.
 
 - Modified tracked files: 1
-- Deleted tracked files: 744
+- Deleted tracked files: 742
 - Untracked files/directories: 9
 - Known dirty categories:
   - `.obsidian` churn
@@ -44,6 +44,7 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 - Likely source/cause: bulk legacy task removal or rename/move activity
 - Recommended decision: separate review or restore, never auto-delete
 - Review report: `operations/reports/mind-legacy-task-deletion-review-2026-05-18.md`
+- Preservation report: `operations/reports/mind-legacy-task-preservation-2026-05-18.md`
 - Safe diagnostic commands:
   - `git diff --name-only --diff-filter=D -- 04-tasks`
   - `git diff --stat -- 04-tasks`
