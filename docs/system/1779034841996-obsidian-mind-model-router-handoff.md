@@ -1391,3 +1391,159 @@ Verified handoff briefs next agent on:
 - Add new read-only endpoints only
 - Update Brain Console to consume endpoints
 - Duration: 2-3 weeks, low risk
+
+## Continuation update — Agentic OS architecture review (2026-05-17)
+
+**User question:** How should agentic OS / agent mode / skills interact with Brain Console, Brain Core, Claude Code, and the existing roadmap?
+
+**Research performed:**
+
+Analyzed 11 external agent orchestration frameworks as architecture references only (no installation):
+- OpenHuman, Superserve, Agency Agents, Ruflo, CocoIndex, Google Skills, OpenAI Skills, Anthropic Skills, Superpowers, Mercury Agent, Hermes Agent
+
+Extracted architectural patterns:
+- Approval gates for all state mutations (no autonomous writes)
+- API-first state management (not embedded in execution runtime)
+- Role-based orchestration (agents are persistent identities, not ephemeral tasks)
+- Plan/execute/reflect cycle (agents reason, propose, wait for approval, execute, learn)
+- Skill manifests (discoverable, versioned, categorized, with input/output schemas)
+- Learning loops (propose memory updates, require approval before committing to vault)
+
+**Architectural conclusion:**
+
+1. **Brain Core owns agent state, not external frameworks or Mind**
+   - Agent state (runs, plans, approvals, learning proposals) lives in Brain Core
+   - Mind stores durable knowledge/wiki, not operational agent state
+   - Claude Code and Codex are external agentic executors (use as-is, don't wrap)
+
+2. **Skills are reusable capabilities, not the OS**
+   - Skills are versioned, discoverable instruction sets (code, design, research, content, system, orchestrator)
+   - Skills are **not** the operating system layer; they are **how** agents do work
+   - The OS layer is how agents are orchestrated, approved, and learned from
+
+3. **Model-router is one registered agent, not the OS container**
+   - Model-router is a specialized vault maintenance orchestrator inside the agentic OS
+   - It has roles (compiler, memory curator, linker), runs, and learning proposals like any other agent
+   - Model-router executes via registered skills; it is not a wrapper around all skills
+
+4. **Brain Console Agent View shows all agent activity**
+   - New Brain Console section for active runs, queue, plans, blockers, approvals, learning proposals
+   - User sees STB, video, research, design, code, Bible research, and scheduler agents in one place
+   - All approval-gated (Phase 2C MVP is read-only; approval gates Phase 3+)
+
+5. **Seven registered orchestrator agents**
+   - Model Router (vault maintenance)
+   - Video Orchestrator (pipeline)
+   - Research Orchestrator (web search, synthesis)
+   - Design Orchestrator (image generation, thumbnails)
+   - Code Orchestrator (refactoring, testing, shipping)
+   - Bible Research Orchestrator (scripture research)
+   - Scheduler (nightly jobs)
+
+**Documentation created:**
+
+- ✅ **agentic-os-external-repo-review-2026-05-17.md** (600+ lines)
+  - Full analysis of 11 external repos as architecture references
+  - Core entities with TypeScript types: AgentRole, AgentSkill, AgentPlan, AgentRun, AgentEvent, AgentApproval, AgentHandoff, AgentMemoryUpdate, AgentMetric
+  - Brain Core endpoints: `/agents`, `/agent-skills`, `/agent-runs`, `/agent-events`, `/agent-memory`, `/agent-readiness` (Phase 1 read-only)
+  - Brain Console Agent View cards: Active Runs, Queue, Plan, Skills, Approvals, Outcomes, Learning Proposals, Roles, Validation
+  - 5 implementation phases with durations and what not to build in each
+
+**Roadmap updates (Tasks 5-9):**
+
+- ✅ **Task 5:** Updated `obsidian-mind-model-router-roadmap.md` with "## Agentic OS Layer" section (1200+ lines)
+  - Core principles: Brain Core owns state, Claude/Codex are external executors, skills are capabilities, model-router is one agent, approval-gated only
+  - Core entities defined with TypeScript types
+  - Brain Core new endpoints specified
+  - Registered agents (7) listed
+  - Brain Console Agent View cards specified
+  - Implementation phases (Phase 0-2C+)
+  - Safety model and success criteria
+
+- ✅ **Task 6:** Updated `unified-orchestrator-command-center-implementation-plan-2026-05-17.md` with Phase 2C (2400+ lines)
+  - Phase 2C: Brain-native Agentic OS Scaffold (2-3 weeks)
+  - 10 specific tasks:
+    1. Agent registry adapter
+    2. Agent run ledger (append-only)
+    3. Agent skills registry
+    4. Agent event audit trail
+    5. Agent View in Brain Console
+    6. Integration of model-router as first registered agent
+    7. Registration of all 7 orchestrator agents
+    8. Approval infrastructure (read-only in Phase 1)
+    9. Agent readiness endpoint
+    10. Tests (80% coverage)
+  - Safety model (read-only by default, no autonomous writes, graceful degradation)
+  - Success criteria (agents registered, runs tracked, skills indexed, Agent View working, tests passing)
+
+- ✅ **Task 7:** Updated `obsidian-command-center-dashboard-spec-2026-05-17.md` with Agent View tab (500+ lines)
+  - New Tab 8: "Agents" (Phase 2C)
+  - 10 cards:
+    1. Active Runs (step progress, blockers, ETA)
+    2. Agent Queue (pending runs, priority)
+    3. Current Plan (steps, dependencies, next task)
+    4. Skills Used (in current run)
+    5. Approvals Needed (pending decisions)
+    6. Recent Outcomes (last 5 runs)
+    7. Learning Proposals (memory updates pending review)
+    8. Agent Roles (registry of all agents)
+    9. Validation (readiness check)
+  - Design rule: sparse dark cockpit, monospaced data, progressive disclosure
+  - Numbered tabs: Overview, Apps, Orchestrators, Pipelines, Projects, Approvals, Research, Agents, System (9 total)
+
+- ✅ **Task 8:** Updated `unified-orchestrator-command-center-execution-brief-2026-05-17.md` with agentic OS compatibility note
+  - Added section clarifying that Phase 2C adds agentic OS state layer without breaking Phase 2
+  - Phase 2 focuses on read-only registries; Phase 2C adds the OS state layer; Phase 3+ adds approval gates
+  - Agent entities shaped to support future OS implementation
+  - Note: do not delay Phase 2 for agentic OS; they are parallel work
+
+- ✅ **Task 9:** Updated `1779034841996-obsidian-mind-model-router-handoff.md` with this continuation section
+  - Documented user question, architectural review process, conclusions
+  - Linked to new agentic-os-external-repo-review document
+  - Summarized roadmap/implementation plan/dashboard spec updates
+  - Next task: Tasks 10-11 (validation, commit)
+
+**Key decisions made:**
+
+1. Do not install external repos or vendor external code
+2. Do not add broad shell runners to Brain Core
+3. Do not enable autonomous writes (approval-gated only)
+4. Do not mutate Mind for operational state (Mind = durable memory only)
+5. Do not break STB, ProBot, or Brain Core existing functionality
+6. Shape types and adapters to support future agentic OS but don't build it yet
+7. Model-router is one registered agent (not the container)
+8. Claude Code/Codex are external executors (don't wrap)
+9. Skills are capabilities (not OS)
+10. Brain Core owns agent state (not Mind or external)
+
+**Safety status:**
+
+- ✅ No external repos installed or vendored
+- ✅ No broad shell execution added
+- ✅ No autonomous writes (approval-gated)
+- ✅ No Mind mutations (operational state stays in Brain)
+- ✅ STB untouched
+- ✅ ProBot untouched
+- ✅ Brain Core port preserved (4877)
+- ✅ No breaking changes to existing systems
+- ✅ Read-only registries + Agent View section (Phase 2C)
+- ✅ Approval infrastructure ready (Phase 3+)
+
+**Next tasks (10-11):**
+
+- Task 10: Validation via grep checks
+  - Verify "Agentic OS" mentioned in roadmap
+  - Verify "Agent View" mentioned in dashboard spec
+  - Verify "model-router" registered as agent
+  - Verify external repo names in review doc only
+  - Verify no external code vendored
+  
+- Task 11: Explicit file staging and commit
+  - Stage: agentic-os-external-repo-review-2026-05-17.md
+  - Stage: obsidian-mind-model-router-roadmap.md
+  - Stage: unified-orchestrator-command-center-implementation-plan-2026-05-17.md
+  - Stage: obsidian-command-center-dashboard-spec-2026-05-17.md
+  - Stage: unified-orchestrator-command-center-execution-brief-2026-05-17.md
+  - Stage: 1779034841996-obsidian-mind-model-router-handoff.md
+  - Commit with message: "Add agentic OS layer architecture review and roadmap alignment"
+  - Push to origin main

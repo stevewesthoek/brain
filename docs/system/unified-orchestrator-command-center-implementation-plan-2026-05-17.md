@@ -354,6 +354,358 @@ tests/
 
 ---
 
+## Phase 2C: Brain-Native Agentic OS Scaffold (2-3 weeks)
+
+### Goal
+Build lean, approval-gated agent orchestration layer in Brain Core + Brain Console. Persistent agent state, skill registry, run tracking, learning proposals. No autonomous writes.
+
+### Key Decisions
+1. **Brain Core owns agent state** — Not in Mind, not in external framework
+2. **Claude Code/Codex are external executors** — Third-party agentic tools, not wrapped
+3. **Skills are capabilities, not OS** — Reusable, versioned, discoverable instruction sets
+4. **Model-router is one registered agent** — Not the container; vault maintenance orchestrator inside the OS
+5. **Approval-gated only** — All state mutations require human decision
+
+### Tasks
+
+#### 2C.1 Create agent registry adapter
+**File:** `projects/brain-core/src/adapters/agent-registry.ts`
+
+**Data models:**
+```typescript
+interface AgentRole {
+  id: string;
+  name: string;
+  description: string;
+  capabilities: string[];
+  permissions: {
+    canRead: string[];
+    canWrite: string[];
+    canExecute: string[];
+  };
+  approvalRequired: boolean;
+  metadata: Record<string, unknown>;
+}
+
+interface AgentSkill {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  category: "code" | "design" | "research" | "content" | "system" | "orchestrator";
+  inputs: Record<string, any>;
+  outputs: Record<string, any>;
+  dependencies: string[];
+  approvalRequired: boolean;
+  status: "ready" | "beta" | "deprecated" | "archived";
+}
+```
+
+**Responsibility:**
+- Register 7 agent roles: model-router, video, research, design, code, Bible research, scheduler
+- Index skills from `brain/ai/skills/active/` and orchestrators from `brain/projects/*/`
+- Expose as read-only HTTP
+
+**Endpoint:** `GET /agents` → AgentRole[]
+
+**Exit criteria:**
+- All 7 agents registered
+- Skills indexed correctly
+- Fast queries (<100ms)
+- No side effects
+
+#### 2C.2 Create agent run ledger
+**File:** `projects/brain-core/src/adapters/agent-runs.ts`
+
+**Data model:**
+```typescript
+interface AgentRun {
+  id: string;
+  planId: string;
+  agentId: string;
+  status: "queued" | "running" | "paused" | "completed" | "failed" | "blocked";
+  startedAt?: Date;
+  completedAt?: Date;
+  currentStep?: number;
+  steps: Array<{
+    sequence: number;
+    skillId: string;
+    status: "pending" | "running" | "completed" | "failed";
+    inputs: Record<string, unknown>;
+    outputs: Record<string, unknown>;
+    error?: string;
+    duration?: number;
+  }>;
+  blockers?: string[];
+  approvalsPending?: string[];
+}
+```
+
+**Responsibility:**
+- Store agent runs (append-only, file-based or in-memory for Phase 1)
+- Track run state and step progress
+- Read-only in Phase 1 (no write endpoint yet)
+
+**Endpoints:**
+```
+GET /agent-runs → AgentRun[] (paginated)
+GET /agent-runs/latest → AgentRun[] (most recent per agent)
+GET /agent-runs/:id → AgentRun (full detail)
+```
+
+**Exit criteria:**
+- Runs stored and retrievable
+- Append-only (no mutations in Phase 1)
+- Timestamped
+- Tests pass
+
+#### 2C.3 Create agent skills registry
+**File:** `projects/brain-core/src/adapters/agent-skills.ts`
+
+**Responsibility:**
+- Index all skills from `brain/ai/skills/active/`
+- Categorize by type (code, design, research, content, system, orchestrator)
+- Expose version, status, dependencies, approval requirements
+
+**Endpoints:**
+```
+GET /agent-skills → AgentSkill[]
+GET /agent-skills/:id → AgentSkill (detail)
+```
+
+**Exit criteria:**
+- Skills indexed with metadata
+- Categories accurate
+- Dependencies tracked
+- Tests pass
+
+#### 2C.4 Create agent event audit trail
+**File:** `projects/brain-core/src/adapters/agent-events.ts`
+
+**Data model:**
+```typescript
+interface AgentEvent {
+  id: string;
+  timestamp: Date;
+  agentId: string;
+  runId?: string;
+  type: "started" | "step_completed" | "blocked" | "approval_requested" | "approval_granted" | "failed" | "completed";
+  message: string;
+  metadata: Record<string, unknown>;
+}
+```
+
+**Responsibility:**
+- Record events from all agents
+- Provide observability for run tracking, failures, blockers
+- Append-only
+
+**Endpoint:**
+```
+GET /agent-events → AgentEvent[] (paginated, time-sorted)
+GET /agent-events/:runId → AgentEvent[] (per run)
+```
+
+**Exit criteria:**
+- Events recorded and retrievable
+- Timestamps accurate
+- Filterable by agent/run
+- Tests pass
+
+#### 2C.5 Create Agent View in Brain Console
+**File:** `projects/brain-console-obsidian/src/components/agent-view.ts`
+
+**New Brain Console section: "Agents" (between Orchestrators and Pipelines)**
+
+**Cards to build:**
+
+1. **Active Runs** — Currently executing runs
+   - Agent name, run ID, current step
+   - Progress (x/y steps)
+   - Time running, ETA
+   - Blockers (if any)
+
+2. **Agent Queue** — Pending runs
+   - Agent name, run ID, position in queue
+   - Priority, age, next task
+   - Ready to execute? (blockers?)
+
+3. **Current Plan** — For focused agent
+   - Plan title, steps, dependencies
+   - Approval gates, current step
+   - Next task to execute
+
+4. **Skills Used** — In active run
+   - Skill names, versions, status (pending/running/done/error)
+   - Category, dependencies
+
+5. **Approvals Needed** — For agents
+   - Plan approval, step approval, memory update approval
+   - Requested by, timestamp, pending decision
+
+6. **Recent Outcomes** — Last 5 runs per agent
+   - Status (passed/failed/blocked), duration, error if any
+   - Timestamp, outcome
+
+7. **Learning Proposals** — Memory updates from agents
+   - Agent name, proposed update description
+   - Source (why proposed), pending review
+   - Approve / Review / Reject buttons (disabled, Phase 2+)
+
+8. **Agent Roles** — Registry of all agents
+   - Name, status (ready/idle/blocked)
+   - Capabilities, permissions
+   - Last activity timestamp
+
+**Design rule:** Sparse dark cockpit, monospaced data, progressive disclosure. Same visual as other cards.
+
+**Exit criteria:**
+- All cards render without errors
+- Data updates on refresh
+- No mutations (read-only)
+- Tests pass
+
+#### 2C.6 Integrate model-router as first registered agent
+**File:** `projects/brain-core/src/adapters/agent-registry.ts` (extend)
+
+**Responsibility:**
+- Query model-router job history from `~/.office-scheduler/`
+- Expose vault maintenance runs as agent runs
+- Register model-router capabilities (compile, memory, hygiene, drift loops)
+
+**Endpoints:**
+- `GET /agents/model-router` → model-router role + capabilities
+- `GET /agent-runs?agentId=model-router` → vault maintenance run history
+
+**Exit criteria:**
+- Model-router appears as registered agent
+- Runs visible in Agent View
+- Vault maintenance capabilities exposed
+- Tests pass
+
+#### 2C.7 Register all 7 orchestrator agents
+**File:** `projects/brain-core/src/adapters/agent-registry.ts` (extend)
+
+**Agents to register:**
+1. Model Router (vault maintenance)
+2. Video Orchestrator (pipeline)
+3. Research Orchestrator (web search, synthesis)
+4. Design Orchestrator (image generation, thumbnails)
+5. Code Orchestrator (refactoring, testing, shipping)
+6. Bible Research Orchestrator (scripture research)
+7. Scheduler (nightly jobs)
+
+**Responsibility:**
+- Hardcode agent definitions with capabilities
+- Link to orchestrator entries in Brain Core
+- Expose in Agent View
+
+**Exit criteria:**
+- All 7 agents registered
+- Roles and permissions defined
+- Brain Console shows all agents
+- Tests pass
+
+#### 2C.8 Create approval infrastructure (read-only in Phase 1)
+**File:** `projects/brain-core/src/adapters/agent-approvals.ts`
+
+**Data model:**
+```typescript
+interface AgentApproval {
+  id: string;
+  type: "run_approval" | "step_approval" | "memory_update" | "skill_modification";
+  targetId: string;
+  requestedAt: Date;
+  requestedBy: string;
+  status: "pending" | "approved" | "rejected";
+  decidedAt?: Date;
+  decidedBy?: string;
+  reason?: string;
+}
+```
+
+**Responsibility:**
+- Read-only approval queue (Phase 1)
+- Prepare for mutation endpoints (Phase 2+)
+
+**Endpoint:**
+```
+GET /agent-approvals → AgentApproval[] (pending + recent)
+GET /agent-approvals/:id → AgentApproval (detail)
+```
+
+**Exit criteria:**
+- Approvals readable
+- Serializable as JSON
+- Tests pass
+
+#### 2C.9 Add agent readiness endpoint
+**Endpoint:** `GET /agent-readiness`
+
+**Response:**
+```typescript
+{
+  timestamp: Date;
+  agents: Array<{
+    id: string;
+    name: string;
+    status: "ready" | "idle" | "blocked";
+    blockers?: string[];
+  }>;
+  ready: boolean;  // all agents ready?
+  criticalBlockers?: string[];
+}
+```
+
+**Exit criteria:**
+- Endpoint returns accurate status
+- Used by Brain Console for diagnostics
+- Tests pass
+
+#### 2C.10 Write tests for agentic OS layer
+**Test scope:**
+- Agent registry (CRUD, indexing)
+- Agent runs (creation, appending, retrieval)
+- Agent skills registry (indexing, filtering)
+- Agent events (recording, audit trail)
+- Agent readiness (status detection)
+- Model-router integration
+- All endpoints callable and return typed data
+- Error cases (agent offline, missing data)
+
+**Coverage:** Minimum 80%
+
+**Exit criteria:**
+- `npm test` passes
+- All new adapters tested
+- No breaking changes to existing tests
+
+### Safety Model (Phase 1)
+
+- **Read-only by default** — All agent endpoints read-only
+- **No autonomous writes** — No agent can mutate Mind/Brain without approval
+- **Skill whitelisting** — Only registered agents can execute registered skills
+- **Event audit trail** — All runs, approvals, and learning proposals logged
+- **Graceful degradation** — If an agent offline, return "unavailable" not crash
+- **No broad shell** — Agents use typed skill interfaces only
+- **No external repo blind install** — All orchestrators authored in Brain, not external
+
+### Success Criteria
+
+- ✅ 7 agent roles registered in Brain Core
+- ✅ Agent runs tracked (queued → running → completed/failed)
+- ✅ Agent skills indexed and discoverable
+- ✅ Agent events recorded for audit trail
+- ✅ Agent View section renders all cards
+- ✅ Model-router appears as first registered agent
+- ✅ All 7 orchestrators registered (video, research, design, code, Bible research, scheduler, model-router)
+- ✅ Brain Core `/agent-readiness` reports accurate status
+- ✅ No autonomous writes to Mind
+- ✅ Tests pass (80% coverage)
+- ✅ Ready for Phase 2C+ approval-gated mutations
+
+---
+
 ## Phase 2B: Orchestrator Registry Brain Core API (1-2 weeks)
 
 ### Goal

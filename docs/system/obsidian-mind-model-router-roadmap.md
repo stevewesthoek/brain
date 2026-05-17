@@ -427,6 +427,245 @@ New project:
 capture or user request -> live/projects.md -> live/tasks.md -> wiki if durable
 ```
 
+## Agentic OS Layer (Brain-Native)
+
+**Mission:** Build a lightweight, approval-gated agent orchestration layer inside Brain Core + Brain Console. Persistent agent state, skill registry, run tracking, and learning proposals. No autonomous writes. All state mutations require human approval.
+
+### Core Principles
+
+1. **Brain Core owns agent state** — Agents (STB, video, research, design, code, Bible research, model-router) are registered entities with persistent runs, plans, roles, and event logs. All state lives in Brain Core, not Mind.
+2. **Claude Code/Codex are external executors** — These are third-party agentic tools. Brain does not wrap them; Brain consumes their output and logs runs. Model-router, video orchestrator, and other agents invoke them as needed.
+3. **Skills are reusable capabilities, not the OS** — Skills are tagged, versioned, discoverable instructions (code, design, research, system). They are NOT the operating system layer. Skills are how agents do work; the OS is how agents are orchestrated, approved, and learned from.
+4. **Model-router is one registered agent** — Not the container for all agents. Model-router is a specialized agent inside the OS responsible for vault maintenance. It has roles (compiler, memory curator, linker), runs, and learning proposals like any other agent.
+5. **Approval-gated mutations only** — Agent plans, runs, and memory updates are read-only until approved. No autonomous writes to Mind, no autonomous skill installations, no autonomous platform actions.
+6. **Brain Console Agent View required** — New Brain Console section for active runs, queue, plans, blockers, approvals, learning proposals. User sees all agent activity in one place.
+
+### Core Entities (TypeScript)
+
+Full specifications in: `docs/system/agentic-os-external-repo-review-2026-05-17.md`
+
+```typescript
+// Agent roles: persistent identities with permissions
+interface AgentRole {
+  id: string;
+  name: string;
+  description: string;
+  capabilities: string[];
+  permissions: {
+    canRead: string[];     // paths/APIs
+    canWrite: string[];    // paths/APIs (approval-gated)
+    canExecute: string[];  // skills/orchestrators
+  };
+  approvalRequired: boolean;
+  metadata: Record<string, unknown>;
+}
+
+// Skills: versioned, discoverable capabilities
+interface AgentSkill {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  category: "code" | "design" | "research" | "content" | "system" | "orchestrator";
+  inputs: Record<string, { type: string; description: string }>;
+  outputs: Record<string, { type: string; description: string }>;
+  dependencies: string[];
+  approvalRequired: boolean;
+  status: "ready" | "beta" | "deprecated" | "archived";
+}
+
+// Plans: sequenced skill execution with dependencies
+interface AgentPlan {
+  id: string;
+  agentId: string;
+  title: string;
+  description: string;
+  steps: Array<{
+    sequence: number;
+    skillId: string;
+    inputs: Record<string, unknown>;
+    dependencies: number[];
+    approvalRequired: boolean;
+  }>;
+  estimatedDuration?: number;
+  status: "proposed" | "approved" | "executing" | "completed" | "failed";
+  createdAt: Date;
+  approvedAt?: Date;
+  approvedBy?: string;
+}
+
+// Runs: execution state and step tracking
+interface AgentRun {
+  id: string;
+  planId: string;
+  agentId: string;
+  status: "queued" | "running" | "paused" | "completed" | "failed" | "blocked";
+  startedAt?: Date;
+  completedAt?: Date;
+  currentStep?: number;
+  steps: Array<{
+    sequence: number;
+    skillId: string;
+    status: "pending" | "running" | "completed" | "failed";
+    inputs: Record<string, unknown>;
+    outputs: Record<string, unknown>;
+    error?: string;
+    duration?: number;
+    startedAt?: Date;
+    completedAt?: Date;
+  }>;
+  blockers?: string[];
+  approvalsPending?: string[];
+}
+
+// Events: audit trail for observability
+interface AgentEvent {
+  id: string;
+  timestamp: Date;
+  agentId: string;
+  runId?: string;
+  type: "started" | "step_completed" | "blocked" | "approval_requested" | "approval_granted" | "failed" | "completed";
+  message: string;
+  metadata: Record<string, unknown>;
+}
+
+// Memory updates: learning proposals and approved facts
+interface AgentMemoryUpdate {
+  id: string;
+  agentId: string;
+  timestamp: Date;
+  type: "learning" | "observation" | "capability" | "constraint";
+  description: string;
+  source: string;
+  approvalStatus: "proposed" | "approved" | "rejected";
+  approvedAt?: Date;
+  approvedBy?: string;
+  targetPath?: string;  // where in mind/ it goes
+}
+
+// Approvals: decision tracking
+interface AgentApproval {
+  id: string;
+  type: "run_approval" | "step_approval" | "memory_update" | "skill_modification";
+  targetId: string;
+  requestedAt: Date;
+  requestedBy: string;
+  status: "pending" | "approved" | "rejected";
+  decidedAt?: Date;
+  decidedBy?: string;
+  reason?: string;
+}
+
+// Handoffs: orchestration between agents
+interface AgentHandoff {
+  id: string;
+  fromAgentId: string;
+  toAgentId: string;
+  timestamp: Date;
+  context: {
+    currentRunId: string;
+    step: number;
+    state: Record<string, unknown>;
+    reasonForHandoff: string;
+  };
+  status: "proposed" | "accepted" | "rejected";
+}
+```
+
+### Brain Core New Endpoints
+
+**Phase 1 (Read-Only, Brain Core MVP):**
+```typescript
+GET  /agents               → AgentRole[]
+GET  /agents/:id           → AgentRole + recent runs
+GET  /agent-skills         → AgentSkill[]
+GET  /agent-skills/:id     → AgentSkill detail
+GET  /agent-runs           → AgentRun[] (all, paginated)
+GET  /agent-runs/latest    → AgentRun[] (most recent per agent)
+GET  /agent-runs/:id       → AgentRun (full detail with all steps)
+GET  /agent-events         → AgentEvent[] (audit trail)
+GET  /agent-events/:runId  → AgentEvent[] (per run)
+GET  /agent-memory         → AgentMemoryUpdate[] (proposals + approved)
+GET  /agent-readiness      → { timestamp, agents: AgentRole[], ready: boolean, blockers?: string[] }
+```
+
+**Phase 2+ (Approval-Gated Mutations, separate specification):**
+```typescript
+POST /agent-approvals                      → submit approval request
+POST /agent-approvals/:id/approve          → grant approval (admin only)
+POST /agent-approvals/:id/reject           → deny approval (admin only)
+POST /agents/:id/request-run               → queue new run (approval-gated)
+POST /agent-memory/:id/approve             → commit memory update to mind/ (approval-gated)
+POST /agent-handoffs/:id/accept            → inter-agent handoff acceptance
+```
+
+### Registered Agents (7 Orchestrators)
+
+1. **Model Router** — vault maintenance (compile, memory, hygiene, drift loops)
+2. **Video Orchestrator** — research, script, assets, design, assembly, publishing
+3. **Research Orchestrator** — web search, synthesis, source capture
+4. **Design Orchestrator** — image generation, thumbnails, visual assets
+5. **Code Orchestrator** — refactoring, testing, shipping
+6. **Bible Research Orchestrator** — scripture research, theological analysis
+7. **Scheduler** — nightly job queue and maintenance triggers
+
+### Brain Console Agent View (New Section)
+
+**Cards:**
+1. **Active Runs** — Currently executing runs with step progress, blockers, ETA
+2. **Agent Queue** — Pending runs, sorted by priority/age
+3. **Current Plan** — For focused agent: steps, dependencies, approval gates, next task
+4. **Skills Used** — In current run: names, versions, status (pending/running/done/error)
+5. **Approvals Needed** — Pending decisions: plan approval, step approval, memory update approval
+6. **Recent Outcomes** — Last 5 run results: status, duration, error if any
+7. **Learning Proposals** — Memory updates proposed by agents (pending review)
+8. **Handoff State** — Any inter-agent handoffs in progress
+9. **Agent Roles** — Registry of all agents, status (ready/idle/blocked)
+10. **Validation** — Readiness check: all agents available, no critical blockers
+
+**Design rule:** Legible dark cockpit, monospaced system data, sparse card layout, progressive disclosure. One card per concept. No nested UI.
+
+### Implementation Phases
+
+**Phase 0 (Current):** Agentic OS architecture review and roadmap alignment
+
+**Phase 1 (Immediate):** Brain Core agent registry scaffolding (read-only)
+- Create agent registry adapter (hardcoded 7 agents, STB/video/research/design/code/Bible/scheduler)
+- Create agent run ledger (in-memory or file-based, append-only)
+- Create agent skills registry (hardcoded for now, tied to skills/ folder)
+- Create agent event model (audit trail from runs)
+- Brain Console Agent View section MVP (cards, static layout)
+- Model-router integration as first registered agent
+- Tests: registry, run creation, event recording, agent readiness
+
+**Phase 2+ (Deferred):** Learning loop, approval gates, memory integration, mutations
+
+### Safety Model
+
+- **Read-only by default** — All Brain Core agent endpoints read-only in Phase 1
+- **No autonomous writes** — Agents cannot write to Mind without approval
+- **Approval-gated plans** — Agent plans require explicit approval before execution
+- **Skill whitelisting** — Only approved skills can be executed by agents
+- **Event audit trail** — All runs, steps, approvals, and memory updates logged
+- **Graceful degradation** — If an agent is offline, Brain Core returns "unavailable" not crash
+- **No broad shell** — Agents use typed skill interfaces, not arbitrary shell commands
+- **No external repo blind install** — All agent code is authored in Brain or Mind, not pulled from external sources
+
+### Success Criteria
+
+- ✅ Agent roles registered in Brain Core
+- ✅ Agent runs tracked (queued → running → completed/failed)
+- ✅ Agent skills discoverable and versioned
+- ✅ Agent events recorded for audit trail
+- ✅ Brain Console Agent View displays active runs, queue, plans, approvals, learning proposals
+- ✅ Model-router appears as first registered agent with vault maintenance runs visible
+- ✅ All 7 orchestrators registered (model-router, video, research, design, code, Bible research, scheduler)
+- ✅ No autonomous writes to Mind (all approval-gated)
+- ✅ Tests passing (registry, runs, events, readiness)
+- ✅ Ready for Phase 2 approval-gated mutations
+
+---
+
 ## Karpathy LLM Wiki Alignment
 
 The roadmap intentionally follows the LLM Wiki pattern where durable knowledge compounds in a maintained markdown wiki instead of being re-derived from raw documents on every query.

@@ -405,6 +405,20 @@ If Phase 2 goes wrong:
 
 ---
 
+## Agentic OS Compatibility (Phase 2C)
+
+**Note on architecture alignment:** During Phase 2 (Brain Core read-only registries) and Phase 3 (Brain Console sections), keep types and adapters compatible with future agentic OS layer.
+
+**Specifically:**
+- Agent entities (AgentRole, AgentSkill, AgentPlan, AgentRun, AgentEvent, AgentApproval) are defined in detail in `docs/system/agentic-os-external-repo-review-2026-05-17.md`
+- Brain Core endpoints are designed to support agent state persistence, run tracking, learning proposals, and approval gates (read-only in Phase 2C MVP)
+- Model-router will be the first registered agent inside the agentic OS layer
+- Video orchestrator, research, design, code, Bible research, and scheduler orchestrators will be registered agents
+- Skill registry (Phase 2B) is distinct from agentic OS skills (they are the same data, but accessed by agents via the OS layer in Phase 2C+)
+- **Do not delay Phase 2 for agentic OS implementation** — Phase 2 focuses on read-only registries; Phase 2C adds the OS state layer; Phase 2C+ adds approval gates and mutations
+
+---
+
 ## Questions to clarify before starting
 
 1. Should STB/video status be fetched from ProBot in real-time, or cached from a recent file?
@@ -412,6 +426,7 @@ If Phase 2 goes wrong:
 3. How should video orchestrator progress be discovered if `projects/video-orchestrator/` design artifacts exist?
 4. Should project registry be sourced from `mind/` vault or separate project tracking?
 5. Are there existing test patterns in `projects/brain-core/src/tests/` to follow for new adapters?
+6. For agentic OS Phase 2C: Should agent run ledger be file-based (append-only JSONL) or in-memory? (Recommend file-based for durability and audit trail)
 
 ---
 
@@ -419,7 +434,10 @@ If Phase 2 goes wrong:
 
 - Brain Core can read ProBot status endpoints via HTTP (localhost)
 - Video Orchestrator design state can be read from `projects/video-orchestrator/` if it exists
-- Model-router is read-only in Phase 1 (no apply route)
-- All operations are read-only (Phase 2+ will add approval-request-only actions)
+- Model-router is read-only in Phase 1 (no apply route); will be registered as first agent in Phase 2C OS layer
+- All Phase 2 operations are read-only (Phase 2C will add approval-request-only actions, Phase 3+ will add approval-gated mutations)
 - Says the Bible must never be broken or directly written to (ProBot integration is read-only)
+- Agentic OS layer belongs in Brain Core, not Mind (agent state, runs, approvals are operational, not durable knowledge)
+- Claude Code and Codex are external agentic executors (not wrapped by Brain)
+- Skills are reusable capabilities (not the OS container; agents use skills, not vice versa)
 

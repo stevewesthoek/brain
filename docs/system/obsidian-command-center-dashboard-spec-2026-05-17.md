@@ -384,7 +384,73 @@ Wiki health, source synthesis, and knowledge maintenance.
   - Stale tasks: count
   - Stale claims: count (no recent update)
 
-#### Tab 8: **System** (Future)
+#### Tab 8: **Agents** (Phase 2C)
+Persistent agent orchestration layer: active runs, queue, plans, skills, approvals, learning proposals.
+
+**Cards:**
+
+- **Active Runs**
+  - Agent name, run ID, current step progress (x/y)
+  - Time running, estimated remaining time
+  - Blockers (if any): list or count
+  - Status indicator: running / paused / blocked / etc.
+  - Click: (Phase 2C+) view full run details and step logs
+
+- **Agent Queue**
+  - Pending runs: count
+  - Per run: agent name, run ID, position in queue
+  - Priority level, age (time waiting)
+  - "Ready to execute" check (blockers?)
+  - Oldest pending: timestamp + wait duration
+
+- **Current Plan** (focused agent view)
+  - Plan title, agent name
+  - Step list: sequence #, skill name, status (pending/running/done/failed)
+  - Dependencies (if any)
+  - Approval gates (if any)
+  - Next task to execute (with skill details)
+
+- **Skills Used** (in active runs)
+  - Skill names, versions, categories
+  - Status per skill (pending / running / completed / failed)
+  - Dependency graph (if complex)
+  - Approval required: yes/no
+
+- **Approvals Needed**
+  - Count of pending approvals
+  - Per approval: type (plan approval / step approval / memory update)
+  - Agent name, requested at
+  - Description (one-liner)
+  - Approve / Reject buttons (Phase 2C, approval gates not enabled yet)
+
+- **Recent Outcomes**
+  - Last 5 runs (across all agents)
+  - Per run: agent, run ID, status (passed/failed/blocked), duration
+  - Error summary (if failed)
+  - Timestamp
+
+- **Learning Proposals** (from agents)
+  - Count: memory updates proposed but not yet approved
+  - Per proposal: agent name, update description
+  - Source: why proposed (which run)
+  - Status: pending review / approved / rejected
+  - Action buttons: Review / Approve / Reject (Phase 2C+)
+
+- **Agent Roles** (registry)
+  - All 7 agents: name, category, status (ready / idle / blocked)
+  - Last activity: timestamp
+  - Capabilities: brief list or count
+  - Permissions: canRead / canWrite / canExecute (high-level)
+
+- **Validation** (readiness check)
+  - Brain Core readiness status
+  - All agents: availability yes/no
+  - Critical blockers (if any)
+  - Safe to execute: yes/no
+
+**Design rule:** Same dark cockpit aesthetic. Sparse data, progressive disclosure. One concept per card. Monospaced IDs/timestamps, sans-serif descriptions. Status indicators (pills, progress bars). Click-to-drill (future) for run logs, skill details, approval flow.
+
+#### Tab 9: **System** (Future)
 Brain Core runtime, scheduler jobs, and operational health.
 
 **Cards:**
