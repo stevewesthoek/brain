@@ -3,6 +3,7 @@ import {
   readBrainCoreCapabilities,
   readBrainCoreExecutionPlans,
   readBrainCoreExecutionReadiness,
+  readBrainCoreMindPreviewPolicy,
   readBrainCoreRuntimeReports,
   readBrainCoreSchedulerJobs,
   readBrainCoreSessions,
@@ -75,6 +76,7 @@ export async function handleBrainCoreCommand(text: string, brainCoreUrl: string)
   ]);
   const executionPlans = await readBrainCoreExecutionPlans(brainCoreUrl);
   const executionReadiness = await readBrainCoreExecutionReadiness(brainCoreUrl);
+  const mindPreviewPolicy = await readBrainCoreMindPreviewPolicy(brainCoreUrl);
 
   if (subcommand === "status") {
     return [status.line, capabilities.line].join("\n");
@@ -95,8 +97,10 @@ export async function handleBrainCoreCommand(text: string, brainCoreUrl: string)
     return [
       approvals.line,
       executionReadiness.line,
+      mindPreviewPolicy.line,
       `Execution gate: ${executionReadiness.executionEnabled ? "enabled" : "disabled"} · first candidate: ${executionPlans.firstCandidate}`,
       `Model-router execution flag: ${executionReadiness.modelRouterDryRunExecutionFlagEnabled ? "enabled (still gated)" : "disabled"} · ${executionReadiness.modelRouterDryRunExecutionFlagName}`,
+      `Mind preview policy: ${mindPreviewPolicy.status} · apply route: ${mindPreviewPolicy.applyRouteEnabled ? "enabled" : "disabled"}`,
       `Executable actions: ${capabilities.executableActionsEnabled ? "enabled" : "disabled"}`,
     ].join("\n");
   }
@@ -105,7 +109,9 @@ export async function handleBrainCoreCommand(text: string, brainCoreUrl: string)
     schedulerJobs.line,
     reports.line,
     executionReadiness.line,
+    mindPreviewPolicy.line,
     `Model-router execution flag: ${executionReadiness.modelRouterDryRunExecutionFlagEnabled ? "enabled (still gated)" : "disabled"} · ${executionReadiness.modelRouterDryRunExecutionFlagName}`,
+    `Mind preview policy: ${mindPreviewPolicy.status} · apply route: ${mindPreviewPolicy.applyRouteEnabled ? "enabled" : "disabled"}`,
     `Executable actions: ${capabilities.executableActionsEnabled ? "enabled" : "disabled"}`,
   ].join("\n");
 }

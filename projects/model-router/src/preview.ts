@@ -225,6 +225,19 @@ export function applyApprovedMindWritePreview(
     reasons.push(`Preview target ${preview.targetPath} is not an allowed unblocked Mind root.`);
   }
 
+  if (preview.targetPath !== 'router/current.md') {
+    reasons.push('Preview target path must be router/current.md.');
+  }
+
+  for (const reason of preview.policyReasons) {
+    if (reason.includes('allowed for preview-only planning')) {
+      continue;
+    }
+    if (!reasons.includes(reason)) {
+      reasons.push(reason);
+    }
+  }
+
   if (preview.maxLines !== 150) {
     reasons.push('router/current.md must use the 150 line limit.');
   }

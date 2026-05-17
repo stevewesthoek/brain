@@ -14,6 +14,7 @@ import {
   readBrainCoreSessions,
   readBrainCoreVideo,
   readBrainCoreStatus,
+  readBrainCoreMindPreviewPolicy,
 } from "./brain-core-client.js";
 import { buildSessionOverview } from "./sessions.js";
 
@@ -45,6 +46,7 @@ export async function getStatusSummary(config: Config): Promise<string> {
   const brainCoreApprovalStore = await readBrainCoreApprovalStore(config.brainCoreUrl);
   const brainCoreExecutionPlans = await readBrainCoreExecutionPlans(config.brainCoreUrl);
   const brainCoreExecutionReadiness = await readBrainCoreExecutionReadiness(config.brainCoreUrl);
+  const brainCoreMindPreviewPolicy = await readBrainCoreMindPreviewPolicy(config.brainCoreUrl);
   const sessions = await buildSessionOverview(
     config.claudeProjectsDir,
     config.codexSessionsDir,
@@ -73,8 +75,10 @@ export async function getStatusSummary(config: Config): Promise<string> {
     brainCoreApprovalStore.line,
     brainCoreExecutionPlans.line,
     brainCoreExecutionReadiness.line,
+    brainCoreMindPreviewPolicy.line,
     `Execution gate: ${brainCoreExecutionReadiness.executionEnabled ? 'enabled' : 'disabled'} · first candidate: ${brainCoreExecutionPlans.firstCandidate}`,
     `Model-router execution flag: ${brainCoreExecutionReadiness.modelRouterDryRunExecutionFlagEnabled ? 'enabled (still gated)' : 'disabled'} · ${brainCoreExecutionReadiness.modelRouterDryRunExecutionFlagName}`,
+    `Mind preview policy: ${brainCoreMindPreviewPolicy.status} · apply route: ${brainCoreMindPreviewPolicy.applyRouteEnabled ? 'enabled' : 'disabled'}`,
     latest ? `Latest thread: ${latest.tool} · ${latest.projectLabel} · ${latest.headline}` : "Latest thread: none detected",
     `Notes captured today: ${todayNotes}`,
     `Allowed roots: ${config.allowedRoots.length}`,

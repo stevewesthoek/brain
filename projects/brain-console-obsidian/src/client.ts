@@ -177,6 +177,19 @@ export interface BrainCoreExecutionReadiness {
   executableActions: false;
 }
 
+export interface BrainCoreMindPreviewPolicy {
+  status: 'preview-only';
+  firstProposedAction: string;
+  firstProposedTarget: string;
+  applyRouteEnabled: boolean;
+  writesToMind: boolean;
+  externalSideEffects: boolean;
+  allowedTargets: string[];
+  blockedPrefixes: string[];
+  requiredGates: string[];
+  docs: Array<{ path: string; description: string }>;
+}
+
 export interface BrainConsoleSnapshot {
   status?: BrainCoreStatus;
   capabilities?: BrainCoreCapabilitySummary;
@@ -192,6 +205,7 @@ export interface BrainConsoleSnapshot {
   approvalStore?: BrainCoreApprovalStoreSummary;
   executionPlans?: BrainCoreExecutionPlan[];
   executionReadiness?: BrainCoreExecutionReadiness;
+  mindPreviewPolicy?: BrainCoreMindPreviewPolicy;
 }
 
 interface HttpResult<T> {
@@ -203,7 +217,7 @@ const REQUEST_TIMEOUT_MS = 1_500;
 
 export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainConsoleSnapshot> {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness] = await Promise.all([
+  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy] = await Promise.all([
     fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
     fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
     fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizedBaseUrl, '/runtime/reports'),
@@ -215,6 +229,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     fetchJson<BrainCoreApprovalStoreSummary>(normalizedBaseUrl, '/approvals/store'),
     fetchJson<{ plans?: BrainCoreExecutionPlan[] }>(normalizedBaseUrl, '/execution/plans'),
     fetchJson<BrainCoreExecutionReadiness>(normalizedBaseUrl, '/execution/readiness'),
+    fetchJson<BrainCoreMindPreviewPolicy>(normalizedBaseUrl, '/execution/mind-preview-policy'),
   ]);
   const [videoStatus, videoQueue, localApps] = await Promise.all([
     readBrainCoreVideoStatus(normalizedBaseUrl),
@@ -237,6 +252,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     approvalStore: approvalStore.value,
     executionPlans: executionPlans.value?.plans,
     executionReadiness: executionReadiness.value,
+    mindPreviewPolicy: mindPreviewPolicy.value,
   };
 }
 

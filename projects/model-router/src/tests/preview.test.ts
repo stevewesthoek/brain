@@ -33,6 +33,18 @@ test('preview policy rejects obsidian plugin/config paths', () => {
   assert.equal(result.reasons.some((reason) => reason.includes('.obsidian/')), true);
 });
 
+test('preview policy rejects traversal and absolute paths', () => {
+  const traversal = evaluateMindPreviewPolicy('../router/current.md');
+  const absolute = evaluateMindPreviewPolicy('/Users/Office/Repos/stevewesthoek/mind/router/current.md');
+
+  assert.equal(traversal.allowedRoot, false);
+  assert.equal(traversal.blockedRoot, false);
+  assert.equal(traversal.reasons.some((reason) => reason.includes('traversal')), true);
+  assert.equal(absolute.allowedRoot, false);
+  assert.equal(absolute.blockedRoot, false);
+  assert.equal(absolute.reasons.some((reason) => reason.includes('traversal')), true);
+});
+
 test('createMindWritePreview is non-writing and includes hashes and diff', () => {
   const preview = createMindWritePreview({
     actionKind: 'model-router-update-current-context',
@@ -153,6 +165,51 @@ test('applyApprovedMindWritePreview rejects .obsidian paths through preview poli
   assert.equal(result.audit.appliedAt, null);
   assert.equal(result.validation.accepted, false);
   assert.equal(result.validation.reasons.some((reason) => reason.includes('.obsidian')), true);
+});
+
+test('applyApprovedMindWritePreview rejects traversal and absolute target paths', () => {
+  const traversalPreview = createMindWritePreview({
+    actionKind: 'model-router-update-current-context',
+    targetPath: '../router/current.md',
+    operation: 'overwrite',
+    oldContent: 'old',
+    newContent: 'new',
+    now,
+  });
+  const absolutePreview = createMindWritePreview({
+    actionKind: 'model-router-update-current-context',
+    targetPath: '/Users/Office/Repos/stevewesthoek/mind/router/current.md',
+    operation: 'overwrite',
+    oldContent: 'old',
+    newContent: 'new',
+    now,
+  });
+  const approval = {
+    id: 'approval-traversal',
+    kind: 'model-router-update-current-context',
+    status: 'approved',
+    expiresAt: '2026-05-18T12:00:00.000Z',
+    previewHash: traversalPreview.newHash,
+  } as const;
+
+  assert.equal(
+    applyApprovedMindWritePreview({ preview: traversalPreview, approval, now }).validation.reasons.some((reason) =>
+      reason.includes('traversal'),
+    ),
+    true,
+  );
+  assert.equal(
+    applyApprovedMindWritePreview({
+      preview: absolutePreview,
+      approval: {
+        ...approval,
+        id: 'approval-absolute',
+        previewHash: absolutePreview.newHash,
+      },
+      now,
+    }).validation.reasons.some((reason) => reason.includes('traversal')),
+    true,
+  );
 });
 
 test('applyApprovedMindWritePreview rejects legacy numbered folders, archive paths, env files, and missing approvals', () => {

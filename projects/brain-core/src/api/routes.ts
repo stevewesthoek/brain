@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { decideApproval, getApprovalStoreSummary, listApprovalAuditEvents, requestAction } from '../adapters/actions.js';
-import { getExecutionPlan, getExecutionReadiness, listExecutionPlans } from '../adapters/execution-plans.js';
+import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
 import { getCapabilities } from '../adapters/capabilities.js';
 import { listOrchestrators } from '../adapters/orchestrators.js';
@@ -102,6 +102,9 @@ export async function routeRequest(
     case '/execution/readiness':
       sendJson(response, 200, getExecutionReadiness());
       return;
+    case '/execution/mind-preview-policy':
+      sendJson(response, 200, getMindPreviewPolicy());
+      return;
     case '/approvals/audit':
       sendJson(response, 200, { events: listApprovalAuditEvents() });
       return;
@@ -129,7 +132,7 @@ export async function routeRequest(
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
   }

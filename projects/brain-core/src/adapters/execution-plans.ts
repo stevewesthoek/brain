@@ -1,4 +1,5 @@
 import type {
+  BrainCoreMindPreviewPolicy,
   BrainCoreExecutionPlan,
   BrainCoreExecutionReadiness,
 } from '../types/api.js';
@@ -100,6 +101,30 @@ export function getExecutionCandidateKinds(): BrainCoreExecutionCandidateKind[] 
 export function getExecutionPlanPreview(kind: string): string | undefined {
   const plan = getExecutionPlan(kind);
   return plan?.summary;
+}
+
+export function getMindPreviewPolicy(): BrainCoreMindPreviewPolicy {
+  return {
+    status: 'preview-only',
+    firstProposedAction: 'model-router-update-current-context',
+    firstProposedTarget: 'router/current.md',
+    applyRouteEnabled: false,
+    writesToMind: false,
+    externalSideEffects: false,
+    allowedTargets: [...MIND_PREVIEW_ALLOWED_TARGETS],
+    blockedPrefixes: [...MIND_PREVIEW_BLOCKED_PREFIXES],
+    requiredGates: [...MIND_PREVIEW_REQUIRED_GATES],
+    docs: [
+      {
+        path: 'operations/specs/1779034874780-model-router-mind-write-apply-policy.md',
+        description: 'Draft apply policy defining approval gates, rollback, and audit requirements.',
+      },
+      {
+        path: 'docs/system/1779034841996-obsidian-mind-model-router-handoff.md',
+        description: 'Roadmap continuation handoff documenting the current preview-only state.',
+      },
+    ],
+  };
 }
 
 function createModelRouterDryRunPlan(): BrainCoreExecutionPlan {

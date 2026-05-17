@@ -41,6 +41,19 @@ export interface BrainCoreExecutionReadinessResponse {
   blockers: string[];
 }
 
+export interface BrainCoreMindPreviewPolicyResponse {
+  status: 'preview-only';
+  firstProposedAction: string;
+  firstProposedTarget: string;
+  applyRouteEnabled: boolean;
+  writesToMind: boolean;
+  externalSideEffects: boolean;
+  allowedTargets: string[];
+  blockedPrefixes: string[];
+  requiredGates: string[];
+  docs: Array<{ path: string; description: string }>;
+}
+
 export interface BrainCoreRuntimeReportSummary {
   id: string;
   status: 'available' | 'missing' | 'invalid';
@@ -164,6 +177,17 @@ export interface BrainCoreExecutionReadinessSummary {
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];
+  line: string;
+}
+
+export interface BrainCoreMindPreviewPolicySummary {
+  available: boolean;
+  status: string;
+  firstProposedAction: string;
+  firstProposedTarget: string;
+  applyRouteEnabled: boolean;
+  writesToMind: boolean;
+  externalSideEffects: boolean;
   line: string;
 }
 
@@ -343,6 +367,33 @@ export async function readBrainCoreExecutionReadiness(baseUrl: string): Promise<
     readyCandidateCount: response.readyCandidateCount,
     blockers: response.blockers,
     line: `Brain Core execution readiness: enabled=${response.executionEnabled} modelRouterDryRunFlag=${modelRouterDryRunExecutionFlagEnabled} candidates=${response.candidateCount} ready=${response.readyCandidateCount}`,
+  };
+}
+
+export async function readBrainCoreMindPreviewPolicy(baseUrl: string): Promise<BrainCoreMindPreviewPolicySummary> {
+  const response = await readJson<BrainCoreMindPreviewPolicyResponse>(baseUrl, '/execution/mind-preview-policy');
+  if (!response) {
+    return {
+      available: false,
+      status: 'preview-only',
+      firstProposedAction: 'model-router-update-current-context',
+      firstProposedTarget: 'router/current.md',
+      applyRouteEnabled: false,
+      writesToMind: false,
+      externalSideEffects: false,
+      line: 'Brain Core mind preview policy: unavailable',
+    };
+  }
+
+  return {
+    available: true,
+    status: response.status,
+    firstProposedAction: response.firstProposedAction,
+    firstProposedTarget: response.firstProposedTarget,
+    applyRouteEnabled: response.applyRouteEnabled,
+    writesToMind: response.writesToMind,
+    externalSideEffects: response.externalSideEffects,
+    line: `Brain Core mind preview policy: ${response.status} · first=${response.firstProposedTarget} · applyRoute=${response.applyRouteEnabled}`,
   };
 }
 

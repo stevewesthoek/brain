@@ -228,6 +228,24 @@ export interface BrainCoreExecutionPlan {
   steps: BrainCoreExecutionPlanStep[];
 }
 
+export interface BrainCoreMindPreviewPolicyDocument {
+  path: string;
+  description: string;
+}
+
+export interface BrainCoreMindPreviewPolicy {
+  status: 'preview-only';
+  firstProposedAction: 'model-router-update-current-context';
+  firstProposedTarget: 'router/current.md';
+  applyRouteEnabled: false;
+  writesToMind: false;
+  externalSideEffects: false;
+  allowedTargets: string[];
+  blockedPrefixes: string[];
+  requiredGates: string[];
+  docs: BrainCoreMindPreviewPolicyDocument[];
+}
+
 export interface BrainCoreExecutionReadiness {
   executionEnabled: false;
   modelRouterDryRunExecutionFlagEnabled: boolean;
@@ -321,6 +339,7 @@ export interface BrainCoreRoutes {
   '/execution/plans': {
     plans: BrainCoreExecutionPlan[];
   };
+  '/execution/mind-preview-policy': BrainCoreMindPreviewPolicy;
   '/execution/readiness': BrainCoreExecutionReadiness;
   '/execution/plans/:kind': {
     plan?: BrainCoreExecutionPlan;

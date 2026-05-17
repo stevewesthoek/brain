@@ -46,6 +46,7 @@ export interface BrainConsoleViewState {
   approvalStore?: BrainCoreApprovalStoreSummary;
   executionPlans?: BrainCoreExecutionPlan[];
   executionReadiness?: BrainCoreExecutionReadiness;
+  mindPreviewPolicy?: import('./client.js').BrainCoreMindPreviewPolicy;
   warning?: string;
   offline?: boolean;
 }
@@ -158,6 +159,7 @@ export function renderBrainConsoleView(
   renderSection(grid, 'Sessions / repos / approvals', describeCollections(state.sessions, state.repos, state.approvals));
   renderSection(grid, 'Approval gate', describeApprovalGate(state.approvalStore));
   renderSection(grid, 'Execution readiness', describeExecutionReadiness(state.executionReadiness, state.executionPlans));
+  renderSection(grid, 'Mind preview policy', describeMindPreviewPolicy(state.mindPreviewPolicy));
 }
 
 function renderSection(parent: HTMLElement, title: string, entries: Array<[string, string]>): void {
@@ -275,6 +277,28 @@ function describeExecutionReadiness(
     ['Ready candidates', String(readiness.readyCandidateCount)],
     ['Blockers', readiness.blockers.slice(0, 3).join(', ') || 'none'],
     ['First candidate', firstPlan?.kind ?? 'none'],
+  ];
+}
+
+function describeMindPreviewPolicy(
+  policy: BrainConsoleViewState['mindPreviewPolicy'],
+): Array<[string, string]> {
+  if (!policy) {
+    return [
+      ['Status', 'preview-only'],
+      ['Apply route enabled', 'false'],
+      ['First proposed target', 'router/current.md'],
+    ];
+  }
+
+  return [
+    ['Status', policy.status],
+    ['Apply route enabled', String(policy.applyRouteEnabled)],
+    ['First proposed target', policy.firstProposedTarget],
+    ['First proposed action', policy.firstProposedAction],
+    ['Writes to Mind', String(policy.writesToMind)],
+    ['External side effects', String(policy.externalSideEffects)],
+    ['Blocked prefixes', policy.blockedPrefixes.slice(0, 4).join(', ') || 'none'],
   ];
 }
 

@@ -574,3 +574,38 @@ No broad execution added.
 No legacy archive/delete/move path added.
 Unrelated dirty Claude/Firecrawl state preserved and not staged.
 ```
+
+## 2026-05-17 read-only preview policy surfaces
+
+Implemented in this continuation:
+
+- Added `GET /execution/mind-preview-policy` as a read-only Brain Core metadata surface.
+- Extended the model-router helper tests to cover traversal and absolute-path rejection plus blocked audit metadata.
+- Surfaced the preview-only policy in ProBot and Brain Console text output.
+
+Changed files:
+
+- `projects/model-router/src/preview.ts`
+- `projects/model-router/src/tests/preview.test.ts`
+- `projects/brain-core/src/adapters/execution-plans.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/routes.test.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/probot/src/services/brain-core-client.ts`
+- `projects/probot/src/services/brain-core-commands.ts`
+- `projects/probot/src/services/status.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+
+Safety boundaries preserved:
+
+- No Mind mutation route was added.
+- No Mind files were changed.
+- No archive/delete/move behavior was added.
+- No `.obsidian/` write path was introduced.
+
+Blocked state remains:
+
+- Mind apply remains metadata-only and not executable through Brain Core.
+- Broad shell execution remains disabled.
+- Any future Mind write still requires a separate approval-backed route and validation drill.

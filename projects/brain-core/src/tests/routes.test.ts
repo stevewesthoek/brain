@@ -683,6 +683,42 @@ test('GET /execution/plans returns the future first execution candidate', async 
   assert.equal(body.plans[0]?.mindPreviewPolicy.requiredGates.includes('fresh preview hash referenced by approval'), true);
 });
 
+test('GET /execution/mind-preview-policy returns preview-only policy metadata', async () => {
+  const response = await exercise({ method: 'GET', url: '/execution/mind-preview-policy' });
+  const body = JSON.parse(response.body) as {
+    status: string;
+    firstProposedAction: string;
+    firstProposedTarget: string;
+    applyRouteEnabled: boolean;
+    writesToMind: boolean;
+    externalSideEffects: boolean;
+    allowedTargets: string[];
+    blockedPrefixes: string[];
+    requiredGates: string[];
+    docs: Array<{ path: string; description: string }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.status, 'preview-only');
+  assert.equal(body.firstProposedAction, 'model-router-update-current-context');
+  assert.equal(body.firstProposedTarget, 'router/current.md');
+  assert.equal(body.applyRouteEnabled, false);
+  assert.equal(body.writesToMind, false);
+  assert.equal(body.externalSideEffects, false);
+  assert.equal(body.allowedTargets.includes('router/current.md'), true);
+  assert.equal(body.blockedPrefixes.includes('.obsidian/'), true);
+  assert.equal(body.blockedPrefixes.includes('01-inbox/'), true);
+  assert.equal(body.requiredGates.includes('localhost-only request'), true);
+  assert.equal(
+    body.docs.some((doc) => doc.path === 'operations/specs/1779034874780-model-router-mind-write-apply-policy.md'),
+    true,
+  );
+  assert.equal(
+    body.docs.some((doc) => doc.path === 'docs/system/1779034841996-obsidian-mind-model-router-handoff.md'),
+    true,
+  );
+});
+
 test('GET /execution/plans/:kind returns the execution plan by kind', async () => {
   const response = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-model-router-dry-run' });
   const body = JSON.parse(response.body) as { plan: { kind: string; summary: string; executed: boolean; wouldExecute: boolean } };
