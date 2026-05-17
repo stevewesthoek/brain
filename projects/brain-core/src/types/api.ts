@@ -278,6 +278,8 @@ export interface BrainCoreApprovalRecord {
   preview: BrainCoreApprovalPreview;
   policy: BrainCoreExecutionGatePolicy;
   source: 'memory' | 'json';
+  ageMinutes?: number;
+  expired?: boolean;
 }
 
 export interface BrainCoreApprovalStoreSummary {

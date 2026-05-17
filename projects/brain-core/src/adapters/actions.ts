@@ -90,6 +90,30 @@ export function listApprovalRecords(): BrainCoreApprovalSummary[] {
     .map(toApprovalSummary);
 }
 
+export function getApprovalRecord(
+  approvalId: string,
+): BrainCoreApprovalRecord | undefined {
+  syncApprovalStoreFromDisk();
+  const approval = approvals.get(approvalId);
+  if (!approval) {
+    return undefined;
+  }
+
+  const normalized = normalizeApprovalForRead(approval);
+  const now = new Date();
+  const createdTime = new Date(normalized.createdAt).getTime();
+  const ageMinutes = Math.floor((now.getTime() - createdTime) / 60000);
+  const expiresAt = normalized.expiresAt ?? new Date().toISOString();
+  const expiresTime = new Date(expiresAt).getTime();
+  const expired = now.getTime() >= expiresTime && normalized.status === 'pending';
+
+  return {
+    ...normalized,
+    ageMinutes,
+    expired,
+  };
+}
+
 export function getApprovalStoreSummary(): BrainCoreApprovalStoreSummary {
   const store = readApprovalStore();
   return {

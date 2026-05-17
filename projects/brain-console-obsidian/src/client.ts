@@ -67,6 +67,22 @@ export interface BrainCoreRuntimeReportSummary {
   };
 }
 
+export interface BrainCoreModelRouterReportDetail {
+  exists: boolean;
+  status: 'available' | 'missing' | 'invalid';
+  latestRunStatus?: 'ok' | 'failed' | 'unknown';
+  path?: string;
+  message?: string;
+  writesToMind: false;
+  externalSideEffects: false;
+  applyEnabled: false;
+  wikiHealth?: {
+    ok: boolean;
+    errorCount: number;
+    warningCount: number;
+  };
+}
+
 export interface BrainCoreSchedulerStatus {
   status: 'not-configured' | 'placeholder' | 'runtime-report';
   enabled: boolean;
@@ -302,6 +318,19 @@ export interface BrainCoreApprovalSummary {
   source: 'placeholder' | 'memory';
 }
 
+export interface BrainCoreApprovalDetail {
+  id: string;
+  kind: string;
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  createdAt: string;
+  expiresAt?: string;
+  ageMinutes?: number;
+  expired?: boolean;
+  requestedBy: string;
+  reason?: string;
+  message?: string;
+}
+
 export interface BrainCoreApprovalStoreSummary {
   enabled: boolean;
   status: 'memory' | 'available' | 'invalid' | 'unsafe';
@@ -373,6 +402,28 @@ export interface BrainCoreMindPreviewSummary {
   blockedRoot: boolean;
   writesToMind: false;
   externalSideEffects: false;
+}
+
+export interface BrainCoreMaintenancePreviewSummary {
+  queueId: string;
+  createdAt: string;
+  expiresAt: string;
+  expired: boolean;
+  actionCount: number;
+  lowRiskCount: number;
+  mediumRiskCount: number;
+  highRiskCount: number;
+  approvalRequiredCount: number;
+  writesToMind: false;
+  externalSideEffects: false;
+}
+
+export interface BrainCoreMaintenancePreviewDetail extends BrainCoreMaintenancePreviewSummary {
+  topActions: Array<{
+    kind: string;
+    title: string;
+    risk: string;
+  }>;
 }
 
 export interface BrainConsoleSnapshot {
@@ -679,6 +730,26 @@ export async function readBrainCoreAction(
   id: string,
 ): Promise<HttpResult<{ action?: BrainCoreActionSummary }>> {
   return fetchJson<{ action?: BrainCoreActionSummary }>(normalizeBaseUrl(baseUrl), `/actions/${id}`);
+}
+
+export async function readBrainCoreApprovalDetail(
+  baseUrl: string,
+  approvalId: string,
+): Promise<HttpResult<{ approval?: BrainCoreApprovalDetail }>> {
+  return fetchJson<{ approval?: BrainCoreApprovalDetail }>(normalizeBaseUrl(baseUrl), `/approvals/${approvalId}`);
+}
+
+export async function readBrainCoreModelRouterReportDetail(
+  baseUrl: string,
+): Promise<HttpResult<{ report?: BrainCoreModelRouterReportDetail }>> {
+  return fetchJson<{ report?: BrainCoreModelRouterReportDetail }>(normalizeBaseUrl(baseUrl), '/runtime/reports/model-router');
+}
+
+export async function readBrainCoreMaintenancePreviewDetail(
+  baseUrl: string,
+  previewId: string,
+): Promise<HttpResult<{ preview?: BrainCoreMaintenancePreviewDetail }>> {
+  return fetchJson<{ preview?: BrainCoreMaintenancePreviewDetail }>(normalizeBaseUrl(baseUrl), `/execution/maintenance-previews/${previewId}`);
 }
 
 export async function requestBrainCoreActionApproval(

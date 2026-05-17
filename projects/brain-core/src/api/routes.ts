@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { decideApproval, getApprovalStoreSummary, listApprovalAuditEvents, requestAction } from '../adapters/actions.js';
+import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
 import { getCapabilities } from '../adapters/capabilities.js';
@@ -171,8 +171,58 @@ export async function routeRequest(
     case '/runtime/reports':
       sendJson(response, 200, { reports: listRuntimeReports() });
       return;
+    case '/runtime/reports/model-router':
+      {
+        const reports = listRuntimeReports();
+        const mrReport = reports.find((r) => r.id === 'model-router');
+        if (!mrReport) {
+          sendJson(response, 200, { report: { exists: false, status: 'unknown' } });
+          return;
+        }
+
+        // Extract safe metadata from wiki health if available
+        const wikiHealth = mrReport.wikiHealth
+          ? {
+              ok: mrReport.wikiHealth.ok,
+              errorCount: mrReport.wikiHealth.errorCount,
+              warningCount: mrReport.wikiHealth.warningCount,
+            }
+          : undefined;
+
+        sendJson(response, 200, {
+          report: {
+            exists: mrReport.status === 'available',
+            status: mrReport.status,
+            latestRunStatus: mrReport.latestRunStatus,
+            path: mrReport.path,
+            message: mrReport.message,
+            writesToMind: false,
+            externalSideEffects: false,
+            applyEnabled: false,
+            wikiHealth,
+          },
+        });
+        return;
+      }
     default:
       {
+        // Check for approval detail route
+        const approvalMatch = /^\/approvals\/([^/]+)$/.exec(url.pathname);
+        if (approvalMatch) {
+          const approval = getApprovalRecord(approvalMatch[1] ?? '');
+          if (approval) {
+            sendJson(response, 200, { approval });
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Approval not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
         const actionMatch = /^\/actions\/([^/]+)$/.exec(url.pathname);
         if (actionMatch) {
           const action = getActionSummary(actionMatch[1] ?? '');
@@ -282,7 +332,7 @@ export async function routeRequest(
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /approvals/audit, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
   }

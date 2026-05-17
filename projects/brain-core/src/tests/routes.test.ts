@@ -1241,6 +1241,63 @@ test('POST /approvals/:id/approve records missing audit event when approval does
   assert.equal(body.executed, false);
 });
 
+test('GET /approvals/:id returns approval detail with age and expiration', async () => {
+  // Create an approval first
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval?: { id: string } };
+  const approvalId = requestBody.approval?.id;
+  assert.ok(approvalId, 'approval should be created');
+
+  // Get the detail
+  const response = await exercise({ method: 'GET', url: `/approvals/${approvalId}` });
+  const body = JSON.parse(response.body) as {
+    approval?: {
+      id: string;
+      status: string;
+      ageMinutes?: number;
+      expired?: boolean;
+      createdAt: string;
+      expiresAt: string;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.approval);
+  assert.equal(body.approval.id, approvalId);
+  assert.equal(body.approval.status, 'pending');
+  assert.ok(body.approval.ageMinutes !== undefined, 'ageMinutes should be calculated');
+  assert.ok(body.approval.ageMinutes >= 0, 'ageMinutes should be non-negative');
+  assert.equal(body.approval.expired, false, 'pending approval should not be expired');
+});
+
+test('GET /approvals/:id returns not found for unknown approval', async () => {
+  const response = await exercise({ method: 'GET', url: '/approvals/approval-not-exists' });
+  const body = JSON.parse(response.body) as { error?: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error?.code, 'not_found');
+});
+
+test('GET /runtime/reports/model-router returns safe detail metadata', async () => {
+  const response = await exercise({ method: 'GET', url: '/runtime/reports/model-router' });
+  const body = JSON.parse(response.body) as {
+    report?: {
+      exists: boolean;
+      status: string;
+      latestRunStatus: string;
+      writesToMind: boolean;
+      externalSideEffects: boolean;
+      applyEnabled: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.report);
+  assert.equal(body.report.writesToMind, false, 'report must never write to Mind');
+  assert.equal(body.report.externalSideEffects, false, 'report must have no external side effects');
+  assert.equal(body.report.applyEnabled, false, 'report must not have apply enabled');
+});
+
 test('GET /runtime/reports includes model-router report with wikiHealth', async () => {
   const response = await exercise({ method: 'GET', url: '/runtime/reports' });
   const body = JSON.parse(response.body) as {
