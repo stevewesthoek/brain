@@ -205,6 +205,23 @@ Exit criteria:
 - `tools/scripts/render-office-scheduler-report.sh` includes the new job states.
 - Reports are exposed by Brain Core later.
 
+### 9A. Add LLM Wiki maintenance primitives before write/apply
+
+Add the lean Karpathy-aligned primitives before broad Mind mutation:
+
+```text
+wiki/log.md      append-only knowledge-maintenance ledger
+source trace     lightweight links from compiled claims/pages back to captures or sources
+lint report      contradiction, stale-claim, orphan, missing-link, oversized-file, and failed-capture checks
+```
+
+Exit criteria:
+
+- `wiki/log.md` is part of the target Mind contract, but not used as a Brain runtime log.
+- Model-router dry-run reports can identify missing source trace, stale claims, orphan pages, and broken/missing links.
+- Any future write/apply preview includes expected source-trace and rollback metadata.
+- The Obsidian dashboard exposes only compact status: changed, failed, needs approval, and next action.
+
 ### 10. Compile old PARA content into wiki/live
 
 The model router should read old folders and create clean compiled pages:

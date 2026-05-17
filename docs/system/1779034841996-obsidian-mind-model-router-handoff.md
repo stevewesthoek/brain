@@ -614,8 +614,8 @@ Blocked state remains:
 
 Baseline commit:
 
-- Brain: `69f79901`
-- Mind: no new Mind commit
+- Brain: `139e7e08`
+- Mind: no new Mind commit; latest clean Mind commit remains `1ad331e`
 
 Working-tree cleanup:
 
@@ -731,4 +731,51 @@ no Mind mutation added
 no Mind files changed
 writesToMind remains false for preview routes
 externalSideEffects remains false for preview routes
+```
+
+
+## Continuation update — Karpathy LLM Wiki alignment review
+
+Performed a holistic review against Andrej Karpathy's LLM Wiki pattern.
+
+Conclusion:
+
+```text
+The Brain + Mind + Obsidian + model-router architecture is directionally solid and should not be redesigned.
+```
+
+Lean improvements added to roadmap/docs:
+
+- make raw source and original capture immutability explicit;
+- add `wiki/log.md` as an append-only knowledge-maintenance ledger, not a Brain runtime log;
+- strengthen lint/health gates before any Mind write/apply phase;
+- preserve a sparse black-box Obsidian dashboard model;
+- keep vector/graph/database additions optional until scale proves they are needed.
+
+Changed files in Brain:
+
+```text
+docs/system/1779040171684-karpathy-llm-wiki-alignment-review-2026-05-17.md
+docs/system/obsidian-mind-model-router-roadmap.md
+docs/system/obsidian-mind-model-router-implementation-plan.md
+docs/system/1779034841996-obsidian-mind-model-router-handoff.md
+```
+
+Matching Mind docs were aligned manually, not by model-router mutation:
+
+```text
+AGENTS.md
+MIND-OS-ROADMAP.md
+MIND-OS-IMPLEMENTATION-PLAN.md
+router/rules.md
+router/maintenance.md
+```
+
+Safety status:
+
+```text
+no apply endpoint added
+no model-router Mind mutation enabled
+no broad shell runner added
+no runtime logs written to Mind
 ```

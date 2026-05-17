@@ -223,6 +223,25 @@ New project:
 capture or user request -> live/projects.md -> live/tasks.md -> wiki if durable
 ```
 
+## Karpathy LLM Wiki Alignment
+
+The roadmap intentionally follows the LLM Wiki pattern where durable knowledge compounds in a maintained markdown wiki instead of being re-derived from raw documents on every query.
+
+Lean additions from the 2026-05-17 alignment review:
+
+- Raw sources and original captures are source-of-truth material and must not be silently rewritten.
+- Compiled `wiki/` and `live/` pages are the model-router-maintained synthesis layer.
+- `wiki/index.md` remains the content catalog.
+- `wiki/log.md` should become an append-only human-readable maintenance ledger for ingests, compilations, lint passes, important queries, and accepted updates.
+- Lint/health checks must run before any approved write/apply phase: contradictions, stale claims, orphan pages, missing links, missing source trace, oversized files, stale captures, and failed captures.
+- Keep the Obsidian dashboard sparse: changed, failed, needs approval, and continue-next only.
+
+Related review:
+
+```text
+docs/system/1779040171684-karpathy-llm-wiki-alignment-review-2026-05-17.md
+```
+
 ## Success Criteria
 
 - Obsidian is the only daily dashboard.
