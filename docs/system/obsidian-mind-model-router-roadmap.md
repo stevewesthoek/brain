@@ -233,3 +233,10 @@ capture or user request -> live/projects.md -> live/tasks.md -> wiki if durable
 - The model router keeps notes small, deduplicated, linked, and current.
 - New skills, orchestrators, projects, and knowledge all enter through one predictable flow.
 - The user experiences the system as a black box that stays organized automatically.
+
+## Current Status
+
+- Report-only execution, preview policy surfaces, and preview artifact inspection are complete in Brain.
+- Mind mutation remains blocked until a separately approved write/apply route exists.
+- Legacy numbered-folder archival remains blocked until a separate explicit cleanup plan is approved.
+- Current safe continuation point: preview-only or approval-gated inspection work, not Mind writes.

@@ -610,6 +610,46 @@ Blocked state remains:
 - Broad shell execution remains disabled.
 - Any future Mind write still requires a separate approval-backed route and validation drill.
 
+## Clean baseline update — 2026-05-17
+
+Baseline commit:
+
+- Brain: `69f79901`
+- Mind: no new Mind commit
+
+Working-tree cleanup:
+
+- Brain dirty state reviewed:
+  - `operations/system-configs/claude/.last-cleanup`: restored to HEAD; local timestamp churn only.
+  - `operations/system-configs/claude/plans/*.md`: restored to HEAD; ephemeral plan deletions only.
+  - `tools/firecrawl/logs/firecrawl.log`: restored to HEAD; runtime log churn only.
+- Mind dirty state reviewed:
+  - `.obsidian/community-plugins.json`: restored to HEAD; local plugin manifest only.
+  - `.obsidian/plugins/custom-sort/`: removed; local plugin bundle only.
+  - `.obsidian/plugins/ghostty-terminal/`: removed; local plugin bundle only.
+  - `.obsidian/plugins/obsidian-icon-folder/`: removed; local plugin bundle only.
+
+Validation:
+
+- Brain Core CI: passed
+- Model-router CI: passed
+- Brain Console typecheck/build: passed
+- ProBot typecheck: passed
+- Secret scan: passed on changed files
+
+Current roadmap state:
+
+- Report-only model-router dry-run: complete
+- Preview artifact surfaces: complete
+- Brain Core preview artifact compatibility: complete
+- Model-router Mind mutation: blocked until separate write/apply policy approval
+- Legacy Mind folder archival: blocked until separate explicit plan
+
+Next safe task:
+
+- Continue from this clean baseline with the next preview-only or approval-gated slice.
+- Do not mutate Mind content until the write/apply policy is explicitly approved and tested.
+
 ## 2026-05-17 preview artifact continuation
 
 Implemented in this continuation:

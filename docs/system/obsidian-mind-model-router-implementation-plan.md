@@ -248,6 +248,14 @@ Exit criteria:
 - Model router map no longer depends on old paths except legacy search fallback.
 - Old paths can be searched but are not part of the daily surface.
 
+## Current Status
+
+- Steps 1 through 9 are complete at the report-only / preview-policy level.
+- Preview artifact inspection is now available through Brain Core read-only endpoints.
+- Step 10 remains intentionally blocked from broad Mind mutation.
+- Step 11 remains intentionally blocked until a separate archival plan is approved.
+- Next safe step: continue with preview-only or approval-gated metadata improvements.
+
 ## Brain Core Scheduler API Additions
 
 Add read-only first:
