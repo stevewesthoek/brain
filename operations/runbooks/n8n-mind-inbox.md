@@ -1,9 +1,9 @@
-# n8n Save to Mind — PARA Inbox Runbook
+# n8n Save to Mind — Mind OS Capture Runbook
 
 **Status:** ✅ Active and verified  
 **Workflow ID:** `FwP5INe9qoo1OwGC`  
 **Deployed:** 2026-04-09  
-**Last updated:** 2026-04-17 — Naming corrected to "Save to Mind / Mind Inbox"; webhook endpoint /mind-inbox verified active (200 OK); old /brain-inbox returns 404
+**Last updated:** 2026-05-16 — Live Save-to-Mind capture path verified to `capture/inbox/`; webhook endpoint /mind-inbox verified active (200 OK); failure-buffer test path verified to `capture/failed/`; old /brain-inbox returns 404
 
 ---
 
@@ -15,7 +15,7 @@ Automates capture and classification of ChatGPT conversations into the Mind pers
 1. Receives raw text via webhook
 2. Gemini Flash classifies into PARA categories with confidence score
 3. Generates structured markdown note with classification metadata
-4. Commits note to `stevewesthoek/mind` repo in `01-inbox/` folder
+4. Commits note to `stevewesthoek/mind` repo in `capture/inbox/` after Mind OS migration deployment; legacy/current production path was `01-inbox/` until the live workflow was updated and tested, and is now verified live on 2026-05-16
 5. Obsidian vault syncs automatically
 
 **What it is NOT:**
@@ -65,7 +65,7 @@ POST https://n8n.prochat.tools/webhook/mind-inbox
 ```json
 {
   "status": "saved",
-  "file": "01-inbox/2026-04-17-slug-title.md",
+  "file": "capture/inbox/2026-05-16-slug-title.md",
   "title": "Refined Title",
   "para_type": "project|area|resource|inbox",
   "confidence": 0.95,
@@ -120,7 +120,9 @@ Respond [returns success/failure to caller]
 - User context (known businesses, personal interests)
 
 **Output path:**
-- Always: `01-inbox/` (never skips, never pre-sorts)
+- Target after Mind OS migration: `capture/inbox/` (never skips, never pre-sorts)
+- Legacy/current production path before verification: `01-inbox/`
+- Live production path verified on 2026-05-16: `capture/inbox/`
 - Filename: `{YYYY-MM-DD}-{slug-title}.md`
 - Unique timestamps prevent collisions
 
@@ -128,7 +130,7 @@ Respond [returns success/failure to caller]
 
 ## Output Note Format
 
-Notes saved to `mind/01-inbox/` by n8n use this structure. Note that `status` is not produced by n8n; it is added by the auto-router on first processing.
+Notes saved to `mind/capture/inbox/` by n8n use this structure. Note that `status` is not produced by n8n; it is added by the auto-router on first processing.
 
 ```markdown
 ---
@@ -180,6 +182,8 @@ Full structured content or raw text excerpt.
 - ✅ `signal_quality` now extracted and included in frontmatter
 - ✅ Router routing works correctly: captures with confidence ≥ 0.8 AND signal_quality ≥ 0.8 route to PARA folders
 - ✅ Fail-safe logic applies when signal_quality is low or missing
+- ✅ Sanitized live workflow uses a runtime Gemini key reference instead of a hardcoded URL key
+- ✅ Guarded failure-buffer test path writes recoverable captures to `mind/capture/failed/`
 
 **Sections:**
 - **Summary** — Concise overview
@@ -245,13 +249,17 @@ Scope: Classification only (not exposed in workflow exports)
 ## Failure Behavior & Pending Buffer
 
 **Current state:**
-- ✅ Success path: Classified note → `mind/01-inbox/`
-- ❌ No error handling: Gemini failure → capture lost, webhook returns error
+- ✅ Legacy success path: Classified note → `mind/01-inbox/`
+- ✅ Mind OS scaffold exists for target success path: `mind/capture/inbox/`
+- ✅ Live success path verified on 2026-05-16: classified note → `mind/capture/inbox/2026-05-16-mind-os-live-deployment-verification.md`
+- ✅ Sanitized live success path verified on 2026-05-16: classified note → `mind/capture/inbox/2026-05-16-mind-os-sanitized-workflow-verification.md`
+- ✅ Mind OS scaffold exists for failure buffer: `mind/capture/failed/`
+- ✅ Failure-buffer test verified on 2026-05-16: `mind/capture/failed/2026-05-16-mind-os-failure-buffer-verification.md`
 
-**Failure buffer (planned, not yet deployed):**
-- Success → `mind/01-inbox/` (classified)
-- Gemini failure → `mind/00-system/pending-classification/` (raw, unclassified)
-- Webhook always returns 200 (user-friendly)
+**Failure buffer target:**
+- Success → `mind/capture/inbox/` (classified)
+- Gemini failure → `mind/capture/failed/` (raw, recoverable)
+- Webhook should return a user-friendly response after failure buffer deployment
 - Allows manual or automated retry
 
 See: `FAILURE-BUFFER-IMPLEMENTATION-PLAN.md`
@@ -260,7 +268,7 @@ See: `FAILURE-BUFFER-IMPLEMENTATION-PLAN.md`
 
 ## Post-Capture Lightweight Sorting
 
-After capture lands in `01-inbox/`, the **lightweight inbox sorter** (optional, manual or scheduled) adds triage metadata:
+After capture lands in `capture/inbox/`, the **lightweight inbox sorter** (optional, manual or scheduled) adds triage metadata:
 
 - Clarity score (how well-defined)
 - Usefulness score (how valuable)
@@ -292,7 +300,7 @@ curl -X POST https://n8n.prochat.tools/webhook/mind-inbox \
 ```json
 {
   "status": "saved",
-  "file": "01-inbox/2026-04-17-save-to-mind-test.md",
+  "file": "capture/inbox/2026-04-17-save-to-mind-test.md",
   "title": "Save to Mind Test",
   "para_type": "resource",
   "confidence": 0.85,
@@ -304,14 +312,14 @@ curl -X POST https://n8n.prochat.tools/webhook/mind-inbox \
 ```bash
 cd ~/Repos/stevewesthoek/mind
 git pull
-cat 01-inbox/2026-04-17-save-to-mind-test.md
+cat capture/inbox/2026-04-17-save-to-mind-test.md
 ```
 
 ### Test Scenarios
 
 | Scenario | Request | Expected |
 |----------|---------|----------|
-| Normal capture | Valid payload | 200, saved to 01-inbox/ |
+| Normal capture | Valid payload | 200, saved to capture/inbox/ |
 | Gemini failure | Valid payload, API down | 404 (workflow inactive) or 500 (API error) |
 | Invalid payload | Missing "content" | 400 Bad Request |
 | GitHub auth error | Valid payload, token revoked | 401 or 403 |
@@ -386,7 +394,7 @@ After Dokploy or n8n service restart:
 1. Check GitHub PAT in Dokploy (should be valid, not revoked)
 2. Verify scope: `repo` only (Settings → Developer Settings → Tokens)
 3. Verify `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` in n8n Dokploy config
-4. If hardcoded token: update workflow to use `$env.GITHUB_MIND_PAT`
+4. If a credential was embedded directly in workflow JSON: replace it with the environment-variable based credential reference.
 
 ### Gemini Returns Error / Unclassified Captures
 
@@ -398,7 +406,7 @@ After Dokploy or n8n service restart:
 - Content is ambiguous (valid but low confidence)
 - Invalid JSON response from Gemini
 
-**Workaround:** Manually classify in frontmatter or use sorter script
+**Workaround:** Manually classify in frontmatter or use sorter script. The failure-buffer branch now preserves recoverable failure captures when the workflow is deliberately exercised with the test-only `type_hint: force-failure-buffer-test` path.
 
 ### Captures Not Appearing in Obsidian
 
@@ -431,7 +439,7 @@ After Dokploy or n8n service restart:
 **Why "Save to Mind" instead of "Brain Inbox"?**
 
 The system's purpose is to save captures INTO the Mind vault (personal knowledge system).
-The workflow saves to the Mind inbox (01-inbox/ in stevewesthoek/mind repo).
+The workflow saves to the Mind inbox (`capture/inbox/` in `stevewesthoek/mind` repo).
 Historical references to "Brain Inbox" are deprecated.
 
 **Endpoint migration:** `/brain-inbox` → `/mind-inbox`
@@ -440,5 +448,5 @@ This runbook documents the current, correct naming and endpoint.
 
 ---
 
-**Last updated:** 2026-04-17  
-**Next review:** Before deploying failure-buffer feature or after credential rotation
+**Last updated:** 2026-05-16  
+**Next review:** After credential rotation or when replacing the test-only failure-buffer trigger with a real recoverable error branch
