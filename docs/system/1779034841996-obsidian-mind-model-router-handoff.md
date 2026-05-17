@@ -1117,3 +1117,116 @@ Implement local apps UI section in Brain Console:
 - Local plugin reinstall to Mind
 - Manual Obsidian test: Apps section renders, no crashes
 - No Mind vault mutations or secrets in logs
+
+## Continuation update — Unified Orchestrator Cockpit Architecture (2026-05-17)
+
+**Scope clarification** from user:
+
+Brain Console is not merely a ProBot dashboard replacement. It is the single future cockpit for:
+1. Brain Core system state
+2. ProBot dashboard features (legacy/secondary)
+3. Video orchestrator (future canonical architecture)
+4. Says the Bible / STB (operational daily pipeline, primary workflow)
+5. Orchestrator skills (video, design, code, research, Bible research, project orchestration)
+6. Local apps and lifecycle
+7. Projects, domains, pipelines, platforms, queues, approvals, runtime health
+
+**Critical user clarification:**
+
+Says the Bible pipeline is currently the user's daily working pipeline. It is operational and must remain operational.
+
+Video orchestrator is the future modular architecture. It is not fully built yet.
+
+STB should NOT be blindly copied into video orchestrator. Instead, STB will eventually be rebuilt into video orchestrator architecture because video orchestrator will be more modular, smoother, more efficient, and more reusable.
+
+Until migration is complete:
+- STB remains operational (daily use)
+- ProBot remains operational (secondary command surface)
+- Video orchestrator continues being built
+- Brain Console becomes new unified cockpit
+- Nothing is deleted, disabled, or broken
+- Decommissioning happens only after feature parity, validation, and explicit approval
+
+**Architecture documents created:**
+
+1. **obsidian-command-center-orchestrator-architecture-2026-05-17.md** (1000+ lines)
+
+   Defines:
+   - Executive conclusion: Brain Console as unified cockpit for all 7 major system areas
+   - Core architecture rule: Nothing disabled until Brain Core API + Brain Console section + tests + user approval
+   - Current operational systems: Brain Console MVP, Brain Core, ProBot, STB (operational), video orchestrator (partial)
+   - Future canonical model: TypeScript types for Orchestrator, Pipeline, Project, Platform, ApprovalRequest, Queue
+   - Relationship model: Brain Console → Brain Core API → Operational systems → Mind vault
+   - Dashboard information architecture: 7 tabs (Overview, Apps, Orchestrators, Pipelines, Projects, Approvals, System)
+   - Action & control model: read-only, approval-request-only, allowlisted local app, never allowed
+   - Phased implementation (12 phases, Phase 0-11)
+   - Safety guarantees: STB protected, ProBot protected, Mind vault protected
+
+   Key insight: STB and video orchestrator shown side-by-side in Brain Console during migration, not hidden or replaced.
+
+2. **stb-to-video-orchestrator-migration-plan-2026-05-17.md** (500+ lines)
+
+   Defines:
+   - Purpose: Migrate STB from legacy monolithic to video orchestrator modular architecture
+   - Non-negotiables: STB remains operational, no destructive changes, no blind copy-paste, dual visibility, user approval required
+   - Current STB inventory: Operational daily, YouTube/Pinterest/Facebook, proven production system
+   - Video orchestrator current state: Design-phase ProBot artifacts exist, no live execution yet
+   - STB → video module map (12 concepts → 12 target modules with implementation order)
+   - Implementation phases (0-8, eight distinct stages)
+   - Dual-run validation strategy: Compare metrics per module before switching
+   - Timeline: 5-8 months (design, build, dual-run, gradual cutover, decommission)
+   - Rollback strategy: Always possible until explicit decommission
+   - Brain Core integration: STB status adapter (Phase 4), video orchestrator status adapter (Phase 7)
+   - Brain Console visibility: Migration card showing parity %, next task, decommission blocker
+
+   Key principle: Module-by-module rebuild (not copy-paste), dual-run validation before any switch, user approval gates everything.
+
+**Roadmap implications:**
+
+The unified orchestrator cockpit roadmap is now 11 phases + 3 supplementary phases:
+
+- Phase 0: Preserve existing operational systems (status quo)
+- Phase 1: Feature inventory and roadmap alignment ✅ done
+- Phase 2: Brain Core read-only registries (orchestrators, pipelines, projects, platforms, local-apps)
+- Phase 3: Brain Console orchestrators section
+- Phase 4: Brain Console pipelines section + STB status adapter
+- Phase 5: Brain Console projects/domains section
+- Phase 6: Brain Console approvals section
+- Phase 7: Brain Console system section + video orchestrator status adapter
+- Phase 8: Approval-request action layer
+- Phase 9: STB/video migration planning (map modules, define parity checkpoints)
+- Phase 10: Implementation + migration (build video modules, dual-run validation)
+- Phase 11: Decommission/transition (archive STB only after approval)
+
+Parallel work:
+- ProBot feature migration: local apps, sessions, orchestrator status, project overview, approval queue
+- Brain Core API expansion: orchestrator registry, pipeline registry, project registry, platform registry, approval-request endpoint
+- Video orchestrator architecture: continue modular design, prepare for STB rebuild
+
+**Safety status:**
+
+- ✅ STB remains operational (no code changes, no risk)
+- ✅ ProBot remains operational (documented as legacy/secondary)
+- ✅ Nothing decommissioned without approval
+- ✅ All dashboard controls read-only or approval-gated
+- ✅ No direct shell execution from Brain Console
+- ✅ No direct Mind mutations from Brain Console
+- ✅ Migration strategy documented and user-aware
+- ✅ Dual visibility in dashboard during transition
+- ✅ Rollback capability preserved until explicit decommission
+
+**Next immediate tasks (in priority order):**
+
+1. **Phase 1 completion**: Inventory video orchestrator current state (design artifacts in ProBot), document findings
+2. **Phase 2 start**: Create Brain Core `/orchestrators`, `/pipelines`, `/projects`, `/platforms` read-only endpoints with accurate status
+3. **Phase 3 start**: Add Brain Console orchestrators section consuming new endpoints, show STB as operational/legacy, video as partial/future
+4. **Phase 4 start**: Create STB status adapter reading operational state if discoverable, expose via Brain Core
+5. **Phase 2-3 integration**: Ensure STB and video visible side-by-side in dashboard
+
+**Validation criteria for roadmap update approval:**
+
+- ✅ Architecture correctly reflects user's intent (STB operational, video future, both visible)
+- ✅ Phased plan is achievable without breaking operational systems
+- ✅ Safety boundaries are clear and enforceable
+- ✅ Documentation is comprehensive enough to guide implementation team
+- ✅ Non-negotiables are understood: STB cannot be broken, nothing decommissioned without approval
