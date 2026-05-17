@@ -93,6 +93,9 @@ export interface BrainConsoleViewState {
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
   agents?: BrainCoreAgentSummary[];
   actions?: import('./client.js').BrainCoreActionSummary[];
+  agentRuns?: import('./client.js').BrainCoreAgentRunSummary[];
+  agentEvents?: import('./client.js').BrainCoreAgentEventSummary[];
+  recoveryItems?: import('./client.js').BrainCoreRecoveryItemSummary[];
   warning?: string;
   offline?: boolean;
   refreshedAt?: Date;
@@ -106,7 +109,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -133,6 +136,9 @@ export async function loadBrainConsoleViewState(
     readBrainCoreAgents(baseUrl),
     readBrainCoreActions(baseUrl),
     readBrainCoreModelRouterReportDetail(baseUrl),
+    readBrainCoreAgentRuns(baseUrl),
+    readBrainCoreAgentEvents(baseUrl),
+    readBrainCoreRecoveryItems(baseUrl),
   ]);
 
   let approvalDetail: import('./client.js').BrainCoreApprovalDetail | undefined;
@@ -149,7 +155,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -200,6 +206,9 @@ export async function loadBrainConsoleViewState(
     stbVideoMigrationStatus: stbVideoMigrationStatus.value,
     agents: agents.value?.agents,
     actions: actions.value?.actions,
+    agentRuns: agentRuns.value?.runs,
+    agentEvents: agentEvents.value?.events,
+    recoveryItems: recoveryItems.value?.items,
     warning: normalized.warning ?? normalized.error,
     offline,
     refreshedAt: new Date(),

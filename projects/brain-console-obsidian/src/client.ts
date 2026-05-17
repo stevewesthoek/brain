@@ -340,6 +340,66 @@ export interface BrainCoreApprovalStoreSummary {
   executableActions: false;
 }
 
+export interface BrainCoreAgentRunSummary {
+  id: string;
+  agentId: string;
+  title: string;
+  kind: string;
+  status: 'queued' | 'running' | 'blocked' | 'completed' | 'failed' | 'cancelled' | 'planned' | 'unknown';
+  startedAt?: string;
+  completedAt?: string;
+  ageMinutes?: number;
+  durationSeconds?: number;
+  targetType: string;
+  targetId: string;
+  source: 'approval' | 'scheduler' | 'placeholder';
+  summary: string;
+  relatedApprovalId?: string;
+  relatedActionId?: string;
+  relatedReportId?: string;
+  relatedPipelineId?: string;
+  blockers: string[];
+  safety: {
+    writesToMind: false;
+    executesShell: boolean;
+    mutatesRuntime: boolean;
+    requiresApproval: boolean;
+    executionEnabled: false;
+  };
+}
+
+export interface BrainCoreAgentEventSummary {
+  id: string;
+  runId?: string;
+  agentId?: string;
+  type: 'requested' | 'approved' | 'rejected' | 'executed' | 'failed' | 'blocked' | 'unknown';
+  createdAt: string;
+  status: 'pending' | 'completed' | 'failed' | 'unknown';
+  summary: string;
+  severity: 'info' | 'warning' | 'error';
+  relatedApprovalId?: string;
+  relatedActionId?: string;
+  relatedReportId?: string;
+}
+
+export interface BrainCoreRecoveryItemSummary {
+  id: string;
+  severity: 'info' | 'warning' | 'error';
+  source: 'action' | 'approval' | 'report' | 'stb' | 'video' | 'scheduler' | 'maintenance' | 'system';
+  title: string;
+  summary: string;
+  blocker: string;
+  nextSafeStep: string;
+  relatedActionId?: string;
+  relatedApprovalId?: string;
+  relatedEndpoint?: string;
+  safety: {
+    canAutoFix: false;
+    requiresApproval: boolean;
+    writesToMind: false;
+  };
+}
+
 export interface BrainCoreExecutionPlanStep {
   id: string;
   description: string;
@@ -730,6 +790,24 @@ export async function readBrainCoreAction(
   id: string,
 ): Promise<HttpResult<{ action?: BrainCoreActionSummary }>> {
   return fetchJson<{ action?: BrainCoreActionSummary }>(normalizeBaseUrl(baseUrl), `/actions/${id}`);
+}
+
+export async function readBrainCoreAgentRuns(
+  baseUrl: string,
+): Promise<HttpResult<{ runs?: BrainCoreAgentRunSummary[] }>> {
+  return fetchJson<{ runs?: BrainCoreAgentRunSummary[] }>(normalizeBaseUrl(baseUrl), '/agent-runs');
+}
+
+export async function readBrainCoreAgentEvents(
+  baseUrl: string,
+): Promise<HttpResult<{ events?: BrainCoreAgentEventSummary[] }>> {
+  return fetchJson<{ events?: BrainCoreAgentEventSummary[] }>(normalizeBaseUrl(baseUrl), '/agent-events');
+}
+
+export async function readBrainCoreRecoveryItems(
+  baseUrl: string,
+): Promise<HttpResult<{ items?: BrainCoreRecoveryItemSummary[] }>> {
+  return fetchJson<{ items?: BrainCoreRecoveryItemSummary[] }>(normalizeBaseUrl(baseUrl), '/recovery');
 }
 
 export async function readBrainCoreApprovalDetail(
