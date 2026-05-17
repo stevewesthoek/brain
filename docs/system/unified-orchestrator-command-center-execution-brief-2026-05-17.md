@@ -1,30 +1,31 @@
-# Unified Orchestrator Command Center — Phase 1 Execution Brief
+# Unified Orchestrator Command Center — Phase 2 Execution Brief
 
 **Date:** 2026-05-17  
-**Scope:** Brain Core Foundation (read-only APIs)  
+**Scope:** Extend existing Brain Core with unified orchestrator registries  
 **Duration:** 2-3 weeks  
-**Risk Level:** Low (no side effects, read-only)  
+**Risk Level:** Low (extend read-only APIs, preserve existing)  
 **Status:** Ready to begin
 
 ---
 
 ## Mission
 
-Build a small, testable local HTTP service (Brain Core) that returns structured machine state without becoming a dashboard. Serve as the API boundary for Obsidian Brain Console, ProBot (legacy), and future orchestrators.
+Extend the existing Brain Core service (running on 127.0.0.1:4877) with read-only unified orchestrator registry surfaces. Add endpoints for orchestrators, pipelines, projects/domains, and platforms. Maintain all existing endpoints and port. Update Brain Console to consume and display these new registries side-by-side with operational systems (Says the Bible, ProBot legacy, video orchestrator future).
 
-Brain Core exposes:
-- System health (Brain Core itself, model-router, wiki, scheduler, local apps)
-- Operational pipelines (Says the Bible, video orchestrator, migration progress)
-- Registries (skills, orchestrators, local apps, projects)
-- Approval queues and action requests (read-only in Phase 1)
-- Scheduler status and safe job triggers
+Brain Core already exposes system health, local apps, sessions, and skill status. Phase 2 adds:
+- Orchestrator registry (skills, video, design, code, research, Bible research, scheduler)
+- Pipeline registries (Says the Bible operational, video orchestrator future, migration progress)
+- Project/domain registries (links to pipelines and orchestrators)
+- Platform registries (YouTube, Pinterest, Facebook, etc.)
+- Approval queue (read-only)
+- Scheduler status
 
 ---
 
 ## Non-Negotiables
 
 1. **No side effects** — Read-only HTTP service, no writes to Mind, no direct shell execution, no mutations
-2. **Localhost-only binding** — 127.0.0.1:9000, no external internet, no credential exposure
+2. **Localhost-only binding** — 127.0.0.1:4877 (PRESERVED), no external internet, no credential exposure
 3. **Type safety** — TypeScript strict mode, Zod validation on responses, 80% test coverage minimum
 4. **Says the Bible preservation** — Read-only adapter only, ProBot source is authoritative, no STB mutations
 5. **Video Orchestrator awareness** — Status adapter for progress tracking, no write path enabled
@@ -60,79 +61,70 @@ Brain Core exposes:
 
 ---
 
-## Immediate Target: Brain Core Scaffold + Phase 1 Endpoints
+## Immediate Target: Extend existing Brain Core (projects/brain-core/)
 
-### Files to create
+### Current state
+- ✅ Brain Core exists at `projects/brain-core/`
+- ✅ Runs on 127.0.0.1:4877 (BRAIN_CORE_PORT env var)
+- ✅ Uses Node.js built-in http module (no Express)
+- ✅ Has existing adapters (status, local-apps, sessions, skills, etc.)
+- ✅ Has existing routes, types, security layer
+- ✅ Has existing tests (jest-based)
+
+### Files to inspect and extend
 
 ```
-projects/brain-core/
-  package.json
-  tsconfig.json
-  jest.config.js
-  esbuild.config.mjs
-  .npmignore
+projects/brain-core/ (EXISTING)
   src/
-    index.ts
     api/
-      server.ts
-      routes.ts
-      types.ts
+      server.ts           (existing, do not modify port binding)
+      routes.ts           (EXTEND with /orchestrators, /pipelines, etc.)
+      types.ts            (EXTEND with Orchestrator, Pipeline, Project, Platform types)
     adapters/
-      status.ts
-      local-apps.ts
-      sessions.ts
-      skills.ts
-      orchestrators.ts
-      pipelines.ts
-      projects.ts
-      approvals.ts
-      scheduler.ts
+      status.ts           (existing, do not modify)
+      local-apps.ts       (existing, do not modify)
+      sessions.ts         (existing, do not modify)
+      skills.ts           (existing, do not modify)
+      orchestrators.ts    (CREATE or EXTEND)
+      pipelines.ts        (CREATE or EXTEND - includes STB, video, migration)
+      projects.ts or domains.ts (CREATE - link to pipelines)
+      platforms.ts        (CREATE - YouTube, Pinterest, Facebook, etc.)
+      approvals.ts        (EXTEND if exists, else create)
+      scheduler.ts        (EXTEND if exists, else create)
     security/
-      localhost.ts
-      redaction.ts
+      localhost.ts        (existing, preserve 4877)
+      redaction.ts        (existing, preserve)
     tests/
-      adapters/
-        status.test.ts
-        local-apps.test.ts
-        [etc. per adapter]
-      api/
-        server.test.ts
-        routes.test.ts
-    fixtures/
-      mock-probot-status.json
-      mock-scheduler-state.json
-  README.md
-  RUNBOOK.md
+      [existing tests]    (UPDATE tests for new adapters)
+  src/index.ts            (existing entry point, do not modify)
+  package.json            (existing, inspect for dev dependencies)
+  tsconfig.json           (existing, preserve strict mode)
 ```
 
-### Endpoints to implement
+### Endpoints to extend/add
 
-**Core (must have):**
+**Existing (preserve as-is):**
+```
+✅ GET /status
+✅ GET /local-apps
+✅ GET /sessions
+✅ GET /skills
+✅ GET /runtime/readiness
+✅ GET /execution/maintenance-previews
+[other existing endpoints]
+```
 
+**To add/extend:**
 ```typescript
-// Status
-GET /status → {
-  ready: boolean,
-  runtime: { brainCore: string, models: string[] },
-  services: object[]
-}
-
-// Local apps
-GET /local-apps → { name, status, port?, logs? }[]
-
-// Sessions
-GET /sessions → { id, name, date, lastStep, model }[]
-
-// Skills
-GET /skills → { name, category, status, lastRun?, queuedItems? }[]
-
-// Orchestrators
+// Orchestrators registry (NEW)
 GET /orchestrators → {
   name, category, status, modules[], lastRun?,
   queueCount?, errorCount?, nextTask?
 }[]
 
-// Pipelines (STB + Video + Migration)
+GET /orchestrators/:id → full detail
+
+// Pipelines (NEW - STB + Video + Migration unified view)
 GET /pipelines → {
   name, category, status, lastRun?, queueCount?,
   failureCount?, health, metadata
@@ -140,146 +132,183 @@ GET /pipelines → {
 
 GET /pipelines/:id → full detail
 
-// Projects
+  // Examples:
+  // - /pipelines/stb-daily-pipeline (operational, read from ProBot)
+  // - /pipelines/video-orchestrator (progress tracking)
+  // - /pipelines/stb-video-migration (aggregated status)
+
+// Projects/Domains (NEW)
 GET /projects → {
   name, type, status, owner, lastModified,
   linkedPipeline?, linkedOrchestrator?
 }[]
 
-// Approvals
+// Platforms (NEW)
+GET /platforms → {
+  name, type, status, linkedProject?, lastActivity?
+}[]
+
+// Approvals (EXTEND if exists)
 GET /approvals → {
   id, action, description, requested, expires, status
 }[]
-
-// Scheduler
-GET /scheduler/status → { lastRun, nextRun, jobs[], health }
-
-GET /scheduler/jobs → {
-  id, name, schedule, lastRun, lastStatus,
-  duration, enabled
-}[]
-
-// Execution reports
-GET /execution/maintenance-previews → {
-  id, type, timestamp, title, status, preview
-}[]
-
-// Health/readiness
-GET /runtime/readiness → {
-  ready: boolean,
-  checks: { name, status, message }[]
-}
 ```
 
-### Adapters to build (in order)
+### Adapters to extend or create
 
-1. **status.ts** — Brain Core internal state (ready flag, version, runtime checks)
-2. **local-apps.ts** — Read ProBot app registry (safe, read-only, no side effects)
-3. **sessions.ts** — Read Brain Core session storage (Claude resumption tracking)
-4. **skills.ts** — Read skill index from `brain/ai/skills/active/` (registry only)
-5. **orchestrators.ts** — Index video, research, design, code, model-router, scheduler (registry)
-6. **pipelines.ts** — **NEW: STB status adapter** (read ProBot STB operational state, read-only)
-7. **pipelines.ts cont'd** — **NEW: video orchestrator adapter** (progress tracking, modules %)
-8. **pipelines.ts cont'd** — **NEW: migration card** (aggregate STB + video)
-9. **projects.ts** — Index from mind vault + project tracking (links to pipelines)
-10. **approvals.ts** — Read Brain Core approval queue (empty in Phase 1)
-11. **scheduler.ts** — Read Office nightly scheduler state (jobs, last run)
+**Existing (already present):**
+1. ✅ **status.ts** — Brain Core internal state
+2. ✅ **local-apps.ts** — ProBot app registry
+3. ✅ **sessions.ts** — Claude session tracking
+4. ✅ **skills.ts** — Skill index from `brain/ai/skills/active/`
 
-### Tests to write (80% coverage minimum)
+**To create/extend (in order):**
+5. **orchestrators.ts** (EXTEND if exists, else CREATE)
+   - Index video, research, design, code, model-router, scheduler orchestrators
+   - Read from `brain/projects/*/`, `brain/ai/skills/active/`
+   - Safe, read-only, no execution
 
-```
-Per adapter:
+6. **pipelines.ts** (EXTEND if exists, else CREATE)
+   - **STB status adapter:** Read ProBot STB operational state (read-only)
+   - **Video orchestrator adapter:** Progress tracking, modules %, parity status
+   - **Migration card:** Aggregate STB + video for dual visibility
+   - All read-only, no mutations
+
+7. **projects.ts or domains.ts** (CREATE)
+   - Index from mind vault + project tracking
+   - Link to pipelines and orchestrators
+   - Safe, read-only
+
+8. **platforms.ts** (CREATE)
+   - YouTube, Pinterest, Facebook, etc.
+   - Link to projects
+   - Safe, read-only
+
+9. **approvals.ts** (EXTEND if exists, else CREATE)
+   - Read Brain Core approval queue (empty in Phase 2)
+
+10. **scheduler.ts** (EXTEND if exists, else CREATE)
+    - Read Office nightly scheduler state (jobs, last run)
+    - Safe, read-only
+
+### Tests to write/extend
+
+**Follow existing test patterns in projects/brain-core/src/tests/:**
+
+Per new adapter:
 - Happy path (service available, returns data)
 - Error case (service unavailable, graceful 503 or fallback)
-- Response schema validation (Zod)
-- Redaction (no credentials/secrets in output)
+- Response schema validation (same as existing adapters)
+- Redaction (no credentials/secrets in output, match existing patterns)
 
-API/routes:
-- All endpoints callable
+Routes tests:
+- All endpoints callable (extend existing routes.test.ts)
 - Error responses formatted correctly
-- Localhost-only binding verified
-- Rate limiting (if implemented) verified
-```
+- Localhost-only binding verified (already in place)
 
-### Security layer
+**Test coverage:** Match existing project standard (inspect jest.config.js and existing tests)
+
+### Security layer (EXISTING, preserve)
 
 **File:** `src/security/localhost.ts`
-- Reject all non-localhost connections
-- Reject connections from 0.0.0.0 or public IPs
+- ✅ Already rejects non-localhost connections
+- ✅ Port already 4877 (do not change)
 
 **File:** `src/security/redaction.ts`
-- Remove credentials, tokens, API keys from all responses
-- Flag if PII or secret-like patterns detected
-- Log (no PII) for debugging
+- ✅ Already removes credentials from responses
+- ✅ Inspect existing pattern and follow for new adapters
 
 ---
 
 ## Key Decisions
 
-### 1. STB Status Adapter
+### 1. Extend existing Brain Core, not create new
+- **Port:** 4877 (BRAIN_CORE_PORT env var, do NOT change)
+- **Address:** 127.0.0.1 (existing, localhost-only binding)
+- **Tech stack:** Node.js built-in http module, existing structure
+- **Why:** Brain Core already exists, operational, and connected to Brain Console
+
+### 2. STB Status Adapter
 - **Source:** ProBot dashboard status endpoints (safe, read-only)
 - **Not a mutation:** Only reads STB operational state from ProBot
 - **Purpose:** Expose STB status in Brain Core for Brain Console visibility
 - **Why:** Says the Bible is the user's daily pipeline; visibility is critical for migration planning
 
-### 2. Video Orchestrator Adapter
+### 3. Video Orchestrator Adapter
 - **Source:** ProBot design artifacts (video-orchestrator-*.ts) + Brain-side state files
 - **Not a write path:** Tracks progress metrics only, doesn't execute video modules
 - **Purpose:** Expose video orchestrator design/progress for Brain Console migration card
 - **Why:** Show user migration status without revealing internal implementation
 
-### 3. Migration Card Aggregation
+### 4. Migration Card Aggregation
 - **Source:** STB + Video status adapters
 - **Purpose:** Unified view of migration progress (legacy → canonical)
 - **Data:** STB operational status, video modules %, parity %, next task
 - **Safety:** Read-only view only, no mutations
 
-### 4. Localhost-only binding
-- **Port:** 9000 (configurable, default 9000)
-- **Address:** 127.0.0.1 (localhost fallback in Brain Console client)
-- **Why:** Local machine only, no network exposure, no credential risk
+### 5. Preserve all existing endpoints
+- All current endpoints stay as-is
+- New endpoints added without breaking changes
+- Existing tests preserved and extended
 
-### 5. No execution in Phase 1
-- Endpoints are read-only
-- No `/actions/request` endpoint yet (Phase 4+)
-- No `/scheduler/jobs/:id/request-run` yet (Phase 4+)
+### 6. No execution in Phase 2
+- Endpoints are read-only only
+- No `/actions/request` endpoint yet (Phase 7+)
+- No `/scheduler/jobs/:id/request-run` yet (Phase 7+)
 - All mutations blocked by design
 
 ---
 
-## Panels and Tabs (Brain Console Integration)
+## Brain Console Panels to Add (Phase 2 consumption)
 
-**Phase 1 MVP (already exists, will consume these endpoints):**
-- Overview tab (6 cards, status pills)
-- Action row (refresh button)
+**Overview Tab (MVP, already exists):**
+- ✅ Status pills, 6 core cards, action row
 
-**Phase 2A (will consume these Phase 1 endpoints):**
-- Apps tab (local-apps endpoint)
-- Pipelines tab (stb + video endpoints, **NEW**)
-  - Says the Bible card (operational status, platforms, warning)
-  - Video Orchestrator card (progress, modules, next task)
-  - Migration card (progress tracking, safeguards)
+**Phase 2 additions to Brain Console (will consume these new endpoints):**
 
-**Phase 2B (will consume Phase 1 endpoints):**
-- Orchestrators tab (orchestrators endpoint)
+1. **Pipelines Tab** (NEW - consumes `/pipelines`, `/pipelines/:id`)
+   - Says the Bible card (operational status, platforms, warning: "no changes during migration")
+   - Video Orchestrator card (progress %, modules, parity status)
+   - Migration card (progress tracking, safeguards enforced)
 
-**Phase 3+ (future phases):**
-- Projects tab, Approvals tab, Research tab, System tab
+2. **Orchestrators Tab** (NEW - consumes `/orchestrators`)
+   - Model Router status
+   - Video Orchestrator progress
+   - Skills registry (research, design, code, Bible research)
+   - Scheduler status
+
+3. **Apps Tab** (NEW - consumes existing `/local-apps`)
+   - Local app status
+   - ProBot legacy status (marked deprecated)
+
+4. **Projects/Domains Tab** (NEW - consumes `/projects`, `/platforms`)
+   - Active projects
+   - Linked pipelines and orchestrators
+   - Platform status
+
+**Phase 3+ (future):**
+- Approvals tab, Research tab, System tab
 
 ---
 
 ## Tests (Definition of Done)
 
-1. ✅ `npm run typecheck` passes (TypeScript strict mode)
-2. ✅ `npm run build` produces single entry point with no external dependencies except Express, zod
-3. ✅ `npm run test` passes (80% coverage minimum)
-4. ✅ Service starts: `npm run start` listens on 127.0.0.1:9000
-5. ✅ Health check works: `curl http://localhost:9000/status` returns JSON
+1. ✅ `npm run typecheck` passes (TypeScript strict mode, follow existing config)
+2. ✅ `npm run build` succeeds (uses existing esbuild config, no changes)
+3. ✅ `npm run test` passes (existing coverage standard)
+4. ✅ Service starts: `npm run start` listens on 127.0.0.1:4877 (do NOT change port)
+5. ✅ Health check works: `curl http://127.0.0.1:4877/status` returns JSON
 6. ✅ All read-only endpoints respond (or gracefully fail)
+   - `/orchestrators`
+   - `/pipelines`
+   - `/pipelines/:id`
+   - `/projects` or `/domains`
+   - `/platforms`
 7. ✅ No secrets in responses (secret scan passes)
 8. ✅ Security layer verified: non-localhost rejected
-9. ✅ Redaction layer verified: credentials removed from output
+9. ✅ Redaction layer verified: credentials removed from output (match existing patterns)
 10. ✅ Graceful degradation: if ProBot offline, returns 503 not crash
+11. ✅ All existing endpoints still work (no breaking changes)
 
 ---
 
@@ -299,73 +328,90 @@ API/routes:
 
 ---
 
-## Phase 1 Definition of Done
+## Phase 2 Definition of Done
 
-- ✅ Brain Core project created and builds
-- ✅ All 10 read-only endpoints implemented
-- ✅ All 9 adapters implemented (including STB + video status)
-- ✅ Security layer (localhost-only, redaction) verified
-- ✅ Tests pass (80% coverage)
+- ✅ All new read-only endpoints implemented and working
+  - `/orchestrators`
+  - `/pipelines`
+  - `/pipelines/:id`
+  - `/projects` (or `/domains`)
+  - `/platforms`
+- ✅ All new adapters created (orchestrators, pipelines, projects, platforms, etc.)
+- ✅ STB status adapter reads ProBot operational state (read-only)
+- ✅ Video orchestrator adapter tracks progress (read-only)
+- ✅ Migration card aggregates STB + video (read-only)
+- ✅ Security layer verified (localhost-only, redaction)
+- ✅ Tests pass (follow existing project standard)
 - ✅ No external shell execution
 - ✅ No secrets in responses
 - ✅ Graceful error handling (offline services don't crash)
+- ✅ All existing endpoints still work (no breaking changes)
+- ✅ Port remains 4877 (do NOT change)
 - ✅ Staged and committed (no uncommitted changes)
-- ✅ Ready for Phase 2 (Brain Console can consume endpoints)
+- ✅ Ready for Phase 3 (Brain Console can consume endpoints)
 
 ---
 
 ## What NOT to touch
 
-- ❌ Say the Bible code (read-only ProBot adapter only)
+- ❌ Says the Bible code (read-only ProBot adapter only, no modifications)
 - ❌ Video Orchestrator code (status tracking only, no write path)
-- ❌ ProBot dashboard (legacy, unmodified in Phase 1)
-- ❌ Brain Console plugin (Phase 2, will consume these endpoints)
+- ❌ ProBot dashboard runtime (legacy, read operational state only)
+- ❌ Brain Core port (must stay 4877)
+- ❌ Brain Core server.ts or localhost.ts (preserve existing)
+- ❌ Existing endpoints and routes (no breaking changes)
+- ❌ Brain Console plugin code (will be updated separately to consume these endpoints)
 - ❌ Mind vault (read-only project index only)
-- ❌ Model-router (no changes in Phase 1)
+- ❌ Model-router (no changes)
 - ❌ Scheduler (read status only, no execution)
 
 ---
 
-## Next Task (Phase 2)
+## Next Task (Phase 3)
 
-After Phase 1 completion:
-1. Start Brain Core service in background
-2. Update Brain Console to consume new Phase 1 endpoints
+After Phase 2 (Brain Core extension) completion:
+1. Verify Brain Core service is running on 4877
+2. Update Brain Console plugin to consume new Phase 2 endpoints
 3. Add Pipelines tab with STB + video orchestrator + migration card
-4. Manual test in Obsidian: verify STB and video status display correctly
-5. Validate migration card shows accurate progress
+4. Add Orchestrators tab with skill registry
+5. Manual test in Obsidian: verify STB and video status display correctly side-by-side
+6. Validate migration card shows accurate progress
+7. Verify ProBot marked as legacy/secondary
 
 ---
 
 ## Rollback Plan
 
-If Phase 1 goes wrong:
-1. Brain Core is new code, no side effects → safe to delete entire `projects/brain-core/` and start over
+If Phase 2 goes wrong:
+1. New adapters are isolated → safe to revert changes to `projects/brain-core/src/adapters/`
 2. All endpoints are read-only → no data loss
-3. Brain Console MVP still works with fallback data (no Brain Core required)
-4. ProBot dashboard remains unchanged (fallback)
-5. Says the Bible remains operational (untouched)
+3. Existing endpoints continue to work (preserved, no breaking changes)
+4. Brain Console MVP still works with existing endpoints
+5. ProBot dashboard remains unchanged (fallback)
+6. Says the Bible remains operational (untouched, read-only adapter only)
 
 ---
 
 ## Success Criteria (User-Facing)
 
-1. ✅ Brain Console loads faster (caches data from local Brain Core, not ProBot web service)
-2. ✅ Says the Bible operational status visible in Brain Console dashboard
-3. ✅ Video Orchestrator progress visible side-by-side with STB during migration
-4. ✅ Migration card shows user how close we are to STB-to-video transition
-5. ✅ No user-visible breaking changes (ProBot still works as fallback)
-6. ✅ No production system disrupted
+1. ✅ Brain Console displays Says the Bible operational status (live, read from ProBot)
+2. ✅ Brain Console displays Video Orchestrator progress side-by-side with STB
+3. ✅ Migration card in Brain Console shows: modules completed, parity %, progress timeline, safeguards
+4. ✅ Orchestrators tab shows all skills and video orchestrator
+5. ✅ ProBot marked as legacy/secondary (visible in dashboard)
+6. ✅ No user-visible breaking changes (existing endpoints unchanged)
+7. ✅ No production system disrupted (read-only adapters only)
+8. ✅ User can see end-to-end: STB operational → video building → planned migration
 
 ---
 
-## Questions to ask before starting
+## Questions to clarify before starting
 
-1. Should Brain Core listen on port 9000 or a different port?
-2. Should STB/video status be fetched from ProBot in real-time, or cached from a recent file?
-3. If ProBot is offline during Brain Core startup, should we start anyway with "unavailable" states?
-4. Should we add a Brain Core `/health` endpoint that can be used by supervisor/launchd for restarts?
-5. Should we implement rate limiting in Phase 1 or defer to Phase 2?
+1. Should STB/video status be fetched from ProBot in real-time, or cached from a recent file?
+2. If ProBot is offline during Brain Core startup, should we start anyway with "unavailable" states?
+3. How should video orchestrator progress be discovered if `projects/video-orchestrator/` design artifacts exist?
+4. Should project registry be sourced from `mind/` vault or separate project tracking?
+5. Are there existing test patterns in `projects/brain-core/src/tests/` to follow for new adapters?
 
 ---
 

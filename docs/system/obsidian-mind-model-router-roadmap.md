@@ -24,7 +24,7 @@ Obsidian remains the only primary human dashboard. Brain Core exposes machine an
 4. **Dual visibility during migration** — Both STB (legacy/operational) and video orchestrator (future/partial) visible in dashboard simultaneously with migration card tracking progress.
 5. **No decommissioning without approval** — Requires: Brain Core API equivalent, Brain Console section deployed, tests passing, dual-run validation complete, explicit user approval.
 6. **All actions approval-gated** — Read-only dashboard by default. App/orchestrator/system controls go through Brain Core approval requests. No direct shell execution from plugin.
-7. **Brain Core is API boundary** — Typed, local-only HTTP layer. All dashboard data flows through Brain Core. No direct vault mutations from Obsidian plugin.
+7. **Brain Core is API boundary** — Typed, local-only HTTP layer (127.0.0.1:4877). All dashboard data flows through Brain Core. No direct vault mutations from Obsidian plugin. Brain Core already exists and is operational.
 
 ### STB → Video Orchestrator Architecture
 
@@ -81,6 +81,22 @@ Obsidian remains the only primary human dashboard. Brain Core exposes machine an
 - Phase 4: Domain/project registry + Projects section
 - Phase 5: Approval-gated actions framework
 - Phase 6: Visual refinement + ProBot deprecation
+
+### Brain Core Infrastructure (Current State)
+
+**Brain Core already exists and is operational:**
+- ✅ Located at: `projects/brain-core/`
+- ✅ Port: 127.0.0.1:4877 (configurable via BRAIN_CORE_PORT env var)
+- ✅ Technology: Node.js built-in http module (no external frameworks)
+- ✅ Connected to Brain Console: Obsidian plugin uses requestUrl API to call Brain Core
+- ✅ Existing adapters: status, local-apps, sessions, skills
+- ✅ Existing endpoints: GET /status, GET /local-apps, GET /sessions, GET /skills, GET /runtime/readiness, GET /execution/maintenance-previews, [others]
+- ✅ Security: localhost-only binding, credential redaction, no external internet
+
+**Next implementation extends Brain Core, not creates it:**
+- Phase 1: Inventory existing state and identify endpoint gaps
+- Phase 2: Add new read-only adapters and endpoints for orchestrators, pipelines, projects, platforms
+- Phase 3: Brain Console consumes new endpoints and displays unified cockpit
 
 ### Brain Console Cockpit Architecture
 

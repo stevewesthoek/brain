@@ -1345,3 +1345,49 @@ Verified handoff briefs next agent on:
 - Task 5: Create unified-orchestrator-command-center-execution-brief-2026-05-17.md (concise operational brief for Phase 1)
 - Task 6: Validate all canonical docs contain required terminology and concepts
 - Task 7: Commit hardened canonical docs with message "Harden unified orchestrator cockpit roadmap"
+
+## Correction update — Existing Brain Core extension, not new scaffold (2026-05-17)
+
+**Critical correction:** Brain Core already exists and is operational.
+
+**Verified facts:**
+- Brain Core runs at 127.0.0.1:4877 (BRAIN_CORE_PORT env var)
+- Located at `projects/brain-core/`
+- Uses Node.js built-in http module (no Express)
+- Has existing adapters (status, local-apps, sessions, skills)
+- Brain Console Obsidian plugin already connects to it via requestUrl API
+- Port and structure must be preserved
+
+**Earlier documents incorrectly implied:**
+- Phase 1 was to create Brain Core from scratch — FALSE
+- New port 9000 would be used — FALSE
+- New scaffold needed — FALSE
+
+**Corrected guidance:**
+- Phase 1: Inventory existing Brain Core, identify endpoint gaps
+- Phase 2: Extend existing Brain Core with read-only orchestrator/pipeline/project/platform adapters
+- Phase 3: Brain Console consumes new endpoints
+- Port remains 4877
+- All existing endpoints preserved
+- No breaking changes
+
+**Files updated:**
+- `docs/system/unified-orchestrator-command-center-execution-brief-2026-05-17.md` — renamed to Phase 2, changed mission from "create" to "extend", updated all references to port 4877
+- `docs/system/unified-orchestrator-command-center-implementation-plan-2026-05-17.md` — Phase 1 renamed to "Inventory", Phase 2 renamed to "Extend", Phase 2A renamed to "Phase 3", removed scaffold creation tasks, simplified to adapter extension focus
+- `docs/system/obsidian-mind-model-router-roadmap.md` — added Brain Core infrastructure section confirming existing state and 4877 port
+
+**Safety preserved:**
+- ✅ Says the Bible untouched (read-only ProBot adapter only)
+- ✅ ProBot untouched (read operational state only)
+- ✅ Video Orchestrator untouched (status tracking only)
+- ✅ Brain Core port preserved (4877)
+- ✅ All existing endpoints preserved (no breaking changes)
+- ✅ No new services created
+- ✅ No scaffold replacement
+
+**Next execution task:**
+- Extend existing Brain Core (projects/brain-core/) with Phase 2 adapters
+- Keep all settings, port, structure the same
+- Add new read-only endpoints only
+- Update Brain Console to consume endpoints
+- Duration: 2-3 weeks, low risk
