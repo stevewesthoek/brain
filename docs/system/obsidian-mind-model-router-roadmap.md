@@ -12,6 +12,14 @@ The `brain` repo will own the executable infrastructure: Brain Core API, model-r
 
 Obsidian remains the only primary human dashboard. Brain Core exposes machine and scheduler state. The model router continuously keeps `mind` small, coherent, useful, and fast.
 
+## Current Status
+
+- Report-only model-router dry-run and Brain Core preview/status surfaces are complete.
+- Preview-only wiki-health linting is now available in dry-run reports.
+- `wiki/log.md` exists as the append-only maintenance ledger for Mind.
+- Write/apply behavior for Mind remains blocked pending the approved policy and tests.
+- Legacy numbered-folder archival remains blocked until a separate validated cleanup phase.
+
 ## Final Mental Model
 
 ```text

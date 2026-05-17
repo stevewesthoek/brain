@@ -331,6 +331,12 @@ export interface BrainCoreRuntimeReportSummary {
   message: string;
   writesToMind: false;
   executableActions: false;
+  wikiHealth?: {
+    status: 'available' | 'unavailable';
+    ok: boolean;
+    errorCount: number;
+    warningCount: number;
+  };
 }
 
 export interface BrainCoreRoutes {

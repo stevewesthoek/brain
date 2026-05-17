@@ -185,7 +185,10 @@ function describeRuntimeReports(reports: BrainCoreRuntimeReportSummary[] | undef
     if (!report) {
       return [id, 'Unavailable'];
     }
-    return [id, `${report.status} · writesToMind=${report.writesToMind} · executed=${report.executableActions}`];
+    const wikiHealth = report.wikiHealth
+      ? ` · wiki health=${report.wikiHealth.ok ? 'ok' : `warnings=${report.wikiHealth.warningCount} errors=${report.wikiHealth.errorCount}`}`
+      : '';
+    return [id, `${report.status} · writesToMind=${report.writesToMind} · executed=${report.executableActions}${wikiHealth}`];
   });
 }
 

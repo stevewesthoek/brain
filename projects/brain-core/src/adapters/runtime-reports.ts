@@ -112,8 +112,21 @@ function readJsonRuntimeReport(input: {
   }
 
   try {
-    const body = JSON.parse(fs.readFileSync(resolved, 'utf8')) as { status?: string; message?: string; endedAtLisbon?: string };
+    const body = JSON.parse(fs.readFileSync(resolved, 'utf8')) as {
+      status?: string;
+      message?: string;
+      endedAtLisbon?: string;
+      wikiHealth?: {
+        status?: string;
+        ok?: boolean;
+        summary?: {
+          errorCount?: number;
+          warningCount?: number;
+        };
+      };
+    };
     const latestRunStatus = body.status === 'success' ? 'ok' : body.status === 'failed' ? 'failed' : 'unknown';
+    const wikiHealth = normalizeWikiHealth(body.wikiHealth);
     return {
       id: input.id,
       status: 'available',
@@ -122,10 +135,34 @@ function readJsonRuntimeReport(input: {
       message: body.message || 'Runtime report is available.',
       writesToMind: false,
       executableActions: false,
+      ...(wikiHealth ? { wikiHealth } : {}),
     };
   } catch {
     return invalidRuntimeReport(input.id, relativeRuntimePath(resolved), 'Runtime report JSON could not be parsed safely.');
   }
+}
+
+function normalizeWikiHealth(
+  value: {
+    status?: string;
+    ok?: boolean;
+    summary?: {
+      errorCount?: number;
+      warningCount?: number;
+    };
+  } | undefined,
+): BrainCoreRuntimeReportSummary['wikiHealth'] | undefined {
+  if (!value || (value.status !== 'available' && value.status !== 'unavailable')) return undefined;
+  if (typeof value.ok !== 'boolean') return undefined;
+  const errorCount = value.summary?.errorCount;
+  const warningCount = value.summary?.warningCount;
+  if (typeof errorCount !== 'number' || typeof warningCount !== 'number') return undefined;
+  return {
+    status: value.status,
+    ok: value.ok,
+    errorCount,
+    warningCount,
+  };
 }
 
 function missingRuntimeReport(

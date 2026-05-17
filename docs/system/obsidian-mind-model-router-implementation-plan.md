@@ -8,6 +8,13 @@
 
 Implement an unnumbered Obsidian-first `mind` structure maintained by a `brain`-hosted model router, with Save-to-Mind as the capture ingress and the Office nightly scheduler running maintenance loops exposed through Brain Core.
 
+## Current Status
+
+- The repo now has report-only dry-run loops, preview-policy surfaces, preview-artifact surfaces, and compact wiki-health summaries.
+- `wiki/log.md` is now part of the Mind contract as an append-only maintenance ledger.
+- The first write/apply boundary remains intentionally blocked until the separate policy is approved and tested.
+- The next safe step is still lint/report refinement, not Mind mutation.
+
 ## Confirmed Architecture Choices
 
 - Use clean folder names, not numeric prefixes.

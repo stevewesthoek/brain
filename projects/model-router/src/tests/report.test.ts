@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { createModelRouterDryRunReport } from '../report.js';
 import type { MindContractSnapshot } from '../contracts.js';
 
@@ -24,21 +27,35 @@ test('model-router dry-run report includes all loops and safe flags', () => {
 });
 
 test('model-router dry-run report computes counts and blockers', () => {
-  const report = createModelRouterDryRunReport(
-    snapshot([
-      { path: 'capture/inbox/a.md', kind: 'file', exists: true, modifiedAt: '2026-05-15T00:00:00.000Z' },
-      { path: 'capture/failed/b.md', kind: 'file', exists: true },
-      { path: 'router/current.md', kind: 'file', exists: true, lineCount: 151 },
-    ]),
-    new Date('2026-05-17T00:00:00.000Z'),
-  );
+  const previousRoot = process.env.MODEL_ROUTER_MIND_ROOT;
+  const missingRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'model-router-missing-root-'));
+  fs.rmSync(missingRoot, { recursive: true, force: true });
+  process.env.MODEL_ROUTER_MIND_ROOT = missingRoot;
+  try {
+    const report = createModelRouterDryRunReport(
+      snapshot([
+        { path: 'capture/inbox/a.md', kind: 'file', exists: true, modifiedAt: '2026-05-15T00:00:00.000Z' },
+        { path: 'capture/failed/b.md', kind: 'file', exists: true },
+        { path: 'router/current.md', kind: 'file', exists: true, lineCount: 151 },
+      ]),
+      new Date('2026-05-17T00:00:00.000Z'),
+    );
 
-  assert.equal(report.snapshotStats.failedCaptureCount, 1);
-  assert.equal(report.snapshotStats.captureInboxCount, 1);
-  assert.ok(report.snapshotStats.oldestCaptureInboxAgeDays !== undefined);
-  assert.equal(report.snapshotStats.oldestCaptureInboxAgeDays, 2);
-  assert.equal(Object.values(report.actionCountsByKind).length > 0, true);
-  const blockers = report.blockersByLoop['mind-compile-loop'];
-  assert.ok(blockers);
-  assert.equal(blockers.length > 0, true);
+    assert.equal(report.snapshotStats.failedCaptureCount, 1);
+    assert.equal(report.snapshotStats.captureInboxCount, 1);
+    assert.ok(report.snapshotStats.oldestCaptureInboxAgeDays !== undefined);
+    assert.equal(report.snapshotStats.oldestCaptureInboxAgeDays, 2);
+    assert.equal(Object.values(report.actionCountsByKind).length > 0, true);
+    const blockers = report.blockersByLoop['mind-compile-loop'];
+    assert.ok(blockers);
+    assert.equal(blockers.length > 0, true);
+    assert.equal(report.wikiHealth.status, 'unavailable');
+    assert.equal(report.wikiHealth.ok, false);
+  } finally {
+    if (previousRoot === undefined) {
+      delete process.env.MODEL_ROUTER_MIND_ROOT;
+    } else {
+      process.env.MODEL_ROUTER_MIND_ROOT = previousRoot;
+    }
+  }
 });

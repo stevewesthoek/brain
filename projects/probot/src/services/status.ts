@@ -79,6 +79,7 @@ export async function getStatusSummary(config: Config): Promise<string> {
     brainCoreExecutionReadiness.line,
     brainCoreMindPreviewPolicy.line,
     brainCoreMindPreviews.line,
+    `Wiki health: ${describeWikiHealth(brainCoreRuntimeReports)}`,
     `Execution gate: ${brainCoreExecutionReadiness.executionEnabled ? 'enabled' : 'disabled'} · first candidate: ${brainCoreExecutionPlans.firstCandidate}`,
     `Model-router execution flag: ${brainCoreExecutionReadiness.modelRouterDryRunExecutionFlagEnabled ? 'enabled (still gated)' : 'disabled'} · ${brainCoreExecutionReadiness.modelRouterDryRunExecutionFlagName}`,
     `Mind preview policy: ${brainCoreMindPreviewPolicy.status} · apply route: ${brainCoreMindPreviewPolicy.applyRouteEnabled ? 'enabled' : 'disabled'}`,
@@ -89,4 +90,11 @@ export async function getStatusSummary(config: Config): Promise<string> {
     `Machine load: ${load}`,
     `Memory free: ${freeGb} GB / ${totalGb} GB`,
   ].join("\n");
+}
+
+function describeWikiHealth(reports: Awaited<ReturnType<typeof readBrainCoreRuntimeReports>>): string {
+  const modelRouter = reports.reports.find((report) => report.id === 'model-router');
+  if (!modelRouter?.wikiHealth) return 'unavailable';
+  const { ok, errorCount, warningCount } = modelRouter.wikiHealth;
+  return ok ? 'ok' : `warnings=${warningCount} errors=${errorCount}`;
 }

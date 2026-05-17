@@ -82,6 +82,12 @@ export interface BrainCoreRuntimeReportSummary {
   id: string;
   status: 'available' | 'missing' | 'invalid';
   latestRunStatus: 'ok' | 'failed' | 'unknown';
+  wikiHealth?: {
+    status: 'available' | 'unavailable';
+    ok: boolean;
+    errorCount: number;
+    warningCount: number;
+  };
 }
 
 export interface BrainCoreVideoStatusResponse {

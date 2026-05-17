@@ -28,6 +28,7 @@ export {
 export { createMindRouterLoopPlan } from './plans.js';
 export { createMindPathSnapshotFromRoot } from './snapshot.js';
 export { createModelRouterDryRunReport } from './report.js';
+export { createMindWikiHealthResultFromRoot } from './wiki-health.js';
 export {
   MIND_PREVIEW_ALLOWED_TARGETS,
   MIND_PREVIEW_BLOCKED_EXACT_PATHS,
@@ -57,3 +58,9 @@ export type {
   WriteMindPreviewArtifactInput,
   WriteMindPreviewArtifactResult,
 } from './preview.js';
+export type {
+  MindWikiHealthFinding,
+  MindWikiHealthResult,
+  MindWikiHealthSeverity,
+  MindWikiHealthSummary,
+} from './wiki-health.js';

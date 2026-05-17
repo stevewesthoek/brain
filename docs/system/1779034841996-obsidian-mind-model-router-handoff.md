@@ -9,6 +9,40 @@
 
 The roadmap is not safe to advance into broad Mind mutation or legacy-folder archival in this pass. The verified state shows the safe implementation slices are already complete through report-only model-router execution and Brain Core status surfaces. The remaining roadmap items that would mutate Mind are intentionally blocked by current policy until a separate write/apply policy is approved and tested.
 
+## Continuation update — Wiki health dry-run slice
+
+Implemented:
+
+- Added a stat-only `mind-wiki-health` model-router helper in Brain.
+- Added dry-run integration so model-router reports now include compact wiki-health summary data when a Mind root is provided.
+- Added Brain Core runtime-report surfacing for the compact wiki-health summary.
+- Added sparse operator visibility in ProBot and Brain Console.
+- Added `wiki/log.md` as an append-only human-readable ledger in Mind, plus sparse links from `wiki/index.md`, `router/map.md`, and `HOME.md`.
+
+Validation:
+
+- Model-router CI: passed.
+- Brain Core CI: passed.
+- ProBot typecheck: passed.
+- Brain Console typecheck/build: passed.
+- Secret scan: no live-looking secrets found in changed files.
+
+Safety status:
+
+- No Mind write/apply path was enabled.
+- No Brain Core mutation endpoint was added.
+- No runtime logs or approval artifacts were written into Mind.
+
+Remaining blockers:
+
+- Broad Mind mutation remains blocked.
+- Legacy folder archival remains blocked.
+- Any future apply flow still requires the separately approved write/apply policy.
+
+Next safe task:
+
+- Continue with preview-only or lint-only strengthening, or stop here and review the new wiki-health findings before considering any future Mind write/apply work.
+
 ## Files read for this continuation
 
 Brain:

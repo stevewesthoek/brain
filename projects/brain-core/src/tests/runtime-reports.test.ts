@@ -68,6 +68,14 @@ test('runtime reports honor configured model-router JSON and approval-audit JSON
       message: 'model-router dry-run validation passed',
       writesToMind: false,
       executableActions: false,
+      wikiHealth: {
+        status: 'available',
+        ok: false,
+        summary: {
+          errorCount: 1,
+          warningCount: 2,
+        },
+      },
     }),
   );
   fs.writeFileSync(auditPath, JSON.stringify({ persisted: true }) + '\n');
@@ -81,6 +89,8 @@ test('runtime reports honor configured model-router JSON and approval-audit JSON
 
     assert.equal(modelRouter?.status, 'available');
     assert.equal(modelRouter?.latestRunStatus, 'ok');
+    assert.equal(modelRouter?.wikiHealth?.status, 'available');
+    assert.equal(modelRouter?.wikiHealth?.warningCount, 2);
     assert.equal(approvalAudit?.status, 'available');
     assert.equal(approvalAudit?.latestRunStatus, 'unknown');
   } finally {

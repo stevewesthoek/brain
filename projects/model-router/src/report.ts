@@ -1,6 +1,8 @@
 import type { MindContractDryRunResult, MindContractSnapshot, MindRouterLoopPlan, MindRouterPlanActionKind } from './contracts.js';
 import { createMindContractDryRunResult } from './jobs.js';
 import { createMindRouterLoopPlan } from './plans.js';
+import { createMindWikiHealthResultFromRoot, type MindWikiHealthResult } from './wiki-health.js';
+import fs from 'node:fs';
 
 export interface ModelRouterDryRunReport {
   generatedAt: string;
@@ -29,6 +31,15 @@ export interface ModelRouterDryRunReport {
     captureInboxCount: number;
     oldestCaptureInboxAgeDays?: number;
   };
+  wikiHealth: ModelRouterWikiHealthReport;
+}
+
+export interface ModelRouterWikiHealthReport {
+  status: 'available' | 'unavailable';
+  checkedAt?: string;
+  ok: boolean;
+  summary: MindWikiHealthResult['summary'];
+  findings: Array<Pick<MindWikiHealthResult['findings'][number], 'id' | 'severity' | 'path' | 'message' | 'recommendation'>>;
 }
 
 export function createModelRouterDryRunReport(
@@ -77,6 +88,8 @@ export function createModelRouterDryRunReport(
     } as ModelRouterDryRunReport['snapshotStats'],
   );
 
+  const wikiHealth = createWikiHealthReport(now);
+
   return {
     generatedAt: now.toISOString(),
     mode: 'dry-run-report-only',
@@ -97,6 +110,56 @@ export function createModelRouterDryRunReport(
     blockersByLoop: Object.fromEntries(loopPlans.map((plan) => [plan.jobId, plan.blockedBy])),
     warningsByLoop: Object.fromEntries(loopPlans.map((plan) => [plan.jobId, plan.warnings])),
     snapshotStats: pathStats,
+    wikiHealth,
+  };
+}
+
+function createWikiHealthReport(now: Date): ModelRouterWikiHealthReport {
+  const configuredRoot = process.env.MODEL_ROUTER_MIND_ROOT;
+  const root = configuredRoot;
+  try {
+    if (!root || !fs.existsSync(root)) {
+      return {
+        status: 'unavailable',
+        ok: false,
+        summary: emptyWikiHealthSummary(),
+        findings: [],
+      };
+    }
+
+    const health = createMindWikiHealthResultFromRoot(root, now);
+    return {
+      status: 'available',
+      checkedAt: health.checkedAt,
+      ok: health.ok,
+      summary: health.summary,
+      findings: health.findings.slice(0, 5).map(({ id, severity, path, message, recommendation }) => ({
+        id,
+        severity,
+        path,
+        message,
+        recommendation,
+      })),
+    };
+  } catch {
+    return {
+      status: 'unavailable',
+      ok: false,
+      summary: emptyWikiHealthSummary(),
+      findings: [],
+    };
+  }
+}
+
+function emptyWikiHealthSummary(): MindWikiHealthResult['summary'] {
+  return {
+    errorCount: 0,
+    warningCount: 0,
+    infoCount: 0,
+    staleCaptureCount: 0,
+    failedCaptureCount: 0,
+    oversizedWikiPageCount: 0,
+    missingSourceTraceCount: 0,
   };
 }
 
