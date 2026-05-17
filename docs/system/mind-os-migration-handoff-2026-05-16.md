@@ -730,6 +730,8 @@ Safety boundaries preserved:
 - no `mind/.obsidian/plugins/` installation
 
 ProBot command aliases remain documented, not wired, because the Slack and Telegram handlers are still too split for a low-risk insertion point. The desired aliases live in `operations/specs/probot-brain-core-thin-client-commands.md`.
+
+An alias resolver now exists at `projects/probot/src/services/brain-core-commands.ts` so future wiring can stay small and read-only.
 - Linked the Brain Core README to the new runbook.
 
 Validation:

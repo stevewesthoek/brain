@@ -13,6 +13,10 @@ Document how to isolate the unrelated dirty state in the `mind` repo without sta
 - untracked `06-resources/research/notes/bible/denominations/`
 - unrelated `05-areas/theological-studies/dance-of-life/README.md` change
 
+See also:
+
+- `operations/reports/mind-dirty-state-isolation-2026-05-17.md`
+
 ## Rules for future cleanup
 
 - Inspect one category at a time.

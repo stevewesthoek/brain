@@ -2,6 +2,11 @@
 
 Standalone read-only Brain Core console scaffold.
 
+Validation status:
+
+- `npm run typecheck` passes
+- `npm run build` passes
+
 ## Intended structure
 
 ```text
@@ -25,6 +30,9 @@ projects/brain-console-obsidian/
 - No automatic POST calls.
 - No secrets in settings.
 - No installation into `mind/.obsidian/plugins/` until explicitly approved.
+- Manual refresh only.
+- Offline state is shown when Brain Core is unavailable.
+- Runtime reports and capabilities are read from Brain Core, not copied into Mind notes.
 
 ## Current status
 

@@ -34,6 +34,12 @@ Document the desired read-only ProBot aliases over Brain Core without forcing a 
 
 The current ProBot command layer is split between Slack and Telegram handlers plus shared helper services. There is no low-risk centralized insertion point for alias routing without opening a wider command refactor.
 
+## Completed safe prep
+
+- Added a pure command resolver module at `projects/probot/src/services/brain-core-commands.ts`.
+- The resolver is intentionally framework-agnostic and only uses Brain Core GET helpers.
+- The remaining wiring step is to introduce a very small shared dispatch hook, if one becomes obvious in a later slice.
+
 ## Exact code locations to refactor later
 
 - `projects/probot/src/bot/commands.ts`

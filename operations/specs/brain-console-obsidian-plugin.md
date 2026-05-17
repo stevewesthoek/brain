@@ -6,7 +6,7 @@ Render Brain Core status inside Obsidian without copying runtime state into Mark
 
 ## Status
 
-Code was not written into the live `mind/.obsidian` folder in this slice. A standalone plugin project path under `projects/brain-console-obsidian/` is currently blocked by the Brain repo write policy, so this spec records the exact implementation target for Codex or a future write-policy update.
+Code was not written into the live `mind/.obsidian` folder in this slice. The standalone plugin project under `projects/brain-console-obsidian/` is now validated locally, but it remains outside the live Mind vault until explicit installation approval.
 
 ## Source of truth
 
@@ -36,11 +36,13 @@ The plugin should render the widget IDs from `BrainConsoleWidgetId`:
 brain-status
 brain-sessions
 brain-repos
-brain-skills
+brain-orchestrators
+brain-capabilities
 brain-scheduler
 brain-local-apps
-brain-video-queue
+brain-video
 brain-approvals
+brain-runtime-reports
 ```
 
 ## Required endpoints
@@ -50,7 +52,6 @@ Read-only endpoints:
 ```text
 GET /status
 GET /sessions
-GET /skills
 GET /repos
 GET /orchestrators
 GET /capabilities
@@ -59,9 +60,9 @@ GET /scheduler/latest-run
 GET /scheduler/jobs
 GET /local-apps
 GET /video/status
-GET /video/queue
 GET /approvals
 GET /approvals/audit
+GET /runtime/reports
 ```
 
 Approval boundary endpoints:
@@ -88,6 +89,8 @@ The approval endpoints must show that responses contain `executed: false` until 
 - The plugin must continue rendering an offline/empty state when Brain Core is unavailable.
 - The plugin must not call approval POST endpoints automatically.
 - The plugin must not add executable actions until persistent audit storage and explicit approval UX are complete.
+- The plugin must remain manual-refresh by default.
+- The plugin must render capabilities and runtime reports as read-only summaries.
 
 ## Recommended implementation shape
 
@@ -102,10 +105,16 @@ projects/brain-console-obsidian/
 Suggested files:
 
 ```text
+package-lock.json
+package.json
 manifest.json
 main.ts
 styles.css
 README.md
+src/client.ts
+src/settings.ts
+src/view.ts
+tsconfig.json
 ```
 
 Minimum implementation:
