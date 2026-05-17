@@ -174,23 +174,45 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
 });
 
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
-  const response = await exercise({ method: 'GET', url: '/scheduler/status' });
-  const body = JSON.parse(response.body) as { status: string; enabled: boolean; source: string };
+  const previousReportPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-scheduler-report.json');
 
-  assert.equal(response.statusCode, 200);
-  assert.equal(body.status, 'placeholder');
-  assert.equal(body.enabled, false);
-  assert.equal(body.source, 'placeholder');
+  try {
+    const response = await exercise({ method: 'GET', url: '/scheduler/status' });
+    const body = JSON.parse(response.body) as { status: string; enabled: boolean; source: string };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'placeholder');
+    assert.equal(body.enabled, false);
+    assert.equal(body.source, 'placeholder');
+  } finally {
+    if (previousReportPath === undefined) {
+      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousReportPath;
+    }
+  }
 });
 
 test('GET /scheduler/latest-run returns read-only placeholder latest run state', async () => {
-  const response = await exercise({ method: 'GET', url: '/scheduler/latest-run' });
-  const body = JSON.parse(response.body) as { status: string; enabled: boolean; source: string };
+  const previousReportPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-latest-report.json');
 
-  assert.equal(response.statusCode, 200);
-  assert.equal(body.status, 'placeholder');
-  assert.equal(body.enabled, false);
-  assert.equal(body.source, 'placeholder');
+  try {
+    const response = await exercise({ method: 'GET', url: '/scheduler/latest-run' });
+    const body = JSON.parse(response.body) as { status: string; enabled: boolean; source: string };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'placeholder');
+    assert.equal(body.enabled, false);
+    assert.equal(body.source, 'placeholder');
+  } finally {
+    if (previousReportPath === undefined) {
+      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousReportPath;
+    }
+  }
 });
 
 test('GET /scheduler/latest-run reads model-router runtime report when configured', async () => {
@@ -718,6 +740,77 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
   }
 });
 
+test('approved scheduler-run-model-router-dry-run executes exactly one report-only action when all gates pass', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-first-action-execution');
+  const storePath = path.join(testDir, 'approvals.json');
+  const auditPath = path.join(testDir, 'approval-audit.jsonl');
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = 'true';
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
+  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
+
+  try {
+    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string; kind: string }; executed: boolean };
+    const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+    const approvalBody = JSON.parse(approvalResponse.body) as {
+      executed: boolean;
+      approval: { kind: string; status: string };
+      preview: { wouldExecute: boolean; writesToMind: boolean; externalSideEffects: boolean; commands: string[] };
+      policy: { executionEnabled: boolean; executionGate: string };
+      execution: { status: string; command: string; outputPath: string; writesToMind: boolean; externalSideEffects: boolean };
+    };
+    const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
+    const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ event: string; kind: string; executed: boolean }> };
+    const outputPath = path.resolve(process.cwd(), '..', '..', approvalBody.execution.outputPath);
+
+    assert.equal(requestResponse.statusCode, 202);
+    assert.equal(requestBody.approval.kind, 'scheduler-run-model-router-dry-run');
+    assert.equal(requestBody.executed, false);
+    assert.equal(approvalResponse.statusCode, 200);
+    assert.equal(approvalBody.approval.status, 'approved');
+    assert.equal(approvalBody.executed, true);
+    assert.equal(approvalBody.preview.wouldExecute, true);
+    assert.equal(approvalBody.preview.writesToMind, false);
+    assert.equal(approvalBody.preview.externalSideEffects, false);
+    assert.equal(approvalBody.preview.commands.length, 1);
+    assert.equal(approvalBody.execution.status, 'ok');
+    assert.equal(approvalBody.execution.command, 'bash tools/scripts/model-router-dry-run-report.sh');
+    assert.equal(approvalBody.execution.outputPath, 'runtime/local/model-router/latest.json');
+    assert.equal(approvalBody.execution.writesToMind, false);
+    assert.equal(approvalBody.execution.externalSideEffects, false);
+    assert.equal(approvalBody.policy.executionEnabled, true);
+    assert.equal(approvalBody.policy.executionGate, 'enabled-for-model-router-dry-run');
+    assert.equal(fs.existsSync(outputPath), true);
+    assert.equal(
+      auditBody.events.some((event) => event.event === 'executed' && event.kind === 'scheduler-run-model-router-dry-run' && event.executed === true),
+      true,
+    );
+  } finally {
+    if (previousFlag === undefined) {
+      delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+    } else {
+      process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = previousFlag;
+    }
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+    if (previousAuditPath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
 test('GET /approvals/audit returns approval audit events', async () => {
   await exercise({ method: 'POST', url: '/actions/request?kind=custom-audit-test' });
   const response = await exercise({ method: 'GET', url: '/approvals/audit' });
@@ -725,10 +818,12 @@ test('GET /approvals/audit returns approval audit events', async () => {
     events: Array<{ event: string; kind: string; persisted: boolean; executed: boolean; source: string }>;
   };
 
+  const matchingEvents = body.events.filter((event) => event.kind === 'custom-audit-test');
+
   assert.equal(response.statusCode, 200);
-  assert.equal(body.events.some((event) => event.event === 'requested' && event.kind === 'custom-audit-test'), true);
+  assert.equal(matchingEvents.some((event) => event.event === 'requested'), true);
   assert.equal(typeof body.events[0]?.persisted, 'boolean');
-  assert.equal(body.events.every((event) => event.executed === false), true);
+  assert.equal(matchingEvents.every((event) => event.executed === false), true);
 });
 
 test('GET /runtime/reports returns report summaries', async () => {
@@ -756,11 +851,13 @@ test('approval audit JSONL persistence writes to a safe runtime path', async () 
     const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
     const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ approvalId: string; source: string; persisted: boolean; executed: boolean }> };
 
+    const matchingEvents = auditBody.events.filter((event) => event.approvalId === body.approval.id);
+
     assert.equal(response.statusCode, 202);
     assert.equal(fs.existsSync(auditPath), true);
-    assert.equal(auditBody.events.some((event) => event.approvalId === body.approval.id && event.source === 'jsonl'), true);
-    assert.equal(auditBody.events.every((event) => event.executed === false), true);
-    assert.equal(auditBody.events.some((event) => event.persisted === true), true);
+    assert.equal(matchingEvents.some((event) => event.source === 'jsonl'), true);
+    assert.equal(matchingEvents.every((event) => event.executed === false), true);
+    assert.equal(matchingEvents.some((event) => event.persisted === true), true);
   } finally {
     if (previousAuditPath === undefined) {
       delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
@@ -832,6 +929,120 @@ test('roadmap POST targets create approval requests without executing', async ()
     assert.equal(body.preview.wouldExecute, false);
     assert.equal(body.policy.executionEnabled, false);
     assert.equal(body.executed, false);
+  }
+});
+
+test('POST /approvals/:id/approve executes only the approved model-router dry-run when all gates pass', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-first-action-execution');
+  const storePath = path.join(testDir, 'approvals.json');
+  const auditPath = path.join(testDir, 'approval-audit.jsonl');
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
+  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
+  process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = 'true';
+
+  try {
+    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+    const body = JSON.parse(response.body) as {
+      approval: { status: string };
+      preview: { wouldExecute: boolean; writesToMind: boolean; externalSideEffects: boolean; commands: string[] };
+      policy: { executionEnabled: boolean; executionGate: string };
+      execution: { status: string; command: string; outputPath: string; exitCode: number; writesToMind: boolean; externalSideEffects: boolean };
+      executed: boolean;
+    };
+    const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
+    const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ event: string; executed: boolean; execution?: { status: string } }> };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.approval.status, 'approved');
+    assert.equal(body.executed, true);
+    assert.equal(body.preview.wouldExecute, true);
+    assert.equal(body.preview.writesToMind, false);
+    assert.equal(body.preview.externalSideEffects, false);
+    assert.equal(body.preview.commands.includes('bash tools/scripts/model-router-dry-run-report.sh'), true);
+    assert.equal(body.policy.executionEnabled, true);
+    assert.equal(body.policy.executionGate, 'enabled-for-model-router-dry-run');
+    assert.equal(body.execution.status, 'ok');
+    assert.equal(body.execution.command, 'bash tools/scripts/model-router-dry-run-report.sh');
+    assert.equal(body.execution.outputPath, 'runtime/local/model-router/latest.json');
+    assert.equal(body.execution.exitCode, 0);
+    assert.equal(body.execution.writesToMind, false);
+    assert.equal(body.execution.externalSideEffects, false);
+    assert.equal(auditBody.events.some((event) => event.event === 'executed' && event.executed === true && event.execution?.status === 'ok'), true);
+  } finally {
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+    if (previousAuditPath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
+    }
+    if (previousFlag === undefined) {
+      delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+    } else {
+      process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = previousFlag;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('POST /approvals/:id/approve does not execute the model-router dry-run when the feature flag is disabled', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-first-action-blocked');
+  const storePath = path.join(testDir, 'approvals.json');
+  const auditPath = path.join(testDir, 'approval-audit.jsonl');
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
+  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
+  delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+
+  try {
+    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+    const body = JSON.parse(response.body) as {
+      policy: { executionEnabled: boolean };
+      execution: { status: string; message: string; writesToMind: boolean };
+      executed: boolean;
+    };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.executed, false);
+    assert.equal(body.policy.executionEnabled, false);
+    assert.equal(body.execution.status, 'blocked');
+    assert.equal(body.execution.message.includes('BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION'), true);
+    assert.equal(body.execution.writesToMind, false);
+  } finally {
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+    if (previousAuditPath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
+    }
+    if (previousFlag === undefined) {
+      delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+    } else {
+      process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = previousFlag;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
   }
 });
 

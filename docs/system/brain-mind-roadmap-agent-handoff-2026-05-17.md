@@ -197,3 +197,48 @@ The safe feature-flag scaffold roadmap slice is complete and validated. Executio
 ## Recommended next step
 
 Commit only the roadmap implementation files listed above after explicit user confirmation. Do not stage unrelated Claude plan cleanup, Firecrawl log changes, generated runtime/build outputs, or Mind `.obsidian` plugin state.
+
+## Controlled first-action execution slice — completed
+
+Implemented the narrow execution path for the first action only:
+
+```text
+scheduler-run-model-router-dry-run
+```
+
+Safety properties:
+
+- exact action kind only
+- feature flag required: `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=true`
+- durable approval store required
+- durable approval audit path required
+- approved approval record required
+- exact command only: `bash tools/scripts/model-router-dry-run-report.sh`
+- Brain-owned runtime output only: `runtime/local/model-router/latest.json`
+- `MODEL_ROUTER_MIND_ROOT` is stripped before execution
+- execution summary records `writesToMind=false` and `externalSideEffects=false`
+- approval audit records an `executed` event only after the report-only action succeeds
+
+Changed files:
+
+```text
+projects/brain-core/src/adapters/actions.ts
+projects/brain-core/src/adapters/approval-store.ts
+projects/brain-core/src/tests/routes.test.ts
+projects/brain-core/src/types/api.ts
+projects/brain-core/src/types/node-shims.d.ts
+```
+
+Validation:
+
+```text
+Brain Core CI: passed, 52 tests
+Model-router CI: passed, 8 tests
+Secret scan: no findings
+```
+
+Notes:
+
+- The execution path is intentionally not exposed as a broad command runner.
+- `/execution/readiness` and `/capabilities` continue to advertise executable actions as disabled until a concrete approved request is processed.
+- The action remains report-only and does not mutate Mind.

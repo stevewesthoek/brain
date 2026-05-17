@@ -1,3 +1,39 @@
+declare module 'node:child_process' {
+  export interface SpawnSyncReturns<T> {
+    status: number | null;
+    signal: string | null;
+    stdout: T;
+    stderr: T;
+    error?: Error;
+  }
+
+  export function spawnSync(
+    command: string,
+    args?: string[],
+    options?: {
+      cwd?: string;
+      env?: Record<string, string | undefined>;
+      encoding?: 'utf8';
+      timeout?: number;
+    },
+  ): SpawnSyncReturns<string>;
+}
+
+declare module 'node:child_process' {
+  export interface SpawnSyncReturns<T> {
+    status: number | null;
+    stdout: T;
+    stderr: T;
+    error?: Error;
+  }
+
+  export function spawnSync(
+    command: string,
+    args?: string[],
+    options?: { cwd?: string; env?: Record<string, string | undefined>; encoding?: 'utf8' },
+  ): SpawnSyncReturns<string>;
+}
+
 declare module 'node:fs' {
   export interface Dirent {
     name: string;

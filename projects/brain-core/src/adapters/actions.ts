@@ -1,8 +1,13 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classifyRequestedKind } from './action-allowlist.js';
-import { getExecutionPlanPreview } from './execution-plans.js';
+import {
+  getExecutionPlanPreview,
+  getModelRouterDryRunExecutionFlagName,
+  isModelRouterDryRunExecutionFlagEnabled,
+} from './execution-plans.js';
 import {
   getApprovalStorePath,
   persistApprovalStore,
@@ -17,6 +22,7 @@ import type {
   BrainCoreApprovalSummary,
   BrainCoreExecutionGatePolicy,
   BrainCoreApprovalStoreSummary,
+  BrainCoreApprovalExecutionSummary,
 } from '../types/api.js';
 
 const approvals = new Map<string, BrainCoreApprovalRecord>();
@@ -147,22 +153,28 @@ export function decideApproval(
     };
   }
 
+  const execution = decision === 'approve' ? executeApprovedActionIfReady(normalized) : undefined;
   const updated = createApprovalRecord({
     ...normalized,
     status: decision === 'approve' ? 'approved' : 'rejected',
     updatedAt: new Date().toISOString(),
-    message: `Approval ${approvalId} marked ${decision === 'approve' ? 'approved' : 'rejected'}. Brain Core does not execute approved actions yet.`,
+    message:
+      execution?.status === 'ok'
+        ? `Approval ${approvalId} marked approved and executed report-only model-router dry-run.`
+        : `Approval ${approvalId} marked ${decision === 'approve' ? 'approved' : 'rejected'}. ${execution?.message ?? 'No action was executed.'}`,
+    ...(execution ? { execution } : {}),
   });
   approvals.set(approvalId, updated);
   persistIfConfigured();
-  recordAuditEvent(toAuditApprovalSummary(updated), decision === 'approve' ? 'approved' : 'rejected');
+  recordAuditEvent(toAuditApprovalSummary(updated), decision === 'approve' ? 'approved' : 'rejected', execution);
 
   return {
     approval: toApprovalSummary(updated),
     preview: updated.preview,
     policy: updated.policy,
+    ...(execution ? { execution } : {}),
     accepted: true,
-    executed: false,
+    executed: execution?.status === 'ok',
     message: updated.message ?? '',
   };
 }
@@ -176,9 +188,10 @@ function createApprovalRecord(input: {
   requestedBy: string;
   reason?: string;
   message?: string;
+  execution?: BrainCoreApprovalExecutionSummary;
 }): BrainCoreApprovalRecord {
-  const preview = createPreview(input.kind);
-  const policy = createPolicy();
+  const preview = createPreview(input.kind, input.execution?.status === 'ok');
+  const policy = createPolicy(input.execution?.status === 'ok');
   return {
     id: input.id,
     kind: input.kind,
@@ -189,7 +202,8 @@ function createApprovalRecord(input: {
     requestedBy: input.requestedBy,
     ...(input.reason ? { reason: input.reason } : {}),
     ...(input.message ? { message: input.message } : {}),
-    executed: false,
+    ...(input.execution ? { execution: input.execution } : {}),
+    executed: input.execution?.status === 'ok',
     preview,
     policy,
     source: getApprovalStorePath() ? 'json' : 'memory',
@@ -199,19 +213,20 @@ function createApprovalRecord(input: {
 function normalizeApprovalForRead(record: BrainCoreApprovalRecord): BrainCoreApprovalRecord {
   const now = Date.now();
   const expired = typeof record.expiresAt === 'string' && Date.parse(record.expiresAt) <= now;
+  const executed = record.execution?.status === 'ok';
   return {
     ...record,
     status: expired && record.status === 'pending' ? 'expired' : record.status,
-    executed: false,
+    executed,
     preview: {
       ...record.preview,
-      wouldExecute: false,
+      wouldExecute: executed,
       requiresApproval: true,
       writesToMind: false,
       externalSideEffects: false,
-      commands: [],
+      commands: executed ? ['bash tools/scripts/model-router-dry-run-report.sh'] : [],
     },
-    policy: createPolicy(),
+    policy: createPolicy(executed),
     source: record.source === 'json' ? 'json' : 'memory',
   };
 }
@@ -237,7 +252,7 @@ function toAuditApprovalSummary(record: BrainCoreApprovalRecord): BrainCoreAppro
   };
 }
 
-function createPreview(kind: string): BrainCoreApprovalPreview {
+function createPreview(kind: string, wouldExecute = false): BrainCoreApprovalPreview {
   const executionPlanPreview = kind === 'scheduler-run-model-router-dry-run' ? getExecutionPlanPreview(kind) : undefined;
   const summary =
     executionPlanPreview ??
@@ -254,18 +269,18 @@ function createPreview(kind: string): BrainCoreApprovalPreview {
   return {
     kind,
     summary,
-    wouldExecute: false,
+    wouldExecute,
     requiresApproval: true,
     writesToMind: false,
     externalSideEffects: false,
-    commands: [],
+    commands: wouldExecute ? ['bash tools/scripts/model-router-dry-run-report.sh'] : [],
   };
 }
 
-function createPolicy(): BrainCoreExecutionGatePolicy {
+function createPolicy(executionEnabled = false): BrainCoreExecutionGatePolicy {
   return {
-    executionEnabled: false,
-    executionGate: 'disabled-until-explicit-enable',
+    executionEnabled,
+    executionGate: executionEnabled ? 'enabled-for-model-router-dry-run' : 'disabled-until-explicit-enable',
     requiresDurableAudit: true,
     requiresRollbackPlan: true,
   };
@@ -291,6 +306,7 @@ function persistIfConfigured(): void {
 function recordAuditEvent(
   approval: BrainCoreApprovalSummary,
   event: BrainCoreApprovalAuditEvent['event'],
+  execution?: BrainCoreApprovalExecutionSummary,
 ): void {
   const auditEvent: BrainCoreApprovalAuditEvent = {
     id: `audit-${nextAuditNumber++}`,
@@ -299,7 +315,8 @@ function recordAuditEvent(
     kind: approval.kind,
     createdAt: new Date().toISOString(),
     persisted: false,
-    executed: false,
+    executed: execution?.status === 'ok',
+    ...(execution?.status === 'ok' ? { execution } : {}),
     source: 'memory',
   };
 
@@ -309,6 +326,21 @@ function recordAuditEvent(
     persisted,
     source: persisted ? 'jsonl' : 'memory',
   });
+
+  if (execution?.status === 'ok') {
+    const executedEvent: BrainCoreApprovalAuditEvent = {
+      ...auditEvent,
+      id: `audit-${nextAuditNumber++}`,
+      event: 'executed',
+      persisted: false,
+    };
+    const executedPersisted = appendAuditEvent(executedEvent);
+    auditEvents.push({
+      ...executedEvent,
+      persisted: executedPersisted,
+      source: executedPersisted ? 'jsonl' : 'memory',
+    });
+  }
 }
 
 function recordAdhocAuditEvent(
@@ -343,7 +375,7 @@ function appendAuditEvent(event: BrainCoreApprovalAuditEvent): boolean {
 
   try {
     fs.mkdirSync(path.dirname(auditPath), { recursive: true });
-    fs.appendFileSync(auditPath, `${JSON.stringify({ ...event, persisted: true, executed: false, source: 'jsonl' })}\n`);
+    fs.appendFileSync(auditPath, `${JSON.stringify({ ...event, persisted: true, source: 'jsonl' })}\n`);
     return true;
   } catch {
     return false;
@@ -369,6 +401,100 @@ function readPersistedAuditEvents(): BrainCoreApprovalAuditEvent[] {
   }
 }
 
+function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCoreApprovalExecutionSummary | undefined {
+  if (record.kind !== 'scheduler-run-model-router-dry-run') {
+    return undefined;
+  }
+
+  if (!isModelRouterDryRunExecutionFlagEnabled()) {
+    return createBlockedExecutionSummary(`${getModelRouterDryRunExecutionFlagName()} is not true.`);
+  }
+
+  const store = readApprovalStore();
+  if (!store.enabled || store.status !== 'available') {
+    return createBlockedExecutionSummary('Durable approval store is not available.');
+  }
+
+  if (!getAuditPath()) {
+    return createBlockedExecutionSummary('Durable approval audit path is not available.');
+  }
+
+  if (record.status !== 'pending' && record.status !== 'approved') {
+    return createBlockedExecutionSummary(`Approval status ${record.status} cannot execute.`);
+  }
+
+  const runtimeDir = getSafeModelRouterRuntimeDir();
+  if (!runtimeDir) {
+    return createBlockedExecutionSummary('Safe model-router runtime output path is not available.');
+  }
+
+  const repoRoot = getBrainRepoRoot();
+  const scriptPath = path.join(repoRoot, 'tools/scripts/model-router-dry-run-report.sh');
+  if (!fs.existsSync(scriptPath)) {
+    return createBlockedExecutionSummary('Allowlisted model-router dry-run script is missing.');
+  }
+
+  const env: Record<string, string | undefined> = { ...process.env };
+  delete env.MODEL_ROUTER_MIND_ROOT;
+  env.MODEL_ROUTER_REPO_ROOT = repoRoot;
+  env.MODEL_ROUTER_DIR = path.join(repoRoot, 'projects/model-router');
+  env.MODEL_ROUTER_RUNTIME_DIR = runtimeDir;
+
+  const result = spawnSync('bash', ['tools/scripts/model-router-dry-run-report.sh'], {
+    cwd: repoRoot,
+    env,
+    encoding: 'utf8',
+  });
+  const exitCode = typeof result.status === 'number' ? result.status : 1;
+  const outputPath = path.relative(repoRoot, path.join(runtimeDir, 'latest.json'));
+
+  if (exitCode !== 0) {
+    return {
+      status: 'error',
+      command: 'bash tools/scripts/model-router-dry-run-report.sh',
+      outputPath,
+      exitCode,
+      message: result.stderr || result.error?.message || 'model-router dry-run report failed',
+      writesToMind: false,
+      externalSideEffects: false,
+    };
+  }
+
+  return {
+    status: 'ok',
+    command: 'bash tools/scripts/model-router-dry-run-report.sh',
+    outputPath,
+    exitCode,
+    message: 'model-router dry-run report completed under Brain runtime/local/ without Mind writes',
+    writesToMind: false,
+    externalSideEffects: false,
+  };
+}
+
+function createBlockedExecutionSummary(message: string): BrainCoreApprovalExecutionSummary {
+  return {
+    status: 'blocked',
+    command: 'bash tools/scripts/model-router-dry-run-report.sh',
+    message,
+    writesToMind: false,
+    externalSideEffects: false,
+  };
+}
+
+function getSafeModelRouterRuntimeDir(): string | undefined {
+  const repoRoot = getBrainRepoRoot();
+  const runtimeDir = path.resolve(repoRoot, 'runtime/local/model-router');
+  const relative = path.relative(repoRoot, runtimeDir).replace(/\\/g, '/');
+  if (!relative.startsWith('runtime/local/model-router')) {
+    return undefined;
+  }
+  return runtimeDir;
+}
+
+function getBrainRepoRoot(): string {
+  return path.resolve(PACKAGE_ROOT, '..', '..');
+}
+
 function parseAuditEvent(line: string): BrainCoreApprovalAuditEvent | undefined {
   try {
     const value = JSON.parse(line) as Partial<BrainCoreApprovalAuditEvent>;
@@ -383,7 +509,8 @@ function parseAuditEvent(line: string): BrainCoreApprovalAuditEvent | undefined 
       kind: value.kind,
       createdAt: value.createdAt,
       persisted: value.persisted === true,
-      executed: false,
+      executed: value.executed === true,
+      ...(value.execution && typeof value.execution === 'object' ? { execution: value.execution as BrainCoreApprovalExecutionSummary } : {}),
       source: 'jsonl',
     };
   } catch {

@@ -136,7 +136,7 @@ export interface BrainCoreApprovalSummary {
 export interface BrainCoreApprovalPreview {
   kind: string;
   summary: string;
-  wouldExecute: false;
+  wouldExecute: boolean;
   requiresApproval: true;
   writesToMind: false;
   externalSideEffects: false;
@@ -144,8 +144,8 @@ export interface BrainCoreApprovalPreview {
 }
 
 export interface BrainCoreExecutionGatePolicy {
-  executionEnabled: false;
-  executionGate: 'disabled-until-explicit-enable';
+  executionEnabled: boolean;
+  executionGate: 'disabled-until-explicit-enable' | 'enabled-for-model-router-dry-run';
   requiresDurableAudit: true;
   requiresRollbackPlan: true;
 }
@@ -162,7 +162,8 @@ export interface BrainCoreApprovalRecord {
   kind: string;
   status: 'pending' | 'approved' | 'rejected' | 'expired';
   expiresAt?: string;
-  executed: false;
+  executed: boolean;
+  execution?: BrainCoreApprovalExecutionSummary;
   preview: BrainCoreApprovalPreview;
   policy: BrainCoreExecutionGatePolicy;
   source: 'memory' | 'json';
@@ -175,6 +176,16 @@ export interface BrainCoreApprovalStoreSummary {
   recordCount: number;
   writesToMind: false;
   executableActions: false;
+}
+
+export interface BrainCoreApprovalExecutionSummary {
+  status: 'ok' | 'error' | 'blocked';
+  command: 'bash tools/scripts/model-router-dry-run-report.sh';
+  outputPath?: string;
+  exitCode?: number;
+  message: string;
+  writesToMind: false;
+  externalSideEffects: false;
 }
 
 export interface BrainCoreExecutionPlanStep {
@@ -228,19 +239,21 @@ export interface BrainCoreApprovalDecisionResult {
   approval: BrainCoreApprovalSummary;
   preview?: BrainCoreApprovalPreview;
   policy?: BrainCoreExecutionGatePolicy;
+  execution?: BrainCoreApprovalExecutionSummary;
   accepted: true;
-  executed: false;
+  executed: boolean;
   message: string;
 }
 
 export interface BrainCoreApprovalAuditEvent {
   id: string;
   approvalId: string;
-  event: 'requested' | 'approved' | 'rejected' | 'missing';
+  event: 'requested' | 'approved' | 'rejected' | 'missing' | 'executed';
   kind: string;
   createdAt: string;
   persisted: boolean;
-  executed: false;
+  executed: boolean;
+  execution?: BrainCoreApprovalExecutionSummary;
   source: 'memory' | 'jsonl';
 }
 
