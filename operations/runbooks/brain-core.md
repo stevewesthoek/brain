@@ -109,7 +109,10 @@ If the integration is unhealthy, Obsidian should remain readable and show a Brai
 - Audit events always include `executed: false` and a `source` of `memory` or `jsonl`.
 - Scheduler endpoints are read-only. They return placeholders until `runtime/local/model-router/latest.json` exists, or until `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH` points to a safe JSON report.
 - Video/local-app endpoints are report-backed when safe JSON exists under `runtime/local/video/latest.json` or `runtime/local/local-apps/latest.json`, or when the corresponding `BRAIN_CORE_*_REPORT_PATH` env var points to a safe JSON report. Missing or invalid reports fall back to placeholders and never execute actions.
+- Those report-backed local app and video surfaces were live-verified over `http://127.0.0.1:4877`.
 
 ## Rollback
 
 If Brain Core breaks, use Obsidian notes directly and keep ProBot as a fallback diagnostic surface. Do not re-expand the ProBot dashboard; fix Brain Core or the Obsidian integration instead.
+
+Manual Brain Console install/test instructions live in `operations/runbooks/brain-console-manual-install-test.md`.

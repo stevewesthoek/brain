@@ -155,4 +155,5 @@ Last updated:
 - `2026-04-26` — Hardened skill-prune: clarified REPORT-only mode, added `gws-token-refresh` as daily job, documented manual scripts, updated sources. Added safety validation to delete/quarantine/keep scripts.
 - `2026-05-17` — Added `model-router-dry-run` as a non-blocking report-only nightly chain member. It validates `projects/model-router` and writes runtime report files without touching Mind content.
 - `2026-05-17` — Added `local-apps-report` and `video-runtime-report` as non-blocking report-only nightly chain members. They write safe runtime/local JSON and Markdown summaries without mutating Mind or executing actions.
+- `2026-05-18` — Live HTTP verified Brain Core reading the generated `local-apps` and `video` runtime reports; the manual Brain Console install/test path is now documented separately in `operations/runbooks/brain-console-manual-install-test.md`.
 - `2026-05-17` — Added `local-apps-report` and `video-runtime-report` as non-blocking report-only nightly chain members. They write safe runtime/local JSON and Markdown summaries without mutating Mind or executing actions.

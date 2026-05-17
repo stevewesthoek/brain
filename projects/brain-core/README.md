@@ -49,6 +49,8 @@ Current `/local-apps` is a read-only placeholder or report-backed list for local
 
 Current `/video/status` and `/video/queue` are read-only placeholder or report-backed surfaces for the future Video Orchestrator adapter. When `runtime/local/video/latest.json` exists, or when `BRAIN_CORE_VIDEO_REPORT_PATH` points to a safe JSON report, the endpoint returns read-only queue/status summaries. They do not inspect media folders, start renders, upload files, or trigger workflow execution.
 
+Those report-backed local app and video surfaces were live-verified over `http://127.0.0.1:4877` during the current roadmap pass.
+
 Current `/approvals` reads the in-memory Phase 4 approval request store, returning a placeholder when no requests exist.
 
 Current mutation surface is intentionally minimal:

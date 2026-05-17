@@ -1093,3 +1093,5 @@ Validation:
 - Brain Core capabilities now advertise the Brain Console package as buildable and manually install-required.
 - `local-apps-report.sh` and `video-runtime-report.sh` now generate ignored runtime reports under `runtime/local/` and were verified locally with JSON lint and read-only safety flags.
 - Brain Core `/runtime/reports`, `/local-apps`, `/video/status`, and `/video/queue` are covered by CI-backed tests and continue to return read-only data.
+- Those runtime surfaces were also live-verified over `http://127.0.0.1:4877`.
+- Brain Console manual install/test instructions are documented in `operations/runbooks/brain-console-manual-install-test.md`.
