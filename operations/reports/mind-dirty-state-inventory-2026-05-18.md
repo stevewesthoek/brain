@@ -101,6 +101,7 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 - Risk: low to medium
 - Likely source/cause: intentional note edit or unrelated content drift
 - Recommended decision: review separately, then commit or restore
+- Review report: `operations/reports/mind-area-note-review-2026-05-18.md`
 - Safe diagnostic commands:
   - `git diff -- 05-areas/theological-studies/dance-of-life/README.md`
 - Safe staging commands if approved later:

@@ -19,3 +19,5 @@
 - Treat research imports as a separate source-ingestion decision.
 - Treat `01-inbox` base files as likely accidental/editor artifacts until reviewed.
 - Treat Mind OS docs as the only safe auto-stage category when explicitly scoped.
+- Use `operations/reports/mind-legacy-task-migration-options-2026-05-18.md` before making any decision about `04-tasks/**` versus `03-projects/04-tasks/**`.
+- Use `operations/reports/mind-area-note-review-2026-05-18.md` as the review record for the theological-studies note.

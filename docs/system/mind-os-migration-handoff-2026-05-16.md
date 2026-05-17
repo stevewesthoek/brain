@@ -193,6 +193,15 @@ Next Codex handoff created earlier:
 
 - `docs/system/1778967920555-codex-prompt-save-to-mind-failure-buffer-and-secret-cleanup-2026-05-16.md`
 
+Current Mind cleanup tracking reports:
+
+- `operations/reports/mind-dirty-state-inventory-2026-05-18.md`
+- `operations/reports/mind-cleanup-decision-matrix-2026-05-18.md`
+- `operations/reports/mind-area-note-review-2026-05-18.md`
+- `operations/reports/mind-legacy-task-migration-options-2026-05-18.md`
+- `operations/reports/mind-project-task-mirror-review-2026-05-18.md`
+- `operations/reports/mind-research-import-review-2026-05-18.md`
+
 Type-check note:
 
 - BuildFlow `type_check_cli` is not applicable to this repo layout at this time; it attempted `pnpm --dir packages/cli type-check` and failed because `packages/cli` does not exist.

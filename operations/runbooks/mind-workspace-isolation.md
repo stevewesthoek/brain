@@ -16,6 +16,8 @@ See also:
 
 - `operations/reports/mind-dirty-state-inventory-2026-05-18.md`
 - `operations/reports/mind-cleanup-decision-matrix-2026-05-18.md`
+- `operations/reports/mind-area-note-review-2026-05-18.md`
+- `operations/reports/mind-legacy-task-migration-options-2026-05-18.md`
 - `operations/reports/mind-obsidian-churn-review-2026-05-18.md`
 - `operations/reports/mind-legacy-task-deletion-review-2026-05-18.md`
 - `operations/reports/mind-project-task-mirror-review-2026-05-18.md`
@@ -45,6 +47,7 @@ git diff -- <specific-safe-path>
 - Legacy task deletion review
 - Inbox base-file review
 - Research folder import review
+- Area note review
 
 ## Rollback commands
 
