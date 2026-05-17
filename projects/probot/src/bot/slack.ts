@@ -28,6 +28,7 @@ import {
   readTailTarget,
 } from "../services/operations.js";
 import { buildTimeSummary } from "../services/sessions.js";
+import { handleBrainCoreCommand } from "../services/brain-core-commands.js";
 
 const HELP_TEXT = `ProBot commands:
 • \`home\` — unified remote-control overview
@@ -81,6 +82,12 @@ export function createSlackBot(app: AppContext): App {
     if (!text) return;
     const userId = typeof msg["user"] === "string" ? msg["user"] : "";
     if (!isAllowed(userId)) return;
+
+    const brainCoreResult = await handleBrainCoreCommand(text, app.config.brainCoreUrl);
+    if (brainCoreResult) {
+      await say(brainCoreResult);
+      return;
+    }
 
     const { command, arg } = parseCommand(text);
 

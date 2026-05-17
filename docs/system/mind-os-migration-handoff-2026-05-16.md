@@ -732,6 +732,10 @@ Safety boundaries preserved:
 ProBot command aliases remain documented, not wired, because the Slack and Telegram handlers are still too split for a low-risk insertion point. The desired aliases live in `operations/specs/probot-brain-core-thin-client-commands.md`.
 
 An alias resolver now exists at `projects/probot/src/services/brain-core-commands.ts` so future wiring can stay small and read-only.
+
+The Slack DM text path and Telegram `message:text` path now both short-circuit `brain ...` messages into that resolver before the legacy command handling continues.
+
+Current Mind dirty-state isolation reporting lives in `operations/reports/mind-dirty-state-isolation-2026-05-17.md`.
 - Linked the Brain Core README to the new runbook.
 
 Validation:

@@ -38,7 +38,8 @@ The current ProBot command layer is split between Slack and Telegram handlers pl
 
 - Added a pure command resolver module at `projects/probot/src/services/brain-core-commands.ts`.
 - The resolver is intentionally framework-agnostic and only uses Brain Core GET helpers.
-- The remaining wiring step is to introduce a very small shared dispatch hook, if one becomes obvious in a later slice.
+- A very small shared dispatch hook was added in the Slack DM text path and Telegram `message:text` path.
+- Legacy slash-command behavior still remains intact.
 
 ## Exact code locations to refactor later
 

@@ -18,6 +18,7 @@ import { appendNote } from "../services/notes.js";
 import { answerBrainQuery } from "../services/brain.js";
 import { assertSafeFilePath, formatFileHit, searchFiles } from "../services/files.js";
 import { routeNaturalLanguage } from "../services/intents.js";
+import { handleBrainCoreCommand } from "../services/brain-core-commands.js";
 import {
   buildResumePrompt,
   formatHandoffSummary,
@@ -415,6 +416,12 @@ export function createTelegramBot(app: AppContext): Bot {
   bot.on("message:text", async (ctx) => {
     const text = ctx.msg.text.trim();
     if (text.startsWith("/")) return;
+
+    const brainCoreResult = await handleBrainCoreCommand(text, app.config.brainCoreUrl);
+    if (brainCoreResult) {
+      await ctx.reply(truncate(brainCoreResult));
+      return;
+    }
 
     await ctx.reply(truncate(await routeNaturalLanguage(app, text)));
   });
