@@ -134,6 +134,11 @@ export function listApprovalAuditEvents(): BrainCoreApprovalAuditEvent[] {
   return [...byId.values()].sort((left, right) => left.createdAt.localeCompare(right.createdAt));
 }
 
+export function getApprovalAuditEvents(approvalId: string): BrainCoreApprovalAuditEvent[] {
+  const allEvents = listApprovalAuditEvents();
+  return allEvents.filter(event => event.approvalId === approvalId);
+}
+
 export function decideApproval(
   approvalId: string,
   decision: 'approve' | 'reject',

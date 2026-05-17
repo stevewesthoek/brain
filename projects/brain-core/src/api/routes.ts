@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction } from '../adapters/actions.js';
+import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
 import { getCapabilities } from '../adapters/capabilities.js';
@@ -29,6 +29,7 @@ import { getVideoOrchestratorStatus } from '../adapters/video-orchestrator-statu
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getAgent, listAgents } from '../adapters/agents.js';
 import { getActionSummary, listActionSummaries, requestActionApprovalById } from '../adapters/action-registry.js';
+import { listAgentRuns, getAgentRun, listAgentEvents, listRecoveryItems, getRecoveryItem } from '../adapters/agent-runs.js';
 import { createStatusAdapter } from '../adapters/status.js';
 import { isLocalRequest } from '../security/localhost.js';
 import { redactingJsonReplacer } from '../security/redaction.js';
@@ -107,6 +108,18 @@ export async function routeRequest(
       return;
     case '/agents':
       sendJson(response, 200, { agents: listAgents() });
+      return;
+    case '/agent-runs':
+      sendJson(response, 200, { runs: listAgentRuns() });
+      return;
+    case '/agent-events':
+      sendJson(response, 200, { events: listAgentEvents() });
+      return;
+    case '/approval-audit':
+      sendJson(response, 200, { events: listApprovalAuditEvents() });
+      return;
+    case '/recovery':
+      sendJson(response, 200, { items: listRecoveryItems() });
       return;
     case '/capabilities':
       sendJson(response, 200, getCapabilities());
@@ -211,7 +224,8 @@ export async function routeRequest(
         if (approvalMatch) {
           const approval = getApprovalRecord(approvalMatch[1] ?? '');
           if (approval) {
-            sendJson(response, 200, { approval });
+            const auditEvents = getApprovalAuditEvents(approval.id);
+            sendJson(response, 200, { approval, auditEvents });
             return;
           }
           sendJson(response, 404, {
@@ -283,6 +297,21 @@ export async function routeRequest(
           } satisfies BrainCoreErrorResponse);
           return;
         }
+        const agentRunMatch = /^\/agent-runs\/([^/]+)$/.exec(url.pathname);
+        if (agentRunMatch) {
+          const run = getAgentRun(agentRunMatch[1] ?? '');
+          if (run) {
+            sendJson(response, 200, { run });
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Agent run not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
         const executionPlanMatch = /^\/execution\/plans\/([^/]+)$/.exec(url.pathname);
         if (executionPlanMatch) {
           const plan = getExecutionPlan(executionPlanMatch[1] ?? '');
@@ -328,11 +357,27 @@ export async function routeRequest(
           } satisfies BrainCoreErrorResponse);
           return;
         }
+
+        const recoveryItemMatch = /^\/recovery\/([^/]+)$/.exec(url.pathname);
+        if (recoveryItemMatch) {
+          const item = getRecoveryItem(recoveryItemMatch[1] ?? '');
+          if (item) {
+            sendJson(response, 200, { item });
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Recovery item not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
       }
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /approvals/audit, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
   }

@@ -311,7 +311,7 @@ test('Safety: STB and video evidence never imply execution is enabled', async ()
   const stbBody = JSON.parse(stbResponse.body) as {
     actions: { canPreview: boolean; canRequestRun: boolean; requiresApproval: boolean };
   };
-  
+
   assert.equal(stbBody.actions.canPreview, false);
   assert.equal(stbBody.actions.canRequestRun, false);
   assert.equal(stbBody.actions.requiresApproval, false);
@@ -320,8 +320,112 @@ test('Safety: STB and video evidence never imply execution is enabled', async ()
   const videoBody = JSON.parse(videoResponse.body) as {
     actions: { canPreview: boolean; canRequestRun: boolean; requiresApproval: boolean };
   };
-  
+
   assert.equal(videoBody.actions.canPreview, false);
   assert.equal(videoBody.actions.canRequestRun, false);
   assert.equal(videoBody.actions.requiresApproval, false);
+});
+
+test('GET /agent-runs returns list of agent run summaries with safety flags disabled', async () => {
+  const response = await exercise({ method: 'GET', url: '/agent-runs' });
+  const body = JSON.parse(response.body) as {
+    runs: Array<{
+      id: string;
+      agentId: string;
+      status: string;
+      safety: { writesToMind: boolean; executesShell: boolean; executionEnabled: boolean };
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(Array.isArray(body.runs));
+  assert.ok(body.runs.length > 0);
+
+  body.runs.forEach(run => {
+    assert.equal(run.safety.writesToMind, false, 'All runs must have writesToMind: false');
+    assert.equal(run.safety.executionEnabled, false, 'All runs must have executionEnabled: false');
+  });
+});
+
+test('GET /agent-runs/:id returns single agent run detail', async () => {
+  const listResponse = await exercise({ method: 'GET', url: '/agent-runs' });
+  const listBody = JSON.parse(listResponse.body) as {
+    runs: Array<{ id: string }>;
+  };
+
+  assert.ok(listBody.runs.length > 0);
+  const runId = listBody.runs[0]!.id;
+
+  const detailResponse = await exercise({ method: 'GET', url: `/agent-runs/${runId}` });
+  const detailBody = JSON.parse(detailResponse.body) as {
+    run: { id: string; status: string };
+  };
+
+  assert.equal(detailResponse.statusCode, 200);
+  assert.equal(detailBody.run.id, runId);
+});
+
+test('GET /agent-runs/:id returns 404 for unknown run', async () => {
+  const response = await exercise({ method: 'GET', url: '/agent-runs/nonexistent-run-id' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /agent-events returns approval audit events mapped to agent events', async () => {
+  const response = await exercise({ method: 'GET', url: '/agent-events' });
+  const body = JSON.parse(response.body) as {
+    events: Array<{
+      id: string;
+      agentId?: string;
+      type: string;
+      createdAt: string;
+      severity: string;
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(Array.isArray(body.events));
+
+  if (body.events.length > 0) {
+    body.events.forEach(event => {
+      assert.ok(['requested', 'approved', 'rejected', 'executed', 'blocked', 'unknown'].includes(event.type));
+      assert.ok(['info', 'warning', 'error'].includes(event.severity));
+    });
+  }
+});
+
+test('GET /approval-audit returns approval audit events', async () => {
+  const response = await exercise({ method: 'GET', url: '/approval-audit' });
+  const body = JSON.parse(response.body) as {
+    events: Array<{
+      id: string;
+      approvalId: string;
+      event: string;
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(Array.isArray(body.events));
+});
+
+test('GET /recovery returns recovery items with no auto-fix capability', async () => {
+  const response = await exercise({ method: 'GET', url: '/recovery' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{
+      id: string;
+      severity: string;
+      source: string;
+      safety: { canAutoFix: boolean; writesToMind: boolean };
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(Array.isArray(body.items));
+
+  body.items.forEach(item => {
+    assert.equal(item.safety.canAutoFix, false, 'Recovery items must not auto-fix');
+    assert.equal(item.safety.writesToMind, false, 'Recovery items must not write to Mind');
+  });
 });
