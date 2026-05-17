@@ -34,6 +34,7 @@ Desired read-only Brain Core command aliases for the thin-client direction are:
 These should remain GET-only and fail soft when Brain Core is offline.
 
 They are now wired through the Slack DM text path and Telegram `message:text` path as a small read-only escape hatch, not as a new dashboard surface.
+Status summaries now also include the read-only `video` and `local-apps` runtime reports when Brain Core exposes them.
 
 ## Current Direction: Dashboard Freeze
 

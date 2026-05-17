@@ -1091,3 +1091,5 @@ Validation:
 - Brain Console plugin scaffold remains in Brain and was not installed into Mind.
 - The Brain Console plugin is now buildable/packageable in Brain, with manual install still required for any Mind vault use.
 - Brain Core capabilities now advertise the Brain Console package as buildable and manually install-required.
+- `local-apps-report.sh` and `video-runtime-report.sh` now generate ignored runtime reports under `runtime/local/` and were verified locally with JSON lint and read-only safety flags.
+- Brain Core `/runtime/reports`, `/local-apps`, `/video/status`, and `/video/queue` are covered by CI-backed tests and continue to return read-only data.

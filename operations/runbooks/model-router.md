@@ -100,6 +100,8 @@ The Office Nightly Scheduler should eventually run:
 4. hygiene dry-run
 5. write/apply only after explicit safety gates are met
 
+The scheduler also now writes report-only runtime outputs for the `local-apps` and `video` surfaces in Brain Core. Those reports are read by Brain Console and ProBot as non-executing summaries and are never written back into Mind.
+
 Initial scheduler integration should call dry-run planners only and report results through Brain Core `/scheduler/latest-run` and `/scheduler/jobs`.
 
 When `MODEL_ROUTER_MIND_ROOT` is set, the report helper should:
