@@ -247,16 +247,19 @@ Brain Console settings are in Obsidian plugin settings:
 
 ### "Brain Core Offline" Message
 
-**Cause:** All endpoints timed out or returned errors.
+**Cause:** Plugin cannot reach Brain Core HTTP server.
 
 **Fixes:**
-1. Verify Brain Core is running: `curl http://localhost:4877/status`
-2. Check plugin settings: verify Brain Core URL is correct
-3. Check network: ping the Brain Core host
-4. Check firewall: ensure port 6789 is accessible
-5. Check Brain Core logs: `tail -f ~/.probot/logs/brain-core.log`
+1. Verify Brain Core terminal is still running: `npm start` from `projects/brain-core`
+2. Test endpoint manually: `curl http://localhost:4877/status`
+3. If curl works but plugin shows offline:
+   - Try alternate address: Settings → Brain Core URL → change to `http://127.0.0.1:4877`
+   - Plugin may prefer 127.0.0.1 over localhost on some systems
+4. Click "Refresh" button in plugin to retry
+5. Check diagnostic error text shown in offline panel for specific endpoint failures
+6. Fully quit and reopen Obsidian (plugin caches may persist)
 
-**Temporary workaround:** Browse Mind Markdown directly (HOME.md, live/dashboard.md) as fallback.
+**Diagnostic info:** When offline, plugin shows which endpoints failed and why. Copy that text if you need to debug further.
 
 ### Cards Show "Unavailable"
 

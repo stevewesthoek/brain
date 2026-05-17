@@ -75,18 +75,29 @@ When Brain Console opens successfully:
 Expected behavior when `/status` endpoint unreachable:
 
 ✅ Plugin still opens  
-✅ Shows "Brain Core offline" message  
+✅ Shows "Brain Core offline" message with diagnostic details  
+✅ Displays error information: which endpoints failed, error messages  
 ✅ No crash or stack traces  
 ✅ No raw JSON or error spam  
 ✅ Graceful degradation  
 ✅ User can still navigate Mind vault  
 
-**Recovery:** Start Brain Core locally:
+**Recovery steps shown in plugin:**
+
+1. Verify Brain Core terminal is still running
+2. Test: `curl http://localhost:4877/status` from terminal
+3. If curl works but plugin still offline: try alternate address
+   - Settings → Brain Core URL → try `http://127.0.0.1:4877` instead of `localhost`
+4. Click Refresh button
+5. If still offline, copy the diagnostic error text and refer to troubleshooting
+
+**Manual recovery (if needed):**
 
 ```bash
 cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
 npm run build
 npm start
+# Brain Core should log: "Brain Core read-only API listening at http://..."
 ```
 
 Then return to Obsidian and click "Refresh" in Brain Console.

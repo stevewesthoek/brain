@@ -929,3 +929,83 @@ None for MVP visual QA. If Brain Core is offline, plugin shows graceful "offline
 **Next task:**
 
 Manual visual QA in Obsidian → screenshot review → polish pass if needed.
+
+## Continuation update — Brain Console Brain Core connection fix (2026-05-17)
+
+**Problem:** After successful MVP build, plugin showed "offline" even though Brain Core was running and `curl http://localhost:4877/status` succeeded.
+
+**Root cause investigation:**
+- Brain Core: running, responding to curl, listening on 127.0.0.1:4877
+- Plugin settings: defaulted to http://localhost:4877
+- Browser fetch: does not work in Obsidian plugin context (electron/IPC boundary)
+
+**Solution implemented:**
+
+1. **Switched HTTP client from browser fetch to Obsidian requestUrl API**
+   - Replaced `fetch()` with `requestUrl()` from obsidian package
+   - All GET requests now use Obsidian's official IPC-based HTTP client
+   - Import and initialize requestUrl in plugin onload()
+
+2. **Added automatic localhost/127.0.0.1 fallback**
+   - If configured URL fails: `http://localhost:4877` → tries `http://127.0.0.1:4877`
+   - If configured URL fails: `http://127.0.0.1:4877` → tries `http://localhost:4877`
+   - Only enabled for local test ports (4877/4878), safe from arbitrary fallbacks
+   - Fallback logic is silent but tracked for diagnostics
+
+3. **Implemented detailed error diagnostics**
+   - Collect per-endpoint errors: pathname, error message, HTTP status, response excerpt
+   - Track status endpoint errors separately from cascading failures
+   - Add response time measurement (ms) for each request
+   - Extended HttpResult interface: url, status, detail, responseTimeMs
+
+4. **Improved offline UI with actionable diagnostics**
+   - Show configured URL that failed
+   - Display first 3 endpoint errors with paths and details
+   - Enhanced recovery steps: verify terminal running, curl test, suggest 127.0.0.1 fallback
+   - Safe error display: no raw JSON dumps, no stack traces, concise messaging
+
+5. **Updated settings UI**
+   - Settings text field now loads saved value (was always showing default)
+   - Description updated with localhost/127 guidance
+   - Made plugin settings publicly accessible (was private)
+
+**Code changes:**
+
+- `src/client.ts`: Replaced fetch with requestUrl, added EndpointError type, implemented fallback logic, enhanced error collection
+- `src/main.ts`: Initialize requestUrl on plugin load, improve settings UI, fix settings access
+- `src/view.ts`: Extended BrainConsoleViewState with diagnostics, pass error details to offline renderer, improve error display
+
+**Validation:**
+
+- TypeCheck: passed
+- Build: 109.4KB bundle (includes requestUrl logic + diagnostic tracking)
+- Verification: `grep requestUrl release/main.js` → 7 references, no raw fetch()
+- Reinstalled to Mind vault: `.obsidian/plugins/brain-console/main.js` updated
+
+**Commit:** 32ec7833
+
+**Files changed:**
+- projects/brain-console-obsidian/src/client.ts
+- projects/brain-console-obsidian/src/main.ts
+- projects/brain-console-obsidian/src/view.ts
+
+**Safety maintained:**
+- No writes to Mind vault
+- No Brain Core mutation endpoints added
+- Read-only HTTP requests only (GET)
+- No shell execution
+- No credentials exposure
+- All errors are safely truncated and user-friendly
+
+**Expected outcome:**
+
+1. Fully restart Obsidian
+2. Open Brain Console
+3. If Brain Core is running: dashboard loads with data
+4. If Brain Core is offline: diagnostic panel shows error details and recovery steps
+5. Settings → Brain Core URL: can manually switch between localhost and 127.0.0.1
+6. Automatic fallback tries alternate address if first fails
+
+**Next validation:**
+
+Real-world test: keep Brain Core running → fully restart Obsidian → open Brain Console → verify data loads. If offline, verify diagnostic error text guides user to solutions.
