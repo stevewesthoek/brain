@@ -1009,3 +1009,111 @@ Manual visual QA in Obsidian → screenshot review → polish pass if needed.
 **Next validation:**
 
 Real-world test: keep Brain Core running → fully restart Obsidian → open Brain Console → verify data loads. If offline, verify diagnostic error text guides user to solutions.
+
+## Continuation update — ProBot Dashboard Migration Planning (2026-05-17)
+
+**Objective:** Migrate valuable ProBot dashboard features into Obsidian Brain Console through Brain Core APIs.
+
+**Work completed:**
+
+1. **ProBot Feature Inventory**
+   - Analyzed full 232KB `projects/probot/src/bot/dashboard.ts`
+   - Identified UI tabs: Overview, Local Apps, Production Pipeline, Video Orchestrator Studio, Viral Flow, Stripe, Session History
+   - Classified features: KEEP (high value, safe), REDESIGN (valuable but risky/complex), DROP (not suitable for Obsidian), LATER (useful but not Phase 2)
+
+2. **Features Classification**
+
+   **KEEP (migrate to Brain Console with minimal changes):**
+   - Local app status cards (HIGH value, safe read-only, Brain Core ready)
+   - Session history (MEDIUM value, useful context, already in Brain Core)
+   - Wiki health / runtime reports (already in Brain Console MVP)
+   - Next safe action (already in Brain Console MVP)
+   - Approvals & audit trail (already in Brain Console MVP)
+
+   **REDESIGN (keep value, expose differently through Brain Core):**
+   - Local app controls (safe to add approval-gated start/stop actions)
+   - Orchestrator registry (new Brain Core adapter for read-only + approval-gated actions)
+   - Video orchestrator status (read-only account health + runqueue summary only)
+   - Viral Flow status (account count + performance summary only)
+   - System updates (readonly available updates + approval-gated execution only)
+   - Domain/project overview (new Brain Core adapter with Mind path references)
+
+   **DROP (not suitable for Brain Console):**
+   - Stripe billing (financial data, PCI concerns, admin-only)
+   - OAuth credential management (secret exposure risk, stays in ProBot)
+   - Production pipeline queue (ProBot-specific, low priority, defer Phase 6+)
+   - Direct buildflow execution (too risky, keep approval-gated or ProBot-only)
+
+   **LATER (useful but not Phase 1-2):**
+   - Buildflow verification (low priority, defer Phase 5+)
+   - Advanced video orchestrator controls (complex, Phase 5+)
+   - Customizable dashboard tabs (UI polish, Phase 6+)
+
+3. **Brain Core API Gap Analysis**
+
+   **Already available (consuming):**
+   - ✅ `GET /status` — system ready, execution gate status
+   - ✅ `GET /local-apps` — app status, health, port (already in Brain Console client)
+   - ✅ `GET /sessions` — recent AI sessions (already in Brain Console client)
+   - ✅ Runtime reports, scheduler, approvals, execution readiness, mind previews
+
+   **Missing (to implement in Phases 2-5):**
+   - ❌ `GET /orchestrators` — registry of orchestrators (model-router, video, design, code, research, Bible research, scheduler, capture) — **Phase 3**
+   - ❌ `GET /domains` — domain/project registry (Brain/Mind, Says the Bible, active projects) — **Phase 4**
+   - ❌ `POST /actions/request` — approval-request-only endpoint for app start/stop, orchestrator run, system updates — **Phase 5**
+
+4. **Dashboard UI Layout (Phased)**
+
+   **Phase 1 (Current MVP):** Overview, Health summary
+   **Phase 2:** + Apps tab/section, improved sessions
+   **Phase 3:** + Orchestrators section
+   **Phase 4:** + Projects/Domains section
+   **Phase 5:** + Approval-gated action buttons
+   **Phase 6:** + Visual refinement, ProBot deprecation
+
+5. **Safety & Approval Model**
+
+   All actions are either:
+   - **Read-only** (status, history, project overview)
+   - **Approval-gated request** (app start/stop, orchestrator run, system update apply)
+   - **Never allowed** (arbitrary shell, credentials display, payment mutation, direct Mind write)
+
+   Flow: User clicks button → Brain Console calls `POST /actions/request` → Brain Core creates approval request → User approves in Approvals panel → Brain Core executes → Result shown in plugin
+
+6. **Roadmap & Documentation Updated**
+
+   - ✅ Created: `docs/system/probot-to-brain-console-migration-review-2026-05-17.md` (comprehensive, 400+ lines)
+   - ✅ Updated: `docs/system/obsidian-mind-model-router-roadmap.md` — added ProBot migration section
+   - ✅ Updated: `docs/system/1779034841996-obsidian-mind-model-router-handoff.md` — this section
+
+**Next immediate task (Phase 2A):**
+
+Implement local apps UI section in Brain Console:
+1. Verify Brain Console already consumes `GET /local-apps` ✅ (confirmed: client.ts line 305, 421)
+2. Add Apps section/tab to dashboard rendering
+3. Render local app cards: name, status, port, category
+4. Add start/stop buttons (disabled UI with tooltip)
+5. Add tests for apps section rendering
+6. Validate through Obsidian with Brain Core running
+
+**Files to change (Phase 2A):**
+- `projects/brain-console-obsidian/src/view.ts` — add Apps section rendering
+- `projects/brain-console-obsidian/src/dashboard.ts` — add apps card helper
+- `projects/brain-console-obsidian/styles.css` — add apps card styles
+- New: test file for apps rendering
+
+**Safety assured:**
+- ✅ No writes to Mind vault
+- ✅ No Brain Core mutation endpoints added yet (planned for Phase 5 only)
+- ✅ No direct shell execution
+- ✅ No credentials exposure
+- ✅ All app controls remain disabled/approval-gated
+- ✅ ProBot code untouched (will remain as secondary/legacy)
+
+**Validation plan:**
+- TypeCheck passing for all changes
+- Brain Core CI passing
+- Brain Console build + package passing
+- Local plugin reinstall to Mind
+- Manual Obsidian test: Apps section renders, no crashes
+- No Mind vault mutations or secrets in logs

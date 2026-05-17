@@ -278,20 +278,86 @@ Related review:
 docs/system/1779040171684-karpathy-llm-wiki-alignment-review-2026-05-17.md
 ```
 
+## ProBot Dashboard Migration into Obsidian Command Center
+
+**Decision:** Obsidian Brain Console replaces ProBot web dashboard as the primary system cockpit. All valuable ProBot features migrate through Brain Core APIs. ProBot remains legacy/secondary until Brain Console reaches feature parity.
+
+**Principles:**
+- Brain Console is primary (Obsidian), ProBot is secondary (web)
+- Brain Core is the integration API layer (all features expose through read-only HTTP)
+- Logic stays in Brain repo (no logic in Obsidian plugin)
+- Mind remains durable Markdown memory and fallback dashboard
+- No direct shell execution from Obsidian plugin
+- All actions are read-only, safe navigation, or approval-request-only
+- Credentials stay in ProBot or out of dashboards entirely
+- Features migrate only if they add real value
+
+**Features analyzed (full inventory: `docs/system/probot-to-brain-console-migration-review-2026-05-17.md`):**
+
+| Feature | Scope | Decision | Phase |
+|---------|-------|----------|-------|
+| Local app status | HIGH | KEEP | 2A |
+| Local app start/stop | HIGH | REDESIGN | 5 |
+| Orchestrator registry | HIGH | NEW API | 3 |
+| Orchestrator run | MEDIUM | REDESIGN | 5 |
+| Session history | MEDIUM | KEEP | 2B |
+| Domain/project overview | MEDIUM | NEW API | 4 |
+| Video orchestrator status | MEDIUM | REDESIGN | 3 |
+| Viral Flow summary | MEDIUM | REDESIGN | 3 |
+| System updates | MEDIUM | REDESIGN | 5 |
+| Buildflow verify | LOW | LATER | 5+ |
+| Credentials / OAuth | N/A | DROP | - |
+| Stripe billing | N/A | DROP | - |
+| Production pipeline | LOW | DROP | 6+ |
+
+**Phased rollout:**
+
+1. **Phase 1:** Feature inventory, classification, Brain Core gap analysis → complete
+2. **Phase 2A:** Local apps UI section + session history refresh
+3. **Phase 2B:** Session cards + activity panel polish
+4. **Phase 3:** Orchestrator registry read-only API + Brain Console section
+5. **Phase 4:** Domain/project registry read-only API + Brain Console section
+6. **Phase 5:** Approval-gated actions (app start/stop, orchestrator run request, updates)
+7. **Phase 6:** Visual refinement, ProBot deprecation, final transition
+
+**Brain Core new endpoints (Phases 2-5):**
+
+- `GET /orchestrators` — registry of all orchestrators (model-router, video, design, code, research, Bible research, scheduler, capture)
+- `GET /domains` — domain/project overview (Brain/Mind, Says the Bible, active projects)
+- `POST /actions/request` — approval-request-only endpoint for app/orchestrator/system mutations
+
+**Safety guarantees:**
+- No credentials exposed
+- No arbitrary shell execution
+- No direct Mind mutation (goes through model-router)
+- All app/orchestrator controls approval-gated
+- Plugin is read-only except for safe approval requests
+
+**Success criteria for Phase 2A (next):**
+- Local apps section renders with app cards
+- All app data from `GET /local-apps` displays correctly
+- Start/stop buttons visible but disabled with tooltip: "Approval-gated (planned)"
+- Tests passing for Brain Core + Brain Console
+
 ## Success Criteria
 
 - Obsidian is the only daily dashboard.
 - `mind` has clean unnumbered folders.
 - Save-to-Mind lands in `capture/inbox/` and never loses captures.
 - Brain Core exposes scheduler status and model-router job results.
+- Brain Core exposes safe, typed APIs for local apps, orchestrators, domains, system status
 - The Office nightly scheduler runs compile, memory, hygiene, and drift/error loops.
 - The model router keeps notes small, deduplicated, linked, and current.
 - New skills, orchestrators, projects, and knowledge all enter through one predictable flow.
 - The user experiences the system as a black box that stays organized automatically.
+- ProBot is acknowledged as legacy, Brain Console is primary cockpit
 
 ## Current Status
 
 - Report-only execution, preview policy surfaces, and preview artifact inspection are complete in Brain.
 - Mind mutation remains blocked until a separately approved write/apply route exists.
 - Legacy numbered-folder archival remains blocked until a separate explicit cleanup plan is approved.
-- Current safe continuation point: preview-only or approval-gated inspection work, not Mind writes.
+- Obsidian Brain Console MVP (MVP status pills + cards) is deployed locally.
+- Brain Console Brain Core connection fixed (requestUrl API).
+- ProBot feature inventory complete, migration plan drafted.
+- Current safe continuation point: Phase 2A (local apps UI section) or approval-gated actions framework.
