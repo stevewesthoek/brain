@@ -8,6 +8,7 @@ import {
   readBrainCoreExecutionPlans,
   readBrainCoreExecutionReadiness,
   readBrainCoreMindPreviewPolicy,
+  readBrainCoreMindPreviews,
   readBrainCoreRepos,
   readBrainCoreRuntimeReports,
   readBrainCoreSchedulerJobs,
@@ -58,7 +59,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -74,9 +75,10 @@ export async function loadBrainConsoleViewState(
     readBrainCoreExecutionPlans(baseUrl),
     readBrainCoreExecutionReadiness(baseUrl),
     readBrainCoreMindPreviewPolicy(baseUrl),
+    readBrainCoreMindPreviews(baseUrl),
   ]);
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews].every(
     (result) => result.value === undefined,
   );
 
@@ -96,6 +98,7 @@ export async function loadBrainConsoleViewState(
     executionPlans: executionPlans.value?.plans,
     executionReadiness: executionReadiness.value,
     mindPreviewPolicy: mindPreviewPolicy.value,
+    mindPreviews: mindPreviews.value?.previews,
     warning: normalized.warning ?? normalized.error,
     offline,
   };

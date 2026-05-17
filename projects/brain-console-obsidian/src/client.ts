@@ -338,6 +338,12 @@ export async function readBrainCoreMindPreviewPolicy(
   return fetchJson<BrainCoreMindPreviewPolicy>(normalizeBaseUrl(baseUrl), '/execution/mind-preview-policy');
 }
 
+export async function readBrainCoreMindPreviews(
+  baseUrl: string,
+): Promise<HttpResult<{ previews?: BrainCoreMindPreviewSummary[] }>> {
+  return fetchJson<{ previews?: BrainCoreMindPreviewSummary[] }>(normalizeBaseUrl(baseUrl), '/execution/mind-previews');
+}
+
 export async function readBrainCoreVideoStatus(baseUrl: string): Promise<HttpResult<BrainCoreVideoStatus>> {
   return fetchJson<BrainCoreVideoStatus>(normalizeBaseUrl(baseUrl), '/video/status');
 }
