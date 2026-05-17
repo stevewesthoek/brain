@@ -35,6 +35,8 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
     approvalRequestEndpoints: [...APPROVAL_REQUEST_ENDPOINTS],
     executableActionsEnabled: false,
     approvalAuditPersistenceSupported: true,
+    runtimeReportsSupported: true,
+    runtimeReportEndpoint: '/runtime/reports',
     modelRouterReportSupported: true,
     obsidianPluginInstalled: false,
     liveSchedulerVerified: false,
@@ -43,6 +45,7 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
       'Approval request endpoints record intent and audit events but do not execute actions.',
       'Scheduler, video, local-app, and orchestrator adapters remain placeholders until live read-only sources are validated.',
       'Approval audit persistence is supported only through a safe runtime JSONL path outside Mind, .env, .git, node_modules, dist, and build.',
+      'Runtime reports are read-only and report-only; they summarize Brain-owned runtime state without storing it in Mind.',
     ],
   };
 }

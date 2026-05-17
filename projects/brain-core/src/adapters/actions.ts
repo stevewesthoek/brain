@@ -16,23 +16,33 @@ let nextAuditNumber = 1;
 
 export function requestAction(kind = 'manual-request'): BrainCoreActionRequestResult {
   const classified = classifyRequestedKind(kind);
+
+  if (!classified.supported) {
+    const rejectedId = `request-${nextAuditNumber++}`;
+    recordAdhocAuditEvent(rejectedId, classified.normalizedKind, 'rejected');
+    return {
+      accepted: false,
+      executed: false,
+      message: classified.rejectionReason || 'Unsupported approval request kind.',
+    };
+  }
+
   const approval: BrainCoreApprovalSummary = {
     id: `approval-${nextApprovalNumber++}`,
     kind: classified.normalizedKind,
-    status: classified.supported ? 'pending' : 'rejected',
+    status: 'pending',
     expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     source: 'memory',
   };
 
   approvals.set(approval.id, approval);
-  recordAuditEvent(approval, classified.supported ? 'requested' : 'rejected');
+  recordAuditEvent(approval, 'requested');
 
   return {
     approval,
+    accepted: true,
     executed: false,
-    message: classified.supported
-      ? 'Action request recorded. Brain Core creates approval records and audit events only; it does not execute actions yet.'
-      : `${classified.rejectionReason || 'Unsupported approval request kind.'} Brain Core recorded a rejected approval only.`,
+    message: 'Action request recorded. Brain Core creates approval records and audit events only; it does not execute actions yet.',
   };
 }
 
@@ -76,6 +86,7 @@ export function decideApproval(
 
     return {
       approval: missing,
+      accepted: true,
       executed: false,
       message: `Approval ${approvalId} was not found. No action was executed.`,
     };
@@ -90,6 +101,7 @@ export function decideApproval(
 
   return {
     approval: updated,
+    accepted: true,
     executed: false,
     message: `Approval ${approvalId} marked ${updated.status}. Brain Core does not execute approved actions yet.`,
   };
@@ -104,6 +116,30 @@ function recordAuditEvent(
     approvalId: approval.id,
     event,
     kind: approval.kind,
+    createdAt: new Date().toISOString(),
+    persisted: false,
+    executed: false,
+    source: 'memory',
+  };
+
+  const persisted = appendAuditEvent(auditEvent);
+  auditEvents.push({
+    ...auditEvent,
+    persisted,
+    source: persisted ? 'jsonl' : 'memory',
+  });
+}
+
+function recordAdhocAuditEvent(
+  approvalId: string,
+  kind: string,
+  event: BrainCoreApprovalAuditEvent['event'],
+): void {
+  const auditEvent: BrainCoreApprovalAuditEvent = {
+    id: `audit-${nextAuditNumber++}`,
+    approvalId,
+    event,
+    kind,
     createdAt: new Date().toISOString(),
     persisted: false,
     executed: false,

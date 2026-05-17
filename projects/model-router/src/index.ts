@@ -27,3 +27,4 @@ export {
 } from './jobs.js';
 export { createMindRouterLoopPlan } from './plans.js';
 export { createMindPathSnapshotFromRoot } from './snapshot.js';
+export { createModelRouterDryRunReport } from './report.js';

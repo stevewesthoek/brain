@@ -88,6 +88,8 @@ export interface BrainCoreCapabilitySummary {
   approvalRequestEndpoints: string[];
   executableActionsEnabled: false;
   approvalAuditPersistenceSupported: boolean;
+  runtimeReportsSupported: boolean;
+  runtimeReportEndpoint: '/runtime/reports';
   modelRouterReportSupported: boolean;
   obsidianPluginInstalled: boolean;
   liveSchedulerVerified: boolean;
@@ -103,13 +105,15 @@ export interface BrainCoreApprovalSummary {
 }
 
 export interface BrainCoreActionRequestResult {
-  approval: BrainCoreApprovalSummary;
+  approval?: BrainCoreApprovalSummary;
+  accepted: boolean;
   executed: false;
   message: string;
 }
 
 export interface BrainCoreApprovalDecisionResult {
   approval: BrainCoreApprovalSummary;
+  accepted: true;
   executed: false;
   message: string;
 }
@@ -130,6 +134,20 @@ export interface BrainCoreErrorResponse {
     code: string;
     message: string;
   };
+}
+
+export type BrainCoreRuntimeReportId = 'model-router' | 'approval-audit' | 'video';
+
+export type BrainCoreRuntimeReportStatus = 'available' | 'missing' | 'invalid';
+
+export interface BrainCoreRuntimeReportSummary {
+  id: BrainCoreRuntimeReportId;
+  status: BrainCoreRuntimeReportStatus;
+  path: string;
+  latestRunStatus: 'ok' | 'failed' | 'unknown';
+  message: string;
+  writesToMind: false;
+  executableActions: false;
 }
 
 export interface BrainCoreRoutes {
@@ -164,6 +182,9 @@ export interface BrainCoreRoutes {
   '/capabilities': BrainCoreCapabilitySummary;
   '/approvals/audit': {
     events: BrainCoreApprovalAuditEvent[];
+  };
+  '/runtime/reports': {
+    reports: BrainCoreRuntimeReportSummary[];
   };
   '/actions/request': BrainCoreActionRequestResult;
   '/scheduler/jobs/:id/request-run': BrainCoreActionRequestResult;

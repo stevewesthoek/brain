@@ -11,6 +11,7 @@ STARTED_EPOCH="$(date +%s)"
 STATUS="success"
 MESSAGE="model-router dry-run validation passed"
 EXIT_CODE=0
+CLI_PATH="$ROUTER_DIR/src/cli/dry-run-report.ts"
 
 mkdir -p "$OUTPUT_DIR"
 chmod 700 "$OUTPUT_DIR"
@@ -20,18 +21,21 @@ if [[ ! -d "$ROUTER_DIR" ]]; then
   MESSAGE="model-router package directory not found"
   EXIT_CODE=1
 else
-  if [[ -n "${MODEL_ROUTER_MIND_ROOT:-}" ]]; then
-    if ! npx --yes --prefix "$ROUTER_DIR" tsx "$ROUTER_DIR/src/cli/dry-run-report.ts" >/tmp/model-router-dry-run-report.log 2>&1; then
+  if [[ -f "$CLI_PATH" ]]; then
+    CLI_ARGS=(npx --yes --prefix "$ROUTER_DIR" tsx "$CLI_PATH")
+    if [[ -n "${MODEL_ROUTER_MIND_ROOT:-}" ]]; then
+      CLI_ARGS+=(--mind-root "$MODEL_ROUTER_MIND_ROOT")
+    fi
+    CLI_ARGS+=(--output-json "$JSON_OUTPUT" --output-md "$MD_OUTPUT")
+    if ! "${CLI_ARGS[@]}" >/tmp/model-router-dry-run-report.log 2>&1; then
       STATUS="failed"
       MESSAGE="model-router dry-run report failed; see /tmp/model-router-dry-run-report.log"
       EXIT_CODE=1
     fi
-  else
-    if ! npm --prefix "$ROUTER_DIR" run ci >/tmp/model-router-dry-run-report.log 2>&1; then
-      STATUS="failed"
-      MESSAGE="model-router ci failed; see /tmp/model-router-dry-run-report.log"
-      EXIT_CODE=1
-    fi
+  elif ! npm --prefix "$ROUTER_DIR" run ci >/tmp/model-router-dry-run-report.log 2>&1; then
+    STATUS="failed"
+    MESSAGE="model-router ci failed; see /tmp/model-router-dry-run-report.log"
+    EXIT_CODE=1
   fi
 fi
 

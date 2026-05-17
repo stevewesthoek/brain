@@ -1,0 +1,109 @@
+import type { MindContractDryRunResult, MindContractSnapshot, MindRouterLoopPlan, MindRouterPlanActionKind } from './contracts.js';
+import { createMindContractDryRunResult } from './jobs.js';
+import { createMindRouterLoopPlan } from './plans.js';
+
+export interface ModelRouterDryRunReport {
+  generatedAt: string;
+  mode: 'dry-run-report-only';
+  writesToMind: false;
+  executableActions: false;
+  validationStatus: 'ok' | 'blocked' | 'failed';
+  contractSummary: {
+    ok: boolean;
+    missingRequiredPathCount: number;
+    missingRouterContractFileCount: number;
+    missingLiveFileCount: number;
+    missingIndexFileCount: number;
+    failureBufferStatus: MindContractDryRunResult['failureBufferStatus'];
+    failureBufferReadyForArchivePhase: boolean;
+  };
+  loopPlans: MindRouterLoopPlan[];
+  actionCountsByKind: Record<string, number>;
+  blockersByLoop: Record<string, string[]>;
+  warningsByLoop: Record<string, string[]>;
+  snapshotStats: {
+    pathCount: number;
+    existingPathCount: number;
+    missingPathCount: number;
+    failedCaptureCount: number;
+    captureInboxCount: number;
+    oldestCaptureInboxAgeDays?: number;
+  };
+}
+
+export function createModelRouterDryRunReport(
+  snapshot: MindContractSnapshot,
+  now = new Date(),
+): ModelRouterDryRunReport {
+  const contract = createMindContractDryRunResult(snapshot);
+  const loopPlans = [
+    createMindRouterLoopPlan('mind-drift-error-loop', snapshot, now),
+    createMindRouterLoopPlan('mind-compile-loop', snapshot, now),
+    createMindRouterLoopPlan('mind-memory-loop', snapshot, now),
+    createMindRouterLoopPlan('mind-hygiene-loop', snapshot, now),
+  ];
+
+  const actionCountsByKind: Record<string, number> = {};
+  for (const plan of loopPlans) {
+    for (const action of plan.actions) {
+      actionCountsByKind[action.kind] = (actionCountsByKind[action.kind] ?? 0) + 1;
+    }
+  }
+
+  const pathStats = snapshot.paths.reduce<ModelRouterDryRunReport['snapshotStats']>(
+    (acc, item) => {
+      acc.pathCount += 1;
+      if (item.exists) acc.existingPathCount += 1;
+      else acc.missingPathCount += 1;
+      if (item.path.startsWith('capture/failed/') && item.exists) acc.failedCaptureCount += 1;
+      if (item.path.startsWith('capture/inbox/') && item.exists) {
+        acc.captureInboxCount += 1;
+        const ageDays = calculateAgeDays(item.modifiedAt, now);
+        if (typeof ageDays === 'number') {
+          acc.oldestCaptureInboxAgeDays =
+            typeof acc.oldestCaptureInboxAgeDays === 'number'
+              ? Math.max(acc.oldestCaptureInboxAgeDays, ageDays)
+              : ageDays;
+        }
+      }
+      return acc;
+    },
+    {
+      pathCount: 0,
+      existingPathCount: 0,
+      missingPathCount: 0,
+      failedCaptureCount: 0,
+      captureInboxCount: 0,
+    } as ModelRouterDryRunReport['snapshotStats'],
+  );
+
+  return {
+    generatedAt: now.toISOString(),
+    mode: 'dry-run-report-only',
+    writesToMind: false,
+    executableActions: false,
+    validationStatus: contract.ok ? 'ok' : 'blocked',
+    contractSummary: {
+      ok: contract.ok,
+      missingRequiredPathCount: contract.missingRequiredPaths.length,
+      missingRouterContractFileCount: contract.missingRouterContractFiles.length,
+      missingLiveFileCount: contract.missingLiveFiles.length,
+      missingIndexFileCount: contract.missingIndexFiles.length,
+      failureBufferStatus: contract.failureBufferStatus,
+      failureBufferReadyForArchivePhase: contract.failureBufferReadyForArchivePhase,
+    },
+    loopPlans,
+    actionCountsByKind,
+    blockersByLoop: Object.fromEntries(loopPlans.map((plan) => [plan.jobId, plan.blockedBy])),
+    warningsByLoop: Object.fromEntries(loopPlans.map((plan) => [plan.jobId, plan.warnings])),
+    snapshotStats: pathStats,
+  };
+}
+
+function calculateAgeDays(modifiedAt: string | undefined, now: Date): number | undefined {
+  if (!modifiedAt) return undefined;
+  const value = new Date(modifiedAt).getTime();
+  if (!Number.isFinite(value)) return undefined;
+  const diffDays = Math.floor((now.getTime() - value) / (24 * 60 * 60 * 1000));
+  return diffDays >= 0 ? diffDays : undefined;
+}

@@ -106,6 +106,8 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
     approvalRequestEndpoints: string[];
     executableActionsEnabled: boolean;
     approvalAuditPersistenceSupported: boolean;
+    runtimeReportsSupported: boolean;
+    runtimeReportEndpoint: string;
     modelRouterReportSupported: boolean;
     obsidianPluginInstalled: boolean;
     liveSchedulerVerified: boolean;
@@ -116,6 +118,8 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.approvalRequestEndpoints.includes('/sessions/:id/resume'), true);
   assert.equal(body.executableActionsEnabled, false);
   assert.equal(body.approvalAuditPersistenceSupported, true);
+  assert.equal(body.runtimeReportsSupported, true);
+  assert.equal(body.runtimeReportEndpoint, '/runtime/reports');
   assert.equal(body.modelRouterReportSupported, true);
   assert.equal(body.obsidianPluginInstalled, false);
   assert.equal(body.liveSchedulerVerified, false);
@@ -278,6 +282,16 @@ test('GET /approvals/audit returns approval audit events', async () => {
   assert.equal(body.events.every((event) => event.executed === false), true);
 });
 
+test('GET /runtime/reports returns report summaries', async () => {
+  const response = await exercise({ method: 'GET', url: '/runtime/reports' });
+  const body = JSON.parse(response.body) as { reports: Array<{ id: string; writesToMind: boolean; executableActions: boolean }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.reports.some((report) => report.id === 'model-router'), true);
+  assert.equal(body.reports.every((report) => report.writesToMind === false), true);
+  assert.equal(body.reports.every((report) => report.executableActions === false), true);
+});
+
 test('approval audit JSONL persistence writes to a safe runtime path', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-approval-audit');
   const auditPath = path.join(testDir, 'approval-audit.jsonl');
@@ -288,7 +302,7 @@ test('approval audit JSONL persistence writes to a safe runtime path', async () 
   process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
 
   try {
-    const response = await exercise({ method: 'POST', url: '/actions/request?kind=approval-jsonl-test' });
+    const response = await exercise({ method: 'POST', url: '/actions/request?kind=manual-request' });
     const body = JSON.parse(response.body) as { approval: { id: string } };
     const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
     const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ approvalId: string; source: string; persisted: boolean; executed: boolean }> };
@@ -335,11 +349,11 @@ test('invalid approval audit path falls back to memory and does not throw', asyn
 
 test('POST /actions/request rejects unsupported custom kinds without executing', async () => {
   const response = await exercise({ method: 'POST', url: '/actions/request?kind=unsafe-kernel-hook' });
-  const body = JSON.parse(response.body) as { approval: { kind: string; status: string }; executed: boolean; message: string };
+  const body = JSON.parse(response.body) as { accepted: boolean; approval?: { kind: string; status: string }; executed: boolean; message: string };
 
   assert.equal(response.statusCode, 202);
-  assert.equal(body.approval.kind, 'unsafe-kernel-hook');
-  assert.equal(body.approval.status, 'rejected');
+  assert.equal(body.accepted, false);
+  assert.equal(body.approval, undefined);
   assert.equal(body.executed, false);
   assert.equal(body.message.includes('Unsupported approval request kind'), true);
 });
@@ -366,7 +380,7 @@ test('roadmap POST targets create approval requests without executing', async ()
 });
 
 test('POST /approvals/:id/approve marks approval approved without executing', async () => {
-  const requestResponse = await exercise({ method: 'POST', url: '/actions/request?kind=test-action' });
+  const requestResponse = await exercise({ method: 'POST', url: '/actions/request?kind=manual-request' });
   const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
   const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
   const body = JSON.parse(response.body) as { approval: { status: string }; executed: boolean };
@@ -377,7 +391,7 @@ test('POST /approvals/:id/approve marks approval approved without executing', as
 });
 
 test('POST /approvals/:id/reject marks approval rejected without executing', async () => {
-  const requestResponse = await exercise({ method: 'POST', url: '/actions/request?kind=test-action' });
+  const requestResponse = await exercise({ method: 'POST', url: '/actions/request?kind=manual-request' });
   const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
   const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/reject` });
   const body = JSON.parse(response.body) as { approval: { status: string }; executed: boolean };

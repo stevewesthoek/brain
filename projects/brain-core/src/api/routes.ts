@@ -4,6 +4,7 @@ import { listApprovals } from '../adapters/approvals.js';
 import { getCapabilities } from '../adapters/capabilities.js';
 import { listOrchestrators } from '../adapters/orchestrators.js';
 import { listLocalApps } from '../adapters/local-apps.js';
+import { listRuntimeReports } from '../adapters/runtime-reports.js';
 import { listRepos } from '../adapters/repos.js';
 import { getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
 import { listSessions } from '../adapters/sessions.js';
@@ -94,11 +95,14 @@ export async function routeRequest(
     case '/approvals/audit':
       sendJson(response, 200, { events: listApprovalAuditEvents() });
       return;
+    case '/runtime/reports':
+      sendJson(response, 200, { reports: listRuntimeReports() });
+      return;
     default:
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/audit.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/audit, /runtime/reports.',
         },
       } satisfies BrainCoreErrorResponse);
   }
