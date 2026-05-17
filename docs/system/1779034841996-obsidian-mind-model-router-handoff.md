@@ -39,9 +39,46 @@ Remaining blockers:
 - Legacy folder archival remains blocked.
 - Any future apply flow still requires the separately approved write/apply policy.
 
+Next safe task (Phase 4C done):
+
+- Continue with approval-request lifecycle clarity and report visibility.
+
+## Continuation update — Approved dry-run report visibility (Phase 4D)
+
+Implemented:
+
+- **Approval execution gate verified**: POST /approvals/:id/approve safely executes only when all 7 gates pass (kind, flag, store, audit, status, runtime dir, script).
+- **Model-router dry-run execution confirmed**: Produces report-only output to runtime/local/model-router/latest.json with wiki health and maintenance preview metadata.
+- **Report readiness metadata added**: Model-router action now exposes readiness status with execution blockers and approval tracking.
+- **Brain Console report visibility**: Added Runtime Reports card showing model-router report status, wiki health summary, and latest run status.
+- **Action Preview card enhanced**: Shows latest report availability when model-router dry-run has been approved and report exists.
+- **Runtime reports endpoint verified**: GET /runtime/reports returns model-router report with wikiHealth, writesToMind=false, executableActions=false.
+
+Validation:
+
+- Brain Core CI: 104 tests passed (3 new report visibility tests).
+- Brain Console typecheck: passed.
+- Brain Console build: passed (191.5 KB bundled).
+- Plugin reinstalled to mind vault.
+- All safety guarantees verified: no Mind writes, no apply/write, no shell broadening.
+
+Safety status:
+
+- Approval execution remains report-only and gated.
+- Model-router output confined to runtime/local/model-router.
+- No Mind writes from any path.
+- No executable actions enabled.
+- Report metadata is safe (no raw logs, no full diffs, no paths leading to Mind).
+
+Remaining blockers:
+
+- Broad Mind mutation remains blocked.
+- Legacy folder archival remains blocked.
+- Any future apply flow still requires separately approved write/apply policy.
+
 Next safe task:
 
-- Continue with preview-only or lint-only strengthening, or stop here and review the new wiki-health findings before considering any future Mind write/apply work.
+- Build read-only approval detail view and report details modal, or improve STB/video live evidence adapters and add further report analysis.
 
 ## Files read for this continuation
 

@@ -213,6 +213,7 @@ export function renderBrainConsoleView(
     const grid = shell.createDiv({ cls: 'brain-console__dashboard-grid' });
 
     renderCard(grid, 'Wiki Health', renderWikiHealthCard(state));
+    renderCard(grid, 'Runtime Reports', renderRuntimeReportsCard(state));
     renderCard(grid, 'Maintenance', renderMaintenanceCard(state));
     renderCard(grid, 'Approvals', renderApprovalsCard(state));
     renderCard(grid, 'Scheduler', renderSchedulerCard(state));
@@ -337,6 +338,55 @@ function renderWikiHealthCard(state: BrainConsoleViewState): HTMLElement {
       cls: 'brain-console__detail',
       text: `${health.warningCount} warn · ${health.errorCount} err`,
     });
+  }
+
+  return container;
+}
+
+function renderRuntimeReportsCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  if (!state.runtimeReports || state.runtimeReports.length === 0) {
+    container.textContent = 'no reports';
+    return container;
+  }
+
+  // Show model-router report with focus
+  const mrReport = state.runtimeReports.find((r) => r.id === 'model-router');
+  const list = container.createEl('ul', { cls: 'brain-console__list' });
+
+  // Model-router report: show status, wiki health summary, file path
+  if (mrReport) {
+    const item = list.createEl('li', { text: `Model Router: ${mrReport.status}` });
+    item.addClass('brain-console__list-item-highlight');
+
+    if (mrReport.latestRunStatus === 'ok') {
+      item.style.color = '#22c55e';
+    } else if (mrReport.latestRunStatus === 'failed') {
+      item.style.color = '#ef4444';
+    }
+
+    // Add wiki health if available
+    if (mrReport.wikiHealth) {
+      const wikiText = mrReport.wikiHealth.ok
+        ? `Wiki: ✓ ok`
+        : `Wiki: ${mrReport.wikiHealth.errorCount}e ${mrReport.wikiHealth.warningCount}w`;
+      list.createEl('li', { cls: 'brain-console__list-sub', text: wikiText });
+    }
+
+    // Add message if available
+    if (mrReport.message && mrReport.message !== 'Runtime report is available.') {
+      list.createEl('li', { cls: 'brain-console__list-sub', text: mrReport.message });
+    }
+  }
+
+  // List other reports
+  const otherReports = state.runtimeReports.filter((r) => r.id !== 'model-router' && r.status === 'available');
+  if (otherReports.length > 0) {
+    for (const report of otherReports) {
+      list.createEl('li', { cls: 'brain-console__list-note', text: `${report.id}: ${report.status}` });
+    }
   }
 
   return container;
@@ -714,6 +764,14 @@ function renderActionPreviewCard(state: BrainConsoleViewState, settings: BrainCo
                              readiness.latestApprovalStatus === 'expired' ? '⏱' : '⏳';
           const ageText = readiness.latestRequestAgeMinutes !== undefined ? ` (${readiness.latestRequestAgeMinutes}m ago)` : '';
           item.createEl('span', { text: ` ${statusEmoji} ${readiness.latestApprovalStatus}${ageText}`, cls: 'brain-console__latest-approval' });
+        }
+
+        // Show latest report availability if model-router action
+        if (action.id === 'model-router-dry-run') {
+          const mrReport = state.runtimeReports?.find((r) => r.id === 'model-router');
+          if (mrReport && mrReport.status === 'available') {
+            item.createEl('span', { text: ' 📄 report available', cls: 'brain-console__report-available' });
+          }
         }
       }
     });

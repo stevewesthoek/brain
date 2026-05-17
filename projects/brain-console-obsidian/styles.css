@@ -345,3 +345,20 @@
   color: var(--cockpit-text-secondary);
   word-break: break-word;
 }
+
+/* Report visibility indicators */
+.brain-console__report-available {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.brain-console__report-status {
+  margin-left: 4px;
+  font-size: 0.85rem;
+}
+
+/* Runtime reports card styles */
+.brain-console__list-item-highlight {
+  color: var(--cockpit-text-primary);
+  font-weight: 600;
+}
