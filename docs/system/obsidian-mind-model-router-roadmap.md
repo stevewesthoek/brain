@@ -12,6 +12,158 @@ The `brain` repo will own the executable infrastructure: Brain Core API, model-r
 
 Obsidian remains the only primary human dashboard. Brain Core exposes machine and scheduler state. The model router continuously keeps `mind` small, coherent, useful, and fast.
 
+## Unified Orchestrator Command Center Roadmap
+
+**Mission:** Brain Console is the single unified cockpit for all system intelligence, machine state, pipelines, approvals, and operational decisions. ProBot is legacy/secondary. Says the Bible operational pipeline remains non-breakable. Video Orchestrator is the future canonical architecture.
+
+### Non-Negotiables
+
+1. **Says the Bible remains operational** — Daily production pipeline. No code changes until full video orchestrator parity. Zero production downtime.
+2. **ProBot is legacy, not replaced** — Brain Console migrates valuable ProBot features through Brain Core APIs. ProBot remains secondary until feature parity complete.
+3. **Video Orchestrator is canonical future** — Rebuilt from STB modules (not blind copy), cleaner design, supports multiple projects/platforms. No decommissioning of STB until video is production-ready.
+4. **Dual visibility during migration** — Both STB (legacy/operational) and video orchestrator (future/partial) visible in dashboard simultaneously with migration card tracking progress.
+5. **No decommissioning without approval** — Requires: Brain Core API equivalent, Brain Console section deployed, tests passing, dual-run validation complete, explicit user approval.
+6. **All actions approval-gated** — Read-only dashboard by default. App/orchestrator/system controls go through Brain Core approval requests. No direct shell execution from plugin.
+7. **Brain Core is API boundary** — Typed, local-only HTTP layer. All dashboard data flows through Brain Core. No direct vault mutations from Obsidian plugin.
+
+### STB → Video Orchestrator Architecture
+
+**Current state:**
+- Says the Bible: active daily pipeline (research → script → assets → video → publish across YouTube, Pinterest, Facebook)
+- Video Orchestrator: design-only ProBot concepts (no live execution yet)
+- Brain Console: emerging dashboard (no STB/video visibility yet)
+
+**Target state:**
+- Says the Bible: visible as "legacy/operational" status in Brain Console Pipelines tab
+- Video Orchestrator: visible as "future/canonical" progress card with module completion %, parity status, dual-run validation
+- Migration card: shows STB→video module mapping, completion timeline, next safe task
+
+**Module rebuild strategy (not blind copy):**
+
+| STB Concept | Video Orchestrator Target | Status | Validation |
+|---|---|---|---|
+| Research/scripture intake | bible-research orchestrator | not-started | Compare passage selection |
+| Outline/structure | script-generation stage | not-started | Compare outline equivalence |
+| Script generation | script-generation stage | not-started | Compare script quality |
+| Asset generation | asset-generation stage | not-started | Compare asset metadata |
+| Thumbnail design | design orchestrator (planned) | blocked | Compare thumbnail output |
+| Video assembly | video-assembly stage | not-started | Compare bitrate/quality |
+| Metadata enrichment | metadata-enrichment stage | not-started | Compare SEO metadata |
+| YouTube publishing | platform-publish stage | not-started | Compare published video |
+| Pinterest publishing | platform-publish stage | not-started | Compare pin appearance |
+| Facebook publishing | platform-publish stage | not-started | Compare post formatting |
+| Approval/review | approval-gate stage | not-started | Compare approval flow |
+| Archive/logging | archive-logging stage | not-started | Compare audit trail |
+
+**Dual-run validation:**
+- Build video module alongside STB
+- Run both on identical test input
+- Compare outputs (correctness, quality, performance, compatibility, safety)
+- No production switch until parity achieved
+- Rollback capability preserved until decommission approval
+
+### ProBot Migration to Brain Console
+
+**Current state:** ProBot web dashboard with local app status, orchestrator registry, session history, domain/project overview.
+
+**Target state:** All valuable ProBot features migrate through Brain Core APIs into Brain Console. ProBot remains secondary reference.
+
+**Feature disposition:**
+- KEEP: Local app status, session history, domain/project overview
+- REDESIGN: App start/stop, orchestrator run (approval-gated)
+- NEW API: Orchestrator registry, domain/project registry
+- DROP: Credentials, OAuth, Stripe billing
+
+**Phased rollout:**
+- Phase 2A: Local apps section + Brain Core endpoint
+- Phase 2B: Session history cards
+- Phase 3: Orchestrator registry + Pipelines section
+- Phase 4: Domain/project registry + Projects section
+- Phase 5: Approval-gated actions framework
+- Phase 6: Visual refinement + ProBot deprecation
+
+### Brain Console Cockpit Architecture
+
+**Eight dashboard sections:**
+1. **Overview** — Health status, last run, warnings, next safe action
+2. **Apps** — Local app status (running/idle/error), start/stop controls (approval-gated)
+3. **Orchestrators** — Skill registry (6 planned), video, research, design, code, scheduler
+4. **Pipelines** — Says the Bible (legacy/operational), video orchestrator (future/partial), migration progress card
+5. **Projects/Domains** — Active projects, platforms, queues, accounts
+6. **Approvals** — Pending action requests, decision tracking
+7. **Research** — Active queries, sources, captures
+8. **System** — Brain Core runtime, scheduler jobs, maintenance previews, model-router health
+
+**Data sources:**
+- Brain Core `/status`, `/orchestrators`, `/pipelines`, `/projects`, `/approvals`, `/runtime/reports`, `/scheduler/jobs`, `/execution/maintenance-previews`
+- Says the Bible operational status (read-only ProBot integration)
+- Video orchestrator progress (Brain Core adapter)
+- Model-router maintenance insights (wiki health, lint status, proposed actions)
+
+### Implementation Timeline
+
+| Phase | Deliverable | Duration | Dependencies |
+|---|---|---|---|
+| 0 | Roadmap + architecture docs | 1 week | None |
+| 1 | Brain Core API design (orchestrators, pipelines, projects, approvals, status) | 1-2 weeks | Roadmap |
+| 2A | Local apps Brain Core endpoint + Brain Console section | 1 week | API design |
+| 2B | Session history cards polish | 1 week | Phase 2A |
+| 3 | Orchestrator registry API + Brain Console Orchestrators section | 1-2 weeks | Phase 2B |
+| 4 | Domain/project registry API + Brain Console Projects section | 1-2 weeks | Phase 3 |
+| 5 | Approval-gated actions framework (app start/stop, orchestrator run) | 2-3 weeks | Phase 4 |
+| 6 | Visual refinement + ProBot → Brain Console transition + ProBot deprecation announcement | 1-2 weeks | Phase 5 |
+| 7 | STB operational status adapter (Brain Core read-only) | 1 week | Phase 2A (established pattern) |
+| 8 | Video orchestrator status adapter + migration card | 1 week | Phase 7 |
+| 9 | Build + validate first video module (research/intake) + dual-run tests | 2-3 weeks | Phase 8 |
+| 10 | Build remaining modules (script, assets, design, assembly, metadata, publishing, approval, archive) | 2-4 months | Phase 9 (iterative) |
+| 11 | Integration testing + dual-run validation all modules | 2-4 weeks | Phase 10 |
+| 12 | User approval + gradual cutover (YouTube → Pinterest → Facebook) | 3-4 weeks | Phase 11 |
+| 13 | Decommission STB (archive code, update docs) | 1 week | Phase 12 success |
+
+**Total estimate:** 5-8 months (depends on design orchestrator availability and testing speed)
+
+### Decommission Safeguards
+
+Nothing is deleted or disabled until ALL of these conditions are met:
+
+1. ✅ Brain Core API equivalent exists and is tested
+2. ✅ Brain Console section displays the replacement feature
+3. ✅ Tests pass for both Brain Core and Brain Console
+4. ✅ Dual-run validation shows parity (correctness, quality, performance, safety)
+5. ✅ User explicitly approves the switch
+6. ✅ Code is archived (not deleted)
+7. ✅ Documentation is updated
+8. ✅ Rollback capability is preserved
+
+**Application:**
+- ProBot features → decommissioned only after Brain Console parity + user approval
+- Says the Bible → never decommissioned; archived after video orchestrator reaches production parity
+- Legacy STB code → archived, not deleted, after cutover success
+
+### Orchestrator Skills (Future)
+
+Six orchestrators planned for Brain Console:
+1. **Model Router** — vault maintenance, compilation, memory loops
+2. **Video Orchestrator** — research, script, assets, design, assembly, metadata, publishing
+3. **Research Orchestrator** — web search, source synthesis, knowledge compilation
+4. **Design Orchestrator** — image generation, thumbnail design, visual asset creation
+5. **Code Orchestrator** — codebase comprehension, refactoring, testing, shipping
+6. **Bible Research Orchestrator** — scripture research, theological analysis, passage synthesis
+
+All orchestrators expose read-only status through Brain Core. Execution requests go through approval layer.
+
+### Success Criteria
+
+- ✅ Brain Console is the single operational cockpit for all system intelligence
+- ✅ ProBot is acknowledged as legacy; migration plan is tracked and transparent
+- ✅ Says the Bible remains operational throughout with zero production downtime
+- ✅ Video orchestrator is built alongside STB (not replacement), with dual-run validation
+- ✅ Each STB module successfully rebuilt into video orchestrator equivalent
+- ✅ User explicitly approves production switch before cutover
+- ✅ Migration progress visible in Brain Console dashboard
+- ✅ All decommission safeguards are enforced
+- ✅ Rollback capability preserved until decommission approval
+
 ## Obsidian Command Center Dashboard
 
 The Brain Console plugin provides a polished black-box Obsidian dashboard that replaces ad-hoc browsing of raw Markdown files.

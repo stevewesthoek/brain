@@ -251,18 +251,167 @@ Buttons for safe, request-only actions:
 - **[ Open Mind Dashboard ]**: Deep link to `HOME.md` in Obsidian
 - **[ Open Wiki Log ]**: Deep link to `wiki/log.md`
 
-### Placeholder Tabs (not implemented yet, visual only)
+### Extended Tab Structure (Unified Orchestrator Cockpit)
 
-- **Mind tab**: (disabled) Future: Today summary, live tasks, live projects
-- **Automation tab**: (disabled) Future: scheduler jobs detail, dry-run status, approval queues
-- **Research tab**: (disabled) Future: wiki health detail, sources inventory, stale claims
-- **Approvals tab**: (disabled) Future: pending approvals with preview/reject flow (only if safe route exists)
+The dashboard expands beyond MVP to serve as the unified cockpit for all operational intelligence:
+
+#### Tab 1: **Overview** (MVP)
+Primary operational view (current section above).
+
+**Cards (6 core):**
+- Status strip
+- System Burn/Attention
+- Wiki Health
+- Maintenance Previews
+- Scheduler
+- Brain Core
+
+#### Tab 2: **Apps** (Phase 2A)
+Local app lifecycle and ProBot legacy status.
+
+**Cards:**
+- Local Apps Card
+  - App name, status pill (RUNNING/IDLE/ERROR)
+  - Port (if available)
+  - Action buttons: start/stop (approval-gated, Phase 5)
+- ProBot Legacy Status
+  - Status: DEPRECATED but available
+  - Last dashboard access: timestamp
+  - Features migrated to Brain Console: count
+  - Migration progress: %
+
+#### Tab 3: **Orchestrators** (Phase 2B)
+Registry of all orchestrators (skills, pipelines, system services).
+
+**Cards:**
+- Orchestrator Registry (list or grid)
+  - Name, category (skill/pipeline/system)
+  - Status (ready/partial/error/future)
+  - Last execution timestamp
+  - Queue count (if applicable)
+  - Linked project (if any)
+- Model Router
+  - Status: ready/stale/error
+  - Last dry-run: timestamp
+  - Current mode: report-only/preview/apply
+- Video Orchestrator
+  - Status: designing/partial/validating/ready
+  - Module progress: X/12 modules
+  - Migration progress: %
+  - Next task
+  - Decommission status: BLOCKED
+
+#### Tab 4: **Pipelines** (Phase 3 + unified scope)
+Operational and canonical-future pipelines with migration tracking.
+
+**Cards:**
+- Says the Bible Operational Pipeline
+  - Status: LIVE / PAUSED / ERROR (large pill)
+  - Category: "operational" (legacy, non-breakable)
+  - Last run: timestamp + duration
+  - Queue count, failure count
+  - Current processing: topic, stage, progress %
+  - Platform status: YouTube ✓, Pinterest ✓, Facebook ✓
+  - Next run estimate
+  - Warning: "No production changes during migration"
+
+- Video Orchestrator Future Pipeline
+  - Status: designing/partial/validating/ready
+  - Category: "canonical-future" (replacement architecture)
+  - Module progress: 3/12 completed
+  - Parity status: mapping/partial/dual-run/ready
+  - Migration progress: %
+  - Decommission status: BLOCKED (until parity complete)
+  - Next safe task
+
+- STB → Video Orchestrator Migration Card
+  - Legacy pipeline: Says the Bible (operational)
+  - Target: Video Orchestrator (canonical future)
+  - Status: mapping/building/validating/cutover/complete
+  - Progress: modules completed %, timeline %, phase #
+  - Safeguards enforced:
+    ✓ Legacy operational (STB still running)
+    ✓ Dual visibility (both shown in dashboard)
+    ✓ Dual-run validation (outputs compared)
+    ✓ User approval required (before cutover)
+  - Next phase: name + task
+  - Action: view detailed migration plan
+
+#### Tab 5: **Projects/Domains** (Phase 3)
+Active projects, business domains, and platforms.
+
+**Cards:**
+- Projects Registry
+  - Name, type (content/system/business/research)
+  - Status: active/paused/archived
+  - Owner (if applicable)
+  - Linked pipeline (if any, e.g., "Says the Bible")
+  - Linked orchestrators (if any)
+  - Last modified: timestamp
+- Platforms Registry
+  - YouTube, Pinterest, Facebook, TikTok, etc.
+  - Associated project (if any)
+  - Last post timestamp
+  - Queue status (if applicable)
+
+#### Tab 6: **Approvals** (Phase 4)
+Pending and historical approval records.
+
+**Cards:**
+- Approvals Queue
+  - Pending count (red pill if > 0)
+  - Approved today: count
+  - Rejected: count
+  - Pending approval list (future modal):
+    - Action name, requested at, expires at
+    - Description (one-liner)
+    - Request actions: approve/reject buttons (Phase 5)
+
+#### Tab 7: **Research** (Future)
+Wiki health, source synthesis, and knowledge maintenance.
+
+**Cards:**
+- Wiki Health Detail
+  - Errors: list of broken links, orphaned pages, contradictions
+  - Warnings: stale claims, missing source trace, oversized files
+  - Latest finding: timestamp + details
+- Sources
+  - Recent captures: count
+  - Compiled wiki pages: count
+  - Source trace coverage: %
+- Stale Content
+  - Stale captures: count (older than threshold)
+  - Stale tasks: count
+  - Stale claims: count (no recent update)
+
+#### Tab 8: **System** (Future)
+Brain Core runtime, scheduler jobs, and operational health.
+
+**Cards:**
+- Brain Core Runtime
+  - Status: LIVE / OFFLINE / DEGRADED
+  - Uptime: days
+  - Mode: read-only / approval-gated
+  - Latest log entry: timestamp + message
+  - Health checks: list (ProBot connection, STB adapter, video adapter, etc.)
+- Scheduler Jobs
+  - Jobs list: name, schedule, last run, status
+  - Active jobs: count
+  - Failed jobs: count
+  - Next job: name + scheduled time
+- Maintenance Loop Status
+  - Compile loop: last run timestamp, status
+  - Memory loop: last run, status
+  - Hygiene loop: last run, status
+  - Drift/error loop: last run, status
 
 ---
 
 ## 5. Data Sources & API Mapping
 
 Each card is fed by Brain Core endpoints or direct Mind file links:
+
+### MVP / Phase 1 Endpoints
 
 | Card | Primary Source | Fallback | Update Frequency |
 |------|---|---|---|
@@ -277,6 +426,72 @@ Each card is fed by Brain Core endpoints or direct Mind file links:
 | **Next Safe Action** | `/execution/maintenance-previews` + `/runtime/reports` | "none found" | manual refresh |
 | **Latest Maintenance Preview** | `/execution/maintenance-previews/latest` | "none" | manual refresh |
 | **Activity Panel** | `/runtime/reports` (events) + `/scheduler/latest-run` | empty | manual refresh |
+
+### Extended Endpoints (Phase 2+: Unified Orchestrator)
+
+| Card | Primary Source | Fallback | Update Frequency |
+|------|---|---|---|
+| **Local Apps** | `/local-apps` | offline if unreachable | manual refresh |
+| **Says the Bible (STB)** | `/pipelines/stb-daily-pipeline` | offline if unreachable | manual refresh |
+| **Video Orchestrator** | `/pipelines/video-orchestrator` | "designing..." if not started | manual refresh |
+| **STB → Video Migration** | `/pipelines/stb-daily-pipeline` + `/pipelines/video-orchestrator` | "unavailable" | manual refresh |
+| **ProBot Legacy Status** | `/probot/status` | "deprecated" | manual refresh |
+| **Orchestrators Registry** | `/orchestrators` | empty list | manual refresh |
+| **Projects Registry** | `/projects` | empty list | manual refresh |
+| **Platforms Registry** | `/projects?filter=platforms` | empty list | manual refresh |
+| **Scheduler Jobs Detail** | `/scheduler/jobs` | empty list | manual refresh |
+| **Maintenance Loop Status** | `/scheduler/jobs?filter=maintenance` | empty list | manual refresh |
+
+### New Brain Core API Endpoints (Phase 1-3)
+
+**Phase 1 (MVP):**
+```
+GET /status
+GET /runtime/reports
+GET /execution/maintenance-previews
+GET /approvals
+GET /scheduler/latest-run
+GET /scheduler/jobs
+```
+
+**Phase 2A (Apps + Pipelines):**
+```
+GET /local-apps
+GET /pipelines
+GET /pipelines/:id
+GET /pipelines/stb-daily-pipeline
+GET /pipelines/video-orchestrator
+```
+
+**Phase 2B (Orchestrators):**
+```
+GET /orchestrators
+GET /orchestrators/:id
+GET /skills
+GET /skills/:id
+```
+
+**Phase 3 (Projects):**
+```
+GET /projects
+GET /projects/:id
+GET /platforms
+GET /platforms/:id
+```
+
+**Phase 4 (Approvals Detail):**
+```
+GET /approvals
+GET /approvals/:id
+POST /approvals/:id/approve (Phase 5)
+POST /approvals/:id/reject (Phase 5)
+```
+
+**Phase 5 (Actions):**
+```
+POST /actions/request
+GET /actions/:id/status
+```
 
 ---
 
@@ -304,14 +519,13 @@ Each card is fed by Brain Core endpoints or direct Mind file links:
 
 ---
 
-## 7. MVP (Minimum Viable Product)
+## 7. MVP (Minimum Viable Product) vs. Extended Scope
 
-**Scope for first implementation:**
+### Phase 1 MVP: Model-Router + Maintenance Focus
 
-### Must Have
-
+**Must Have:**
 - Overview tab (only active tab)
-- Status strip (6 pills)
+- Status strip (6 pills: Brain Core, Model-Router, Wiki, Maintenance, Approvals, Scheduler)
 - Top 3 metric cards (Wiki Health, Maintenance Previews, Approvals)
 - Scheduler card
 - Brain Core card
@@ -321,22 +535,51 @@ Each card is fed by Brain Core endpoints or direct Mind file links:
 - Dark cockpit CSS styling
 - Graceful error states (show "unavailable" if endpoint fails)
 
-### Nice-to-Have (Phase 2)
+**Scope:** Primarily model-router health and maintenance queue visibility
 
-- Captures card
-- Latest Maintenance Preview panel
-- System Burn progress bar
-- Modal for preview detail
-- Tab headers for Mind/Automation/Research/Approvals (visual, not clickable)
+### Phase 2A+ Extended: Unified Orchestrator Cockpit
 
-### Out-of-Scope for MVP
+**Additional Tabs (Phase 2+):**
+
+| Tab | Phase | Cards | Status |
+|-----|-------|-------|--------|
+| **Apps** | 2A | Local Apps, ProBot Legacy | Phase 2A |
+| **Orchestrators** | 2B | Orchestrator Registry, Model Router, Video Orchestrator | Phase 2B |
+| **Pipelines** | 2A+3 | STB Operational, Video Orchestrator, Migration Card | Phase 2A (STB) + Phase 3 (Video) |
+| **Projects/Domains** | 3 | Projects, Platforms | Phase 3 |
+| **Approvals** | 4 | Approvals Queue (detail, approve/reject Phase 5) | Phase 4 |
+| **Research** | Future | Wiki Health Detail, Sources, Stale Content | Future |
+| **System** | Future | Brain Core Runtime, Scheduler Jobs, Maintenance Loops | Future |
+
+**Additional Cards (Phase 2+):**
+- Captures card (Phase 2A)
+- Latest Maintenance Preview panel (Phase 2A)
+- System Burn progress bar (Phase 2A)
+- Says the Bible Pipeline Status (Phase 2A)
+- Video Orchestrator Progress (Phase 2B)
+- STB → Video Migration Card (Phase 2A base data + Phase 3 integration)
+- Local Apps (Phase 2A)
+- Orchestrator Registry (Phase 2B)
+- Projects Registry (Phase 3)
+
+### Scope Separation
+
+**Phase 1 (MVP, 2-3 weeks):** Model-router health, maintenance previews, approvals, scheduler
+**Phase 2A (Orchestrator Awareness, 1-2 weeks):** Says the Bible visibility, apps, local status
+**Phase 2B (Skill Registry, 1-2 weeks):** Orchestrators, model-router, video orchestrator basics
+**Phase 3 (Project Integration, 1-2 weeks):** Projects, domains, platforms
+**Phase 4+ (Interactivity):** Approval decision flow, action execution, detail modals
+
+### Out-of-Scope for Phase 1 MVP
 
 - Approval UI (request/approve/reject flow)—blocked until approval policy is safe
-- Full maintenance preview list
+- Full orchestrator/project/platform lists
 - Interactive command execution
 - Real-time auto-refresh
 - Custom theming / settings UI
 - Mobile layout optimization (focus on desktop Obsidian)
+- Says the Bible production mutation capabilities
+- Video Orchestrator module controls
 
 **Success Criteria:**
 
@@ -496,20 +739,54 @@ The user **never** runs commands from the dashboard. All actions are requests:
 
 ## Acceptance Criteria
 
+### Phase 1 (MVP) Acceptance
+
 Dashboard is "done" when:
 
 1. ✅ Plugin compiles with `npm run build`
 2. ✅ TypeScript typechecks with no errors
-3. ✅ Overview tab renders with all 8 core cards
-4. ✅ All Brain Core endpoints are called and display data (or "unavailable")
-5. ✅ CSS is dark cockpit style with warm accent (not default Obsidian theme)
+3. ✅ Overview tab renders with all 6 core cards (Wiki Health, Maintenance Previews, Approvals, Scheduler, Brain Core, Next Safe Action)
+4. ✅ All Phase 1 Brain Core endpoints are called and display data (or "unavailable")
+5. ✅ CSS is dark cockpit style with warm accent (#ff6b3d)
 6. ✅ Refresh button re-fetches data and updates cards
-7. ✅ Action buttons are visible and labeled (request-only, no execution)
+7. ✅ Status strip shows 6 pills (Brain Core, Model-Router, Wiki, Maintenance, Approvals, Scheduler)
 8. ✅ No raw JSON or secrets are shown in any card
 9. ✅ Error states show "unavailable" gracefully
 10. ✅ Manual testing in Obsidian shows readable, sparse, polished dashboard
 11. ✅ Plugin bundle NOT committed to Mind repo
 12. ✅ Documentation and runbook are written
+
+### Phase 2A (Says the Bible Visibility) Acceptance
+
+Additional criteria:
+
+13. ✅ Pipelines tab renders (initial phase)
+14. ✅ Says the Bible card shows: status, last run, queue count, failure count, platforms status
+15. ✅ STB card displays warning: "No production changes during migration"
+16. ✅ STB card is read-only (no mutation buttons)
+17. ✅ Video Orchestrator card shows: status, module progress, migration %, next task
+18. ✅ Migration card displays: legacy/target, progress %, safeguards enforced
+19. ✅ Says the Bible status reflected in `GET /pipelines/stb-daily-pipeline`
+20. ✅ All STB-related data read from read-only ProBot adapters
+
+### Phase 2B (Video Orchestrator + Orchestrators) Acceptance
+
+Additional criteria:
+
+21. ✅ Orchestrators tab renders
+22. ✅ Orchestrators registry displays: name, category, status, modules (if any)
+23. ✅ Video orchestrator shows: module count (X/12), parity status, decommission status BLOCKED
+24. ✅ Video orchestrator data reflects in `GET /pipelines/video-orchestrator`
+25. ✅ Migration card data updates as video modules complete
+
+### Phase 3 (Projects/Domains) Acceptance
+
+Additional criteria:
+
+26. ✅ Projects/Domains tab renders
+27. ✅ Projects registry shows: name, type, status, linked pipeline (if any)
+28. ✅ Says the Bible linked to stb-daily-pipeline
+29. ✅ Platforms registry indexed
 
 ---
 

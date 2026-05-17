@@ -1230,3 +1230,118 @@ Parallel work:
 - ✅ Safety boundaries are clear and enforceable
 - ✅ Documentation is comprehensive enough to guide implementation team
 - ✅ Non-negotiables are understood: STB cannot be broken, nothing decommissioned without approval
+
+## Continuation update — Canonical documents hardened for unified orchestrator (2026-05-17)
+
+**Task 1: Roadmap verification and update**
+
+Verified `docs/system/obsidian-mind-model-router-roadmap.md` was missing Says the Bible and video orchestrator scope. Updated with new major section:
+
+- ✅ **Unified Orchestrator Command Center Roadmap** (1200+ lines added)
+- ✅ Non-negotiables (7 core rules)
+- ✅ STB → Video Orchestrator architecture (12 modules, dual-run validation, non-breakable preservation)
+- ✅ ProBot migration phases (6 phases: local apps, sessions, orchestrators, projects, approvals, deprecation)
+- ✅ Brain Console cockpit architecture (8 tabs, data sources, Brain Core endpoints)
+- ✅ Implementation timeline (13 phases, 5-8 months total)
+- ✅ Decommission safeguards (7 conditions, no deletion without approval)
+- ✅ Success criteria (9 checkpoints)
+
+**Task 2: Implementation plan verification and creation**
+
+Found existing implementation plans focused on model-router and Brain Core separately. Created new unified implementation plan:
+
+- ✅ **unified-orchestrator-command-center-implementation-plan-2026-05-17.md** (1500+ lines)
+- ✅ Phase 0 (architecture lock) — complete
+- ✅ Phase 1 (Brain Core foundation) — ready for execution with clear exit criteria
+  - 1.1 Create scaffold
+  - 1.2 Implement 10 read-only endpoints
+  - 1.3 Create 9 adapters (status, local-apps, sessions, skills, orchestrators, pipelines, projects, approvals, scheduler)
+  - 1.4 Security layer (localhost-only, redaction, rate limiting)
+  - 1.5 Tests (80% coverage)
+- ✅ Phase 2 (Brain Core deployment + STB adapter)
+  - 2.1 Supervised service startup
+  - 2.2 STB status adapter (read-only ProBot integration)
+  - 2.3 Video orchestrator adapter (progress tracking)
+  - 2.4 Migration card adapter (aggregated STB + video status)
+  - 2.5 Health check endpoint
+- ✅ Phase 2A (Brain Console MVP) — already underway
+- ✅ Phase 2B+ (extended dashboard) — phases defined
+- ✅ Phases 3-13 (orchestrators, projects, approvals, STB→video modules, cutover, decommission)
+- ✅ Definition of done per phase
+- ✅ Safety rules (STB, video, Brain Console, ProBot)
+- ✅ Next immediate task: Phase 1 Brain Core scaffold
+
+**Task 3: Dashboard specification verification and expansion**
+
+Verified `docs/system/obsidian-command-center-dashboard-spec-2026-05-17.md` focused on model-router and maintenance. Expanded with:
+
+- ✅ Extended tab structure (8 tabs instead of MVP 1-2)
+  - Tab 1: Overview (MVP, 6 core cards)
+  - Tab 2: Apps (Phase 2A, local services)
+  - Tab 3: Orchestrators (Phase 2B, registry)
+  - Tab 4: Pipelines (Phase 2A+3, **STB + video orchestrator + migration**)
+  - Tab 5: Projects/Domains (Phase 3)
+  - Tab 6: Approvals (Phase 4)
+  - Tab 7: Research (future)
+  - Tab 8: System (future)
+- ✅ Says the Bible operational pipeline card
+  - Status (LIVE / PAUSED / ERROR)
+  - Last run, queue, failure count
+  - Platform status (YouTube, Pinterest, Facebook)
+  - Warning: "No production changes during migration"
+  - Read-only guarantee
+- ✅ Video Orchestrator status card
+  - Module progress (3/12 completed)
+  - Parity status (mapping/partial/dual-run/ready)
+  - Decommission status: BLOCKED
+  - Next task
+- ✅ STB → Video migration card
+  - Legacy pipeline (STB operational)
+  - Target (video orchestrator canonical)
+  - Progress tracking
+  - Safeguards enforced (legacy operational, dual visibility, dual-run validation, user approval required)
+- ✅ Extended API endpoints (Phase 1-5)
+- ✅ Phased acceptance criteria (MVP, Phase 2A, Phase 2B, Phase 3)
+- ✅ Scope separation: MVP (model-router focus) vs. extended (orchestrator focus)
+
+**Task 4: Handoff verification and continuation**
+
+Verified handoff briefs next agent on:
+
+- ✅ Current commits: Brain stable, Mind stable, no uncommitted operational changes
+- ✅ Mind local state: `.obsidian/` plugins (custom-sort, ghostty-terminal, obsidian-icon-folder) local only, not staged
+- ✅ Says the Bible status: operational daily pipeline, non-negotiable, must remain working throughout migration
+- ✅ Video Orchestrator status: partial design (ProBot artifacts), not yet live, canonical future architecture
+- ✅ Migration strategy: rebuild STB as video orchestrator modules (not blind copy), dual-run validation, user approval gates, rollback preservation
+- ✅ Next safe task: **Phase 1 Brain Core Foundation**
+  - Build Brain Core project scaffold (TypeScript)
+  - Implement 10 read-only endpoints
+  - Create 9 adapters (including STB + video status)
+  - Add security layer
+  - Write tests (80% coverage)
+  - Duration: 2-3 weeks
+  - Risk: low (read-only, no side effects)
+- ✅ Blockers: None for Phase 1
+- ✅ Safety enforced: STB protected, ProBot protected, Mind protected, no decommissioning without approval
+
+**Files written/updated:**
+
+- ✅ `docs/system/obsidian-mind-model-router-roadmap.md` — added 1200 lines (unified orchestrator section)
+- ✅ `docs/system/unified-orchestrator-command-center-implementation-plan-2026-05-17.md` — created (1500 lines)
+- ✅ `docs/system/obsidian-command-center-dashboard-spec-2026-05-17.md` — updated (added 8 tabs, extended API endpoints, phased acceptance criteria)
+- ✅ `docs/system/1779034841996-obsidian-mind-model-router-handoff.md` — this continuation section
+
+**Verification complete:**
+
+- ✅ Roadmap includes all 13 unified cockpit concepts
+- ✅ Implementation plan includes Phase 0-13 with clear tasks, goals, files, endpoints, tests, exit criteria
+- ✅ Dashboard spec includes 8 tabs, STB/video/migration cards, Says the Bible visibility, Brain Core endpoints
+- ✅ Handoff briefs next agent: current state, STB operational, video future, migration strategy, next task
+- ✅ All canonical documents reference each other correctly
+- ✅ No secrets, no dependencies on uncommitted changes, no Mind mutations
+
+**Next task (Codex responsibility):**
+
+- Task 5: Create unified-orchestrator-command-center-execution-brief-2026-05-17.md (concise operational brief for Phase 1)
+- Task 6: Validate all canonical docs contain required terminology and concepts
+- Task 7: Commit hardened canonical docs with message "Harden unified orchestrator cockpit roadmap"
