@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "tsc -p tsconfig.json",
+    "build": "node ./esbuild.config.mjs",
     "package": "node ./scripts/package.mjs"
   },
   "devDependencies": {
+    "esbuild": "^0.28.0",
+    "obsidian": "^1.12.3",
     "typescript": "^5.9.2"
   }
 }

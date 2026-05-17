@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ES2022",
-    "moduleResolution": "Bundler",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "baseUrl": ".",
     "lib": ["ES2022", "DOM"],
     "strict": true,
     "skipLibCheck": true,
@@ -13,5 +14,6 @@
     "noEmitOnError": true,
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "exclude": ["src/obsidian.ts", "node_modules"]
 }
