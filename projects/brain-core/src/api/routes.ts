@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { listRepos } from '../adapters/repos.js';
+import { getSchedulerStatus } from '../adapters/scheduler.js';
 import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
 import { createStatusAdapter } from '../adapters/status.js';
@@ -52,11 +53,14 @@ export async function routeRequest(
     case '/repos':
       sendJson(response, 200, { repos: listRepos() });
       return;
+    case '/scheduler/status':
+      sendJson(response, 200, getSchedulerStatus());
+      return;
     default:
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /scheduler/status.',
         },
       } satisfies BrainCoreErrorResponse);
   }

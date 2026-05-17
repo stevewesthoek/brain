@@ -22,6 +22,7 @@ GET /status
 GET /sessions
 GET /skills
 GET /repos
+GET /scheduler/status
 ```
 
 Current `/sessions` scans optional directories configured by `BRAIN_CORE_SESSION_DIRS`, `CLAUDE_PROJECTS_DIR`, `CODEX_SESSIONS_DIR`, and `GEMINI_SESSIONS_DIR`. It recursively discovers session-like files, infers the tool from names/paths, adds age and intent labels, applies simple recency/intent scoring, and returns a placeholder when no readable session directory is configured.
@@ -29,6 +30,8 @@ Current `/sessions` scans optional directories configured by `BRAIN_CORE_SESSION
 Current `/skills` indexes skill folders from `BRAIN_CORE_SKILLS_DIR` or the default repo-local `operations/system-configs/codex/skills` path and reports folders containing `SKILL.md` as indexed.
 
 Current `/repos` reads `BRAIN_CORE_REPO_ALIASES` or `PROBOT_REPO_ALIASES` in `name:/absolute/path` format, reports whether each repo exists, and detects known handoff files without reading secrets or runtime logs.
+
+Current `/scheduler/status` is a read-only placeholder for the future Office Nightly Scheduler integration. It reports disabled placeholder status and does not inspect logs, run jobs, or mutate scheduler state.
 
 These adapters intentionally do not import ProBot dashboard code. Future slices should migrate richer read-only backend logic from ProBot without importing dashboard rendering or browser state.
 

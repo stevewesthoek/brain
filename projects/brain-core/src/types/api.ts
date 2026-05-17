@@ -36,6 +36,15 @@ export interface BrainCoreRepoSummary {
   source: 'env' | 'placeholder';
 }
 
+export interface BrainCoreSchedulerStatus {
+  status: 'not-configured' | 'placeholder';
+  enabled: boolean;
+  latestRunAt?: string;
+  latestRunStatus?: 'ok' | 'failed' | 'unknown';
+  source: 'placeholder';
+  message: string;
+}
+
 export interface BrainCoreErrorResponse {
   error: {
     code: string;
@@ -54,4 +63,5 @@ export interface BrainCoreRoutes {
   '/repos': {
     repos: BrainCoreRepoSummary[];
   };
+  '/scheduler/status': BrainCoreSchedulerStatus;
 }

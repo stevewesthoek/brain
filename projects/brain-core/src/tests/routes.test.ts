@@ -88,6 +88,16 @@ test('GET /repos returns a repo alias list or setup placeholder', async () => {
   assert.equal(typeof body.repos[0]?.handoffExists, 'boolean');
 });
 
+test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/status' });
+  const body = JSON.parse(response.body) as { status: string; enabled: boolean; source: string };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.status, 'placeholder');
+  assert.equal(body.enabled, false);
+  assert.equal(body.source, 'placeholder');
+});
+
 test('non-GET requests are rejected', async () => {
   const response = await exercise({ method: 'POST', url: '/status' });
   const body = JSON.parse(response.body) as { error: { code: string } };

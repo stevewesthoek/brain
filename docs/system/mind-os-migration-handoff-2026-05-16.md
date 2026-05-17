@@ -410,3 +410,35 @@ Next safe implementation phase:
 
 - Add a read-only scheduler placeholder endpoint such as `GET /scheduler/status`, or start extracting richer ProBot session adapter logic into Brain Core without importing dashboard code.
 - Mutation endpoints remain blocked until approval-aware Phase 4.
+
+## Brain Core `/scheduler/status` continuation — 2026-05-17
+
+Completed the next read-only Brain Core scheduler placeholder slice.
+
+Changes made:
+
+- Added `BrainCoreSchedulerStatus` to `projects/brain-core/src/types/api.ts`.
+- Added `projects/brain-core/src/adapters/scheduler.ts`.
+- Added `GET /scheduler/status` in `projects/brain-core/src/api/routes.ts`.
+- Added route contract test coverage for `/scheduler/status` in `projects/brain-core/src/tests/routes.test.ts`.
+- Updated `projects/brain-core/README.md`.
+- Updated `mind/live/machine.md` to mention `/scheduler/status` without duplicating runtime state.
+
+Current `/scheduler/status` behavior:
+
+- Read-only placeholder only.
+- Reports disabled scheduler adapter state.
+- Does not inspect logs.
+- Does not run scheduler jobs.
+- Does not mutate scheduler state.
+
+Validation after `/scheduler/status`:
+
+- `npm run ci` in `projects/brain-core` passed.
+- CI included typecheck and 8 Node route/adapter tests.
+
+Remaining constraints:
+
+- Scheduler integration is not live yet.
+- Mutation/action endpoints remain blocked until approval-aware Phase 4.
+- Generated `projects/brain-core/dist/` appears after tests and remains untracked because `.gitignore` writes are blocked by current BuildFlow policy.
