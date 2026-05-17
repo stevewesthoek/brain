@@ -43,6 +43,7 @@ const schema = z.object({
   SLACK_ALLOWED_USER_IDS: z.string().default(""),
   PROBOT_DASHBOARD_PORT: z.coerce.number().int().nonnegative().default(0),
   PROBOT_DASHBOARD_URL: z.string().default(""),
+  BRAIN_CORE_URL: z.string().default("http://127.0.0.1:4877"),
 });
 
 const parsed = schema.parse(process.env);
@@ -83,6 +84,7 @@ export interface Config {
   slackAllowedUserIds: string[];
   dashboardPort: number;
   dashboardUrl: string;
+  brainCoreUrl: string;
   projectRoot: string;
   hostname: string;
   envPath: string;
@@ -106,6 +108,7 @@ export const config: Config = {
   slackAllowedUserIds: splitCsv(parsed.SLACK_ALLOWED_USER_IDS),
   dashboardPort: parsed.PROBOT_DASHBOARD_PORT,
   dashboardUrl: parsed.PROBOT_DASHBOARD_URL,
+  brainCoreUrl: parsed.BRAIN_CORE_URL,
   projectRoot,
   hostname: os.hostname(),
   envPath,

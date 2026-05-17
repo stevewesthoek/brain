@@ -1,5 +1,7 @@
 # ProBot
 
+> Migration note: ProBot is being reduced to an optional thin client over Brain Core. Do not add new dashboard product features here. New machine/session/scheduler surfaces should be implemented in `projects/brain-core` first, then consumed by Slack/Telegram only as fallback/mobile clients.
+
 ProBot is a lightweight, always-on local Slack and Telegram control plane for the Brain repo and the existing Claude/Codex workflow on this Mac.
 
 It is intentionally not a general-purpose agent platform. The goal is fast remote access to trusted local workflows with a small, auditable codebase and low idle resource usage.

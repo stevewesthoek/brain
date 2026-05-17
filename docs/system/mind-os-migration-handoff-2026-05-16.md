@@ -581,3 +581,39 @@ Validation:
 
 - `npm run ci` in `projects/brain-core` passed.
 - CI included typecheck and 18 Node route/adapter/widget tests.
+
+## ProBot thin-client migration slice — 2026-05-17
+
+Completed the first safe Phase 5 slice.
+
+New file:
+
+```text
+projects/probot/src/services/brain-core-client.ts
+```
+
+Updated files:
+
+```text
+projects/probot/src/config.ts
+projects/probot/src/services/status.ts
+projects/probot/README.md
+```
+
+What changed:
+
+- Added `BRAIN_CORE_URL` with default `http://127.0.0.1:4877`.
+- Added a small Brain Core HTTP status client for ProBot.
+- Existing Slack/Telegram `/status` path now includes Brain Core health via `getStatusSummary(...)`.
+- If Brain Core is offline or unexpected, ProBot reports `Brain Core: unavailable` instead of failing.
+- Added ProBot README migration notice: ProBot is now an optional thin client/fallback surface, not the place for new dashboard product features.
+
+Validation:
+
+- `npm run typecheck` in `projects/probot` passed.
+
+Remaining Phase 5 work:
+
+- Convert sessions/approvals commands to Brain Core API calls where safe.
+- Keep emergency/mobile fallback behavior.
+- Do not remove existing local fallback logic until Brain Core parity is proven.

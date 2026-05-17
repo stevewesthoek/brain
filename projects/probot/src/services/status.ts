@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import type { Config } from "../config.js";
+import { readBrainCoreStatusLine } from "./brain-core-client.js";
 import { buildSessionOverview } from "./sessions.js";
 
 function countTodayNotes(notesDir: string): number {
@@ -21,6 +22,7 @@ export async function getStatusSummary(config: Config): Promise<string> {
   const load = os.loadavg().map((value) => value.toFixed(2)).join(", ");
   const freeGb = (os.freemem() / 1024 / 1024 / 1024).toFixed(1);
   const totalGb = (os.totalmem() / 1024 / 1024 / 1024).toFixed(1);
+  const brainCoreStatus = await readBrainCoreStatusLine(config.brainCoreUrl);
   const sessions = await buildSessionOverview(
     config.claudeProjectsDir,
     config.codexSessionsDir,
@@ -32,6 +34,7 @@ export async function getStatusSummary(config: Config): Promise<string> {
 
   return [
     `ProBot is live on ${config.hostname}.`,
+    brainCoreStatus,
     `Telegram: local polling active, ${config.telegramAllowedUserIds.length} allowed user(s)`,
     config.slackBotToken && config.slackAppToken
       ? `Slack: Socket Mode configured, ${config.slackAllowedUserIds.length || "all"} allowed user(s)`
