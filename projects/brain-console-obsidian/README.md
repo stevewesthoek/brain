@@ -37,6 +37,8 @@ projects/brain-console-obsidian/
 - Runtime reports include the read-only `local-apps` and `video` summaries generated under `runtime/local/`.
 - The read-only approval gate view includes approval store health when Brain Core exposes `/approvals/store`.
 - The read-only execution readiness view includes `/execution/plans` and `/execution/readiness`, with `scheduler-run-model-router-dry-run` as the first future candidate and execution still disabled.
+- **2026-05-18 live verified:** Approval store and audit log surfaces are operational and read-only.
+- **2026-05-18 live verified:** Execution readiness view shows disabled state and no-execute behavior.
 - Manual installation into `mind/.obsidian/plugins/` is required and should be approved separately.
 - Manual install/test instructions live in `operations/runbooks/brain-console-manual-install-test.md`.
 

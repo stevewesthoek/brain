@@ -19,9 +19,10 @@ http://127.0.0.1:4877/status
 Current role:
 
 - expose read-only machine/session/repo/skill/scheduler/video/approval state
-- provide an approval request boundary that records approval state but does not execute actions yet
+- ✅ **live-verified (2026-05-18):** provide an approval request boundary that records approval state to durable JSON + JSONL audit logs, but does not execute actions
 - provide a read-only Brain Console widget contract for future Obsidian integration
 - expose read-only capability metadata for Mind cleanup state, Brain Console scaffold status, and ProBot thin-client wiring
+- ✅ **first action candidate live-verified:** execution readiness for `scheduler-run-model-router-dry-run` is read-only and reports `executionEnabled: false`
 
 ## Start locally
 
@@ -112,6 +113,10 @@ If the integration is unhealthy, Obsidian should remain readable and show a Brai
 - Audit path validation rejects `..`, `mind`, `.env`, `.git`, `node_modules`, `dist`, and `build`. Unsafe paths fall back to memory-only audit events.
 - Approval request kinds are normalized through a strict scaffold. Allowlisted scheduler/session/skill/local-app requests plus `manual-request` and `custom-*` are recorded; unsupported kinds are rejected without execution.
 - Audit events always include `executed: false` and a `source` of `memory` or `jsonl`.
+- ✅ **live-verified (2026-05-18):** Approval store JSON persistence operational with `BRAIN_CORE_APPROVAL_STORE_PATH`.
+- ✅ **live-verified (2026-05-18):** Approval audit JSONL persistence operational with `BRAIN_CORE_APPROVAL_AUDIT_PATH`.
+- ✅ **live-verified (2026-05-18):** Approve/reject endpoints return `executed: false` even after marking approval as `approved`.
+- First-action feature flag design complete: see `operations/specs/brain-core-first-action-feature-flag.md` for planned flag `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION`.
 - Scheduler endpoints are read-only. They return placeholders until `runtime/local/model-router/latest.json` exists, or until `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH` points to a safe JSON report.
 - Video/local-app endpoints are report-backed when safe JSON exists under `runtime/local/video/latest.json` or `runtime/local/local-apps/latest.json`, or when the corresponding `BRAIN_CORE_*_REPORT_PATH` env var points to a safe JSON report. Missing or invalid reports fall back to placeholders and never execute actions.
 - Those report-backed local app and video surfaces were live-verified over `http://127.0.0.1:4877`.

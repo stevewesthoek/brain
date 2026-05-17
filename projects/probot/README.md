@@ -39,6 +39,12 @@ Those runtime summaries were live-verified against the local Brain Core server o
 ProBot status also includes approval-store health when Brain Core exposes `/approvals/store`, still with execution disabled.
 ProBot status also includes the read-only execution readiness view from `/execution/readiness` plus the first candidate from `/execution/plans`, still with execution disabled.
 
+**2026-05-18 Live Verification:**
+- ✅ Approval store persistence verified (JSON)
+- ✅ Approval audit persistence verified (JSONL)
+- ✅ Execution disabled state confirmed
+- ✅ First candidate `scheduler-run-model-router-dry-run` shows in readiness view
+
 ## Current Direction: Dashboard Freeze
 
 The ProBot dashboard is deprecated as a primary UI. Obsidian is the target primary human cockpit, backed by a small local Brain Core API.

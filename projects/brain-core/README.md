@@ -6,6 +6,14 @@ Brain Core is the small local API boundary for the Obsidian-first operating cock
 
 Phase 1/4 scaffold. The service exposes read-only status endpoints plus local-only approval-request endpoints that create audit records but do not execute actions.
 
+**2026-05-18 Live Verification:**
+- ✅ Approval store JSON persistence operational
+- ✅ Approval audit JSONL persistence operational
+- ✅ Approve/reject workflow verified (returns `executed: false` even when approved)
+- ✅ First candidate `scheduler-run-model-router-dry-run` execution readiness reported (disabled by design)
+- ✅ All 48 tests passing, including unsafe path rejection and corrupted store handling
+- Execution remains disabled; feature flag design complete (see `operations/specs/brain-core-first-action-feature-flag.md`)
+
 ## Goals
 
 - Return machine/session/skill state as JSON.
@@ -55,9 +63,11 @@ Current `/video/status` and `/video/queue` are read-only placeholder or report-b
 
 Those report-backed local app and video surfaces were live-verified over `http://127.0.0.1:4877` during the current roadmap pass.
 
-Current `/approvals` reads the in-memory Phase 4 approval request store, returning a placeholder when no requests exist.
+Current `/approvals` reads the in-memory Phase 4 approval request store, or returns persisted records from JSON when `BRAIN_CORE_APPROVAL_STORE_PATH` is configured, returning a placeholder when no requests exist.
 
-Current `/approvals/store` exposes read-only approval-store health and record counts. When `BRAIN_CORE_APPROVAL_STORE_PATH` points to a safe JSON file, Brain Core persists approval records there; otherwise it falls back to memory.
+Current `/approvals/store` exposes read-only approval-store health and record counts. When `BRAIN_CORE_APPROVAL_STORE_PATH` points to a safe JSON file, Brain Core persists approval records there and reports `status: "available"`; otherwise it falls back to memory and reports `status: "memory"`. Unsafe paths are rejected and reported as `status: "unsafe"`.
+
+Current `/approvals/audit` exposes approval audit events as a read-only log. When `BRAIN_CORE_APPROVAL_AUDIT_PATH` points to a safe JSONL file, events are persisted there; otherwise events stay in memory. Events always include `executed: false` and never record real execution, even after an approval is marked as `approved`.
 
 Current `/execution/plans`, `/execution/plans/:kind`, and `/execution/readiness` expose a read-only execution-gate scaffold. The first candidate is `scheduler-run-model-router-dry-run`, but Brain Core still reports `executionEnabled: false`, `wouldExecute: false`, and `executed: false`.
 

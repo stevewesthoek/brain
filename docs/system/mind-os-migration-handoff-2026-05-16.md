@@ -237,6 +237,34 @@ Known remaining noise:
 - `tools/firecrawl/logs/firecrawl.log` remains unrelated.
 - `mind` still has unrelated Obsidian/plugin/task churn and was not cleaned in this slice.
 
+## Brain Core Approval Gate Live Verification — 2026-05-18
+
+Completed live server verification of approval persistence and audit logging:
+
+**Live Verification Results:**
+- ✅ Approval store JSON persistence operational with `BRAIN_CORE_APPROVAL_STORE_PATH`
+- ✅ Approval audit JSONL persistence operational with `BRAIN_CORE_APPROVAL_AUDIT_PATH`
+- ✅ Request/approve/reject workflow verified (all return `executed: false`)
+- ✅ Audit events persist with correct `executed: false` status
+- ✅ First candidate `scheduler-run-model-router-dry-run` execution readiness verified (disabled)
+- ✅ All 48 automated tests passing, including unsafe path rejection and corrupted store handling
+
+**Documentation Created:**
+- `operations/reports/brain-core-approval-gate-live-verification-2026-05-18.md` — full live verification report
+- `operations/specs/brain-core-first-action-feature-flag.md` — design-only spec for first action execution
+
+**Current State:**
+- Execution remains disabled (by design)
+- Feature flag designed but not yet implemented
+- Mind remains untouched
+- No approval/audit files committed (runtime/local/ paths)
+
+**Next Steps:**
+- Explicit user decision on feature flag implementation
+- Rollback drill preparation
+- Operator UI updates in Brain Console/ProBot
+- Approval from stakeholders before any execution
+
 ## Brain Core Phase 1 continuation — 2026-05-16
 
 Created a read-only Brain Core scaffold in `brain`:
