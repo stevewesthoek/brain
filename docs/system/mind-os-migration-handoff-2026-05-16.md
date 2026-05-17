@@ -1071,3 +1071,14 @@ Validation:
 
 - `npm run ci` in `projects/brain-core` passed.
 - CI included typecheck and 24 Node route/adapter/widget/health/audit/action-target tests.
+
+## Legacy task migration outcome — 2026-05-18
+
+- Option B was executed successfully.
+- Mind commit: `12495d4`
+- Mind push: pushed to `origin/main`.
+- Preservation tag `mind-pre-legacy-task-decision-2026-05-18` was created and pushed before migration.
+- Parity immediately before staging: 742 deleted paths and 742 mirror paths, with no normalized mismatch.
+- Sample hash spot-checks matched across representative task categories.
+- No `.obsidian` or research files were staged.
+- Model-router did not perform the migration; this was a human-approved repo migration commit.

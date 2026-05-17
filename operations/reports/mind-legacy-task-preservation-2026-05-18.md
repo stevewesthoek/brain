@@ -34,3 +34,16 @@
 - No migration was executed.
 - No deletes were committed.
 - No mirror files were staged.
+
+## Migration result
+
+- Option B was executed successfully.
+- Mind commit: `12495d4`
+- Mind push: pushed to `origin/main`
+- Preservation tag existed and was pushed before migration.
+- Immediate pre-stage parity check: 742 deleted paths, 742 mirror paths, no normalized mismatch.
+- Sample hash spot-checks matched for representative paths across business, buy, church, family, and personal categories.
+- No `.obsidian` files were staged.
+- No research import files were staged.
+- No runtime logs were staged.
+- Model-router did not perform the migration; this was a human-approved repo migration commit.

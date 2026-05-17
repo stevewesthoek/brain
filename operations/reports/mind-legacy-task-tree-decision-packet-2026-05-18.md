@@ -69,3 +69,9 @@ The latest path-only preservation export shows no remaining path mismatch. The e
 
 - Migration options report: `operations/reports/mind-legacy-task-migration-options-2026-05-18.md`
 - Workspace isolation runbook: `operations/runbooks/mind-workspace-isolation.md`
+
+## Outcome
+
+- Option B was executed successfully on 2026-05-18.
+- The mirror became authoritative via commit `12495d4`.
+- The preservation tag remained available as rollback evidence.

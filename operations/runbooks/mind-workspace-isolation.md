@@ -7,8 +7,7 @@ Document how to isolate the unrelated dirty state in the `mind` repo without sta
 ## Current known dirty categories
 
 - `.obsidian` churn
-- deleted `04-tasks/**`
-- untracked `03-projects/04-tasks/`
+- migrated `04-tasks/**` into `03-projects/04-tasks/`
 - untracked `06-resources/research/notes/bible/denominations/`
 - unrelated `05-areas/theological-studies/dance-of-life/README.md` change
 
@@ -48,6 +47,7 @@ git diff -- <specific-safe-path>
 - Obsidian config cleanup
 - Legacy task deletion review
 - Legacy task preservation
+- Legacy task migration result
 - Inbox base-file review
 - Research folder import review
 - Area note review

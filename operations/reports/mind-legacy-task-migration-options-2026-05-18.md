@@ -90,3 +90,9 @@ Risk:
 ## Warning
 
 Do not commit this alongside `04-tasks/**` deletions unless the user approves a task-tree migration commit.
+
+## Result
+
+- Option B has now been executed successfully.
+- The migration was committed as `12495d4` and pushed to `origin/main`.
+- The preservation tag and export remain available as rollback evidence.

@@ -11,8 +11,7 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 - Untracked files/directories: 9
 - Known dirty categories:
   - `.obsidian` churn
-  - deleted `04-tasks/**`
-  - untracked `03-projects/04-tasks/`
+  - migrated `04-tasks/**` into `03-projects/04-tasks/`
   - untracked `06-resources/research/notes/bible/denominations/`
   - unrelated `05-areas/theological-studies/dance-of-life/README.md`
 - Low-risk cleanup result:
@@ -40,19 +39,18 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 
 ### 2. Deleted `04-tasks/**`
 
-- Risk: high
+- Risk: resolved via migration commit
 - Likely source/cause: bulk legacy task removal or rename/move activity
-- Recommended decision: separate review or restore, never auto-delete
+- Recommended decision: migration completed; preserve tag and export as rollback evidence
 - Review report: `operations/reports/mind-legacy-task-deletion-review-2026-05-18.md`
 - Preservation report: `operations/reports/mind-legacy-task-preservation-2026-05-18.md`
 - Safe diagnostic commands:
-  - `git diff --name-only --diff-filter=D -- 04-tasks`
-  - `git diff --stat -- 04-tasks`
-- Safe staging commands if approved later:
-  - `git add -- 04-tasks/<exact-path>`
+  - `git show --stat --summary 12495d4`
+  - `git diff --name-only HEAD~1..HEAD -- 04-tasks 03-projects/04-tasks`
 - Rollback commands:
+  - `git revert 12495d4`
   - `git restore --staged -- 04-tasks`
-  - `git restore -- 04-tasks`
+  - `git restore --staged -- 03-projects/04-tasks`
 
 ### 3. Untracked `01-inbox/*.base`
 
@@ -70,18 +68,15 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 
 ### 4. Untracked `03-projects/04-tasks/`
 
-- Risk: medium to high
+- Risk: migrated into the project task mirror
 - Likely source/cause: mirror/import tree or duplicated task structure
-- Recommended decision: source import review before any commit
+- Recommended decision: migration completed; no further action unless a reverse migration is required
 - Review report: `operations/reports/mind-project-task-mirror-review-2026-05-18.md`
 - Safe diagnostic commands:
-  - `git ls-files --others --exclude-standard -- 03-projects/04-tasks`
-  - `git diff --name-only -- 03-projects/04-tasks`
-- Safe staging commands if approved later:
-  - `git add -- 03-projects/04-tasks/<exact-path>`
+  - `git show --stat --summary 12495d4`
+  - `git diff --name-only HEAD~1..HEAD -- 04-tasks 03-projects/04-tasks`
 - Rollback commands:
-  - `git restore --staged -- 03-projects/04-tasks`
-  - `git restore -- 03-projects/04-tasks`
+  - `git revert 12495d4`
 
 ### 5. Untracked `06-resources/research/notes/bible/denominations/`
 
