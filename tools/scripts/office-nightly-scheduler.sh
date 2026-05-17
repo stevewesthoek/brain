@@ -341,6 +341,36 @@ run_model_router_dry_run_report() {
   run_job "model-router-dry-run" "$timeout_seconds" "$command" "$report_log"
 }
 
+run_local_apps_report() {
+  local timeout_seconds="${LOCAL_APPS_REPORT_TIMEOUT_SECONDS:-120}"
+  local report_script="${LOCAL_APPS_REPORT_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/local-apps-report.sh}"
+  local report_log="$LOG_DIR/local-apps-report.log"
+  local command
+
+  if [[ ! -f "$report_script" ]]; then
+    log "skipping job=local-apps-report reason=missing_script path=$report_script"
+    return 0
+  fi
+
+  command="$(printf 'bash %q >> %q 2>&1' "$report_script" "$report_log")"
+  run_job "local-apps-report" "$timeout_seconds" "$command" "$report_log"
+}
+
+run_video_runtime_report() {
+  local timeout_seconds="${VIDEO_RUNTIME_REPORT_TIMEOUT_SECONDS:-120}"
+  local report_script="${VIDEO_RUNTIME_REPORT_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/video-runtime-report.sh}"
+  local report_log="$LOG_DIR/video-runtime-report.log"
+  local command
+
+  if [[ ! -f "$report_script" ]]; then
+    log "skipping job=video-runtime-report reason=missing_script path=$report_script"
+    return 0
+  fi
+
+  command="$(printf 'bash %q >> %q 2>&1' "$report_script" "$report_log")"
+  run_job "video-runtime-report" "$timeout_seconds" "$command" "$report_log"
+}
+
 render_runtime_report() {
   if [[ -x "$REPORT_SCRIPT" ]]; then
     OFFICE_SCHEDULER_STATE_DIR="$STATE_DIR" \
@@ -462,6 +492,12 @@ main() {
 
   # Model Router dry-run report — validates planner package and writes runtime report only; never stops chain
   run_model_router_dry_run_report || log "warning model-router-dry-run failed but chain continues"
+
+  # Local apps report — writes read-only runtime status only; never stops chain
+  run_local_apps_report || log "warning local-apps-report failed but chain continues"
+
+  # Video runtime report — writes read-only runtime status only; never stops chain
+  run_video_runtime_report || log "warning video-runtime-report failed but chain continues"
 
   # ING Bank Statement download — runs on the 1st of each month, never stops chain
   run_ing_bank_statement_download || log "warning ing-bank-statement-download failed but chain continues"

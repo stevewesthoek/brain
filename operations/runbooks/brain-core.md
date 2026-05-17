@@ -103,12 +103,13 @@ If the integration is unhealthy, Obsidian should remain readable and show a Brai
 - Approval endpoints currently record and decide only; they return `executed: false`.
 - `GET /approvals/audit` exposes approval audit events.
 - `GET /runtime/reports` exposes read-only runtime report summaries for model-router, approval-audit, and future report slots. It never reads Mind content and always reports `writesToMind: false` and `executableActions: false`.
+- `GET /runtime/reports` exposes read-only runtime report summaries for model-router, approval-audit, video, and local-apps. It never reads Mind content and always reports `writesToMind: false` and `executableActions: false`.
 - Optional audit persistence uses `BRAIN_CORE_APPROVAL_AUDIT_PATH` as a JSONL file path. Use a safe ignored runtime path; do not store audit logs in Mind notes.
 - Audit path validation rejects `..`, `mind`, `.env`, `.git`, `node_modules`, `dist`, and `build`. Unsafe paths fall back to memory-only audit events.
 - Approval request kinds are normalized through a strict scaffold. Allowlisted scheduler/session/skill/local-app requests plus `manual-request` and `custom-*` are recorded; unsupported kinds are rejected without execution.
 - Audit events always include `executed: false` and a `source` of `memory` or `jsonl`.
 - Scheduler endpoints are read-only. They return placeholders until `runtime/local/model-router/latest.json` exists, or until `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH` points to a safe JSON report.
-- Video/local-app endpoints are placeholders until real adapters are separately validated.
+- Video/local-app endpoints are report-backed when safe JSON exists under `runtime/local/video/latest.json` or `runtime/local/local-apps/latest.json`, or when the corresponding `BRAIN_CORE_*_REPORT_PATH` env var points to a safe JSON report. Missing or invalid reports fall back to placeholders and never execute actions.
 
 ## Rollback
 

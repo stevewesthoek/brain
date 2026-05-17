@@ -41,13 +41,13 @@ Current `/repos` reads `BRAIN_CORE_REPO_ALIASES` or `PROBOT_REPO_ALIASES` in `na
 
 Current `/orchestrators` returns placeholder summaries for Video Orchestrator, Mind Model Router, and Office Nightly Scheduler. Current `/capabilities` returns a manifest of read endpoints and approval-request endpoints with `executableActionsEnabled: false`, `runtimeReportsSupported: true`, and `runtimeReportEndpoint: /runtime/reports`, plus read-only metadata for Mind cleanup state, Brain Console scaffold status, and ProBot thin-client wiring.
 
-Current `/runtime/reports` returns read-only runtime report summaries for the model-router dry-run report, approval audit JSONL health, and future report slots. It does not read Mind content and always reports `writesToMind: false` and `executableActions: false`.
+Current `/runtime/reports` returns read-only runtime report summaries for the model-router dry-run report, approval audit JSONL health, video runtime status, and local-app runtime status. It does not read Mind content and always reports `writesToMind: false` and `executableActions: false`.
 
 Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are read-only scheduler surfaces. They report placeholder state until a runtime report is available. When `runtime/local/model-router/latest.json` exists, or when `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH` points to a safe JSON report, `/scheduler/status` and `/scheduler/latest-run` expose that report as read-only scheduler state. They do not inspect logs, run jobs, or mutate scheduler state.
 
-Current `/local-apps` is a read-only placeholder list for local services that may later support approval-aware lifecycle requests.
+Current `/local-apps` is a read-only placeholder or report-backed list for local services. When `runtime/local/local-apps/latest.json` exists, or when `BRAIN_CORE_LOCAL_APPS_REPORT_PATH` points to a safe JSON report, the endpoint returns report-backed summaries. It still does not start, stop, or restart apps.
 
-Current `/video/status` and `/video/queue` are read-only placeholders for the future Video Orchestrator adapter. They do not inspect media folders, start renders, or upload files.
+Current `/video/status` and `/video/queue` are read-only placeholder or report-backed surfaces for the future Video Orchestrator adapter. When `runtime/local/video/latest.json` exists, or when `BRAIN_CORE_VIDEO_REPORT_PATH` points to a safe JSON report, the endpoint returns read-only queue/status summaries. They do not inspect media folders, start renders, upload files, or trigger workflow execution.
 
 Current `/approvals` reads the in-memory Phase 4 approval request store, returning a placeholder when no requests exist.
 
