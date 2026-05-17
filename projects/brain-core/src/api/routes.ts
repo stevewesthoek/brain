@@ -3,7 +3,10 @@ import { decideApproval, getApprovalStoreSummary, listApprovalAuditEvents, reque
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
 import { getCapabilities } from '../adapters/capabilities.js';
-import { listOrchestrators } from '../adapters/orchestrators.js';
+import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
+import { getPipeline, listPipelines } from '../adapters/pipelines.js';
+import { getProject, listProjects } from '../adapters/projects.js';
+import { getPlatform, listPlatforms } from '../adapters/platforms.js';
 import { listLocalApps } from '../adapters/local-apps.js';
 import {
   listMindPreviewSummaries,
@@ -79,6 +82,15 @@ export async function routeRequest(
     case '/orchestrators':
       sendJson(response, 200, { orchestrators: listOrchestrators() });
       return;
+    case '/pipelines':
+      sendJson(response, 200, { pipelines: listPipelines() });
+      return;
+    case '/projects':
+      sendJson(response, 200, { projects: listProjects() });
+      return;
+    case '/platforms':
+      sendJson(response, 200, { platforms: listPlatforms() });
+      return;
     case '/capabilities':
       sendJson(response, 200, getCapabilities());
       return;
@@ -141,6 +153,36 @@ export async function routeRequest(
       return;
     default:
       {
+        const orchestratorMatch = /^\/orchestrators\/([^/]+)$/.exec(url.pathname);
+        if (orchestratorMatch) {
+          const orchestrator = getOrchestrator(orchestratorMatch[1] ?? '');
+          if (orchestrator) {
+            sendJson(response, 200, { orchestrator });
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Orchestrator not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+        const pipelineMatch = /^\/pipelines\/([^/]+)$/.exec(url.pathname);
+        if (pipelineMatch) {
+          const pipeline = getPipeline(pipelineMatch[1] ?? '');
+          if (pipeline) {
+            sendJson(response, 200, { pipeline });
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Pipeline not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
         const executionPlanMatch = /^\/execution\/plans\/([^/]+)$/.exec(url.pathname);
         if (executionPlanMatch) {
           const plan = getExecutionPlan(executionPlanMatch[1] ?? '');
@@ -190,7 +232,7 @@ export async function routeRequest(
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
   }

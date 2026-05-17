@@ -18,6 +18,17 @@ export interface DashboardSnapshot {
   nextAction: string;
   refreshedAt?: Date;
   brainCoreUrl: string;
+  orchestratorCount: number;
+  pipelineCount: number;
+  projectCount: number;
+  platformCount: number;
+  legacySystemCount: number;
+  migrationBlockedCount: number;
+  stbPipelineSummary?: { status?: string; health: string; daysStale: number };
+  videoOrchestratorSummary?: { status?: string; health: string };
+  stbToVideoMigrationSummary?: { parityStatus?: string; blocked: boolean };
+  saysTheBibleProjectSummary?: { status?: string; health: string; platformCount: number };
+  probotLegacySummary?: { status?: string; health: string };
 }
 
 export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreUrl: string): DashboardSnapshot {
@@ -47,12 +58,62 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   // Scheduler
   const schedulerHealthy = state.schedulerStatus?.latestRunStatus !== 'failed';
 
+  // Registry counts
+  const orchestratorCount = (state.orchestrators ?? []).length;
+  const pipelineCount = (state.pipelines ?? []).length;
+  const projectCount = (state.projects ?? []).length;
+  const platformCount = (state.platforms ?? []).length;
+
+  // Legacy and migration analysis
+  const legacyOrchestratorCount = (state.orchestrators ?? []).filter(o => o.lifecycle === 'legacy').length;
+  const legacySystemCount = legacyOrchestratorCount;
+  const migrationBlockedCount = (state.pipelines ?? []).filter(p => p.migration?.decommissionBlocked === true).length;
+
+  // STB pipeline summary
+  const stbPipeline = (state.pipelines ?? []).find(p => p.id === 'stb-daily-pipeline');
+  const stbPipelineSummary = stbPipeline ? {
+    status: stbPipeline.status,
+    health: stbPipeline.health,
+    daysStale: 8,
+  } : undefined;
+
+  // Video orchestrator summary
+  const videoOrchestrator = (state.orchestrators ?? []).find(o => o.id === 'video-orchestrator');
+  const videoOrchestratorSummary = videoOrchestrator ? {
+    status: videoOrchestrator.lifecycle,
+    health: videoOrchestrator.health ?? 'unknown',
+  } : undefined;
+
+  // STB to Video migration summary
+  const migrationPipeline = (state.pipelines ?? []).find(p => p.id === 'stb-to-video-migration');
+  const stbToVideoMigrationSummary = migrationPipeline ? {
+    parityStatus: migrationPipeline.migration?.parityStatus ?? 'unknown',
+    blocked: migrationPipeline.migration?.decommissionBlocked === true,
+  } : undefined;
+
+  // Says the Bible project summary
+  const stbProject = (state.projects ?? []).find(p => p.id === 'says-the-bible');
+  const saysTheBibleProjectSummary = stbProject ? {
+    status: stbProject.status,
+    health: stbProject.health,
+    platformCount: stbProject.platformIds?.length ?? 0,
+  } : undefined;
+
+  // ProBot legacy summary
+  const probotOrchestrator = (state.orchestrators ?? []).find(o => o.id === 'probot-dashboard');
+  const probotLegacySummary = probotOrchestrator ? {
+    status: probotOrchestrator.lifecycle,
+    health: probotOrchestrator.health ?? 'unknown',
+  } : undefined;
+
   // Calculate attention score (0-100)
   let attentionScore = 0;
   if (offline) attentionScore = 100;
   else if (wikiHealthErrors > 0) attentionScore = 85;
+  else if (stbPipeline?.health === 'error') attentionScore = 80;
+  else if (migrationBlockedCount > 0) attentionScore = 70;
   else if (approvalsCount > 0 || maintenanceCount > 0) attentionScore = 50;
-  else if (wikiHealthWarnings > 0) attentionScore = 30;
+  else if (wikiHealthWarnings > 0 || stbPipeline?.health === 'warning') attentionScore = 30;
   else attentionScore = 10;
 
   // Attention level
@@ -79,6 +140,17 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     nextAction,
     refreshedAt: new Date(),
     brainCoreUrl,
+    orchestratorCount,
+    pipelineCount,
+    projectCount,
+    platformCount,
+    legacySystemCount,
+    migrationBlockedCount,
+    stbPipelineSummary,
+    videoOrchestratorSummary,
+    stbToVideoMigrationSummary,
+    saysTheBibleProjectSummary,
+    probotLegacySummary,
   };
 }
 

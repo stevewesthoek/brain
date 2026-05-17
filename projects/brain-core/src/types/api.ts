@@ -76,12 +76,61 @@ export interface BrainCoreVideoQueueItem {
   source: 'placeholder' | 'runtime-report';
 }
 
+export type BrainCoreHealth = 'ok' | 'warning' | 'error' | 'unknown';
+
+export type BrainCoreLifecycleStatus = 'operational' | 'partial' | 'planned' | 'legacy' | 'migrating' | 'blocked' | 'unknown';
+
+export type BrainCoreCurrentRole = 'primary' | 'legacy' | 'future' | 'supporting';
+
 export interface BrainCoreOrchestratorSummary {
   id: string;
   name: string;
   status: 'placeholder' | 'unknown' | 'disabled';
   source: 'placeholder';
   actionsSupported: boolean;
+  health?: BrainCoreHealth;
+  lifecycle?: BrainCoreLifecycleStatus;
+  role?: BrainCoreCurrentRole;
+  description?: string;
+}
+
+export interface BrainCorePipelineMigration {
+  sourcePipelineId?: string;
+  targetPipelineId?: string;
+  parityStatus?: 'ready' | 'in-progress' | 'blocked' | 'not-applicable';
+  decommissionBlocked?: boolean;
+}
+
+export interface BrainCorePipelineSummary {
+  id: string;
+  name: string;
+  status: BrainCoreLifecycleStatus;
+  health: BrainCoreHealth;
+  role: BrainCoreCurrentRole;
+  description: string;
+  stages?: string[];
+  migration?: BrainCorePipelineMigration;
+}
+
+export interface BrainCoreProjectSummary {
+  id: string;
+  name: string;
+  category: 'content' | 'infrastructure' | 'operations' | 'research' | 'other';
+  status: BrainCoreLifecycleStatus;
+  health: BrainCoreHealth;
+  orchestratorIds?: string[];
+  pipelineIds?: string[];
+  platformIds?: string[];
+}
+
+export interface BrainCorePlatformSummary {
+  id: string;
+  name: string;
+  category: 'social' | 'video' | 'storage' | 'local' | 'development' | 'other';
+  status: BrainCoreLifecycleStatus;
+  health: BrainCoreHealth;
+  projectIds?: string[];
+  pipelineIds?: string[];
 }
 
 export interface BrainCoreCapabilitySummary {
@@ -408,6 +457,21 @@ export interface BrainCoreRoutes {
   };
   '/orchestrators': {
     orchestrators: BrainCoreOrchestratorSummary[];
+  };
+  '/orchestrators/:id': {
+    orchestrator: BrainCoreOrchestratorSummary;
+  };
+  '/pipelines': {
+    pipelines: BrainCorePipelineSummary[];
+  };
+  '/pipelines/:id': {
+    pipeline: BrainCorePipelineSummary;
+  };
+  '/projects': {
+    projects: BrainCoreProjectSummary[];
+  };
+  '/platforms': {
+    platforms: BrainCorePlatformSummary[];
   };
   '/capabilities': BrainCoreCapabilitySummary;
   '/approvals/audit': {

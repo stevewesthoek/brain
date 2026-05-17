@@ -128,6 +128,57 @@ export interface BrainCoreVideoQueueItem {
   source: 'placeholder' | 'runtime-report';
 }
 
+export interface BrainCoreOrchestratorSummary {
+  id: string;
+  name: string;
+  status: string;
+  source?: string;
+  actionsSupported: boolean;
+  health?: string;
+  lifecycle?: string;
+  role?: string;
+  description?: string;
+}
+
+export interface BrainCorePipelineMigration {
+  sourcePipelineId?: string;
+  targetPipelineId?: string;
+  parityStatus?: string;
+  decommissionBlocked?: boolean;
+}
+
+export interface BrainCorePipelineSummary {
+  id: string;
+  name: string;
+  status: string;
+  health: string;
+  role: string;
+  description: string;
+  stages?: string[];
+  migration?: BrainCorePipelineMigration;
+}
+
+export interface BrainCoreProjectSummary {
+  id: string;
+  name: string;
+  category: string;
+  status: string;
+  health: string;
+  orchestratorIds?: string[];
+  pipelineIds?: string[];
+  platformIds?: string[];
+}
+
+export interface BrainCorePlatformSummary {
+  id: string;
+  name: string;
+  category: string;
+  status: string;
+  health: string;
+  projectIds?: string[];
+  pipelineIds?: string[];
+}
+
 export interface BrainCoreApprovalSummary {
   id: string;
   kind: string;
@@ -226,6 +277,10 @@ export interface BrainConsoleSnapshot {
   executionReadiness?: BrainCoreExecutionReadiness;
   mindPreviewPolicy?: BrainCoreMindPreviewPolicy;
   mindPreviews?: BrainCoreMindPreviewSummary[];
+  orchestrators?: BrainCoreOrchestratorSummary[];
+  pipelines?: BrainCorePipelineSummary[];
+  projects?: BrainCoreProjectSummary[];
+  platforms?: BrainCorePlatformSummary[];
 }
 
 export interface HttpResult<T> {
@@ -254,7 +309,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
   let normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const endpointErrors: EndpointError[] = [];
 
-  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews] = await Promise.all([
+  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms] = await Promise.all([
     fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
     fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
     fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizedBaseUrl, '/runtime/reports'),
@@ -268,6 +323,10 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     fetchJson<BrainCoreExecutionReadiness>(normalizedBaseUrl, '/execution/readiness'),
     fetchJson<BrainCoreMindPreviewPolicy>(normalizedBaseUrl, '/execution/mind-preview-policy'),
     fetchJson<{ previews?: BrainCoreMindPreviewSummary[] }>(normalizedBaseUrl, '/execution/mind-previews'),
+    fetchJson<{ orchestrators?: BrainCoreOrchestratorSummary[] }>(normalizedBaseUrl, '/orchestrators'),
+    fetchJson<{ pipelines?: BrainCorePipelineSummary[] }>(normalizedBaseUrl, '/pipelines'),
+    fetchJson<{ projects?: BrainCoreProjectSummary[] }>(normalizedBaseUrl, '/projects'),
+    fetchJson<{ platforms?: BrainCorePlatformSummary[] }>(normalizedBaseUrl, '/platforms'),
   ]);
 
   // Collect endpoint errors for diagnostics
@@ -285,6 +344,10 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     ['/execution/readiness', executionReadiness],
     ['/execution/mind-preview-policy', mindPreviewPolicy],
     ['/execution/mind-previews', mindPreviews],
+    ['/orchestrators', orchestrators],
+    ['/pipelines', pipelines],
+    ['/projects', projects],
+    ['/platforms', platforms],
   ];
 
   endpointPairs.forEach(([pathname, result]) => {
@@ -340,6 +403,10 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     executionReadiness: executionReadiness.value,
     mindPreviewPolicy: mindPreviewPolicy.value,
     mindPreviews: mindPreviews.value?.previews,
+    orchestrators: orchestrators.value?.orchestrators,
+    pipelines: pipelines.value?.pipelines,
+    projects: projects.value?.projects,
+    platforms: platforms.value?.platforms,
     endpointErrors: endpointErrors.length > 0 ? endpointErrors : undefined,
   };
 }
@@ -420,6 +487,30 @@ export async function readBrainCoreVideoQueue(baseUrl: string): Promise<HttpResu
 
 export async function readBrainCoreLocalApps(baseUrl: string): Promise<HttpResult<{ apps?: BrainCoreLocalAppSummary[] }>> {
   return fetchJson<{ apps?: BrainCoreLocalAppSummary[] }>(normalizeBaseUrl(baseUrl), '/local-apps');
+}
+
+export async function readBrainCoreOrchestrators(
+  baseUrl: string,
+): Promise<HttpResult<{ orchestrators?: BrainCoreOrchestratorSummary[] }>> {
+  return fetchJson<{ orchestrators?: BrainCoreOrchestratorSummary[] }>(normalizeBaseUrl(baseUrl), '/orchestrators');
+}
+
+export async function readBrainCorePipelines(
+  baseUrl: string,
+): Promise<HttpResult<{ pipelines?: BrainCorePipelineSummary[] }>> {
+  return fetchJson<{ pipelines?: BrainCorePipelineSummary[] }>(normalizeBaseUrl(baseUrl), '/pipelines');
+}
+
+export async function readBrainCoreProjects(
+  baseUrl: string,
+): Promise<HttpResult<{ projects?: BrainCoreProjectSummary[] }>> {
+  return fetchJson<{ projects?: BrainCoreProjectSummary[] }>(normalizeBaseUrl(baseUrl), '/projects');
+}
+
+export async function readBrainCorePlatforms(
+  baseUrl: string,
+): Promise<HttpResult<{ platforms?: BrainCorePlatformSummary[] }>> {
+  return fetchJson<{ platforms?: BrainCorePlatformSummary[] }>(normalizeBaseUrl(baseUrl), '/platforms');
 }
 
 // Import requestUrl from obsidian at runtime (to avoid bundling issues, it's imported in main.ts)

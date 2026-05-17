@@ -17,6 +17,10 @@ import {
   readBrainCoreVideoQueue,
   readBrainCoreVideoStatus,
   readBrainCoreStatus,
+  readBrainCoreOrchestrators,
+  readBrainCorePipelines,
+  readBrainCoreProjects,
+  readBrainCorePlatforms,
   type BrainCoreApprovalSummary,
   type BrainCoreApprovalStoreSummary,
   type BrainCoreCapabilitySummary,
@@ -31,6 +35,10 @@ import {
   type BrainCoreVideoQueueItem,
   type BrainCoreVideoStatus,
   type BrainCoreStatus,
+  type BrainCoreOrchestratorSummary,
+  type BrainCorePipelineSummary,
+  type BrainCoreProjectSummary,
+  type BrainCorePlatformSummary,
 } from './client.js';
 import {
   deriveDashboardSnapshot,
@@ -57,6 +65,10 @@ export interface BrainConsoleViewState {
   executionReadiness?: BrainCoreExecutionReadiness;
   mindPreviewPolicy?: import('./client.js').BrainCoreMindPreviewPolicy;
   mindPreviews?: import('./client.js').BrainCoreMindPreviewSummary[];
+  orchestrators?: BrainCoreOrchestratorSummary[];
+  pipelines?: BrainCorePipelineSummary[];
+  projects?: BrainCoreProjectSummary[];
+  platforms?: BrainCorePlatformSummary[];
   warning?: string;
   offline?: boolean;
   refreshedAt?: Date;
@@ -70,7 +82,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -87,9 +99,13 @@ export async function loadBrainConsoleViewState(
     readBrainCoreExecutionReadiness(baseUrl),
     readBrainCoreMindPreviewPolicy(baseUrl),
     readBrainCoreMindPreviews(baseUrl),
+    readBrainCoreOrchestrators(baseUrl),
+    readBrainCorePipelines(baseUrl),
+    readBrainCoreProjects(baseUrl),
+    readBrainCorePlatforms(baseUrl),
   ]);
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms].every(
     (result) => result.value === undefined,
   );
 
@@ -128,6 +144,10 @@ export async function loadBrainConsoleViewState(
     executionReadiness: executionReadiness.value,
     mindPreviewPolicy: mindPreviewPolicy.value,
     mindPreviews: mindPreviews.value?.previews,
+    orchestrators: orchestrators.value?.orchestrators,
+    pipelines: pipelines.value?.pipelines,
+    projects: projects.value?.projects,
+    platforms: platforms.value?.platforms,
     warning: normalized.warning ?? normalized.error,
     offline,
     refreshedAt: new Date(),
@@ -173,6 +193,12 @@ export function renderBrainConsoleView(
     renderCard(grid, 'Scheduler', renderSchedulerCard(state));
     renderCard(grid, 'Brain Core', renderBrainCoreCard(state));
     renderCard(grid, 'Next Action', renderNextActionCard(snapshot));
+
+    // Registry panels
+    renderCard(grid, 'Orchestrators', renderOrchestratorsCard(state, snapshot));
+    renderCard(grid, 'Pipelines', renderPipelinesCard(state, snapshot));
+    renderCard(grid, 'Projects', renderProjectsCard(state, snapshot));
+    renderCard(grid, 'Platforms', renderPlatformsCard(state, snapshot));
 
     // Activity panel
     renderActivityPanel(shell, state);
@@ -431,4 +457,96 @@ function renderActivityPanel(shell: HTMLElement, state: BrainConsoleViewState): 
   if (activity.children.length === 0) {
     activity.createEl('li', { text: 'all clear' });
   }
+}
+
+function renderOrchestratorsCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const card = document.createElement('div');
+
+  if (!state.orchestrators) {
+    card.textContent = 'No data';
+    return card;
+  }
+
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Total: ${snapshot.orchestratorCount}` });
+  list.createEl('li', { text: `Legacy: ${snapshot.legacySystemCount}` });
+
+  const operationalCount = state.orchestrators.filter(o => o.lifecycle === 'operational').length;
+  const problematicCount = state.orchestrators.filter(o => ['migrating', 'partial'].includes(o.lifecycle ?? '')).length;
+  list.createEl('li', { text: `Operational: ${operationalCount}` });
+  if (problematicCount > 0) {
+    list.createEl('li', { text: `Needs Attention: ${problematicCount}`, cls: 'brain-console__list-warning' });
+  }
+
+  return card;
+}
+
+function renderPipelinesCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const card = document.createElement('div');
+
+  if (!state.pipelines) {
+    card.textContent = 'No data';
+    return card;
+  }
+
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Total: ${snapshot.pipelineCount}` });
+
+  const stbPipeline = state.pipelines.find(p => p.id === 'stb-daily-pipeline');
+  if (stbPipeline) {
+    const item = list.createEl('li', { text: `STB: ${stbPipeline.health}` });
+    if (stbPipeline.health === 'error') {
+      item.addClass('brain-console__list-error');
+    }
+  }
+
+  if (snapshot.migrationBlockedCount > 0) {
+    list.createEl('li', { text: `Migrations Blocked: ${snapshot.migrationBlockedCount}`, cls: 'brain-console__list-warning' });
+  }
+
+  return card;
+}
+
+function renderProjectsCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const card = document.createElement('div');
+
+  if (!state.projects) {
+    card.textContent = 'No data';
+    return card;
+  }
+
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Total: ${snapshot.projectCount}` });
+
+  const stbProject = state.projects.find(p => p.id === 'says-the-bible');
+  if (stbProject) {
+    const item = list.createEl('li', { text: `Says the Bible: ${stbProject.health}` });
+    if (stbProject.health === 'error') {
+      item.addClass('brain-console__list-error');
+    }
+  }
+
+  const categories = new Set(state.projects.map(p => p.category));
+  list.createEl('li', { text: `Categories: ${categories.size}` });
+
+  return card;
+}
+
+function renderPlatformsCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const card = document.createElement('div');
+
+  if (!state.platforms) {
+    card.textContent = 'No data';
+    return card;
+  }
+
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Total: ${snapshot.platformCount}` });
+
+  const socialCount = state.platforms.filter(p => p.category === 'social').length;
+  const localCount = state.platforms.filter(p => p.category === 'local').length;
+  list.createEl('li', { text: `Social: ${socialCount}` });
+  list.createEl('li', { text: `Local: ${localCount}` });
+
+  return card;
 }
