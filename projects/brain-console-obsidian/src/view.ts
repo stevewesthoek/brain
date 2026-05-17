@@ -7,6 +7,7 @@ import {
   readBrainCoreLocalApps,
   readBrainCoreExecutionPlans,
   readBrainCoreExecutionReadiness,
+  readBrainCoreMindPreviewPolicy,
   readBrainCoreRepos,
   readBrainCoreRuntimeReports,
   readBrainCoreSchedulerJobs,
@@ -56,7 +57,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -71,9 +72,10 @@ export async function loadBrainConsoleViewState(
     readBrainCoreApprovalStore(baseUrl),
     readBrainCoreExecutionPlans(baseUrl),
     readBrainCoreExecutionReadiness(baseUrl),
+    readBrainCoreMindPreviewPolicy(baseUrl),
   ]);
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy].every(
     (result) => result.value === undefined,
   );
 
@@ -92,6 +94,7 @@ export async function loadBrainConsoleViewState(
     approvalStore: approvalStore.value,
     executionPlans: executionPlans.value?.plans,
     executionReadiness: executionReadiness.value,
+    mindPreviewPolicy: mindPreviewPolicy.value,
     warning: normalized.warning ?? normalized.error,
     offline,
   };
