@@ -1,9 +1,9 @@
 # Obsidian Command Center Dashboard Specification
 
 **Date:** 2026-05-17  
-**Status:** Architecture & Design Specification (not yet implemented)  
-**Scope:** Visual dashboard design + Brain Console plugin implementation roadmap  
-**Safety:** Read-only, no Mind mutations, no broad execution, preview-only governance  
+**Status:** MVP implemented (extending with registry panels in Phase 3)  
+**Scope:** Visual dashboard design for unified orchestrator cockpit; existing plugin is being extended with new panels  
+**Safety:** Read-only, no Mind mutations, no broad execution, approval-gated governance  
 
 ## 1. Purpose
 

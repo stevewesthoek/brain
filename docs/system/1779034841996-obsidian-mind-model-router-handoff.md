@@ -1547,3 +1547,65 @@ Extracted architectural patterns:
   - Stage: 1779034841996-obsidian-mind-model-router-handoff.md
   - Commit with message: "Add agentic OS layer architecture review and roadmap alignment"
   - Push to origin main
+
+## Correction update — execution docs de-staled before multi-agent implementation
+
+**Problem found:**
+
+Execution brief and implementation plan contained stale language implying:
+- Brain Core needs to be built from scratch (false, exists at 4877)
+- Brain Console plugin needs to be scaffolded from skeleton (false, exists and is operational)
+- Phase 3 task was "Create Brain Console plugin skeleton" (wrong, should be "Extend existing plugin")
+
+This language would dangerously confuse multi-agent execution runs.
+
+**Corrections made:**
+
+1. **execution-brief-2026-05-17.md**
+   - Changed "What's missing: Brain Core service (the thing we're building)" → "What's missing for the next implementation slice: read-only registry endpoints"
+   - Clarified immediate target: extend existing Brain Core, preserve 4877, add new read-only endpoints only
+   - Clarified Brain Console is already MVP; extending with new panels
+
+2. **implementation-plan-2026-05-17.md**
+   - Renamed Phase 3 from "Brain Console Consumes New Endpoints" to "Extend Brain Console to Consume Registry Endpoints"
+   - Removed stale task "Create Brain Console plugin skeleton" (7 subtasks about esbuild, manifest, package.json, tsconfig)
+   - Replaced with 7 correct extension tasks:
+     - 3.1 Extend HTTP client with new reader methods
+     - 3.2 Add Orchestrators panel
+     - 3.3 Add Pipelines panel (STB + video side-by-side)
+     - 3.4 Add Projects/Domains panel
+     - 3.5 Add Platforms panel
+     - 3.6 Update styles for new panels
+     - 3.7 Add tests for new panels
+   - Added explicit note: "Do NOT recreate plugin skeleton or scaffolding"
+   - All tasks focus on **extending** existing code, not creating from scratch
+
+3. **dashboard-spec-2026-05-17.md**
+   - Updated Status from "not yet implemented" → "MVP implemented (extending with registry panels in Phase 3)"
+   - Clarified: existing plugin is being extended with new panels
+   - Changed governance model from "preview-only" → "approval-gated"
+
+4. **This handoff section**
+   - Documented the corrections before next multi-agent execution run
+   - Confirmed: Brain Core exists, is operational, port is 4877
+   - Confirmed: Brain Console exists, is operational, loads in Obsidian
+   - Next slice: extend registry endpoints in Brain Core, extend panels in Brain Console
+   - Agentic OS layer remains planned but not blocking; Phase 2C shapes types for future
+
+**Safety status:**
+
+- ✅ No code was changed (docs-only cleanup)
+- ✅ Brain Core port preserved (4877)
+- ✅ Brain Core existing endpoints preserved (no breaking changes)
+- ✅ Brain Console plugin preserved (MVP intact)
+- ✅ No stale scaffold instructions to confuse agents
+- ✅ Immediate next slice is clear: extend registry endpoints + extend panels
+- ✅ Agentic OS layer remains optional Phase 2C (not blocking Phase 2-3)
+
+**Ready for multi-agent implementation run:**
+
+- ✅ Execution brief clarifies extend-not-recreate model
+- ✅ Implementation plan specifies 7 extension tasks for Phase 3
+- ✅ Dashboard spec confirms MVP exists and is being extended
+- ✅ Handoff briefs next agent on corrected state
+- ✅ No dangerous scaffold instructions remain

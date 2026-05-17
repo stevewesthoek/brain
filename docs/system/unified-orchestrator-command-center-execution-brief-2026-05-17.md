@@ -44,12 +44,12 @@ Brain Core already exposes system health, local apps, sessions, and skill status
 - ✅ Model-router (report-only dry-runs, no Mind writes yet)
 - ✅ Scheduler (nightly jobs, model-router dry-run hooks exist)
 
-### What's missing
-- ❌ Brain Core service (the thing we're building)
-- ❌ Brain Core read-only endpoints for orchestrators, pipelines, projects
-- ❌ STB status adapter (read-only integration with ProBot)
-- ❌ Video Orchestrator status adapter (progress tracking)
-- ❌ Migration card aggregation (STB + video dual-visibility)
+### What's missing for the next implementation slice
+- ❌ Brain Core read-only registry endpoints for orchestrators, pipelines, projects/domains, and platforms
+- ❌ Brain Core adapters for orchestrators, pipelines, projects/domains, platforms, STB status, and video orchestrator status
+- ❌ Brain Console panels consuming those new registry endpoints
+- ❌ STB and video orchestrator displayed side-by-side in Brain Console with migration progress
+- ❌ Agent View panels (planned for Phase 2C, not part of immediate slice)
 
 ### What we're NOT doing in Phase 1
 - ❌ Brain Console UI implementation (already MVP complete, Phase 2 will consume these endpoints)

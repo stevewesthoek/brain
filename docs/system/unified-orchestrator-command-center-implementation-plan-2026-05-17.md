@@ -218,139 +218,149 @@ Add read-only unified orchestrator registry surfaces to existing Brain Core runn
 
 ---
 
-## Phase 3: Brain Console Consumes New Endpoints (2 weeks)
+## Phase 3: Extend Brain Console to Consume Registry Endpoints (2 weeks)
 
 ### Goal
-Update Brain Console Obsidian plugin to consume Phase 2 Brain Core registry endpoints and display unified orchestrator cockpit.
+Update existing Brain Console Obsidian plugin to consume Phase 2 Brain Core registry endpoints and display orchestrators, pipelines, projects/domains, platforms, and STB/video side-by-side.
+
+### Current State
+- ✅ Brain Console plugin exists at `projects/brain-console-obsidian/`
+- ✅ Already loads in Obsidian
+- ✅ Already connects to Brain Core via requestUrl IPC API
+- ✅ Already has basic card rendering framework
+- ✅ Already has dark theme and styling
+- ✅ Do NOT recreate plugin skeleton or scaffolding
 
 ### Tasks
 
-#### 2A.1 Create Brain Console plugin skeleton
-**File structure:**
-```
-projects/brain-console-obsidian/
-  esbuild.config.mjs
-  manifest.json
-  package.json
-  tsconfig.json
-  src/
-    main.ts
-    view.ts
-    client.ts
-    styles.css
-    components/
-      cards.ts
-      buttons.ts
-      spinner.ts
-    types.ts
-  tests/
-    view.test.ts
-```
-
-**Dependencies:** obsidian, esbuild, TypeScript
-
-**Exit criteria:**
-- Plugin loads in Obsidian without errors
-- esbuild bundles to single entry point
-- No TypeErrors
-
-#### 2A.2 Create Brain Core HTTP client
+#### 3.1 Extend Brain Console HTTP client
 **File:** `projects/brain-console-obsidian/src/client.ts`
 
-**Responsibility:**
-- Use Obsidian `requestUrl` API (IPC-based HTTP)
+**Existing capability:**
+- Uses Obsidian `requestUrl` API (IPC-based HTTP)
 - Fallback to localhost/127.0.0.1:4877
-- Exponential backoff for retries
-- Detailed error diagnostics
+- Already implements exponential backoff and error diagnostics
+
+**New additions:**
+- Add client reader methods:
+  - `getOrchestrators()` → GET `/orchestrators`
+  - `getOrchestrator(id)` → GET `/orchestrators/:id`
+  - `getPipelines()` → GET `/pipelines`
+  - `getPipeline(id)` → GET `/pipelines/:id`
+  - `getProjects()` or `getDomains()` → GET `/projects` or `/domains`
+  - `getPlatforms()` → GET `/platforms`
+- Add type definitions for responses
+- Add graceful error handling per endpoint
 
 **Exit criteria:**
-- Can fetch all Brain Core read-only endpoints
-- Handles localhost offline gracefully
-- Provides user-friendly error messages
-- No browser fetch API
+- All new client methods callable
+- Responses type-safe and validated
+- Error handling matches existing patterns
+- Tests updated for new methods
 
-#### 2A.3 Render 6 core status cards
-**Cards to build:**
+#### 3.2 Add Orchestrators panel to Brain Console dashboard
+**File:** `projects/brain-console-obsidian/src/view.ts` and related
 
-1. **Wiki Health Card** — model-router lint results
-   - OK / warnings / errors count
-   - Latest lint report timestamp
-   - Action: "Run dry-run"
-
-2. **Brain Core Card** — runtime status
-   - Readiness status
-   - Health checks (Pro Box, STB, scheduler, etc.)
-   - Blockers (if any)
-
-3. **Local Apps Card** — running services
-   - App status pills (running/idle/error)
-   - Port (if available)
-   - Action: start/stop (disabled, "planned for Phase 4")
-
-4. **Says the Bible Card** — operational pipeline status
-   - Status (active/paused/error)
-   - Last run time + duration
-   - Queue count, failure count
-   - Current processing (if any)
-   - Platforms (YouTube, Pinterest, Facebook status)
-
-5. **Video Orchestrator Card** — future canonical architecture
-   - Modules implemented (3/12)
-   - Migration progress %
-   - Parity status
-   - Next task
-   - Decommission status (blocked)
-
-6. **Migration Card** — STB → Video progress
-   - Legacy operational status
-   - Dual visibility badge
-   - Next phase name + task
-   - Safeguards enforced
-
-**Implementation rules:**
-- Use dark theme (#0a0e27 background, #ff6b3d accents)
-- Monospaced system data
-- Progressive disclosure (hover for details)
-- Status indicators (pills, progress bars)
-- No user input (read-only MVP)
+**New content:**
+- Render orchestrator registry
+- Show: name, category (skill/pipeline/system), status, last run, queue count
+- Display all 7 agents: model-router, video, research, design, code, Bible research, scheduler
+- Link to projects/pipelines if applicable
+- Status pills (ready/partial/error/future)
 
 **Exit criteria:**
-- All 6 cards render without errors
-- Data refreshes on demand
-- Cards display correctly with mock data
-- Dark theme applied
+- Orchestrators panel renders
+- All orchestrators visible
+- Responsive to data updates
+- Tests pass
 
-#### 2A.4 Add action row buttons (read-only for MVP)
-**Buttons:**
+#### 3.3 Add Pipelines panel to Brain Console dashboard
+**File:** `projects/brain-console-obsidian/src/view.ts` and related
 
-1. **Refresh** — Poll all Brain Core endpoints
-2. **Open Mind** — Navigate to mind vault
-3. **View Logs** — Show Brain Core logs
-4. **Diagnostics** — Show connection details
+**New content:**
+- Render pipeline registry
+- Show THREE cards side-by-side:
+  1. **Says the Bible (Operational)** — status, last run, queue, platform status, "no changes during migration" warning
+  2. **Video Orchestrator (Future)** — module progress, parity status, next task
+  3. **Migration Card** — STB → video progress, safeguards enforced, timeline
+- All three always visible during migration
+- STB marked as "operational/legacy"
+- Video marked as "canonical-future/designing"
+- Read-only display (no mutations)
 
 **Exit criteria:**
-- All buttons functional
-- Refresh polls Brain Core successfully
-- No mutations (read-only)
+- Pipelines panel renders all three cards
+- STB and video shown side-by-side
+- Says the Bible clearly marked as operational
+- Migration progress visible
+- Tests pass
 
-#### 2A.5 Add tests
+#### 3.4 Add Projects/Domains panel to Brain Console dashboard
+**File:** `projects/brain-console-obsidian/src/view.ts` and related
+
+**New content:**
+- Render projects/domains registry
+- Show: name, type, status, owner, linked pipeline, linked orchestrators
+- Link to platforms if applicable
+- List all active projects and their associations
+
+**Exit criteria:**
+- Projects/Domains panel renders
+- Relationships clear (pipeline/orchestrator links)
+- Tests pass
+
+#### 3.5 Add Platforms panel to Brain Console dashboard
+**File:** `projects/brain-console-obsidian/src/view.ts` and related
+
+**New content:**
+- Render platforms registry
+- Show: YouTube, Pinterest, Facebook, etc.
+- Linked project, last activity, queue status
+- Associated with Says the Bible or video orchestrator
+
+**Exit criteria:**
+- Platforms panel renders
+- Associations with projects clear
+- Tests pass
+
+#### 3.6 Update styles for new panels
+**File:** `projects/brain-console-obsidian/styles.css`
+
+**Changes:**
+- Add styles for Orchestrators, Pipelines, Projects/Domains, Platforms panels
+- Maintain dark cockpit aesthetic (#0a0e27 background, #ff6b3d accents)
+- Ensure legible layout for side-by-side STB/video cards
+- Monospaced system data, sans-serif descriptions
+- Status pills, progress bars for visualization
+
+**Exit criteria:**
+- All panels styled consistently
+- Dark theme maintained
+- Legible and sparse (no clutter)
+- Responsive layout
+
+#### 3.7 Add tests for new panels
 **Test scope:**
 ```
 tests/
-  view.test.ts (card rendering)
-  client.test.ts (HTTP client)
-  fixtures/mock-*.json (mock Brain Core responses)
+  orchestrators.test.ts (panel rendering)
+  pipelines.test.ts (STB + video side-by-side)
+  projects.test.ts (projects/domains rendering)
+  platforms.test.ts (platforms rendering)
+  client.test.ts (updated for new client methods)
 ```
 
 **Coverage:**
-- Card rendering with mock data
+- Panel rendering with mock data
 - Error handling (offline Brain Core)
-- Refresh functionality
+- Data refresh
 - Type safety
+- STB/video coexistence
 
 **Exit criteria:**
 - npm test passes
-- 80% coverage
+- 80% coverage maintained
+- All new panels tested
 
 ---
 
@@ -773,7 +783,7 @@ interface Orchestrator {
 
 ---
 
-## Phase 3: Projects/Domains Registry (1-2 weeks)
+## Phase 4: Projects/Domains Registry (1-2 weeks)
 
 ### Goal
 Create read-only projects and domains registry in Brain Core.
@@ -811,7 +821,7 @@ interface Project {
 
 ---
 
-## Phase 4: Approvals Framework (1-2 weeks)
+## Phase 5: Approvals Framework (1-2 weeks)
 
 ### Goal
 Create read-only approvals display for Brain Console.
