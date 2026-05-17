@@ -242,3 +242,19 @@ Notes:
 - The execution path is intentionally not exposed as a broad command runner.
 - `/execution/readiness` and `/capabilities` continue to advertise executable actions as disabled until a concrete approved request is processed.
 - The action remains report-only and does not mutate Mind.
+
+## Documentation status update after controlled execution
+
+Updated roadmap/spec documentation to reflect that the first action is no longer design-only:
+
+```text
+operations/specs/brain-core-first-action-feature-flag.md
+operations/runbooks/brain-core-first-action-incident-response.md
+```
+
+Current wording now distinguishes:
+
+- broad execution remains disabled;
+- one exact report-only action exists;
+- the implemented action is `scheduler-run-model-router-dry-run` only;
+- all safety gates remain required for each approved request.

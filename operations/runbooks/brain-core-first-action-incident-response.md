@@ -11,8 +11,8 @@ scheduler-run-model-router-dry-run
 Current state:
 
 - Feature-flag scaffold exists.
-- Execution remains disabled.
-- No Brain Core execution path exists yet.
+- Broad execution remains disabled.
+- One exact Brain Core execution path exists for `scheduler-run-model-router-dry-run` only.
 - Model-router remains report-only and must not write to Mind.
 
 ## Safety invariants

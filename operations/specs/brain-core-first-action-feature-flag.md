@@ -2,7 +2,7 @@
 
 ## Status
 
-**Feature-flag scaffold implemented. Execution remains disabled. No execution path is implemented yet.**
+**Controlled first-action execution implemented for `scheduler-run-model-router-dry-run` only. Broad execution remains disabled.**
 
 This document specifies how to enable execution for the first action (`scheduler-run-model-router-dry-run`) when explicit approval is given.
 
@@ -190,15 +190,16 @@ When execution occurs, a new audit event is created:
 
 ## Current Phase
 
-**Phase 1: Feature Flag Scaffold Implemented**
+**Phase 2: Controlled First Action Implemented**
 
-- Execution is disabled by default
+- Broad execution is disabled by default
 - Feature flag parsing is implemented
 - `/execution/readiness`, `/execution/plans`, and `/capabilities` expose flag state
 - Brain Console and ProBot display flag state read-only
 - Approval store/audit is verified operational
-- No execution path is implemented yet
-- No CLI execution trigger exists
+- The only implemented execution path is `scheduler-run-model-router-dry-run`
+- Execution requires the feature flag, durable approval store, durable audit path, approved record, exact command allowlist, and Brain `runtime/local/` output
+- No broad CLI execution trigger exists
 - Operator rollback drill is documented in `operations/runbooks/brain-core-approval-gates.md`
 
 ## Future Phases
