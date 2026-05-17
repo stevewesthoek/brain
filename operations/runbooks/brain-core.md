@@ -21,6 +21,7 @@ Current role:
 - expose read-only machine/session/repo/skill/scheduler/video/approval state
 - provide an approval request boundary that records approval state but does not execute actions yet
 - provide a read-only Brain Console widget contract for future Obsidian integration
+- expose read-only capability metadata for Mind cleanup state, Brain Console scaffold status, and ProBot thin-client wiring
 
 ## Start locally
 

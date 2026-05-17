@@ -93,6 +93,23 @@ export interface BrainCoreCapabilitySummary {
   modelRouterReportSupported: boolean;
   obsidianPluginInstalled: boolean;
   liveSchedulerVerified: boolean;
+  mindWorkspace: {
+    legacyTaskMigrationStatus: 'completed' | 'pending' | 'skipped';
+    legacyTaskMigrationCommit?: string;
+    cleanupInventory: string;
+    workspaceIsolationRunbook: string;
+    remainingKnownDirtyCategories: string[];
+  };
+  brainConsole: {
+    scaffoldStatus: 'validated' | 'pending' | 'blocked';
+    installedInMindVault: false;
+    projectPath: string;
+  };
+  probot: {
+    thinClientStatus: 'wired' | 'pending' | 'blocked';
+    commandAliasesEnabled: boolean;
+    actionsEnabled: false;
+  };
   notes: string[];
 }
 

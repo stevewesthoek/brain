@@ -22,6 +22,8 @@ Current capability:
 
 No write/apply implementation exists yet.
 
+The legacy task migration was a human-approved repository migration in Mind, not a model-router action. Future write/apply behavior remains blocked until explicit policy, approval, and rollback notes exist.
+
 ## Validate
 
 ```bash

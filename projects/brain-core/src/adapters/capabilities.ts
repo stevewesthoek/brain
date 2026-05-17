@@ -40,6 +40,28 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
     modelRouterReportSupported: true,
     obsidianPluginInstalled: false,
     liveSchedulerVerified: false,
+    mindWorkspace: {
+      legacyTaskMigrationStatus: 'completed',
+      legacyTaskMigrationCommit: '12495d4',
+      cleanupInventory: 'operations/reports/mind-dirty-state-inventory-2026-05-18.md',
+      workspaceIsolationRunbook: 'operations/runbooks/mind-workspace-isolation.md',
+      remainingKnownDirtyCategories: [
+        '.obsidian/community-plugins.json',
+        '.obsidian/plugins/custom-sort/',
+        '.obsidian/plugins/ghostty-terminal/',
+        '.obsidian/plugins/obsidian-icon-folder/',
+      ],
+    },
+    brainConsole: {
+      scaffoldStatus: 'validated',
+      installedInMindVault: false,
+      projectPath: 'projects/brain-console-obsidian',
+    },
+    probot: {
+      thinClientStatus: 'wired',
+      commandAliasesEnabled: true,
+      actionsEnabled: false,
+    },
     notes: [
       'Brain Core is local-only by default.',
       'Approval request endpoints record intent and audit events but do not execute actions.',

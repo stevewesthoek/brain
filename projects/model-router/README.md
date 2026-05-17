@@ -68,6 +68,8 @@ The loop planner also accepts an observed path snapshot and creates dry-run acti
 
 Planner output is blocked from execution by design. It reports `plannedWrites` as intended targets, but no write/apply implementation exists yet.
 
+The legacy task migration was performed manually and approved by the user. The model-router only consumes the resulting dry-run context; it does not execute that migration.
+
 ## Safety posture
 
 The first implementation is read-only/dry-run. Writes should be explicit, small, logged, and reversible. Legacy numbered folders must not be moved, archived, deleted, or rewritten until validation and explicit archive approval.

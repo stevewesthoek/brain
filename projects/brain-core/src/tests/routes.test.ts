@@ -111,6 +111,23 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
     modelRouterReportSupported: boolean;
     obsidianPluginInstalled: boolean;
     liveSchedulerVerified: boolean;
+    mindWorkspace: {
+      legacyTaskMigrationStatus: string;
+      legacyTaskMigrationCommit?: string;
+      cleanupInventory: string;
+      workspaceIsolationRunbook: string;
+      remainingKnownDirtyCategories: string[];
+    };
+    brainConsole: {
+      scaffoldStatus: string;
+      installedInMindVault: boolean;
+      projectPath: string;
+    };
+    probot: {
+      thinClientStatus: string;
+      commandAliasesEnabled: boolean;
+      actionsEnabled: boolean;
+    };
   };
 
   assert.equal(response.statusCode, 200);
@@ -123,6 +140,17 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.modelRouterReportSupported, true);
   assert.equal(body.obsidianPluginInstalled, false);
   assert.equal(body.liveSchedulerVerified, false);
+  assert.equal(body.mindWorkspace.legacyTaskMigrationStatus, 'completed');
+  assert.equal(body.mindWorkspace.legacyTaskMigrationCommit, '12495d4');
+  assert.equal(body.mindWorkspace.cleanupInventory, 'operations/reports/mind-dirty-state-inventory-2026-05-18.md');
+  assert.equal(body.mindWorkspace.workspaceIsolationRunbook, 'operations/runbooks/mind-workspace-isolation.md');
+  assert.equal(body.mindWorkspace.remainingKnownDirtyCategories.includes('.obsidian/community-plugins.json'), true);
+  assert.equal(body.brainConsole.scaffoldStatus, 'validated');
+  assert.equal(body.brainConsole.installedInMindVault, false);
+  assert.equal(body.brainConsole.projectPath, 'projects/brain-console-obsidian');
+  assert.equal(body.probot.thinClientStatus, 'wired');
+  assert.equal(body.probot.commandAliasesEnabled, true);
+  assert.equal(body.probot.actionsEnabled, false);
 });
 
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
