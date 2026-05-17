@@ -4,15 +4,16 @@ Brain Core is the small local API boundary for the Obsidian-first operating cock
 
 ## Status
 
-Phase 1/4 scaffold. The service exposes read-only status endpoints plus local-only approval-request endpoints that create audit records but do not execute actions.
+Phase 4G: Agent View Foundation. The service exposes read-only status endpoints, approval-request endpoints, and operational ledgers for agent runs, events, and recovery items. All work is read-only; execution remains disabled.
 
-**2026-05-18 Live Verification:**
-- ✅ Approval store JSON persistence operational
-- ✅ Approval audit JSONL persistence operational
-- ✅ Approve/reject workflow verified (returns `executed: false` even when approved)
-- ✅ First candidate `scheduler-run-model-router-dry-run` execution readiness reported (disabled by design)
-- ✅ All 48 tests passing, including unsafe path rejection and corrupted store handling
-- Execution remains disabled; feature flag design complete (see `operations/specs/brain-core-first-action-feature-flag.md`)
+**2026-05-18 Latest:**
+- ✅ Agent run summaries (derived from approvals + external executor placeholders)
+- ✅ Agent event audit trail (mapped from approval audit events)
+- ✅ Recovery/blocker items (execution readiness, report health, scheduler status, STB/video health)
+- ✅ Approval audit trail detail endpoint (returns auditEvents alongside approval record)
+- ✅ All 118 tests passing (includes agent, recovery, and approval audit trail tests)
+- ✅ All safety flags hardcoded: writesToMind=false, executesShell=false, mutatesRuntime=false, executionEnabled=false
+- Execution remains disabled by design; no Mind mutations, no shell execution
 
 ## Goals
 
@@ -25,24 +26,64 @@ Phase 1/4 scaffold. The service exposes read-only status endpoints plus local-on
 
 ## Current endpoints
 
+**Status & Infrastructure:**
 ```text
 GET /status
 GET /sessions
 GET /skills
 GET /repos
 GET /orchestrators
+GET /platforms
+GET /projects
 GET /capabilities
+```
+
+**Agent Operations Ledgers (Phase 4G):**
+```text
+GET /agents
+GET /agents/:id
+GET /agent-runs
+GET /agent-runs/:id
+GET /agent-events
+GET /approval-audit
+GET /recovery
+GET /recovery/:id
+```
+
+**Approval & Action Management:**
+```text
+GET /approvals
+GET /approvals/:id
+GET /approvals/store
+GET /actions
+GET /actions/:id
+```
+
+**Scheduler & Execution:**
+```text
 GET /scheduler/status
 GET /scheduler/latest-run
 GET /scheduler/jobs
-GET /local-apps
-GET /video/status
-GET /video/queue
-GET /approvals
-GET /approvals/store
 GET /execution/plans
 GET /execution/plans/:kind
 GET /execution/readiness
+GET /execution/mind-preview-policy
+GET /execution/mind-previews
+GET /execution/mind-previews/:id
+GET /execution/maintenance-previews
+GET /execution/maintenance-previews/:id
+```
+
+**Runtime Infrastructure:**
+```text
+GET /local-apps
+GET /video/status
+GET /video/queue
+GET /stb/status
+GET /video-orchestrator/status
+GET /stb-video-migration/status
+GET /runtime/reports
+GET /runtime/reports/model-router
 ```
 
 Current `/sessions` scans optional directories configured by `BRAIN_CORE_SESSION_DIRS`, `CLAUDE_PROJECTS_DIR`, `CODEX_SESSIONS_DIR`, and `GEMINI_SESSIONS_DIR`. It recursively discovers session-like files, infers the tool from names/paths, adds age and intent labels, applies simple recency/intent scoring, and returns a placeholder when no readable session directory is configured.
@@ -63,11 +104,21 @@ Current `/video/status` and `/video/queue` are read-only placeholder or report-b
 
 Those report-backed local app and video surfaces were live-verified over `http://127.0.0.1:4877` during the current roadmap pass.
 
-Current `/approvals` reads the in-memory Phase 4 approval request store, or returns persisted records from JSON when `BRAIN_CORE_APPROVAL_STORE_PATH` is configured, returning a placeholder when no requests exist.
+**Phase 4G: Agent View Foundation (NEW)**
+
+Current `/agent-runs` returns derived agent run summaries from approval records, including status (queued/running/blocked/completed/failed/cancelled/planned), age, and safety flags. External executor placeholders (Claude Code, Codex) are always included as `planned` runs. All safety flags are hardcoded: `writesToMind: false`, `executesShell: false`, `mutatesRuntime: false`, `executionEnabled: false`.
+
+Current `/agent-events` returns agent event summaries mapped from approval audit trail events. Each event has type (requested/approved/rejected/executed/failed/blocked), severity (info/warning/error), and relatedApprovalId linking to the source approval. Events are read-only snapshots; they do not reflect real execution.
+
+Current `/recovery` returns a read-only incident/blocker list capped at 10 items. Items include execution readiness blockers, missing/stale reports, scheduler health issues, and STB/video orchestrator health warnings. Each item has `canAutoFix: false` and `writesToMind: false` (pure observability).
+
+Current `/approvals/:id` now includes `auditEvents` alongside the approval record, showing the full lifecycle trail (requested → approved/rejected → executed/missing).
+
+**Previous Phase Endpoints**
+
+Current `/approvals` reads the in-memory approval request store, or returns persisted records from JSON when `BRAIN_CORE_APPROVAL_STORE_PATH` is configured, returning a placeholder when no requests exist.
 
 Current `/approvals/store` exposes read-only approval-store health and record counts. When `BRAIN_CORE_APPROVAL_STORE_PATH` points to a safe JSON file, Brain Core persists approval records there and reports `status: "available"`; otherwise it falls back to memory and reports `status: "memory"`. Unsafe paths are rejected and reported as `status: "unsafe"`.
-
-Current `/approvals/audit` exposes approval audit events as a read-only log. When `BRAIN_CORE_APPROVAL_AUDIT_PATH` points to a safe JSONL file, events are persisted there; otherwise events stay in memory. Events always include `executed: false` and never record real execution, even after an approval is marked as `approved`.
 
 Current `/execution/plans`, `/execution/plans/:kind`, and `/execution/readiness` expose a read-only execution-gate scaffold. The first candidate is `scheduler-run-model-router-dry-run`, but Brain Core still reports `executionEnabled: false`, `wouldExecute: false`, and `executed: false`.
 
