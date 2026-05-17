@@ -8,7 +8,6 @@ Document how to isolate the unrelated dirty state in the `mind` repo without sta
 
 - `.obsidian` churn
 - deleted `04-tasks/**`
-- untracked `01-inbox/*.base`
 - untracked `03-projects/04-tasks/`
 - untracked `06-resources/research/notes/bible/denominations/`
 - unrelated `05-areas/theological-studies/dance-of-life/README.md` change
@@ -19,6 +18,8 @@ See also:
 - `operations/reports/mind-cleanup-decision-matrix-2026-05-18.md`
 - `operations/reports/mind-obsidian-churn-review-2026-05-18.md`
 - `operations/reports/mind-legacy-task-deletion-review-2026-05-18.md`
+- `operations/reports/mind-project-task-mirror-review-2026-05-18.md`
+- `operations/reports/mind-research-import-review-2026-05-18.md`
 
 ## Rules for future cleanup
 

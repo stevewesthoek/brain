@@ -12,7 +12,6 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 - Known dirty categories:
   - `.obsidian` churn
   - deleted `04-tasks/**`
-  - untracked `01-inbox/*.base`
   - untracked `03-projects/04-tasks/`
   - untracked `06-resources/research/notes/bible/denominations/`
   - unrelated `05-areas/theological-studies/dance-of-life/README.md`
@@ -72,6 +71,7 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 - Risk: medium to high
 - Likely source/cause: mirror/import tree or duplicated task structure
 - Recommended decision: source import review before any commit
+- Review report: `operations/reports/mind-project-task-mirror-review-2026-05-18.md`
 - Safe diagnostic commands:
   - `git ls-files --others --exclude-standard -- 03-projects/04-tasks`
   - `git diff --name-only -- 03-projects/04-tasks`
@@ -86,6 +86,7 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 - Risk: medium
 - Likely source/cause: research import or bulk note creation
 - Recommended decision: move to source import review
+- Review report: `operations/reports/mind-research-import-review-2026-05-18.md`
 - Safe diagnostic commands:
   - `git ls-files --others --exclude-standard -- 06-resources/research/notes/bible/denominations`
   - `git diff --name-only -- 06-resources/research/notes/bible/denominations`

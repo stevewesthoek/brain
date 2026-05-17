@@ -746,6 +746,11 @@ Low-risk Mind category review reports now live in:
 
 - `operations/reports/mind-obsidian-churn-review-2026-05-18.md`
 - `operations/reports/mind-legacy-task-deletion-review-2026-05-18.md`
+
+Next Mind category review reports now live in:
+
+- `operations/reports/mind-project-task-mirror-review-2026-05-18.md`
+- `operations/reports/mind-research-import-review-2026-05-18.md`
 - Linked the Brain Core README to the new runbook.
 
 Validation:
