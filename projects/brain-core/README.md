@@ -41,7 +41,7 @@ Current `/repos` reads `BRAIN_CORE_REPO_ALIASES` or `PROBOT_REPO_ALIASES` in `na
 
 Current `/orchestrators` returns placeholder summaries for Video Orchestrator, Mind Model Router, and Office Nightly Scheduler. Current `/capabilities` returns a manifest of read endpoints and approval-request endpoints with `executableActionsEnabled: false`.
 
-Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are read-only placeholders for the future Office Nightly Scheduler integration. They report disabled/placeholder state and do not inspect logs, run jobs, or mutate scheduler state.
+Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are read-only scheduler surfaces. They report placeholder state until a runtime report is available. When `runtime/local/model-router/latest.json` exists, or when `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH` points to a safe JSON report, `/scheduler/status` and `/scheduler/latest-run` expose that report as read-only scheduler state. They do not inspect logs, run jobs, or mutate scheduler state.
 
 Current `/local-apps` is a read-only placeholder list for local services that may later support approval-aware lifecycle requests.
 

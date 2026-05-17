@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { routeRequest } from '../api/routes.js';
@@ -127,14 +129,55 @@ test('GET /scheduler/latest-run returns read-only placeholder latest run state',
   assert.equal(body.source, 'placeholder');
 });
 
+test('GET /scheduler/latest-run reads model-router runtime report when configured', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-scheduler');
+  const reportPath = path.join(testDir, 'latest.json');
+  const previousReportPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify({
+      job: 'model-router-dry-run',
+      status: 'success',
+      message: 'model-router dry-run validation passed',
+      endedAtLisbon: '2026-05-17 07:00:00 WEST',
+      mode: 'dry-run-report-only',
+      writesToMind: false,
+      executableActions: false,
+    }),
+  );
+  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = reportPath;
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/scheduler/latest-run' });
+    const body = JSON.parse(response.body) as { status: string; enabled: boolean; source: string; latestRunStatus: string };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'runtime-report');
+    assert.equal(body.enabled, true);
+    assert.equal(body.source, 'runtime-report');
+    assert.equal(body.latestRunStatus, 'ok');
+  } finally {
+    if (previousReportPath === undefined) {
+      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousReportPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
 test('GET /scheduler/jobs returns placeholder model-router jobs', async () => {
   const response = await exercise({ method: 'GET', url: '/scheduler/jobs' });
   const body = JSON.parse(response.body) as { jobs: Array<{ id: string; mutationRequired: boolean }> };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.jobs.length, 4);
+  assert.equal(body.jobs.length, 5);
   assert.equal(body.jobs[0]?.id, 'mind-compile-loop');
   assert.equal(typeof body.jobs[0]?.mutationRequired, 'boolean');
+  assert.equal(body.jobs.some((job) => job.id === 'model-router-dry-run'), true);
 });
 
 test('GET /local-apps returns placeholder local app list', async () => {

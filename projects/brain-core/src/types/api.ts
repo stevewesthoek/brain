@@ -37,11 +37,11 @@ export interface BrainCoreRepoSummary {
 }
 
 export interface BrainCoreSchedulerStatus {
-  status: 'not-configured' | 'placeholder';
+  status: 'not-configured' | 'placeholder' | 'runtime-report';
   enabled: boolean;
   latestRunAt?: string;
   latestRunStatus?: 'ok' | 'failed' | 'unknown';
-  source: 'placeholder';
+  source: 'placeholder' | 'runtime-report';
   message: string;
 }
 

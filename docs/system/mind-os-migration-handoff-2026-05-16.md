@@ -922,3 +922,37 @@ Validation:
 
 - `npm run ci` in `projects/model-router` passed before scheduler integration.
 - The scheduler shell script was patched but not executed by BuildFlow; live scheduler execution still needs local runtime verification.
+
+## Brain Core scheduler runtime report adapter — 2026-05-17
+
+Completed the Brain Core side of the model-router scheduler report integration.
+
+Updated files:
+
+```text
+projects/brain-core/src/adapters/scheduler.ts
+projects/brain-core/src/tests/routes.test.ts
+projects/brain-core/src/types/api.ts
+projects/brain-core/README.md
+```
+
+What changed:
+
+- `GET /scheduler/status` and `GET /scheduler/latest-run` now read a safe JSON runtime report when available.
+- Default report path is `runtime/local/model-router/latest.json` relative to the repo.
+- Override path is `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH`, with traversal rejected.
+- `GET /scheduler/jobs` now includes `model-router-dry-run` as a non-mutating scheduler job.
+- Added route test coverage for the configured runtime report path.
+
+Safety boundary:
+
+- Reads one safe JSON report file only.
+- Does not inspect scheduler logs.
+- Does not run scheduler jobs.
+- Does not mutate Mind.
+- Does not enable executable actions.
+
+Validation:
+
+- `npm run ci` in `projects/brain-core` should pass with the runtime report adapter test included.
+- Firecrawl log output remains unrelated and unstaged.
