@@ -16,6 +16,8 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
   - untracked `03-projects/04-tasks/`
   - untracked `06-resources/research/notes/bible/denominations/`
   - unrelated `05-areas/theological-studies/dance-of-life/README.md`
+- Low-risk cleanup result:
+  - `01-inbox/*.base` editor artifacts were reviewed and deleted
 
 ## Category Inventory
 
@@ -24,6 +26,7 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 - Risk: high
 - Likely source/cause: Obsidian plugin/config drift or local vault settings changes
 - Recommended decision: ignore until manual review
+- Review report: `operations/reports/mind-obsidian-churn-review-2026-05-18.md`
 - Safe diagnostic commands:
   - `git diff -- .obsidian`
   - `git diff --stat -- .obsidian`
@@ -40,6 +43,7 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 - Risk: high
 - Likely source/cause: bulk legacy task removal or rename/move activity
 - Recommended decision: separate review or restore, never auto-delete
+- Review report: `operations/reports/mind-legacy-task-deletion-review-2026-05-18.md`
 - Safe diagnostic commands:
   - `git diff --name-only --diff-filter=D -- 04-tasks`
   - `git diff --stat -- 04-tasks`

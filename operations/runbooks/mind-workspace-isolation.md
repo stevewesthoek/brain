@@ -17,6 +17,8 @@ See also:
 
 - `operations/reports/mind-dirty-state-inventory-2026-05-18.md`
 - `operations/reports/mind-cleanup-decision-matrix-2026-05-18.md`
+- `operations/reports/mind-obsidian-churn-review-2026-05-18.md`
+- `operations/reports/mind-legacy-task-deletion-review-2026-05-18.md`
 
 ## Rules for future cleanup
 

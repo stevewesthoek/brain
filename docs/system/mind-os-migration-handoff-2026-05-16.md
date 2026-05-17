@@ -741,6 +741,11 @@ The fresh Mind inventory and cleanup matrix now live in:
 
 - `operations/reports/mind-dirty-state-inventory-2026-05-18.md`
 - `operations/reports/mind-cleanup-decision-matrix-2026-05-18.md`
+
+Low-risk Mind category review reports now live in:
+
+- `operations/reports/mind-obsidian-churn-review-2026-05-18.md`
+- `operations/reports/mind-legacy-task-deletion-review-2026-05-18.md`
 - Linked the Brain Core README to the new runbook.
 
 Validation:
