@@ -27,7 +27,7 @@ Implement an unnumbered Obsidian-first `mind` structure maintained by a `brain`-
 - Add compile, memory, hygiene, and drift/error loops to the Office nightly scheduler.
 - Expose scheduler status and safe controls through Brain Core.
 
-## 11-Step Execution Order
+## 12-Step Execution Order (Phase 9B Dashboard Added)
 
 ### 1. Document the new mind architecture in brain
 
@@ -229,7 +229,62 @@ Exit criteria:
 - Any future write/apply preview includes expected source-trace and rollback metadata.
 - The Obsidian dashboard exposes only compact status: changed, failed, needs approval, and next action.
 
-### 10. Compile old PARA content into wiki/live
+### 9B. Build Obsidian Command Center dashboard
+
+Implement Brain Console Obsidian plugin dashboard as the user's primary system cockpit.
+
+**Visual design:**
+- Dark gray-black background (#0a0e27), warm red-orange accents (#ff6b3d)
+- Status strip with 6 pill indicators (Brain Core, Model Router, Scheduler, Save-to-Mind, Approvals, Maintenance)
+- Card-based layout showing system metrics, action queues, and health status
+- Monospaced system data labels; progressive disclosure (hover for detail)
+
+**Core cards (MVP scope):**
+```text
+Wiki Health           model-router lint results (ok/warnings/errors)
+Maintenance Previews  queue of proposed maintenance actions
+Approvals             pending approval requests from Brain Core
+Scheduler Status      nightly job queue and health
+Brain Core            runtime/execution status and readiness gates
+Next Safe Action      recommended action or current context
+```
+
+**Action row buttons:**
+```text
+Refresh             poll all Brain Core endpoints
+Request Dry Run     trigger model-router preview
+View Latest         inspect latest artifact/preview
+Open Mind           navigate to mind vault in Obsidian
+Open Wiki Log       jump to wiki/log.md
+```
+
+**Data sources:**
+```text
+Brain Core /status                        → status pills
+/runtime/reports                          → wiki health card
+/execution/maintenance-previews           → maintenance queue card
+/approvals                                → approvals card
+/scheduler/jobs                           → scheduler status card
+/execution/readiness                      → brain core card + next safe action
+```
+
+**Implementation targets:**
+- File: `projects/brain-console-obsidian/src/view.ts` (main dashboard)
+- Styles: `projects/brain-console-obsidian/src/styles.css` (dark cockpit theme)
+- Client: `projects/brain-console-obsidian/src/client.ts` (Brain Core polling)
+
+Exit criteria:
+
+- Dashboard renders without errors in Obsidian
+- All 6 core cards display and poll their endpoints successfully
+- Action buttons fire correct Brain Core requests (no mutations)
+- Dark cockpit theme matches design spec
+- No Mind mutations; plugin is read-only
+- Type safety: all Brain Core responses match API types
+- Tests verify card rendering and data handling
+- Manual Obsidian testing confirms UX matches spec
+
+### 10. Compile old PARA content into wiki/live (after dashboard stabilizes)
 
 The model router should read old folders and create clean compiled pages:
 
@@ -250,7 +305,7 @@ Exit criteria:
 - Daily work is possible from `live/` and `wiki/`.
 - Old folders become legacy reference only.
 
-### 11. Archive old numbered folders after validation
+### 11. Archive old numbered folders after validation (post-dashboard)
 
 Only after new structure works:
 
@@ -274,11 +329,11 @@ Exit criteria:
 
 ## Current Status
 
-- Steps 1 through 9 are complete at the report-only / preview-policy level.
+- Steps 1 through 9A are complete at the report-only / preview-policy level.
 - Preview artifact inspection is now available through Brain Core read-only endpoints.
-- Step 10 remains intentionally blocked from broad Mind mutation.
-- Step 11 remains intentionally blocked until a separate archival plan is approved.
-- Next safe step: continue with preview-only or approval-gated metadata improvements.
+- Step 9B (Obsidian Command Center dashboard) is the current focus — specification complete, implementation starting.
+- Steps 10 and 11 remain intentionally blocked from broad Mind mutation until dashboard stabilizes.
+- Next safe step: implement dashboard visual design and card rendering (Work Package C).
 
 ## Brain Core Scheduler API Additions
 

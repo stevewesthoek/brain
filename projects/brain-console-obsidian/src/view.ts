@@ -108,16 +108,22 @@ export function renderBrainConsoleView(
 ): void {
   container.empty();
   container.addClass('brain-console');
+  container.addClass('brain-console--dashboard');
 
   const shell = container.createDiv({ cls: 'brain-console__shell' });
-  const header = shell.createDiv({ cls: 'brain-console__header' });
-  header.createEl('h2', { text: 'Brain Console' });
-  header.createEl('p', {
-    text: 'Read-only Brain Core cockpit. No POST calls. No note writes. Manual refresh only.',
-  });
 
+  // Status strip (6 pills)
+  const statusStrip = shell.createDiv({ cls: 'brain-console__status-strip' });
+  renderStatusPills(statusStrip, state);
+
+  // Header
+  const header = shell.createDiv({ cls: 'brain-console__header' });
+  header.createEl('h1', { text: 'Brain Cockpit' });
+  header.createEl('p', { text: 'System status, maintenance queue, and next safe action' });
+
+  // Safety banner
   const safety = header.createDiv({ cls: 'brain-console__banner' });
-  safety.setText('Read-only plugin. POST endpoints are never called automatically. Executable actions stay disabled.');
+  safety.setText('Read-only. Manual refresh. No automatic POST calls.');
 
   if (state.warning) {
     header.createDiv({ cls: 'brain-console__warning' }).setText(state.warning);
@@ -126,213 +132,238 @@ export function renderBrainConsoleView(
   if (state.offline) {
     const offline = shell.createDiv({ cls: 'brain-console__offline' });
     offline.createEl('h3', { text: 'Brain Core offline' });
-    offline.createEl('p', {
-      text: 'The plugin is still usable. Start Brain Core to load live summaries.',
-    });
+    offline.createEl('p', { text: 'Start Brain Core to load live summaries.' });
     return;
   }
 
-  const refresh = header.createEl('button', { text: 'Manual refresh' });
-  refresh.addClass('brain-console__refresh');
+  // Action row
+  const actions = header.createDiv({ cls: 'brain-console__actions' });
+  renderActionButtons(actions, onRefresh);
+
+  // Dashboard grid (6 core cards + 2 optional)
+  const dashboard = shell.createDiv({ cls: 'brain-console__dashboard' });
+
+  // MVP cards (6 must-have)
+  renderCard(dashboard, 'Wiki Health', renderWikiHealthCard(state));
+  renderCard(dashboard, 'Maintenance Previews', renderMaintenancePreviewsCard(state));
+  renderCard(dashboard, 'Approvals', renderApprovalsCard(state));
+  renderCard(dashboard, 'Scheduler Status', renderSchedulerCard(state));
+  renderCard(dashboard, 'Brain Core', renderBrainCoreCard(state));
+  renderCard(dashboard, 'Next Safe Action', renderNextActionCard(state));
+
+  // Activity panel at the bottom
+  const activity = shell.createDiv({ cls: 'brain-console__activity' });
+  renderActivityPanel(activity, state);
+}
+
+function renderStatusPills(container: HTMLElement, state: BrainConsoleViewState): void {
+  const pills = container.createDiv({ cls: 'brain-console__pills' });
+
+  // Brain Core pill
+  const brainCorePill = pills.createDiv({ cls: 'brain-console__pill' });
+  brainCorePill.createEl('span', {
+    text: `Brain Core: ${state.status?.ok === true ? '●' : '○'} ${state.status?.mode ?? 'unknown'}`,
+  });
+
+  // Model Router pill
+  const mrReport = (state.runtimeReports ?? []).find((r) => r.id === 'model-router');
+  const mrPill = pills.createDiv({ cls: 'brain-console__pill' });
+  mrPill.createEl('span', { text: `Model Router: ${mrReport?.status ?? 'unknown'}` });
+
+  // Scheduler pill
+  const schedPill = pills.createDiv({ cls: 'brain-console__pill' });
+  schedPill.createEl('span', { text: `Scheduler: ${state.schedulerStatus?.status ?? 'unknown'}` });
+
+  // Save-to-Mind pill
+  const capturePill = pills.createDiv({ cls: 'brain-console__pill' });
+  capturePill.createEl('span', { text: 'Save-to-Mind: live' });
+
+  // Approvals pill
+  const approvalsCount = state.approvals?.length ?? 0;
+  const approvalsPill = pills.createDiv({ cls: 'brain-console__pill' });
+  approvalsPill.createEl('span', { text: `Approvals: ${approvalsCount}` });
+
+  // Maintenance pill
+  const maintenanceCount = (state.mindPreviews ?? []).filter((p) => !p.expired).length;
+  const maintenancePill = pills.createDiv({ cls: 'brain-console__pill' });
+  maintenancePill.createEl('span', { text: `Maintenance: ${maintenanceCount} pending` });
+}
+
+function renderActionButtons(container: HTMLElement, onRefresh?: () => void): void {
+  const buttonGroup = container.createDiv({ cls: 'brain-console__button-group' });
+
+  const refreshBtn = buttonGroup.createEl('button', { text: 'Refresh' });
+  refreshBtn.addClass('brain-console__btn');
   if (onRefresh) {
-    refresh.addEventListener('click', () => onRefresh());
+    refreshBtn.addEventListener('click', () => onRefresh());
   }
 
-  const grid = shell.createDiv({ cls: 'brain-console__grid' });
-  renderSection(grid, 'Brain Core status', [
-    ['Online', formatStatus(state.status?.ok === true ? 'online' : 'offline')],
-    ['Mode', state.status?.mode ?? 'unknown'],
-    ['Host', state.status?.host ?? 'localhost'],
-    ['Version', state.status?.version ?? 'unknown'],
-  ]);
-  renderSection(grid, 'Capabilities', [
-    ['Executable actions', String(state.capabilities?.executableActionsEnabled ?? false)],
-    ['Runtime reports', String(state.capabilities?.runtimeReportsSupported ?? false)],
-    ['Brain Console installed in Mind', String(state.capabilities?.brainConsole?.installedInMindVault ?? false)],
-    ['ProBot aliases enabled', String(state.capabilities?.probot?.commandAliasesEnabled ?? false)],
-    ['Legacy migration', state.capabilities?.mindWorkspace?.legacyTaskMigrationStatus ?? 'unknown'],
-    ['Execution gate', state.capabilities?.executionGate?.executionEnabled === false ? 'disabled' : 'unknown'],
-    ['Model-router execution flag', formatFlagState(state.capabilities?.executionGate?.modelRouterDryRunExecutionFlagEnabled)],
-    ['Execution flag name', state.capabilities?.executionGate?.modelRouterDryRunExecutionFlagName ?? 'unknown'],
-    ['First candidate', state.capabilities?.executionGate?.firstCandidate ?? 'unknown'],
-  ]);
-  renderSection(grid, 'Runtime reports', describeRuntimeReports(state.runtimeReports));
-  renderSection(grid, 'Video', describeVideo(state.videoStatus, state.videoQueue));
-  renderSection(grid, 'Local apps', describeLocalApps(state.localApps));
-  renderSection(grid, 'Scheduler', describeScheduler(state.schedulerStatus, state.schedulerJobs));
-  renderSection(grid, 'Sessions / repos / approvals', describeCollections(state.sessions, state.repos, state.approvals));
-  renderSection(grid, 'Approval gate', describeApprovalGate(state.approvalStore));
-  renderSection(grid, 'Execution readiness', describeExecutionReadiness(state.executionReadiness, state.executionPlans));
-  renderSection(grid, 'Mind preview policy', describeMindPreviewPolicy(state.mindPreviewPolicy));
-  renderSection(grid, 'Mind previews', describeMindPreviews(state.mindPreviews, state.mindPreviewPolicy));
+  const dryRunBtn = buttonGroup.createEl('button', { text: 'Request Dry Run' });
+  dryRunBtn.addClass('brain-console__btn');
+  dryRunBtn.disabled = true;
+
+  const viewBtn = buttonGroup.createEl('button', { text: 'View Latest' });
+  viewBtn.addClass('brain-console__btn');
+  viewBtn.disabled = true;
+
+  const mindBtn = buttonGroup.createEl('button', { text: 'Open Mind' });
+  mindBtn.addClass('brain-console__btn');
+  mindBtn.disabled = true;
+
+  const logBtn = buttonGroup.createEl('button', { text: 'Wiki Log' });
+  logBtn.addClass('brain-console__btn');
+  logBtn.disabled = true;
 }
 
-function renderSection(parent: HTMLElement, title: string, entries: Array<[string, string]>): void {
-  const section = parent.createDiv({ cls: 'brain-console__section' });
-  section.createEl('h3', { text: title });
-  const list = section.createEl('dl');
-  entries.forEach(([label, value]) => {
-    const row = list.createDiv({ cls: 'brain-console__row' });
-    row.createEl('dt', { text: label });
-    row.createEl('dd', { text: value });
-  });
+function renderCard(parent: HTMLElement, title: string, content: HTMLElement): void {
+  const card = parent.createDiv({ cls: 'brain-console__card' });
+  const cardHeader = card.createDiv({ cls: 'brain-console__card-header' });
+  cardHeader.createEl('h3', { text: title });
+  card.appendChild(content);
 }
 
-function describeRuntimeReports(reports: BrainCoreRuntimeReportSummary[] | undefined): Array<[string, string]> {
-  const byId = new Map((reports ?? []).map((report) => [report.id, report]));
-  return ['model-router', 'approval-audit', 'video', 'local-apps'].map((id) => {
-    const report = byId.get(id as BrainCoreRuntimeReportSummary['id']);
-    if (!report) {
-      return [id, 'Unavailable'];
-    }
-    const wikiHealth = report.wikiHealth
-      ? ` · wiki health=${report.wikiHealth.ok ? 'ok' : `warnings=${report.wikiHealth.warningCount} errors=${report.wikiHealth.errorCount}`}`
-      : '';
-    return [id, `${report.status} · writesToMind=${report.writesToMind} · executed=${report.executableActions}${wikiHealth}`];
-  });
-}
+function renderWikiHealthCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
 
-function describeVideo(
-  status: BrainCoreVideoStatus | undefined,
-  queue: BrainCoreVideoQueueItem[] | undefined,
-): Array<[string, string]> {
-  const queueItems = queue ?? [];
-  return [
-    ['Status', status ? `${status.status} · enabled=${status.enabled}` : 'Unavailable'],
-    ['Queue depth', String(status?.queueDepth ?? queueItems.length)],
-    ['Latest run', status?.latestRunAt ?? 'unknown'],
-    ['Top queue items', queueItems.slice(0, 3).map((item) => `${item.title}:${item.status}`).join(', ') || 'none'],
-  ];
-}
-
-function describeLocalApps(apps: BrainCoreLocalAppSummary[] | undefined): Array<[string, string]> {
-  const items = apps ?? [];
-  return [
-    ['App count', String(items.length)],
-    ['Status summary', items.slice(0, 3).map((app) => `${app.name}:${app.status}`).join(', ') || 'none'],
-    ['Actions supported', String(items.some((app) => app.actionsSupported))],
-  ];
-}
-
-function describeScheduler(
-  schedulerStatus: BrainCoreSchedulerStatus | undefined,
-  jobs: BrainCoreSchedulerJobSummary[] | undefined,
-): Array<[string, string]> {
-  const modelRouterJob = (jobs ?? []).find((job) => job.id === 'model-router-dry-run');
-  return [
-    ['Scheduler status', schedulerStatus ? `${schedulerStatus.status} · ${schedulerStatus.message}` : 'Unavailable'],
-    ['Latest run', schedulerStatus?.latestRunStatus ?? 'unknown'],
-    ['model-router-dry-run', modelRouterJob ? `${modelRouterJob.status} · mutationRequired=${modelRouterJob.mutationRequired}` : 'Unavailable'],
-  ];
-}
-
-function describeCollections(
-  sessions: BrainCoreSessionSummary[] | undefined,
-  repos: BrainCoreRepoSummary[] | undefined,
-  approvals: BrainCoreApprovalSummary[] | undefined,
-): Array<[string, string]> {
-  const sessionList = sessions ?? [];
-  const repoList = repos ?? [];
-  const approvalList = approvals ?? [];
-  const sampleSessions = sessionList.slice(0, 3).map((session) => session.title).join(', ') || 'none';
-  const sampleRepos = repoList.slice(0, 3).map((repo) => repo.alias).join(', ') || 'none';
-  const sampleApprovals = approvalList.slice(0, 3).map((approval) => `${approval.kind}:${approval.status}`).join(', ') || 'none';
-  return [
-    ['Sessions', `${sessionList.length} · ${sampleSessions}`],
-    ['Repos', `${repoList.length} · ${sampleRepos}`],
-    ['Approvals', `${approvalList.length} · ${sampleApprovals}`],
-  ];
-}
-
-function describeApprovalGate(
-  approvalStore: BrainConsoleViewState['approvalStore'],
-): Array<[string, string]> {
-  if (!approvalStore) {
-    return [
-      ['Store status', 'Unavailable'],
-      ['Execution enabled', 'false'],
-      ['Gate', 'disabled-until-explicit-enable'],
-    ];
+  const mrReport = (state.runtimeReports ?? []).find((r) => r.id === 'model-router');
+  if (!mrReport?.wikiHealth) {
+    container.createEl('p', { text: 'Wiki health data unavailable' });
+    return container;
   }
 
-  return [
-    ['Store status', approvalStore.status],
-    ['Records', String(approvalStore.recordCount)],
-    ['Execution enabled', String(false)],
-    ['Gate', 'disabled-until-explicit-enable'],
-  ];
+  const health = mrReport.wikiHealth;
+  const status = health.ok ? '✓ OK' : `⚠ Issues`;
+
+  container.createEl('div', { cls: 'brain-console__metric', text: status });
+  if (!health.ok) {
+    container.createEl('p', {
+      text: `Warnings: ${health.warningCount} · Errors: ${health.errorCount}`,
+      cls: 'brain-console__detail',
+    });
+  }
+
+  return container;
 }
 
-function describeExecutionReadiness(
-  readiness: BrainConsoleViewState['executionReadiness'],
-  plans: BrainCoreExecutionPlan[] | undefined,
-): Array<[string, string]> {
-  const firstPlan = plans?.[0];
+function renderMaintenancePreviewsCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const previews = state.mindPreviews ?? [];
+  const pending = previews.filter((p) => !p.expired);
+
+  if (pending.length === 0) {
+    container.createEl('p', { text: 'No maintenance queued' });
+    return container;
+  }
+
+  container.createEl('div', { cls: 'brain-console__metric', text: `${pending.length} pending` });
+  if (pending[0]) {
+    container.createEl('p', {
+      text: `Latest: ${new Date(pending[0].createdAt).toLocaleDateString()}`,
+      cls: 'brain-console__detail',
+    });
+  }
+
+  return container;
+}
+
+function renderApprovalsCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const approvals = state.approvals ?? [];
+  if (approvals.length === 0) {
+    container.createEl('p', { text: 'No approvals pending' });
+    return container;
+  }
+
+  container.createEl('div', { cls: 'brain-console__metric', text: `${approvals.length} pending` });
+  const sample = approvals.slice(0, 2);
+  const list = container.createEl('ul', { cls: 'brain-console__list' });
+  sample.forEach((a) => {
+    list.createEl('li', { text: `${a.kind}: ${a.status}` });
+  });
+
+  return container;
+}
+
+function renderSchedulerCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  container.createEl('div', { cls: 'brain-console__metric', text: state.schedulerStatus?.status ?? 'unknown' });
+  container.createEl('p', {
+    text: `Latest: ${state.schedulerStatus?.latestRunStatus ?? 'never'}`,
+    cls: 'brain-console__detail',
+  });
+
+  const jobs = state.schedulerJobs ?? [];
+  if (jobs.length > 0) {
+    const jobSummary = jobs.slice(0, 2).map((j) => `${j.id}: ${j.status}`).join(' · ');
+    container.createEl('p', { text: jobSummary, cls: 'brain-console__detail' });
+  }
+
+  return container;
+}
+
+function renderBrainCoreCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const online = state.status?.ok === true ? 'online' : 'offline';
+  container.createEl('div', { cls: 'brain-console__metric', text: online });
+  container.createEl('p', {
+    text: `Host: ${state.status?.host ?? 'localhost'} · v${state.status?.version ?? '?'}`,
+    cls: 'brain-console__detail',
+  });
+  container.createEl('p', {
+    text: `Execution: ${state.executionReadiness?.executionEnabled ? 'enabled' : 'disabled'}`,
+    cls: 'brain-console__detail',
+  });
+
+  return container;
+}
+
+function renderNextActionCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const readiness = state.executionReadiness;
   if (!readiness) {
-    return [
-      ['Execution enabled', 'false'],
-      ['Candidates', 'Unavailable'],
-      ['Ready candidates', 'Unavailable'],
-      ['Blockers', 'Unavailable'],
-    ];
+    container.createEl('p', { text: 'Readiness unavailable' });
+    return container;
   }
 
-  return [
-    ['Execution enabled', String(readiness.executionEnabled)],
-    ['Model-router execution flag', formatFlagState(readiness.modelRouterDryRunExecutionFlagEnabled)],
-    ['Execution flag name', readiness.modelRouterDryRunExecutionFlagName ?? firstPlan?.modelRouterDryRunExecutionFlagName ?? 'unknown'],
-    ['Candidates', String(readiness.candidateCount)],
-    ['Ready candidates', String(readiness.readyCandidateCount)],
-    ['Blockers', readiness.blockers.slice(0, 3).join(', ') || 'none'],
-    ['First candidate', firstPlan?.kind ?? 'none'],
-  ];
-}
+  const nextAction = readiness.blockers.length > 0 ? `Blocked: ${readiness.blockers[0]}` : `Ready: ${readiness.readyCandidateCount}`;
+  container.createEl('div', { cls: 'brain-console__metric', text: nextAction });
 
-function describeMindPreviewPolicy(
-  policy: BrainConsoleViewState['mindPreviewPolicy'],
-): Array<[string, string]> {
-  if (!policy) {
-    return [
-      ['Status', 'preview-only'],
-      ['Apply route enabled', 'false'],
-      ['First proposed target', 'router/current.md'],
-    ];
+  if (readiness.readyCandidateCount > 0) {
+    container.createEl('p', { text: 'Candidates available for execution', cls: 'brain-console__detail' });
   }
 
-  return [
-    ['Status', policy.status],
-    ['Apply route enabled', String(policy.applyRouteEnabled)],
-    ['First proposed target', policy.firstProposedTarget],
-    ['First proposed action', policy.firstProposedAction],
-    ['Writes to Mind', String(policy.writesToMind)],
-    ['External side effects', String(policy.externalSideEffects)],
-    ['Blocked prefixes', policy.blockedPrefixes.slice(0, 4).join(', ') || 'none'],
-  ];
+  return container;
 }
 
-function describeMindPreviews(
-  previews: BrainConsoleViewState['mindPreviews'],
-  policy: BrainConsoleViewState['mindPreviewPolicy'],
-): Array<[string, string]> {
-  const items = previews ?? [];
-  return [
-    ['Preview count', String(items.length)],
-    ['Latest preview', items[0]?.targetPath ?? 'none'],
-    ['Latest expired', String(items[0]?.expired ?? false)],
-    ['Apply route enabled', String(policy?.applyRouteEnabled ?? false)],
-  ];
-}
+function renderActivityPanel(container: HTMLElement, state: BrainConsoleViewState): void {
+  const panel = container.createDiv({ cls: 'brain-console__activity-panel' });
+  panel.createEl('h4', { text: 'Recent Activity' });
 
-function formatStatus(value: string): string {
-  return value === 'online' ? 'online' : 'offline';
-}
+  const activity = panel.createEl('ul', { cls: 'brain-console__activity-list' });
 
-function formatFlagState(value: boolean | undefined): string {
-  if (value === true) {
-    return 'enabled flag, execution still gated';
+  // Sample activity items (in real implementation, would come from Brain Core)
+  if (state.sessions && state.sessions.length > 0) {
+    activity.createEl('li', { text: `Latest session: ${state.sessions[0]?.title ?? 'unknown'}` });
   }
-  if (value === false) {
-    return 'disabled';
+
+  if (state.runtimeReports && state.runtimeReports.length > 0) {
+    activity.createEl('li', { text: `Runtime reports available: ${state.runtimeReports.length}` });
   }
-  return 'unknown';
+
+  const mindPreviews = state.mindPreviews ?? [];
+  if (mindPreviews.length > 0) {
+    activity.createEl('li', { text: `Maintenance previews: ${mindPreviews.length}` });
+  }
 }
+

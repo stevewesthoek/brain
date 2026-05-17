@@ -12,6 +12,33 @@ The `brain` repo will own the executable infrastructure: Brain Core API, model-r
 
 Obsidian remains the only primary human dashboard. Brain Core exposes machine and scheduler state. The model router continuously keeps `mind` small, coherent, useful, and fast.
 
+## Obsidian Command Center Dashboard
+
+The Brain Console plugin provides a polished black-box Obsidian dashboard that replaces ad-hoc browsing of raw Markdown files.
+
+**Visual direction:** dark gray-black cockpit (#0a0e27), monospaced system data, warm red-orange accents (#ff6b3d), sparse card layout, progressive disclosure.
+
+**Dashboard cards:**
+- Wiki Health: model-router lint status and error/warning counts
+- Maintenance Previews: proposed maintenance queue from model-router
+- Approvals: pending approval requests from Brain Core
+- Scheduler Status: nightly job queue and last-run health
+- Brain Core: runtime/execution status and readiness gates
+- Next Safe Action: recommended action from Brain Core/model-router
+- (optional) Captures: today's saved notes
+- (optional) Latest Preview: most recent maintenance preview artifact
+
+**Action row:**
+- Refresh (poll all endpoints)
+- Request Dry Run (trigger model-router preview)
+- View Latest (inspect latest artifact/preview)
+- Open Mind (navigate to mind vault in Obsidian)
+- Open Wiki Log (jump to wiki/log.md)
+
+**Safety:** all endpoints are read-only; all action buttons request approval or fire request-only signals; no Mind mutations; plugin never writes Obsidian settings.
+
+**Data sources:** Brain Core `/status`, `/runtime/reports`, `/execution/maintenance-previews`, `/approvals`, `/scheduler/jobs`.
+
 ## Current Status
 
 - Report-only model-router dry-run and Brain Core preview/status surfaces are complete.
@@ -19,6 +46,7 @@ Obsidian remains the only primary human dashboard. Brain Core exposes machine an
 - `wiki/log.md` exists as the append-only maintenance ledger for Mind.
 - Write/apply behavior for Mind remains blocked pending the approved policy and tests.
 - Legacy numbered-folder archival remains blocked until a separate validated cleanup phase.
+- Obsidian Command Center dashboard specification is complete; implementation underway.
 
 ## Final Mental Model
 
