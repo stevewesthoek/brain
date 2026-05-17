@@ -4,7 +4,7 @@ Brain Core is the small local API boundary for the Obsidian-first operating cock
 
 ## Status
 
-Phase 1 scaffold only. The service is read-only and has no mutation endpoints.
+Phase 1/4 scaffold. The service exposes read-only status endpoints plus local-only approval-request endpoints that create audit records but do not execute actions.
 
 ## Goals
 
@@ -22,6 +22,8 @@ GET /status
 GET /sessions
 GET /skills
 GET /repos
+GET /orchestrators
+GET /capabilities
 GET /scheduler/status
 GET /scheduler/latest-run
 GET /scheduler/jobs
@@ -37,6 +39,8 @@ Current `/skills` indexes skill folders from `BRAIN_CORE_SKILLS_DIR` or the defa
 
 Current `/repos` reads `BRAIN_CORE_REPO_ALIASES` or `PROBOT_REPO_ALIASES` in `name:/absolute/path` format, reports whether each repo exists, and detects known handoff files without reading secrets or runtime logs.
 
+Current `/orchestrators` returns placeholder summaries for Video Orchestrator, Mind Model Router, and Office Nightly Scheduler. Current `/capabilities` returns a manifest of read endpoints and approval-request endpoints with `executableActionsEnabled: false`.
+
 Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are read-only placeholders for the future Office Nightly Scheduler integration. They report disabled/placeholder state and do not inspect logs, run jobs, or mutate scheduler state.
 
 Current `/local-apps` is a read-only placeholder list for local services that may later support approval-aware lifecycle requests.
@@ -49,11 +53,17 @@ Current mutation surface is intentionally minimal:
 
 ```text
 POST /actions/request?kind=<safe-action-kind>
+POST /scheduler/jobs/:id/request-run
+POST /skills/profile?profile=<profile>
+POST /sessions/:id/resume
+POST /local-apps/:id/start
+POST /local-apps/:id/stop
+POST /local-apps/:id/restart
 POST /approvals/:id/approve
 POST /approvals/:id/reject
 ```
 
-These endpoints are local-only, approval-aware scaffolding. They create or update approval records but always return `executed: false`; they do not run shell commands, start/stop apps, trigger scheduler jobs, resume sessions, or mutate external systems.
+These endpoints are local-only, approval-aware scaffolding. They create or update approval records but always return `executed: false`; they do not run shell commands, start/stop apps, trigger scheduler jobs, switch profiles, resume sessions, or mutate external systems.
 
 These adapters intentionally do not import ProBot dashboard code. Future slices should migrate richer read-only backend logic from ProBot without importing dashboard rendering or browser state.
 
@@ -115,7 +125,8 @@ This is not an Obsidian plugin yet. It is the audited data shape that a plugin c
 
 ## Safety boundary
 
-- Phase 1 supports `GET` only.
+- Read/status endpoints are `GET` only.
+- Approval-request endpoints are local-only `POST` routes that always return `executed: false`.
 - Non-local requests are rejected.
 - Runtime state should be returned from adapters, not duplicated into markdown.
-- Mutation endpoints must wait for the approval-aware phase.
+- Executable mutation behavior must wait for persistent audit storage, explicit UX, and separate approval.

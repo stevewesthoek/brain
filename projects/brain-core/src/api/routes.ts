@@ -1,6 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { decideApproval, listApprovalAuditEvents, requestAction } from '../adapters/actions.js';
 import { listApprovals } from '../adapters/approvals.js';
+import { getCapabilities } from '../adapters/capabilities.js';
+import { listOrchestrators } from '../adapters/orchestrators.js';
 import { listLocalApps } from '../adapters/local-apps.js';
 import { listRepos } from '../adapters/repos.js';
 import { getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
@@ -62,6 +64,12 @@ export async function routeRequest(
     case '/repos':
       sendJson(response, 200, { repos: listRepos() });
       return;
+    case '/orchestrators':
+      sendJson(response, 200, { orchestrators: listOrchestrators() });
+      return;
+    case '/capabilities':
+      sendJson(response, 200, getCapabilities());
+      return;
     case '/scheduler/status':
       sendJson(response, 200, getSchedulerStatus());
       return;
@@ -90,7 +98,7 @@ export async function routeRequest(
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/audit.',
         },
       } satisfies BrainCoreErrorResponse);
   }
@@ -100,6 +108,12 @@ function routePostRequest(url: URL, response: ServerResponse): void {
   if (url.pathname === '/actions/request') {
     const kind = url.searchParams.get('kind') || 'manual-request';
     sendJson(response, 202, requestAction(kind));
+    return;
+  }
+
+  const requestKind = getApprovalRequestKind(url);
+  if (requestKind) {
+    sendJson(response, 202, requestAction(requestKind));
     return;
   }
 
@@ -114,9 +128,32 @@ function routePostRequest(url: URL, response: ServerResponse): void {
   sendJson(response, 404, {
     error: {
       code: 'not_found',
-      message: 'POST route not found. Available POST routes: /actions/request, /approvals/:id/approve, /approvals/:id/reject.',
+      message: 'POST route not found. Available POST routes: /actions/request, /scheduler/jobs/:id/request-run, /skills/profile, /sessions/:id/resume, /local-apps/:id/start|stop|restart, /approvals/:id/approve, /approvals/:id/reject.',
     },
   } satisfies BrainCoreErrorResponse);
+}
+
+function getApprovalRequestKind(url: URL): string | undefined {
+  const schedulerMatch = /^\/scheduler\/jobs\/([^/]+)\/request-run$/.exec(url.pathname);
+  if (schedulerMatch) {
+    return `scheduler-run-${schedulerMatch[1] ?? 'unknown'}`;
+  }
+
+  if (url.pathname === '/skills/profile') {
+    return `skill-profile-${url.searchParams.get('profile') || 'default'}`;
+  }
+
+  const sessionMatch = /^\/sessions\/([^/]+)\/resume$/.exec(url.pathname);
+  if (sessionMatch) {
+    return `session-resume-${sessionMatch[1] ?? 'unknown'}`;
+  }
+
+  const localAppMatch = /^\/local-apps\/([^/]+)\/(start|stop|restart)$/.exec(url.pathname);
+  if (localAppMatch) {
+    return `local-app-${localAppMatch[2] ?? 'action'}-${localAppMatch[1] ?? 'unknown'}`;
+  }
+
+  return undefined;
 }
 
 function sendJson(response: ServerResponse, statusCode: number, body: unknown): void {

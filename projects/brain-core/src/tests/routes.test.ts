@@ -88,6 +88,25 @@ test('GET /repos returns a repo alias list or setup placeholder', async () => {
   assert.equal(typeof body.repos[0]?.handoffExists, 'boolean');
 });
 
+test('GET /orchestrators returns placeholder orchestrator list', async () => {
+  const response = await exercise({ method: 'GET', url: '/orchestrators' });
+  const body = JSON.parse(response.body) as { orchestrators: Array<{ id: string; actionsSupported: boolean }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.orchestrators.length > 0, true);
+  assert.equal(body.orchestrators[0]?.actionsSupported, false);
+});
+
+test('GET /capabilities returns manifest with executable actions disabled', async () => {
+  const response = await exercise({ method: 'GET', url: '/capabilities' });
+  const body = JSON.parse(response.body) as { readEndpoints: string[]; approvalRequestEndpoints: string[]; executableActionsEnabled: boolean };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.readEndpoints.includes('/orchestrators'), true);
+  assert.equal(body.approvalRequestEndpoints.includes('/sessions/:id/resume'), true);
+  assert.equal(body.executableActionsEnabled, false);
+});
+
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
   const response = await exercise({ method: 'GET', url: '/scheduler/status' });
   const body = JSON.parse(response.body) as { status: string; enabled: boolean; source: string };
@@ -172,6 +191,27 @@ test('GET /approvals/audit returns approval audit events', async () => {
   assert.equal(response.statusCode, 200);
   assert.equal(body.events.some((event) => event.event === 'requested' && event.kind === 'audit-test'), true);
   assert.equal(typeof body.events[0]?.persisted, 'boolean');
+});
+
+test('roadmap POST targets create approval requests without executing', async () => {
+  const routes = [
+    ['/scheduler/jobs/mind-compile-loop/request-run', 'scheduler-run-mind-compile-loop'],
+    ['/skills/profile?profile=research', 'skill-profile-research'],
+    ['/sessions/abc123/resume', 'session-resume-abc123'],
+    ['/local-apps/probot/start', 'local-app-start-probot'],
+    ['/local-apps/probot/stop', 'local-app-stop-probot'],
+    ['/local-apps/probot/restart', 'local-app-restart-probot'],
+  ] as const;
+
+  for (const [url, kind] of routes) {
+    const response = await exercise({ method: 'POST', url });
+    const body = JSON.parse(response.body) as { approval: { kind: string; status: string }; executed: boolean };
+
+    assert.equal(response.statusCode, 202);
+    assert.equal(body.approval.kind, kind);
+    assert.equal(body.approval.status, 'pending');
+    assert.equal(body.executed, false);
+  }
 });
 
 test('POST /approvals/:id/approve marks approval approved without executing', async () => {

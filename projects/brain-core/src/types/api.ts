@@ -75,6 +75,21 @@ export interface BrainCoreVideoQueueItem {
   source: 'placeholder';
 }
 
+export interface BrainCoreOrchestratorSummary {
+  id: string;
+  name: string;
+  status: 'placeholder' | 'unknown' | 'disabled';
+  source: 'placeholder';
+  actionsSupported: boolean;
+}
+
+export interface BrainCoreCapabilitySummary {
+  readEndpoints: string[];
+  approvalRequestEndpoints: string[];
+  executableActionsEnabled: false;
+  notes: string[];
+}
+
 export interface BrainCoreApprovalSummary {
   id: string;
   kind: string;
@@ -137,10 +152,20 @@ export interface BrainCoreRoutes {
   '/approvals': {
     approvals: BrainCoreApprovalSummary[];
   };
+  '/orchestrators': {
+    orchestrators: BrainCoreOrchestratorSummary[];
+  };
+  '/capabilities': BrainCoreCapabilitySummary;
   '/approvals/audit': {
     events: BrainCoreApprovalAuditEvent[];
   };
   '/actions/request': BrainCoreActionRequestResult;
+  '/scheduler/jobs/:id/request-run': BrainCoreActionRequestResult;
+  '/skills/profile': BrainCoreActionRequestResult;
+  '/sessions/:id/resume': BrainCoreActionRequestResult;
+  '/local-apps/:id/start': BrainCoreActionRequestResult;
+  '/local-apps/:id/stop': BrainCoreActionRequestResult;
+  '/local-apps/:id/restart': BrainCoreActionRequestResult;
   '/approvals/:id/approve': BrainCoreApprovalDecisionResult;
   '/approvals/:id/reject': BrainCoreApprovalDecisionResult;
 }

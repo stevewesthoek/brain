@@ -25,6 +25,8 @@ GET /status
 GET /sessions
 GET /skills
 GET /repos
+GET /orchestrators
+GET /capabilities
 GET /scheduler/status
 GET /scheduler/latest-run
 GET /scheduler/jobs

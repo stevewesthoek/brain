@@ -743,3 +743,57 @@ Validation:
 
 - `npm run ci` in `projects/brain-core` passed after the audit endpoint change.
 - CI included typecheck and 20 Node route/adapter/widget/health/audit tests.
+
+## Brain Core capability manifest and request-only action targets — 2026-05-17
+
+Completed another safe roadmap coverage slice.
+
+New files:
+
+```text
+projects/brain-core/src/adapters/capabilities.ts
+projects/brain-core/src/adapters/orchestrators.ts
+```
+
+Updated files:
+
+```text
+projects/brain-core/src/api/routes.ts
+projects/brain-core/src/tests/routes.test.ts
+projects/brain-core/src/types/api.ts
+projects/brain-core/README.md
+operations/runbooks/brain-core.md
+```
+
+Read endpoints added:
+
+```text
+GET /orchestrators
+GET /capabilities
+```
+
+Approval-aware request-only POST routes added:
+
+```text
+POST /scheduler/jobs/:id/request-run
+POST /skills/profile?profile=<profile>
+POST /sessions/:id/resume
+POST /local-apps/:id/start
+POST /local-apps/:id/stop
+POST /local-apps/:id/restart
+```
+
+Safety boundary:
+
+- These routes create approval-request records only.
+- All action responses still return `executed: false`.
+- No scheduler jobs are run.
+- No skill profile is switched.
+- No sessions are resumed.
+- No local apps are started/stopped/restarted.
+- No external systems are mutated.
+
+Validation:
+
+- `npm run ci` in `projects/brain-core` passed.
+- CI included typecheck and 23 Node route/adapter/widget/health/audit/action-target tests.

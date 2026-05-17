@@ -52,6 +52,8 @@ GET /status
 GET /sessions
 GET /skills
 GET /repos
+GET /orchestrators
+GET /capabilities
 GET /scheduler/status
 GET /scheduler/latest-run
 GET /scheduler/jobs
@@ -66,6 +68,12 @@ Approval boundary endpoints:
 
 ```text
 POST /actions/request?kind=<safe-action-kind>
+POST /scheduler/jobs/:id/request-run
+POST /skills/profile?profile=<profile>
+POST /sessions/:id/resume
+POST /local-apps/:id/start
+POST /local-apps/:id/stop
+POST /local-apps/:id/restart
 POST /approvals/:id/approve
 POST /approvals/:id/reject
 ```

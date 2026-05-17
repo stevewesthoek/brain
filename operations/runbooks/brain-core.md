@@ -50,6 +50,8 @@ Expected coverage:
 curl http://127.0.0.1:4877/status
 curl http://127.0.0.1:4877/sessions
 curl http://127.0.0.1:4877/repos
+curl http://127.0.0.1:4877/orchestrators
+curl http://127.0.0.1:4877/capabilities
 curl http://127.0.0.1:4877/scheduler/status
 curl http://127.0.0.1:4877/video/status
 curl http://127.0.0.1:4877/approvals
