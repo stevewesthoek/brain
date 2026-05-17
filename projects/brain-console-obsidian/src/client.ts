@@ -228,15 +228,32 @@ export interface BrainConsoleSnapshot {
   mindPreviews?: BrainCoreMindPreviewSummary[];
 }
 
-interface HttpResult<T> {
+export interface HttpResult<T> {
   value?: T;
   error?: string;
+  detail?: string;
+  url?: string;
+  status?: number;
+  responseTimeMs?: number;
+}
+
+export interface EndpointError {
+  pathname: string;
+  error?: string;
+  detail?: string;
+  status?: number;
+  url?: string;
 }
 
 const REQUEST_TIMEOUT_MS = 1_500;
 
-export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainConsoleSnapshot> {
-  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+// Track which URL worked (for localhost/127 fallback diagnostics)
+let lastWorkingUrl: string | null = null;
+
+export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainConsoleSnapshot & { endpointErrors?: EndpointError[] }> {
+  let normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+  const endpointErrors: EndpointError[] = [];
+
   const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews] = await Promise.all([
     fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
     fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
@@ -252,11 +269,59 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     fetchJson<BrainCoreMindPreviewPolicy>(normalizedBaseUrl, '/execution/mind-preview-policy'),
     fetchJson<{ previews?: BrainCoreMindPreviewSummary[] }>(normalizedBaseUrl, '/execution/mind-previews'),
   ]);
+
+  // Collect endpoint errors for diagnostics
+  const endpointPairs: Array<[string, any]> = [
+    ['/status', status],
+    ['/capabilities', capabilities],
+    ['/runtime/reports', runtimeReports],
+    ['/scheduler/status', schedulerStatus],
+    ['/scheduler/jobs', schedulerJobs],
+    ['/sessions', sessions],
+    ['/repos', repos],
+    ['/approvals', approvals],
+    ['/approvals/store', approvalStore],
+    ['/execution/plans', executionPlans],
+    ['/execution/readiness', executionReadiness],
+    ['/execution/mind-preview-policy', mindPreviewPolicy],
+    ['/execution/mind-previews', mindPreviews],
+  ];
+
+  endpointPairs.forEach(([pathname, result]) => {
+    if ((result as any).error) {
+      endpointErrors.push({
+        pathname,
+        error: (result as any).error,
+        detail: (result as any).detail,
+        status: (result as any).status,
+        url: (result as any).url,
+      });
+    }
+  });
+
   const [videoStatus, videoQueue, localApps] = await Promise.all([
     readBrainCoreVideoStatus(normalizedBaseUrl),
     readBrainCoreVideoQueue(normalizedBaseUrl),
     readBrainCoreLocalApps(normalizedBaseUrl),
   ]);
+
+  const videoPairs: Array<[string, any]> = [
+    ['/video/status', videoStatus],
+    ['/video/queue', videoQueue],
+    ['/local-apps', localApps],
+  ];
+
+  videoPairs.forEach(([pathname, result]) => {
+    if ((result as any).error) {
+      endpointErrors.push({
+        pathname,
+        error: (result as any).error,
+        detail: (result as any).detail,
+        status: (result as any).status,
+        url: (result as any).url,
+      });
+    }
+  });
 
   return {
     status: status.value,
@@ -275,6 +340,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     executionReadiness: executionReadiness.value,
     mindPreviewPolicy: mindPreviewPolicy.value,
     mindPreviews: mindPreviews.value?.previews,
+    endpointErrors: endpointErrors.length > 0 ? endpointErrors : undefined,
   };
 }
 
@@ -356,29 +422,138 @@ export async function readBrainCoreLocalApps(baseUrl: string): Promise<HttpResul
   return fetchJson<{ apps?: BrainCoreLocalAppSummary[] }>(normalizeBaseUrl(baseUrl), '/local-apps');
 }
 
+// Import requestUrl from obsidian at runtime (to avoid bundling issues, it's imported in main.ts)
+let requestUrlFn: any = null;
+
+export function setRequestUrl(fn: any): void {
+  requestUrlFn = fn;
+}
+
 async function fetchJson<T>(baseUrl: string, pathname: string): Promise<HttpResult<T>> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const url = `${baseUrl}${pathname}`;
+  const startTime = performance.now();
+
+  if (!requestUrlFn) {
+    return {
+      error: 'Obsidian requestUrl not initialized',
+      url,
+    };
+  }
 
   try {
-    const response = await fetch(`${baseUrl}${pathname}`, {
-      method: 'GET',
-      signal: controller.signal,
-      headers: {
-        accept: 'application/json',
-      },
-    });
+    const response = await Promise.race([
+      requestUrlFn({
+        url,
+        method: 'GET',
+        headers: { accept: 'application/json' },
+        throw: false,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('request timeout')), REQUEST_TIMEOUT_MS)
+      ),
+    ]);
 
-    if (!response.ok) {
-      return { error: `HTTP ${response.status}` };
+    const responseTimeMs = Math.round(performance.now() - startTime);
+
+    if (response.status < 200 || response.status >= 300) {
+      const detail = response.text ? response.text.slice(0, 200) : undefined;
+      return {
+        error: `HTTP ${response.status}`,
+        status: response.status,
+        detail,
+        url,
+        responseTimeMs,
+      };
     }
 
-    return { value: (await response.json()) as T };
+    let parsed: T;
+    try {
+      parsed = JSON.parse(response.text) as T;
+    } catch {
+      return {
+        error: 'invalid JSON response',
+        detail: response.text?.slice(0, 100),
+        url,
+        responseTimeMs,
+      };
+    }
+
+    return { value: parsed, url, responseTimeMs };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : 'request failed' };
-  } finally {
-    clearTimeout(timeout);
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    const errorMsg = error instanceof Error ? error.message : 'request failed';
+
+    // On timeout or connection error, try fallback URL (only for localhost/127)
+    if (
+      (errorMsg.includes('timeout') || errorMsg.includes('connection')) &&
+      isLocalTestUrl(baseUrl)
+    ) {
+      const fallbackUrl = tryGetFallbackLocalUrl(baseUrl);
+      if (fallbackUrl && fallbackUrl !== baseUrl) {
+        return fetchJsonWithFallback<T>(fallbackUrl, pathname, responseTimeMs);
+      }
+    }
+
+    return {
+      error: errorMsg,
+      url,
+      responseTimeMs,
+    };
   }
+}
+
+async function fetchJsonWithFallback<T>(
+  fallbackUrl: string,
+  pathname: string,
+  firstAttemptMs: number
+): Promise<HttpResult<T>> {
+  try {
+    const response = await Promise.race([
+      requestUrlFn({
+        url: `${fallbackUrl}${pathname}`,
+        method: 'GET',
+        headers: { accept: 'application/json' },
+        throw: false,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('request timeout')), REQUEST_TIMEOUT_MS)
+      ),
+    ]);
+
+    if (response.status < 200 || response.status >= 300) {
+      return { error: `HTTP ${response.status}`, url: `${fallbackUrl}${pathname}` };
+    }
+
+    const parsed = JSON.parse(response.text) as T;
+    return {
+      value: parsed,
+      url: `${fallbackUrl}${pathname} (fallback)`,
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'fallback request failed',
+      url: `${fallbackUrl}${pathname}`,
+    };
+  }
+}
+
+function isLocalTestUrl(url: string): boolean {
+  return (
+    url.includes('localhost:4877') ||
+    url.includes('127.0.0.1:4877') ||
+    url.includes('localhost:4878') ||
+    url.includes('127.0.0.1:4878')
+  );
+}
+
+function tryGetFallbackLocalUrl(baseUrl: string): string | null {
+  if (baseUrl.includes('localhost:')) {
+    return baseUrl.replace('localhost:', '127.0.0.1:');
+  }
+  if (baseUrl.includes('127.0.0.1:')) {
+    return baseUrl.replace('127.0.0.1:', 'localhost:');
+  }
+  return null;
 }
 
 function normalizeBaseUrl(rawValue: string): string {

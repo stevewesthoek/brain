@@ -60,6 +60,9 @@ export interface BrainConsoleViewState {
   warning?: string;
   offline?: boolean;
   refreshedAt?: Date;
+  brainCoreUrl?: string;
+  statusError?: string;
+  endpointErrors?: import('./client.js').EndpointError[];
 }
 
 export async function loadBrainConsoleViewState(
@@ -90,6 +93,24 @@ export async function loadBrainConsoleViewState(
     (result) => result.value === undefined,
   );
 
+  // Collect endpoint errors for diagnostics
+  const endpointErrors: import('./client.js').EndpointError[] = [];
+  [
+    { name: '/status', result: status },
+    { name: '/runtime/reports', result: runtimeReports },
+    { name: '/scheduler/status', result: schedulerStatus },
+  ].forEach(({ name, result }) => {
+    if ((result as any).error) {
+      endpointErrors.push({
+        pathname: name,
+        error: (result as any).error,
+        detail: (result as any).detail,
+        status: (result as any).status,
+        url: (result as any).url,
+      });
+    }
+  });
+
   return {
     status: status.value,
     capabilities: capabilities.value,
@@ -110,6 +131,9 @@ export async function loadBrainConsoleViewState(
     warning: normalized.warning ?? normalized.error,
     offline,
     refreshedAt: new Date(),
+    brainCoreUrl: baseUrl,
+    statusError: status.error,
+    endpointErrors: endpointErrors.length > 0 ? endpointErrors : undefined,
   };
 }
 
@@ -138,7 +162,7 @@ export function renderBrainConsoleView(
 
   // Main content area
   if (snapshot.connectionStatus === 'offline') {
-    renderOfflineState(shell, settings.brainCoreUrl);
+    renderOfflineState(shell, state.brainCoreUrl || settings.brainCoreUrl, state.statusError, state.endpointErrors);
   } else {
     // Dashboard grid with cards
     const grid = shell.createDiv({ cls: 'brain-console__dashboard-grid' });
@@ -339,7 +363,12 @@ function renderNextActionCard(snapshot: DashboardSnapshot): HTMLElement {
   return container;
 }
 
-function renderOfflineState(shell: HTMLElement, brainCoreUrl: string): void {
+function renderOfflineState(
+  shell: HTMLElement,
+  brainCoreUrl: string,
+  statusError?: string,
+  endpointErrors?: import('./client.js').EndpointError[],
+): void {
   const offline = shell.createDiv({ cls: 'brain-console__offline-panel' });
 
   offline.createEl('h2', { text: 'Connection lost' });
@@ -348,11 +377,32 @@ function renderOfflineState(shell: HTMLElement, brainCoreUrl: string): void {
   const urlEl = offline.createEl('code', { text: brainCoreUrl });
   urlEl.addClass('brain-console__url-display');
 
+  // Show diagnostic error
+  if (statusError) {
+    offline.createEl('p', { text: `Error: ${statusError}` });
+  }
+
+  // Show first few endpoint errors
+  if (endpointErrors && endpointErrors.length > 0) {
+    const errorsDiv = offline.createDiv();
+    errorsDiv.createEl('p', { text: 'Endpoint errors:' });
+    const list = errorsDiv.createEl('ul');
+    endpointErrors.slice(0, 3).forEach((err) => {
+      const item = list.createEl('li');
+      item.createEl('code', { text: err.pathname });
+      item.appendText(` — ${err.error || 'no response'}`);
+      if (err.detail) {
+        item.appendText(` (${err.detail.slice(0, 50)})`);
+      }
+    });
+  }
+
   offline.createEl('h3', { text: 'To recover:' });
   const steps = offline.createEl('ol');
-  steps.createEl('li', { text: 'Verify Brain Core is running' });
-  steps.createEl('li', { text: 'Run: npm start in projects/brain-core' });
-  steps.createEl('li', { text: 'Return here and click Refresh' });
+  steps.createEl('li', { text: 'Verify Brain Core terminal is still running' });
+  steps.createEl('li', { text: 'Test: curl http://localhost:4877/status' });
+  steps.createEl('li', { text: 'If still offline, try: Settings → Brain Core URL → http://127.0.0.1:4877' });
+  steps.createEl('li', { text: 'Click Refresh' });
 
   const refreshBtn = offline.createEl('button', { text: 'Refresh' });
   refreshBtn.addClass('brain-console__btn-main');

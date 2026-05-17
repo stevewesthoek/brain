@@ -1,13 +1,15 @@
-import { ItemView, Notice, Plugin, PluginSettingTab, Setting, type WorkspaceLeaf } from 'obsidian';
+import { ItemView, Notice, Plugin, PluginSettingTab, Setting, requestUrl, type WorkspaceLeaf } from 'obsidian';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
 import { loadBrainConsoleViewState, renderBrainConsoleView } from './view.js';
+import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
 
 export default class BrainConsolePlugin extends Plugin {
-  private settings: BrainConsoleSettings = DEFAULT_BRAIN_CONSOLE_SETTINGS;
+  settings: BrainConsoleSettings = DEFAULT_BRAIN_CONSOLE_SETTINGS;
 
   async onload(): Promise<void> {
+    setRequestUrl(requestUrl);
     this.settings = sanitizeSettings(await this.loadData());
 
     this.addRibbonIcon('brain-circuit', 'Open Brain Console', () => {
@@ -57,9 +59,9 @@ class BrainConsoleSettingTab extends PluginSettingTab {
 
     new Setting(this.containerEl)
       .setName('Brain Core URL')
-      .setDesc('Read-only Brain Core endpoint. Defaults to localhost.')
+      .setDesc('Read-only Brain Core endpoint. Default: http://localhost:4877. If offline, try http://127.0.0.1:4877')
       .addText((text) => {
-        text.setValue(DEFAULT_BRAIN_CONSOLE_SETTINGS.brainCoreUrl);
+        text.setValue(this.plugin.settings.brainCoreUrl);
         text.onChange(async (value) => {
           const normalized = normalizeBrainCoreUrl(value);
           if (normalized.error) {
