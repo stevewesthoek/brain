@@ -228,6 +228,22 @@ export interface BrainCoreMindPreviewsSummary {
   line: string;
 }
 
+export interface BrainCoreMaintenancePreviewSummary {
+  queueId: string;
+  actionCount: number;
+  approvalRequiredCount: number;
+  lowRiskCount: number;
+  mediumRiskCount: number;
+  highRiskCount: number;
+}
+
+export interface BrainCoreMaintenancePreviewsSummary {
+  available: boolean;
+  count: number;
+  latest?: BrainCoreMaintenancePreviewSummary;
+  line: string;
+}
+
 export async function readBrainCoreStatus(baseUrl: string): Promise<BrainCoreStatusSummary> {
   const response = await readBrainCoreStatusResponse(baseUrl);
   if (!response) {
@@ -449,6 +465,25 @@ export async function readBrainCoreMindPreviews(baseUrl: string): Promise<BrainC
     count: response.previews?.length ?? 0,
     ...(latest ? { latest } : {}),
     line: `Brain Core mind previews: ${(response.previews?.length ?? 0)} · latest=${latest?.targetPath ?? 'none'}`,
+  };
+}
+
+export async function readBrainCoreMaintenancePreviews(baseUrl: string): Promise<BrainCoreMaintenancePreviewsSummary> {
+  const response = await readJson<{ previews?: BrainCoreMaintenancePreviewSummary[] }>(baseUrl, '/execution/maintenance-previews');
+  if (!response) {
+    return {
+      available: false,
+      count: 0,
+      line: 'Brain Core maintenance previews: unavailable',
+    };
+  }
+  const latest = response.previews?.[0];
+  const approvalCount = latest?.approvalRequiredCount ?? 0;
+  return {
+    available: true,
+    count: response.previews?.length ?? 0,
+    ...(latest ? { latest } : {}),
+    line: `Brain Core maintenance previews: ${(response.previews?.length ?? 0)} actions · approvals=${approvalCount}`,
   };
 }
 

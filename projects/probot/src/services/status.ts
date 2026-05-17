@@ -16,6 +16,7 @@ import {
   readBrainCoreStatus,
   readBrainCoreMindPreviewPolicy,
   readBrainCoreMindPreviews,
+  readBrainCoreMaintenancePreviews,
 } from "./brain-core-client.js";
 import { buildSessionOverview } from "./sessions.js";
 
@@ -49,6 +50,7 @@ export async function getStatusSummary(config: Config): Promise<string> {
   const brainCoreExecutionReadiness = await readBrainCoreExecutionReadiness(config.brainCoreUrl);
   const brainCoreMindPreviewPolicy = await readBrainCoreMindPreviewPolicy(config.brainCoreUrl);
   const brainCoreMindPreviews = await readBrainCoreMindPreviews(config.brainCoreUrl);
+  const brainCoreMaintenancePreviews = await readBrainCoreMaintenancePreviews(config.brainCoreUrl);
   const sessions = await buildSessionOverview(
     config.claudeProjectsDir,
     config.codexSessionsDir,
@@ -79,6 +81,7 @@ export async function getStatusSummary(config: Config): Promise<string> {
     brainCoreExecutionReadiness.line,
     brainCoreMindPreviewPolicy.line,
     brainCoreMindPreviews.line,
+    brainCoreMaintenancePreviews.line,
     `Wiki health: ${describeWikiHealth(brainCoreRuntimeReports)}`,
     `Execution gate: ${brainCoreExecutionReadiness.executionEnabled ? 'enabled' : 'disabled'} · first candidate: ${brainCoreExecutionPlans.firstCandidate}`,
     `Model-router execution flag: ${brainCoreExecutionReadiness.modelRouterDryRunExecutionFlagEnabled ? 'enabled (still gated)' : 'disabled'} · ${brainCoreExecutionReadiness.modelRouterDryRunExecutionFlagName}`,

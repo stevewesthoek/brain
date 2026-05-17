@@ -64,3 +64,24 @@ export type {
   MindWikiHealthSeverity,
   MindWikiHealthSummary,
 } from './wiki-health.js';
+export {
+  createMindMaintenancePreviewQueueFromFindings,
+} from './maintenance-preview.js';
+export type {
+  MindMaintenancePreviewAction,
+  MindMaintenancePreviewActionKind,
+  MindMaintenancePreviewQueue,
+  MindMaintenancePreviewRisk,
+} from './maintenance-preview.js';
+export {
+  writeMaintenancePreviewArtifact,
+  listMaintenancePreviewArtifacts,
+  readMaintenancePreviewArtifact,
+} from './preview-artifacts.js';
+export type {
+  WriteMaintenancePreviewArtifactInput,
+  ListMaintenancePreviewArtifactsInput,
+  ReadMaintenancePreviewArtifactInput,
+  MaintenancePreviewArtifactMeta,
+  MaintenancePreviewArtifactListItem,
+} from './preview-artifacts.js';

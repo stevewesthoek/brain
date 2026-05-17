@@ -270,6 +270,28 @@ export interface BrainCoreMindPreviewDetail extends BrainCoreMindPreviewSummary 
   policyReasons: string[];
 }
 
+export interface BrainCoreMaintenancePreviewSummary {
+  queueId: string;
+  createdAt: string;
+  expiresAt: string;
+  expired: boolean;
+  actionCount: number;
+  lowRiskCount: number;
+  mediumRiskCount: number;
+  highRiskCount: number;
+  approvalRequiredCount: number;
+  writesToMind: false;
+  externalSideEffects: false;
+}
+
+export interface BrainCoreMaintenancePreviewDetail extends BrainCoreMaintenancePreviewSummary {
+  topActions: Array<{
+    kind: string;
+    title: string;
+    risk: string;
+  }>;
+}
+
 export interface BrainCoreExecutionReadiness {
   executionEnabled: false;
   modelRouterDryRunExecutionFlagEnabled: boolean;

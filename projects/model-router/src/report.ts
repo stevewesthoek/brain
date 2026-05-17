@@ -2,6 +2,7 @@ import type { MindContractDryRunResult, MindContractSnapshot, MindRouterLoopPlan
 import { createMindContractDryRunResult } from './jobs.js';
 import { createMindRouterLoopPlan } from './plans.js';
 import { createMindWikiHealthResultFromRoot, type MindWikiHealthResult } from './wiki-health.js';
+import { createMindMaintenancePreviewQueueFromFindings } from './maintenance-preview.js';
 import fs from 'node:fs';
 
 export interface ModelRouterDryRunReport {
@@ -32,6 +33,7 @@ export interface ModelRouterDryRunReport {
     oldestCaptureInboxAgeDays?: number;
   };
   wikiHealth: ModelRouterWikiHealthReport;
+  maintenancePreview: ModelRouterMaintenancePreviewMetadata;
 }
 
 export interface ModelRouterWikiHealthReport {
@@ -40,6 +42,18 @@ export interface ModelRouterWikiHealthReport {
   ok: boolean;
   summary: MindWikiHealthResult['summary'];
   findings: Array<Pick<MindWikiHealthResult['findings'][number], 'id' | 'severity' | 'path' | 'message' | 'recommendation'>>;
+}
+
+export interface ModelRouterMaintenancePreviewMetadata {
+  status: 'available' | 'unavailable';
+  actionCount: number;
+  lowRiskCount: number;
+  mediumRiskCount: number;
+  highRiskCount: number;
+  approvalRequiredCount: number;
+  topActions: Array<{ kind: string; title: string; risk: string }>;
+  writesToMind: false;
+  externalSideEffects: false;
 }
 
 export function createModelRouterDryRunReport(
@@ -89,6 +103,7 @@ export function createModelRouterDryRunReport(
   );
 
   const wikiHealth = createWikiHealthReport(now);
+  const maintenancePreview = createMaintenancePreviewMetadata(wikiHealth);
 
   return {
     generatedAt: now.toISOString(),
@@ -111,6 +126,7 @@ export function createModelRouterDryRunReport(
     warningsByLoop: Object.fromEntries(loopPlans.map((plan) => [plan.jobId, plan.warnings])),
     snapshotStats: pathStats,
     wikiHealth,
+    maintenancePreview,
   };
 }
 
@@ -161,6 +177,56 @@ function emptyWikiHealthSummary(): MindWikiHealthResult['summary'] {
     oversizedWikiPageCount: 0,
     missingSourceTraceCount: 0,
   };
+}
+
+function createMaintenancePreviewMetadata(wikiHealth: ModelRouterWikiHealthReport): ModelRouterMaintenancePreviewMetadata {
+  if (wikiHealth.status === 'unavailable') {
+    return {
+      status: 'unavailable',
+      actionCount: 0,
+      lowRiskCount: 0,
+      mediumRiskCount: 0,
+      highRiskCount: 0,
+      approvalRequiredCount: 0,
+      topActions: [],
+      writesToMind: false,
+      externalSideEffects: false,
+    };
+  }
+
+  try {
+    const queue = createMindMaintenancePreviewQueueFromFindings(
+      wikiHealth.findings as any, // findings are already filtered
+    );
+
+    return {
+      status: 'available',
+      actionCount: queue.summary.total,
+      lowRiskCount: queue.summary.lowRiskCount,
+      mediumRiskCount: queue.summary.mediumRiskCount,
+      highRiskCount: queue.summary.highRiskCount,
+      approvalRequiredCount: queue.summary.approvalRequiredCount,
+      topActions: queue.actions.slice(0, 3).map((action) => ({
+        kind: action.kind,
+        title: action.title,
+        risk: action.risk,
+      })),
+      writesToMind: false,
+      externalSideEffects: false,
+    };
+  } catch {
+    return {
+      status: 'unavailable',
+      actionCount: 0,
+      lowRiskCount: 0,
+      mediumRiskCount: 0,
+      highRiskCount: 0,
+      approvalRequiredCount: 0,
+      topActions: [],
+      writesToMind: false,
+      externalSideEffects: false,
+    };
+  }
 }
 
 function calculateAgeDays(modifiedAt: string | undefined, now: Date): number | undefined {

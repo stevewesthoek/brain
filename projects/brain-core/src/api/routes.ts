@@ -10,6 +10,11 @@ import {
   readLatestMindPreviewDetail,
   readMindPreviewDetailById,
 } from '../adapters/preview-artifacts.js';
+import {
+  listMaintenancePreviewSummaries,
+  readLatestMaintenancePreviewDetail,
+  readMaintenancePreviewDetailById,
+} from '../adapters/maintenance-previews.js';
 import { listRuntimeReports } from '../adapters/runtime-reports.js';
 import { listRepos } from '../adapters/repos.js';
 import { getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
@@ -119,6 +124,15 @@ export async function routeRequest(
         sendJson(response, 200, preview ? { status: 'available', preview } : { status: 'empty' });
         return;
       }
+    case '/execution/maintenance-previews':
+      sendJson(response, 200, { previews: listMaintenancePreviewSummaries() });
+      return;
+    case '/execution/maintenance-previews/latest':
+      {
+        const preview = readLatestMaintenancePreviewDetail();
+        sendJson(response, 200, preview ? { status: 'available', preview } : { status: 'empty' });
+        return;
+      }
     case '/approvals/audit':
       sendJson(response, 200, { events: listApprovalAuditEvents() });
       return;
@@ -157,11 +171,26 @@ export async function routeRequest(
           } satisfies BrainCoreErrorResponse);
           return;
         }
+        const maintenancePreviewMatch = /^\/execution\/maintenance-previews\/([^/]+)$/.exec(url.pathname);
+        if (maintenancePreviewMatch) {
+          const preview = readMaintenancePreviewDetailById(maintenancePreviewMatch[1] ?? '');
+          if (preview) {
+            sendJson(response, 200, { preview });
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Maintenance preview queue not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
       }
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
   }
