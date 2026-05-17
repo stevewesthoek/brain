@@ -1004,6 +1004,8 @@ What changed:
 - Brain Core `/scheduler/status` and `/scheduler/latest-run` now read the model-router dry-run runtime report when present.
 - Brain Core `/runtime/reports` now exposes read-only summaries for the model-router dry-run report, approval audit JSONL health, and future report slots. The endpoint stays Brain-owned and reports `writesToMind: false` and `executableActions: false`.
 - Approval requests and audit records remain non-executing scaffolds. Rejected requests are recorded with `executed: false`; unsupported kinds are rejected without creating approval records.
+- Mind workspace isolation guidance now lives in `operations/runbooks/mind-workspace-isolation.md` for later category-by-category cleanup of unrelated dirty state.
+- ProBot is being reduced to a thin GET-only client over Brain Core, and the Brain Console plugin remains standalone until manually approved for vault installation.
 - Default report path: `runtime/local/model-router/latest.json`.
 - Override path: `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH`.
 - `/scheduler/jobs` now includes `model-router-dry-run` in addition to Mind loop job placeholders.

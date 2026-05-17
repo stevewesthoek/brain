@@ -4,6 +4,8 @@
 
 ProBot is a lightweight, always-on local Slack and Telegram control plane for the Brain repo and the existing Claude/Codex workflow on this Mac.
 
+It is being trimmed into a thin read-only client over Brain Core. New machine, session, scheduler, approval, and runtime-report surfaces should come from Brain Core first.
+
 It is intentionally not a general-purpose agent platform. The goal is fast remote access to trusted local workflows with a small, auditable codebase and low idle resource usage.
 
 ## Architecture Direction — Dashboard Freeze
@@ -18,6 +20,18 @@ The accepted direction is documented in:
 Obsidian is the target primary human cockpit. ProBot should not receive new dashboard product features. Reusable ProBot backend capabilities may be migrated into the future Brain Core local API, including Slack/Telegram adapters, session ranking, local app lifecycle logic, approval handling, and selected status adapters.
 
 Dashboard changes are allowed only when they support diagnostics, migration, or safe decommissioning.
+
+Brain Console is expected to live as a standalone Obsidian plugin project outside the live Mind vault and remain manually installable only after explicit approval.
+
+Desired read-only Brain Core command aliases for the thin-client direction are:
+
+- `brain`
+- `brain status`
+- `brain reports`
+- `brain sessions`
+- `brain approvals`
+
+These should remain GET-only and fail soft when Brain Core is offline.
 
 ## Current Direction: Dashboard Freeze
 

@@ -3,10 +3,12 @@ import path from "node:path";
 import os from "node:os";
 import type { Config } from "../config.js";
 import {
+  readBrainCoreApprovals,
   readBrainCoreCapabilities,
   readBrainCoreRuntimeReports,
+  readBrainCoreSchedulerJobs,
   readBrainCoreSessions,
-  readBrainCoreStatusLine,
+  readBrainCoreStatus,
 } from "./brain-core-client.js";
 import { buildSessionOverview } from "./sessions.js";
 
@@ -27,10 +29,12 @@ export async function getStatusSummary(config: Config): Promise<string> {
   const load = os.loadavg().map((value) => value.toFixed(2)).join(", ");
   const freeGb = (os.freemem() / 1024 / 1024 / 1024).toFixed(1);
   const totalGb = (os.totalmem() / 1024 / 1024 / 1024).toFixed(1);
-  const brainCoreStatus = await readBrainCoreStatusLine(config.brainCoreUrl);
+  const brainCoreStatus = await readBrainCoreStatus(config.brainCoreUrl);
   const brainCoreCapabilities = await readBrainCoreCapabilities(config.brainCoreUrl);
   const brainCoreRuntimeReports = await readBrainCoreRuntimeReports(config.brainCoreUrl);
   const brainCoreSessions = await readBrainCoreSessions(config.brainCoreUrl);
+  const brainCoreSchedulerJobs = await readBrainCoreSchedulerJobs(config.brainCoreUrl);
+  const brainCoreApprovals = await readBrainCoreApprovals(config.brainCoreUrl);
   const sessions = await buildSessionOverview(
     config.claudeProjectsDir,
     config.codexSessionsDir,
@@ -42,24 +46,18 @@ export async function getStatusSummary(config: Config): Promise<string> {
 
   return [
     `ProBot is live on ${config.hostname}.`,
-    brainCoreStatus,
-    brainCoreCapabilities
-      ? `Brain Core capabilities: executableActionsEnabled=${brainCoreCapabilities.executableActionsEnabled}`
-      : "Brain Core capabilities: unavailable",
-    brainCoreRuntimeReports
-      ? `Brain Core runtime reports: ${brainCoreRuntimeReports.reports
-          .map((report) => `${report.id}=${report.status}`)
-          .join(", ")}`
-      : "Brain Core runtime reports: unavailable",
+    brainCoreStatus.line,
+    brainCoreCapabilities.line,
+    brainCoreRuntimeReports.line,
     `Telegram: local polling active, ${config.telegramAllowedUserIds.length} allowed user(s)`,
     config.slackBotToken && config.slackAppToken
       ? `Slack: Socket Mode configured, ${config.slackAllowedUserIds.length || "all"} allowed user(s)`
       : "Slack: disabled",
     `ProBot uptime: ${uptimeMinutes}m`,
     `Recent sessions: ${sessions.length} total, ${activeSessions.length} active in tmux`,
-    brainCoreSessions
-      ? `Brain Core sessions: ${brainCoreSessions.sessions.length}`
-      : "Brain Core sessions: unavailable",
+    brainCoreSessions.line,
+    brainCoreSchedulerJobs.line,
+    brainCoreApprovals.line,
     latest ? `Latest thread: ${latest.tool} · ${latest.projectLabel} · ${latest.headline}` : "Latest thread: none detected",
     `Notes captured today: ${todayNotes}`,
     `Allowed roots: ${config.allowedRoots.length}`,
