@@ -95,6 +95,8 @@ If the integration is unhealthy, Obsidian should remain readable and show a Brai
 - Do not paste runtime logs into Mind.
 - Do not use Mind notes as a runtime database.
 - Approval endpoints currently record and decide only; they return `executed: false`.
+- `GET /approvals/audit` exposes approval audit events.
+- Optional audit persistence uses `BRAIN_CORE_APPROVAL_AUDIT_PATH` as a JSONL file path. Use a safe ignored runtime path; do not store audit logs in Mind notes.
 - Scheduler/video/local-app endpoints are placeholders until real adapters are separately validated.
 
 ## Rollback

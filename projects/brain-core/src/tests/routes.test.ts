@@ -164,6 +164,16 @@ test('POST /actions/request creates an approval record without executing', async
   assert.equal(body.executed, false);
 });
 
+test('GET /approvals/audit returns approval audit events', async () => {
+  await exercise({ method: 'POST', url: '/actions/request?kind=audit-test' });
+  const response = await exercise({ method: 'GET', url: '/approvals/audit' });
+  const body = JSON.parse(response.body) as { events: Array<{ event: string; kind: string; persisted: boolean }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.events.some((event) => event.event === 'requested' && event.kind === 'audit-test'), true);
+  assert.equal(typeof body.events[0]?.persisted, 'boolean');
+});
+
 test('POST /approvals/:id/approve marks approval approved without executing', async () => {
   const requestResponse = await exercise({ method: 'POST', url: '/actions/request?kind=test-action' });
   const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };

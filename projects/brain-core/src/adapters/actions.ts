@@ -1,11 +1,16 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type {
   BrainCoreActionRequestResult,
+  BrainCoreApprovalAuditEvent,
   BrainCoreApprovalDecisionResult,
   BrainCoreApprovalSummary,
 } from '../types/api.js';
 
 const approvals = new Map<string, BrainCoreApprovalSummary>();
+const auditEvents: BrainCoreApprovalAuditEvent[] = [];
 let nextApprovalNumber = 1;
+let nextAuditNumber = 1;
 
 export function requestAction(kind = 'manual-request'): BrainCoreActionRequestResult {
   const approval: BrainCoreApprovalSummary = {
@@ -17,11 +22,12 @@ export function requestAction(kind = 'manual-request'): BrainCoreActionRequestRe
   };
 
   approvals.set(approval.id, approval);
+  recordAuditEvent(approval, 'requested');
 
   return {
     approval,
     executed: false,
-    message: 'Action request recorded. Brain Core Phase 4 creates approval records only; it does not execute actions yet.',
+    message: 'Action request recorded. Brain Core creates approval records and audit events only; it does not execute actions yet.',
   };
 }
 
@@ -40,6 +46,14 @@ export function listApprovalRecords(): BrainCoreApprovalSummary[] {
   return [...approvals.values()].sort((left, right) => left.id.localeCompare(right.id));
 }
 
+export function listApprovalAuditEvents(): BrainCoreApprovalAuditEvent[] {
+  const persistedEvents = readPersistedAuditEvents();
+  const merged = [...persistedEvents, ...auditEvents];
+  const byId = new Map(merged.map((event) => [event.id, event]));
+
+  return [...byId.values()].sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+}
+
 export function decideApproval(
   approvalId: string,
   decision: 'approve' | 'reject',
@@ -53,6 +67,7 @@ export function decideApproval(
       status: 'expired',
       source: 'memory',
     };
+    recordAuditEvent(missing, 'missing');
 
     return {
       approval: missing,
@@ -66,12 +81,89 @@ export function decideApproval(
     status: decision === 'approve' ? 'approved' : 'rejected',
   };
   approvals.set(approvalId, updated);
+  recordAuditEvent(updated, decision === 'approve' ? 'approved' : 'rejected');
 
   return {
     approval: updated,
     executed: false,
-    message: `Approval ${approvalId} marked ${updated.status}. Brain Core Phase 4 does not execute approved actions yet.`,
+    message: `Approval ${approvalId} marked ${updated.status}. Brain Core does not execute approved actions yet.`,
   };
+}
+
+function recordAuditEvent(
+  approval: BrainCoreApprovalSummary,
+  event: BrainCoreApprovalAuditEvent['event'],
+): void {
+  const auditEvent: BrainCoreApprovalAuditEvent = {
+    id: `audit-${nextAuditNumber++}`,
+    approvalId: approval.id,
+    event,
+    kind: approval.kind,
+    createdAt: new Date().toISOString(),
+    persisted: false,
+  };
+
+  const persisted = appendAuditEvent(auditEvent);
+  auditEvents.push({
+    ...auditEvent,
+    persisted,
+  });
+}
+
+function appendAuditEvent(event: BrainCoreApprovalAuditEvent): boolean {
+  const auditPath = getAuditPath();
+  if (!auditPath) {
+    return false;
+  }
+
+  const dir = path.dirname(auditPath);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.appendFileSync(auditPath, `${JSON.stringify({ ...event, persisted: true })}\n`);
+  return true;
+}
+
+function readPersistedAuditEvents(): BrainCoreApprovalAuditEvent[] {
+  const auditPath = getAuditPath();
+  if (!auditPath || !fs.existsSync(auditPath)) {
+    return [];
+  }
+
+  return fs
+    .readFileSync(auditPath, 'utf8')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map(parseAuditEvent)
+    .filter((event): event is BrainCoreApprovalAuditEvent => event !== undefined);
+}
+
+function parseAuditEvent(line: string): BrainCoreApprovalAuditEvent | undefined {
+  try {
+    const value = JSON.parse(line) as Partial<BrainCoreApprovalAuditEvent>;
+    if (!value.id || !value.approvalId || !value.event || !value.kind || !value.createdAt) {
+      return undefined;
+    }
+
+    return {
+      id: value.id,
+      approvalId: value.approvalId,
+      event: value.event,
+      kind: value.kind,
+      createdAt: value.createdAt,
+      persisted: value.persisted === true,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function getAuditPath(): string | undefined {
+  const rawPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+  if (!rawPath || rawPath.includes('..')) {
+    return undefined;
+  }
+
+  return path.resolve(rawPath);
 }
 
 function normalizeKind(kind: string): string {

@@ -697,3 +697,49 @@ Remaining Phase 7 work:
 - Add real packaging/install guidance for the future Obsidian plugin once its location is confirmed.
 - Add persistent audit storage for approvals before any executable actions are enabled.
 - Keep generated `projects/brain-core/dist/` unstaged unless a package build artifact policy is explicitly chosen.
+
+## Brain Core approval audit + blocked plugin handoff — 2026-05-17
+
+Continued the remaining roadmap work until blocked by repo policy or live access.
+
+Implemented in Brain Core:
+
+```text
+GET /approvals/audit
+BRAIN_CORE_APPROVAL_AUDIT_PATH optional JSONL persistence
+```
+
+Updated files:
+
+```text
+projects/brain-core/src/adapters/actions.ts
+projects/brain-core/src/api/routes.ts
+projects/brain-core/src/tests/routes.test.ts
+projects/brain-core/src/types/api.ts
+projects/brain-core/src/types/node-shims.d.ts
+operations/runbooks/brain-core.md
+```
+
+Safety boundary preserved:
+
+- Approval requests and decisions still return `executed: false`.
+- Audit events may persist only when `BRAIN_CORE_APPROVAL_AUDIT_PATH` is explicitly set.
+- Audit logs must use a safe ignored runtime path and must not be stored in Mind notes.
+- No executable actions were enabled.
+
+Blocked and skipped:
+
+- A standalone `projects/brain-console-obsidian/` plugin project could not be created because the Brain repo write policy blocks that new project path.
+- Generated `projects/brain-core/dist/` could not be deleted through BuildFlow because generated output paths are blocked by policy.
+
+Created instead:
+
+```text
+operations/specs/brain-console-obsidian-plugin.md
+docs/system/1778991704100-codex-prompt-complete-live-brain-core-integrations-2026-05-17.md
+```
+
+Validation:
+
+- `npm run ci` in `projects/brain-core` passed after the audit endpoint change.
+- CI included typecheck and 20 Node route/adapter/widget/health/audit tests.

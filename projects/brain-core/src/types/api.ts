@@ -95,6 +95,15 @@ export interface BrainCoreApprovalDecisionResult {
   message: string;
 }
 
+export interface BrainCoreApprovalAuditEvent {
+  id: string;
+  approvalId: string;
+  event: 'requested' | 'approved' | 'rejected' | 'missing';
+  kind: string;
+  createdAt: string;
+  persisted: boolean;
+}
+
 export interface BrainCoreErrorResponse {
   error: {
     code: string;
@@ -127,6 +136,9 @@ export interface BrainCoreRoutes {
   };
   '/approvals': {
     approvals: BrainCoreApprovalSummary[];
+  };
+  '/approvals/audit': {
+    events: BrainCoreApprovalAuditEvent[];
   };
   '/actions/request': BrainCoreActionRequestResult;
   '/approvals/:id/approve': BrainCoreApprovalDecisionResult;

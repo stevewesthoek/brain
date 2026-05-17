@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { decideApproval, requestAction } from '../adapters/actions.js';
+import { decideApproval, listApprovalAuditEvents, requestAction } from '../adapters/actions.js';
 import { listApprovals } from '../adapters/approvals.js';
 import { listLocalApps } from '../adapters/local-apps.js';
 import { listRepos } from '../adapters/repos.js';
@@ -82,6 +82,9 @@ export async function routeRequest(
       return;
     case '/approvals':
       sendJson(response, 200, { approvals: listApprovals() });
+      return;
+    case '/approvals/audit':
+      sendJson(response, 200, { events: listApprovalAuditEvents() });
       return;
     default:
       sendJson(response, 404, {
