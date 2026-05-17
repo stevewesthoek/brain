@@ -52,6 +52,15 @@ export interface BrainCoreApprovalsResponse {
   approvals: Array<{ id: string; status?: string }>;
 }
 
+export interface BrainCoreApprovalStoreResponse {
+  enabled: boolean;
+  status: 'memory' | 'available' | 'invalid' | 'unsafe';
+  path: string;
+  recordCount: number;
+  writesToMind: boolean;
+  executableActions: boolean;
+}
+
 export interface BrainCoreStatusSummary {
   available: boolean;
   line: string;
@@ -98,6 +107,13 @@ export interface BrainCoreSchedulerJobsSummary {
 export interface BrainCoreApprovalsSummary {
   available: boolean;
   count: number;
+  line: string;
+}
+
+export interface BrainCoreApprovalStoreSummary {
+  available: boolean;
+  status: string;
+  recordCount: number;
   line: string;
 }
 
@@ -199,6 +215,19 @@ export async function readBrainCoreApprovals(baseUrl: string): Promise<BrainCore
     available: true,
     count: response.approvals.length,
     line: `Brain Core approvals: ${response.approvals.length}`,
+  };
+}
+
+export async function readBrainCoreApprovalStore(baseUrl: string): Promise<BrainCoreApprovalStoreSummary> {
+  const response = await readJson<BrainCoreApprovalStoreResponse>(baseUrl, '/approvals/store');
+  if (!response) {
+    return { available: false, status: 'unavailable', recordCount: 0, line: 'Brain Core approval store: unavailable' };
+  }
+  return {
+    available: true,
+    status: response.status,
+    recordCount: response.recordCount,
+    line: `Brain Core approval store: ${response.status} · records=${response.recordCount}`,
   };
 }
 

@@ -2,6 +2,7 @@ import { ItemView } from './obsidian.js';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
 import {
   readBrainCoreApprovals,
+  readBrainCoreApprovalStore,
   readBrainCoreCapabilities,
   readBrainCoreLocalApps,
   readBrainCoreRepos,
@@ -13,6 +14,7 @@ import {
   readBrainCoreVideoStatus,
   readBrainCoreStatus,
   type BrainCoreApprovalSummary,
+  type BrainCoreApprovalStoreSummary,
   type BrainCoreCapabilitySummary,
   type BrainCoreLocalAppSummary,
   type BrainCoreRepoSummary,
@@ -37,6 +39,7 @@ export interface BrainConsoleViewState {
   sessions?: BrainCoreSessionSummary[];
   repos?: BrainCoreRepoSummary[];
   approvals?: BrainCoreApprovalSummary[];
+  approvalStore?: BrainCoreApprovalStoreSummary;
   warning?: string;
   offline?: boolean;
 }
@@ -46,7 +49,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -58,9 +61,10 @@ export async function loadBrainConsoleViewState(
     readBrainCoreSessions(baseUrl),
     readBrainCoreRepos(baseUrl),
     readBrainCoreApprovals(baseUrl),
+    readBrainCoreApprovalStore(baseUrl),
   ]);
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore].every(
     (result) => result.value === undefined,
   );
 
@@ -76,6 +80,7 @@ export async function loadBrainConsoleViewState(
     sessions: sessions.value?.sessions,
     repos: repos.value?.repos,
     approvals: approvals.value?.approvals,
+    approvalStore: approvalStore.value,
     warning: normalized.warning ?? normalized.error,
     offline,
   };
@@ -137,6 +142,7 @@ export function renderBrainConsoleView(
   renderSection(grid, 'Local apps', describeLocalApps(state.localApps));
   renderSection(grid, 'Scheduler', describeScheduler(state.schedulerStatus, state.schedulerJobs));
   renderSection(grid, 'Sessions / repos / approvals', describeCollections(state.sessions, state.repos, state.approvals));
+  renderSection(grid, 'Approval gate', describeApprovalGate(state.approvalStore));
 }
 
 function renderSection(parent: HTMLElement, title: string, entries: Array<[string, string]>): void {
@@ -210,6 +216,25 @@ function describeCollections(
     ['Sessions', `${sessionList.length} · ${sampleSessions}`],
     ['Repos', `${repoList.length} · ${sampleRepos}`],
     ['Approvals', `${approvalList.length} · ${sampleApprovals}`],
+  ];
+}
+
+function describeApprovalGate(
+  approvalStore: BrainConsoleViewState['approvalStore'],
+): Array<[string, string]> {
+  if (!approvalStore) {
+    return [
+      ['Store status', 'Unavailable'],
+      ['Execution enabled', 'false'],
+      ['Gate', 'disabled-until-explicit-enable'],
+    ];
+  }
+
+  return [
+    ['Store status', approvalStore.status],
+    ['Records', String(approvalStore.recordCount)],
+    ['Execution enabled', String(false)],
+    ['Gate', 'disabled-until-explicit-enable'],
   ];
 }
 

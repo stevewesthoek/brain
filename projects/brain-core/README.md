@@ -53,6 +53,8 @@ Those report-backed local app and video surfaces were live-verified over `http:/
 
 Current `/approvals` reads the in-memory Phase 4 approval request store, returning a placeholder when no requests exist.
 
+Current `/approvals/store` exposes read-only approval-store health and record counts. When `BRAIN_CORE_APPROVAL_STORE_PATH` points to a safe JSON file, Brain Core persists approval records there; otherwise it falls back to memory.
+
 Current mutation surface is intentionally minimal:
 
 ```text

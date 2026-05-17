@@ -124,8 +124,54 @@ export interface BrainCoreApprovalSummary {
   source: 'placeholder' | 'memory';
 }
 
+export interface BrainCoreApprovalPreview {
+  kind: string;
+  summary: string;
+  wouldExecute: false;
+  requiresApproval: true;
+  writesToMind: false;
+  externalSideEffects: false;
+  commands: string[];
+}
+
+export interface BrainCoreExecutionGatePolicy {
+  executionEnabled: false;
+  executionGate: 'disabled-until-explicit-enable';
+  requiresDurableAudit: true;
+  requiresRollbackPlan: true;
+}
+
+export type BrainCoreApprovalStoreStatus = 'memory' | 'available' | 'invalid' | 'unsafe';
+
+export interface BrainCoreApprovalRecord {
+  createdAt: string;
+  updatedAt: string;
+  requestedBy: string;
+  reason?: string;
+  message?: string;
+  id: string;
+  kind: string;
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  expiresAt?: string;
+  executed: false;
+  preview: BrainCoreApprovalPreview;
+  policy: BrainCoreExecutionGatePolicy;
+  source: 'memory' | 'json';
+}
+
+export interface BrainCoreApprovalStoreSummary {
+  enabled: boolean;
+  status: BrainCoreApprovalStoreStatus;
+  path: string;
+  recordCount: number;
+  writesToMind: false;
+  executableActions: false;
+}
+
 export interface BrainCoreActionRequestResult {
   approval?: BrainCoreApprovalSummary;
+  preview?: BrainCoreApprovalPreview;
+  policy?: BrainCoreExecutionGatePolicy;
   accepted: boolean;
   executed: false;
   message: string;
@@ -133,6 +179,8 @@ export interface BrainCoreActionRequestResult {
 
 export interface BrainCoreApprovalDecisionResult {
   approval: BrainCoreApprovalSummary;
+  preview?: BrainCoreApprovalPreview;
+  policy?: BrainCoreExecutionGatePolicy;
   accepted: true;
   executed: false;
   message: string;
@@ -196,6 +244,7 @@ export interface BrainCoreRoutes {
   '/approvals': {
     approvals: BrainCoreApprovalSummary[];
   };
+  '/approvals/store': BrainCoreApprovalStoreSummary;
   '/orchestrators': {
     orchestrators: BrainCoreOrchestratorSummary[];
   };

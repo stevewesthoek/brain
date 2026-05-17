@@ -5,6 +5,7 @@ import type { Config } from "../config.js";
 import {
   readBrainCoreLocalApps,
   readBrainCoreApprovals,
+  readBrainCoreApprovalStore,
   readBrainCoreCapabilities,
   readBrainCoreRuntimeReports,
   readBrainCoreSchedulerJobs,
@@ -39,6 +40,7 @@ export async function getStatusSummary(config: Config): Promise<string> {
   const brainCoreSessions = await readBrainCoreSessions(config.brainCoreUrl);
   const brainCoreSchedulerJobs = await readBrainCoreSchedulerJobs(config.brainCoreUrl);
   const brainCoreApprovals = await readBrainCoreApprovals(config.brainCoreUrl);
+  const brainCoreApprovalStore = await readBrainCoreApprovalStore(config.brainCoreUrl);
   const sessions = await buildSessionOverview(
     config.claudeProjectsDir,
     config.codexSessionsDir,
@@ -64,6 +66,7 @@ export async function getStatusSummary(config: Config): Promise<string> {
     brainCoreSessions.line,
     brainCoreSchedulerJobs.line,
     brainCoreApprovals.line,
+    brainCoreApprovalStore.line,
     latest ? `Latest thread: ${latest.tool} · ${latest.projectLabel} · ${latest.headline}` : "Latest thread: none detected",
     `Notes captured today: ${todayNotes}`,
     `Allowed roots: ${config.allowedRoots.length}`,

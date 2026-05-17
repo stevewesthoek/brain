@@ -35,6 +35,7 @@ projects/brain-console-obsidian/
 - Offline state is shown when Brain Core is unavailable.
 - Runtime reports and capabilities are read from Brain Core, not copied into Mind notes.
 - Runtime reports include the read-only `local-apps` and `video` summaries generated under `runtime/local/`.
+- The read-only approval gate view includes approval store health when Brain Core exposes `/approvals/store`.
 - Manual installation into `mind/.obsidian/plugins/` is required and should be approved separately.
 - Manual install/test instructions live in `operations/runbooks/brain-console-manual-install-test.md`.
 

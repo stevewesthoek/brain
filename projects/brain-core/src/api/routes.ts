@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { decideApproval, listApprovalAuditEvents, requestAction } from '../adapters/actions.js';
+import { decideApproval, getApprovalStoreSummary, listApprovalAuditEvents, requestAction } from '../adapters/actions.js';
 import { listApprovals } from '../adapters/approvals.js';
 import { getCapabilities } from '../adapters/capabilities.js';
 import { listOrchestrators } from '../adapters/orchestrators.js';
@@ -92,6 +92,9 @@ export async function routeRequest(
     case '/approvals':
       sendJson(response, 200, { approvals: listApprovals() });
       return;
+    case '/approvals/store':
+      sendJson(response, 200, getApprovalStoreSummary());
+      return;
     case '/approvals/audit':
       sendJson(response, 200, { events: listApprovalAuditEvents() });
       return;
@@ -102,7 +105,7 @@ export async function routeRequest(
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/audit, /runtime/reports.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports.',
         },
       } satisfies BrainCoreErrorResponse);
   }

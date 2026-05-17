@@ -102,6 +102,7 @@ If the integration is unhealthy, Obsidian should remain readable and show a Brai
 - Do not use Mind notes as a runtime database.
 - Approval endpoints currently record and decide only; they return `executed: false`.
 - `GET /approvals/audit` exposes approval audit events.
+- `GET /approvals/store` exposes read-only approval-store health and record counts.
 - `GET /runtime/reports` exposes read-only runtime report summaries for model-router, approval-audit, video, and local-apps. It never reads Mind content and always reports `writesToMind: false` and `executableActions: false`.
 - Optional audit persistence uses `BRAIN_CORE_APPROVAL_AUDIT_PATH` as a JSONL file path. Use a safe ignored runtime path; do not store audit logs in Mind notes.
 - Audit path validation rejects `..`, `mind`, `.env`, `.git`, `node_modules`, `dist`, and `build`. Unsafe paths fall back to memory-only audit events.

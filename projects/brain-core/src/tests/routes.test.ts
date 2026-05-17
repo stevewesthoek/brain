@@ -435,13 +435,61 @@ test('GET /approvals returns placeholder approvals list before action requests',
   assert.equal(typeof body.approvals[0]?.status, 'string');
 });
 
+test('GET /approvals/store returns read-only store health', async () => {
+  const response = await exercise({ method: 'GET', url: '/approvals/store' });
+  const body = JSON.parse(response.body) as { enabled: boolean; status: string; recordCount: number; writesToMind: boolean; executableActions: boolean };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.enabled, true);
+  assert.equal(body.writesToMind, false);
+  assert.equal(body.executableActions, false);
+  assert.equal(typeof body.recordCount, 'number');
+});
+
+test('POST /actions/request persists approval records when the store path is configured', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-approval-store');
+  const storePath = path.join(testDir, 'approvals.json');
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
+
+  try {
+    const response = await exercise({ method: 'POST', url: '/actions/request?kind=manual-request' });
+    const storeResponse = await exercise({ method: 'GET', url: '/approvals/store' });
+    const storeBody = JSON.parse(storeResponse.body) as { status: string; recordCount: number };
+
+    assert.equal(response.statusCode, 202);
+    assert.equal(fs.existsSync(storePath), true);
+    assert.equal(storeBody.status, 'available');
+    assert.equal(storeBody.recordCount > 0, true);
+  } finally {
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
 test('POST /actions/request creates an approval record without executing', async () => {
   const response = await exercise({ method: 'POST', url: '/actions/request?kind=manual-request' });
-  const body = JSON.parse(response.body) as { approval: { id: string; kind: string; status: string }; executed: boolean };
+  const body = JSON.parse(response.body) as {
+    approval: { id: string; kind: string; status: string };
+    preview: { wouldExecute: boolean; requiresApproval: boolean; writesToMind: boolean; externalSideEffects: boolean; commands: string[] };
+    policy: { executionEnabled: boolean; executionGate: string; requiresDurableAudit: boolean; requiresRollbackPlan: boolean };
+    executed: boolean;
+  };
 
   assert.equal(response.statusCode, 202);
   assert.equal(body.approval.kind, 'manual-request');
   assert.equal(body.approval.status, 'pending');
+  assert.equal(body.preview.wouldExecute, false);
+  assert.equal(body.preview.requiresApproval, true);
+  assert.equal(body.policy.executionEnabled, false);
+  assert.equal(body.policy.executionGate, 'disabled-until-explicit-enable');
   assert.equal(body.executed, false);
 });
 
@@ -546,11 +594,18 @@ test('roadmap POST targets create approval requests without executing', async ()
 
   for (const [url, kind] of routes) {
     const response = await exercise({ method: 'POST', url });
-    const body = JSON.parse(response.body) as { approval: { kind: string; status: string }; executed: boolean };
+    const body = JSON.parse(response.body) as {
+      approval: { kind: string; status: string };
+      preview: { wouldExecute: boolean };
+      policy: { executionEnabled: boolean };
+      executed: boolean;
+    };
 
     assert.equal(response.statusCode, 202);
     assert.equal(body.approval.kind, kind);
     assert.equal(body.approval.status, 'pending');
+    assert.equal(body.preview.wouldExecute, false);
+    assert.equal(body.policy.executionEnabled, false);
     assert.equal(body.executed, false);
   }
 });

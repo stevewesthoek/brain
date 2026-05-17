@@ -1095,3 +1095,4 @@ Validation:
 - Brain Core `/runtime/reports`, `/local-apps`, `/video/status`, and `/video/queue` are covered by CI-backed tests and continue to return read-only data.
 - Those runtime surfaces were also live-verified over `http://127.0.0.1:4877`.
 - Brain Console manual install/test instructions are documented in `operations/runbooks/brain-console-manual-install-test.md`.
+- Brain Core approval persistence/gates are now documented in `operations/runbooks/brain-core-approval-gates.md`; execution is still disabled and all action responses continue to return `executed: false`.

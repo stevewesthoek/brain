@@ -121,6 +121,15 @@ export interface BrainCoreApprovalSummary {
   source: 'placeholder' | 'memory';
 }
 
+export interface BrainCoreApprovalStoreSummary {
+  enabled: boolean;
+  status: 'memory' | 'available' | 'invalid' | 'unsafe';
+  path: string;
+  recordCount: number;
+  writesToMind: false;
+  executableActions: false;
+}
+
 export interface BrainConsoleSnapshot {
   status?: BrainCoreStatus;
   capabilities?: BrainCoreCapabilitySummary;
@@ -133,6 +142,7 @@ export interface BrainConsoleSnapshot {
   sessions?: BrainCoreSessionSummary[];
   repos?: BrainCoreRepoSummary[];
   approvals?: BrainCoreApprovalSummary[];
+  approvalStore?: BrainCoreApprovalStoreSummary;
 }
 
 interface HttpResult<T> {
@@ -144,7 +154,7 @@ const REQUEST_TIMEOUT_MS = 1_500;
 
 export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainConsoleSnapshot> {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals] = await Promise.all([
+  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore] = await Promise.all([
     fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
     fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
     fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizedBaseUrl, '/runtime/reports'),
@@ -153,6 +163,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     fetchJson<{ sessions?: BrainCoreSessionSummary[] }>(normalizedBaseUrl, '/sessions'),
     fetchJson<{ repos?: BrainCoreRepoSummary[] }>(normalizedBaseUrl, '/repos'),
     fetchJson<{ approvals?: BrainCoreApprovalSummary[] }>(normalizedBaseUrl, '/approvals'),
+    fetchJson<BrainCoreApprovalStoreSummary>(normalizedBaseUrl, '/approvals/store'),
   ]);
   const [videoStatus, videoQueue, localApps] = await Promise.all([
     readBrainCoreVideoStatus(normalizedBaseUrl),
@@ -172,6 +183,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     sessions: sessions.value?.sessions,
     repos: repos.value?.repos,
     approvals: approvals.value?.approvals,
+    approvalStore: approvalStore.value,
   };
 }
 
@@ -211,6 +223,10 @@ export async function readBrainCoreRepos(baseUrl: string): Promise<HttpResult<{ 
 
 export async function readBrainCoreApprovals(baseUrl: string): Promise<HttpResult<{ approvals?: BrainCoreApprovalSummary[] }>> {
   return fetchJson<{ approvals?: BrainCoreApprovalSummary[] }>(normalizeBaseUrl(baseUrl), '/approvals');
+}
+
+export async function readBrainCoreApprovalStore(baseUrl: string): Promise<HttpResult<BrainCoreApprovalStoreSummary>> {
+  return fetchJson<BrainCoreApprovalStoreSummary>(normalizeBaseUrl(baseUrl), '/approvals/store');
 }
 
 export async function readBrainCoreVideoStatus(baseUrl: string): Promise<HttpResult<BrainCoreVideoStatus>> {
