@@ -617,3 +617,47 @@ Remaining Phase 5 work:
 - Convert sessions/approvals commands to Brain Core API calls where safe.
 - Keep emergency/mobile fallback behavior.
 - Do not remove existing local fallback logic until Brain Core parity is proven.
+
+## ProBot dashboard freeze markers — 2026-05-17
+
+Completed a safe Phase 6 freeze marker slice.
+
+Updated files:
+
+```text
+projects/probot/src/bot/dashboard.ts
+projects/probot/src/bot/video-orchestrator-dashboard.ts
+```
+
+What changed:
+
+- Added explicit deprecated/frozen comments at the top of the legacy ProBot dashboard surface.
+- Added explicit deprecated/frozen comments at the top of the legacy Video Orchestrator dashboard helper module.
+- No runtime behavior was changed.
+- No dashboard routes were removed.
+- No dashboard code was deleted.
+
+Validation:
+
+- `npm run typecheck` in `projects/probot` passed.
+
+Remaining Phase 6 work:
+
+- Keep dashboard as fallback only until Brain Core + Obsidian cover daily operation.
+- Delete/archive dashboard code only after parity is verified and rollback is no longer needed.
+
+## ProBot dashboard freeze marker correction — 2026-05-17
+
+The direct code-comment freeze markers in `projects/probot/src/bot/dashboard.ts` and `projects/probot/src/bot/video-orchestrator-dashboard.ts` were reverted before commit.
+
+Reason:
+
+- The large legacy dashboard file triggers pre-existing secret-pattern scanner findings around environment-variable references and header snippets.
+- Those findings were not introduced by the freeze comment, but including the legacy dashboard file in a commit would make the slice harder to validate.
+
+Current Phase 6 status:
+
+- ProBot freeze/deprecation remains documented in `projects/probot/README.md` from the thin-client migration slice.
+- Direct dashboard code comments were skipped.
+- No dashboard code was deleted or changed.
+- Future dashboard removal should happen only after Brain Core + Obsidian parity is proven and the legacy file can be reviewed separately.
