@@ -45,6 +45,44 @@ export interface BrainCoreSchedulerStatus {
   message: string;
 }
 
+export interface BrainCoreSchedulerJobSummary {
+  id: string;
+  name: string;
+  status: 'placeholder' | 'disabled' | 'unknown';
+  mutationRequired: boolean;
+}
+
+export interface BrainCoreLocalAppSummary {
+  id: string;
+  name: string;
+  status: 'placeholder' | 'unknown' | 'disabled';
+  source: 'placeholder';
+  actionsSupported: boolean;
+}
+
+export interface BrainCoreVideoStatus {
+  status: 'placeholder' | 'not-configured';
+  enabled: boolean;
+  queueDepth: number;
+  source: 'placeholder';
+  message: string;
+}
+
+export interface BrainCoreVideoQueueItem {
+  id: string;
+  title: string;
+  status: 'placeholder' | 'queued' | 'running' | 'failed' | 'done';
+  source: 'placeholder';
+}
+
+export interface BrainCoreApprovalSummary {
+  id: string;
+  kind: string;
+  status: 'placeholder' | 'pending' | 'approved' | 'rejected' | 'expired';
+  expiresAt?: string;
+  source: 'placeholder';
+}
+
 export interface BrainCoreErrorResponse {
   error: {
     code: string;
@@ -64,4 +102,18 @@ export interface BrainCoreRoutes {
     repos: BrainCoreRepoSummary[];
   };
   '/scheduler/status': BrainCoreSchedulerStatus;
+  '/scheduler/latest-run': BrainCoreSchedulerStatus;
+  '/scheduler/jobs': {
+    jobs: BrainCoreSchedulerJobSummary[];
+  };
+  '/local-apps': {
+    apps: BrainCoreLocalAppSummary[];
+  };
+  '/video/status': BrainCoreVideoStatus;
+  '/video/queue': {
+    queue: BrainCoreVideoQueueItem[];
+  };
+  '/approvals': {
+    approvals: BrainCoreApprovalSummary[];
+  };
 }

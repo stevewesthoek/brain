@@ -442,3 +442,60 @@ Remaining constraints:
 - Scheduler integration is not live yet.
 - Mutation/action endpoints remain blocked until approval-aware Phase 4.
 - Generated `projects/brain-core/dist/` appears after tests and remains untracked because `.gitignore` writes are blocked by current BuildFlow policy.
+
+## Brain Core Phase 1 endpoint completion — 2026-05-17
+
+Completed the remaining read-only Brain Core Phase 1 API surface from the implementation plan.
+
+New read-only adapters:
+
+```text
+projects/brain-core/src/adapters/approvals.ts
+projects/brain-core/src/adapters/local-apps.ts
+projects/brain-core/src/adapters/video.ts
+```
+
+Updated adapters/routes/contracts:
+
+```text
+projects/brain-core/src/adapters/scheduler.ts
+projects/brain-core/src/api/routes.ts
+projects/brain-core/src/tests/routes.test.ts
+projects/brain-core/src/types/api.ts
+projects/brain-core/README.md
+```
+
+Read-only endpoints now covered by tests:
+
+```text
+GET /status
+GET /sessions
+GET /skills
+GET /repos
+GET /scheduler/status
+GET /scheduler/latest-run
+GET /scheduler/jobs
+GET /local-apps
+GET /video/status
+GET /video/queue
+GET /approvals
+```
+
+Safety preserved:
+
+- No mutation endpoints.
+- No scheduler jobs are run.
+- No logs are inspected.
+- No local apps are started/stopped/restarted.
+- No video jobs are started or uploaded.
+- No approval decisions are implemented yet.
+- No ProBot dashboard import.
+
+Validation:
+
+- `npm run ci` in `projects/brain-core` passed.
+- CI included typecheck and 14 Node route/adapter tests.
+
+Matching Mind update:
+
+- `mind/live/machine.md` documents the complete read-only endpoint surface and placeholder behavior.

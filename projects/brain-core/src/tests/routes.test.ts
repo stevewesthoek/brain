@@ -98,6 +98,62 @@ test('GET /scheduler/status returns read-only placeholder scheduler state', asyn
   assert.equal(body.source, 'placeholder');
 });
 
+test('GET /scheduler/latest-run returns read-only placeholder latest run state', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/latest-run' });
+  const body = JSON.parse(response.body) as { status: string; enabled: boolean; source: string };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.status, 'placeholder');
+  assert.equal(body.enabled, false);
+  assert.equal(body.source, 'placeholder');
+});
+
+test('GET /scheduler/jobs returns placeholder model-router jobs', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/jobs' });
+  const body = JSON.parse(response.body) as { jobs: Array<{ id: string; mutationRequired: boolean }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.jobs.length, 4);
+  assert.equal(body.jobs[0]?.id, 'mind-compile-loop');
+  assert.equal(typeof body.jobs[0]?.mutationRequired, 'boolean');
+});
+
+test('GET /local-apps returns placeholder local app list', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps' });
+  const body = JSON.parse(response.body) as { apps: Array<{ id: string; actionsSupported: boolean }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.apps.length > 0, true);
+  assert.equal(body.apps[0]?.actionsSupported, false);
+});
+
+test('GET /video/status returns read-only placeholder video state', async () => {
+  const response = await exercise({ method: 'GET', url: '/video/status' });
+  const body = JSON.parse(response.body) as { enabled: boolean; queueDepth: number; source: string };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.enabled, false);
+  assert.equal(body.queueDepth, 0);
+  assert.equal(body.source, 'placeholder');
+});
+
+test('GET /video/queue returns read-only queue list', async () => {
+  const response = await exercise({ method: 'GET', url: '/video/queue' });
+  const body = JSON.parse(response.body) as { queue: unknown[] };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(Array.isArray(body.queue), true);
+});
+
+test('GET /approvals returns placeholder approvals list', async () => {
+  const response = await exercise({ method: 'GET', url: '/approvals' });
+  const body = JSON.parse(response.body) as { approvals: Array<{ id: string; status: string }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.approvals.length, 1);
+  assert.equal(body.approvals[0]?.status, 'placeholder');
+});
+
 test('non-GET requests are rejected', async () => {
   const response = await exercise({ method: 'POST', url: '/status' });
   const body = JSON.parse(response.body) as { error: { code: string } };

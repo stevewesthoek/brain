@@ -1,8 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { listApprovals } from '../adapters/approvals.js';
+import { listLocalApps } from '../adapters/local-apps.js';
 import { listRepos } from '../adapters/repos.js';
-import { getSchedulerStatus } from '../adapters/scheduler.js';
+import { getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
 import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
+import { getVideoStatus, listVideoQueue } from '../adapters/video.js';
 import { createStatusAdapter } from '../adapters/status.js';
 import { isLocalRequest } from '../security/localhost.js';
 import { redactingJsonReplacer } from '../security/redaction.js';
@@ -56,11 +59,29 @@ export async function routeRequest(
     case '/scheduler/status':
       sendJson(response, 200, getSchedulerStatus());
       return;
+    case '/scheduler/latest-run':
+      sendJson(response, 200, getSchedulerLatestRun());
+      return;
+    case '/scheduler/jobs':
+      sendJson(response, 200, { jobs: listSchedulerJobs() });
+      return;
+    case '/local-apps':
+      sendJson(response, 200, { apps: listLocalApps() });
+      return;
+    case '/video/status':
+      sendJson(response, 200, getVideoStatus());
+      return;
+    case '/video/queue':
+      sendJson(response, 200, { queue: listVideoQueue() });
+      return;
+    case '/approvals':
+      sendJson(response, 200, { approvals: listApprovals() });
+      return;
     default:
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /scheduler/status.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals.',
         },
       } satisfies BrainCoreErrorResponse);
   }
