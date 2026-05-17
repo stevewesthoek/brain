@@ -38,6 +38,11 @@ export interface DashboardSnapshot {
   blockedAgentCount: number;
   modelRouterAgentSummary?: { status: string; health: string };
   claudeCodexExecutorSummary?: { count: number };
+  actionCount: number;
+  requestableActionCount: number;
+  blockedActionCount: number;
+  plannedActionCount: number;
+  approvalRequiredActionCount: number;
 }
 
 export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreUrl: string): DashboardSnapshot {
@@ -169,6 +174,13 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const claudeCodexCount = (state.agents ?? []).filter(a => ['claude-code-executor', 'codex-executor'].includes(a.id)).length;
   const claudeCodexExecutorSummary = claudeCodexCount > 0 ? { count: claudeCodexCount } : undefined;
 
+  // Action analysis
+  const actionCount = (state.actions ?? []).length;
+  const requestableActionCount = (state.actions ?? []).filter(a => a.canRequestApproval && a.status === 'approval-required').length;
+  const blockedActionCount = (state.actions ?? []).filter(a => a.status === 'blocked').length;
+  const plannedActionCount = (state.actions ?? []).filter(a => a.status === 'planned').length;
+  const approvalRequiredActionCount = (state.actions ?? []).filter(a => a.requiresApproval).length;
+
   return {
     connectionStatus,
     attentionLevel,
@@ -203,6 +215,11 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     blockedAgentCount,
     modelRouterAgentSummary,
     claudeCodexExecutorSummary,
+    actionCount,
+    requestableActionCount,
+    blockedActionCount,
+    plannedActionCount,
+    approvalRequiredActionCount,
   };
 }
 

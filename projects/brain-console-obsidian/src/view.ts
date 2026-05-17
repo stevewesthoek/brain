@@ -25,6 +25,8 @@ import {
   readBrainCoreVideoOrchestratorStatus,
   readBrainCoreStbVideoMigrationStatus,
   readBrainCoreAgents,
+  readBrainCoreActions,
+  requestBrainCoreActionApproval,
   type BrainCoreApprovalSummary,
   type BrainCoreApprovalStoreSummary,
   type BrainCoreCapabilitySummary,
@@ -81,6 +83,7 @@ export interface BrainConsoleViewState {
   videoOrchestratorStatus?: BrainCoreVideoOrchestratorStatus;
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
   agents?: BrainCoreAgentSummary[];
+  actions?: import('./client.js').BrainCoreActionSummary[];
   warning?: string;
   offline?: boolean;
   refreshedAt?: Date;
@@ -94,7 +97,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -119,9 +122,10 @@ export async function loadBrainConsoleViewState(
     readBrainCoreVideoOrchestratorStatus(baseUrl),
     readBrainCoreStbVideoMigrationStatus(baseUrl),
     readBrainCoreAgents(baseUrl),
+    readBrainCoreActions(baseUrl),
   ]);
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions].every(
     (result) => result.value === undefined,
   );
 
@@ -168,6 +172,7 @@ export async function loadBrainConsoleViewState(
     videoOrchestratorStatus: videoOrchestratorStatus.value,
     stbVideoMigrationStatus: stbVideoMigrationStatus.value,
     agents: agents.value?.agents,
+    actions: actions.value?.actions,
     warning: normalized.warning ?? normalized.error,
     offline,
     refreshedAt: new Date(),
@@ -225,6 +230,7 @@ export function renderBrainConsoleView(
     renderCard(grid, 'Video Orchestrator', renderVideoOrchestratorCard(state, snapshot));
     renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
     renderCard(grid, 'Agents (Read-Only)', renderAgentViewCard(state, snapshot));
+    renderCard(grid, 'Action Preview', renderActionPreviewCard(state, settings));
 
     // Activity panel
     renderActivityPanel(shell, state);
@@ -668,4 +674,63 @@ function renderAgentViewCard(state: BrainConsoleViewState, snapshot: DashboardSn
   list.createEl('li', { text: 'Agent runtime is read-only (planned)', cls: 'brain-console__list-note' });
 
   return card;
+}
+
+function renderActionPreviewCard(state: BrainConsoleViewState, settings: BrainConsoleSettings): HTMLElement {
+  const card = document.createElement('div');
+
+  if (!state.actions || state.actions.length === 0) {
+    card.textContent = 'No actions available';
+    return card;
+  }
+
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Total actions: ${state.actions.length}` });
+
+  const requestable = state.actions.filter((a) => a.canRequestApproval && a.status === 'approval-required');
+  if (requestable.length > 0) {
+    list.createEl('li', { text: `Requestable: ${requestable.length}`, cls: 'brain-console__list-item-highlight' });
+    requestable.forEach((action) => {
+      const item = list.createEl('li', { text: `  • ${action.label} (${action.risk})`, cls: 'brain-console__list-sub' });
+      const btn = item.createEl('button', { text: 'Request', cls: 'brain-console__btn-mini' });
+      btn.addEventListener('click', () => {
+        void requestActionApproval(action.id, settings.brainCoreUrl);
+      });
+    });
+  }
+
+  const blocked = state.actions.filter((a) => a.status === 'blocked');
+  if (blocked.length > 0) {
+    list.createEl('li', { text: `Blocked: ${blocked.length}` });
+    blocked.slice(0, 2).forEach((action) => {
+      list.createEl('li', { text: `  • ${action.label}`, cls: 'brain-console__list-sub' });
+    });
+    if (blocked.length > 2) {
+      list.createEl('li', { text: `  ... and ${blocked.length - 2} more`, cls: 'brain-console__list-note' });
+    }
+  }
+
+  const planned = state.actions.filter((a) => a.status === 'planned');
+  if (planned.length > 0) {
+    list.createEl('li', { text: `Planned: ${planned.length}` });
+  }
+
+  list.createEl('li', { text: 'Approval requests do not execute actions', cls: 'brain-console__list-note' });
+
+  return card;
+}
+
+async function requestActionApproval(actionId: string, brainCoreUrl: string): Promise<void> {
+  try {
+    const result = await requestBrainCoreActionApproval(brainCoreUrl, actionId);
+    if (result.error) {
+      console.error(`Action request failed: ${result.error}`, result.detail);
+      return;
+    }
+    if (result.value?.executionDidRun === false) {
+      console.log(`Action approval requested: ${actionId}. Execution did not run.`);
+    }
+  } catch (err) {
+    console.error(`Error requesting action approval: ${err}`);
+  }
 }

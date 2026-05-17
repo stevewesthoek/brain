@@ -236,6 +236,64 @@ export interface BrainCoreAgentSummary {
   actions: { canRun: boolean; canRequestRun: boolean; requiresApproval: boolean };
 }
 
+export type BrainCoreActionKind =
+  | 'model-router-dry-run'
+  | 'stb-status-refresh'
+  | 'video-status-refresh'
+  | 'stb-video-migration-review'
+  | 'agent-readiness-review'
+  | 'local-app-start'
+  | 'local-app-stop'
+  | 'local-app-restart'
+  | 'orchestrator-run'
+  | 'pipeline-dry-run'
+  | 'mind-write-apply';
+
+export type BrainCoreActionRisk = 'low' | 'medium' | 'high' | 'blocked';
+
+export type BrainCoreActionStatus =
+  | 'available'
+  | 'approval-required'
+  | 'planned'
+  | 'blocked'
+  | 'disabled';
+
+export interface BrainCoreActionSafety {
+  writesToMind: boolean;
+  executesShell: boolean;
+  mutatesRuntime: boolean;
+  touchesStb: boolean;
+  touchesVideo: boolean;
+  requiresHumanReview: boolean;
+}
+
+export interface BrainCoreActionSummary {
+  id: string;
+  kind: BrainCoreActionKind;
+  label: string;
+  description: string;
+  targetType: 'system' | 'agent' | 'orchestrator' | 'pipeline' | 'project' | 'platform' | 'mind' | 'local-app';
+  targetId: string;
+  status: BrainCoreActionStatus;
+  risk: BrainCoreActionRisk;
+  requiresApproval: boolean;
+  canRequestApproval: boolean;
+  canExecuteNow: false;
+  reason: string;
+  safety: BrainCoreActionSafety;
+}
+
+export interface BrainCoreActionRequest {
+  id: string;
+  actionId: string;
+  requestedAt: string;
+  status: 'requested' | 'blocked' | 'invalid';
+  summary: string;
+  approvalId?: string | undefined;
+  executionDidRun: false;
+  safety: BrainCoreActionSafety;
+}
+
 export interface BrainCoreApprovalSummary {
   id: string;
   kind: string;
@@ -608,6 +666,85 @@ export async function readBrainCoreAgents(
   baseUrl: string,
 ): Promise<HttpResult<{ agents?: BrainCoreAgentSummary[] }>> {
   return fetchJson<{ agents?: BrainCoreAgentSummary[] }>(normalizeBaseUrl(baseUrl), '/agents');
+}
+
+export async function readBrainCoreActions(
+  baseUrl: string,
+): Promise<HttpResult<{ actions?: BrainCoreActionSummary[] }>> {
+  return fetchJson<{ actions?: BrainCoreActionSummary[] }>(normalizeBaseUrl(baseUrl), '/actions');
+}
+
+export async function readBrainCoreAction(
+  baseUrl: string,
+  id: string,
+): Promise<HttpResult<{ action?: BrainCoreActionSummary }>> {
+  return fetchJson<{ action?: BrainCoreActionSummary }>(normalizeBaseUrl(baseUrl), `/actions/${id}`);
+}
+
+export async function requestBrainCoreActionApproval(
+  baseUrl: string,
+  id: string,
+): Promise<HttpResult<BrainCoreActionRequest>> {
+  const url = `${normalizeBaseUrl(baseUrl)}/actions/${id}/request-approval`;
+  const startTime = performance.now();
+
+  if (!requestUrlFn) {
+    return {
+      error: 'Obsidian requestUrl not initialized',
+      url,
+    };
+  }
+
+  try {
+    const response = await Promise.race([
+      requestUrlFn({
+        url,
+        method: 'POST',
+        headers: { accept: 'application/json' },
+        throw: false,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('request timeout')), REQUEST_TIMEOUT_MS)
+      ),
+    ]);
+
+    const responseTimeMs = Math.round(performance.now() - startTime);
+
+    if (response.status < 200 || response.status >= 300) {
+      const detail = response.text ? response.text.slice(0, 200) : undefined;
+      return {
+        error: `HTTP ${response.status}`,
+        status: response.status,
+        detail,
+        url,
+        responseTimeMs,
+      };
+    }
+
+    const body = JSON.parse(response.text ?? '{}') as Partial<BrainCoreActionRequest>;
+    return {
+      status: response.status,
+      value: body as BrainCoreActionRequest,
+      url,
+      responseTimeMs,
+    };
+  } catch (err) {
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    const detail =
+      err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err);
+
+    const fallbackUrl = tryGetFallbackLocalUrl(url);
+    if (fallbackUrl && isLocalTestUrl(url)) {
+      const baseUrlFallback = fallbackUrl.replace(/\/actions\/.*$/, '');
+      return requestBrainCoreActionApproval(baseUrlFallback, id);
+    }
+
+    return {
+      error: detail,
+      url,
+      responseTimeMs,
+    };
+  }
 }
 
 // Import requestUrl from obsidian at runtime (to avoid bundling issues, it's imported in main.ts)

@@ -1609,3 +1609,73 @@ This language would dangerously confuse multi-agent execution runs.
 - ✅ Dashboard spec confirms MVP exists and is being extended
 - ✅ Handoff briefs next agent on corrected state
 - ✅ No dangerous scaffold instructions remain
+
+---
+
+## Continuation update — Approval-request-only action model (Phase 4B)
+
+**Date:** 2026-05-17
+
+Implemented:
+
+- Added Brain Core action metadata types (BrainCoreActionKind, BrainCoreActionRisk, BrainCoreActionStatus, BrainCoreActionSafety, BrainCoreActionSummary, BrainCoreActionRequest)
+- Created action-registry adapter with 11 actions (8 allowlisted + 3 blocked/planned)
+- Added GET /actions, GET /actions/:id, POST /actions/:id/request-approval routes
+- All action responses have canExecuteNow: false and executionDidRun: false
+- Added action endpoints client functions (readBrainCoreActions, readBrainCoreAction, requestBrainCoreActionApproval)
+- Extended Brain Console dashboard with action summaries (actionCount, requestableActionCount, blockedActionCount, plannedActionCount, approvalRequiredActionCount)
+- Added Action Preview / Approval Requests panel to Brain Console UI with request buttons
+- All 98 Brain Core tests pass (including 18 new action endpoint tests)
+
+Requestable actions:
+
+- model-router-dry-run: approval-required, low risk
+
+Read-only actions:
+
+- stb-status-refresh: available
+- video-status-refresh: available
+- stb-video-migration-review: available
+- agent-readiness-review: available
+
+Blocked/planned actions:
+
+- local-app-start, local-app-stop, local-app-restart (planned)
+- orchestrator-run (blocked)
+- pipeline-dry-run (blocked)
+- mind-write-apply (blocked)
+
+Safety status:
+
+- ✅ No direct execution added
+- ✅ No STB execution added
+- ✅ No video execution added
+- ✅ No app start/stop execution added
+- ✅ No autonomous agent runtime added
+- ✅ No writes to Mind enabled
+- ✅ No broad shell runner added
+- ✅ writesToMind always false in this slice
+- ✅ All action safety metadata accurate
+
+Validation:
+
+- Brain Core CI: 98 tests pass (including 18 new action tests)
+- Brain Console typecheck: passed
+- Brain Console build: passed
+- Model Router CI: 53 tests pass
+- Secret scan: no secrets found in changed files
+
+Files modified:
+
+- projects/brain-core/src/types/api.ts (added action types)
+- projects/brain-core/src/adapters/action-registry.ts (created)
+- projects/brain-core/src/api/routes.ts (added action routes)
+- projects/brain-core/src/tests/action-endpoints.test.ts (created)
+- projects/brain-console-obsidian/src/client.ts (added action functions)
+- projects/brain-console-obsidian/src/dashboard.ts (added action summaries)
+- projects/brain-console-obsidian/src/view.ts (added action panel)
+
+Next safe task:
+
+- Wire one low-risk model-router dry-run approval request into existing preview generation, still without apply/write
+- Or stop here and review action visibility before considering Phase 5 autonomy features

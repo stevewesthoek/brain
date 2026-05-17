@@ -414,6 +414,64 @@ export interface BrainCoreExecutionReadiness {
   executableActions: false;
 }
 
+export type BrainCoreActionKind =
+  | 'model-router-dry-run'
+  | 'stb-status-refresh'
+  | 'video-status-refresh'
+  | 'stb-video-migration-review'
+  | 'agent-readiness-review'
+  | 'local-app-start'
+  | 'local-app-stop'
+  | 'local-app-restart'
+  | 'orchestrator-run'
+  | 'pipeline-dry-run'
+  | 'mind-write-apply';
+
+export type BrainCoreActionRisk = 'low' | 'medium' | 'high' | 'blocked';
+
+export type BrainCoreActionStatus =
+  | 'available'
+  | 'approval-required'
+  | 'planned'
+  | 'blocked'
+  | 'disabled';
+
+export interface BrainCoreActionSafety {
+  writesToMind: boolean;
+  executesShell: boolean;
+  mutatesRuntime: boolean;
+  touchesStb: boolean;
+  touchesVideo: boolean;
+  requiresHumanReview: boolean;
+}
+
+export interface BrainCoreActionSummary {
+  id: string;
+  kind: BrainCoreActionKind;
+  label: string;
+  description: string;
+  targetType: 'system' | 'agent' | 'orchestrator' | 'pipeline' | 'project' | 'platform' | 'mind' | 'local-app';
+  targetId: string;
+  status: BrainCoreActionStatus;
+  risk: BrainCoreActionRisk;
+  requiresApproval: boolean;
+  canRequestApproval: boolean;
+  canExecuteNow: false;
+  reason: string;
+  safety: BrainCoreActionSafety;
+}
+
+export interface BrainCoreActionRequest {
+  id: string;
+  actionId: string;
+  requestedAt: string;
+  status: 'requested' | 'blocked' | 'invalid';
+  summary: string;
+  approvalId?: string | undefined;
+  executionDidRun: false;
+  safety: BrainCoreActionSafety;
+}
+
 export interface BrainCoreActionRequestResult {
   approval?: BrainCoreApprovalSummary;
   preview?: BrainCoreApprovalPreview;
@@ -560,4 +618,11 @@ export interface BrainCoreRoutes {
   '/local-apps/:id/restart': BrainCoreActionRequestResult;
   '/approvals/:id/approve': BrainCoreApprovalDecisionResult;
   '/approvals/:id/reject': BrainCoreApprovalDecisionResult;
+  '/actions': {
+    actions: BrainCoreActionSummary[];
+  };
+  '/actions/:id': {
+    action: BrainCoreActionSummary;
+  };
+  '/actions/:id/request-approval': BrainCoreActionRequest;
 }

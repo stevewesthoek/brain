@@ -28,6 +28,7 @@ import { getStbPipelineStatus } from '../adapters/stb-status.js';
 import { getVideoOrchestratorStatus } from '../adapters/video-orchestrator-status.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getAgent, listAgents } from '../adapters/agents.js';
+import { getActionSummary, listActionSummaries, requestActionApprovalById } from '../adapters/action-registry.js';
 import { createStatusAdapter } from '../adapters/status.js';
 import { isLocalRequest } from '../security/localhost.js';
 import { redactingJsonReplacer } from '../security/redaction.js';
@@ -128,6 +129,9 @@ export async function routeRequest(
     case '/video/queue':
       sendJson(response, 200, { queue: listVideoQueue() });
       return;
+    case '/actions':
+      sendJson(response, 200, { actions: listActionSummaries() });
+      return;
     case '/approvals':
       sendJson(response, 200, { approvals: listApprovals() });
       return;
@@ -169,6 +173,21 @@ export async function routeRequest(
       return;
     default:
       {
+        const actionMatch = /^\/actions\/([^/]+)$/.exec(url.pathname);
+        if (actionMatch) {
+          const action = getActionSummary(actionMatch[1] ?? '');
+          if (action) {
+            sendJson(response, 200, { action });
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Action not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
         const orchestratorMatch = /^\/orchestrators\/([^/]+)$/.exec(url.pathname);
         if (orchestratorMatch) {
           const orchestrator = getOrchestrator(orchestratorMatch[1] ?? '');
@@ -263,7 +282,7 @@ export async function routeRequest(
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/store, /approvals/audit, /runtime/reports, /execution/plans, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
   }
@@ -273,6 +292,15 @@ function routePostRequest(url: URL, response: ServerResponse): void {
   if (url.pathname === '/actions/request') {
     const kind = url.searchParams.get('kind') || 'manual-request';
     sendJson(response, 202, requestAction(kind));
+    return;
+  }
+
+  const actionRequestMatch = /^\/actions\/([^/]+)\/request-approval$/.exec(url.pathname);
+  if (actionRequestMatch) {
+    void (async () => {
+      const actionRequest = await requestActionApprovalById(actionRequestMatch[1] ?? '');
+      sendJson(response, actionRequest.status === 'requested' ? 202 : 400, actionRequest);
+    })();
     return;
   }
 
@@ -293,7 +321,7 @@ function routePostRequest(url: URL, response: ServerResponse): void {
   sendJson(response, 404, {
     error: {
       code: 'not_found',
-      message: 'POST route not found. Available POST routes: /actions/request, /scheduler/jobs/:id/request-run, /skills/profile, /sessions/:id/resume, /local-apps/:id/start|stop|restart, /approvals/:id/approve, /approvals/:id/reject.',
+      message: 'POST route not found. Available POST routes: /actions/request, /actions/:id/request-approval, /scheduler/jobs/:id/request-run, /skills/profile, /sessions/:id/resume, /local-apps/:id/start|stop|restart, /approvals/:id/approve, /approvals/:id/reject.',
     },
   } satisfies BrainCoreErrorResponse);
 }
