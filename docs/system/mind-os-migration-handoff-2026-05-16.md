@@ -499,3 +499,40 @@ Validation:
 Matching Mind update:
 
 - `mind/live/machine.md` documents the complete read-only endpoint surface and placeholder behavior.
+
+## Brain Console integration contract — 2026-05-17
+
+Completed a safe Phase 3 foundation slice without writing into `.obsidian` plugin folders.
+
+New file:
+
+```text
+projects/brain-core/src/obsidian.ts
+```
+
+Updated files:
+
+```text
+projects/brain-core/src/index.ts
+projects/brain-core/src/tests/obsidian.test.ts
+projects/brain-core/README.md
+```
+
+What it provides:
+
+- A read-only `BrainConsoleSnapshot` contract.
+- Typed widget IDs for the future Obsidian `brain-console` plugin/integration layer.
+- Widget surfaces for status, sessions, repos, skills, scheduler, local apps, video queue, and approvals.
+- No legacy ProBot dashboard import.
+- No Obsidian plugin folder writes.
+- No mutation/action endpoints.
+
+Validation:
+
+- `npm run ci` in `projects/brain-core` passed.
+- CI included typecheck and 15 Node route/adapter/widget tests.
+
+Next safe Phase 3 work:
+
+- Build an actual Obsidian plugin only when plugin folder write policy and packaging location are confirmed.
+- Until then, Mind documents the integration contract and remains readable without live API data.

@@ -76,6 +76,25 @@ BRAIN_CORE_HOST=127.0.0.1
 BRAIN_CORE_PORT=4877
 ```
 
+## Brain Console integration contract
+
+`src/obsidian.ts` exposes a read-only widget snapshot contract for a future Obsidian `brain-console` plugin or integration layer.
+
+Current widget IDs:
+
+```text
+brain-status
+brain-sessions
+brain-repos
+brain-skills
+brain-scheduler
+brain-local-apps
+brain-video-queue
+brain-approvals
+```
+
+This is not an Obsidian plugin yet. It is the audited data shape that a plugin can render without importing the legacy ProBot dashboard.
+
 ## Safety boundary
 
 - Phase 1 supports `GET` only.
