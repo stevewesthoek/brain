@@ -813,3 +813,64 @@ no model-router Mind mutation enabled
 no broad shell runner added
 no runtime logs written to Mind
 ```
+
+## Continuation update — Maintenance preview queue
+
+Implemented a safe Brain-side maintenance preview queue that converts wiki-health findings into actionable maintenance actions. Expanded dry-run reporting and added read-only Brain Core and operator surfaces.
+
+Changed files:
+
+- `projects/model-router/src/maintenance-preview.ts` (new)
+- `projects/model-router/src/preview-artifacts.ts` (new)
+- `projects/model-router/src/tests/maintenance-preview.test.ts` (new)
+- `projects/model-router/src/tests/preview-artifacts.test.ts` (new)
+- `projects/model-router/src/report.ts`
+- `projects/model-router/src/index.ts`
+- `projects/model-router/src/cli/dry-run-report.ts`
+- `projects/brain-core/src/adapters/maintenance-previews.ts` (new)
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/probot/src/services/brain-core-client.ts`
+- `projects/probot/src/services/status.ts`
+
+Capabilities added:
+
+- `MindMaintenancePreviewQueue`: maps wiki-health findings to preview actions by kind and risk
+- `MindMaintenancePreviewAction`: individual maintenance actions (create, patch, review, no-op)
+- Artifact writer: stores queues under `runtime/local/model-router/maintenance-previews/`
+- Report integration: compact maintenance preview metadata in dry-run reports
+- Brain Core routes: `/execution/maintenance-previews` and `/execution/maintenance-previews/latest`
+- Operator surfaces: sparse summaries in ProBot (action counts + approval counts) and Brain Console
+
+Safety status:
+
+- All preview actions have `writesToMind=false`
+- All queues have `externalSideEffects=false`
+- No apply route is enabled yet
+- No Mind files were changed
+- Blocked paths: `.obsidian/`, `.git/`, `node_modules/`, `dist/`, `build/`, `runtime/`, `logs/`, `.env`, legacy numbered folders, traversal, absolute system paths
+- 52 model-router tests pass, 60 brain-core tests pass
+
+Validation:
+
+```text
+npm run --prefix projects/model-router ci: 52/52 tests passed
+npm run --prefix projects/brain-core ci: 60/60 tests passed
+npm run --prefix projects/probot typecheck: passed
+npm run --prefix projects/brain-console-obsidian typecheck: passed
+npm run --prefix projects/brain-console-obsidian build: passed
+secret scan: no live-looking secrets found
+```
+
+Remaining blockers:
+
+- Mind apply route remains disabled
+- No execution of maintenance actions (preview-only)
+- First approved action policy still under review
+- Legacy folder archival still blocked
+
+Next safe task:
+
+- Approve the first maintenance preview action policy for `router/current.md` if desired
+- Implement a no-op approval drill for validation
+- Or stop here and gather findings from the wiki-health reports before advancing
