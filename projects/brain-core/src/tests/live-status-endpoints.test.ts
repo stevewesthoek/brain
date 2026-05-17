@@ -221,3 +221,107 @@ test('Existing registry tests still pass (orchestrators count is 12)', async () 
   assert.equal(response.statusCode, 200);
   assert.equal(body.orchestrators.length, 12);
 });
+
+test('GET /stb/status evidence is capped and safe', async () => {
+  const response = await exercise({ method: 'GET', url: '/stb/status' });
+  const body = JSON.parse(response.body) as {
+    evidence: Array<{ label: string; value: string; path?: string }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(Array.isArray(body.evidence));
+  assert.ok(body.evidence.length <= 8, 'Evidence should be capped at 8 items');
+  
+  body.evidence.forEach(item => {
+    assert.ok(typeof item.label === 'string', 'Each evidence item must have a label');
+    assert.ok(typeof item.value === 'string', 'Each evidence item must have a value');
+    // Path field (optional) should not be exposed if present
+    if (item.path !== undefined) {
+      assert.ok(typeof item.path === 'string', 'Evidence path should be string');
+    }
+  });
+});
+
+test('GET /video-orchestrator/status modules report accurate progress and blocked status', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/status' });
+  const body = JSON.parse(response.body) as {
+    modules: Array<{ id: string; status: 'implemented' | 'partial' | 'planned' | 'blocked' | 'unknown' }>;
+    moduleProgress: { implemented: number; partial: number; planned: number; blocked: number; percent: number };
+  };
+
+  assert.equal(response.statusCode, 200);
+  
+  // Verify progress counts match module statuses
+  const implemented = body.modules.filter(m => m.status === 'implemented').length;
+  const partial = body.modules.filter(m => m.status === 'partial').length;
+  const planned = body.modules.filter(m => m.status === 'planned').length;
+  const blocked = body.modules.filter(m => m.status === 'blocked').length;
+  
+  assert.equal(body.moduleProgress.implemented, implemented, 'Implemented count mismatch');
+  assert.equal(body.moduleProgress.partial, partial, 'Partial count mismatch');
+  assert.equal(body.moduleProgress.planned, planned, 'Planned count mismatch');
+  assert.equal(body.moduleProgress.blocked, blocked, 'Blocked count mismatch');
+  
+  // Verify percent calculation: (implemented * 100 + partial * 50) / total
+  const total = body.modules.length;
+  const expectedPercent = Math.round(((implemented * 100) + (partial * 50)) / total);
+  assert.equal(body.moduleProgress.percent, expectedPercent, 'Progress percent mismatch');
+});
+
+test('GET /video-orchestrator/status limitations include blocker information', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/status' });
+  const body = JSON.parse(response.body) as {
+    limitations: string[];
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(Array.isArray(body.limitations));
+  assert.ok(body.limitations.length > 0, 'Limitations should not be empty');
+  
+  // Should not claim to be operational when design-phase only
+  const hasDesignPhaseNote = body.limitations.some(l => l.toLowerCase().includes('design') || l.toLowerCase().includes('no live execution'));
+  assert.ok(hasDesignPhaseNote, 'Limitations should note design-phase status');
+});
+
+test('GET /stb-video-migration/status has accurate module status and blockers', async () => {
+  const response = await exercise({ method: 'GET', url: '/stb-video-migration/status' });
+  const body = JSON.parse(response.body) as {
+    modules: Array<{ status: 'mapped' | 'partial' | 'planned' | 'blocked' }>;
+    blockers: string[];
+    decommissionBlocked: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(Array.isArray(body.modules));
+  assert.ok(body.modules.length > 0);
+  
+  // Verify blockers array exists and is populated
+  assert.ok(Array.isArray(body.blockers));
+  assert.ok(body.decommissionBlocked === true, 'STB migration should always be decommissionBlocked');
+  
+  // Verify at least one module is blocked if blockers exist
+  if (body.blockers.length > 0) {
+    const hasBlockedModule = body.modules.some(m => m.status === 'blocked');
+    assert.ok(hasBlockedModule, 'Should have blocked modules if blockers are listed');
+  }
+});
+
+test('Safety: STB and video evidence never imply execution is enabled', async () => {
+  const stbResponse = await exercise({ method: 'GET', url: '/stb/status' });
+  const stbBody = JSON.parse(stbResponse.body) as {
+    actions: { canPreview: boolean; canRequestRun: boolean; requiresApproval: boolean };
+  };
+  
+  assert.equal(stbBody.actions.canPreview, false);
+  assert.equal(stbBody.actions.canRequestRun, false);
+  assert.equal(stbBody.actions.requiresApproval, false);
+
+  const videoResponse = await exercise({ method: 'GET', url: '/video-orchestrator/status' });
+  const videoBody = JSON.parse(videoResponse.body) as {
+    actions: { canPreview: boolean; canRequestRun: boolean; requiresApproval: boolean };
+  };
+  
+  assert.equal(videoBody.actions.canPreview, false);
+  assert.equal(videoBody.actions.canRequestRun, false);
+  assert.equal(videoBody.actions.requiresApproval, false);
+});

@@ -28,6 +28,14 @@ export function getStbPipelineStatus(): BrainCoreStbPipelineStatus {
 
     const status = lastRunAgeHours && lastRunAgeHours > 24 ? 'stale' : stbStatus;
 
+    // Build evidence array with safe caps
+    const evidence: Array<{ label: string; value: string; path?: string }> = [
+      { label: 'Last run', value: lastRunAt, path: latestRunPath },
+      { label: 'Age (hours)', value: String(lastRunAgeHours ?? 0) },
+      { label: 'STB job status', value: stbStatus },
+      { label: 'Failures detected', value: failureCount > 0 ? `yes (${failureCount})` : 'no' },
+    ];
+
     const result: BrainCoreStbPipelineStatus = {
       id: 'stb-pipeline-status',
       pipelineId: 'stb-daily-pipeline',
@@ -38,12 +46,7 @@ export function getStbPipelineStatus(): BrainCoreStbPipelineStatus {
       lastRunAt,
       lastRunAgeHours,
       summary: buildSummary(status, lastRunAgeHours, stbStatus),
-      evidence: [
-        { label: 'Last run', value: lastRunAt, path: latestRunPath },
-        { label: 'Age (hours)', value: String(lastRunAgeHours ?? 0) },
-        { label: 'STB job status', value: stbStatus },
-        { label: 'Last 8 days failure', value: stbStatus === 'error' ? 'yes' : 'no' },
-      ],
+      evidence: evidence.slice(0, 8),
       limitations: [
         'Does not report current queue (STB runtime not exposed)',
         'Does not report current task (no STB execution endpoint)',

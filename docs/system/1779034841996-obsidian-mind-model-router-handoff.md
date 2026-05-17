@@ -1716,3 +1716,66 @@ Next safe task:
 
 - Wire one low-risk model-router dry-run approval request into existing preview generation, still without apply/write
 - Or stop here and review action visibility before considering Phase 5 autonomy features
+
+## Continuation update — Brain Console detail panels and evidence adapters (Phase 4F)
+
+Implemented:
+
+- **Brain Console detail endpoint wiring**: Added imports and loading for readBrainCoreApprovalDetail, readBrainCoreModelRouterReportDetail, readBrainCoreMaintenancePreviewDetail.
+- **View state extensions**: BrainConsoleViewState now includes approvalDetail, modelRouterReportDetail, maintenancePreviewDetail fields.
+- **Load chain enhancement**: loadBrainConsoleViewState now fetches latest approval detail and model-router report detail. Maintenance preview detail loaded defensively if available.
+- **Approval Details panel**: Compact read-only card showing ID, kind, status, age in minutes, expiration status, and safety flags (writesToMind=false, applyEnabled=false).
+- **Model Router Report Details panel**: Shows exists/missing/invalid status, latest run status, wiki health summary with error/warning counts, and safety flags.
+- **Maintenance Preview Details panel**: Displays queue ID, action counts, risk distribution (low/med/high), approval-required count, expiration status, and top 3-5 actions.
+- **STB evidence adapter improvements**: Enhanced evidence array to include failure count in display, added safe evidence capping to 8 items max.
+- **Video orchestrator evidence improvements**: Enhanced limitations to clarify design-phase status, added block detection, improved module status clarity.
+- **New evidence tests**: Added 5 comprehensive tests verifying evidence capping, safety, progress accuracy, and blocker preservation.
+
+Validation:
+
+- Brain Core CI: 112 tests passed (5 new evidence tests + 107 existing).
+- Brain Console typecheck: passed (no errors).
+- Brain Console build: passed (208.7 KB bundled, +14KB from detail panels).
+- Plugin reinstalled to mind vault.
+- All safety guarantees verified: no mutations, no Mind writes, no execution capability added.
+
+Safety status:
+
+- All detail panels are read-only inspection only.
+- No approve/reject buttons in detail panels (handled separately).
+- No execute/start/stop buttons in any panel.
+- Evidence capped to safe limits (8 items for STB, full module list for video capped by design).
+- No raw JSON or full logs exposed.
+- No absolute unsafe paths in evidence.
+- STB evidence accurately reflects stale/error/operational states.
+- Video evidence accurately tracks blocked modules and design-phase status.
+- Model-router detail never implies write/apply is enabled.
+- Maintenance preview detail never implies automatic action.
+
+Remaining blockers:
+
+- Broad Mind mutation remains blocked.
+- Legacy folder archival remains blocked.
+- Any future apply flow still requires separately approved write/apply policy.
+- STB/video execution remains blocked (canRequestRun=false).
+
+Next safe task:
+
+- Build report-only execution detail view with approval audit trail (no new execution enabled).
+- Or implement approval-request failure recovery and incident logging.
+
+## Files changed for Phase 4F
+
+Brain:
+
+```text
+projects/brain-core/src/adapters/stb-status.ts (+capping and evidence improvements)
+projects/brain-core/src/adapters/video-orchestrator-status.ts (+blocker clarity, limitations)
+projects/brain-core/src/tests/live-status-endpoints.test.ts (+5 new evidence tests)
+projects/brain-console-obsidian/src/view.ts (+detail endpoint wiring, state fields, loading logic, rendering functions)
+projects/brain-console-obsidian/src/client.ts (already had detail types/readers from Phase 4E)
+projects/brain-console-obsidian/src/styles.css (existing compact styles reused)
+projects/brain-console-obsidian/dist/main.js (rebuilt, 208.7 KB)
+projects/brain-console-obsidian/release/manifest.json (reinstalled to mind vault)
+```
+

@@ -2,6 +2,7 @@ import { ItemView } from 'obsidian';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
 import {
   readBrainCoreApprovals,
+  readBrainCoreApprovalDetail,
   readBrainCoreApprovalStore,
   readBrainCoreCapabilities,
   readBrainCoreLocalApps,
@@ -11,6 +12,7 @@ import {
   readBrainCoreMindPreviews,
   readBrainCoreRepos,
   readBrainCoreRuntimeReports,
+  readBrainCoreModelRouterReportDetail,
   readBrainCoreSchedulerJobs,
   readBrainCoreSchedulerStatus,
   readBrainCoreSessions,
@@ -26,8 +28,10 @@ import {
   readBrainCoreStbVideoMigrationStatus,
   readBrainCoreAgents,
   readBrainCoreActions,
+  readBrainCoreMaintenancePreviewDetail,
   requestBrainCoreActionApproval,
   type BrainCoreApprovalSummary,
+  type BrainCoreApprovalDetail,
   type BrainCoreApprovalStoreSummary,
   type BrainCoreCapabilitySummary,
   type BrainCoreLocalAppSummary,
@@ -49,6 +53,8 @@ import {
   type BrainCoreVideoOrchestratorStatus,
   type BrainCoreStbVideoMigrationStatus,
   type BrainCoreAgentSummary,
+  type BrainCoreModelRouterReportDetail,
+  type BrainCoreMaintenancePreviewDetail,
 } from './client.js';
 import {
   deriveDashboardSnapshot,
@@ -70,11 +76,14 @@ export interface BrainConsoleViewState {
   sessions?: BrainCoreSessionSummary[];
   repos?: BrainCoreRepoSummary[];
   approvals?: BrainCoreApprovalSummary[];
+  approvalDetail?: BrainCoreApprovalDetail;
   approvalStore?: BrainCoreApprovalStoreSummary;
   executionPlans?: BrainCoreExecutionPlan[];
   executionReadiness?: BrainCoreExecutionReadiness;
   mindPreviewPolicy?: import('./client.js').BrainCoreMindPreviewPolicy;
   mindPreviews?: import('./client.js').BrainCoreMindPreviewSummary[];
+  modelRouterReportDetail?: BrainCoreModelRouterReportDetail;
+  maintenancePreviewDetail?: BrainCoreMaintenancePreviewDetail;
   orchestrators?: BrainCoreOrchestratorSummary[];
   pipelines?: BrainCorePipelineSummary[];
   projects?: BrainCoreProjectSummary[];
@@ -97,7 +106,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -123,7 +132,22 @@ export async function loadBrainConsoleViewState(
     readBrainCoreStbVideoMigrationStatus(baseUrl),
     readBrainCoreAgents(baseUrl),
     readBrainCoreActions(baseUrl),
+    readBrainCoreModelRouterReportDetail(baseUrl),
   ]);
+
+  let approvalDetail: import('./client.js').BrainCoreApprovalDetail | undefined;
+  const latestApprovalId = approvals.value?.approvals?.[0]?.id;
+  if (latestApprovalId) {
+    const approvalDetailResult = await readBrainCoreApprovalDetail(baseUrl, latestApprovalId);
+    approvalDetail = approvalDetailResult.value?.approval;
+  }
+
+  let maintenancePreviewDetail: BrainCoreMaintenancePreviewDetail | undefined;
+  const latestMaintenanceId = mindPreviews.value?.previews?.[0]?.id;
+  if (latestMaintenanceId) {
+    const maintenanceDetailResult = await readBrainCoreMaintenancePreviewDetail(baseUrl, latestMaintenanceId);
+    maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
+  }
 
   const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions].every(
     (result) => result.value === undefined,
@@ -159,11 +183,14 @@ export async function loadBrainConsoleViewState(
     sessions: sessions.value?.sessions,
     repos: repos.value?.repos,
     approvals: approvals.value?.approvals,
+    approvalDetail,
     approvalStore: approvalStore.value,
     executionPlans: executionPlans.value?.plans,
     executionReadiness: executionReadiness.value,
     mindPreviewPolicy: mindPreviewPolicy.value,
     mindPreviews: mindPreviews.value?.previews,
+    modelRouterReportDetail: modelRouterReportDetail.value?.report,
+    maintenancePreviewDetail,
     orchestrators: orchestrators.value?.orchestrators,
     pipelines: pipelines.value?.pipelines,
     projects: projects.value?.projects,
@@ -232,6 +259,17 @@ export function renderBrainConsoleView(
     renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
     renderCard(grid, 'Agents (Read-Only)', renderAgentViewCard(state, snapshot));
     renderCard(grid, 'Action Preview', renderActionPreviewCard(state, settings));
+
+    // Detail panels
+    if (state.approvalDetail) {
+      renderCard(grid, 'Approval Details', renderApprovalDetailCard(state.approvalDetail));
+    }
+    if (state.modelRouterReportDetail) {
+      renderCard(grid, 'Model Router Report', renderModelRouterReportDetailCard(state.modelRouterReportDetail));
+    }
+    if (state.maintenancePreviewDetail) {
+      renderCard(grid, 'Maintenance Preview', renderMaintenancePreviewDetailCard(state.maintenancePreviewDetail));
+    }
 
     // Activity panel
     renderActivityPanel(shell, state);
@@ -821,4 +859,74 @@ async function requestActionApproval(actionId: string, brainCoreUrl: string): Pr
   } catch (err) {
     console.error(`Error requesting action approval: ${err}`);
   }
+}
+
+function renderApprovalDetailCard(detail: import('./client.js').BrainCoreApprovalDetail): HTMLElement {
+  const el = document.createElement('div');
+  const rows = [
+    { label: 'ID', value: detail.id },
+    { label: 'Kind', value: detail.kind },
+    { label: 'Status', value: detail.status },
+    { label: 'Age', value: detail.ageMinutes !== undefined ? `${detail.ageMinutes}m` : 'unknown' },
+    { label: 'Expires', value: detail.expired ? '✗ expired' : (detail.expiresAt ? 'pending' : 'never') },
+    { label: 'WritesToMind', value: 'false' },
+    { label: 'ApplyEnabled', value: 'false' },
+  ];
+  
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+  
+  return el;
+}
+
+function renderModelRouterReportDetailCard(detail: import('./client.js').BrainCoreModelRouterReportDetail): HTMLElement {
+  const el = document.createElement('div');
+  const rows = [
+    { label: 'Exists', value: detail.exists ? 'yes' : 'no' },
+    { label: 'Status', value: detail.status || 'unknown' },
+    { label: 'Latest Run', value: detail.latestRunStatus || 'unknown' },
+    { label: 'Wiki Health', value: detail.wikiHealth ? (detail.wikiHealth.ok ? '✓ ok' : `⚠ ${detail.wikiHealth.errorCount} errors, ${detail.wikiHealth.warningCount} warnings`) : 'unknown' },
+    { label: 'WritesToMind', value: 'false' },
+    { label: 'ApplyEnabled', value: 'false' },
+  ];
+  
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+  
+  return el;
+}
+
+function renderMaintenancePreviewDetailCard(detail: import('./client.js').BrainCoreMaintenancePreviewDetail): HTMLElement {
+  const el = document.createElement('div');
+  const rows = [
+    { label: 'Queue ID', value: detail.queueId },
+    { label: 'Actions', value: String(detail.actionCount) },
+    { label: 'Risk', value: `L:${detail.lowRiskCount} M:${detail.mediumRiskCount} H:${detail.highRiskCount}` },
+    { label: 'Approval Required', value: String(detail.approvalRequiredCount) },
+    { label: 'Expired', value: detail.expired ? '✗ yes' : '○ no' },
+    { label: 'WritesToMind', value: 'false' },
+  ];
+  
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+  
+  if (detail.topActions && detail.topActions.length > 0) {
+    const actionsDiv = el.createDiv({ cls: 'brain-console__section' });
+    actionsDiv.createEl('strong', { text: 'Top Actions:' });
+    const list = actionsDiv.createEl('ul', { cls: 'brain-console__list' });
+    detail.topActions.forEach(action => {
+      list.createEl('li', { text: `${action.title} (${action.risk})` });
+    });
+  }
+  
+  return el;
 }
