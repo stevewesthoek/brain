@@ -24,6 +24,15 @@ High. Vault config and plugin state are easy to overstage and may be environment
 
 Do not commit in this pass unless a user explicitly approves the exact `.obsidian` paths.
 
+## Next-step recommendation
+
+- Review exact changed `.obsidian` files manually.
+- Do not commit plugin churn until the user confirms it represents intentional vault configuration.
+- Likely split into:
+  - safe config files
+  - plugin state/cache files
+  - plugin installation/removal changes
+
 ## Suggested future commands
 
 ```bash

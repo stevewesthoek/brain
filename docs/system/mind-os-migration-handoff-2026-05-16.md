@@ -197,6 +197,7 @@ Current Mind cleanup tracking reports:
 
 - `operations/reports/mind-dirty-state-inventory-2026-05-18.md`
 - `operations/reports/mind-cleanup-decision-matrix-2026-05-18.md`
+- `operations/reports/mind-obsidian-exact-path-review-2026-05-18.md`
 - `operations/reports/mind-area-note-review-2026-05-18.md`
 - `operations/reports/mind-legacy-task-migration-options-2026-05-18.md`
 - `operations/reports/mind-project-task-mirror-review-2026-05-18.md`

@@ -16,6 +16,7 @@ See also:
 
 - `operations/reports/mind-dirty-state-inventory-2026-05-18.md`
 - `operations/reports/mind-cleanup-decision-matrix-2026-05-18.md`
+- `operations/reports/mind-obsidian-exact-path-review-2026-05-18.md`
 - `operations/reports/mind-area-note-review-2026-05-18.md`
 - `operations/reports/mind-legacy-task-migration-options-2026-05-18.md`
 - `operations/reports/mind-obsidian-churn-review-2026-05-18.md`
@@ -48,6 +49,7 @@ git diff -- <specific-safe-path>
 - Inbox base-file review
 - Research folder import review
 - Area note review
+- Exact `.obsidian` path review
 
 ## Rollback commands
 

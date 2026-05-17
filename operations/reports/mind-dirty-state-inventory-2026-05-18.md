@@ -26,6 +26,7 @@ Current Mind repo state is heavily dirty and must be isolated category by catego
 - Likely source/cause: Obsidian plugin/config drift or local vault settings changes
 - Recommended decision: ignore until manual review
 - Review report: `operations/reports/mind-obsidian-churn-review-2026-05-18.md`
+- Exact-path review: `operations/reports/mind-obsidian-exact-path-review-2026-05-18.md`
 - Safe diagnostic commands:
   - `git diff -- .obsidian`
   - `git diff --stat -- .obsidian`
