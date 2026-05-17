@@ -209,7 +209,7 @@ npm run --prefix projects/brain-console-obsidian package
 cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
 npm run build
 npm start
-# Listen for: "Brain Core listening on http://localhost:6789"
+# Listen for: "Brain Core listening on http://localhost:4877"
 ```
 
 ## FAQ
@@ -218,7 +218,7 @@ npm start
 A: Restart Obsidian completely. If still missing, check Settings → Community plugins → Disabled list. Re-enable if needed.
 
 **Q: Refresh button does nothing?**  
-A: Brain Core is likely offline. Check status: `curl http://localhost:6789/status`. Start Brain Core if needed.
+A: Brain Core is likely offline. Check status: `curl http://localhost:4877/status`. Start Brain Core if needed.
 
 **Q: See raw JSON in cards?**  
 A: Data may be malformed from Brain Core, or plugin has a rendering bug. Check browser console for JS errors (Settings → Developer Tools).

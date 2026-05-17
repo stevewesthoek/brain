@@ -37,8 +37,9 @@ export default class BrainConsolePlugin extends Plugin {
 
   private async openConsole(): Promise<void> {
     const leaf = this.app.workspace.getRightLeaf(false);
+    if (!leaf) return;
     await leaf.setViewState({ type: VIEW_TYPE, active: true });
-    const view = this.app.workspace.getActiveViewOfType<BrainConsoleView>(VIEW_TYPE);
+    const view = this.app.workspace.getActiveViewOfType(BrainConsoleView);
     if (view) {
       await view.refresh();
     }
@@ -108,8 +109,9 @@ class BrainConsoleView extends ItemView {
   }
 
   async refresh(): Promise<void> {
-    const current = await loadBrainConsoleViewState(await this.plugin.getSettings());
-    renderBrainConsoleView(this.contentEl, current, () => {
+    const settings = await this.plugin.getSettings();
+    const current = await loadBrainConsoleViewState(settings);
+    renderBrainConsoleView(this.contentEl, current, settings, () => {
       void this.refresh();
     });
   }

@@ -1,4 +1,4 @@
-import { ItemView } from './obsidian.js';
+import { ItemView } from 'obsidian';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
 import {
   readBrainCoreApprovals,
@@ -32,6 +32,13 @@ import {
   type BrainCoreVideoStatus,
   type BrainCoreStatus,
 } from './client.js';
+import {
+  deriveDashboardSnapshot,
+  formatRelativeTime,
+  getConnectionStatusColor,
+  getAttentionBadgeColor,
+  type DashboardSnapshot,
+} from './dashboard.js';
 
 export interface BrainConsoleViewState {
   status?: BrainCoreStatus;
@@ -52,6 +59,7 @@ export interface BrainConsoleViewState {
   mindPreviews?: import('./client.js').BrainCoreMindPreviewSummary[];
   warning?: string;
   offline?: boolean;
+  refreshedAt?: Date;
 }
 
 export async function loadBrainConsoleViewState(
@@ -101,127 +109,129 @@ export async function loadBrainConsoleViewState(
     mindPreviews: mindPreviews.value?.previews,
     warning: normalized.warning ?? normalized.error,
     offline,
+    refreshedAt: new Date(),
   };
 }
 
 export function renderBrainConsoleView(
   container: HTMLElement,
   state: BrainConsoleViewState,
+  settings: BrainConsoleSettings,
   onRefresh?: () => void,
 ): void {
   container.empty();
   container.addClass('brain-console');
-  container.addClass('brain-console--dashboard');
+  container.addClass('brain-console--cockpit');
+
+  const snapshot = deriveDashboardSnapshot(state, settings.brainCoreUrl);
 
   const shell = container.createDiv({ cls: 'brain-console__shell' });
 
-  // Status strip (6 pills)
-  const statusStrip = shell.createDiv({ cls: 'brain-console__status-strip' });
-  renderStatusPills(statusStrip, state);
+  // Command bar
+  renderCommandBar(shell, snapshot, onRefresh);
 
-  // Header
-  const header = shell.createDiv({ cls: 'brain-console__header' });
-  header.createEl('h1', { text: 'Brain Cockpit' });
-  header.createEl('p', { text: 'System status, maintenance queue, and next safe action' });
+  // Status pills
+  renderStatusPills(shell, state);
 
-  // Safety banner
-  const safety = header.createDiv({ cls: 'brain-console__banner' });
-  safety.setText('Read-only. Manual refresh. No automatic POST calls.');
+  // Hero attention panel
+  renderHeroPanel(shell, snapshot, state);
 
-  if (state.warning) {
-    header.createDiv({ cls: 'brain-console__warning' }).setText(state.warning);
+  // Main content area
+  if (snapshot.connectionStatus === 'offline') {
+    renderOfflineState(shell, settings.brainCoreUrl);
+  } else {
+    // Dashboard grid with cards
+    const grid = shell.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+    renderCard(grid, 'Wiki Health', renderWikiHealthCard(state));
+    renderCard(grid, 'Maintenance', renderMaintenanceCard(state));
+    renderCard(grid, 'Approvals', renderApprovalsCard(state));
+    renderCard(grid, 'Scheduler', renderSchedulerCard(state));
+    renderCard(grid, 'Brain Core', renderBrainCoreCard(state));
+    renderCard(grid, 'Next Action', renderNextActionCard(snapshot));
+
+    // Activity panel
+    renderActivityPanel(shell, state);
   }
-
-  if (state.offline) {
-    const offline = shell.createDiv({ cls: 'brain-console__offline' });
-    offline.createEl('h3', { text: 'Brain Core offline' });
-    offline.createEl('p', { text: 'Start Brain Core to load live summaries.' });
-    return;
-  }
-
-  // Action row
-  const actions = header.createDiv({ cls: 'brain-console__actions' });
-  renderActionButtons(actions, onRefresh);
-
-  // Dashboard grid (6 core cards + 2 optional)
-  const dashboard = shell.createDiv({ cls: 'brain-console__dashboard' });
-
-  // MVP cards (6 must-have)
-  renderCard(dashboard, 'Wiki Health', renderWikiHealthCard(state));
-  renderCard(dashboard, 'Maintenance Previews', renderMaintenancePreviewsCard(state));
-  renderCard(dashboard, 'Approvals', renderApprovalsCard(state));
-  renderCard(dashboard, 'Scheduler Status', renderSchedulerCard(state));
-  renderCard(dashboard, 'Brain Core', renderBrainCoreCard(state));
-  renderCard(dashboard, 'Next Safe Action', renderNextActionCard(state));
-
-  // Activity panel at the bottom
-  const activity = shell.createDiv({ cls: 'brain-console__activity' });
-  renderActivityPanel(activity, state);
 }
 
-function renderStatusPills(container: HTMLElement, state: BrainConsoleViewState): void {
-  const pills = container.createDiv({ cls: 'brain-console__pills' });
+function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRefresh?: () => void): void {
+  const bar = shell.createDiv({ cls: 'brain-console__command-bar' });
 
-  // Brain Core pill
-  const brainCorePill = pills.createDiv({ cls: 'brain-console__pill' });
-  brainCorePill.createEl('span', {
-    text: `Brain Core: ${state.status?.ok === true ? '●' : '○'} ${state.status?.mode ?? 'unknown'}`,
-  });
+  // Left side: logo/label
+  const left = bar.createDiv({ cls: 'brain-console__bar-left' });
+  left.createEl('div', { cls: 'brain-console__logo', text: '◈ BRAIN OS' });
 
-  // Model Router pill
-  const mrReport = (state.runtimeReports ?? []).find((r) => r.id === 'model-router');
-  const mrPill = pills.createDiv({ cls: 'brain-console__pill' });
-  mrPill.createEl('span', { text: `Model Router: ${mrReport?.status ?? 'unknown'}` });
+  // Center: connection status badge
+  const center = bar.createDiv({ cls: 'brain-console__bar-center' });
+  const badge = center.createEl('span', { cls: 'brain-console__status-badge' });
+  badge.style.color = getConnectionStatusColor(snapshot.connectionStatus);
+  badge.textContent = `● ${snapshot.connectionStatus.toUpperCase()}`;
 
-  // Scheduler pill
-  const schedPill = pills.createDiv({ cls: 'brain-console__pill' });
-  schedPill.createEl('span', { text: `Scheduler: ${state.schedulerStatus?.status ?? 'unknown'}` });
+  // Right side: refresh button + timestamp
+  const right = bar.createDiv({ cls: 'brain-console__bar-right' });
 
-  // Save-to-Mind pill
-  const capturePill = pills.createDiv({ cls: 'brain-console__pill' });
-  capturePill.createEl('span', { text: 'Save-to-Mind: live' });
-
-  // Approvals pill
-  const approvalsCount = state.approvals?.length ?? 0;
-  const approvalsPill = pills.createDiv({ cls: 'brain-console__pill' });
-  approvalsPill.createEl('span', { text: `Approvals: ${approvalsCount}` });
-
-  // Maintenance pill
-  const maintenanceCount = (state.mindPreviews ?? []).filter((p) => !p.expired).length;
-  const maintenancePill = pills.createDiv({ cls: 'brain-console__pill' });
-  maintenancePill.createEl('span', { text: `Maintenance: ${maintenanceCount} pending` });
-}
-
-function renderActionButtons(container: HTMLElement, onRefresh?: () => void): void {
-  const buttonGroup = container.createDiv({ cls: 'brain-console__button-group' });
-
-  const refreshBtn = buttonGroup.createEl('button', { text: 'Refresh' });
-  refreshBtn.addClass('brain-console__btn');
+  const refreshBtn = right.createEl('button', { text: '↻ refresh' });
+  refreshBtn.addClass('brain-console__btn-mini');
   if (onRefresh) {
     refreshBtn.addEventListener('click', () => onRefresh());
   }
 
-  const dryRunBtn = buttonGroup.createEl('button', { text: 'Request Dry Run' });
-  dryRunBtn.addClass('brain-console__btn');
-  dryRunBtn.disabled = true;
+  const timestamp = right.createEl('span', { text: formatRelativeTime(snapshot.refreshedAt) });
+  timestamp.addClass('brain-console__timestamp');
+}
 
-  const viewBtn = buttonGroup.createEl('button', { text: 'View Latest' });
-  viewBtn.addClass('brain-console__btn');
-  viewBtn.disabled = true;
+function renderStatusPills(shell: HTMLElement, state: BrainConsoleViewState): void {
+  const pills = shell.createDiv({ cls: 'brain-console__pills' });
 
-  const mindBtn = buttonGroup.createEl('button', { text: 'Open Mind' });
-  mindBtn.addClass('brain-console__btn');
-  mindBtn.disabled = true;
+  const mrReport = state.runtimeReports?.find((r) => r.id === 'model-router');
+  const brainCoreOnline = state.status?.ok === true;
 
-  const logBtn = buttonGroup.createEl('button', { text: 'Wiki Log' });
-  logBtn.addClass('brain-console__btn');
-  logBtn.disabled = true;
+  const data = [
+    { label: 'Brain Core', value: brainCoreOnline ? '● online' : '○ offline' },
+    { label: 'Model Router', value: mrReport ? `${mrReport.status}` : 'unknown' },
+    { label: 'Scheduler', value: state.schedulerStatus?.status ?? 'unknown' },
+    { label: 'Save-to-Mind', value: 'live' },
+    { label: 'Approvals', value: `${state.approvals?.length ?? 0}` },
+    { label: 'Maintenance', value: `${(state.mindPreviews ?? []).filter((p) => !p.expired).length}` },
+  ];
+
+  for (const pill of data) {
+    const el = pills.createDiv({ cls: 'brain-console__pill' });
+    el.createEl('span', { cls: 'brain-console__pill-label', text: pill.label });
+    el.createEl('span', { cls: 'brain-console__pill-value', text: pill.value });
+  }
+}
+
+function renderHeroPanel(shell: HTMLElement, snapshot: DashboardSnapshot, state: BrainConsoleViewState): void {
+  const hero = shell.createDiv({ cls: 'brain-console__hero' });
+  hero.style.borderLeftColor = getAttentionBadgeColor(snapshot.attentionLevel);
+
+  const label = hero.createDiv({ cls: 'brain-console__hero-label', text: 'SYSTEM ATTENTION' });
+
+  const statusRow = hero.createDiv({ cls: 'brain-console__hero-status' });
+  const statusVal = statusRow.createEl('span', { text: snapshot.attentionLevel.toUpperCase() });
+  statusVal.style.color = getAttentionBadgeColor(snapshot.attentionLevel);
+
+  const scoreRow = hero.createDiv({ cls: 'brain-console__hero-score' });
+  scoreRow.createEl('span', { text: 'Score' });
+  scoreRow.createEl('span', { cls: 'brain-console__score-number', text: `${snapshot.attentionScore}%` });
+
+  // Burn bar
+  const burnBar = hero.createDiv({ cls: 'brain-console__burn-bar' });
+  const burnFill = burnBar.createDiv({ cls: 'brain-console__burn-fill' });
+  burnFill.style.width = `${snapshot.attentionScore}%`;
+  burnFill.style.backgroundColor = getAttentionBadgeColor(snapshot.attentionLevel);
+
+  const right = hero.createDiv({ cls: 'brain-console__hero-right' });
+  right.createEl('div', { text: `${snapshot.approvalsCount} approvals` });
+  right.createEl('div', { text: `${snapshot.maintenanceCount} queued` });
 }
 
 function renderCard(parent: HTMLElement, title: string, content: HTMLElement): void {
   const card = parent.createDiv({ cls: 'brain-console__card' });
-  const cardHeader = card.createDiv({ cls: 'brain-console__card-header' });
-  cardHeader.createEl('h3', { text: title });
+  const header = card.createDiv({ cls: 'brain-console__card-header' });
+  header.createEl('h3', { text: title });
   card.appendChild(content);
 }
 
@@ -229,44 +239,40 @@ function renderWikiHealthCard(state: BrainConsoleViewState): HTMLElement {
   const container = document.createElement('div');
   container.className = 'brain-console__card-content';
 
-  const mrReport = (state.runtimeReports ?? []).find((r) => r.id === 'model-router');
+  const mrReport = state.runtimeReports?.find((r) => r.id === 'model-router');
   if (!mrReport?.wikiHealth) {
-    container.createEl('p', { text: 'Wiki health data unavailable' });
+    container.textContent = 'unavailable';
     return container;
   }
 
   const health = mrReport.wikiHealth;
-  const status = health.ok ? '✓ OK' : `⚠ Issues`;
-
-  container.createEl('div', { cls: 'brain-console__metric', text: status });
-  if (!health.ok) {
+  const metric = container.createEl('div', { cls: 'brain-console__metric', text: health.ok ? '✓ ok' : '⚠ issues' });
+  if (health.ok) {
+    metric.style.color = '#22c55e';
+  } else {
+    metric.style.color = '#ef4444';
     container.createEl('p', {
-      text: `Warnings: ${health.warningCount} · Errors: ${health.errorCount}`,
       cls: 'brain-console__detail',
+      text: `${health.warningCount} warn · ${health.errorCount} err`,
     });
   }
 
   return container;
 }
 
-function renderMaintenancePreviewsCard(state: BrainConsoleViewState): HTMLElement {
+function renderMaintenanceCard(state: BrainConsoleViewState): HTMLElement {
   const container = document.createElement('div');
   container.className = 'brain-console__card-content';
 
-  const previews = state.mindPreviews ?? [];
-  const pending = previews.filter((p) => !p.expired);
-
+  const pending = (state.mindPreviews ?? []).filter((p) => !p.expired);
   if (pending.length === 0) {
-    container.createEl('p', { text: 'No maintenance queued' });
-    return container;
-  }
-
-  container.createEl('div', { cls: 'brain-console__metric', text: `${pending.length} pending` });
-  if (pending[0]) {
-    container.createEl('p', {
-      text: `Latest: ${new Date(pending[0].createdAt).toLocaleDateString()}`,
-      cls: 'brain-console__detail',
-    });
+    container.createEl('div', { cls: 'brain-console__metric', text: 'none' });
+  } else {
+    container.createEl('div', { cls: 'brain-console__metric', text: `${pending.length}` });
+    if (pending[0]) {
+      const date = new Date(pending[0].createdAt);
+      container.createEl('p', { cls: 'brain-console__detail', text: `${formatRelativeTime(date)}` });
+    }
   }
 
   return container;
@@ -278,16 +284,15 @@ function renderApprovalsCard(state: BrainConsoleViewState): HTMLElement {
 
   const approvals = state.approvals ?? [];
   if (approvals.length === 0) {
-    container.createEl('p', { text: 'No approvals pending' });
-    return container;
+    container.createEl('div', { cls: 'brain-console__metric', text: 'none' });
+  } else {
+    container.createEl('div', { cls: 'brain-console__metric', text: `${approvals.length}` });
+    const sample = approvals.slice(0, 2);
+    const list = container.createEl('ul', { cls: 'brain-console__list' });
+    for (const a of sample) {
+      list.createEl('li', { text: `${a.kind}` });
+    }
   }
-
-  container.createEl('div', { cls: 'brain-console__metric', text: `${approvals.length} pending` });
-  const sample = approvals.slice(0, 2);
-  const list = container.createEl('ul', { cls: 'brain-console__list' });
-  sample.forEach((a) => {
-    list.createEl('li', { text: `${a.kind}: ${a.status}` });
-  });
 
   return container;
 }
@@ -296,17 +301,12 @@ function renderSchedulerCard(state: BrainConsoleViewState): HTMLElement {
   const container = document.createElement('div');
   container.className = 'brain-console__card-content';
 
-  container.createEl('div', { cls: 'brain-console__metric', text: state.schedulerStatus?.status ?? 'unknown' });
-  container.createEl('p', {
-    text: `Latest: ${state.schedulerStatus?.latestRunStatus ?? 'never'}`,
-    cls: 'brain-console__detail',
-  });
+  const status = state.schedulerStatus?.latestRunStatus ?? 'unknown';
+  const metric = container.createEl('div', { cls: 'brain-console__metric', text: status });
+  if (status === 'failed') metric.style.color = '#ef4444';
+  if (status === 'ok') metric.style.color = '#22c55e';
 
-  const jobs = state.schedulerJobs ?? [];
-  if (jobs.length > 0) {
-    const jobSummary = jobs.slice(0, 2).map((j) => `${j.id}: ${j.status}`).join(' · ');
-    container.createEl('p', { text: jobSummary, cls: 'brain-console__detail' });
-  }
+  container.createEl('p', { cls: 'brain-console__detail', text: `${state.schedulerStatus?.latestRunAt ? formatRelativeTime(state.schedulerStatus.latestRunAt) : 'never'}` });
 
   return container;
 }
@@ -315,58 +315,70 @@ function renderBrainCoreCard(state: BrainConsoleViewState): HTMLElement {
   const container = document.createElement('div');
   container.className = 'brain-console__card-content';
 
-  const online = state.status?.ok === true ? 'online' : 'offline';
-  container.createEl('div', { cls: 'brain-console__metric', text: online });
-  container.createEl('p', {
-    text: `Host: ${state.status?.host ?? 'localhost'} · v${state.status?.version ?? '?'}`,
-    cls: 'brain-console__detail',
-  });
-  container.createEl('p', {
-    text: `Execution: ${state.executionReadiness?.executionEnabled ? 'enabled' : 'disabled'}`,
-    cls: 'brain-console__detail',
-  });
+  const online = state.status?.ok === true;
+  const metric = container.createEl('div', { cls: 'brain-console__metric', text: online ? 'online' : 'offline' });
+  if (online) metric.style.color = '#22c55e';
+  else metric.style.color = '#ef4444';
+
+  container.createEl('p', { cls: 'brain-console__detail', text: `v${state.status?.version ?? '?'}` });
+  container.createEl('p', { cls: 'brain-console__detail', text: `exec: ${state.executionReadiness?.executionEnabled ? 'on' : 'off'}` });
 
   return container;
 }
 
-function renderNextActionCard(state: BrainConsoleViewState): HTMLElement {
+function renderNextActionCard(snapshot: DashboardSnapshot): HTMLElement {
   const container = document.createElement('div');
   container.className = 'brain-console__card-content';
 
-  const readiness = state.executionReadiness;
-  if (!readiness) {
-    container.createEl('p', { text: 'Readiness unavailable' });
-    return container;
-  }
-
-  const nextAction = readiness.blockers.length > 0 ? `Blocked: ${readiness.blockers[0]}` : `Ready: ${readiness.readyCandidateCount}`;
-  container.createEl('div', { cls: 'brain-console__metric', text: nextAction });
-
-  if (readiness.readyCandidateCount > 0) {
-    container.createEl('p', { text: 'Candidates available for execution', cls: 'brain-console__detail' });
-  }
+  const metric = container.createEl('div', { cls: 'brain-console__metric', text: snapshot.nextAction });
+  if (snapshot.attentionLevel === 'blocked') metric.style.color = '#ef4444';
+  if (snapshot.attentionLevel === 'review') metric.style.color = '#f97316';
+  if (snapshot.attentionLevel === 'watch') metric.style.color = '#eab308';
+  if (snapshot.attentionLevel === 'clear') metric.style.color = '#22c55e';
 
   return container;
 }
 
-function renderActivityPanel(container: HTMLElement, state: BrainConsoleViewState): void {
-  const panel = container.createDiv({ cls: 'brain-console__activity-panel' });
-  panel.createEl('h4', { text: 'Recent Activity' });
+function renderOfflineState(shell: HTMLElement, brainCoreUrl: string): void {
+  const offline = shell.createDiv({ cls: 'brain-console__offline-panel' });
+
+  offline.createEl('h2', { text: 'Connection lost' });
+  offline.createEl('p', { text: 'Brain Core is not responding. Trying to reach:' });
+
+  const urlEl = offline.createEl('code', { text: brainCoreUrl });
+  urlEl.addClass('brain-console__url-display');
+
+  offline.createEl('h3', { text: 'To recover:' });
+  const steps = offline.createEl('ol');
+  steps.createEl('li', { text: 'Verify Brain Core is running' });
+  steps.createEl('li', { text: 'Run: npm start in projects/brain-core' });
+  steps.createEl('li', { text: 'Return here and click Refresh' });
+
+  const refreshBtn = offline.createEl('button', { text: 'Refresh' });
+  refreshBtn.addClass('brain-console__btn-main');
+}
+
+function renderActivityPanel(shell: HTMLElement, state: BrainConsoleViewState): void {
+  const panel = shell.createDiv({ cls: 'brain-console__activity' });
+  const header = panel.createDiv({ cls: 'brain-console__activity-header', text: 'Activity' });
 
   const activity = panel.createEl('ul', { cls: 'brain-console__activity-list' });
 
-  // Sample activity items (in real implementation, would come from Brain Core)
   if (state.sessions && state.sessions.length > 0) {
-    activity.createEl('li', { text: `Latest session: ${state.sessions[0]?.title ?? 'unknown'}` });
+    activity.createEl('li', { text: `session: ${state.sessions[0]?.title?.slice(0, 40) ?? 'unknown'}` });
   }
 
   if (state.runtimeReports && state.runtimeReports.length > 0) {
-    activity.createEl('li', { text: `Runtime reports available: ${state.runtimeReports.length}` });
+    const ready = state.runtimeReports.filter((r) => r.status === 'available').length;
+    activity.createEl('li', { text: `reports: ${ready}/${state.runtimeReports.length}` });
   }
 
   const mindPreviews = state.mindPreviews ?? [];
   if (mindPreviews.length > 0) {
-    activity.createEl('li', { text: `Maintenance previews: ${mindPreviews.length}` });
+    activity.createEl('li', { text: `previews: ${mindPreviews.length}` });
+  }
+
+  if (activity.children.length === 0) {
+    activity.createEl('li', { text: 'all clear' });
   }
 }
-

@@ -3,7 +3,7 @@ export interface BrainConsoleSettings {
 }
 
 export const DEFAULT_BRAIN_CONSOLE_SETTINGS: BrainConsoleSettings = {
-  brainCoreUrl: 'http://127.0.0.1:4877',
+  brainCoreUrl: 'http://localhost:4877',
 };
 
 export function normalizeBrainCoreUrl(rawValue: string): { value: string; warning?: string; error?: string } {

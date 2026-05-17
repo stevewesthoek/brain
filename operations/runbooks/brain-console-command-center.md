@@ -206,10 +206,10 @@ GET /execution/mind-previews
 Brain Console settings are in Obsidian plugin settings:
 
 **Setting: Brain Core URL**
-- Default: `http://localhost:6789`
+- Default: `http://localhost:4877`
 - Customize if Brain Core runs on different host/port
 - Examples:
-  - Local: `http://localhost:6789`
+  - Local: `http://localhost:4877`
   - Remote (Tailscale): `http://100.71.31.88:6789`
   - HTTPS: `https://brain-core.internal.example.com`
 
@@ -250,7 +250,7 @@ Brain Console settings are in Obsidian plugin settings:
 **Cause:** All endpoints timed out or returned errors.
 
 **Fixes:**
-1. Verify Brain Core is running: `curl http://localhost:6789/status`
+1. Verify Brain Core is running: `curl http://localhost:4877/status`
 2. Check plugin settings: verify Brain Core URL is correct
 3. Check network: ping the Brain Core host
 4. Check firewall: ensure port 6789 is accessible
@@ -264,7 +264,7 @@ Brain Console settings are in Obsidian plugin settings:
 
 **Fixes:**
 1. Click "Refresh" to retry
-2. Check individual endpoint manually: `curl http://localhost:6789/<endpoint>`
+2. Check individual endpoint manually: `curl http://localhost:4877/<endpoint>`
 3. Check Brain Core status: does `/status` return online?
 4. Check Brain Core runtime reports: are subsystems healthy?
 
