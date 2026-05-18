@@ -31,6 +31,7 @@ import {
   readBrainCorePostOrchestratorIntegrations,
   readBrainCorePostOrchestratorRecovery,
   readBrainCorePostOrchestratorStatus,
+  readBrainCorePostOrchestratorOverview,
   readBrainCorePostPlatformPolicies,
   readBrainCorePostDraftReviewQueue,
   readBrainCorePostSchedulePreviewQueue,
@@ -75,6 +76,7 @@ import {
   type BrainCoreProjectSummary,
   type BrainCorePlatformSummary,
   type BrainCorePostOrchestratorContract,
+  type BrainCorePostOrchestratorOverviewResponse,
   type BrainCorePostDryRunPlanResponse,
   type BrainCorePostDraftFixture,
   type BrainCorePostDraftReviewQueueResponse,
@@ -149,6 +151,7 @@ export interface BrainConsoleViewState {
   projects?: BrainCoreProjectSummary[];
   platforms?: BrainCorePlatformSummary[];
   postOrchestratorStatus?: BrainCorePostOrchestratorStatusResponse;
+  postOrchestratorOverview?: BrainCorePostOrchestratorOverviewResponse;
   postOrchestratorFlows?: BrainCorePostFlowFixturesResponse;
   postOrchestratorDrafts?: BrainCorePostDraftFixturesResponse;
   postOrchestratorEvents?: BrainCorePostEventFixturesResponse;
@@ -190,7 +193,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -212,6 +215,7 @@ export async function loadBrainConsoleViewState(
     readBrainCoreProjects(baseUrl),
     readBrainCorePlatforms(baseUrl),
     readBrainCorePostOrchestratorStatus(baseUrl),
+    readBrainCorePostOrchestratorOverview(baseUrl),
     readBrainCorePostOrchestratorFlows(baseUrl),
     readBrainCorePostOrchestratorDrafts(baseUrl),
     readBrainCorePostOrchestratorEvents(baseUrl),
@@ -256,7 +260,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -303,6 +307,7 @@ export async function loadBrainConsoleViewState(
     projects: projects.value?.projects,
     platforms: platforms.value?.platforms,
     postOrchestratorStatus: postOrchestratorStatus.value,
+    postOrchestratorOverview: postOrchestratorOverview.value,
     postOrchestratorFlows: postOrchestratorFlows.value,
     postOrchestratorDrafts: postOrchestratorDrafts.value,
     postOrchestratorEvents: postOrchestratorEvents.value,
@@ -523,28 +528,48 @@ function renderReportsSection(content: HTMLElement, state: BrainConsoleViewState
 function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
 
-  renderCard(grid, 'Post Orchestrator Status', renderPostOrchestratorStatusCard(state));
-  renderCard(grid, 'Platform / Post Flows', renderPlatformPostFlowsCard(state));
-  renderCard(grid, 'Event Fixtures', renderPostEventFixturesCard(state));
-  renderCard(grid, 'Dry-Run Plan', renderPostDryRunPlanCard(state));
-  renderCard(grid, 'Draft Plan Rows', renderPostDryRunDraftRowsCard(state));
-  renderCard(grid, 'Draft Review Queue', renderPostDraftReviewQueueCard(state));
-  renderCard(grid, 'Schedule Preview Queue', renderPostSchedulePreviewQueueCard(state));
-  renderCard(grid, 'Draft Fixtures / Preview Examples', renderDraftFixturesCard(state));
-  renderCard(grid, 'Safety State', renderSafetyStateCard(state));
-  renderCard(grid, 'Analytics Feedback Fixtures', renderPostAnalyticsFixturesCard(state));
-  renderCard(grid, 'End-to-End Pipeline Summary', renderPostPipelineSummaryCard(state));
-  renderCard(grid, 'Readiness / Quality Score', renderPostReadinessScoreCard(state));
-  renderCard(grid, 'Platform Policy / Security Review', renderPostPlatformPolicyCard(state));
-  renderCard(grid, 'Decommission Readiness Matrix', renderPostDecommissionReadinessCard(state));
-  renderCard(grid, 'Operator Guidance', renderPostOperatorGuidanceCard(state));
-  renderCard(grid, 'Manual Export Preview', renderPostManualExportCard(state));
-  renderCard(grid, 'Operator Acceptance Checklist', renderPostAcceptanceChecklistCard(state));
-  renderCard(grid, 'Migration Parity Report', renderPostMigrationParityReportCard(state));
-  renderCard(grid, 'Roadmap Checkpoint', renderPostRoadmapCheckpointCard(state));
-  renderCard(grid, 'Contracts', renderPostContractsCard(state));
-  renderCard(grid, 'Recovery / Blockers', renderPostRecoveryCard(state));
+  renderPostGroup(grid, 'Status', [
+    { title: 'Overview', render: renderPostOrchestratorOverviewCard(state) },
+    { title: 'Post Orchestrator Status', render: renderPostOrchestratorStatusCard(state) },
+  ]);
+  renderPostGroup(grid, 'Flow Preview', [
+    { title: 'Platform / Post Flows', render: renderPlatformPostFlowsCard(state) },
+    { title: 'Event Fixtures', render: renderPostEventFixturesCard(state) },
+    { title: 'Dry-Run Plan', render: renderPostDryRunPlanCard(state) },
+    { title: 'Draft Plan Rows', render: renderPostDryRunDraftRowsCard(state) },
+    { title: 'Draft Fixtures / Preview Examples', render: renderDraftFixturesCard(state) },
+  ]);
+  renderPostGroup(grid, 'Review / Schedule', [
+    { title: 'Draft Review Queue', render: renderPostDraftReviewQueueCard(state) },
+    { title: 'Schedule Preview Queue', render: renderPostSchedulePreviewQueueCard(state) },
+    { title: 'Manual Export Preview', render: renderPostManualExportCard(state) },
+  ]);
+  renderPostGroup(grid, 'Safety / Policy', [
+    { title: 'Readiness / Quality Score', render: renderPostReadinessScoreCard(state) },
+    { title: 'Platform Policy / Security Review', render: renderPostPlatformPolicyCard(state) },
+    { title: 'Operator Guidance', render: renderPostOperatorGuidanceCard(state) },
+    { title: 'Acceptance Checklist', render: renderPostAcceptanceChecklistCard(state) },
+    { title: 'Safety State', render: renderSafetyStateCard(state) },
+  ]);
+  renderPostGroup(grid, 'Migration / Checkpoint', [
+    { title: 'Migration Parity Report', render: renderPostMigrationParityReportCard(state) },
+    { title: 'Decommission Readiness Matrix', render: renderPostDecommissionReadinessCard(state) },
+    { title: 'Roadmap Checkpoint', render: renderPostRoadmapCheckpointCard(state) },
+    { title: 'Contracts', render: renderPostContractsCard(state) },
+    { title: 'Recovery / Blockers', render: renderPostRecoveryCard(state) },
+    { title: 'Analytics Feedback Fixtures', render: renderPostAnalyticsFixturesCard(state) },
+    { title: 'End-to-End Pipeline Summary', render: renderPostPipelineSummaryCard(state) },
+  ]);
   renderCard(grid, 'Publishing Disabled', renderPublishingDisabledCard());
+}
+
+function renderPostGroup(parent: HTMLElement, title: string, cards: Array<{ title: string; render: HTMLElement }>): void {
+  const section = parent.createDiv({ cls: 'brain-console__post-group' });
+  section.createEl('h4', { cls: 'brain-console__post-group-title', text: title });
+  const grid = section.createDiv({ cls: 'brain-console__post-group-grid' });
+  for (const card of cards) {
+    renderCard(grid, card.title, card.render);
+  }
 }
 
 function renderAgentsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
@@ -639,6 +664,15 @@ function renderCard(parent: HTMLElement, title: string, content: HTMLElement): v
   const header = card.createDiv({ cls: 'brain-console__card-header' });
   header.createEl('h3', { text: title });
   card.appendChild(content);
+}
+
+function renderCompactStatGrid(container: HTMLElement, rows: Array<{ label: string; value: string }>): void {
+  const grid = container.createDiv({ cls: 'brain-console__stat-grid' });
+  rows.forEach(({ label, value }) => {
+    const stat = grid.createDiv({ cls: 'brain-console__stat' });
+    stat.createEl('span', { cls: 'brain-console__stat-label', text: label });
+    stat.createEl('span', { cls: 'brain-console__stat-value', text: value });
+  });
 }
 
 function renderWikiHealthCard(state: BrainConsoleViewState): HTMLElement {
@@ -1549,24 +1583,59 @@ function renderRecoveryPanelCard(state: BrainConsoleViewState): HTMLElement {
 function renderPostOrchestratorStatusCard(state: BrainConsoleViewState): HTMLElement {
   const el = document.createElement('div');
   const status = state.postOrchestratorStatus;
-  if (!status) {
+  const overview = state.postOrchestratorOverview?.overview;
+  if (!status && !overview) {
     el.createEl('div', { cls: 'brain-console__list-note', text: 'No post orchestrator status available.' });
     return el;
   }
 
-  const rows = [
-    { label: 'Status', value: status.status },
-    { label: 'Phase', value: status.phase },
-    { label: 'Publishing', value: status.publishingEnabled ? 'enabled' : 'disabled' },
-    { label: 'Scheduling', value: status.schedulingEnabled ? 'enabled' : 'disabled' },
-    { label: 'Execution', value: status.executionEnabled ? 'enabled' : 'disabled' },
-    { label: 'Next safe step', value: status.nextSafeStep },
-  ];
+  const rows = overview
+    ? [
+        { label: 'Overview status', value: overview.status },
+        { label: 'Flows', value: String(overview.counts.flows) },
+        { label: 'Events', value: String(overview.counts.eventFixtures) },
+        { label: 'Blockers', value: String(overview.blockers.length) },
+        { label: 'Next safe step', value: overview.nextSafeStep },
+      ]
+    : [
+        { label: 'Status', value: status?.status ?? 'unknown' },
+        { label: 'Phase', value: status?.phase ?? 'unknown' },
+        { label: 'Publishing', value: status?.publishingEnabled ? 'enabled' : 'disabled' },
+        { label: 'Scheduling', value: status?.schedulingEnabled ? 'enabled' : 'disabled' },
+        { label: 'Execution', value: status?.executionEnabled ? 'enabled' : 'disabled' },
+        { label: 'Next safe step', value: status?.nextSafeStep ?? 'unknown' },
+      ];
 
-  rows.forEach(({ label, value }) => {
-    const row = el.createDiv({ cls: 'brain-console__row' });
-    row.createEl('dt', { text: label });
-    row.createEl('dd', { text: value });
+  renderCompactStatGrid(el, rows);
+  el.createEl('div', { cls: 'brain-console__post-safe-note', text: 'Publishing and scheduling remain disabled.' });
+
+  return el;
+}
+
+function renderPostOrchestratorOverviewCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const overview = state.postOrchestratorOverview?.overview;
+  if (!overview) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No post orchestrator overview available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Flows', value: String(overview.counts.flows) },
+    { label: 'Events', value: String(overview.counts.eventFixtures) },
+    { label: 'Drafts', value: String(overview.counts.draftFixtures) },
+    { label: 'Reviews', value: String(overview.counts.reviewItems) },
+    { label: 'Schedules', value: String(overview.counts.schedulePreviewItems) },
+    { label: 'Blockers', value: String(overview.blockers.length) },
+  ];
+  renderCompactStatGrid(el, rows);
+
+  el.createEl('div', { cls: 'brain-console__post-safe-note', text: 'Preview-only overview · publishing and scheduling remain disabled.' });
+
+  const blockerList = el.createEl('ul', { cls: 'brain-console__list brain-console__blocker-list' });
+  overview.blockers.slice(0, 5).forEach((blocker) => {
+    blockerList.createEl('li', { text: `${blocker.label} · ${blocker.source} · ${blocker.severity}` });
+    blockerList.createEl('li', { cls: 'brain-console__list-sub', text: blocker.nextSafeStep });
   });
 
   return el;

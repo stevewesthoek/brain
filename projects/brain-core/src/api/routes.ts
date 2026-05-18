@@ -17,6 +17,7 @@ import {
   readPostOrchestratorIntegrations,
   readPostOrchestratorRecovery,
   readPostOrchestratorStatus,
+  readPostOrchestratorOverview,
   readPostAnalyticsFixtures,
   readPostDecommissionReadiness,
   readPostAcceptanceChecklist,
@@ -123,6 +124,9 @@ export async function routeRequest(
       return;
     case '/post-orchestrator/status':
       sendJson(response, 200, readPostOrchestratorStatus());
+      return;
+    case '/post-orchestrator/overview':
+      sendJson(response, 200, readPostOrchestratorOverview());
       return;
     case '/post-orchestrator/contracts':
       sendJson(response, 200, readPostOrchestratorContracts());

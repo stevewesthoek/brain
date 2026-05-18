@@ -872,3 +872,65 @@ test('GET /post-orchestrator/roadmap-checkpoint returns checkpoint', async () =>
   assert.equal(body.checkpoint.safety.executionEnabled, false);
   assert.equal(body.checkpoint.safety.requiresExplicitUserApprovalBeforePublishingDesign, true);
 });
+
+test('GET /post-orchestrator/overview returns overview', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/overview' });
+  const body = JSON.parse(response.body) as {
+    overview: {
+      status: string;
+      counts: Record<string, number>;
+      keyStates: Record<string, boolean>;
+      blockers: Array<{ id: string; severity: string; source: string }>;
+      safety: {
+        readOnly: boolean;
+        previewOnly: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        executionEnabled: boolean;
+        decommissionStarted: boolean;
+        writesExternalPlatform: boolean;
+        writesToMind: boolean;
+      };
+      nextSafeStep: string;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(['preview-ready', 'blocked'].includes(body.overview.status));
+  assert.equal(typeof body.overview.counts.flows, 'number');
+  assert.equal(typeof body.overview.counts.eventFixtures, 'number');
+  assert.equal(typeof body.overview.counts.draftFixtures, 'number');
+  assert.equal(typeof body.overview.counts.reviewItems, 'number');
+  assert.equal(typeof body.overview.counts.schedulePreviewItems, 'number');
+  assert.equal(typeof body.overview.counts.analyticsFixtures, 'number');
+  assert.equal(typeof body.overview.counts.policyItems, 'number');
+  assert.equal(typeof body.overview.counts.decommissionItems, 'number');
+  assert.equal(typeof body.overview.counts.guidanceItems, 'number');
+  assert.equal(typeof body.overview.counts.acceptanceChecks, 'number');
+  assert.equal(typeof body.overview.counts.migrationCapabilities, 'number');
+  assert.equal(typeof body.overview.counts.roadmapPhases, 'number');
+  assert.equal(body.overview.keyStates.publishingEnabled, false);
+  assert.equal(body.overview.keyStates.schedulingEnabled, false);
+  assert.equal(body.overview.keyStates.executionEnabled, false);
+  assert.equal(body.overview.keyStates.decommissionStarted, false);
+  assert.equal(body.overview.keyStates.externalApiCallsEnabled, false);
+  assert.equal(body.overview.keyStates.externalAiCallsEnabled, false);
+  assert.equal(body.overview.keyStates.writesExternalPlatform, false);
+  assert.equal(body.overview.keyStates.writesToMind, false);
+  assert.equal(body.overview.keyStates.usesCookies, false);
+  assert.equal(body.overview.keyStates.usesPlaywright, false);
+  assert.equal(body.overview.safety.readOnly, true);
+  assert.equal(body.overview.safety.previewOnly, true);
+  assert.equal(body.overview.safety.publishingEnabled, false);
+  assert.equal(body.overview.safety.schedulingEnabled, false);
+  assert.equal(body.overview.safety.executionEnabled, false);
+  assert.equal(body.overview.safety.decommissionStarted, false);
+  assert.equal(body.overview.safety.writesExternalPlatform, false);
+  assert.equal(body.overview.safety.writesToMind, false);
+  assert.ok(body.overview.nextSafeStep.length > 0);
+  assert.ok(body.overview.blockers.some((blocker) => blocker.id === 'publishing-disabled'));
+  assert.ok(body.overview.blockers.some((blocker) => blocker.id === 'security-review-required'));
+  assert.ok(body.overview.blockers.some((blocker) => blocker.id === 'decommission-blocked'));
+  assert.ok(body.overview.blockers.some((blocker) => blocker.id === 'future-design-gated'));
+  assert.ok(body.overview.blockers.some((blocker) => blocker.id === 'acceptance-future-gates-blocked'));
+});

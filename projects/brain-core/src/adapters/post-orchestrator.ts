@@ -39,6 +39,8 @@ import type {
   BrainCorePostManualExportItem,
   BrainCorePostManualExportPackage,
   BrainCorePostManualExportPackageResponse,
+  BrainCorePostOrchestratorOverview,
+  BrainCorePostOrchestratorOverviewResponse,
   BrainCorePostAcceptanceCheck,
   BrainCorePostAcceptanceCheckCategory,
   BrainCorePostAcceptanceCheckStatus,
@@ -1580,6 +1582,81 @@ export function readPostOrchestratorStatus(): BrainCorePostOrchestratorStatusRes
   return STATUS;
 }
 
+export function readPostOrchestratorOverview(): BrainCorePostOrchestratorOverviewResponse {
+  const status = readPostOrchestratorStatus();
+  const flows = readPostOrchestratorFlowFixtures().flows;
+  const events = readPostOrchestratorEventFixtures().events;
+  const drafts = readPostOrchestratorDraftFixtures().drafts;
+  const reviewQueue = readPostDraftReviewQueue('github-release-event-fixture').queue;
+  const schedulePreviewQueue = readPostSchedulePreviewQueue('github-release-event-fixture').queue;
+  const analytics = readPostAnalyticsFixtures().analytics;
+  const policies = readPostPlatformPolicies().policies;
+  const decommission = readPostDecommissionReadiness();
+  const guidance = readPostOperatorGuidance();
+  const acceptance = readPostAcceptanceChecklist();
+  const migration = readPostMigrationParityReport();
+  const roadmap = readPostRoadmapCheckpoint();
+  const readiness = readPostReadinessScore('github-release-event-fixture').readiness;
+
+  const blockers = [
+    overviewBlocker('readiness', 'publishing-disabled', 'Publishing remains disabled', 'blocked', readiness.nextSafeStep),
+    overviewBlocker('policy', 'security-review-required', 'Platform security review is incomplete', 'warning', policies.find((policy) => policy.status === 'blocked' || policy.riskLevel === 'blocked')?.nextSafeStep ?? 'Review platform policies.'),
+    overviewBlocker('decommission', 'decommission-blocked', 'Decommission remains blocked', 'blocked', decommission.overall.nextSafeStep),
+    overviewBlocker('roadmap', 'future-design-gated', 'Future publishing/scheduling design is gated by explicit user approval', 'blocked', roadmap.checkpoint.nextRecommendedPhase),
+    overviewBlocker('acceptance', 'acceptance-future-gates-blocked', 'Future publishing and scheduling gates remain blocked', 'warning', acceptance.checklist.nextSafeStep),
+  ];
+
+  const counts = {
+    flows: flows.length,
+    eventFixtures: events.length,
+    draftFixtures: drafts.length,
+    reviewItems: reviewQueue.itemCount,
+    schedulePreviewItems: schedulePreviewQueue.itemCount,
+    analyticsFixtures: analytics.length,
+    policyItems: policies.length,
+    decommissionItems: decommission.items.length,
+    guidanceItems: guidance.items.length,
+    acceptanceChecks: acceptance.checklist.checks.length,
+    migrationCapabilities: migration.report.capabilities.length,
+    roadmapPhases: roadmap.checkpoint.phases.length,
+  };
+
+  return {
+    overview: {
+      id: 'post-orchestrator-overview',
+      generatedAt: new Date().toISOString(),
+      phase: 'preview-checkpoint',
+      status: 'blocked',
+      summary: 'Brain Core maintains a preview-only Post Orchestrator with no publishing, scheduling, execution, or decommission actions.',
+      counts,
+      keyStates: {
+        publishingEnabled: false,
+        schedulingEnabled: false,
+        executionEnabled: false,
+        decommissionStarted: false,
+        externalApiCallsEnabled: false,
+        externalAiCallsEnabled: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        usesCookies: false,
+        usesPlaywright: false,
+      },
+      blockers,
+      nextSafeStep: 'Review the grouped Post Orchestrator cards and keep future publishing/scheduling design gated by explicit user approval.',
+      safety: {
+        readOnly: true,
+        previewOnly: true,
+        publishingEnabled: false,
+        schedulingEnabled: false,
+        executionEnabled: false,
+        decommissionStarted: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+      },
+    },
+  };
+}
+
 export function readPostOrchestratorContracts(): BrainCorePostOrchestratorContractsResponse {
   return CONTRACTS;
 }
@@ -2970,5 +3047,21 @@ function roadmapPhase(
     status,
     summary,
     evidence,
+  };
+}
+
+function overviewBlocker(
+  source: BrainCorePostOrchestratorOverview['blockers'][number]['source'],
+  id: string,
+  label: string,
+  severity: BrainCorePostOrchestratorOverview['blockers'][number]['severity'],
+  nextSafeStep: string,
+): BrainCorePostOrchestratorOverview['blockers'][number] {
+  return {
+    id,
+    label,
+    severity,
+    source,
+    nextSafeStep,
   };
 }

@@ -936,6 +936,13 @@ Additional criteria:
 33. ✅ No publishing, scheduling, execution, export, download, clipboard, or decommission actions are exposed
 34. ✅ Future publishing/scheduling design remains gated by explicit user approval
 
+### Continuation Update — Post Orchestrator Overview
+
+- ✅ `/post-orchestrator/overview` provides compact counts, key states, blockers, and next safe step
+- ✅ Posts section is grouped into clear operator-facing sections
+- ✅ Preview-mode runbook documents what is safe and what remains disabled
+- ✅ All preview-only semantics remain intact
+
 ---
 
 ## Glossary

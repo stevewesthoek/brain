@@ -29,6 +29,14 @@ export interface DashboardSnapshot {
   postOrchestratorBlockedCount: number;
   postOrchestratorContractCount: number;
   postOrchestratorIntegrationCount: number;
+  postOverviewStatus?: string;
+  postOverviewFlowCount: number;
+  postOverviewBlockerCount: number;
+  postOverviewNextSafeStep: string;
+  postOverviewPublishingEnabled: boolean;
+  postOverviewSchedulingEnabled: boolean;
+  postOverviewExecutionEnabled: boolean;
+  postOverviewDecommissionStarted: boolean;
   postFlowCount: number;
   postDraftFixtureCount: number;
   postEventFixtureCount: number;
@@ -186,6 +194,14 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postOrchestratorBlockedCount = (state.postOrchestratorStatus?.modules ?? []).filter((module) => module.status === 'blocked').length;
   const postOrchestratorContractCount = state.postOrchestratorStatus ? 8 : 0;
   const postOrchestratorIntegrationCount = state.postOrchestratorStatus ? 3 : 0;
+  const postOverviewStatus = state.postOrchestratorOverview?.overview?.status;
+  const postOverviewFlowCount = state.postOrchestratorOverview?.overview?.counts.flows ?? 0;
+  const postOverviewBlockerCount = state.postOrchestratorOverview?.overview?.blockers?.length ?? 0;
+  const postOverviewNextSafeStep = state.postOrchestratorOverview?.overview?.nextSafeStep ?? 'Review the overview.';
+  const postOverviewPublishingEnabled = Boolean(state.postOrchestratorOverview?.overview?.keyStates.publishingEnabled);
+  const postOverviewSchedulingEnabled = Boolean(state.postOrchestratorOverview?.overview?.keyStates.schedulingEnabled);
+  const postOverviewExecutionEnabled = Boolean(state.postOrchestratorOverview?.overview?.keyStates.executionEnabled);
+  const postOverviewDecommissionStarted = Boolean(state.postOrchestratorOverview?.overview?.keyStates.decommissionStarted);
   const postFlowCount = state.postOrchestratorStatus ? 8 : 0;
   const postDraftFixtureCount = state.postOrchestratorDrafts?.drafts?.length ?? 0;
   const postEventFixtureCount = state.postOrchestratorEvents?.events?.length ?? 0;
@@ -408,6 +424,14 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postOrchestratorBlockedCount,
     postOrchestratorContractCount,
     postOrchestratorIntegrationCount,
+    postOverviewStatus,
+    postOverviewFlowCount,
+    postOverviewBlockerCount,
+    postOverviewNextSafeStep,
+    postOverviewPublishingEnabled,
+    postOverviewSchedulingEnabled,
+    postOverviewExecutionEnabled,
+    postOverviewDecommissionStarted,
     postFlowCount,
     postDraftFixtureCount,
     postEventFixtureCount,

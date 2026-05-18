@@ -1020,6 +1020,62 @@ export interface BrainCorePostRoadmapCheckpointResponse {
   checkpoint: BrainCorePostRoadmapCheckpoint;
 }
 
+export interface BrainCorePostOrchestratorOverview {
+  id: 'post-orchestrator-overview';
+  generatedAt: string;
+  phase: 'preview-checkpoint';
+  status: 'preview-ready' | 'blocked';
+  summary: string;
+  counts: {
+    flows: number;
+    eventFixtures: number;
+    draftFixtures: number;
+    reviewItems: number;
+    schedulePreviewItems: number;
+    analyticsFixtures: number;
+    policyItems: number;
+    decommissionItems: number;
+    guidanceItems: number;
+    acceptanceChecks: number;
+    migrationCapabilities: number;
+    roadmapPhases: number;
+  };
+  keyStates: {
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    decommissionStarted: false;
+    externalApiCallsEnabled: false;
+    externalAiCallsEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    usesCookies: false;
+    usesPlaywright: false;
+  };
+  blockers: Array<{
+    id: string;
+    label: string;
+    severity: 'info' | 'warning' | 'blocked';
+    source: 'readiness' | 'policy' | 'decommission' | 'roadmap' | 'acceptance';
+    nextSafeStep: string;
+  }>;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    previewOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    decommissionStarted: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostOrchestratorOverviewResponse {
+  overview: BrainCorePostOrchestratorOverview;
+}
+
 export type BrainCorePostOperatorGuidanceSeverity = 'info' | 'warning' | 'blocked';
 export type BrainCorePostOperatorGuidanceCategory =
   | 'review'
@@ -1818,6 +1874,12 @@ export async function readBrainCorePostRoadmapCheckpoint(
   baseUrl: string,
 ): Promise<HttpResult<BrainCorePostRoadmapCheckpointResponse>> {
   return fetchJson<BrainCorePostRoadmapCheckpointResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/roadmap-checkpoint');
+}
+
+export async function readBrainCorePostOrchestratorOverview(
+  baseUrl: string,
+): Promise<HttpResult<BrainCorePostOrchestratorOverviewResponse>> {
+  return fetchJson<BrainCorePostOrchestratorOverviewResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/overview');
 }
 
 export async function readBrainCoreStbStatus(

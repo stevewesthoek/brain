@@ -2335,3 +2335,27 @@ Safety status:
 Next safe task:
 
 - Roadmap checkpoint review and explicit user decision before any future real scheduling/publishing design.
+
+## Continuation update — Post Orchestrator overview and dashboard cleanup
+
+Implemented:
+
+- `/post-orchestrator/overview` aggregates compact preview-only counts, states, and blockers.
+- Brain Console Posts section is grouped into Status, Flow Preview, Review / Schedule, Safety / Policy, and Migration / Checkpoint.
+- Preview-mode runbook added for operator use.
+
+Safety status:
+
+- Read-only.
+- Publishing and scheduling remain disabled.
+- No platform writes.
+- No decommission.
+
+Validation:
+
+- Brain Core CI passed.
+- Brain Console typecheck/build/package passed.
+
+Next safe task:
+
+- Brain Console visual polish/navigation cleanup, or explicit user roadmap decision before designing real scheduling/publishing.
