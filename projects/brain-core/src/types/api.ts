@@ -2252,6 +2252,67 @@ export interface BrainCoreVideoReleaseCandidateReadinessResponse {
   snapshot: BrainCoreVideoReleaseCandidateReadinessSnapshot;
 }
 
+export interface BrainCoreVideoOperatorDecisionQueueItem {
+  id: string;
+  label: string;
+  category:
+    | 'candidate-selection'
+    | 'rollback-cleanup'
+    | 'artifact-sandbox'
+    | 'comparison-schema'
+    | 'release-candidate'
+    | 'controlled-execution';
+  status: 'decision-required' | 'blocked' | 'not-ready';
+  priority: 'high' | 'medium' | 'low';
+  requiredBeforeExecution: true;
+  evidence: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    registersAction: false;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoOperatorDecisionQueue {
+  id: 'video-orchestrator-operator-decision-queue';
+  generatedAt: string;
+  status: 'queue-only' | 'blocked';
+  canCreateApproval: false;
+  executableActionRegistered: false;
+  decisions: BrainCoreVideoOperatorDecisionQueueItem[];
+  summary: {
+    totalDecisions: number;
+    decisionRequiredCount: number;
+    blockedCount: number;
+    highPriorityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    registersAction: false;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoOperatorDecisionQueueResponse {
+  queue: BrainCoreVideoOperatorDecisionQueue;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3798,6 +3859,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/fixture-comparison-preview': BrainCoreVideoFixtureComparisonPreviewResponse;
   '/video-orchestrator/production-cutover-gate': BrainCoreVideoProductionCutoverGateResponse;
   '/video-orchestrator/release-candidate-readiness': BrainCoreVideoReleaseCandidateReadinessResponse;
+  '/video-orchestrator/operator-decision-queue': BrainCoreVideoOperatorDecisionQueueResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

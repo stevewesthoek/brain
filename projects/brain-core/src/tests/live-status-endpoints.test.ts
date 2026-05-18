@@ -2314,3 +2314,70 @@ test('POST /video-orchestrator/release-candidate-readiness is not available', as
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/operator-decision-queue returns read-only decisions', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/operator-decision-queue' });
+  const body = JSON.parse(response.body) as {
+    queue: {
+      id: string;
+      status: string;
+      canCreateApproval: boolean;
+      executableActionRegistered: boolean;
+      decisions: Array<{
+        id: string;
+        category: string;
+        requiredBeforeExecution: boolean;
+        safety: Record<string, boolean>;
+      }>;
+      summary: { totalDecisions: number; decisionRequiredCount: number; blockedCount: number; highPriorityCount: number };
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.queue.id, 'video-orchestrator-operator-decision-queue');
+  assert.ok(['queue-only', 'blocked'].includes(body.queue.status));
+  assert.equal(body.queue.canCreateApproval, false);
+  assert.equal(body.queue.executableActionRegistered, false);
+  assert.ok(body.queue.summary.totalDecisions >= 6);
+  assert.ok(body.queue.summary.highPriorityCount > 0);
+
+  const categories = body.queue.decisions.map(decision => decision.category);
+  assert.ok(categories.includes('candidate-selection'));
+  assert.ok(categories.includes('rollback-cleanup'));
+  assert.ok(categories.includes('artifact-sandbox'));
+  assert.ok(categories.includes('comparison-schema'));
+  assert.ok(categories.includes('release-candidate'));
+  assert.ok(categories.includes('controlled-execution'));
+
+  assert.equal(body.queue.safety.readOnly, true);
+  assert.equal(body.queue.safety.createsApproval, false);
+  assert.equal(body.queue.safety.registersAction, false);
+  assert.equal(body.queue.safety.executesStb, false);
+  assert.equal(body.queue.safety.executesVideo, false);
+  assert.equal(body.queue.safety.rendersVideo, false);
+  assert.equal(body.queue.safety.publishesContent, false);
+  assert.equal(body.queue.safety.decommissionsStb, false);
+  assert.equal(body.queue.safety.writesToMind, false);
+
+  body.queue.decisions.forEach(decision => {
+    assert.equal(decision.requiredBeforeExecution, true);
+    assert.equal(decision.safety.readOnly, true);
+    assert.equal(decision.safety.createsApproval, false);
+    assert.equal(decision.safety.registersAction, false);
+    assert.equal(decision.safety.executesStb, false);
+    assert.equal(decision.safety.executesVideo, false);
+    assert.equal(decision.safety.rendersVideo, false);
+    assert.equal(decision.safety.publishesContent, false);
+    assert.equal(decision.safety.decommissionsStb, false);
+    assert.equal(decision.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/operator-decision-queue is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/operator-decision-queue' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
