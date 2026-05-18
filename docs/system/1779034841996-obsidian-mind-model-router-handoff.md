@@ -2974,3 +2974,17 @@ Safety status:
 - No publishing or STB decommission.
 
 Next safe task: explicit operator decision before Phase 5 controlled execution design.
+
+
+## Operator decision required before Phase 5
+
+Phase 5 cannot begin until the operator explicitly approves:
+- first candidate story
+- exact controlled dry-run scope
+- approval execution model
+- artifact sandbox policy
+- rollback/cleanup policy
+- comparison acceptance criteria
+- risk register acceptance
+
+No code execution should be enabled before that decision.

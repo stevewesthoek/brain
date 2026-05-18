@@ -217,6 +217,24 @@ All orchestrators expose read-only status through Brain Core. Execution requests
 
 ## Naming Boundary - Legacy Apps vs Post Orchestrator Flows
 
+## 2026-05-18 — Phase 5 boundary
+
+Phase 5 is approved only as controlled execution design.
+
+Current state:
+- preview-only readiness is complete
+- controlled execution remains blocked
+- no execution, publishing, rendering, or decommissioning paths are enabled
+
+Operator-gated prerequisites for the next implementation steps:
+- first candidate story
+- exact controlled dry-run scope
+- approval execution model
+- artifact sandbox policy
+- rollback/cleanup policy
+- comparison acceptance criteria
+- risk register acceptance
+
 - Proofly and Xgrow are legacy/internal migration source names.
 - Brain Console should not present them as primary products/providers.
 - User-facing Post Orchestrator language should use flows such as Social Proof Asset Flow, Growth Optimization Flow, X Post Flow, GitHub Post Flow, LinkedIn Post Flow, and Platform Publishing Flow.

@@ -2059,3 +2059,22 @@ Current state:
 
 Next macro-phase:
 - Phase 5 only after explicit operator approval of controlled execution design boundaries
+
+## 2026-05-18 — Phase 5 controlled execution design
+
+Phase 5 is now allowed only as design/specification work.
+
+Required operator decisions before any executable implementation:
+- first candidate story
+- exact controlled dry-run scope
+- approval execution model
+- artifact sandbox policy
+- rollback/cleanup policy
+- comparison acceptance criteria
+- risk register acceptance
+
+Hard boundary:
+- no POST routes
+- no action registration
+- no execution plan
+- no execution, publishing, rendering, or decommissioning
