@@ -4672,3 +4672,141 @@ test('POST /video-orchestrator/controlled-execution-sandbox-execution-implementa
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-sandbox-teardown-recovery-implementation-plan returns plan design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-sandbox-teardown-recovery-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      version: string;
+      sandboxTeardownEnabled: boolean;
+      recoveryExecutionEnabled: boolean;
+      executionEnabled: boolean;
+      recoverySteps: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.version, 'phase-6k');
+  assert.equal(body.plan.sandboxTeardownEnabled, false);
+  assert.equal(body.plan.recoveryExecutionEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.ok(body.plan.recoverySteps.includes('block actual teardown and recovery execution'));
+  assert.equal(body.plan.safety.deletesFiles, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-sandbox-teardown-recovery-implementation-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-sandbox-teardown-recovery-implementation-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-artifact-policy-implementation-plan returns plan design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-artifact-policy-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      version: string;
+      artifactPolicyEnabled: boolean;
+      artifactGenerationEnabled: boolean;
+      renderingEnabled: boolean;
+      executionEnabled: boolean;
+      artifactBoundaryRules: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.version, 'phase-6l');
+  assert.equal(body.plan.artifactPolicyEnabled, false);
+  assert.equal(body.plan.artifactGenerationEnabled, false);
+  assert.equal(body.plan.renderingEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.ok(body.plan.artifactBoundaryRules.includes('artifact export cannot authorize publishing'));
+  assert.equal(body.plan.safety.exportsArtifacts, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-artifact-policy-implementation-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-artifact-policy-implementation-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-stb-protection-decommission-prevention-plan returns plan design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-stb-protection-decommission-prevention-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      version: string;
+      stbProtectionEnabled: boolean;
+      decommissionPreventionEnabled: boolean;
+      stbMutationEnabled: boolean;
+      decommissionEnabled: boolean;
+      executionEnabled: boolean;
+      decommissionGuards: string[];
+      protectionRequirements: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.version, 'phase-6m');
+  assert.equal(body.plan.stbProtectionEnabled, false);
+  assert.equal(body.plan.decommissionPreventionEnabled, false);
+  assert.equal(body.plan.stbMutationEnabled, false);
+  assert.equal(body.plan.decommissionEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.ok(body.plan.decommissionGuards.includes('no decommission from controlled execution path'));
+  assert.ok(body.plan.protectionRequirements.includes('controlled execution cannot mutate STB state'));
+  assert.equal(body.plan.safety.decommissionsStb, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-stb-protection-decommission-prevention-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-stb-protection-decommission-prevention-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-implementation-completion-readiness-checkpoint returns checkpoint', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-implementation-completion-readiness-checkpoint' });
+  const body = JSON.parse(response.body) as {
+    checkpoint: {
+      version: string;
+      planningPhaseComplete: boolean;
+      completedPlanningPhaseCount: number;
+      requiredPlanningPhaseCount: number;
+      remainingPlanningPhaseCount: number;
+      implementationExecutionEnabled: boolean;
+      executionEnabled: boolean;
+      completedPlanningPhases: string[];
+      remainingPlanningPhases: string[];
+      readinessBlockers: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.checkpoint.version, 'phase-6n');
+  assert.equal(body.checkpoint.planningPhaseComplete, false);
+  assert.equal(body.checkpoint.completedPlanningPhaseCount, 13);
+  assert.equal(body.checkpoint.requiredPlanningPhaseCount, 17);
+  assert.equal(body.checkpoint.remainingPlanningPhaseCount, 4);
+  assert.equal(body.checkpoint.implementationExecutionEnabled, false);
+  assert.equal(body.checkpoint.executionEnabled, false);
+  assert.ok(body.checkpoint.completedPlanningPhases.includes('6M STB protection decommission prevention plan'));
+  assert.ok(body.checkpoint.remainingPlanningPhases.includes('6O operator UX and console controls implementation plan'));
+  assert.ok(body.checkpoint.readinessBlockers.includes('no explicit user approval to begin Phase 7'));
+  assert.equal(body.checkpoint.safety.executionEnabled, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-implementation-completion-readiness-checkpoint is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-implementation-completion-readiness-checkpoint' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

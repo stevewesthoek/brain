@@ -601,3 +601,58 @@ This document defines the future controlled execution model as a design-only bou
 - No execution enabled.
 - Status: not-ready (blocked until sandbox teardown and recovery plan is approved).
 - Next safe phase: Phase 6K sandbox teardown and recovery implementation plan, still read-only and no execution.
+
+## Phase 6K sandbox teardown recovery implementation plan
+
+- Added as a read-only sandbox teardown recovery implementation plan design endpoint.
+- Defines 8 teardown requirements (runtime-local only, cannot touch source, cannot touch Mind, cannot touch STB, cannot delete source, cannot publish, must produce report-only, must preserve audit).
+- Defines 8 recovery steps (detect incomplete, identify temp state, verify teardown boundary, verify no repo paths, verify no Mind paths, verify no STB paths, prepare report, block execution).
+- Identifies 6 blocking requirements (no approved teardown policy, no approved runtime-local path policy, no approved recovery UX, no approved audit persistence, no approved cleanup lifecycle, no explicit approval).
+- No sandbox teardown is enabled.
+- No recovery execution is enabled.
+- No cleanup execution is enabled.
+- No artifact deletion is enabled.
+- No execution enabled.
+- Status: not-ready (blocked until artifact policy plan is approved).
+- Next safe phase: Phase 6L artifact policy implementation plan, still read-only and no execution.
+
+## Phase 6L artifact policy implementation plan
+
+- Added as a read-only artifact policy implementation plan design endpoint.
+- Defines 9 artifact requirements (runtime-local only, no source writes, no Mind writes, no STB writes, no platform API writes, no credential access, no publishable until policy, no writes until policy, audit metadata only).
+- Defines 8 artifact boundary rules (cannot authorize execution, export cannot authorize publishing, persistence cannot write repo, persistence cannot write Mind, cannot mutate STB, cannot contain credentials, cannot be published, cannot decommission STB).
+- Identifies 6 blocking requirements (no approved artifact sandbox policy, no approved safe output path, no approved retention policy, no approved redaction policy, no approved publishing boundary, no explicit approval).
+- No artifact policy is enabled.
+- No artifact generation is enabled.
+- No artifact persistence is enabled.
+- No artifact export is enabled.
+- No rendering is enabled.
+- No execution enabled.
+- Status: not-ready (blocked until STB protection plan is approved).
+- Next safe phase: Phase 6M STB protection and decommission prevention plan, still read-only and no execution.
+
+## Phase 6M STB protection decommission prevention plan
+
+- Added as a read-only STB protection and decommission prevention implementation plan design endpoint.
+- Defines 8 protection requirements (STB remains source of truth, cannot mutate state, cannot delete artifacts, cannot disable schedules, cannot alter publishing, cannot mark deprecated, must preserve rollback, must preserve dual-run evidence).
+- Defines 8 decommission guards (no decommission without Core parity, no without Console parity, no without dual-run validation, no without user approval, no without archive plan, no without rollback plan, no without post-cutover monitoring, no from controlled execution).
+- Identifies 7 blocking requirements (no approved STB protection, no approved decommission prevention, no approved cutover policy, no approved dual-run parity, no approved archive plan, no approved rollback plan, no explicit decommission approval).
+- No STB protection is enabled.
+- No decommission prevention is enabled.
+- No STB mutation is enabled.
+- No decommission is enabled.
+- No execution enabled.
+- Status: not-ready (blocked until readiness checkpoint approved).
+- Next safe phase: Phase 6N implementation completion readiness checkpoint, still read-only and no execution.
+
+## Phase 6N implementation completion readiness checkpoint
+
+- Added as a read-only implementation completion readiness checkpoint endpoint.
+- Identifies 13 completed planning phases (6A through 6M).
+- Identifies 4 remaining planning phases (6O operator UX, 6P security review, 6Q approval packet, 6R start gate).
+- Identifies readiness blockers (UX plan missing, security review missing, approval packet missing, start gate missing, no explicit user approval).
+- Planning phase complete: false.
+- No implementation execution is enabled.
+- No execution enabled.
+- Status: not-ready (blocked until remaining 4 planning phases approved).
+- Next safe phase: Phases 6O–6R for final planning gates before Phase 7 implementation start.
