@@ -3055,6 +3055,58 @@ export interface BrainCoreVideoControlledExecutionDisabledGateResponse {
   gate: BrainCoreVideoControlledExecutionDisabledGate;
 }
 
+export interface BrainCoreVideoControlledExecutionSecondApprovalPolicy {
+  id: 'video-orchestrator-controlled-execution-second-approval-policy';
+  generatedAt: string;
+  version: 'phase-5g';
+  status: 'blocked' | 'disabled';
+  policyExists: false;
+  policyAccepted: false;
+  secondApprovalCreationEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    policyCount: number;
+    policySectionCount: number;
+    requiredEvidenceCount: number;
+    missingEvidenceCount: number;
+    blockerCount: number;
+  };
+  policySections: string[];
+  requiredEvidence: string[];
+  missingEvidence: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    policyDesignOnly: true;
+    policyExists: false;
+    policyAccepted: false;
+    createsApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionSecondApprovalPolicyResponse {
+  policy: BrainCoreVideoControlledExecutionSecondApprovalPolicy;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =

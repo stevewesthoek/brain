@@ -3140,6 +3140,34 @@ export interface BrainCoreVideoControlledExecutionDisabledGateResponse {
   };
 }
 
+export interface BrainCoreVideoControlledExecutionSecondApprovalPolicyResponse {
+  policy: {
+    id: string;
+    generatedAt: string;
+    version: string;
+    status: string;
+    policyExists: boolean;
+    policyAccepted: boolean;
+    secondApprovalCreationEnabled: boolean;
+    executionEnabled: boolean;
+    executable: boolean;
+    summary: {
+      policyCount: number;
+      policySectionCount: number;
+      requiredEvidenceCount: number;
+      missingEvidenceCount: number;
+      blockerCount: number;
+    };
+    policySections: string[];
+    requiredEvidence: string[];
+    missingEvidence: string[];
+    evidenceReferences: string[];
+    blockers: string[];
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -4144,6 +4172,12 @@ export async function readBrainCoreVideoControlledExecutionDisabledGate(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionDisabledGateResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionDisabledGateResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-disabled-gate');
+}
+
+export async function readBrainCoreVideoControlledExecutionSecondApprovalPolicy(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionSecondApprovalPolicyResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionSecondApprovalPolicyResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-second-approval-policy');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(

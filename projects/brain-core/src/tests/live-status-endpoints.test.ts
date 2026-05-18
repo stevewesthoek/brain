@@ -3180,3 +3180,89 @@ test('POST /video-orchestrator/controlled-execution-plan-stub is not available',
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-second-approval-policy returns blocked policy design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-second-approval-policy' });
+  const body = JSON.parse(response.body) as {
+    policy: {
+      id: string;
+      generatedAt: string;
+      version: string;
+      status: string;
+      policyExists: boolean;
+      policyAccepted: boolean;
+      secondApprovalCreationEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      summary: {
+        policyCount: number;
+        policySectionCount: number;
+        requiredEvidenceCount: number;
+        missingEvidenceCount: number;
+        blockerCount: number;
+      };
+      policySections: string[];
+      requiredEvidence: string[];
+      missingEvidence: string[];
+      evidenceReferences: string[];
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.policy.id, 'video-orchestrator-controlled-execution-second-approval-policy');
+  assert.equal(body.policy.version, 'phase-5g');
+  assert.ok(['blocked', 'disabled'].includes(body.policy.status));
+  assert.equal(body.policy.policyExists, false);
+  assert.equal(body.policy.policyAccepted, false);
+  assert.equal(body.policy.secondApprovalCreationEnabled, false);
+  assert.equal(body.policy.executionEnabled, false);
+  assert.equal(body.policy.executable, false);
+  assert.ok(body.policy.summary.policyCount > 0);
+  assert.ok(body.policy.summary.policySectionCount > 0);
+  assert.ok(body.policy.summary.requiredEvidenceCount > 0);
+  assert.ok(body.policy.summary.missingEvidenceCount > 0);
+  assert.ok(body.policy.summary.blockerCount > 0);
+  assert.ok(body.policy.policySections.length > 0);
+  assert.ok(body.policy.policySections.some(s => s.includes('Operator identity')));
+  assert.ok(body.policy.policySections.some(s => s.includes('approval scope')));
+  assert.ok(body.policy.policySections.some(s => s.includes('sandbox') || s.includes('Sandbox')));
+  assert.ok(body.policy.requiredEvidence.length > 0);
+  assert.ok(body.policy.missingEvidence.length > 0);
+  assert.ok(body.policy.evidenceReferences.length > 0);
+  assert.ok(body.policy.blockers.length > 0);
+  assert.ok(body.policy.nextSafeStep.length > 0);
+  assert.equal(body.policy.safety.readOnly, true);
+  assert.equal(body.policy.safety.policyDesignOnly, true);
+  assert.equal(body.policy.safety.policyExists, false);
+  assert.equal(body.policy.safety.policyAccepted, false);
+  assert.equal(body.policy.safety.createsApproval, false);
+  assert.equal(body.policy.safety.createsSecondApproval, false);
+  assert.equal(body.policy.safety.approvalExecutionEnabled, false);
+  assert.equal(body.policy.safety.registersAction, false);
+  assert.equal(body.policy.safety.registersAllowlist, false);
+  assert.equal(body.policy.safety.runsValidator, false);
+  assert.equal(body.policy.safety.createsExecutionPlan, false);
+  assert.equal(body.policy.safety.executionPlanExecutable, false);
+  assert.equal(body.policy.safety.executionEnabled, false);
+  assert.equal(body.policy.safety.executesStb, false);
+  assert.equal(body.policy.safety.executesVideo, false);
+  assert.equal(body.policy.safety.writesFiles, false);
+  assert.equal(body.policy.safety.rendersVideo, false);
+  assert.equal(body.policy.safety.exportsArtifacts, false);
+  assert.equal(body.policy.safety.publishesContent, false);
+  assert.equal(body.policy.safety.decommissionsStb, false);
+  assert.equal(body.policy.safety.writesToMind, false);
+  assert.ok(body.policy.evidenceReferences.includes('/video-orchestrator/controlled-execution-disabled-gate'));
+  assert.ok(body.policy.evidenceReferences.includes('/video-orchestrator/controlled-execution-approval-request-design'));
+});
+
+test('POST /video-orchestrator/controlled-execution-second-approval-policy is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-second-approval-policy' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
