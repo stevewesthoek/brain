@@ -2827,6 +2827,70 @@ export interface BrainCoreVideoControlledExecutionReadinessIndexResponse {
   };
 }
 
+export interface BrainCoreVideoRoadmapCheckpointResponse {
+  checkpoint: {
+    status: string;
+    completedPhaseCount: number;
+    blockedPhaseCount: number;
+    approvalRequiredCount: number;
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      createsApproval: boolean;
+      registersAction: boolean;
+      publishesContent: boolean;
+      decommissionsStb: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
+export interface BrainCoreVideoOperatorReviewPacketResponse {
+  packet: {
+    status: string;
+    canCreateApproval: boolean;
+    canExecute: boolean;
+    canMarkReviewed: boolean;
+    sections: Array<{
+      status: string;
+      sourceEndpoint: string;
+      blockers: string[];
+      summary: string;
+      safety: {
+        readOnly: boolean;
+        createsApproval: boolean;
+        registersAction: boolean;
+        executesStb: boolean;
+        executesVideo: boolean;
+        publishesContent: boolean;
+        decommissionsStb: boolean;
+        writesToMind: boolean;
+      };
+    }>;
+    summary: {
+      totalSections: number;
+      includedCount: number;
+      blockedCount: number;
+      missingCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      createsApproval: boolean;
+      registersAction: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      publishesContent: boolean;
+      decommissionsStb: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -3771,6 +3835,18 @@ export async function readBrainCoreVideoControlledExecutionReadinessIndex(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionReadinessIndexResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionReadinessIndexResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-readiness-index');
+}
+
+export async function readBrainCoreVideoRoadmapCheckpoint(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoRoadmapCheckpointResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoRoadmapCheckpointResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/roadmap-checkpoint');
+}
+
+export async function readBrainCoreVideoOperatorReviewPacket(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoOperatorReviewPacketResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoOperatorReviewPacketResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/operator-review-packet');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(
