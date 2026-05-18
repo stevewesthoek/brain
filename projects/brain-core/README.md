@@ -4,21 +4,29 @@ Brain Core is the small local API boundary for the Obsidian-first operating cock
 
 ## Status
 
-Phase 3d: Video Orchestrator Asset Plan (Active). The service exposes deterministic read-only asset planning module for video intake → research → script → asset-plan pipeline. Phase 4G (Agent View Foundation) endpoints remain operational.
+Phase 3h: Video Orchestrator Assembly Plan (Active). The service exposes deterministic read-only assembly planning modules for the video intake → research → script → asset-plan → design-plan → voiceover-plan → visuals-plan → assembly-plan progression. Phase 4G (Agent View Foundation) endpoints remain operational.
 
 **2026-05-18 Latest:**
-- ✅ Phase 3d: Video Orchestrator Asset Plan module (Planning, not generation)
+- ✅ Phase 3h: Video Orchestrator Assembly Plan module (Timing/sync planning, not video rendering)
+  - ✅ Assembly plan fixtures: 5 stories with 5 timeline items each (intro, main-segment, passage-card, overlay, outro)
+  - ✅ Timeline items include: voiceoverSegmentId, visualSequenceItemId, assetRequirementId, designSpecId references
+  - ✅ Timeline kind enum: intro|main-segment|passage-card|overlay|transition|outro|platform-derivative
+  - ✅ Sync points: requiresVoiceover, requiresVisual, requiresOverlay boolean flags
+  - ✅ Structural placeholders only (no ffmpeg, no video rendering, no file generation)
+  - ✅ Composition requirements array for multi-platform planning (placeholders only)
+  - ✅ All safety flags hardcoded: readOnly=true, rendersVideo=false, callsFfmpeg=false, generatesFiles=false, etc.
+  - ✅ Blockers correctly documented: "Video rendering not implemented; FFmpeg/export runner disabled"
+  - ✅ GET /video-orchestrator/assembly-plan (list all plans with summary)
+  - ✅ GET /video-orchestrator/assembly-plan/:id (single plan with upstream links)
+  - ✅ Brain Console integration: minimal card in Pipelines section between Visuals Plan and Parity Matrix
+  - ✅ All 175 tests passing (172 existing + 3 new assembly-plan endpoint tests)
+- ✅ Previous Phase 3d: Video Orchestrator Asset Plan module (Planning, not generation)
   - ✅ Asset plan fixtures: 5 stories with 15-17 asset requirements each
   - ✅ Asset requirement types: thumbnail, title-card, passage-card, scene-visual, b-roll, platform-derivative, metadata-visual
   - ✅ Structural placeholders only (no image generation, no design synthesis)
   - ✅ Design orchestrator blocker correctly documented
-  - ✅ Video assembly stage blocker correctly documented
-  - ✅ GET /video-orchestrator/asset-plan (list all plans with summary)
-  - ✅ GET /video-orchestrator/asset-plan/:id (single plan with upstream links)
-  - ✅ Brain Console integration: minimal card in Pipelines section showing plan count, requirements, blocked count
-  - ✅ All 172 tests passing (169 existing + 3 new asset-plan endpoint tests)
-- ✅ All safety flags hardcoded: readOnly=true, generatesImage=false, callsExternalAI=false, writesFiles=false, publishesContent=false, writesToMind=false
-- Read-only by design; no asset generation, no image generation, no Mind mutations
+- ✅ All safety flags hardcoded: readOnly=true, rendersVideo=false, callsFfmpeg=false, generatesFiles=false, callsExternalAI=false, publishesContent=false, writesToMind=false
+- Read-only by design; no video rendering, no ffmpeg, no file generation, no Mind mutations
 
 ## Goals
 
@@ -119,7 +127,19 @@ Current `/video/status` and `/video/queue` are read-only placeholder or report-b
 
 Those report-backed local app and video surfaces were live-verified over `http://127.0.0.1:4877` during the current roadmap pass.
 
-**Phase 3d: Video Orchestrator Asset Plan (NEW)**
+**Phase 3h: Video Orchestrator Assembly Plan (NEW)**
+
+Current `/video-orchestrator/assembly-plan` and `/video-orchestrator/assembly-plan/:id` expose a deterministic, read-only assembly planning module. This is **timing/sync planning only, not video rendering or ffmpeg execution**. The module converts voiceover-plan + visuals-plan + design-plan + asset-plan fixtures into a unified video timeline with structural placeholders. Timeline items specify:
+- **Timing metadata:** startSecond, durationSeconds, endSecond
+- **Sync points:** requiresVoiceover, requiresVisual, requiresOverlay (boolean flags)
+- **Upstream references:** voiceoverSegmentId, visualSequenceItemId, assetRequirementId, designSpecId
+- **Timeline kind:** intro|main-segment|passage-card|overlay|transition|outro|platform-derivative
+- **Composition requirements:** array of structural placeholders for multi-platform planning (e.g., "Sync point placeholder...", "Timeline segment placeholder...")
+- **Status:** planned|blocked (blocked when rendering/ffmpeg not implemented)
+
+All timing is synchronized to voiceover segment durations. All composition requirements use placeholders (no ffmpeg commands, no render instructions, no file paths). All safety flags are hardcoded: `readOnly: true`, `rendersVideo: false`, `callsFfmpeg: false`, `generatesFiles: false`, `callsExternalAI: false`, `publishesContent: false`, `writesToMind: false`. Blockers: "Video rendering not implemented; FFmpeg/export runner disabled; assembly is timing/sync metadata only; no file artifacts produced".
+
+**Phase 3d: Video Orchestrator Asset Plan**
 
 Current `/video-orchestrator/asset-plan` and `/video-orchestrator/asset-plan/:id` expose a deterministic, read-only asset planning module. This is **planning only, not asset generation**. The module converts intake + research + script fixtures into a structured asset plan that defines what assets **will be needed** (not what will be generated). All requirements use structural placeholders (no image generation, no design prompt synthesis). Requirements are marked `planned` when design-orchestrator dependency is documented, or `blocked` when multiple blockers exist (design-orchestrator not implemented, video-assembly not implemented, image-generation disabled). Each requirement specifies `designDependency` ('design-orchestrator', 'manual-design', or 'none') to allow future design systems to understand blocker types. All safety flags are hardcoded: `readOnly: true`, `generatesImage: false`, `callsExternalAI: false`, `writesFiles: false`, `publishesContent: false`, `writesToMind: false`.
 

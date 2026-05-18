@@ -1804,6 +1804,125 @@ export interface BrainCoreVideoVisualsPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoAssemblyTimelineItem {
+  id: string;
+  sequence: number;
+  voiceoverSegmentId?: string;
+  visualSequenceItemId?: string;
+  assetRequirementId?: string;
+  designSpecId?: string;
+  kind: 'intro' | 'main-segment' | 'passage-card' | 'overlay' | 'transition' | 'outro' | 'platform-derivative';
+  label: string;
+  status: 'planned' | 'blocked';
+  placeholder: string;
+  timing: {
+    startSecond: number;
+    durationSeconds: number;
+    endSecond: number;
+  };
+  sync: {
+    requiresVoiceover: boolean;
+    requiresVisual: boolean;
+    requiresOverlay: boolean;
+  };
+  compositionRequirements: string[];
+  blockers: string[];
+  safety: {
+    readOnly: boolean;
+    rendersVideo: boolean;
+    callsFfmpeg: boolean;
+    generatesFiles: boolean;
+    callsExternalAI: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoAssemblyPlan {
+  id: string;
+  intakePlanId: string;
+  voiceoverPlanId?: string;
+  visualsPlanId?: string;
+  assetPlanId?: string;
+  designPlanId?: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  timeline: BrainCoreVideoAssemblyTimelineItem[];
+  summary: {
+    totalTimelineItems: number;
+    plannedCount: number;
+    blockedCount: number;
+    estimatedDurationSeconds: number;
+    estimatedDurationMinutes: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    rendersVideo: boolean;
+    callsFfmpeg: boolean;
+    generatesFiles: boolean;
+    callsExternalAI: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoAssemblyPlanListResponse {
+  id: 'video-orchestrator-assembly-plan';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoAssemblyPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalTimelineItems: number;
+    estimatedDurationMinutes: number;
+  };
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    rendersVideo: boolean;
+    callsFfmpeg: boolean;
+    generatesFiles: boolean;
+    callsExternalAI: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoAssemblyPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoAssemblyPlan;
+  upstream: {
+    voiceoverPlanId?: string;
+    visualsPlanId?: string;
+    assetPlanId?: string;
+    designPlanId?: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    rendersVideo: boolean;
+    callsFfmpeg: boolean;
+    generatesFiles: boolean;
+    callsExternalAI: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
 export interface BrainCoreStbVideoMigrationStatus {
   id: 'stb-to-video-migration-status';
   sourcePipelineId: string;
@@ -2712,6 +2831,19 @@ export async function readBrainCoreVideoOrchestratorVisualsPlan(
   voiceoverPlanId: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoVisualsPlanDetailResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoVisualsPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/visuals-plan/${encodeURIComponent(voiceoverPlanId)}`);
+}
+
+export async function readBrainCoreVideoOrchestratorAssemblyPlans(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoAssemblyPlanListResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoAssemblyPlanListResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/assembly-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorAssemblyPlan(
+  baseUrl: string,
+  voiceoverPlanId: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoAssemblyPlanDetailResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoAssemblyPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/assembly-plan/${encodeURIComponent(voiceoverPlanId)}`);
 }
 
 export async function readBrainCoreStbVideoMigrationStatus(

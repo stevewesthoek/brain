@@ -963,3 +963,73 @@ test('GET /video-orchestrator/visuals-plan/:id with unknown id returns 404', asy
   assert.equal(body.error?.code, 'not_found');
   assert.ok(body.error?.message.includes('visuals plan'));
 });
+
+test('GET /video-orchestrator/assembly-plan returns plans with safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/assembly-plan' });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    id: string;
+    summary?: { total: number };
+    safety?: Record<string, unknown>;
+    plans?: Array<{ safety?: Record<string, unknown> }>;
+  };
+  assert.equal(body.id, 'video-orchestrator-assembly-plan');
+  assert.ok(body.summary?.total !== undefined);
+  assert.equal(body.safety?.readOnly, true);
+  assert.equal(body.safety?.rendersVideo, false);
+  assert.equal(body.safety?.callsFfmpeg, false);
+  assert.equal(body.safety?.generatesFiles, false);
+  assert.equal(body.safety?.callsExternalAI, false);
+  assert.equal(body.safety?.publishesContent, false);
+  assert.equal(body.safety?.writesToMind, false);
+  assert.ok(Array.isArray(body.plans));
+});
+
+test('GET /video-orchestrator/assembly-plan/:id returns a single assembly plan', async () => {
+  const listResponse = await exercise({ method: 'GET', url: '/video-orchestrator/assembly-plan' });
+  const listBody = JSON.parse(listResponse.body) as {
+    plans?: Array<{ id: string; voiceoverPlanId: string }>;
+  };
+  const firstPlan = listBody.plans?.[0];
+  assert.ok(firstPlan?.voiceoverPlanId);
+
+  const response = await exercise({
+    method: 'GET',
+    url: `/video-orchestrator/assembly-plan/${encodeURIComponent(firstPlan.voiceoverPlanId)}`,
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    plan?: {
+      timeline?: Array<{ safety?: Record<string, unknown>; placeholder?: string }>;
+      safety?: Record<string, unknown>;
+    };
+  };
+  assert.ok(body.plan?.timeline);
+  assert.ok(Array.isArray(body.plan.timeline));
+
+  for (const item of body.plan.timeline ?? []) {
+    assert.equal(item.safety?.readOnly, true);
+    assert.equal(item.safety?.rendersVideo, false);
+    assert.equal(item.safety?.callsFfmpeg, false);
+    assert.equal(item.safety?.generatesFiles, false);
+    assert.ok(item.placeholder?.includes('placeholder'));
+  }
+
+  assert.equal(body.plan?.safety?.readOnly, true);
+  assert.equal(body.plan?.safety?.rendersVideo, false);
+  assert.equal(body.plan?.safety?.callsFfmpeg, false);
+});
+
+test('GET /video-orchestrator/assembly-plan/:id with unknown id returns 404', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/assembly-plan/unknown-assembly-plan-id',
+  });
+  assert.equal(response.statusCode, 404);
+
+  const body = JSON.parse(response.body) as { error?: { code: string; message: string } };
+  assert.equal(body.error?.code, 'not_found');
+  assert.ok(body.error?.message.includes('assembly plan'));
+});

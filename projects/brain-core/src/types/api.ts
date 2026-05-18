@@ -919,6 +919,125 @@ export interface BrainCoreVideoVisualsPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoAssemblyTimelineItem {
+  id: string;
+  sequence: number;
+  voiceoverSegmentId?: string;
+  visualSequenceItemId?: string;
+  assetRequirementId?: string;
+  designSpecId?: string;
+  kind: 'intro' | 'main-segment' | 'passage-card' | 'overlay' | 'transition' | 'outro' | 'platform-derivative';
+  label: string;
+  status: 'planned' | 'blocked';
+  placeholder: string;
+  timing: {
+    startSecond: number;
+    durationSeconds: number;
+    endSecond: number;
+  };
+  sync: {
+    requiresVoiceover: boolean;
+    requiresVisual: boolean;
+    requiresOverlay: boolean;
+  };
+  compositionRequirements: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    rendersVideo: false;
+    callsFfmpeg: false;
+    generatesFiles: false;
+    callsExternalAI: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoAssemblyPlan {
+  id: string;
+  intakePlanId: string;
+  voiceoverPlanId?: string;
+  visualsPlanId?: string;
+  assetPlanId?: string;
+  designPlanId?: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  timeline: BrainCoreVideoAssemblyTimelineItem[];
+  summary: {
+    totalTimelineItems: number;
+    plannedCount: number;
+    blockedCount: number;
+    estimatedDurationSeconds: number;
+    estimatedDurationMinutes: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    callsFfmpeg: false;
+    generatesFiles: false;
+    callsExternalAI: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoAssemblyPlanListResponse {
+  id: 'video-orchestrator-assembly-plan';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoAssemblyPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalTimelineItems: number;
+    estimatedDurationMinutes: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    callsFfmpeg: false;
+    generatesFiles: false;
+    callsExternalAI: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoAssemblyPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoAssemblyPlan;
+  upstream: {
+    voiceoverPlanId?: string;
+    visualsPlanId?: string;
+    assetPlanId?: string;
+    designPlanId?: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    callsFfmpeg: false;
+    generatesFiles: false;
+    callsExternalAI: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
 export interface BrainCoreStbVideoParityMatrixEntry {
   id: string;
   stbStage: string;
