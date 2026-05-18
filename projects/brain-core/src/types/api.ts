@@ -2376,6 +2376,81 @@ export interface BrainCoreVideoControlledExecutionPolicyBoundaryResponse {
   boundary: BrainCoreVideoControlledExecutionPolicyBoundary;
 }
 
+export interface BrainCoreVideoControlledExecutionReadinessIndexItem {
+  id: string;
+  label: string;
+  category:
+    | 'production-gate'
+    | 'execution-boundary'
+    | 'operator-decision'
+    | 'release-candidate'
+    | 'cutover'
+    | 'rollback'
+    | 'artifact-sandbox'
+    | 'comparison'
+    | 'render-export'
+    | 'approval-policy'
+    | 'safety';
+  status: 'ready' | 'blocked' | 'missing' | 'not-applicable';
+  severity: 'info' | 'warning' | 'blocking';
+  evidence: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    canExecute: false;
+    canRegisterAction: false;
+    canCreateApproval: false;
+    canRender: false;
+    canExport: false;
+    canPublish: false;
+    canMarkReleaseCandidate: false;
+    canDecommissionStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionReadinessIndex {
+  id: 'video-orchestrator-controlled-execution-readiness-index';
+  generatedAt: string;
+  status: 'blocked' | 'design-only' | 'ready-for-review';
+  readinessPercent: number;
+  canExecute: false;
+  canRegisterAction: false;
+  canCreateApproval: false;
+  canRender: false;
+  canExport: false;
+  canPublish: false;
+  canMarkReleaseCandidate: false;
+  canDecommissionStb: false;
+  executableActionRegistered: false;
+  items: BrainCoreVideoControlledExecutionReadinessIndexItem[];
+  summary: {
+    totalItems: number;
+    readyCount: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    canExecute: false;
+    canRegisterAction: false;
+    canCreateApproval: false;
+    canRender: false;
+    canExport: false;
+    canPublish: false;
+    canMarkReleaseCandidate: false;
+    canDecommissionStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionReadinessIndexResponse {
+  index: BrainCoreVideoControlledExecutionReadinessIndex;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3924,6 +3999,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/release-candidate-readiness': BrainCoreVideoReleaseCandidateReadinessResponse;
   '/video-orchestrator/operator-decision-queue': BrainCoreVideoOperatorDecisionQueueResponse;
   '/video-orchestrator/controlled-execution-policy-boundary': BrainCoreVideoControlledExecutionPolicyBoundaryResponse;
+  '/video-orchestrator/controlled-execution-readiness-index': BrainCoreVideoControlledExecutionReadinessIndexResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

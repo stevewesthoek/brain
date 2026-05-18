@@ -1098,3 +1098,14 @@ Safety boundary: no POST route, no executable action registration, no release-ca
 Validation: Brain Core tests pass with 236/236 tests.
 
 Next safe phase: dashboard/client visibility for release-candidate status or explicit operator decision on controlled execution policy.
+
+
+## 2026-05-18 — Phase 4A: Controlled Execution Readiness Index
+
+Status: in progress, read-only/index-only.
+
+Planned endpoint: `GET /video-orchestrator/controlled-execution-readiness-index`.
+
+Purpose: aggregate the current production-readiness gates into one operator-facing answer covering execution, action registration, approval execution, rendering/export, publishing, release-candidate marking, STB decommission, blockers, and next safe step.
+
+Safety boundary: no POST route, no executable action registration, no approval creation, no execution, no rendering/export, no publishing, no release-candidate marking, no STB decommission, and no Mind writes.

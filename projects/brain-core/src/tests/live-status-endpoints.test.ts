@@ -2450,3 +2450,80 @@ test('POST /video-orchestrator/controlled-execution-policy-boundary is not avail
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-readiness-index returns blocked readiness index', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-readiness-index' });
+  const body = JSON.parse(response.body) as {
+    index: {
+      id: string;
+      status: string;
+      readinessPercent: number;
+      canExecute: boolean;
+      canRegisterAction: boolean;
+      canCreateApproval: boolean;
+      canRender: boolean;
+      canExport: boolean;
+      canPublish: boolean;
+      canMarkReleaseCandidate: boolean;
+      canDecommissionStb: boolean;
+      executableActionRegistered: boolean;
+      items: Array<{ safety: Record<string, boolean> }>;
+      summary: { totalItems: number; readyCount: number; blockedCount: number; missingCount: number; blockingSeverityCount: number };
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.index.id, 'video-orchestrator-controlled-execution-readiness-index');
+  assert.ok(['blocked', 'design-only', 'ready-for-review'].includes(body.index.status));
+  assert.ok(body.index.readinessPercent >= 0);
+  assert.ok(body.index.readinessPercent < 100);
+  assert.equal(body.index.canExecute, false);
+  assert.equal(body.index.canRegisterAction, false);
+  assert.equal(body.index.canCreateApproval, false);
+  assert.equal(body.index.canRender, false);
+  assert.equal(body.index.canExport, false);
+  assert.equal(body.index.canPublish, false);
+  assert.equal(body.index.canMarkReleaseCandidate, false);
+  assert.equal(body.index.canDecommissionStb, false);
+  assert.equal(body.index.executableActionRegistered, false);
+  assert.ok(body.index.summary.totalItems > 0);
+  assert.ok(body.index.summary.blockedCount > 0 || body.index.summary.missingCount > 0);
+  assert.ok(body.index.summary.blockingSeverityCount > 0);
+  assert.ok(body.index.blockers.length > 0);
+  assert.ok(body.index.nextSafeStep.length > 0);
+
+  assert.equal(body.index.safety.readOnly, true);
+  assert.equal(body.index.safety.canExecute, false);
+  assert.equal(body.index.safety.canRegisterAction, false);
+  assert.equal(body.index.safety.canCreateApproval, false);
+  assert.equal(body.index.safety.canRender, false);
+  assert.equal(body.index.safety.canExport, false);
+  assert.equal(body.index.safety.canPublish, false);
+  assert.equal(body.index.safety.canMarkReleaseCandidate, false);
+  assert.equal(body.index.safety.canDecommissionStb, false);
+  assert.equal(body.index.safety.writesToMind, false);
+
+  body.index.items.forEach(item => {
+    assert.equal(item.safety.readOnly, true);
+    assert.equal(item.safety.canExecute, false);
+    assert.equal(item.safety.canRegisterAction, false);
+    assert.equal(item.safety.canCreateApproval, false);
+    assert.equal(item.safety.canRender, false);
+    assert.equal(item.safety.canExport, false);
+    assert.equal(item.safety.canPublish, false);
+    assert.equal(item.safety.canMarkReleaseCandidate, false);
+    assert.equal(item.safety.canDecommissionStb, false);
+    assert.equal(item.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/controlled-execution-readiness-index is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-readiness-index' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

@@ -2870,3 +2870,42 @@ Safety status:
 - No execution controls, no POST routes, no approval creation, no file writes, no publishing, no release-candidate marking, and no STB decommission added.
 
 Next safe task: Controlled Execution Readiness Index, or operator review if the boundary card is sufficient.
+
+
+## 2026-05-18 — Production acceleration: Controlled execution readiness index
+
+Completed a read-only controlled execution readiness index slice.
+
+Added:
+- `GET /video-orchestrator/controlled-execution-readiness-index`
+- Aggregates production gate, execution boundary, operator decisions, release-candidate readiness, cutover gate, rollback checklist, artifact sandbox, comparison preview, render/export policy, and approval policy.
+- Reports the top blockers and next safe step in one operator-facing index.
+
+Validation evidence:
+- Pending Brain Core CI.
+
+Safety status:
+- No POST route added.
+- No executable action registered.
+- No execution, action registration, approval creation, rendering/export, publishing, release-candidate marking, STB decommission, or Mind writes enabled.
+
+Next safe task: Brain Console visibility for the controlled execution readiness index, still read-only.
+
+
+## 2026-05-18 — Brain Console: Controlled execution readiness visibility
+
+Completed a minimal Brain Console visibility pass for the controlled execution readiness index.
+
+Added:
+- Pipelines tab card: `Controlled Execution Readiness`.
+- Shows aggregate readiness status, readiness percent, blocker counts, top blockers, next safe step, and the read-only execution-disabled safety label.
+- Keeps the dashboard scaffold lean while making the readiness index discoverable.
+
+Validation evidence:
+- Pending Brain Console typecheck/build/package and Brain Core CI.
+
+Safety status:
+- UI visibility only.
+- No execution controls, no approval creation, no publishing, and no STB decommission added.
+
+Next safe task: roadmap checkpoint summary or operator review if the readiness card is sufficient.
