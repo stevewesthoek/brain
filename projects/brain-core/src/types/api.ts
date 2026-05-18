@@ -2141,6 +2141,63 @@ export interface BrainCoreVideoFixtureComparisonPreviewResponse {
   preview: BrainCoreVideoFixtureComparisonPreview;
 }
 
+export interface BrainCoreVideoProductionCutoverGateItem {
+  id: string;
+  label: string;
+  category: 'planning-chain' | 'dual-run' | 'comparison' | 'approval' | 'rollback' | 'publishing' | 'decommission' | 'safety';
+  status: 'passed' | 'blocked' | 'missing' | 'not-applicable';
+  severity: 'info' | 'warning' | 'blocking';
+  evidence: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    marksProductionReady: false;
+    switchesTraffic: false;
+    decommissionsStb: false;
+    executesStb: false;
+    executesVideo: false;
+    publishesContent: false;
+    createsApproval: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoProductionCutoverGate {
+  id: 'video-orchestrator-production-cutover-gate';
+  generatedAt: string;
+  status: 'gate-only' | 'blocked' | 'ready-for-review';
+  canCutover: false;
+  canMarkProductionReady: false;
+  canDecommissionStb: false;
+  executableActionRegistered: false;
+  items: BrainCoreVideoProductionCutoverGateItem[];
+  summary: {
+    totalItems: number;
+    passedCount: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    marksProductionReady: false;
+    switchesTraffic: false;
+    decommissionsStb: false;
+    executesStb: false;
+    executesVideo: false;
+    publishesContent: false;
+    createsApproval: false;
+    executableActionRegistered: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoProductionCutoverGateResponse {
+  gate: BrainCoreVideoProductionCutoverGate;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3685,6 +3742,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/rollback-cleanup-checklist': BrainCoreVideoRollbackCleanupChecklistResponse;
   '/video-orchestrator/comparison-schema-design': BrainCoreVideoComparisonSchemaDesignResponse;
   '/video-orchestrator/fixture-comparison-preview': BrainCoreVideoFixtureComparisonPreviewResponse;
+  '/video-orchestrator/production-cutover-gate': BrainCoreVideoProductionCutoverGateResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

@@ -2749,3 +2749,22 @@ Safety status:
 - No real output comparison, generated artifact reads, STB execution, Video execution, evidence writes, approval creation, publishing, STB decommission, or Mind writes enabled.
 
 Next safe task: production cutover gate design, still read-only/design-only.
+
+
+## 2026-05-18 — Production acceleration: Production cutover gate design
+
+Completed a read-only production cutover gate design slice.
+
+Added:
+- `GET /video-orchestrator/production-cutover-gate`
+- Gate items for planning-chain presence, production gate blockers, dual-run status, comparison preview limitations, approval gaps, rollback/cleanup blockers, publishing-disabled status, and STB decommission safeguards.
+
+Validation evidence:
+- Brain Core tests passed: 234/234.
+
+Safety status:
+- No POST route added.
+- No executable action registered.
+- No cutover, production-ready marking, traffic switch, STB decommission, STB execution, Video execution, publishing, approval creation, or Mind writes enabled.
+
+Next safe task: Brain Console visibility for the policy/gate chain, or explicit user decision on controlled execution policy.

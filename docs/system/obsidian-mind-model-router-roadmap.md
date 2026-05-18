@@ -1072,3 +1072,16 @@ Safety boundary: no POST route, no executable action registration, no real outpu
 Validation: Brain Core tests pass with 232/232 tests.
 
 Next safe phase: production cutover gate design, still no real execution.
+
+
+## 2026-05-18 — Phase 3v: Production Cutover Gate Design
+
+Status: complete, read-only/gate-only.
+
+Added `GET /video-orchestrator/production-cutover-gate` to define the future production cutover gate while explicitly blocking cutover, production-ready marking, traffic switching, publishing, and STB decommission. The gate aggregates planning-chain presence, production gate blockers, dual-run status, comparison preview limitations, approval gaps, rollback/cleanup blockers, publishing-disabled status, and STB decommission safeguards.
+
+Safety boundary: no POST route, no executable action registration, no cutover, no production-ready marking, no traffic switch, no STB decommission, no STB execution, no Video execution, no publishing, no approval creation, and no Mind writes.
+
+Validation: Brain Core tests pass with 234/234 tests.
+
+Next safe phase: Brain Console visibility for the policy/gate chain or explicit user decision on controlled execution policy.

@@ -2196,3 +2196,63 @@ test('POST /video-orchestrator/fixture-comparison-preview is not available', asy
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/production-cutover-gate returns read-only blocked gate', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/production-cutover-gate' });
+  const body = JSON.parse(response.body) as {
+    gate: {
+      id: string;
+      status: string;
+      canCutover: boolean;
+      canMarkProductionReady: boolean;
+      canDecommissionStb: boolean;
+      executableActionRegistered: boolean;
+      items: Array<{ status: string; severity: string; safety: Record<string, boolean> }>;
+      summary: { totalItems: number; passedCount: number; blockedCount: number; missingCount: number; blockingSeverityCount: number };
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.gate.id, 'video-orchestrator-production-cutover-gate');
+  assert.ok(['gate-only', 'blocked', 'ready-for-review'].includes(body.gate.status));
+  assert.equal(body.gate.canCutover, false);
+  assert.equal(body.gate.canMarkProductionReady, false);
+  assert.equal(body.gate.canDecommissionStb, false);
+  assert.equal(body.gate.executableActionRegistered, false);
+  assert.ok(body.gate.summary.totalItems > 0);
+  assert.ok(body.gate.summary.passedCount > 0);
+  assert.ok(body.gate.summary.blockedCount > 0 || body.gate.summary.missingCount > 0);
+  assert.ok(body.gate.summary.blockingSeverityCount > 0);
+  assert.equal(body.gate.safety.readOnly, true);
+  assert.equal(body.gate.safety.marksProductionReady, false);
+  assert.equal(body.gate.safety.switchesTraffic, false);
+  assert.equal(body.gate.safety.decommissionsStb, false);
+  assert.equal(body.gate.safety.executesStb, false);
+  assert.equal(body.gate.safety.executesVideo, false);
+  assert.equal(body.gate.safety.publishesContent, false);
+  assert.equal(body.gate.safety.createsApproval, false);
+  assert.equal(body.gate.safety.executableActionRegistered, false);
+  assert.equal(body.gate.safety.writesToMind, false);
+
+  body.gate.items.forEach(item => {
+    assert.equal(item.safety.readOnly, true);
+    assert.equal(item.safety.marksProductionReady, false);
+    assert.equal(item.safety.switchesTraffic, false);
+    assert.equal(item.safety.decommissionsStb, false);
+    assert.equal(item.safety.executesStb, false);
+    assert.equal(item.safety.executesVideo, false);
+    assert.equal(item.safety.publishesContent, false);
+    assert.equal(item.safety.createsApproval, false);
+    assert.equal(item.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/production-cutover-gate is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/production-cutover-gate' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
