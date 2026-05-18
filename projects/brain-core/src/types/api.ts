@@ -6504,3 +6504,51 @@ export interface BrainCoreVideoControlledExecutionImplementationApprovalPacketSt
 export interface BrainCoreVideoControlledExecutionImplementationApprovalPacketStartGateResponse {
   gate: BrainCoreVideoControlledExecutionImplementationApprovalPacketStartGate;
 }
+
+
+export type BrainCoreProBotDashboardParityStatus = 'available' | 'partial' | 'planned' | 'legacy-only' | 'blocked';
+export type BrainCoreProBotDashboardParityDecision = 'keep' | 'redesign' | 'drop' | 'later';
+
+export interface BrainCoreProBotDashboardParityTab {
+  id: string;
+  probotLabel: string;
+  brainConsoleSection: string;
+  status: BrainCoreProBotDashboardParityStatus;
+  decision: BrainCoreProBotDashboardParityDecision;
+  priority: 'high' | 'medium' | 'low';
+  brainCoreEndpoints: string[];
+  visibleInBrainConsole: boolean;
+  workingInBrainConsole: boolean;
+  mutationControlsEnabled: false;
+  sensitiveDataExposed: false;
+  notes: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreProBotDashboardParityResponse {
+  id: 'probot-dashboard-parity';
+  generatedAt: string;
+  status: 'in-progress' | 'complete' | 'blocked';
+  summary: {
+    totalTabs: number;
+    availableCount: number;
+    partialCount: number;
+    plannedCount: number;
+    legacyOnlyCount: number;
+    visibleInBrainConsoleCount: number;
+    workingInBrainConsoleCount: number;
+    blockerCount: number;
+  };
+  tabs: BrainCoreProBotDashboardParityTab[];
+  safety: {
+    readOnly: true;
+    exposesSecrets: false;
+    exposesFinancialData: false;
+    mutationControlsEnabled: false;
+    directShellExecutionEnabled: false;
+    approvalRequiredForFutureActions: true;
+    writesToMind: false;
+    writesFiles: false;
+  };
+  nextSafeStep: string;
+}

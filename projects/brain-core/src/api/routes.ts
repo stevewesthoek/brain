@@ -34,6 +34,7 @@ import {
   requestPostSchedulePreviewApproval,
 } from '../adapters/post-orchestrator.js';
 import { listLocalApps } from '../adapters/local-apps.js';
+import { readProBotDashboardParity } from '../adapters/probot-dashboard-parity.js';
 import {
   listMindPreviewSummaries,
   readLatestMindPreviewDetail,
@@ -330,6 +331,9 @@ export async function routeRequest(
       return;
     case '/local-apps':
       sendJson(response, 200, { apps: listLocalApps() });
+      return;
+    case '/probot/dashboard-parity':
+      sendJson(response, 200, readProBotDashboardParity());
       return;
     case '/video/status':
       sendJson(response, 200, getVideoStatus());

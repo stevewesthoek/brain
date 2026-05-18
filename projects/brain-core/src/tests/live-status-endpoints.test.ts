@@ -4965,3 +4965,86 @@ test('POST /video-orchestrator/controlled-execution-implementation-approval-pack
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /probot/dashboard-parity returns read-only ProBot to Brain Console migration inventory', async () => {
+  const response = await exercise({ method: 'GET', url: '/probot/dashboard-parity' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    summary: {
+      totalTabs: number;
+      visibleInBrainConsoleCount: number;
+      workingInBrainConsoleCount: number;
+      legacyOnlyCount: number;
+      blockerCount: number;
+    };
+    tabs: Array<{
+      id: string;
+      probotLabel: string;
+      brainConsoleSection: string;
+      status: string;
+      decision: string;
+      visibleInBrainConsole: boolean;
+      workingInBrainConsole: boolean;
+      mutationControlsEnabled: boolean;
+      sensitiveDataExposed: boolean;
+      brainCoreEndpoints: string[];
+    }>;
+    safety: {
+      readOnly: boolean;
+      exposesSecrets: boolean;
+      exposesFinancialData: boolean;
+      mutationControlsEnabled: boolean;
+      directShellExecutionEnabled: boolean;
+      approvalRequiredForFutureActions: boolean;
+      writesToMind: boolean;
+      writesFiles: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'probot-dashboard-parity');
+  assert.equal(body.status, 'in-progress');
+  assert.equal(body.summary.totalTabs, 8);
+  assert.ok(body.summary.visibleInBrainConsoleCount >= 6);
+  assert.ok(body.summary.workingInBrainConsoleCount >= 5);
+  assert.equal(body.summary.legacyOnlyCount, 1);
+  assert.ok(body.summary.blockerCount >= 1);
+
+  const tabIds = body.tabs.map(tab => tab.id);
+  assert.ok(tabIds.includes('overview'));
+  assert.ok(tabIds.includes('local-apps'));
+  assert.ok(tabIds.includes('production-pipeline'));
+  assert.ok(tabIds.includes('video-orchestrator-studio'));
+  assert.ok(tabIds.includes('viral-flow'));
+  assert.ok(tabIds.includes('stripe'));
+  assert.ok(tabIds.includes('session-history'));
+
+  const stripe = body.tabs.find(tab => tab.id === 'stripe');
+  assert.ok(stripe);
+  assert.equal(stripe.visibleInBrainConsole, false);
+  assert.equal(stripe.decision, 'drop');
+
+  body.tabs.forEach(tab => {
+    assert.equal(tab.mutationControlsEnabled, false, `${tab.id} must not enable mutation controls`);
+    assert.equal(tab.sensitiveDataExposed, false, `${tab.id} must not expose sensitive data`);
+  });
+
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.exposesSecrets, false);
+  assert.equal(body.safety.exposesFinancialData, false);
+  assert.equal(body.safety.mutationControlsEnabled, false);
+  assert.equal(body.safety.directShellExecutionEnabled, false);
+  assert.equal(body.safety.approvalRequiredForFutureActions, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.writesFiles, false);
+});
+
+test('POST /probot/dashboard-parity is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/probot/dashboard-parity' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
