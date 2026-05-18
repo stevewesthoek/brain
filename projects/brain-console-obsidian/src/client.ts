@@ -1263,6 +1263,119 @@ export interface BrainCoreVideoOrchestratorIntakeResponse {
   nextSafeStep: string;
 }
 
+export interface BrainCoreVideoResearchBrief {
+  id: string;
+  intakePlanId: string;
+  sourceId: string;
+  title: string;
+  status: string;
+  generatedAt: string;
+  theologicalTheme?: string;
+  narrativeSummary?: string;
+  researchedPassages: Array<{ book: string; chapter: number; verses: string; title?: string }>;
+  keyBiblicalConcepts: string[];
+}
+
+export interface BrainCoreVideoOrchestratorResearchResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  intakePlan: { id: string; title: string; durationTargetMinutes: number; platforms: string[] };
+  researchBrief: BrainCoreVideoResearchBrief;
+  questions: Array<{ sequence: number; question: string; expectedAnswerLength: string; relatedPassages: string[] }>;
+  sources: Array<{ id: string; type: string; reference: string; summary: string; relevance: string }>;
+  summary: { passageCount: number; questionCount: number; sourceCount: number };
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoResearchListResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  briefs: BrainCoreVideoResearchBrief[];
+  summary: { total: number; readyCount: number; blockedCount: number };
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoScriptSection {
+  sequence: number;
+  name: string;
+  contentType: string;
+  estimatedDurationSeconds: number;
+  keyPoints: string[];
+  sampleNarration?: string;
+}
+
+export interface BrainCoreVideoScriptOutline {
+  id: string;
+  intakePlanId: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: string;
+  sections: BrainCoreVideoScriptSection[];
+  totalEstimatedSeconds: number;
+}
+
+export interface BrainCoreVideoScriptPlan {
+  id: string;
+  intakePlanId: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: string;
+  outline: BrainCoreVideoScriptOutline;
+}
+
+export interface BrainCoreVideoScriptResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  type: string;
+  intakePlan: { id: string; title: string; durationTargetMinutes: number; platforms: string[] };
+  plan?: BrainCoreVideoScriptPlan;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoScriptListResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoScriptPlan[];
+  summary: { total: number; availableCount: number; blockedCount: number };
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
 export interface BrainCoreStbVideoMigrationStatus {
   id: 'stb-to-video-migration-status';
   sourcePipelineId: string;
@@ -2093,6 +2206,32 @@ export async function readBrainCoreVideoOrchestratorIntakePlan(
   planId: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoIntakePlan>> {
   return fetchJson<import('./client.js').BrainCoreVideoIntakePlan>(normalizeBaseUrl(baseUrl), `/video-orchestrator/intake/${encodeURIComponent(planId)}`);
+}
+
+export async function readBrainCoreVideoOrchestratorResearch(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoResearchListResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoResearchListResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/research');
+}
+
+export async function readBrainCoreVideoOrchestratorResearchPlan(
+  baseUrl: string,
+  planId: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoOrchestratorResearchResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoOrchestratorResearchResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/research/${encodeURIComponent(planId)}`);
+}
+
+export async function readBrainCoreVideoOrchestratorScript(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoScriptListResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoScriptListResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/script');
+}
+
+export async function readBrainCoreVideoOrchestratorScriptPlan(
+  baseUrl: string,
+  planId: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoScriptResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoScriptResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/script/${encodeURIComponent(planId)}`);
 }
 
 export async function readBrainCoreStbVideoMigrationStatus(

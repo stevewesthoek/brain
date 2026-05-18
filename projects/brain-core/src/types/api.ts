@@ -242,6 +242,253 @@ export interface BrainCoreVideoOrchestratorIntakeResponse {
   nextSafeStep: string;
 }
 
+export interface BrainCoreVideoResearchBrief {
+  id: string;
+  intakePlanId: string;
+  sourceId: string;
+  title: string;
+  status: 'preview-ready' | 'blocked';
+  generatedAt: string;
+  theologicalTheme?: string;
+  narrativeSummary?: string;
+  researchedPassages: Array<{ book: string; chapter: number; verses: string; title?: string }>;
+  keyBiblicalConcepts: string[];
+  estimatedReadTime?: number;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    callsExternalAI: false;
+  };
+}
+
+export interface BrainCoreVideoResearchQuestion {
+  sequence: number;
+  question: string;
+  expectedAnswerLength: 'brief' | 'medium' | 'detailed';
+  relatedPassages: string[];
+}
+
+export interface BrainCoreVideoResearchSource {
+  id: string;
+  type: 'bible-passage' | 'commentary' | 'theological-note';
+  reference: string;
+  summary: string;
+  relevance: 'primary' | 'supporting' | 'contextual';
+  stbEvidence?: { testedAt: string; matchesStbResearch: boolean };
+}
+
+export interface BrainCoreVideoOrchestratorResearchResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  intakePlan: {
+    id: string;
+    title: string;
+    durationTargetMinutes: number;
+    platforms: string[];
+  };
+  researchBrief: BrainCoreVideoResearchBrief;
+  questions: BrainCoreVideoResearchQuestion[];
+  sources: BrainCoreVideoResearchSource[];
+  summary: {
+    passageCount: number;
+    questionCount: number;
+    sourceCount: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    callsExternalAI: false;
+  };
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  validation?: {
+    dualRunStatus: 'passed' | 'in-progress';
+    stbResearchMatches: boolean;
+    passageSelectionParity: number;
+    testedAt?: string;
+  };
+  nextSafeStep: string;
+  blockers: string[];
+}
+
+export interface BrainCoreVideoResearchListResponse {
+  id: 'video-orchestrator-research';
+  generatedAt: string;
+  version: string;
+  briefs: BrainCoreVideoResearchBrief[];
+  summary: {
+    total: number;
+    readyCount: number;
+    blockedCount: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    callsExternalAI: false;
+  };
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+}
+
+export interface BrainCoreVideoScriptSection {
+  sequence: number;
+  name: string;
+  contentType: 'narration' | 'passage' | 'visual-cue' | 'transition';
+  estimatedDurationSeconds: number;
+  keyPoints: string[];
+  sampleNarration?: string;
+}
+
+export interface BrainCoreVideoScriptOutline {
+  id: string;
+  intakePlanId: string;
+  researchId?: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'generated' | 'blocked';
+  sections: BrainCoreVideoScriptSection[];
+  totalEstimatedSeconds: number;
+  formatConfirm: boolean;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    callsExternalAI: false;
+  };
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  nextSafeStep: string;
+  blockers: string[];
+}
+
+export interface BrainCoreVideoScriptNarrationSection {
+  sequence: number;
+  sectionName: string;
+  type: 'intro' | 'body' | 'passage' | 'application' | 'outro';
+  narration: string;
+  passageReference?: { book: string; chapter: number; verses: string; text?: string };
+  timingNotes?: string;
+  visualCues?: string[];
+}
+
+export interface BrainCoreVideoScriptDraft {
+  id: string;
+  intakePlanId: string;
+  outlineId: string;
+  researchId?: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'generated' | 'blocked';
+  sections: BrainCoreVideoScriptNarrationSection[];
+  metadata: {
+    wordCount: number;
+    estimatedNarrationMinutes: number;
+    tone: 'devotional' | 'educational' | 'story' | 'mixed';
+    targetAudience: 'bedtime-story' | 'family' | 'faith-focused';
+    speakerNotes: string;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    callsExternalAI: false;
+  };
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  nextSafeStep: string;
+  blockers: string[];
+}
+
+export interface BrainCoreVideoScriptPlan {
+  id: string;
+  intakePlanId: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'available' | 'blocked';
+  outline: BrainCoreVideoScriptOutline;
+  draft: BrainCoreVideoScriptDraft;
+  nextStage: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    callsExternalAI: false;
+  };
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  blockers: string[];
+}
+
+export interface BrainCoreVideoScriptResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  type: 'outline' | 'draft' | 'plan';
+  intakePlan: {
+    id: string;
+    title: string;
+    durationTargetMinutes: number;
+    platforms: string[];
+  };
+  outline?: BrainCoreVideoScriptOutline;
+  draft?: BrainCoreVideoScriptDraft;
+  plan?: BrainCoreVideoScriptPlan;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    callsExternalAI: false;
+  };
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  nextSafeStep: string;
+  blockers: string[];
+}
+
+export interface BrainCoreVideoScriptListResponse {
+  id: 'video-orchestrator-script';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoScriptPlan[];
+  summary: {
+    total: number;
+    availableCount: number;
+    blockedCount: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    callsExternalAI: false;
+  };
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+}
+
 export interface BrainCoreStbVideoParityMatrixEntry {
   id: string;
   stbStage: string;

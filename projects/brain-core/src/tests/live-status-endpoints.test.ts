@@ -506,3 +506,148 @@ test('GET /video-orchestrator/intake/:id with unknown id returns 404', async () 
   assert.equal(body.error?.code, 'not_found');
   assert.ok(body.error?.message.includes('intake plan'));
 });
+
+test('GET /video-orchestrator/research returns briefs with safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/research' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    briefs: Array<{ id: string; status: string; title: string }>;
+    summary: { total: number; readyCount: number };
+    safety: {
+      readOnly: boolean;
+      executesStb: boolean;
+      callsExternalAI: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'video-orchestrator-research');
+  assert.ok(Array.isArray(body.briefs), 'briefs should be array');
+  assert.ok(body.summary.total > 0, 'should have briefs');
+  assert.equal(body.safety.readOnly, true, 'must be read-only');
+  assert.equal(body.safety.executesStb, false, 'must not execute STB');
+  assert.equal(body.safety.callsExternalAI, false, 'must not call external AI');
+  assert.equal(body.safety.writesFiles, false, 'must not write files');
+  assert.equal(body.safety.publishesContent, false, 'must not publish');
+  assert.equal(body.safety.writesToMind, false, 'must not write to Mind');
+});
+
+test('GET /video-orchestrator/research/:id returns a single research plan', async () => {
+  const intakeResponse = await exercise({ method: 'GET', url: '/video-orchestrator/intake' });
+  const intakeBody = JSON.parse(intakeResponse.body) as { plans: Array<{ id: string }> };
+  assert.ok(intakeBody.plans.length > 0, 'should have at least one intake plan');
+
+  const firstIntakePlanId = intakeBody.plans[0]?.id;
+  const response = await exercise({ method: 'GET', url: `/video-orchestrator/research/${firstIntakePlanId}` });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    researchBrief: { title: string; status: string };
+    questions: Array<{ sequence: number; question: string }>;
+    sources: Array<{ id: string; type: string }>;
+    safety: {
+      readOnly: boolean;
+      executesStb: boolean;
+      callsExternalAI: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.researchBrief);
+  assert.ok(Array.isArray(body.questions));
+  assert.ok(Array.isArray(body.sources));
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.executesStb, false);
+  assert.equal(body.safety.callsExternalAI, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+});
+
+test('GET /video-orchestrator/research/:id with unknown id returns 404', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/research/unknown-brief-id' });
+  assert.equal(response.statusCode, 404);
+
+  const body = JSON.parse(response.body) as { error?: { code: string; message: string } };
+  assert.equal(body.error?.code, 'not_found');
+  assert.ok(body.error?.message.includes('research plan'));
+});
+
+test('GET /video-orchestrator/script returns plans with safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/script' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    plans: Array<{ id: string; status: string; title: string }>;
+    summary: { total: number; availableCount: number };
+    safety: {
+      readOnly: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      callsExternalAI: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'video-orchestrator-script');
+  assert.ok(Array.isArray(body.plans), 'plans should be array');
+  assert.ok(body.summary.total > 0, 'should have plans');
+  assert.equal(body.safety.readOnly, true, 'must be read-only');
+  assert.equal(body.safety.executesStb, false, 'must not execute STB');
+  assert.equal(body.safety.executesVideo, false, 'must not execute Video');
+  assert.equal(body.safety.callsExternalAI, false, 'must not call external AI');
+  assert.equal(body.safety.writesFiles, false, 'must not write files');
+  assert.equal(body.safety.publishesContent, false, 'must not publish');
+  assert.equal(body.safety.writesToMind, false, 'must not write to Mind');
+});
+
+test('GET /video-orchestrator/script/:id returns a single script plan', async () => {
+  const intakeResponse = await exercise({ method: 'GET', url: '/video-orchestrator/intake' });
+  const intakeBody = JSON.parse(intakeResponse.body) as { plans: Array<{ id: string }> };
+  assert.ok(intakeBody.plans.length > 0, 'should have at least one intake plan');
+
+  const firstIntakePlanId = intakeBody.plans[0]?.id;
+  const response = await exercise({ method: 'GET', url: `/video-orchestrator/script/${firstIntakePlanId}` });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    type: string;
+    plan?: { outline: object; draft: object };
+    safety: {
+      readOnly: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      callsExternalAI: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.plan, 'should have plan');
+  assert.ok(body.plan?.outline, 'plan should have outline');
+  assert.ok(body.plan?.draft, 'plan should have draft');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.executesStb, false);
+  assert.equal(body.safety.executesVideo, false);
+  assert.equal(body.safety.callsExternalAI, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+});
+
+test('GET /video-orchestrator/script/:id with unknown id returns 404', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/script/unknown-plan-id' });
+  assert.equal(response.statusCode, 404);
+
+  const body = JSON.parse(response.body) as { error?: { code: string; message: string } };
+  assert.equal(body.error?.code, 'not_found');
+  assert.ok(body.error?.message.includes('script plan'));
+});

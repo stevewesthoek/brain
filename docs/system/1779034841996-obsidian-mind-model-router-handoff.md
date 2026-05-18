@@ -100,6 +100,84 @@ Next safe task (Phase 4C done):
 - Currently in-progress: 4/5 structure tests passing, 8/8 script tests passing
 - After structure timing variance resolved, follow same pattern as intake
 
+## Continuation update — Phase 3c: Video Research + Script modules (2026-05-18)
+
+**Context:** Production acceleration continues. Implemented research and script planning modules to expand Video Orchestrator pipeline. Bedrock content filter recovery: script fixtures use structural placeholders only, no long narrative content.
+
+**Implemented:**
+
+- **Video Orchestrator research module** (`projects/brain-core/src/adapters/video-orchestrator-research.ts`)
+  - HTTP endpoints: GET /video-orchestrator/research (all briefs), GET /video-orchestrator/research/:id (individual brief)
+  - 5 test fixture sources with passages, theological themes, research questions, sources
+  - Research briefs linked to intake plans: bidirectional reference model
+  - All safety flags hardcoded: readOnly=true, executesStb=false, executesVideo=false, callsExternalAI=false, writesFiles=false, publishesContent=false, writesToMind=false
+
+- **Video Orchestrator script module** (`projects/brain-core/src/adapters/video-orchestrator-script.ts`)
+  - HTTP endpoints: GET /video-orchestrator/script (all plans), GET /video-orchestrator/script/:id (individual plan)
+  - 5 test fixture stories with outline + draft structure (no long narrative prose)
+  - Script outlines: sections with sample narration placeholders, timing, key points
+  - Script drafts: metadata (wordCount, tone, targetAudience), section structure with narration placeholders
+  - All safety flags hardcoded: readOnly=true, executesStb=false, executesVideo=false, callsExternalAI=false, writesFiles=false, publishesContent=false, writesToMind=false
+
+- **Brain Core integration**
+  - Added 20+ new types for research/script: BrainCoreVideoResearchBrief, BrainCoreVideoScriptOutline, BrainCoreVideoScriptDraft, etc.
+  - Added 4 routes: GET /video-orchestrator/research, /research/:id, /script, /script/:id
+  - 6 new tests added (169/169 tests passing, all passing)
+  - Parity matrix entries 2-3 updated with research/script module evidence
+
+- **Brain Console integration**
+  - Added 6 client methods: readBrainCoreVideoOrchestratorResearch, readBrainCoreVideoOrchestratorResearchPlan, readBrainCoreVideoOrchestratorScript, readBrainCoreVideoOrchestratorScriptPlan
+  - Added type definitions for research/script responses
+  - Updated package: dist/main.js now 539.6kb
+
+**Bedrock Recovery Note:**
+
+- Amazon Bedrock content filter triggered during initial script adapter generation due to long narrative prose
+- **Mitigation applied**: Rewrote script fixtures with structural placeholders only
+  - "Intro placeholder for validation only."
+  - "Body section placeholder for validation only."
+  - "Application placeholder for validation only."
+  - "Outro placeholder for validation only."
+  - No long biblical narration, story prose, or devotional content
+  - Only section names, timing estimates, key points, and brief samples
+
+**Validation:**
+
+- ✅ Brain Core tests: 169/169 passing (6 new research+script tests)
+- ✅ No long narrative lines detected in script adapter (awk check)
+- ✅ No external API calls found (fetch/requestUrl/exec/spawn/model-router/openai/bedrock grep check)
+- ✅ Brain Console typecheck: passed
+- ✅ Brain Console build: passed (539.6kb bundle)
+- ✅ All safety flags verified hardcoded (no configuration overrides)
+
+**Safety status:**
+
+- No STB execution
+- No STB mutation
+- No Video orchestrator rendering
+- No external AI/model-router calls
+- No file system writes
+- No publishing added
+- No decommission started
+- No writes to Mind enabled
+- No secrets found
+
+**Architecture Pattern Established:**
+
+Research + Script modules follow same pattern as intake:
+1. Deterministic fixtures from dual-run validation evidence
+2. Bidirectional linking (research → intake, script → research + intake)
+3. Read-only HTTP endpoints (GET only, no POST/PUT/DELETE)
+4. Safety flags hardcoded on all responses
+5. Evidence arrays tracing to parity matrix and dual-run tests
+6. Structural content only (placeholders, not generated prose)
+
+**Next safe task (Phase 3c done):**
+
+- Implement asset-plan / design planning module (entry-4 assets)
+- Currently blocked by design orchestrator requirement
+- Alternative: implement metadata-enrichment or placeholder for publishing stages
+
 ## Continuation update — Approved dry-run report visibility (Phase 4D)
 
 Implemented:
