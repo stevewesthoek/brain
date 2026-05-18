@@ -585,6 +585,110 @@ export interface BrainCoreVideoAssetPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoDesignSpec {
+  id: string;
+  assetRequirementId: string;
+  kind: 'thumbnail-design' | 'title-card-design' | 'passage-card-design' | 'scene-style' | 'platform-layout' | 'metadata-visual-layout';
+  label: string;
+  status: 'planned' | 'blocked';
+  placeholder: string;
+  designSystem: {
+    format: 'static-card' | 'overlay' | 'layout' | 'style-guide';
+    aspectRatio: '16:9' | '1:1' | '9:16' | '4:5' | 'mixed';
+    platformTargets: string[];
+  };
+  dependency: 'design-orchestrator' | 'manual-design' | 'none';
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    generatesImage: false;
+    generatesPrompt: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoDesignPlanSummary {
+  totalSpecs: number;
+  plannedCount: number;
+  blockedCount: number;
+  platformLayoutCount: number;
+}
+
+export interface BrainCoreVideoDesignPlan {
+  id: string;
+  assetPlanId: string;
+  intakePlanId: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  specs: BrainCoreVideoDesignSpec[];
+  summary: BrainCoreVideoDesignPlanSummary;
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesImage: false;
+    generatesPrompt: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoDesignPlanListResponse {
+  id: 'video-orchestrator-design-plan';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoDesignPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalSpecs: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesImage: false;
+    generatesPrompt: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoDesignPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoDesignPlan;
+  upstream: {
+    assetPlanId: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesImage: false;
+    generatesPrompt: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
 export interface BrainCoreStbVideoParityMatrixEntry {
   id: string;
   stbStage: string;

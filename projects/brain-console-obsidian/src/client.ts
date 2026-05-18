@@ -1474,6 +1474,108 @@ export interface BrainCoreVideoAssetPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoDesignSpec {
+  id: string;
+  assetRequirementId: string;
+  kind: 'thumbnail-design' | 'title-card-design' | 'passage-card-design' | 'scene-style' | 'platform-layout' | 'metadata-visual-layout';
+  label: string;
+  status: 'planned' | 'blocked';
+  placeholder: string;
+  designSystem: {
+    format: 'static-card' | 'overlay' | 'layout' | 'style-guide';
+    aspectRatio: '16:9' | '1:1' | '9:16' | '4:5' | 'mixed';
+    platformTargets: string[];
+  };
+  dependency: 'design-orchestrator' | 'manual-design' | 'none';
+  blockers: string[];
+  safety: {
+    readOnly: boolean;
+    generatesImage: boolean;
+    generatesPrompt: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoDesignPlan {
+  id: string;
+  assetPlanId: string;
+  intakePlanId: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  specs: BrainCoreVideoDesignSpec[];
+  summary: {
+    totalSpecs: number;
+    plannedCount: number;
+    blockedCount: number;
+    platformLayoutCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesImage: boolean;
+    generatesPrompt: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoDesignPlanListResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoDesignPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalSpecs: number;
+  };
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesImage: boolean;
+    generatesPrompt: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoDesignPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoDesignPlan;
+  upstream: {
+    assetPlanId: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesImage: boolean;
+    generatesPrompt: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
 export interface BrainCoreStbVideoMigrationStatus {
   id: 'stb-to-video-migration-status';
   sourcePipelineId: string;
@@ -2343,6 +2445,19 @@ export async function readBrainCoreVideoOrchestratorAssetPlan(
   planId: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoAssetPlanDetailResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoAssetPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/asset-plan/${encodeURIComponent(planId)}`);
+}
+
+export async function readBrainCoreVideoOrchestratorDesignPlans(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoDesignPlanListResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoDesignPlanListResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/design-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorDesignPlan(
+  baseUrl: string,
+  assetPlanId: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoDesignPlanDetailResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoDesignPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/design-plan/${encodeURIComponent(assetPlanId)}`);
 }
 
 export async function readBrainCoreStbVideoMigrationStatus(
