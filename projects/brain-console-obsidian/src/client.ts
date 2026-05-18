@@ -1133,6 +1133,46 @@ export interface BrainCorePostOperatorGuidanceResponse {
   summary: { itemCount: number; blockedCount: number; warningCount: number; nextSafeStep: string };
 }
 
+export interface BrainCorePostQaChecklistItem {
+  id: string;
+  label: string;
+  status: 'passed' | 'failed' | 'blocked' | 'not-applicable';
+  required: boolean;
+  summary: string;
+  evidence: string[];
+}
+
+export interface BrainCorePostQaStatus {
+  id: 'post-orchestrator-qa-status';
+  generatedAt: string;
+  endpointCoverage: {
+    total: number;
+    implemented: number;
+    documented: number;
+    tested: number;
+    percent: number;
+  };
+  checklist: {
+    total: number;
+    passed: number;
+    failed: number;
+    blocked: number;
+    items: BrainCorePostQaChecklistItem[];
+  };
+  safety: {
+    readOnly: true;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+  };
+}
+
+export interface BrainCorePostQaStatusResponse {
+  qaStatus: BrainCorePostQaStatus;
+}
+
 export interface BrainCoreStbPipelineStatus {
   id: 'stb-pipeline-status';
   pipelineId: 'stb-daily-pipeline';
@@ -1465,6 +1505,7 @@ export interface BrainConsoleSnapshot {
   postOrchestratorContracts?: { contracts?: BrainCorePostOrchestratorContract[] };
   postOrchestratorIntegrations?: { integrations?: BrainCorePostOrchestratorIntegration[] };
   postOrchestratorRecovery?: { items?: BrainCorePostOrchestratorRecoveryItem[] };
+  postOrchestratorQaStatus?: BrainCorePostQaStatus;
   stbStatus?: BrainCoreStbPipelineStatus;
   videoOrchestratorStatus?: BrainCoreVideoOrchestratorStatus;
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
@@ -1497,7 +1538,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
   let normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const endpointErrors: EndpointError[] = [];
 
-  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents] = await Promise.all([
+  const [status, capabilities, runtimeReports, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postQaStatus, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents] = await Promise.all([
     fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
     fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
     fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizedBaseUrl, '/runtime/reports'),
@@ -1515,6 +1556,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     fetchJson<{ pipelines?: BrainCorePipelineSummary[] }>(normalizedBaseUrl, '/pipelines'),
     fetchJson<{ projects?: BrainCoreProjectSummary[] }>(normalizedBaseUrl, '/projects'),
     fetchJson<{ platforms?: BrainCorePlatformSummary[] }>(normalizedBaseUrl, '/platforms'),
+    fetchJson<BrainCorePostQaStatusResponse>(normalizedBaseUrl, '/post-orchestrator/qa-status'),
     fetchJson<BrainCoreStbPipelineStatus>(normalizedBaseUrl, '/stb/status'),
     fetchJson<BrainCoreVideoOrchestratorStatus>(normalizedBaseUrl, '/video-orchestrator/status'),
     fetchJson<BrainCoreStbVideoMigrationStatus>(normalizedBaseUrl, '/stb-video-migration/status'),
@@ -1540,6 +1582,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     ['/pipelines', pipelines],
     ['/projects', projects],
     ['/platforms', platforms],
+    ['/post-orchestrator/qa-status', postQaStatus],
     ['/stb/status', stbStatus],
     ['/video-orchestrator/status', videoOrchestratorStatus],
     ['/stb-video-migration/status', stbVideoMigrationStatus],
@@ -1603,6 +1646,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     pipelines: pipelines.value?.pipelines,
     projects: projects.value?.projects,
     platforms: platforms.value?.platforms,
+    postOrchestratorQaStatus: postQaStatus.value?.qaStatus,
     stbStatus: stbStatus.value,
     videoOrchestratorStatus: videoOrchestratorStatus.value,
     stbVideoMigrationStatus: stbVideoMigrationStatus.value,
@@ -1880,6 +1924,12 @@ export async function readBrainCorePostOrchestratorOverview(
   baseUrl: string,
 ): Promise<HttpResult<BrainCorePostOrchestratorOverviewResponse>> {
   return fetchJson<BrainCorePostOrchestratorOverviewResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/overview');
+}
+
+export async function readBrainCorePostQaStatus(
+  baseUrl: string,
+): Promise<HttpResult<BrainCorePostQaStatusResponse>> {
+  return fetchJson<BrainCorePostQaStatusResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/qa-status');
 }
 
 export async function readBrainCoreStbStatus(
