@@ -3079,6 +3079,41 @@ export interface BrainCoreVideoControlledExecutionPlanStubResponse {
   };
 }
 
+export interface BrainCoreVideoControlledExecutionApprovalRequestDesignResponse {
+  design: {
+    id: string;
+    generatedAt: string;
+    version: string;
+    status: string;
+    approvalRequestEnabled: boolean;
+    createsApproval: boolean;
+    registersAction: boolean;
+    executable: boolean;
+    summary: {
+      totalRequiredPreconditions: number;
+      missingPreconditionsCount: number;
+      blockerCount: number;
+    };
+    requestShape: {
+      candidateStoryId: string;
+      sourceEpisodeId: string;
+      scopeType: string;
+      selectedDecisionIds: string[];
+      evidenceReferences: string[];
+      requestedBy: string;
+      expiresAt: string;
+      rollbackRequirement: string;
+      dryRunOnly: boolean;
+    };
+    requiredPreconditions: string[];
+    missingPreconditions: string[];
+    blockers: string[];
+    evidenceReferences: string[];
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -4071,6 +4106,12 @@ export async function readBrainCoreVideoControlledExecutionPlanStub(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionPlanStubResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionPlanStubResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-plan-stub');
+}
+
+export async function readBrainCoreVideoControlledExecutionApprovalRequestDesign(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionApprovalRequestDesignResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionApprovalRequestDesignResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-approval-request-design');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(

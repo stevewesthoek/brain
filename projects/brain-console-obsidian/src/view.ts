@@ -76,6 +76,7 @@ import {
   readBrainCoreVideoControlledExecutionRiskRegister,
   readBrainCoreVideoControlledExecutionPreflightValidatorSchema,
   readBrainCoreVideoControlledExecutionPlanStub,
+  readBrainCoreVideoControlledExecutionApprovalRequestDesign,
   readBrainCoreControlledDualRunRequestDesign,
   readBrainCoreAgents,
   readBrainCoreActions,
@@ -169,6 +170,7 @@ import {
   type BrainCoreVideoControlledExecutionRiskRegisterResponse,
   type BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse,
   type BrainCoreVideoControlledExecutionPlanStubResponse,
+  type BrainCoreVideoControlledExecutionApprovalRequestDesignResponse,
   type BrainCoreControlledDualRunRequestDesignResponse,
   type BrainCoreAgentSummary,
   type BrainCoreModelRouterReportDetail,
@@ -264,6 +266,7 @@ export interface BrainConsoleViewState {
   videoControlledExecutionRiskRegister?: BrainCoreVideoControlledExecutionRiskRegisterResponse;
   videoControlledExecutionPreflightValidatorSchema?: BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse;
   videoControlledExecutionPlanStub?: BrainCoreVideoControlledExecutionPlanStubResponse;
+  videoControlledExecutionApprovalRequestDesign?: BrainCoreVideoControlledExecutionApprovalRequestDesignResponse;
   controlledDualRunRequestDesign?: BrainCoreControlledDualRunRequestDesignResponse;
   agents?: BrainCoreAgentSummary[];
   actions?: import('./client.js').BrainCoreActionSummary[];
@@ -284,7 +287,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -358,6 +361,7 @@ export async function loadBrainConsoleViewState(
     readBrainCoreVideoControlledExecutionRiskRegister(baseUrl),
     readBrainCoreVideoControlledExecutionPreflightValidatorSchema(baseUrl),
     readBrainCoreVideoControlledExecutionPlanStub(baseUrl),
+    readBrainCoreVideoControlledExecutionApprovalRequestDesign(baseUrl),
     readBrainCoreControlledDualRunRequestDesign(baseUrl),
     readBrainCoreAgents(baseUrl),
     readBrainCoreActions(baseUrl),
@@ -480,6 +484,7 @@ export async function loadBrainConsoleViewState(
     videoControlledExecutionRiskRegister: videoControlledExecutionRiskRegister.value,
     videoControlledExecutionPreflightValidatorSchema: videoControlledExecutionPreflightValidatorSchema.value,
     videoControlledExecutionPlanStub: videoControlledExecutionPlanStub.value,
+    videoControlledExecutionApprovalRequestDesign: videoControlledExecutionApprovalRequestDesign.value,
     controlledDualRunRequestDesign: controlledDualRunRequestDesign.value,
     agents: agents.value?.agents,
     actions: actions.value?.actions,
@@ -666,6 +671,7 @@ function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewSta
   renderCard(grid, 'Operator Review Packet', renderOperatorReviewPacketCard(state, snapshot));
   renderCard(grid, 'Approval Payload Schema', renderControlledExecutionApprovalPayloadSchemaCard(state, snapshot));
   renderCard(grid, 'Controlled Execution Plan Stub', renderControlledExecutionPlanStubCard(state, snapshot));
+  renderCard(grid, 'Controlled Execution Approval Request Design', renderControlledExecutionApprovalRequestDesignCard(state, snapshot));
   renderCard(grid, 'Preview Completion Index', renderPreviewCompletionIndexCard(state, snapshot));
   renderCard(grid, 'Controlled Execution Preflight', renderControlledExecutionPreflightChecklistCard(state, snapshot));
   renderCard(grid, 'Controlled Execution Risk Register', renderControlledExecutionRiskRegisterCard(state, snapshot));
@@ -2284,6 +2290,31 @@ function renderControlledExecutionPlanStubCard(state: BrainConsoleViewState, sna
   }
   list.createEl('li', { text: `Next: ${plan.nextSafeStep}` });
   const safetyList = list.createEl('li', { text: 'Safety: Read-only · Disabled · No execution' });
+  safetyList.addClass('brain-console__list-info');
+  return card;
+}
+
+function renderControlledExecutionApprovalRequestDesignCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const card = document.createElement('div');
+
+  if (!state.videoControlledExecutionApprovalRequestDesign?.design) {
+    card.textContent = 'Unavailable';
+    return card;
+  }
+
+  const design = state.videoControlledExecutionApprovalRequestDesign.design;
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Status: ${design.status}` });
+  list.createEl('li', { text: `Approval request enabled: ${design.approvalRequestEnabled}` });
+  list.createEl('li', { text: `Missing preconditions: ${design.summary.missingPreconditionsCount}` });
+  list.createEl('li', { text: `Blockers: ${design.summary.blockerCount}` });
+  const blockers = design.blockers.slice(0, 3);
+  if (blockers.length > 0) {
+    const blockerItem = list.createEl('li', { text: `Top blockers: ${blockers.join('; ')}` });
+    blockerItem.addClass('brain-console__list-error');
+  }
+  list.createEl('li', { text: `Next: ${design.nextSafeStep}` });
+  const safetyList = list.createEl('li', { text: 'Safety: Read-only · No approval created · No execution' });
   safetyList.addClass('brain-console__list-info');
   return card;
 }

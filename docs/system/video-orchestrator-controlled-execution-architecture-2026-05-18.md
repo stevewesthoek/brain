@@ -120,3 +120,14 @@ This document defines the future controlled execution model as a design-only bou
 - No file writes.
 - No STB or Video execution.
 - Next safe phase: Phase 5E approval-request-only endpoint design, still no execution.
+
+## Phase 5E approval-request-only endpoint design
+
+- Added as a read-only approval-request-only design endpoint.
+- No approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes.
+- Next safe phase: Phase 5F execution remains disabled until explicit second approval.

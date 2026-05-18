@@ -3036,6 +3036,20 @@ Next safe task: Phase 5E approval-request-only endpoint design, still no executi
 
 Added a compact Pipelines card for the controlled execution plan stub. It is read-only and does not imply executable planning.
 
+## 2026-05-18 — Phase 5E: Approval-request-only design
+
+Implemented `GET /video-orchestrator/controlled-execution-approval-request-design` as a read-only, approval-request-only design surface.
+
+Safety status:
+- Read-only.
+- No approval created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+
+Next safe task: Phase 5F execution remains disabled until explicit second approval.
+
 
 ## Brain Console — Approval payload schema visibility
 

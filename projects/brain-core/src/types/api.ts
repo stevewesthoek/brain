@@ -2956,6 +2956,57 @@ export interface BrainCoreVideoControlledExecutionPlanStubResponse {
   plan: BrainCoreVideoControlledExecutionPlanStub;
 }
 
+export interface BrainCoreVideoControlledExecutionApprovalRequestDesign {
+  id: 'video-orchestrator-controlled-execution-approval-request-design';
+  generatedAt: string;
+  version: 'phase-5e';
+  status: 'blocked' | 'disabled';
+  approvalRequestEnabled: false;
+  createsApproval: false;
+  registersAction: false;
+  executable: false;
+  summary: {
+    totalRequiredPreconditions: number;
+    missingPreconditionsCount: number;
+    blockerCount: number;
+  };
+  requestShape: {
+    candidateStoryId: string;
+    sourceEpisodeId: string;
+    scopeType: 'single-story-only';
+    selectedDecisionIds: string[];
+    evidenceReferences: string[];
+    requestedBy: string;
+    expiresAt: string;
+    rollbackRequirement: string;
+    dryRunOnly: boolean;
+  };
+  requiredPreconditions: string[];
+  missingPreconditions: string[];
+  blockers: string[];
+  evidenceReferences: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    approvalRequestOnly: true;
+    createsApproval: false;
+    registersAction: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionApprovalRequestDesignResponse {
+  design: BrainCoreVideoControlledExecutionApprovalRequestDesign;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -4511,6 +4562,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/controlled-execution-preflight-checklist': BrainCoreVideoControlledExecutionPreflightChecklistResponse;
   '/video-orchestrator/controlled-execution-risk-register': BrainCoreVideoControlledExecutionRiskRegisterResponse;
   '/video-orchestrator/controlled-execution-approval-payload-schema': BrainCoreVideoControlledExecutionApprovalPayloadSchemaResponse;
+  '/video-orchestrator/controlled-execution-approval-request-design': BrainCoreVideoControlledExecutionApprovalRequestDesignResponse;
   '/video-orchestrator/controlled-execution-preflight-validator-schema': BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {

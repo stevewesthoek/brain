@@ -2892,6 +2892,79 @@ test('POST /video-orchestrator/controlled-execution-approval-payload-schema is n
   assert.equal(body.error.code, 'not_found');
 });
 
+test('GET /video-orchestrator/controlled-execution-approval-request-design returns blocked approval-request-only design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-approval-request-design' });
+  const body = JSON.parse(response.body) as {
+    design: {
+      id: string;
+      version: string;
+      status: string;
+      approvalRequestEnabled: boolean;
+      createsApproval: boolean;
+      registersAction: boolean;
+      executable: boolean;
+      summary: { totalRequiredPreconditions: number; missingPreconditionsCount: number; blockerCount: number };
+      requestShape: {
+        candidateStoryId: string;
+        sourceEpisodeId: string;
+        scopeType: string;
+        selectedDecisionIds: string[];
+        evidenceReferences: string[];
+        requestedBy: string;
+        expiresAt: string;
+        rollbackRequirement: string;
+        dryRunOnly: boolean;
+      };
+      requiredPreconditions: string[];
+      missingPreconditions: string[];
+      blockers: string[];
+      evidenceReferences: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.design.id, 'video-orchestrator-controlled-execution-approval-request-design');
+  assert.equal(body.design.version, 'phase-5e');
+  assert.ok(['blocked', 'disabled'].includes(body.design.status));
+  assert.equal(body.design.approvalRequestEnabled, false);
+  assert.equal(body.design.createsApproval, false);
+  assert.equal(body.design.registersAction, false);
+  assert.equal(body.design.executable, false);
+  assert.ok(body.design.summary.totalRequiredPreconditions > 0);
+  assert.ok(body.design.summary.missingPreconditionsCount > 0);
+  assert.ok(body.design.summary.blockerCount > 0);
+  assert.equal(body.design.requestShape.scopeType, 'single-story-only');
+  assert.equal(body.design.requestShape.dryRunOnly, true);
+  assert.ok(body.design.requestShape.evidenceReferences.length > 0);
+  assert.ok(body.design.requiredPreconditions.length > 0);
+  assert.ok(body.design.missingPreconditions.length > 0);
+  assert.ok(body.design.blockers.length > 0);
+  assert.ok(body.design.nextSafeStep.length > 0);
+  assert.equal(body.design.safety.readOnly, true);
+  assert.equal(body.design.safety.approvalRequestOnly, true);
+  assert.equal(body.design.safety.createsApproval, false);
+  assert.equal(body.design.safety.registersAction, false);
+  assert.equal(body.design.safety.runsValidator, false);
+  assert.equal(body.design.safety.createsExecutionPlan, false);
+  assert.equal(body.design.safety.executionPlanExecutable, false);
+  assert.equal(body.design.safety.executesStb, false);
+  assert.equal(body.design.safety.executesVideo, false);
+  assert.equal(body.design.safety.writesFiles, false);
+  assert.equal(body.design.safety.publishesContent, false);
+  assert.equal(body.design.safety.decommissionsStb, false);
+  assert.equal(body.design.safety.writesToMind, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-approval-request-design is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-approval-request-design' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
 test('GET /video-orchestrator/controlled-execution-preflight-validator-schema returns blocked validator schema', async () => {
   const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-preflight-validator-schema' });
   const body = JSON.parse(response.body) as {

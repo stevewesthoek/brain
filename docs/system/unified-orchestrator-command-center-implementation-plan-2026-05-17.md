@@ -2117,3 +2117,17 @@ Hard boundary remains unchanged:
 
 Next safe phase:
 - Phase 5E approval-request-only endpoint design, still no execution
+
+## 2026-05-18 — Phase 5E approval-request-only design
+
+Added the read-only approval-request-only design endpoint for controlled execution.
+
+Hard boundary remains unchanged:
+- no approval created
+- no action registration
+- no validator execution
+- no execution-plan execution
+- no STB or Video execution
+
+Next safe phase:
+- Phase 5F execution remains disabled until explicit second approval

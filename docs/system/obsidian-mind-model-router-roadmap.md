@@ -259,6 +259,19 @@ Added a read-only execution-plan stub endpoint for controlled execution design. 
 
 Next safe phase: Phase 5E approval-request-only endpoint design, still no execution.
 
+## 2026-05-18 — Phase 5E: Approval-request-only design
+
+Added a read-only approval-request-only design endpoint for controlled execution.
+
+Safety status:
+- No approval created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+
+Next safe phase: Phase 5F execution remains disabled until explicit second approval.
+
 - Proofly and Xgrow are legacy/internal migration source names.
 - Brain Console should not present them as primary products/providers.
 - User-facing Post Orchestrator language should use flows such as Social Proof Asset Flow, Growth Optimization Flow, X Post Flow, GitHub Post Flow, LinkedIn Post Flow, and Platform Publishing Flow.
