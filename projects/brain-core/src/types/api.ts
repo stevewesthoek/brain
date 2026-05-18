@@ -3107,6 +3107,60 @@ export interface BrainCoreVideoControlledExecutionSecondApprovalPolicyResponse {
   policy: BrainCoreVideoControlledExecutionSecondApprovalPolicy;
 }
 
+export interface BrainCoreVideoControlledExecutionOperatorIdentityProtocol {
+  id: 'video-orchestrator-controlled-execution-operator-identity-protocol';
+  generatedAt: string;
+  version: 'phase-5h';
+  status: 'blocked' | 'disabled';
+  protocolExists: false;
+  identityVerificationEnabled: false;
+  operatorAuthenticated: false;
+  secondApprovalAllowed: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    requirementCount: number;
+    missingRequirementCount: number;
+    verificationStepCount: number;
+    blockerCount: number;
+  };
+  identityRequirements: string[];
+  missingRequirements: string[];
+  verificationSteps: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    protocolDesignOnly: true;
+    protocolExists: false;
+    identityVerificationEnabled: false;
+    authenticatesOperator: false;
+    createsSession: false;
+    createsApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionOperatorIdentityProtocolResponse {
+  protocol: BrainCoreVideoControlledExecutionOperatorIdentityProtocol;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =

@@ -3266,3 +3266,91 @@ test('POST /video-orchestrator/controlled-execution-second-approval-policy is no
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-operator-identity-protocol returns blocked protocol design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-operator-identity-protocol' });
+  const body = JSON.parse(response.body) as {
+    protocol: {
+      id: string;
+      generatedAt: string;
+      version: string;
+      status: string;
+      protocolExists: boolean;
+      identityVerificationEnabled: boolean;
+      operatorAuthenticated: boolean;
+      secondApprovalAllowed: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      summary: {
+        requirementCount: number;
+        missingRequirementCount: number;
+        verificationStepCount: number;
+        blockerCount: number;
+      };
+      identityRequirements: string[];
+      missingRequirements: string[];
+      verificationSteps: string[];
+      evidenceReferences: string[];
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.protocol.id, 'video-orchestrator-controlled-execution-operator-identity-protocol');
+  assert.equal(body.protocol.version, 'phase-5h');
+  assert.ok(['blocked', 'disabled'].includes(body.protocol.status));
+  assert.equal(body.protocol.protocolExists, false);
+  assert.equal(body.protocol.identityVerificationEnabled, false);
+  assert.equal(body.protocol.operatorAuthenticated, false);
+  assert.equal(body.protocol.secondApprovalAllowed, false);
+  assert.equal(body.protocol.executionEnabled, false);
+  assert.equal(body.protocol.executable, false);
+  assert.ok(body.protocol.summary.requirementCount > 0);
+  assert.ok(body.protocol.summary.missingRequirementCount > 0);
+  assert.ok(body.protocol.summary.verificationStepCount > 0);
+  assert.ok(body.protocol.summary.blockerCount > 0);
+  assert.ok(body.protocol.identityRequirements.length > 0);
+  assert.ok(body.protocol.identityRequirements.some(r => r.includes('Operator identifier')));
+  assert.ok(body.protocol.identityRequirements.some(r => r.includes('role') || r.includes('Role')));
+  assert.ok(body.protocol.identityRequirements.some(r => r.includes('local-only') || r.includes('Local-only')));
+  assert.ok(body.protocol.missingRequirements.length > 0);
+  assert.ok(body.protocol.verificationSteps.length > 0);
+  assert.ok(body.protocol.evidenceReferences.length > 0);
+  assert.ok(body.protocol.blockers.length > 0);
+  assert.ok(body.protocol.nextSafeStep.length > 0);
+  assert.equal(body.protocol.safety.readOnly, true);
+  assert.equal(body.protocol.safety.protocolDesignOnly, true);
+  assert.equal(body.protocol.safety.protocolExists, false);
+  assert.equal(body.protocol.safety.identityVerificationEnabled, false);
+  assert.equal(body.protocol.safety.authenticatesOperator, false);
+  assert.equal(body.protocol.safety.createsSession, false);
+  assert.equal(body.protocol.safety.createsApproval, false);
+  assert.equal(body.protocol.safety.createsSecondApproval, false);
+  assert.equal(body.protocol.safety.approvalExecutionEnabled, false);
+  assert.equal(body.protocol.safety.registersAction, false);
+  assert.equal(body.protocol.safety.registersAllowlist, false);
+  assert.equal(body.protocol.safety.runsValidator, false);
+  assert.equal(body.protocol.safety.createsExecutionPlan, false);
+  assert.equal(body.protocol.safety.executionPlanExecutable, false);
+  assert.equal(body.protocol.safety.executionEnabled, false);
+  assert.equal(body.protocol.safety.executesStb, false);
+  assert.equal(body.protocol.safety.executesVideo, false);
+  assert.equal(body.protocol.safety.writesFiles, false);
+  assert.equal(body.protocol.safety.rendersVideo, false);
+  assert.equal(body.protocol.safety.exportsArtifacts, false);
+  assert.equal(body.protocol.safety.publishesContent, false);
+  assert.equal(body.protocol.safety.decommissionsStb, false);
+  assert.equal(body.protocol.safety.writesToMind, false);
+  assert.ok(body.protocol.evidenceReferences.includes('/video-orchestrator/controlled-execution-second-approval-policy'));
+  assert.ok(body.protocol.evidenceReferences.includes('/video-orchestrator/controlled-execution-disabled-gate'));
+});
+
+test('POST /video-orchestrator/controlled-execution-operator-identity-protocol is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-operator-identity-protocol' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

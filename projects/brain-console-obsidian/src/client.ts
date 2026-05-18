@@ -3168,6 +3168,34 @@ export interface BrainCoreVideoControlledExecutionSecondApprovalPolicyResponse {
   };
 }
 
+export interface BrainCoreVideoControlledExecutionOperatorIdentityProtocolResponse {
+  protocol: {
+    id: string;
+    generatedAt: string;
+    version: string;
+    status: string;
+    protocolExists: boolean;
+    identityVerificationEnabled: boolean;
+    operatorAuthenticated: boolean;
+    secondApprovalAllowed: boolean;
+    executionEnabled: boolean;
+    executable: boolean;
+    summary: {
+      requirementCount: number;
+      missingRequirementCount: number;
+      verificationStepCount: number;
+      blockerCount: number;
+    };
+    identityRequirements: string[];
+    missingRequirements: string[];
+    verificationSteps: string[];
+    evidenceReferences: string[];
+    blockers: string[];
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -4178,6 +4206,12 @@ export async function readBrainCoreVideoControlledExecutionSecondApprovalPolicy(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionSecondApprovalPolicyResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionSecondApprovalPolicyResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-second-approval-policy');
+}
+
+export async function readBrainCoreVideoControlledExecutionOperatorIdentityProtocol(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionOperatorIdentityProtocolResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionOperatorIdentityProtocolResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-operator-identity-protocol');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(

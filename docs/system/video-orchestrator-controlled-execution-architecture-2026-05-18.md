@@ -82,6 +82,8 @@ This document defines the future controlled execution model as a design-only bou
 - 5D execution-plan stub, still disabled.
 - 5E approval-request-only endpoint.
 - 5F execution remains disabled until explicit second approval.
+- 5G second-approval policy design.
+- 5H operator identity verification protocol design.
 
 ## Non-negotiable safety
 
@@ -145,3 +147,35 @@ This document defines the future controlled execution model as a design-only bou
 - No STB or Video execution.
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Next safe phase: second-approval policy design, still read-only and no execution.
+
+## Phase 5G second-approval policy design
+
+- Added as a read-only policy design endpoint.
+- Defines 10 required policy sections for future second approval mechanism.
+- Sections: operator identity verification, approval scope narrowing, candidate lock, preflight evidence, runtime sandbox, rollback acceptance, dual-run comparison, artifact policy, STB protection, expiration/audit.
+- No policy is created.
+- No approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: Phase 5H operator identity verification protocol design, still read-only and no execution.
+
+## Phase 5H operator identity verification protocol design
+
+- Added as a read-only protocol design endpoint.
+- Defines how operator identity would be verified before second approval is permitted.
+- Requirements: operator identifier, role policy, local-only context, explicit confirmation, second approval authority, audit attribution, expiry window.
+- Protocol cannot authenticate.
+- No session is created.
+- No operator is authenticated.
+- No approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: operator identity protocol implementation (still read-only), or role policy definition endpoint design.
