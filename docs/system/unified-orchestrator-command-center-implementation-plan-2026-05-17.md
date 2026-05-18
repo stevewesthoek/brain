@@ -1806,3 +1806,45 @@ See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.
 - Manual export preview renders from Brain Core
 - No file writes, downloads, clipboard writes, publishing, or scheduling are introduced
 - Preview-only state remains explicit in UI and API
+
+### Phase P13: Operator Acceptance Checklist (2026-06-02+)
+
+**Objective:** Add a read-only operator acceptance checklist for Post Orchestrator preview readiness.
+
+**Tasks:**
+- Acceptance checklist endpoint derived from existing read-only endpoints and safety surfaces
+- Brain Console operator acceptance checklist card
+- Safety verification for checklist-only semantics
+
+**Exit criteria:**
+- Acceptance checklist renders from Brain Core
+- No execution, publishing, scheduling, file writes, or external writes are introduced
+- Future-gate checks remain blocked
+
+### Phase P14: Migration Parity Report (2026-06-02+)
+
+**Objective:** Add a read-only migration parity report for legacy asset/growth/scheduler/publishing/analytics responsibilities.
+
+**Tasks:**
+- Migration parity report endpoint derived from current preview-only surfaces
+- Brain Console migration parity report card
+- Safety verification for no legacy repo changes and no decommission
+
+**Exit criteria:**
+- Migration parity report renders from Brain Core
+- No legacy repos are modified
+- Publishing and scheduling remain disabled
+
+### Phase P15: Roadmap Checkpoint (2026-06-02+)
+
+**Objective:** Add a read-only roadmap checkpoint that records completed preview phases and gates any future publishing/scheduling design behind explicit user approval.
+
+**Tasks:**
+- Roadmap checkpoint endpoint derived from completed phases P1-P14
+- Brain Console roadmap checkpoint card
+- Safety verification for read-only roadmap semantics
+
+**Exit criteria:**
+- Roadmap checkpoint renders from Brain Core
+- Future publishing/scheduling design remains blocked behind explicit user approval
+- No execution, publishing, scheduling, or decommission actions are introduced

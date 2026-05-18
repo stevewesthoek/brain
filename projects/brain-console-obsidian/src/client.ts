@@ -866,6 +866,160 @@ export interface BrainCorePostManualExportPackageResponse {
   package: BrainCorePostManualExportPackage;
 }
 
+export type BrainCorePostAcceptanceCheckStatus =
+  | 'passed'
+  | 'failed'
+  | 'blocked'
+  | 'not-applicable';
+
+export type BrainCorePostAcceptanceCheckCategory =
+  | 'api'
+  | 'dashboard'
+  | 'safety'
+  | 'policy'
+  | 'migration'
+  | 'operator'
+  | 'docs';
+
+export interface BrainCorePostAcceptanceCheck {
+  id: string;
+  category: BrainCorePostAcceptanceCheckCategory;
+  label: string;
+  status: BrainCorePostAcceptanceCheckStatus;
+  required: boolean;
+  summary: string;
+  evidence: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesCode: false;
+    writesFiles: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostAcceptanceChecklist {
+  id: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  passedCount: number;
+  blockedCount: number;
+  failedCount: number;
+  requiredCount: number;
+  checks: BrainCorePostAcceptanceCheck[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    decommissionStarted: false;
+  };
+}
+
+export interface BrainCorePostAcceptanceChecklistResponse {
+  checklist: BrainCorePostAcceptanceChecklist;
+}
+
+export type BrainCorePostMigrationCapabilityStatus =
+  | 'not-started'
+  | 'preview-only'
+  | 'partial'
+  | 'blocked'
+  | 'parity-ready';
+
+export type BrainCorePostMigrationCapabilityArea =
+  | 'asset-generation'
+  | 'growth-optimization'
+  | 'scheduler'
+  | 'publishing'
+  | 'analytics'
+  | 'approval'
+  | 'dashboard'
+  | 'policy'
+  | 'manual-export';
+
+export interface BrainCorePostMigrationParityCapability {
+  id: string;
+  area: BrainCorePostMigrationCapabilityArea;
+  label: string;
+  status: BrainCorePostMigrationCapabilityStatus;
+  summary: string;
+  currentBrainSupport: string[];
+  remainingGaps: string[];
+  parityScore: number;
+  nextSafeStep: string;
+  safety: {
+    previewOnly: boolean;
+    modifiesLegacyRepo: false;
+    decommissionStarted: false;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostMigrationParityReport {
+  id: string;
+  generatedAt: string;
+  status: 'blocked' | 'in-progress' | 'preview-ready';
+  overallParityScore: number;
+  capabilities: BrainCorePostMigrationParityCapability[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    modifiesLegacyRepo: false;
+    decommissionStarted: false;
+    deletesFiles: false;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    requiresExplicitUserApprovalForDecommission: true;
+  };
+}
+
+export interface BrainCorePostMigrationParityReportResponse {
+  report: BrainCorePostMigrationParityReport;
+}
+
+export interface BrainCorePostRoadmapCheckpointPhase {
+  id: string;
+  label: string;
+  status: 'complete' | 'in-progress' | 'blocked' | 'not-started';
+  summary: string;
+  evidence: string[];
+}
+
+export interface BrainCorePostRoadmapCheckpoint {
+  id: string;
+  generatedAt: string;
+  currentPhase: string;
+  completedPhaseCount: number;
+  blockedPhaseCount: number;
+  phases: BrainCorePostRoadmapCheckpointPhase[];
+  nextRecommendedPhase: string;
+  nextPhaseRequiresUserApproval: true;
+  nextPhaseSummary: string;
+  safety: {
+    readOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    requiresExplicitUserApprovalBeforePublishingDesign: true;
+  };
+}
+
+export interface BrainCorePostRoadmapCheckpointResponse {
+  checkpoint: BrainCorePostRoadmapCheckpoint;
+}
+
 export type BrainCorePostOperatorGuidanceSeverity = 'info' | 'warning' | 'blocked';
 export type BrainCorePostOperatorGuidanceCategory =
   | 'review'
@@ -1646,6 +1800,24 @@ export async function readBrainCorePostManualExportPackage(
     normalizeBaseUrl(baseUrl),
     `/post-orchestrator/manual-export/${encodeURIComponent(eventId)}`,
   );
+}
+
+export async function readBrainCorePostAcceptanceChecklist(
+  baseUrl: string,
+): Promise<HttpResult<BrainCorePostAcceptanceChecklistResponse>> {
+  return fetchJson<BrainCorePostAcceptanceChecklistResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/acceptance-checklist');
+}
+
+export async function readBrainCorePostMigrationParityReport(
+  baseUrl: string,
+): Promise<HttpResult<BrainCorePostMigrationParityReportResponse>> {
+  return fetchJson<BrainCorePostMigrationParityReportResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/migration-parity');
+}
+
+export async function readBrainCorePostRoadmapCheckpoint(
+  baseUrl: string,
+): Promise<HttpResult<BrainCorePostRoadmapCheckpointResponse>> {
+  return fetchJson<BrainCorePostRoadmapCheckpointResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/roadmap-checkpoint');
 }
 
 export async function readBrainCoreStbStatus(

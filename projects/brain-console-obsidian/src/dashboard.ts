@@ -80,6 +80,15 @@ export interface DashboardSnapshot {
   postOperatorGuidanceBlockedCount: number;
   postOperatorGuidanceWarningCount: number;
   postOperatorGuidanceNextSafeStep: string;
+  postAcceptancePassedCount: number;
+  postAcceptanceBlockedCount: number;
+  postAcceptanceFailedCount: number;
+  postMigrationParityScore: number;
+  postMigrationBlockedCapabilities: number;
+  postRoadmapCompletedPhaseCount: number;
+  postRoadmapBlockedPhaseCount: number;
+  postNextRecommendedPhase: string;
+  postNextPhaseRequiresUserApproval: boolean;
   postManualExportItemCount: number;
   postManualExportStatus?: string;
   postManualExportWritesFiles: boolean;
@@ -230,6 +239,15 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postOperatorGuidanceBlockedCount = state.postOrchestratorOperatorGuidance?.items?.filter((item) => item.severity === 'blocked').length ?? 0;
   const postOperatorGuidanceWarningCount = state.postOrchestratorOperatorGuidance?.items?.filter((item) => item.severity === 'warning').length ?? 0;
   const postOperatorGuidanceNextSafeStep = state.postOrchestratorOperatorGuidance?.summary?.nextSafeStep ?? 'Review operator guidance.';
+  const postAcceptancePassedCount = state.postOrchestratorAcceptanceChecklist?.checklist?.passedCount ?? 0;
+  const postAcceptanceBlockedCount = state.postOrchestratorAcceptanceChecklist?.checklist?.blockedCount ?? 0;
+  const postAcceptanceFailedCount = state.postOrchestratorAcceptanceChecklist?.checklist?.failedCount ?? 0;
+  const postMigrationParityScore = state.postOrchestratorMigrationParity?.report?.overallParityScore ?? 0;
+  const postMigrationBlockedCapabilities = state.postOrchestratorMigrationParity?.report?.blockers?.length ?? 0;
+  const postRoadmapCompletedPhaseCount = state.postOrchestratorRoadmapCheckpoint?.checkpoint?.completedPhaseCount ?? 0;
+  const postRoadmapBlockedPhaseCount = state.postOrchestratorRoadmapCheckpoint?.checkpoint?.blockedPhaseCount ?? 0;
+  const postNextRecommendedPhase = state.postOrchestratorRoadmapCheckpoint?.checkpoint?.nextRecommendedPhase ?? 'Review the roadmap checkpoint.';
+  const postNextPhaseRequiresUserApproval = state.postOrchestratorRoadmapCheckpoint?.checkpoint?.nextPhaseRequiresUserApproval ?? true;
   const postManualExportItemCount = state.postOrchestratorManualExportPackage?.package?.itemCount ?? 0;
   const postManualExportStatus = state.postOrchestratorManualExportPackage?.package?.status;
   const postManualExportWritesFiles = Boolean(state.postOrchestratorManualExportPackage?.package?.safety.writesFiles);
@@ -441,6 +459,15 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postOperatorGuidanceBlockedCount,
     postOperatorGuidanceWarningCount,
     postOperatorGuidanceNextSafeStep,
+    postAcceptancePassedCount,
+    postAcceptanceBlockedCount,
+    postAcceptanceFailedCount,
+    postMigrationParityScore,
+    postMigrationBlockedCapabilities,
+    postRoadmapCompletedPhaseCount,
+    postRoadmapBlockedPhaseCount,
+    postNextRecommendedPhase,
+    postNextPhaseRequiresUserApproval,
     postManualExportItemCount,
     postManualExportStatus,
     postManualExportWritesFiles,

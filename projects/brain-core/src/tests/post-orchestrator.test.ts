@@ -750,3 +750,125 @@ test('GET /post-orchestrator/manual-export/unknown-event returns blocked package
   assert.equal(body.package.status, 'blocked');
   assert.equal(body.package.items.length, 0);
 });
+
+test('GET /post-orchestrator/acceptance-checklist returns checklist', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/acceptance-checklist' });
+  const body = JSON.parse(response.body) as {
+    checklist: {
+      status: string;
+      checks: Array<{
+        id: string;
+        required: boolean;
+        status: string;
+        safety: {
+          readOnly: boolean;
+          executesCode: boolean;
+          writesFiles: boolean;
+          writesExternalPlatform: boolean;
+          writesToMind: boolean;
+        };
+      }>;
+      safety: {
+        readOnly: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        executionEnabled: boolean;
+        writesExternalPlatform: boolean;
+        writesToMind: boolean;
+        decommissionStarted: boolean;
+      };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(['preview-ready', 'blocked'].includes(body.checklist.status));
+  assert.ok(body.checklist.checks.some((check) => check.id === 'status-endpoint'));
+  assert.ok(body.checklist.checks.some((check) => check.id === 'dashboard-section'));
+  assert.ok(body.checklist.checks.some((check) => check.id === 'real-publishing-policy'));
+  assert.equal(body.checklist.safety.readOnly, true);
+  assert.equal(body.checklist.safety.publishingEnabled, false);
+  assert.equal(body.checklist.safety.schedulingEnabled, false);
+  assert.equal(body.checklist.safety.executionEnabled, false);
+  assert.equal(body.checklist.safety.writesExternalPlatform, false);
+  assert.equal(body.checklist.safety.writesToMind, false);
+  assert.equal(body.checklist.safety.decommissionStarted, false);
+  assert.equal(body.checklist.checks.every((check) => check.safety.readOnly === true), true);
+  assert.equal(body.checklist.checks.every((check) => check.safety.executesCode === false), true);
+  assert.equal(body.checklist.checks.every((check) => check.safety.writesFiles === false), true);
+});
+
+test('GET /post-orchestrator/migration-parity returns report', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/migration-parity' });
+  const body = JSON.parse(response.body) as {
+    report: {
+      status: string;
+      capabilities: Array<{ area: string; status: string }>;
+      blockers: string[];
+      safety: {
+        readOnly: boolean;
+        modifiesLegacyRepo: boolean;
+        decommissionStarted: boolean;
+        deletesFiles: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        writesExternalPlatform: boolean;
+        writesToMind: boolean;
+        requiresExplicitUserApprovalForDecommission: boolean;
+      };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(['blocked', 'in-progress', 'preview-ready'].includes(body.report.status));
+  assert.ok(body.report.capabilities.some((capability) => capability.area === 'asset-generation'));
+  assert.ok(body.report.capabilities.some((capability) => capability.area === 'scheduler'));
+  assert.ok(body.report.capabilities.some((capability) => capability.area === 'publishing'));
+  assert.ok(body.report.capabilities.some((capability) => capability.area === 'manual-export'));
+  assert.ok(body.report.blockers.includes('Real publishing is not designed yet.'));
+  assert.ok(body.report.blockers.includes('Platform security review is incomplete.'));
+  assert.equal(body.report.safety.readOnly, true);
+  assert.equal(body.report.safety.modifiesLegacyRepo, false);
+  assert.equal(body.report.safety.decommissionStarted, false);
+  assert.equal(body.report.safety.deletesFiles, false);
+  assert.equal(body.report.safety.publishingEnabled, false);
+  assert.equal(body.report.safety.schedulingEnabled, false);
+  assert.equal(body.report.safety.writesExternalPlatform, false);
+  assert.equal(body.report.safety.writesToMind, false);
+  assert.equal(body.report.safety.requiresExplicitUserApprovalForDecommission, true);
+  const publishing = body.report.capabilities.find((capability) => capability.area === 'publishing');
+  assert.ok(publishing);
+  assert.equal(publishing?.status, 'blocked');
+});
+
+test('GET /post-orchestrator/roadmap-checkpoint returns checkpoint', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/roadmap-checkpoint' });
+  const body = JSON.parse(response.body) as {
+    checkpoint: {
+      currentPhase: string;
+      completedPhaseCount: number;
+      blockedPhaseCount: number;
+      nextRecommendedPhase: string;
+      nextPhaseRequiresUserApproval: boolean;
+      phases: Array<{ id: string; status: string }>;
+      safety: {
+        readOnly: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        executionEnabled: boolean;
+        requiresExplicitUserApprovalBeforePublishingDesign: boolean;
+      };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.checkpoint.currentPhase, 'P15 roadmap checkpoint');
+  assert.ok(body.checkpoint.phases.some((phase) => phase.id === 'P1' && phase.status === 'complete'));
+  assert.ok(body.checkpoint.phases.some((phase) => phase.id === 'P14' && phase.status === 'complete'));
+  assert.ok(body.checkpoint.phases.some((phase) => phase.id === 'P16' && ['blocked', 'not-started'].includes(phase.status)));
+  assert.equal(body.checkpoint.nextPhaseRequiresUserApproval, true);
+  assert.equal(body.checkpoint.safety.readOnly, true);
+  assert.equal(body.checkpoint.safety.publishingEnabled, false);
+  assert.equal(body.checkpoint.safety.schedulingEnabled, false);
+  assert.equal(body.checkpoint.safety.executionEnabled, false);
+  assert.equal(body.checkpoint.safety.requiresExplicitUserApprovalBeforePublishingDesign, true);
+});

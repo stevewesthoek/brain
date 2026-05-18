@@ -2280,3 +2280,58 @@ Safety status:
 Next safe task:
 
 - Phase P13: operator acceptance checklist and migration parity report.
+
+## Phase P13 — Operator Acceptance Checklist
+
+Implemented:
+
+- Acceptance checklist endpoint added for preview-only readiness validation.
+- Brain Console now shows an Operator Acceptance Checklist card.
+
+Safety status:
+
+- Read-only.
+- No publishing.
+- No scheduling.
+- No external writes.
+- No decommission.
+
+Next safe task:
+
+- Phase P14: migration parity report.
+
+## Phase P14 — Migration Parity Report
+
+Implemented:
+
+- Migration parity report endpoint added for legacy asset/growth/scheduler/publishing/analytics gap review.
+- Brain Console now shows a Migration Parity Report card.
+
+Safety status:
+
+- Read-only.
+- No legacy repo changes.
+- No decommission.
+- No publishing.
+- No scheduling.
+
+Next safe task:
+
+- Phase P15: roadmap checkpoint.
+
+## Phase P15 — Roadmap Checkpoint
+
+Implemented:
+
+- Roadmap checkpoint endpoint added to summarize completed preview-only phases and gate future design work.
+- Brain Console now shows a Roadmap Checkpoint card.
+
+Safety status:
+
+- Read-only.
+- Publishing and scheduling design remain gated by explicit user approval.
+- No execution or decommission actions.
+
+Next safe task:
+
+- Roadmap checkpoint review and explicit user decision before any future real scheduling/publishing design.

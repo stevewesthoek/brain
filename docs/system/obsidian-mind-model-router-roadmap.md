@@ -923,6 +923,10 @@ docs/system/1779040171684-karpathy-llm-wiki-alignment-review-2026-05-17.md
 - Phase P11 adds read-only operator guidance and blocker recovery notes.
 - Phase P12 adds read-only manual export/package previews for post drafts.
 - Neither phase writes files, downloads assets, copies to clipboard, or publishes.
+- Phase P13 adds a read-only operator acceptance checklist.
+- Phase P14 adds a read-only migration parity report.
+- Phase P15 adds a read-only roadmap checkpoint that gates any future publishing/scheduling design behind explicit user approval.
+- None of the above phases introduces execution, publishing, scheduling, or decommission actions.
 
 ## Current Status
 

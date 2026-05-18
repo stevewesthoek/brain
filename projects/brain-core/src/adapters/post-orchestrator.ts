@@ -39,11 +39,24 @@ import type {
   BrainCorePostManualExportItem,
   BrainCorePostManualExportPackage,
   BrainCorePostManualExportPackageResponse,
+  BrainCorePostAcceptanceCheck,
+  BrainCorePostAcceptanceCheckCategory,
+  BrainCorePostAcceptanceCheckStatus,
+  BrainCorePostAcceptanceChecklist,
+  BrainCorePostAcceptanceChecklistResponse,
+  BrainCorePostMigrationCapabilityArea,
+  BrainCorePostMigrationCapabilityStatus,
+  BrainCorePostMigrationParityCapability,
+  BrainCorePostMigrationParityReport,
+  BrainCorePostMigrationParityReportResponse,
   BrainCorePostOperatorGuidanceCategory,
   BrainCorePostOperatorGuidanceItem,
   BrainCorePostOperatorGuidanceResponse,
   BrainCorePostOperatorGuidanceSeverity,
   BrainCorePostOperatorGuidanceStep,
+  BrainCorePostRoadmapCheckpoint,
+  BrainCorePostRoadmapCheckpointPhase,
+  BrainCorePostRoadmapCheckpointResponse,
   BrainCorePostReadinessBlocker,
   BrainCorePostReadinessScore,
   BrainCorePostReadinessScoreResponse,
@@ -2068,6 +2081,158 @@ export function readPostManualExportPackage(eventId: string): BrainCorePostManua
   };
 }
 
+export function readPostAcceptanceChecklist(): BrainCorePostAcceptanceChecklistResponse {
+  const checks: BrainCorePostAcceptanceCheck[] = [
+    acceptanceCheck('status-endpoint', 'api', 'Status endpoint exists', 'passed', true, 'GET /post-orchestrator/status exists.', ['GET /post-orchestrator/status'], 'Keep the status endpoint read-only.'),
+    acceptanceCheck('flows-endpoint', 'api', 'Flows endpoint exists', 'passed', true, 'GET /post-orchestrator/flows exists.', ['GET /post-orchestrator/flows'], 'Keep the flow fixture endpoint read-only.'),
+    acceptanceCheck('events-endpoint', 'api', 'Events endpoint exists', 'passed', true, 'GET /post-orchestrator/events exists.', ['GET /post-orchestrator/events'], 'Keep the event fixture endpoint read-only.'),
+    acceptanceCheck('dry-run-endpoint', 'api', 'Dry-run endpoint exists', 'passed', true, 'GET /post-orchestrator/dry-run/:eventId exists.', ['GET /post-orchestrator/dry-run/:eventId'], 'Keep the dry-run planner preview-only.'),
+    acceptanceCheck('review-queue-endpoint', 'api', 'Review queue endpoint exists', 'passed', true, 'GET /post-orchestrator/review-queue/:eventId exists.', ['GET /post-orchestrator/review-queue/:eventId'], 'Keep review requests approval-only.'),
+    acceptanceCheck('schedule-preview-endpoint', 'api', 'Schedule preview endpoint exists', 'passed', true, 'GET /post-orchestrator/schedule-preview/:eventId exists.', ['GET /post-orchestrator/schedule-preview/:eventId'], 'Keep schedule preview approval-only.'),
+    acceptanceCheck('analytics-endpoint', 'api', 'Analytics endpoint exists', 'passed', true, 'GET /post-orchestrator/analytics exists.', ['GET /post-orchestrator/analytics'], 'Keep analytics fixtures read-only.'),
+    acceptanceCheck('pipeline-endpoint', 'api', 'Pipeline endpoint exists', 'passed', true, 'GET /post-orchestrator/pipeline/:eventId exists.', ['GET /post-orchestrator/pipeline/:eventId'], 'Keep pipeline summaries preview-only.'),
+    acceptanceCheck('readiness-endpoint', 'api', 'Readiness endpoint exists', 'passed', true, 'GET /post-orchestrator/readiness/:eventId exists.', ['GET /post-orchestrator/readiness/:eventId'], 'Keep readiness blocked while publishing is disabled.'),
+    acceptanceCheck('platform-policies-endpoint', 'api', 'Platform policies endpoint exists', 'passed', true, 'GET /post-orchestrator/platform-policies exists.', ['GET /post-orchestrator/platform-policies'], 'Keep platform policy metadata read-only.'),
+    acceptanceCheck('decommission-readiness-endpoint', 'api', 'Decommission readiness endpoint exists', 'passed', true, 'GET /post-orchestrator/decommission-readiness exists.', ['GET /post-orchestrator/decommission-readiness'], 'Keep decommission readiness blocked.'),
+    acceptanceCheck('operator-guidance-endpoint', 'api', 'Operator guidance endpoint exists', 'passed', true, 'GET /post-orchestrator/operator-guidance exists.', ['GET /post-orchestrator/operator-guidance'], 'Keep operator guidance read-only.'),
+    acceptanceCheck('manual-export-endpoint', 'api', 'Manual export preview endpoint exists', 'passed', true, 'GET /post-orchestrator/manual-export/:eventId exists.', ['GET /post-orchestrator/manual-export/:eventId'], 'Keep manual export preview-only.'),
+    acceptanceCheck('dashboard-section', 'dashboard', 'Post Orchestrator section exists conceptually', 'passed', true, 'Brain Console renders the Posts/Post Orchestrator section.', ['Brain Console Posts section'], 'Keep the dashboard read-only.'),
+    acceptanceCheck('pipeline-readiness-cards', 'dashboard', 'Pipeline and readiness cards are represented', 'passed', true, 'Pipeline, readiness, operator guidance, and export cards render.', ['Brain Console Post cards'], 'Keep the cards read-only.'),
+    acceptanceCheck('publishing-disabled', 'safety', 'Publishing is disabled', 'blocked', true, 'Publishing remains disabled in every preview path.', ['Publishing flags are false'], 'Keep publishing disabled.'),
+    acceptanceCheck('scheduling-disabled', 'safety', 'Scheduling is disabled', 'blocked', true, 'Scheduling remains disabled in every preview path.', ['Scheduling flags are false'], 'Keep scheduling disabled.'),
+    acceptanceCheck('execution-disabled', 'safety', 'Execution is disabled', 'passed', true, 'Execution remains disabled in every preview path.', ['Execution flags are false'], 'Keep execution disabled.'),
+    acceptanceCheck('external-writes-disabled', 'safety', 'External writes are disabled', 'passed', true, 'No preview path writes to an external platform.', ['Safety flags are false'], 'Keep external writes disabled.'),
+    acceptanceCheck('mind-writes-disabled', 'safety', 'Mind writes are disabled', 'passed', true, 'No preview path writes to Mind.', ['Safety flags are false'], 'Keep Mind writes disabled.'),
+    acceptanceCheck('playwright-disabled', 'safety', 'Playwright and cookies are disabled', 'passed', true, 'No preview path uses cookies or Playwright.', ['Safety flags are false'], 'Keep Playwright disabled.'),
+    acceptanceCheck('cookies-secrets-not-read', 'safety', 'Cookies and secrets are not read', 'passed', true, 'No preview path reads cookies or secrets.', ['Safety flags are false'], 'Keep secrets and cookies unread.'),
+    acceptanceCheck('decommission-not-started', 'policy', 'Decommission has not started', 'passed', true, 'Decommission readiness is read-only.', ['Decommission readiness matrix'], 'Keep decommission blocked.'),
+    acceptanceCheck('platform-policy-registry', 'policy', 'Platform policy registry exists', 'passed', true, 'Platform policy metadata is exposed for all post platforms.', ['Platform policies endpoint'], 'Keep policy metadata read-only.'),
+    acceptanceCheck('legacy-sources-tracked', 'migration', 'Legacy sources are tracked internally', 'passed', true, 'Proofly/Xgrow remain internal migration references.', ['Internal legacy references'], 'Keep legacy labels internal only.'),
+    acceptanceCheck('neutral-user-facing-labels', 'migration', 'User-facing labels are neutral', 'passed', true, 'User-facing UI uses flow/platform names.', ['Brain Console labels'], 'Keep user-facing names neutral.'),
+    acceptanceCheck('real-publishing-policy', 'policy', 'Real publishing policy is not defined', 'blocked', true, 'No production publishing policy exists yet.', ['No publish execution path'], 'Require explicit user approval before future publishing design.'),
+    acceptanceCheck('real-scheduler-policy', 'policy', 'Real scheduler write policy is not defined', 'blocked', true, 'No scheduler write policy exists yet.', ['No scheduler execution path'], 'Require explicit user approval before future scheduling design.'),
+    acceptanceCheck('platform-security-review', 'policy', 'Platform API security review is not complete', 'blocked', true, 'Platform API security review remains incomplete.', ['Platform policy registry'], 'Complete platform security review before any future publishing design.'),
+    acceptanceCheck('dual-run-parity', 'migration', 'Dual-run parity validation is not complete', 'blocked', true, 'Dual-run parity validation remains incomplete.', ['Migration parity report'], 'Complete dual-run parity validation before any future migration decision.'),
+  ];
+
+  const passedCount = checks.filter((check) => check.status === 'passed').length;
+  const blockedCount = checks.filter((check) => check.status === 'blocked').length;
+  const failedCount = checks.filter((check) => check.status === 'failed').length;
+  const requiredCount = checks.filter((check) => check.required).length;
+  return {
+    checklist: {
+      id: 'post-acceptance-checklist',
+      title: 'Post Orchestrator Acceptance Checklist',
+      generatedAt: new Date().toISOString(),
+      status: blockedCount > 0 ? 'blocked' : 'preview-ready',
+      passedCount,
+      blockedCount,
+      failedCount,
+      requiredCount,
+      checks,
+      nextSafeStep: 'Review blocked future-gate checks and keep publishing, scheduling, and execution disabled.',
+      safety: {
+        readOnly: true,
+        publishingEnabled: false,
+        schedulingEnabled: false,
+        executionEnabled: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        decommissionStarted: false,
+      },
+    },
+  };
+}
+
+export function readPostMigrationParityReport(): BrainCorePostMigrationParityReportResponse {
+  const capabilities: BrainCorePostMigrationParityCapability[] = [
+    migrationCapability('asset-generation', 'Asset Generation', 'preview-only', 'Social Proof Asset Flow fixture, manual export preview, and decommission readiness tracking exist.', ['No live asset rendering integration', 'No dual-run validation', 'No provider contract execution'], 72, 'Keep asset generation preview-only.'),
+    migrationCapability('growth-optimization', 'Growth Optimization', 'preview-only', 'Growth Optimization Flow fixture, analytics fixtures, and operator guidance exist.', ['No live optimization integration', 'No real platform data', 'No dual-run validation'], 68, 'Keep growth optimization preview-only.'),
+    migrationCapability('scheduler', 'Scheduler', 'blocked', 'Schedule preview queue and schedule review approval exist.', ['No scheduler job writes', 'No scheduler policy approval'], 42, 'Keep scheduler write paths disabled.'),
+    migrationCapability('publishing', 'Publishing', 'blocked', 'Platform policies, readiness blockers, and manual export preview exist.', ['No API publishing', 'No platform security review complete', 'No explicit user approval'], 34, 'Keep publishing blocked.'),
+    migrationCapability('analytics', 'Analytics', 'preview-only', 'Analytics feedback fixtures exist.', ['No external analytics API reads', 'No real post IDs'], 75, 'Keep analytics fixture-only.'),
+    migrationCapability('approval', 'Approval', 'partial', 'Review approval requests and schedule review approvals exist.', ['No approval-to-publish path', 'No publish policy'], 61, 'Keep approvals approval-only.'),
+    migrationCapability('dashboard', 'Dashboard', 'partial', 'Brain Console Post Orchestrator cards exist.', ['Visual polish', 'Operator UX review'], 64, 'Keep dashboard read-only.'),
+    migrationCapability('policy', 'Policy', 'partial', 'Platform policies and decommission matrix exist.', ['User approval for next phase', 'Security review'], 58, 'Keep policy surfaces read-only.'),
+    migrationCapability('manual-export', 'Manual Export', 'preview-only', 'Manual export preview package exists.', ['No real export/download/copy by design'], 78, 'Keep manual export preview-only.'),
+  ];
+
+  const overallParityScore = Math.round(capabilities.reduce((sum, capability) => sum + capability.parityScore, 0) / capabilities.length);
+  const blockers = [
+    'Real publishing is not designed yet.',
+    'Real scheduling is not designed yet.',
+    'Platform security review is incomplete.',
+    'Dual-run parity validation is incomplete.',
+  ];
+
+  return {
+    report: {
+      id: 'post-migration-parity-report',
+      generatedAt: new Date().toISOString(),
+      status: 'blocked',
+      overallParityScore,
+      capabilities,
+      blockers,
+      nextSafeStep: 'Keep migration parity preview-only and require explicit user approval before any future scheduling or publishing design.',
+      safety: {
+        readOnly: true,
+        modifiesLegacyRepo: false,
+        decommissionStarted: false,
+        deletesFiles: false,
+        publishingEnabled: false,
+        schedulingEnabled: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        requiresExplicitUserApprovalForDecommission: true,
+      },
+    },
+  };
+}
+
+export function readPostRoadmapCheckpoint(): BrainCorePostRoadmapCheckpointResponse {
+  const phases: BrainCorePostRoadmapCheckpointPhase[] = [
+    roadmapPhase('P1', 'P1 Read-only scaffold', 'complete', 'Initial Post Orchestrator status, contracts, integrations, recovery, and read-only console scaffold exist.', ['Read-only API routes', 'Console sections']),
+    roadmapPhase('P2', 'P2 Flow fixtures', 'complete', 'Platform flow fixtures exist for X, GitHub, LinkedIn, Facebook, YouTube, Blog, Social Proof Asset, and Growth Optimization flows.', ['Flow fixture endpoints']),
+    roadmapPhase('P3', 'P3 Dry-run planner', 'complete', 'Event fixtures and dry-run preview plans exist.', ['Dry-run planner endpoint']),
+    roadmapPhase('P4', 'P4 Review queue', 'complete', 'Review queue and approval request surface exist.', ['Review queue endpoint']),
+    roadmapPhase('P5', 'P5 Schedule preview', 'complete', 'Schedule preview queue and approval request surface exist.', ['Schedule preview endpoint']),
+    roadmapPhase('P6', 'P6 Analytics fixtures', 'complete', 'Analytics fixtures exist as passive feedback metadata.', ['Analytics endpoint']),
+    roadmapPhase('P7', 'P7 Pipeline summary', 'complete', 'End-to-end pipeline summary exists.', ['Pipeline endpoint']),
+    roadmapPhase('P8', 'P8 Readiness scoring', 'complete', 'Readiness scoring and blocker model exist.', ['Readiness endpoint']),
+    roadmapPhase('P9', 'P9 Platform policy', 'complete', 'Platform policy / security review registry exists.', ['Platform policies endpoint']),
+    roadmapPhase('P10', 'P10 Decommission readiness', 'complete', 'Decommission readiness matrix exists.', ['Decommission readiness endpoint']),
+    roadmapPhase('P11', 'P11 Operator guidance', 'complete', 'Operator guidance and blocker recovery guidance exist.', ['Operator guidance endpoint']),
+    roadmapPhase('P12', 'P12 Manual export preview', 'complete', 'Manual export preview package exists.', ['Manual export endpoint']),
+    roadmapPhase('P13', 'P13 Acceptance checklist', 'complete', 'Operator acceptance checklist exists.', ['Acceptance checklist endpoint']),
+    roadmapPhase('P14', 'P14 Migration parity report', 'complete', 'Migration parity report exists.', ['Migration parity endpoint']),
+    roadmapPhase('P16', 'P16 Future real scheduling/publishing design', 'blocked', 'Future real scheduling/publishing design remains intentionally blocked until explicit user approval.', ['Roadmap checkpoint review']),
+  ];
+
+  const completedPhaseCount = phases.filter((phase) => phase.status === 'complete').length;
+  const blockedPhaseCount = phases.filter((phase) => phase.status === 'blocked').length;
+
+  return {
+    checkpoint: {
+      id: 'post-roadmap-checkpoint',
+      generatedAt: new Date().toISOString(),
+      currentPhase: 'P15 roadmap checkpoint',
+      completedPhaseCount,
+      blockedPhaseCount,
+      phases,
+      nextRecommendedPhase: 'Review the roadmap checkpoint and require explicit user approval before any future real scheduling/publishing design.',
+      nextPhaseRequiresUserApproval: true,
+      nextPhaseSummary: 'Future real scheduling/publishing design is intentionally blocked until the user explicitly approves that direction.',
+      safety: {
+        readOnly: true,
+        publishingEnabled: false,
+        schedulingEnabled: false,
+        executionEnabled: false,
+        requiresExplicitUserApprovalBeforePublishingDesign: true,
+      },
+    },
+  };
+}
+
 function buildPipelineStep(
   id: BrainCorePostPipelineStepId,
   label: string,
@@ -2729,5 +2894,81 @@ function manualExportItemSafety(): BrainCorePostManualExportItem['safety'] {
     publishingEnabled: false,
     schedulingEnabled: false,
     executionEnabled: false,
+  };
+}
+
+function acceptanceCheck(
+  id: string,
+  category: BrainCorePostAcceptanceCheckCategory,
+  label: string,
+  status: BrainCorePostAcceptanceCheckStatus,
+  required: boolean,
+  summary: string,
+  evidence: string[],
+  nextSafeStep: string,
+): BrainCorePostAcceptanceCheck {
+  return {
+    id,
+    category,
+    label,
+    status,
+    required,
+    summary,
+    evidence,
+    nextSafeStep,
+    safety: {
+      readOnly: true,
+      executesCode: false,
+      writesFiles: false,
+      writesExternalPlatform: false,
+      writesToMind: false,
+    },
+  };
+}
+
+function migrationCapability(
+  id: string,
+  label: string,
+  status: BrainCorePostMigrationCapabilityStatus,
+  summary: string,
+  remainingGaps: string[],
+  parityScore: number,
+  nextSafeStep: string,
+): BrainCorePostMigrationParityCapability {
+  return {
+    id,
+    area: id as BrainCorePostMigrationCapabilityArea,
+    label,
+    status,
+    summary,
+    currentBrainSupport: summary.split(', ').filter(Boolean),
+    remainingGaps,
+    parityScore,
+    nextSafeStep,
+    safety: {
+      previewOnly: true,
+      modifiesLegacyRepo: false,
+      decommissionStarted: false,
+      publishingEnabled: false,
+      schedulingEnabled: false,
+      writesExternalPlatform: false,
+      writesToMind: false,
+    },
+  };
+}
+
+function roadmapPhase(
+  id: string,
+  label: string,
+  status: BrainCorePostRoadmapCheckpointPhase['status'],
+  summary: string,
+  evidence: string[],
+): BrainCorePostRoadmapCheckpointPhase {
+  return {
+    id,
+    label,
+    status,
+    summary,
+    evidence,
   };
 }

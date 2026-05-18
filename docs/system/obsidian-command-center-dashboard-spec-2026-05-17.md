@@ -928,6 +928,14 @@ Additional criteria:
 28. ✅ Says the Bible linked to stb-daily-pipeline
 29. ✅ Platforms registry indexed
 
+### Phase P13-P15 Post Orchestrator Acceptance
+
+30. ✅ Post Orchestrator acceptance checklist card renders read-only checks only
+31. ✅ Migration parity report card renders preview-only parity capability summaries
+32. ✅ Roadmap checkpoint card renders completed phases and future approval gate
+33. ✅ No publishing, scheduling, execution, export, download, clipboard, or decommission actions are exposed
+34. ✅ Future publishing/scheduling design remains gated by explicit user approval
+
 ---
 
 ## Glossary
