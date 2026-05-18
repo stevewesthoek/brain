@@ -92,3 +92,11 @@ This document defines the future controlled execution model as a design-only bou
 - No file writes.
 - No publishing.
 - No STB decommission.
+
+## Phase 5B approval payload schema
+
+- Added as a read-only schema endpoint.
+- No approval is created.
+- No action registration is enabled.
+- No execution is enabled.
+- Next safe phase: Phase 5C preflight validator schema/design.

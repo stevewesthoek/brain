@@ -2988,3 +2988,16 @@ Phase 5 cannot begin until the operator explicitly approves:
 - risk register acceptance
 
 No code execution should be enabled before that decision.
+
+
+## 2026-05-18 — Phase 5B: Approval payload schema
+
+Added `GET /video-orchestrator/controlled-execution-approval-payload-schema` as a read-only schema endpoint.
+
+Safety status:
+- Design-only.
+- No approval created.
+- No action registration.
+- No execution.
+
+Next safe task: Phase 5C preflight validator schema/design.

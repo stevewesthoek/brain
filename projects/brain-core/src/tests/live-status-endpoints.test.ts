@@ -2809,3 +2809,85 @@ test('POST /video-orchestrator/controlled-execution-risk-register is not availab
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-approval-payload-schema returns blocked schema-only payload schema', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-approval-payload-schema' });
+  const body = JSON.parse(response.body) as {
+    schema: {
+      id: string;
+      status: string;
+      canCreateApproval: boolean;
+      canRegisterAction: boolean;
+      canExecute: boolean;
+      sections: Array<{
+        status: string;
+        fields: Array<{ status: string; safety: Record<string, boolean> }>;
+        safety: Record<string, boolean>;
+      }>;
+      summary: {
+        totalSections: number;
+        totalFields: number;
+        requiredFieldCount: number;
+        blockedFieldCount: number;
+        missingFieldCount: number;
+      };
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.schema.id, 'video-orchestrator-controlled-execution-approval-payload-schema');
+  assert.ok(['schema-only', 'blocked', 'ready-for-review'].includes(body.schema.status));
+  assert.equal(body.schema.canCreateApproval, false);
+  assert.equal(body.schema.canRegisterAction, false);
+  assert.equal(body.schema.canExecute, false);
+  assert.ok(body.schema.sections.length > 0);
+  assert.ok(body.schema.summary.totalFields > 0);
+  assert.ok(body.schema.summary.requiredFieldCount > 0);
+  assert.ok(body.schema.summary.blockedFieldCount > 0 || body.schema.summary.missingFieldCount > 0);
+  assert.ok(body.schema.blockers.length > 0);
+  assert.ok(body.schema.nextSafeStep.length > 0);
+  assert.equal(body.schema.safety.readOnly, true);
+  assert.equal(body.schema.safety.createsApproval, false);
+  assert.equal(body.schema.safety.registersAction, false);
+  assert.equal(body.schema.safety.executesStb, false);
+  assert.equal(body.schema.safety.executesVideo, false);
+  assert.equal(body.schema.safety.writesFiles, false);
+  assert.equal(body.schema.safety.publishesContent, false);
+  assert.equal(body.schema.safety.decommissionsStb, false);
+  assert.equal(body.schema.safety.writesToMind, false);
+
+  body.schema.sections.forEach(section => {
+    assert.equal(section.safety.readOnly, true);
+    assert.equal(section.safety.createsApproval, false);
+    assert.equal(section.safety.registersAction, false);
+    assert.equal(section.safety.executesStb, false);
+    assert.equal(section.safety.executesVideo, false);
+    assert.equal(section.safety.writesFiles, false);
+    assert.equal(section.safety.publishesContent, false);
+    assert.equal(section.safety.decommissionsStb, false);
+    assert.equal(section.safety.writesToMind, false);
+
+    section.fields.forEach(field => {
+      assert.equal(field.safety.readOnly, true);
+      assert.equal(field.safety.createsApproval, false);
+      assert.equal(field.safety.registersAction, false);
+      assert.equal(field.safety.executesStb, false);
+      assert.equal(field.safety.executesVideo, false);
+      assert.equal(field.safety.writesFiles, false);
+      assert.equal(field.safety.publishesContent, false);
+      assert.equal(field.safety.decommissionsStb, false);
+      assert.equal(field.safety.writesToMind, false);
+    });
+  });
+});
+
+test('POST /video-orchestrator/controlled-execution-approval-payload-schema is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-approval-payload-schema' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

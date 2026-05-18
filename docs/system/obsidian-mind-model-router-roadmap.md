@@ -235,6 +235,14 @@ Operator-gated prerequisites for the next implementation steps:
 - comparison acceptance criteria
 - risk register acceptance
 
+## 2026-05-18 — Phase 5B: Approval payload schema
+
+Status: complete, schema-only.
+
+Added a read-only approval payload schema endpoint for controlled execution design. The schema describes the future approval payload fields, evidence references, safety invariants, expiry/audit, and explicit blockers without creating approvals or enabling execution.
+
+Next safe phase: Phase 5C preflight validator schema/design.
+
 - Proofly and Xgrow are legacy/internal migration source names.
 - Brain Console should not present them as primary products/providers.
 - User-facing Post Orchestrator language should use flows such as Social Proof Asset Flow, Growth Optimization Flow, X Post Flow, GitHub Post Flow, LinkedIn Post Flow, and Platform Publishing Flow.

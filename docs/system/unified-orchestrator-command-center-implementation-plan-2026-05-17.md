@@ -2078,3 +2078,15 @@ Hard boundary:
 - no action registration
 - no execution plan
 - no execution, publishing, rendering, or decommissioning
+
+## 2026-05-18 — Phase 5B approval payload schema
+
+Added the read-only approval payload schema endpoint as design-only documentation for the future approval payload structure.
+
+Hard boundary remains unchanged:
+- no approval created
+- no action registration
+- no execution
+
+Next safe phase:
+- Phase 5C preflight validator schema/design
