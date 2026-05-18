@@ -1133,32 +1133,37 @@ export interface BrainCorePostOperatorGuidanceResponse {
   summary: { itemCount: number; blockedCount: number; warningCount: number; nextSafeStep: string };
 }
 
+export interface BrainCorePostQaEndpointCoverageItem {
+  id: string;
+  endpoint: string;
+  purpose: string;
+  expectedInDashboard: boolean;
+  status: 'covered' | 'manual-check' | 'planned';
+  safety: {
+    readOnly: true;
+    hasPost: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
 export interface BrainCorePostQaChecklistItem {
   id: string;
   label: string;
-  status: 'passed' | 'failed' | 'blocked' | 'not-applicable';
-  required: boolean;
+  status: 'manual-check';
   summary: string;
-  evidence: string[];
 }
 
 export interface BrainCorePostQaStatus {
   id: 'post-orchestrator-qa-status';
   generatedAt: string;
-  endpointCoverage: {
-    total: number;
-    implemented: number;
-    documented: number;
-    tested: number;
-    percent: number;
-  };
-  checklist: {
-    total: number;
-    passed: number;
-    failed: number;
-    blocked: number;
-    items: BrainCorePostQaChecklistItem[];
-  };
+  status: 'ready-for-manual-qa' | 'needs-attention';
+  endpointCount: number;
+  coveredCount: number;
+  manualCheckCount: number;
+  endpoints: BrainCorePostQaEndpointCoverageItem[];
+  checklist: BrainCorePostQaChecklistItem[];
+  nextSafeStep: string;
   safety: {
     readOnly: true;
     writesExternalPlatform: false;

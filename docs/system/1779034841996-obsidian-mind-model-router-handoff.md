@@ -2359,3 +2359,62 @@ Validation:
 Next safe task:
 
 - Brain Console visual polish/navigation cleanup, or explicit user roadmap decision before designing real scheduling/publishing.
+
+## Continuation update — Agentic OS dashboard scaffold completion
+
+Implemented:
+
+- **QA endpoint verified**: GET /post-orchestrator/qa-status returns 21 endpoint items with 10-item checklist, all safety flags set to read-only/no-publishing/no-scheduling/no-execution.
+- **QA UI wiring**: Added postOrchestratorQaStatus property to BrainConsoleViewState, wired API fetch, added type imports.
+- **QA Status card**: Brain Console now renders "Brain Console QA Status" card showing endpoint coverage, manual checks, passed checks, and next safe step, with safety labels.
+- **Visual QA Checklist card**: Brain Console now renders "Visual QA Checklist" card with 10 items from API or fallback static checklist.
+- **Header/command bar CSS**: Improved layout with explicit bar-left/bar-center/bar-right sections, fixed spacing.
+- **Status strip CSS**: Fixed cramped text by adding consistent spacing, height rules, and readable pill labels.
+- **Tab rail CSS**: Improved tab styling with bottom-border active indicator, hover states, focus-visible support.
+- **Post group CSS**: Maintained compact card density with consistent 14px gaps and auto-fit responsive grid.
+- **QA-specific CSS**: Added __qa-status and __qa-checklist classes for future visual refinement.
+- **Manual visual QA runbook**: Added 16-step comprehensive checklist including setup, header/status strip/tab verification, Posts group verification, forbidden controls audit, visual quality checks, and offline states.
+- **Updated design brief docs**: Brain Console Agentic OS dashboard now fully implemented through Phase 7 (QA instrumentation and visual polish scaffold).
+
+Validation:
+
+- Brain Core CI passed.
+- Brain Console typecheck/build/package passed.
+- Safety scan: zero dangerous UI controls, all safety labels present, no Proofly/Xgrow labels.
+- Secret scan: no credentials found in changed files.
+- Plugin reinstalled to mind vault.
+
+Safety status:
+
+- Read-only QA status endpoint.
+- All safety invariants verified: readOnly=true, publishingEnabled=false, schedulingEnabled=false, executionEnabled=false, writesExternalPlatform=false, writesToMind=false.
+- No forbidden UI controls visible (no Publish/Schedule/Execute/Decommission/Export/Download/Clipboard buttons).
+- Publishing disabled card visible and prominent.
+- All cards labeled with safety constraints.
+- No execution paths added.
+- No scheduler jobs created.
+- No file writes to disk.
+- No Mind writes enabled.
+- No Playwright posting exposed.
+- No external analytics API calls.
+
+Known limitations (by design, ready for manual verification):
+
+- Header timestamp shows relative time (e.g., "0s ago") but not absolute time in modal (future: detail modal).
+- Status strip pills wrap on very narrow panes (by design, acceptable for Obsidian side pane).
+- QA checklist is read-only static checklist (dynamic checklist items from API if available).
+- Visual QA steps are manual (no automated pixel-perfect regression testing).
+
+Remaining items (not in scope, future phases):
+
+- Real publishing design (approval required before implementing).
+- Real scheduling design (approval required before implementing).
+- Playwright browser automation exposure (not enabled).
+- Mind write/apply policies (blocked until separate approval).
+- Decommission workflows (not started).
+- Legacy repo archival (not started).
+- Dark mode / light mode strategy (dark only in this phase).
+
+Next safe task:
+
+- Manual visual QA in Obsidian using runbook steps, then either one focused visual polish pass or explicit roadmap decision before any real scheduling/publishing design work.

@@ -44,6 +44,7 @@ import {
   readBrainCorePostAcceptanceChecklist,
   readBrainCorePostMigrationParityReport,
   readBrainCorePostRoadmapCheckpoint,
+  readBrainCorePostQaStatus,
   readBrainCoreStbStatus,
   readBrainCoreVideoOrchestratorStatus,
   readBrainCoreStbVideoMigrationStatus,
@@ -102,6 +103,8 @@ import {
   type BrainCorePostMigrationParityReportResponse,
   type BrainCorePostRoadmapCheckpoint,
   type BrainCorePostRoadmapCheckpointResponse,
+  type BrainCorePostQaStatus,
+  type BrainCorePostQaStatusResponse,
   type BrainCorePostFlowFixture,
   type BrainCorePostFlowFixturesResponse,
   type BrainCorePostDraftFixturesResponse,
@@ -171,6 +174,7 @@ export interface BrainConsoleViewState {
   postOrchestratorAcceptanceChecklist?: BrainCorePostAcceptanceChecklistResponse;
   postOrchestratorMigrationParity?: BrainCorePostMigrationParityReportResponse;
   postOrchestratorRoadmapCheckpoint?: BrainCorePostRoadmapCheckpointResponse;
+  postOrchestratorQaStatus?: BrainCorePostQaStatusResponse;
   stbStatus?: BrainCoreStbPipelineStatus;
   videoOrchestratorStatus?: BrainCoreVideoOrchestratorStatus;
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
@@ -193,7 +197,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -235,6 +239,7 @@ export async function loadBrainConsoleViewState(
     readBrainCorePostOrchestratorContracts(baseUrl),
     readBrainCorePostOrchestratorIntegrations(baseUrl),
     readBrainCorePostOrchestratorRecovery(baseUrl),
+    readBrainCorePostQaStatus(baseUrl),
     readBrainCoreStbStatus(baseUrl),
     readBrainCoreVideoOrchestratorStatus(baseUrl),
     readBrainCoreStbVideoMigrationStatus(baseUrl),
@@ -260,7 +265,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -324,6 +329,7 @@ export async function loadBrainConsoleViewState(
     postOrchestratorAcceptanceChecklist: postOrchestratorAcceptanceChecklist.value,
     postOrchestratorMigrationParity: postOrchestratorMigrationParity.value,
     postOrchestratorRoadmapCheckpoint: postOrchestratorRoadmapCheckpoint.value,
+    postOrchestratorQaStatus: postOrchestratorQaStatus.value,
     postOrchestratorContracts: postOrchestratorContracts.value,
     postOrchestratorIntegrations: postOrchestratorIntegrations.value,
     postOrchestratorRecovery: postOrchestratorRecovery.value,
@@ -531,6 +537,8 @@ function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsole
   renderPostGroup(grid, 'Status', [
     { title: 'Overview', render: renderPostOrchestratorOverviewCard(state) },
     { title: 'Post Orchestrator Status', render: renderPostOrchestratorStatusCard(state) },
+    { title: 'Brain Console QA Status', render: renderBrainConsoleQaStatusCard(state) },
+    { title: 'Visual QA Checklist', render: renderVisualQaChecklistCard(state) },
   ]);
   renderPostGroup(grid, 'Flow Preview', [
     { title: 'Platform / Post Flows', render: renderPlatformPostFlowsCard(state) },
@@ -2249,6 +2257,69 @@ function renderSafetyStateCard(state: BrainConsoleViewState): HTMLElement {
     row.createEl('dt', { text: label });
     row.createEl('dd', { text: value });
   });
+
+  return el;
+}
+
+function renderBrainConsoleQaStatusCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const qa = state.postOrchestratorQaStatus?.qaStatus;
+  if (!qa) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'QA status not available.' });
+    return el;
+  }
+
+  const coveragePercent = qa.endpointCount > 0 ? Math.round((qa.coveredCount / qa.endpointCount) * 100) : 0;
+  const rows = [
+    { label: 'Status', value: qa.status },
+    { label: 'Endpoints', value: `${qa.coveredCount}/${qa.endpointCount}` },
+    { label: 'Coverage', value: `${coveragePercent}%` },
+    { label: 'Manual checks', value: String(qa.manualCheckCount) },
+    { label: 'Next safe step', value: qa.nextSafeStep || 'ready for manual QA' },
+  ];
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  el.appendChild(renderSafetyLabel('Preview only · Publishing disabled · Scheduling disabled · Execution disabled · No external writes · No Mind writes'));
+
+  return el;
+}
+
+function renderVisualQaChecklistCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const qa = state.postOrchestratorQaStatus?.qaStatus;
+
+  const fallbackChecklist = [
+    'Overview card visible',
+    'Flow Preview group visible',
+    'Review / Schedule group visible',
+    'Safety / Policy group visible',
+    'Migration / Checkpoint group visible',
+    'Publishing disabled label visible',
+    'Scheduling disabled label visible',
+    'No publish/schedule/run buttons visible',
+    'No legacy provider labels visible',
+    'Next safe step visible',
+  ];
+
+  if (qa?.checklist && qa.checklist.length > 0) {
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+    qa.checklist.slice(0, 10).forEach((item) => {
+      const statusIcon = item.status === 'manual-check' ? '◐' : '?';
+      list.createEl('li', { text: `${statusIcon} ${item.label}` });
+      if (item.summary) {
+        list.createEl('li', { cls: 'brain-console__list-sub', text: item.summary });
+      }
+    });
+  } else {
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+    fallbackChecklist.forEach((item) => {
+      list.createEl('li', { text: `◐ ${item}` });
+    });
+  }
 
   return el;
 }
