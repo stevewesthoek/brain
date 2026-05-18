@@ -998,13 +998,37 @@ function renderLocalAppsCard(state: BrainConsoleViewState): HTMLElement {
     return container;
   }
 
-  const list = container.createEl('ul', { cls: 'brain-console__list' });
-  state.localApps.slice(0, 5).forEach(app => {
-    list.createEl('li', { text: `${app.name}` });
+  const list = container.createEl('div', { cls: 'brain-console__app-list' });
+  state.localApps.slice(0, 8).forEach(app => {
+    const item = list.createDiv({ cls: 'brain-console__app-item' });
+
+    // App name
+    item.createDiv({ cls: 'brain-console__app-name', text: app.name });
+
+    // Status badge and actions row
+    const row = item.createDiv({ cls: 'brain-console__app-controls' });
+
+    // Status badge
+    const badge = row.createDiv({ cls: 'brain-console__app-status-badge' });
+    badge.textContent = app.status;
+    if (app.status === 'running') badge.style.color = '#22c55e';
+    else if (app.status === 'stopped') badge.style.color = '#ef4444';
+    else if (app.status === 'disabled') badge.style.color = '#64748b';
+    else badge.style.color = '#94a3b8';
+
+    // Action buttons (disabled)
+    const actions = row.createDiv({ cls: 'brain-console__app-actions' });
+    const startBtn = actions.createEl('button', { text: 'Start', cls: 'brain-console__app-btn-disabled' });
+    startBtn.disabled = true;
+    startBtn.title = 'Approval-gated, planned Phase 5';
+
+    const stopBtn = actions.createEl('button', { text: 'Stop', cls: 'brain-console__app-btn-disabled' });
+    stopBtn.disabled = true;
+    stopBtn.title = 'Approval-gated, planned Phase 5';
   });
 
-  if (state.localApps.length > 5) {
-    list.createEl('li', { cls: 'brain-console__list-note', text: `... and ${state.localApps.length - 5} more` });
+  if (state.localApps.length > 8) {
+    list.createEl('div', { cls: 'brain-console__list-note', text: `... and ${state.localApps.length - 8} more` });
   }
 
   return container;
