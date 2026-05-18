@@ -340,6 +340,13 @@ Operational and canonical-future pipelines with migration tracking.
 #### Tab 5: **Posts** (Phase Post-1 — Read-Only Status)
 Social content and post orchestration pipeline (planned).
 
+**Naming boundary:**
+- Proofly and Xgrow are legacy/internal migration source names.
+- Brain Console should not present them as primary products/providers.
+- User-facing Post Orchestrator language should use flows such as Social Proof Asset Flow, Growth Optimization Flow, X Post Flow, GitHub Post Flow, LinkedIn Post Flow, and Platform Publishing Flow.
+- Internal docs may retain Proofly/Xgrow references for migration traceability.
+- Decommission tracking still references Proofly/Xgrow until migration is complete.
+
 **Cards:**
 - Post Orchestrator Status (new section)
   - Brain Post Orchestrator: planned / partial / operational
@@ -361,14 +368,14 @@ Social content and post orchestration pipeline (planned).
   - Scheduled (7 days): count
   - Recent failures: count
 
-- Proofly Asset Provider (new section)
+- Social Proof Asset Flow (new section)
   - Integration status: planned / integrating / ready
   - Recent requests: count (this week)
   - Avg turnaround: duration
   - Failures: count
   - Last sync: timestamp
 
-- Xgrow Optimization Provider (new section)
+- Growth Optimization Flow (new section)
   - Integration status: planned / integrating / ready
   - Requests this week: count
   - Avg hook score: number

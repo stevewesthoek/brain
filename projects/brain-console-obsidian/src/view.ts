@@ -432,11 +432,12 @@ function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsole
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
 
   renderCard(grid, 'Post Orchestrator Status', renderPostOrchestratorStatusCard(state));
-  renderCard(grid, 'Proofly Provider', renderProoflyProviderCard(state));
-  renderCard(grid, 'Xgrow Provider', renderXgrowProviderCard(state));
+  renderCard(grid, 'Platform / Post Flows', renderPlatformPostFlowsCard(state));
+  renderCard(grid, 'Social Proof Asset Flow', renderSocialProofAssetFlowCard(state));
+  renderCard(grid, 'Growth Optimization Flow', renderGrowthOptimizationFlowCard(state));
   renderCard(grid, 'Contracts', renderPostContractsCard(state));
   renderCard(grid, 'Recovery / Blockers', renderPostRecoveryCard(state));
-  renderCard(grid, 'Publishing Disabled State', renderPublishingDisabledCard());
+  renderCard(grid, 'Publishing Disabled', renderPublishingDisabledCard());
 }
 
 function renderAgentsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
@@ -1464,14 +1465,36 @@ function renderPostOrchestratorStatusCard(state: BrainConsoleViewState): HTMLEle
   return el;
 }
 
-function renderProoflyProviderCard(state: BrainConsoleViewState): HTMLElement {
+function renderPlatformPostFlowsCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const status = state.postOrchestratorStatus;
+  const modules = status?.modules ?? [];
+  const flowIds = ['x-post-flow', 'github-post-flow', 'linkedin-post-flow', 'facebook-post-flow', 'youtube-post-flow', 'blog-post-flow', 'product-milestone-post-flow', 'release-announcement-post-flow'];
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+
+  flowIds.forEach((id) => {
+    const module = modules.find((item) => item.id === id);
+    list.createEl('li', { text: `${module?.name ?? id}: ${module?.status ?? 'planned'}` });
+  });
+
+  if (status?.socialProofFlowLabel) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: `Asset flow label: ${status.socialProofFlowLabel}` });
+  }
+  if (status?.growthOptimizationFlowLabel) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: `Optimization flow label: ${status.growthOptimizationFlowLabel}` });
+  }
+
+  return el;
+}
+
+function renderSocialProofAssetFlowCard(state: BrainConsoleViewState): HTMLElement {
   const el = document.createElement('div');
   const status = state.postOrchestratorStatus;
   const integrations = state.postOrchestratorIntegrations?.integrations ?? [];
   const proofly = integrations.find((integration) => integration.id === 'proofly-social-proof-assets');
 
   if (!proofly) {
-    el.createEl('div', { cls: 'brain-console__list-note', text: 'No Proofly integration available.' });
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No social proof asset flow available.' });
     return el;
   }
 
@@ -1493,20 +1516,20 @@ function renderProoflyProviderCard(state: BrainConsoleViewState): HTMLElement {
     proofly.blockers.forEach((blocker) => list.createEl('li', { text: blocker }));
   }
 
-  if (status?.prooflyRole) {
-    el.createEl('div', { cls: 'brain-console__list-note', text: `Brain view: ${status.prooflyRole}` });
+  if (proofly.legacySource) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: `Internal migration source: ${proofly.legacySource}` });
   }
 
   return el;
 }
 
-function renderXgrowProviderCard(state: BrainConsoleViewState): HTMLElement {
+function renderGrowthOptimizationFlowCard(state: BrainConsoleViewState): HTMLElement {
   const el = document.createElement('div');
   const integrations = state.postOrchestratorIntegrations?.integrations ?? [];
   const xgrow = integrations.find((integration) => integration.id === 'xgrow-growth-optimization');
 
   if (!xgrow) {
-    el.createEl('div', { cls: 'brain-console__list-note', text: 'No Xgrow integration available.' });
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No growth optimization flow available.' });
     return el;
   }
 
@@ -1532,6 +1555,10 @@ function renderXgrowProviderCard(state: BrainConsoleViewState): HTMLElement {
   if (xgrow.blockers.length > 0) {
     const list = el.createEl('ul', { cls: 'brain-console__list' });
     xgrow.blockers.forEach((blocker) => list.createEl('li', { text: blocker }));
+  }
+
+  if (xgrow.legacySource) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: `Internal migration source: ${xgrow.legacySource}` });
   }
 
   return el;

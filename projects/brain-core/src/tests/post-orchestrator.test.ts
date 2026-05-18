@@ -42,7 +42,7 @@ test('GET /post-orchestrator/status returns read-only scaffold status', async ()
     publishingEnabled: boolean;
     schedulingEnabled: boolean;
     executionEnabled: boolean;
-    modules: Array<{ id: string }>;
+    modules: Array<{ id: string; name: string }>;
   };
 
   assert.equal(response.statusCode, 200);
@@ -50,8 +50,10 @@ test('GET /post-orchestrator/status returns read-only scaffold status', async ()
   assert.equal(body.publishingEnabled, false);
   assert.equal(body.schedulingEnabled, false);
   assert.equal(body.executionEnabled, false);
-  assert.ok(body.modules.some((module) => module.id === 'proofly-asset-provider'));
-  assert.ok(body.modules.some((module) => module.id === 'xgrow-optimization-provider'));
+  assert.ok(body.modules.some((module) => module.id === 'social-proof-asset-flow'));
+  assert.ok(body.modules.some((module) => module.id === 'growth-optimization-flow'));
+  assert.ok(body.modules.some((module) => module.name === 'Social Proof Asset Flow'));
+  assert.ok(body.modules.some((module) => module.name === 'Growth Optimization Flow'));
 });
 
 test('GET /post-orchestrator/contracts returns expected contract ids', async () => {
@@ -80,6 +82,8 @@ test('GET /post-orchestrator/integrations returns read-only provider integration
     integrations: Array<{
       id: string;
       provider: string;
+      name: string;
+      legacySource?: string;
       executionEnabled: boolean;
       publishingEnabled: boolean;
       safety: { usesCookies: boolean; usesPlaywright: boolean; writesToMind: boolean };
@@ -89,12 +93,15 @@ test('GET /post-orchestrator/integrations returns read-only provider integration
   assert.equal(response.statusCode, 200);
   assert.ok(body.integrations.some((integration) => integration.id === 'proofly-social-proof-assets'));
   assert.ok(body.integrations.some((integration) => integration.id === 'xgrow-growth-optimization'));
+  assert.ok(body.integrations.some((integration) => integration.name === 'Social Proof Asset Flow'));
+  assert.ok(body.integrations.some((integration) => integration.name === 'Growth Optimization Flow'));
   assert.ok(body.integrations.every((integration) => integration.executionEnabled === false));
   assert.ok(body.integrations.every((integration) => integration.publishingEnabled === false));
   const xgrow = body.integrations.find((integration) => integration.id === 'xgrow-growth-optimization');
   assert.equal(xgrow?.safety.usesCookies, true);
   assert.equal(xgrow?.safety.usesPlaywright, true);
   assert.equal(xgrow?.safety.writesToMind, false);
+  assert.equal(xgrow?.legacySource, 'xgrow');
 });
 
 test('GET /post-orchestrator/recovery returns publishing-disabled and security-review blockers', async () => {
@@ -103,7 +110,9 @@ test('GET /post-orchestrator/recovery returns publishing-disabled and security-r
 
   assert.equal(response.statusCode, 200);
   assert.ok(body.items.some((item) => item.id === 'publishing-disabled'));
-  assert.ok(body.items.some((item) => item.id === 'xgrow-playwright-security-review-required'));
+  assert.ok(body.items.some((item) => item.id === 'growth-optimization-flow-not-integrated'));
+  assert.ok(body.items.some((item) => item.id === 'social-proof-asset-flow-not-integrated'));
+  assert.ok(body.items.some((item) => item.id === 'growth-optimization-playwright-security-review-required'));
   assert.equal(body.items.every((item) => item.executionEnabled === false), true);
 });
 
@@ -113,4 +122,15 @@ test('GET /post-orchestrator/status never implies writesToMind true', async () =
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.modules.every((module) => module.executionEnabled === false), true);
+});
+
+test('GET /post-orchestrator/status does not expose legacy provider names as primary labels', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/status' });
+  const body = JSON.parse(response.body) as { modules: Array<{ name: string; internalName?: string }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.modules.some((module) => module.name === 'Proofly Asset Provider'), false);
+  assert.equal(body.modules.some((module) => module.name === 'Xgrow Optimization Provider'), false);
+  assert.equal(body.modules.some((module) => module.internalName === 'Proofly Asset Provider'), true);
+  assert.equal(body.modules.some((module) => module.internalName === 'Xgrow Optimization Provider'), true);
 });

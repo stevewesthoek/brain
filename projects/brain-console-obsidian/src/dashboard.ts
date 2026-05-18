@@ -29,8 +29,8 @@ export interface DashboardSnapshot {
   postOrchestratorBlockedCount: number;
   postOrchestratorContractCount: number;
   postOrchestratorIntegrationCount: number;
-  prooflyIntegrationStatus?: string;
-  xgrowIntegrationStatus?: string;
+  socialProofFlowStatus?: string;
+  growthOptimizationFlowStatus?: string;
   postPublishingEnabled: boolean;
   postSchedulingEnabled: boolean;
   postNextSafeStep: string;
@@ -109,8 +109,8 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postSchedulingEnabled = Boolean(state.postOrchestratorStatus?.schedulingEnabled);
   const postNextSafeStep = state.postOrchestratorStatus?.nextSafeStep ?? 'Review the read-only Post Orchestrator scaffold.';
   const postRecoveryCount = state.recoveryItems?.filter((item) => item.id.startsWith('post-') || item.id.includes('proofly') || item.id.includes('xgrow')).length ?? 0;
-  const prooflyIntegrationStatus = 'contract-defined';
-  const xgrowIntegrationStatus = 'contract-defined';
+  const socialProofFlowStatus = 'contract-defined';
+  const growthOptimizationFlowStatus = 'contract-defined';
 
   // STB pipeline summary
   const stbPipeline = (state.pipelines ?? []).find(p => p.id === 'stb-daily-pipeline');
@@ -245,8 +245,8 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postOrchestratorBlockedCount,
     postOrchestratorContractCount,
     postOrchestratorIntegrationCount,
-    prooflyIntegrationStatus,
-    xgrowIntegrationStatus,
+    socialProofFlowStatus,
+    growthOptimizationFlowStatus,
     postPublishingEnabled,
     postSchedulingEnabled,
     postNextSafeStep,

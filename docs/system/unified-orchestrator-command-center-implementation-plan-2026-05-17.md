@@ -1423,6 +1423,13 @@ After Brain Console section navigation (Phase 5 complete), the next safe impleme
 
 **Objective:** Add Post Orchestrator status endpoints and Brain Console visibility. No publishing, no Proofly/Xgrow code changes, no execution.
 
+**Naming boundary:**
+- Proofly and Xgrow are legacy/internal migration source names.
+- Brain Console should not present them as primary products/providers.
+- User-facing Post Orchestrator language should use flows such as Social Proof Asset Flow, Growth Optimization Flow, X Post Flow, GitHub Post Flow, LinkedIn Post Flow, and Platform Publishing Flow.
+- Internal docs may retain Proofly/Xgrow references for migration traceability.
+- Decommission tracking still references Proofly/Xgrow until migration is complete.
+
 **Brain Core additions:**
 
 1. **New adapter:** `projects/brain-core/src/adapters/post-orchestrator.ts`
@@ -1430,8 +1437,8 @@ After Brain Console section navigation (Phase 5 complete), the next safe impleme
    - readPostOrchestratorStatus() function
    - Static/derived data:
      - orchestrationStatus: 'planned' | 'partial' | 'operational'
-     - proofly: { status, lastSyncAt, contractVersion }
-     - xgrow: { status, lastSyncAt, contractVersion }
+     - socialProofFlow: { status, lastSyncAt, contractVersion }
+     - growthOptimizationFlow: { status, lastSyncAt, contractVersion }
      - publishing: { enabled: false, reason: 'approval-gated and security review pending' }
      - scheduleHealth: 'operational' | 'degraded'
      - analyticsHealth: 'planned'
@@ -1439,7 +1446,7 @@ After Brain Console section navigation (Phase 5 complete), the next safe impleme
 2. **New endpoints:** `projects/brain-core/src/api/routes.ts`
    - GET /post-orchestrator/status
    - GET /post-orchestrator/contracts (service contract versions)
-   - GET /post-orchestrator/integrations (Proofly/Xgrow readiness)
+   - GET /post-orchestrator/integrations (legacy migration readiness)
    - GET /post-orchestrator/recovery (blockers and next steps)
 
 3. **Types:** `projects/brain-core/src/types/api.ts`

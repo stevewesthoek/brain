@@ -215,9 +215,11 @@ export type BrainCorePostContractStatus = 'draft' | 'defined' | 'validated' | 'i
 export interface BrainCorePostOrchestratorModule {
   id: string;
   name: string;
+  internalName?: string;
+  legacySource?: 'proofly' | 'xgrow';
   status: BrainCorePostOrchestratorStatus;
   summary: string;
-  owner: 'brain' | 'proofly' | 'xgrow' | 'external';
+  owner: 'brain' | 'proofly' | 'xgrow' | 'platform' | 'external';
   executionEnabled: false;
   blockers: string[];
   nextSafeStep: string;
@@ -239,7 +241,9 @@ export interface BrainCorePostOrchestratorContract {
 export interface BrainCorePostOrchestratorIntegration {
   id: string;
   provider: 'proofly' | 'xgrow' | 'brain' | 'platform';
+  legacySource?: 'proofly' | 'xgrow';
   name: string;
+  internalName?: string;
   status: BrainCorePostProviderStatus;
   role: string;
   summary: string;
@@ -280,8 +284,8 @@ export interface BrainCorePostOrchestratorStatusResponse {
   publishingEnabled: false;
   schedulingEnabled: false;
   executionEnabled: false;
-  prooflyRole: string;
-  xgrowRole: string;
+  socialProofFlowLabel: string;
+  growthOptimizationFlowLabel: string;
   modules: BrainCorePostOrchestratorModule[];
   nextSafeStep: string;
   updatedAt: string;

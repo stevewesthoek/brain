@@ -9,6 +9,14 @@
 
 ## 1. Executive Summary
 
+## Naming Boundary - Legacy Apps vs Post Orchestrator Flows
+
+- Proofly and Xgrow are legacy/internal migration source names.
+- Brain Console should not present them as primary products/providers.
+- User-facing Post Orchestrator language should use flows such as Social Proof Asset Flow, Growth Optimization Flow, X Post Flow, GitHub Post Flow, LinkedIn Post Flow, and Platform Publishing Flow.
+- Internal docs may retain Proofly/Xgrow references for migration traceability.
+- Decommission tracking still references Proofly/Xgrow until migration is complete.
+
 ### Strategic Direction
 
 The Brain repo will become the canonical orchestration engine for all post (content/social) operations. Proofly and Xgrow will remain operational but will shift from independent orchestration systems to specialized, stateless modules that Brain calls upon.
