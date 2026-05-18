@@ -43,11 +43,14 @@ Obsidian remains the only primary human dashboard. Brain Core exposes machine an
 | STB Concept | Video Orchestrator Target | Status | Validation |
 |---|---|---|---|
 | Research/scripture intake | bible-research orchestrator + intake-stage | ✅ **PRODUCTION** (2026-05-18) | 10/10 passage selection tests passing, 100% parity |
-| Outline/structure | script-generation stage | in-progress | 4/5 tests passing, timing variance under investigation |
-| Script generation | script-generation stage | in-progress | 8/8 tests passing, ready for module implementation |
-| Asset generation | asset-generation stage | partial | Preview-only rendering, dynamic composition pending |
+| Outline/structure | script-generation stage | ✅ **PRODUCTION** (2026-05-18) | 5/5 tests passing, ready for production |
+| Script generation | script-generation stage | ✅ **PRODUCTION** (2026-05-18) | 8/8 tests passing, phase 3c complete |
+| Asset generation | asset-planning stage | ✅ **PRODUCTION** (2026-05-18) | 5 story fixtures, phase 3d complete |
+| Design specifications | design-planning stage | ✅ **PRODUCTION** (2026-05-18) | 5 story fixtures, phase 3e complete |
+| Voiceover timing/specs | voiceover-planning stage | ✅ **PRODUCTION** (2026-05-18) | 5 story fixtures, phase 3f complete |
+| Visual sequence planning | visuals-planning stage | ✅ **PRODUCTION** (2026-05-18) | 5 story fixtures, phase 3g complete |
 | Thumbnail design | design orchestrator (planned) | blocked | Design orchestrator not yet built |
-| Video assembly | video-assembly stage | planned | Design phase only, rendering pending |
+| Video assembly | video-assembly stage | planned | Visuals timing + voiceover + assets → sync |
 | Metadata enrichment | metadata-enrichment stage | planned | Schema design pending |
 | YouTube publishing | platform-publish stage | planned | Publishing stage not yet implemented |
 | Pinterest publishing | platform-publish stage | planned | Publishing stage not yet implemented |

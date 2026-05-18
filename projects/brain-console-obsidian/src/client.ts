@@ -1682,6 +1682,128 @@ export interface BrainCoreVideoVoiceoverPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoVisualSequenceItem {
+  id: string;
+  voiceoverSegmentId: string;
+  designSpecId: string;
+  assetRequirementId: string;
+  sequence: number;
+  label: string;
+  kind: 'scene' | 'overlay' | 'transition' | 'text-card' | 'title-card' | 'passage-card' | 'platform-crop';
+  status: 'planned' | 'blocked';
+  startSecond: number;
+  durationSeconds: number;
+  transitionType?: 'fade' | 'cut' | 'slide' | 'dissolve' | 'none';
+  aspectRatio: '16:9' | '1:1' | '9:16' | '4:5' | 'mixed';
+  platformTargets: string[];
+  placeholder: string;
+  requiredForStages: string[];
+  designDependency: 'design-orchestrator' | 'manual-design' | 'none';
+  blockers: string[];
+  safety: {
+    readOnly: boolean;
+    generatesImage: boolean;
+    generatesVideo: boolean;
+    generatesPrompt: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoVisualsPlanSummary {
+  totalSequenceItems: number;
+  plannedCount: number;
+  blockedCount: number;
+  estimatedTotalDurationSeconds: number;
+  estimatedTotalDurationMinutes: number;
+  platformTargetCount: number;
+  uniqueKinds: string[];
+}
+
+export interface BrainCoreVideoVisualsPlan {
+  id: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  voiceoverPlanId: string;
+  designPlanId: string;
+  assetPlanId: string;
+  scriptPlanId: string;
+  intakePlanId: string;
+  status: 'preview-ready' | 'blocked';
+  sequence: BrainCoreVideoVisualSequenceItem[];
+  summary: BrainCoreVideoVisualsPlanSummary;
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesImage: boolean;
+    generatesVideo: boolean;
+    generatesPrompt: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoVisualsPlanListResponse {
+  id: 'video-orchestrator-visuals-plan';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoVisualsPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalSequenceItems: number;
+    estimatedTotalDurationMinutes: number;
+  };
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesImage: boolean;
+    generatesVideo: boolean;
+    generatesPrompt: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoVisualsPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoVisualsPlan;
+  upstream: {
+    voiceoverPlanId: string;
+    designPlanId: string;
+    assetPlanId: string;
+    scriptPlanId: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesImage: boolean;
+    generatesVideo: boolean;
+    generatesPrompt: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
 export interface BrainCoreStbVideoMigrationStatus {
   id: 'stb-to-video-migration-status';
   sourcePipelineId: string;
@@ -2577,6 +2699,19 @@ export async function readBrainCoreVideoOrchestratorVoiceoverPlan(
   scriptPlanId: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoVoiceoverPlanDetailResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoVoiceoverPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/voiceover-plan/${encodeURIComponent(scriptPlanId)}`);
+}
+
+export async function readBrainCoreVideoOrchestratorVisualsPlans(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoVisualsPlanListResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoVisualsPlanListResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/visuals-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorVisualsPlan(
+  baseUrl: string,
+  voiceoverPlanId: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoVisualsPlanDetailResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoVisualsPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/visuals-plan/${encodeURIComponent(voiceoverPlanId)}`);
 }
 
 export async function readBrainCoreStbVideoMigrationStatus(

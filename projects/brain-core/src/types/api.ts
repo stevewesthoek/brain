@@ -797,6 +797,128 @@ export interface BrainCoreVideoVoiceoverPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoVisualSequenceItem {
+  id: string;
+  voiceoverSegmentId: string;
+  designSpecId: string;
+  assetRequirementId: string;
+  sequence: number;
+  label: string;
+  kind: 'scene' | 'overlay' | 'transition' | 'text-card' | 'title-card' | 'passage-card' | 'platform-crop';
+  status: 'planned' | 'blocked';
+  startSecond: number;
+  durationSeconds: number;
+  transitionType?: 'fade' | 'cut' | 'slide' | 'dissolve' | 'none';
+  aspectRatio: '16:9' | '1:1' | '9:16' | '4:5' | 'mixed';
+  platformTargets: string[];
+  placeholder: string;
+  requiredForStages: string[];
+  designDependency: 'design-orchestrator' | 'manual-design' | 'none';
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    generatesImage: false;
+    generatesVideo: false;
+    generatesPrompt: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoVisualsPlanSummary {
+  totalSequenceItems: number;
+  plannedCount: number;
+  blockedCount: number;
+  estimatedTotalDurationSeconds: number;
+  estimatedTotalDurationMinutes: number;
+  platformTargetCount: number;
+  uniqueKinds: string[];
+}
+
+export interface BrainCoreVideoVisualsPlan {
+  id: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  voiceoverPlanId: string;
+  designPlanId: string;
+  assetPlanId: string;
+  scriptPlanId: string;
+  intakePlanId: string;
+  status: 'preview-ready' | 'blocked';
+  sequence: BrainCoreVideoVisualSequenceItem[];
+  summary: BrainCoreVideoVisualsPlanSummary;
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesImage: false;
+    generatesVideo: false;
+    generatesPrompt: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoVisualsPlanListResponse {
+  id: 'video-orchestrator-visuals-plan';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoVisualsPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalSequenceItems: number;
+    estimatedTotalDurationMinutes: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesImage: false;
+    generatesVideo: false;
+    generatesPrompt: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoVisualsPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoVisualsPlan;
+  upstream: {
+    voiceoverPlanId: string;
+    designPlanId: string;
+    assetPlanId: string;
+    scriptPlanId: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesImage: false;
+    generatesVideo: false;
+    generatesPrompt: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
 export interface BrainCoreStbVideoParityMatrixEntry {
   id: string;
   stbStage: string;

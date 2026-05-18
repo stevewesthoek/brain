@@ -58,6 +58,7 @@ import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../a
 import { readVideoAssetPlans, readVideoAssetPlan } from '../adapters/video-orchestrator-asset-plan.js';
 import { readVideoDesignPlans, readVideoDesignPlan } from '../adapters/video-orchestrator-design-plan.js';
 import { readVideoVoiceoverPlans, readVideoVoiceoverPlan } from '../adapters/video-orchestrator-voiceover-plan.js';
+import { readVideoVisualsPlans, readVideoVisualsPlan } from '../adapters/video-orchestrator-visuals-plan.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
 import { getAgent, listAgents } from '../adapters/agents.js';
@@ -656,12 +657,33 @@ export async function routeRequest(
           } satisfies BrainCoreErrorResponse);
           return;
         }
+
+        if (url.pathname === '/video-orchestrator/visuals-plan') {
+          sendJson(response, 200, readVideoVisualsPlans());
+          return;
+        }
+
+        const visualsPlanMatch = /^\/video-orchestrator\/visuals-plan\/([^/]+)$/.exec(url.pathname);
+        if (visualsPlanMatch) {
+          const visualsPlan = readVideoVisualsPlan(decodeURIComponent(visualsPlanMatch[1] ?? ''));
+          if (visualsPlan) {
+            sendJson(response, 200, visualsPlan);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator visuals plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
       }
 
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /post-orchestrator/status, /post-orchestrator/contracts, /post-orchestrator/flows, /post-orchestrator/drafts, /post-orchestrator/events, /post-orchestrator/dry-run/:eventId, /post-orchestrator/integrations, /post-orchestrator/recovery, /post-orchestrator/platform-policies, /post-orchestrator/decommission-readiness, /post-orchestrator/operator-guidance, /post-orchestrator/manual-export/:eventId, /post-orchestrator/acceptance-checklist, /post-orchestrator/migration-parity, /post-orchestrator/roadmap-checkpoint, /post-orchestrator/pipeline/:eventId, /post-orchestrator/readiness/:eventId, /stb/status, /video-orchestrator/status, /video-orchestrator/intake, /video-orchestrator/intake/:id, /video-orchestrator/research, /video-orchestrator/research/:id, /video-orchestrator/script, /video-orchestrator/script/:id, /video-orchestrator/asset-plan, /video-orchestrator/asset-plan/:id, /video-orchestrator/design-plan, /video-orchestrator/design-plan/:id, /video-orchestrator/voiceover-plan, /video-orchestrator/voiceover-plan/:id, /stb-video-migration/status, /stb-video/parity-matrix, /stb-video/dual-run-status, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /post-orchestrator/status, /post-orchestrator/contracts, /post-orchestrator/flows, /post-orchestrator/drafts, /post-orchestrator/events, /post-orchestrator/dry-run/:eventId, /post-orchestrator/integrations, /post-orchestrator/recovery, /post-orchestrator/platform-policies, /post-orchestrator/decommission-readiness, /post-orchestrator/operator-guidance, /post-orchestrator/manual-export/:eventId, /post-orchestrator/acceptance-checklist, /post-orchestrator/migration-parity, /post-orchestrator/roadmap-checkpoint, /post-orchestrator/pipeline/:eventId, /post-orchestrator/readiness/:eventId, /stb/status, /video-orchestrator/status, /video-orchestrator/intake, /video-orchestrator/intake/:id, /video-orchestrator/research, /video-orchestrator/research/:id, /video-orchestrator/script, /video-orchestrator/script/:id, /video-orchestrator/asset-plan, /video-orchestrator/asset-plan/:id, /video-orchestrator/design-plan, /video-orchestrator/design-plan/:id, /video-orchestrator/voiceover-plan, /video-orchestrator/voiceover-plan/:id, /video-orchestrator/visuals-plan, /video-orchestrator/visuals-plan/:id, /stb-video-migration/status, /stb-video/parity-matrix, /stb-video/dual-run-status, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
       return;

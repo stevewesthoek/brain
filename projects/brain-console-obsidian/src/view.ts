@@ -51,6 +51,7 @@ import {
   readBrainCoreVideoOrchestratorAssetPlans,
   readBrainCoreVideoOrchestratorDesignPlans,
   readBrainCoreVideoOrchestratorVoiceoverPlans,
+  readBrainCoreVideoOrchestratorVisualsPlans,
   readBrainCoreStbVideoMigrationStatus,
   readBrainCoreStbVideoParityMatrix,
   readBrainCoreStbVideoDualRunStatus,
@@ -121,6 +122,7 @@ import {
   type BrainCoreVideoAssetPlanListResponse,
   type BrainCoreVideoDesignPlanListResponse,
   type BrainCoreVideoVoiceoverPlanListResponse,
+  type BrainCoreVideoVisualsPlanListResponse,
   type BrainCoreStbVideoMigrationStatus,
   type BrainCoreStbVideoParityMatrix,
   type BrainCoreStbVideoDualRunStatus,
@@ -193,6 +195,7 @@ export interface BrainConsoleViewState {
   videoAssetPlans?: BrainCoreVideoAssetPlanListResponse;
   videoDesignPlans?: BrainCoreVideoDesignPlanListResponse;
   videoVoiceoverPlans?: BrainCoreVideoVoiceoverPlanListResponse;
+  videoVisualPlans?: BrainCoreVideoVisualsPlanListResponse;
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
   stbVideoParityMatrix?: BrainCoreStbVideoParityMatrix;
   stbVideoDualRunStatus?: BrainCoreStbVideoDualRunStatus;
@@ -215,7 +218,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -264,6 +267,7 @@ export async function loadBrainConsoleViewState(
     readBrainCoreVideoOrchestratorAssetPlans(baseUrl),
     readBrainCoreVideoOrchestratorDesignPlans(baseUrl),
     readBrainCoreVideoOrchestratorVoiceoverPlans(baseUrl),
+    readBrainCoreVideoOrchestratorVisualsPlans(baseUrl),
     readBrainCoreStbVideoMigrationStatus(baseUrl),
     readBrainCoreStbVideoParityMatrix(baseUrl),
     readBrainCoreStbVideoDualRunStatus(baseUrl),
@@ -289,7 +293,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -363,6 +367,7 @@ export async function loadBrainConsoleViewState(
     videoAssetPlans: videoAssetPlans.value,
     videoDesignPlans: videoDesignPlans.value,
     videoVoiceoverPlans: videoVoiceoverPlans.value,
+    videoVisualPlans: videoVisualPlans.value,
     stbVideoMigrationStatus: stbVideoMigrationStatus.value,
     stbVideoParityMatrix: stbVideoParityMatrix.value,
     stbVideoDualRunStatus: stbVideoDualRunStatus.value,
@@ -546,6 +551,7 @@ function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewSta
   renderCard(grid, 'Video Orchestrator Asset Plan', renderVideoAssetPlanCard(state, snapshot));
   renderCard(grid, 'Video Orchestrator Design Plan', renderVideoDesignPlanCard(state, snapshot));
   renderCard(grid, 'Video Orchestrator Voiceover Plan', renderVideoVoiceoverPlanCard(state, snapshot));
+  renderCard(grid, 'Video Orchestrator Visuals Plan', renderVideoVisualsPlanCard(state, snapshot));
   renderCard(grid, 'STB ↔ Video Parity Matrix', renderParityMatrixCard(state, snapshot));
   renderCard(grid, 'STB ↔ Video Dual-Run Status', renderDualRunStatusCard(state, snapshot));
 }
@@ -1557,6 +1563,37 @@ function renderVideoVoiceoverPlanCard(state: BrainConsoleViewState, snapshot: Da
 
   const safetyList = list.createEl('li', {
     text: 'Safety: read-only, no TTS, no audio generation, structural placeholders only',
+  });
+  safetyList.addClass('brain-console__list-info');
+
+  return card;
+}
+
+function renderVideoVisualsPlanCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const card = document.createElement('div');
+
+  if (!state.videoVisualPlans) {
+    card.textContent = 'No visuals plan data available';
+    return card;
+  }
+
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Status: Visuals planning module` });
+  list.createEl('li', { text: `Plans: ${state.videoVisualPlans.summary.total}` });
+  list.createEl('li', { text: `Sequence items: ${state.videoVisualPlans.summary.totalSequenceItems}` });
+  list.createEl('li', {
+    text: `Duration: ${state.videoVisualPlans.summary.estimatedTotalDurationMinutes}m total`,
+  });
+
+  if (state.videoVisualPlans.summary.blockedCount > 0) {
+    const blockedItem = list.createEl('li', {
+      text: `Blocked: ${state.videoVisualPlans.summary.blockedCount}`,
+    });
+    blockedItem.addClass('brain-console__list-warning');
+  }
+
+  const safetyList = list.createEl('li', {
+    text: 'Safety: read-only, no image generation, no video rendering, structural placeholders only',
   });
   safetyList.addClass('brain-console__list-info');
 

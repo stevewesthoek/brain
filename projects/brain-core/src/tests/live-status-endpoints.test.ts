@@ -891,3 +891,75 @@ test('GET /video-orchestrator/voiceover-plan/:id with unknown id returns 404', a
   assert.equal(body.error?.code, 'not_found');
   assert.ok(body.error?.message.includes('voiceover plan'));
 });
+
+test('GET /video-orchestrator/visuals-plan returns plans with safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/visuals-plan' });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    id: string;
+    summary?: { total: number };
+    safety?: Record<string, unknown>;
+    plans?: Array<{ safety?: Record<string, unknown> }>;
+  };
+  assert.equal(body.id, 'video-orchestrator-visuals-plan');
+  assert.ok(body.summary?.total !== undefined);
+  assert.equal(body.safety?.readOnly, true);
+  assert.equal(body.safety?.generatesImage, false);
+  assert.equal(body.safety?.generatesVideo, false);
+  assert.equal(body.safety?.generatesPrompt, false);
+  assert.equal(body.safety?.callsExternalAI, false);
+  assert.equal(body.safety?.writesFiles, false);
+  assert.equal(body.safety?.publishesContent, false);
+  assert.equal(body.safety?.writesToMind, false);
+  assert.ok(Array.isArray(body.plans));
+});
+
+test('GET /video-orchestrator/visuals-plan/:id returns a single visuals plan', async () => {
+  const listResponse = await exercise({ method: 'GET', url: '/video-orchestrator/visuals-plan' });
+  const listBody = JSON.parse(listResponse.body) as {
+    plans?: Array<{ id: string; voiceoverPlanId: string }>;
+  };
+  const firstPlan = listBody.plans?.[0];
+  assert.ok(firstPlan?.voiceoverPlanId);
+
+  const response = await exercise({
+    method: 'GET',
+    url: `/video-orchestrator/visuals-plan/${encodeURIComponent(firstPlan.voiceoverPlanId)}`,
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    plan?: {
+      sequence?: Array<{ safety?: Record<string, unknown>; placeholder?: string }>;
+      safety?: Record<string, unknown>;
+    };
+  };
+  assert.ok(body.plan?.sequence);
+  assert.ok(Array.isArray(body.plan.sequence));
+
+  for (const item of body.plan.sequence ?? []) {
+    assert.equal(item.safety?.readOnly, true);
+    assert.equal(item.safety?.generatesImage, false);
+    assert.equal(item.safety?.generatesVideo, false);
+    assert.equal(item.safety?.generatesPrompt, false);
+    assert.equal(item.safety?.callsExternalAI, false);
+    assert.ok(item.placeholder?.includes('placeholder'));
+  }
+
+  assert.equal(body.plan?.safety?.readOnly, true);
+  assert.equal(body.plan?.safety?.generatesImage, false);
+  assert.equal(body.plan?.safety?.generatesVideo, false);
+});
+
+test('GET /video-orchestrator/visuals-plan/:id with unknown id returns 404', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/visuals-plan/unknown-visuals-plan-id',
+  });
+  assert.equal(response.statusCode, 404);
+
+  const body = JSON.parse(response.body) as { error?: { code: string; message: string } };
+  assert.equal(body.error?.code, 'not_found');
+  assert.ok(body.error?.message.includes('visuals plan'));
+});
