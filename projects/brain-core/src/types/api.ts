@@ -5531,3 +5531,79 @@ export interface BrainCoreVideoControlledExecutionApprovalStoreImplementationPla
 export interface BrainCoreVideoControlledExecutionApprovalStoreImplementationPlanResponse {
   plan: BrainCoreVideoControlledExecutionApprovalStoreImplementationPlan;
 }
+
+export interface BrainCoreVideoControlledExecutionFirstApprovalCreationImplementationPlan {
+  id: 'video-orchestrator-controlled-execution-first-approval-creation-implementation-plan';
+  generatedAt: string;
+  version: 'phase-6d';
+  status: 'not-ready' | 'ready';
+  planExists: false;
+  firstApprovalCreationEnabled: false;
+  approvalCreationEnabled: false;
+  approvalStoreEnabled: false;
+  persistenceEnabled: false;
+  operatorVerificationEnabled: false;
+  roleEnforcementEnabled: false;
+  scopeValidationEnabled: false;
+  evidenceCaptureEnabled: false;
+  implementationExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    requiredInputCount: number;
+    validationStepCount: number;
+    outputRecordFieldCount: number;
+    blockerCount: number;
+    implementationGateCount: number;
+  };
+  requiredInputs: string[];
+  validationSteps: string[];
+  outputRecordShape: string[];
+  implementationGates: string[];
+  blockingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    planDesignOnly: true;
+    firstApprovalCreationEnabled: false;
+    approvalCreationEnabled: false;
+    approvalStoreEnabled: false;
+    persistenceEnabled: false;
+    operatorVerificationEnabled: false;
+    roleEnforcementEnabled: false;
+    scopeValidationEnabled: false;
+    evidenceCaptureEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    expiryEnforcementEnabled: false;
+    revocationEnabled: false;
+    auditLinkingEnabled: false;
+    featureFlagsEnabled: false;
+    flagEvaluationEnabled: false;
+    validatorExecutionEnabled: false;
+    lockPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    sandboxProvisioningEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionFirstApprovalCreationImplementationPlanResponse {
+  plan: BrainCoreVideoControlledExecutionFirstApprovalCreationImplementationPlan;
+}

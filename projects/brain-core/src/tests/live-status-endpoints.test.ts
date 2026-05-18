@@ -4248,3 +4248,85 @@ test('POST /video-orchestrator/controlled-execution-approval-store-implementatio
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-first-approval-creation-implementation-plan returns plan design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-first-approval-creation-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      version: string;
+      status: string;
+      planExists: boolean;
+      firstApprovalCreationEnabled: boolean;
+      approvalCreationEnabled: boolean;
+      approvalStoreEnabled: boolean;
+      persistenceEnabled: boolean;
+      operatorVerificationEnabled: boolean;
+      roleEnforcementEnabled: boolean;
+      scopeValidationEnabled: boolean;
+      evidenceCaptureEnabled: boolean;
+      implementationExecutionEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      summary: Record<string, number>;
+      requiredInputs: string[];
+      validationSteps: string[];
+      outputRecordShape: string[];
+      implementationGates: string[];
+      blockingRequirements: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.id, 'video-orchestrator-controlled-execution-first-approval-creation-implementation-plan');
+  assert.equal(body.plan.version, 'phase-6d');
+  assert.ok(['not-ready', 'ready'].includes(body.plan.status));
+  assert.equal(body.plan.planExists, false);
+  assert.equal(body.plan.firstApprovalCreationEnabled, false);
+  assert.equal(body.plan.approvalCreationEnabled, false);
+  assert.equal(body.plan.approvalStoreEnabled, false);
+  assert.equal(body.plan.persistenceEnabled, false);
+  assert.equal(body.plan.operatorVerificationEnabled, false);
+  assert.equal(body.plan.roleEnforcementEnabled, false);
+  assert.equal(body.plan.scopeValidationEnabled, false);
+  assert.equal(body.plan.evidenceCaptureEnabled, false);
+  assert.equal(body.plan.implementationExecutionEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.equal(body.plan.executable, false);
+  assert.ok(body.plan.requiredInputs.includes('candidateStoryId'));
+  assert.ok(body.plan.requiredInputs.includes('sourceEpisodeId'));
+  assert.ok(body.plan.requiredInputs.includes('operatorIdentity'));
+  assert.ok(body.plan.requiredInputs.includes('operatorRole'));
+  assert.ok(body.plan.validationSteps.includes('verify approval does not authorize execution'));
+  assert.ok(body.plan.validationSteps.includes('verify second approval remains required'));
+  assert.ok(body.plan.outputRecordShape.includes('approvalType: first_approval'));
+  assert.ok(body.plan.outputRecordShape.includes('status: first_approval_pending'));
+  assert.ok(body.plan.implementationGates.length > 0);
+  assert.ok(body.plan.blockingRequirements.length > 0);
+  assert.ok(body.plan.evidenceReferences.includes('/video-orchestrator/controlled-execution-approval-store-implementation-plan'));
+
+  assert.equal(body.plan.safety.readOnly, true);
+  assert.equal(body.plan.safety.planDesignOnly, true);
+  assert.equal(body.plan.safety.firstApprovalCreationEnabled, false);
+  assert.equal(body.plan.safety.approvalCreationEnabled, false);
+  assert.equal(body.plan.safety.approvalStoreEnabled, false);
+  assert.equal(body.plan.safety.persistenceEnabled, false);
+  assert.equal(body.plan.safety.operatorVerificationEnabled, false);
+  assert.equal(body.plan.safety.roleEnforcementEnabled, false);
+  assert.equal(body.plan.safety.scopeValidationEnabled, false);
+  assert.equal(body.plan.safety.evidenceCaptureEnabled, false);
+  assert.equal(body.plan.safety.createsApproval, false);
+  assert.equal(body.plan.safety.createsFirstApproval, false);
+  assert.equal(body.plan.safety.executionEnabled, false);
+  assert.equal(body.plan.safety.writesFiles, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-first-approval-creation-implementation-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-first-approval-creation-implementation-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

@@ -456,3 +456,28 @@ This document defines the future controlled execution model as a design-only bou
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Status: not-ready (blocked until first-approval creation plan is approved).
 - Next safe phase: Phase 6D first-approval creation implementation plan, still read-only.
+
+## Phase 6D first-approval creation implementation plan
+
+- Added as a read-only first-approval creation implementation plan design endpoint.
+- Defines 10 required inputs (candidateStoryId, sourceEpisodeId, operatorIdentity, operatorRole, candidateStoryLockRef, preflightEvidenceHashRef, operatorDecisionSnapshotRef, approvalStorePolicyRef, auditTrailSchemaRef, rationale).
+- Defines 12 validation steps (verify feature flag framework, verify approval store plan, verify operator identity protocol, verify role policy, verify candidate/story lock, verify preflight evidence hash, verify operator decision snapshot, verify single-story scope, verify no execution authorization, verify second approval required, verify no concurrent approvals, verify immutable audit trail policy).
+- Defines output record shape (approvalId, approvalType: first_approval, status: first_approval_pending, and 11 other fields).
+- Defines 6 implementation gates (feature flag rollout, approval store implementation, operator identity implementation, role policy enforcement, candidate/story lock persistence, immutable audit trail persistence).
+- Identifies 8 blocking requirements (no approved feature flag framework, no approved approval store, no approved operator verification, no approved role enforcement, no approved candidate/story lock, no approved audit persistence, no approved concurrency check, no explicit approval).
+- No first approval creation is enabled.
+- No approval is created.
+- No approval store is enabled.
+- No persistence is enabled.
+- No operator verification is enabled.
+- No role enforcement is enabled.
+- No scope validation is enabled.
+- No evidence capture is enabled.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Status: not-ready (blocked until second-approval creation plan is approved).
+- Next safe phase: Phase 6E second-approval creation implementation plan, still read-only and no execution.
