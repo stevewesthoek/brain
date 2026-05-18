@@ -3354,3 +3354,96 @@ test('POST /video-orchestrator/controlled-execution-operator-identity-protocol i
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-role-policy returns blocked policy design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-role-policy' });
+  const body = JSON.parse(response.body) as {
+    policy: {
+      id: string;
+      generatedAt: string;
+      version: string;
+      status: string;
+      policyExists: boolean;
+      policyEnforced: boolean;
+      roleVerificationEnabled: boolean;
+      secondApprovalAllowed: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      summary: {
+        roleCount: number;
+        privilegeRequirementCount: number;
+        missingRequirementCount: number;
+        blockerCount: number;
+      };
+      roles: Array<{ name: string; canExecute: boolean; canPublish: boolean; canDecommission: boolean }>;
+      privilegeRequirements: string[];
+      missingPolicyRequirements: string[];
+      evidenceReferences: string[];
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.policy.id, 'video-orchestrator-controlled-execution-role-policy');
+  assert.equal(body.policy.version, 'phase-5i');
+  assert.ok(['blocked', 'disabled'].includes(body.policy.status));
+  assert.equal(body.policy.policyExists, false);
+  assert.equal(body.policy.policyEnforced, false);
+  assert.equal(body.policy.roleVerificationEnabled, false);
+  assert.equal(body.policy.secondApprovalAllowed, false);
+  assert.equal(body.policy.executionEnabled, false);
+  assert.equal(body.policy.executable, false);
+  assert.ok(body.policy.summary.roleCount > 0);
+  assert.ok(body.policy.summary.privilegeRequirementCount > 0);
+  assert.ok(body.policy.summary.missingRequirementCount > 0);
+  assert.ok(body.policy.summary.blockerCount > 0);
+  assert.ok(body.policy.roles.length > 0);
+  assert.ok(body.policy.roles.some(r => r.name === 'viewer'));
+  assert.ok(body.policy.roles.some(r => r.name === 'admin'));
+  assert.ok(body.policy.privilegeRequirements.length > 0);
+  assert.ok(body.policy.missingPolicyRequirements.length > 0);
+  assert.ok(body.policy.evidenceReferences.length > 0);
+  assert.ok(body.policy.blockers.length > 0);
+  assert.ok(body.policy.nextSafeStep.length > 0);
+  assert.equal(body.policy.safety.readOnly, true);
+  assert.equal(body.policy.safety.policyDesignOnly, true);
+  assert.equal(body.policy.safety.policyExists, false);
+  assert.equal(body.policy.safety.policyEnforced, false);
+  assert.equal(body.policy.safety.roleVerificationEnabled, false);
+  assert.equal(body.policy.safety.authenticatesOperator, false);
+  assert.equal(body.policy.safety.createsSession, false);
+  assert.equal(body.policy.safety.createsApproval, false);
+  assert.equal(body.policy.safety.createsSecondApproval, false);
+  assert.equal(body.policy.safety.approvalExecutionEnabled, false);
+  assert.equal(body.policy.safety.registersAction, false);
+  assert.equal(body.policy.safety.registersAllowlist, false);
+  assert.equal(body.policy.safety.runsValidator, false);
+  assert.equal(body.policy.safety.createsExecutionPlan, false);
+  assert.equal(body.policy.safety.executionPlanExecutable, false);
+  assert.equal(body.policy.safety.executionEnabled, false);
+  assert.equal(body.policy.safety.executesStb, false);
+  assert.equal(body.policy.safety.executesVideo, false);
+  assert.equal(body.policy.safety.writesFiles, false);
+  assert.equal(body.policy.safety.rendersVideo, false);
+  assert.equal(body.policy.safety.exportsArtifacts, false);
+  assert.equal(body.policy.safety.publishesContent, false);
+  assert.equal(body.policy.safety.decommissionsStb, false);
+  assert.equal(body.policy.safety.writesToMind, false);
+  body.policy.roles.forEach(role => {
+    assert.equal(role.canExecute, false);
+    assert.equal(role.canPublish, false);
+    assert.equal(role.canDecommission, false);
+  });
+  assert.ok(body.policy.evidenceReferences.includes('/video-orchestrator/controlled-execution-operator-identity-protocol'));
+  assert.ok(body.policy.evidenceReferences.includes('/video-orchestrator/controlled-execution-second-approval-policy'));
+});
+
+test('POST /video-orchestrator/controlled-execution-role-policy is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-role-policy' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

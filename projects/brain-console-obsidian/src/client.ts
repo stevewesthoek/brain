@@ -3196,6 +3196,44 @@ export interface BrainCoreVideoControlledExecutionOperatorIdentityProtocolRespon
   };
 }
 
+export interface BrainCoreVideoControlledExecutionRolePolicyResponse {
+  policy: {
+    id: string;
+    generatedAt: string;
+    version: string;
+    status: string;
+    policyExists: boolean;
+    policyEnforced: boolean;
+    roleVerificationEnabled: boolean;
+    secondApprovalAllowed: boolean;
+    executionEnabled: boolean;
+    executable: boolean;
+    summary: {
+      roleCount: number;
+      privilegeRequirementCount: number;
+      missingRequirementCount: number;
+      blockerCount: number;
+    };
+    roles: Array<{
+      name: string;
+      description: string;
+      canView: boolean;
+      canRequestApproval: boolean;
+      canIssueFirstApproval: boolean;
+      canIssueSecondApproval: boolean;
+      canExecute: boolean;
+      canPublish: boolean;
+      canDecommission: boolean;
+    }>;
+    privilegeRequirements: string[];
+    missingPolicyRequirements: string[];
+    evidenceReferences: string[];
+    blockers: string[];
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -4212,6 +4250,12 @@ export async function readBrainCoreVideoControlledExecutionOperatorIdentityProto
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionOperatorIdentityProtocolResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionOperatorIdentityProtocolResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-operator-identity-protocol');
+}
+
+export async function readBrainCoreVideoControlledExecutionRolePolicy(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionRolePolicyResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionRolePolicyResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-role-policy');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(

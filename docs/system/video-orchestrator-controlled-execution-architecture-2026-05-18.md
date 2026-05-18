@@ -84,6 +84,7 @@ This document defines the future controlled execution model as a design-only bou
 - 5F execution remains disabled until explicit second approval.
 - 5G second-approval policy design.
 - 5H operator identity verification protocol design.
+- 5I role policy definition design.
 
 ## Non-negotiable safety
 
@@ -178,4 +179,21 @@ This document defines the future controlled execution model as a design-only bou
 - No execution-plan execution.
 - No STB or Video execution.
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
-- Next safe phase: operator identity protocol implementation (still read-only), or role policy definition endpoint design.
+- Next safe phase: Phase 5I role policy definition design, still read-only and no execution.
+
+## Phase 5I role policy definition design
+
+- Added as a read-only policy design endpoint.
+- Defines future operator roles (viewer, developer, maintainer, admin) and privilege matrix.
+- Privilege matrix defines capabilities: canView, canRequestApproval, canIssueFirstApproval, canIssueSecondApproval, canExecute, canPublish, canDecommission (all currently false).
+- Policy cannot be enforced.
+- No roles are assigned.
+- No operator is authenticated or role-verified.
+- No approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: role policy implementation (still read-only), or first-approval authority policy definition.

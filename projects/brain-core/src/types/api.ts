@@ -3161,6 +3161,73 @@ export interface BrainCoreVideoControlledExecutionOperatorIdentityProtocolRespon
   protocol: BrainCoreVideoControlledExecutionOperatorIdentityProtocol;
 }
 
+export interface BrainCoreVideoControlledExecutionRole {
+  name: string;
+  description: string;
+  canView: boolean;
+  canRequestApproval: boolean;
+  canIssueFirstApproval: boolean;
+  canIssueSecondApproval: boolean;
+  canExecute: boolean;
+  canPublish: boolean;
+  canDecommission: boolean;
+}
+
+export interface BrainCoreVideoControlledExecutionRolePolicy {
+  id: 'video-orchestrator-controlled-execution-role-policy';
+  generatedAt: string;
+  version: 'phase-5i';
+  status: 'blocked' | 'disabled';
+  policyExists: false;
+  policyEnforced: false;
+  roleVerificationEnabled: false;
+  secondApprovalAllowed: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    roleCount: number;
+    privilegeRequirementCount: number;
+    missingRequirementCount: number;
+    blockerCount: number;
+  };
+  roles: BrainCoreVideoControlledExecutionRole[];
+  privilegeRequirements: string[];
+  missingPolicyRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    policyDesignOnly: true;
+    policyExists: false;
+    policyEnforced: false;
+    roleVerificationEnabled: false;
+    authenticatesOperator: false;
+    createsSession: false;
+    createsApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionRolePolicyResponse {
+  policy: BrainCoreVideoControlledExecutionRolePolicy;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
