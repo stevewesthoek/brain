@@ -1109,3 +1109,21 @@ Planned endpoint: `GET /video-orchestrator/controlled-execution-readiness-index`
 Purpose: aggregate the current production-readiness gates into one operator-facing answer covering execution, action registration, approval execution, rendering/export, publishing, release-candidate marking, STB decommission, blockers, and next safe step.
 
 Safety boundary: no POST route, no executable action registration, no approval creation, no execution, no rendering/export, no publishing, no release-candidate marking, no STB decommission, and no Mind writes.
+
+
+## 2026-05-18 — Phase 4C: Roadmap Checkpoint
+
+Status: complete, read-only/checkpoint-only.
+
+Added `GET /video-orchestrator/roadmap-checkpoint` to summarize completed roadmap phases, blocked production phases, approval-required phases, and the next safe step. It is a preview-only checkpoint and does not unlock execution.
+
+Safety boundary: no POST route, no executable action registration, no approval creation, no execution, no publishing, no STB decommission, and no Mind writes.
+
+
+## 2026-05-18 — Phase 4D: Operator Review Packet
+
+Status: complete, read-only/review-packet-only.
+
+Added `GET /video-orchestrator/operator-review-packet` to package the roadmap checkpoint, controlled execution readiness index, operator decision queue, cutover gate, release-candidate readiness, rollback checklist, and fixture comparison preview into a single review packet. It is preview-only and does not create approvals or unlock execution.
+
+Safety boundary: no POST route, no executable action registration, no approval creation, no execution, no publishing, no STB decommission, and no Mind writes.

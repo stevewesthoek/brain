@@ -2451,6 +2451,109 @@ export interface BrainCoreVideoControlledExecutionReadinessIndexResponse {
   index: BrainCoreVideoControlledExecutionReadinessIndex;
 }
 
+export interface BrainCoreVideoRoadmapCheckpointPhase {
+  id: string;
+  label: string;
+  group:
+    | 'planning-chain'
+    | 'policy-gates'
+    | 'console-visibility'
+    | 'operator-review'
+    | 'future-execution'
+    | 'production';
+  status: 'complete' | 'blocked' | 'planned' | 'requires-approval';
+  evidence: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    createsApproval: false;
+    registersAction: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoRoadmapCheckpoint {
+  id: 'video-orchestrator-roadmap-checkpoint';
+  generatedAt: string;
+  status: 'checkpoint-only' | 'blocked' | 'ready-for-review';
+  completedPhaseCount: number;
+  blockedPhaseCount: number;
+  approvalRequiredCount: number;
+  phases: BrainCoreVideoRoadmapCheckpointPhase[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    createsApproval: false;
+    registersAction: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoRoadmapCheckpointResponse {
+  checkpoint: BrainCoreVideoRoadmapCheckpoint;
+}
+
+export interface BrainCoreVideoOperatorReviewPacketSection {
+  id: string;
+  label: string;
+  status: 'included' | 'blocked' | 'missing';
+  sourceEndpoint: string;
+  summary: string;
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    registersAction: false;
+    executesStb: false;
+    executesVideo: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoOperatorReviewPacket {
+  id: 'video-orchestrator-operator-review-packet';
+  generatedAt: string;
+  status: 'review-packet-only' | 'blocked' | 'ready-for-review';
+  canCreateApproval: false;
+  canExecute: false;
+  canMarkReviewed: false;
+  sections: BrainCoreVideoOperatorReviewPacketSection[];
+  summary: {
+    totalSections: number;
+    includedCount: number;
+    blockedCount: number;
+    missingCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    registersAction: false;
+    executesStb: false;
+    executesVideo: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoOperatorReviewPacketResponse {
+  packet: BrainCoreVideoOperatorReviewPacket;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -4000,6 +4103,8 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/operator-decision-queue': BrainCoreVideoOperatorDecisionQueueResponse;
   '/video-orchestrator/controlled-execution-policy-boundary': BrainCoreVideoControlledExecutionPolicyBoundaryResponse;
   '/video-orchestrator/controlled-execution-readiness-index': BrainCoreVideoControlledExecutionReadinessIndexResponse;
+  '/video-orchestrator/roadmap-checkpoint': BrainCoreVideoRoadmapCheckpointResponse;
+  '/video-orchestrator/operator-review-packet': BrainCoreVideoOperatorReviewPacketResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

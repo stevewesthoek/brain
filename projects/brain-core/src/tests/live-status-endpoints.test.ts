@@ -2527,3 +2527,114 @@ test('POST /video-orchestrator/controlled-execution-readiness-index is not avail
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/roadmap-checkpoint returns blocked checkpoint', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/roadmap-checkpoint' });
+  const body = JSON.parse(response.body) as {
+    checkpoint: {
+      id: string;
+      status: string;
+      completedPhaseCount: number;
+      blockedPhaseCount: number;
+      approvalRequiredCount: number;
+      phases: Array<{ status: string; group: string; safety: Record<string, boolean> }>;
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.checkpoint.id, 'video-orchestrator-roadmap-checkpoint');
+  assert.ok(['checkpoint-only', 'blocked', 'ready-for-review'].includes(body.checkpoint.status));
+  assert.ok(body.checkpoint.completedPhaseCount > 0);
+  assert.ok(body.checkpoint.blockedPhaseCount > 0);
+  assert.ok(body.checkpoint.approvalRequiredCount > 0);
+  assert.ok(body.checkpoint.phases.some(phase => phase.status === 'blocked' || phase.status === 'requires-approval'));
+  assert.ok(body.checkpoint.blockers.length > 0);
+  assert.ok(body.checkpoint.nextSafeStep.length > 0);
+  assert.equal(body.checkpoint.safety.readOnly, true);
+  assert.equal(body.checkpoint.safety.executesStb, false);
+  assert.equal(body.checkpoint.safety.executesVideo, false);
+  assert.equal(body.checkpoint.safety.createsApproval, false);
+  assert.equal(body.checkpoint.safety.registersAction, false);
+  assert.equal(body.checkpoint.safety.publishesContent, false);
+  assert.equal(body.checkpoint.safety.decommissionsStb, false);
+  assert.equal(body.checkpoint.safety.writesToMind, false);
+
+  body.checkpoint.phases.forEach(phase => {
+    assert.equal(phase.safety.readOnly, true);
+    assert.equal(phase.safety.executesStb, false);
+    assert.equal(phase.safety.executesVideo, false);
+    assert.equal(phase.safety.createsApproval, false);
+    assert.equal(phase.safety.registersAction, false);
+    assert.equal(phase.safety.publishesContent, false);
+    assert.equal(phase.safety.decommissionsStb, false);
+    assert.equal(phase.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/roadmap-checkpoint is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/roadmap-checkpoint' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/operator-review-packet returns blocked review packet', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/operator-review-packet' });
+  const body = JSON.parse(response.body) as {
+    packet: {
+      id: string;
+      status: string;
+      canCreateApproval: boolean;
+      canExecute: boolean;
+      canMarkReviewed: boolean;
+      sections: Array<{ status: string; safety: Record<string, boolean> }>;
+      summary: { totalSections: number; includedCount: number; blockedCount: number; missingCount: number };
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.packet.id, 'video-orchestrator-operator-review-packet');
+  assert.ok(['review-packet-only', 'blocked', 'ready-for-review'].includes(body.packet.status));
+  assert.equal(body.packet.canCreateApproval, false);
+  assert.equal(body.packet.canExecute, false);
+  assert.equal(body.packet.canMarkReviewed, false);
+  assert.ok(body.packet.summary.totalSections > 0);
+  assert.ok(body.packet.summary.includedCount > 0);
+  assert.ok(body.packet.summary.blockedCount > 0 || body.packet.summary.missingCount > 0);
+  assert.ok(body.packet.blockers.length > 0);
+  assert.ok(body.packet.nextSafeStep.length > 0);
+  assert.equal(body.packet.safety.readOnly, true);
+  assert.equal(body.packet.safety.createsApproval, false);
+  assert.equal(body.packet.safety.registersAction, false);
+  assert.equal(body.packet.safety.executesStb, false);
+  assert.equal(body.packet.safety.executesVideo, false);
+  assert.equal(body.packet.safety.publishesContent, false);
+  assert.equal(body.packet.safety.decommissionsStb, false);
+  assert.equal(body.packet.safety.writesToMind, false);
+
+  body.packet.sections.forEach(section => {
+    assert.equal(section.safety.readOnly, true);
+    assert.equal(section.safety.createsApproval, false);
+    assert.equal(section.safety.registersAction, false);
+    assert.equal(section.safety.executesStb, false);
+    assert.equal(section.safety.executesVideo, false);
+    assert.equal(section.safety.publishesContent, false);
+    assert.equal(section.safety.decommissionsStb, false);
+    assert.equal(section.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/operator-review-packet is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/operator-review-packet' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

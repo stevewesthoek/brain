@@ -2910,3 +2910,34 @@ Safety status:
 - No execution controls, no approval creation, no publishing, and no STB decommission added.
 
 Next safe task: roadmap checkpoint summary or operator review if the readiness card is sufficient.
+
+
+## 2026-05-18 — Phase 4C: Roadmap checkpoint
+
+Completed a read-only roadmap checkpoint slice.
+
+Added:
+- `GET /video-orchestrator/roadmap-checkpoint`
+- Summarizes completed phases, blocked phases, approval-required phases, and the next safe step.
+
+Safety status:
+- Checkpoint only.
+- No execution unlocked.
+
+Next safe task: operator review packet, still preview-only.
+
+
+## 2026-05-18 — Phase 4D: Operator review packet
+
+Completed a read-only operator review packet slice.
+
+Added:
+- `GET /video-orchestrator/operator-review-packet`
+- Packages roadmap checkpoint, readiness index, operator queue, cutover gate, release-candidate readiness, rollback checklist, and fixture comparison preview into a review packet.
+
+Safety status:
+- Review-packet only.
+- No approval creation.
+- No execution.
+
+Next safe task: Brain Console visibility for roadmap checkpoint and review packet, still read-only.
