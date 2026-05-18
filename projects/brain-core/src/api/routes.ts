@@ -29,6 +29,7 @@ import {
   readPostPipelineSummary,
   readPostSchedulePreviewQueue,
   readPostReadinessScore,
+  readPostQaStatus,
   requestPostDraftReviewApproval,
   requestPostSchedulePreviewApproval,
 } from '../adapters/post-orchestrator.js';
@@ -166,6 +167,9 @@ export async function routeRequest(
       return;
     case '/post-orchestrator/roadmap-checkpoint':
       sendJson(response, 200, readPostRoadmapCheckpoint());
+      return;
+    case '/post-orchestrator/qa-status':
+      sendJson(response, 200, readPostQaStatus());
       return;
     case '/post-orchestrator/pipeline':
       sendJson(response, 400, {

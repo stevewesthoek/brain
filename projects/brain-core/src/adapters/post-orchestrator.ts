@@ -63,6 +63,10 @@ import type {
   BrainCorePostReadinessScore,
   BrainCorePostReadinessScoreResponse,
   BrainCorePostReadinessSeverity,
+  BrainCorePostQaStatus,
+  BrainCorePostQaStatusResponse,
+  BrainCorePostQaEndpointCoverageItem,
+  BrainCorePostQaChecklistItem,
 } from '../types/api.js';
 
 const STATUS: BrainCorePostOrchestratorStatusResponse = {
@@ -2305,6 +2309,67 @@ export function readPostRoadmapCheckpoint(): BrainCorePostRoadmapCheckpointRespo
         schedulingEnabled: false,
         executionEnabled: false,
         requiresExplicitUserApprovalBeforePublishingDesign: true,
+      },
+    },
+  };
+}
+
+export function readPostQaStatus(): BrainCorePostQaStatusResponse {
+  const endpoints: BrainCorePostQaEndpointCoverageItem[] = [
+    { id: 'overview', endpoint: '/post-orchestrator/overview', purpose: 'Status overview and blockers', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'status', endpoint: '/post-orchestrator/status', purpose: 'Orchestrator status and phase', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'contracts', endpoint: '/post-orchestrator/contracts', purpose: 'Contract fixtures', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'integrations', endpoint: '/post-orchestrator/integrations', purpose: 'Platform integrations', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'recovery', endpoint: '/post-orchestrator/recovery', purpose: 'Recovery blockers', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'flows', endpoint: '/post-orchestrator/flows', purpose: 'Flow fixtures', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'drafts', endpoint: '/post-orchestrator/drafts', purpose: 'Draft fixtures', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'events', endpoint: '/post-orchestrator/events', purpose: 'Event fixtures', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'dryrun', endpoint: '/post-orchestrator/dry-run/:eventId', purpose: 'Dry-run plan preview', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'reviewqueue', endpoint: '/post-orchestrator/review-queue/:eventId', purpose: 'Draft review queue', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'schedulepreview', endpoint: '/post-orchestrator/schedule-preview/:eventId', purpose: 'Schedule preview queue', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'analytics', endpoint: '/post-orchestrator/analytics', purpose: 'Analytics fixtures', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'pipeline', endpoint: '/post-orchestrator/pipeline/:eventId', purpose: 'Pipeline summary', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'readiness', endpoint: '/post-orchestrator/readiness/:eventId', purpose: 'Readiness score', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'policies', endpoint: '/post-orchestrator/platform-policies', purpose: 'Platform policies', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'decommission', endpoint: '/post-orchestrator/decommission-readiness', purpose: 'Decommission readiness', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'guidance', endpoint: '/post-orchestrator/operator-guidance', purpose: 'Operator guidance', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'export', endpoint: '/post-orchestrator/manual-export/:eventId', purpose: 'Manual export preview', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'acceptance', endpoint: '/post-orchestrator/acceptance-checklist', purpose: 'Acceptance checklist', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'migration', endpoint: '/post-orchestrator/migration-parity', purpose: 'Migration parity report', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+    { id: 'roadmap', endpoint: '/post-orchestrator/roadmap-checkpoint', purpose: 'Roadmap checkpoint', expectedInDashboard: true, status: 'covered', safety: { readOnly: true, hasPost: false, writesExternalPlatform: false, writesToMind: false } },
+  ];
+
+  const checklist: BrainCorePostQaChecklistItem[] = [
+    { id: 'overview-visible', label: 'Overview card visible', status: 'manual-check', summary: 'Post Orchestrator overview card renders in Status group' },
+    { id: 'flowpreview-visible', label: 'Flow Preview group visible', status: 'manual-check', summary: 'Flow Preview section with 5 cards renders' },
+    { id: 'review-visible', label: 'Review / Schedule group visible', status: 'manual-check', summary: 'Review / Schedule section with 3 cards renders' },
+    { id: 'safety-visible', label: 'Safety / Policy group visible', status: 'manual-check', summary: 'Safety / Policy section with 5 cards renders' },
+    { id: 'migration-visible', label: 'Migration / Checkpoint group visible', status: 'manual-check', summary: 'Migration / Checkpoint section with 7 cards renders' },
+    { id: 'publishing-label', label: 'Publishing disabled label visible', status: 'manual-check', summary: 'Safety label "Publishing disabled" appears in all cards' },
+    { id: 'scheduling-label', label: 'Scheduling disabled label visible', status: 'manual-check', summary: 'Safety label "Scheduling disabled" appears in all cards' },
+    { id: 'no-publish-button', label: 'No publish/schedule/run buttons visible', status: 'manual-check', summary: 'Confirm forbidden action buttons are absent' },
+    { id: 'no-proofly', label: 'No Proofly/Xgrow provider labels visible', status: 'manual-check', summary: 'No external provider labels exposed' },
+    { id: 'next-safe-step', label: 'Next safe step visible', status: 'manual-check', summary: 'Each card shows actionable next safe step' },
+  ];
+
+  return {
+    qaStatus: {
+      id: 'post-orchestrator-qa-status',
+      generatedAt: new Date().toISOString(),
+      status: 'ready-for-manual-qa',
+      endpointCount: endpoints.length,
+      coveredCount: endpoints.filter((e) => e.status === 'covered').length,
+      manualCheckCount: checklist.length,
+      endpoints,
+      checklist,
+      nextSafeStep: 'Perform manual visual QA in Obsidian: restart fully, open Posts section, verify groups and safety labels, confirm no forbidden controls are visible.',
+      safety: {
+        readOnly: true,
+        publishingEnabled: false,
+        schedulingEnabled: false,
+        executionEnabled: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
       },
     },
   };

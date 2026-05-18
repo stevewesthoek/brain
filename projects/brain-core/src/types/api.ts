@@ -1293,6 +1293,51 @@ export interface BrainCoreCapabilitySummary {
   notes: string[];
 }
 
+export interface BrainCorePostQaEndpointCoverageItem {
+  id: string;
+  endpoint: string;
+  purpose: string;
+  expectedInDashboard: boolean;
+  status: 'covered' | 'manual-check' | 'planned';
+  safety: {
+    readOnly: true;
+    hasPost: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostQaChecklistItem {
+  id: string;
+  label: string;
+  status: 'manual-check';
+  summary: string;
+}
+
+export interface BrainCorePostQaStatus {
+  id: 'post-orchestrator-qa-status';
+  generatedAt: string;
+  status: 'ready-for-manual-qa' | 'needs-attention';
+  endpointCount: number;
+  coveredCount: number;
+  manualCheckCount: number;
+  endpoints: BrainCorePostQaEndpointCoverageItem[];
+  checklist: BrainCorePostQaChecklistItem[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostQaStatusResponse {
+  qaStatus: BrainCorePostQaStatus;
+}
+
 export interface BrainCoreApprovalSummary {
   id: string;
   kind: string;

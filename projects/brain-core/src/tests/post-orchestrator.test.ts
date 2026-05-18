@@ -934,3 +934,44 @@ test('GET /post-orchestrator/overview returns overview', async () => {
   assert.ok(body.overview.blockers.some((blocker) => blocker.id === 'future-design-gated'));
   assert.ok(body.overview.blockers.some((blocker) => blocker.id === 'acceptance-future-gates-blocked'));
 });
+
+test('GET /post-orchestrator/qa-status returns qaStatus', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/qa-status' });
+  const body = JSON.parse(response.body) as any;
+  assert.ok(body.qaStatus);
+  assert.equal(body.qaStatus.id, 'post-orchestrator-qa-status');
+  assert.ok(body.qaStatus.generatedAt);
+  assert.equal(body.qaStatus.status, 'ready-for-manual-qa');
+  assert.ok(body.qaStatus.endpointCount > 0);
+  assert.ok(body.qaStatus.coveredCount > 0);
+  assert.ok(body.qaStatus.manualCheckCount > 0);
+});
+
+test('GET /post-orchestrator/qa-status has safety readOnly true', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/qa-status' });
+  const body = JSON.parse(response.body) as any;
+  assert.equal(body.qaStatus.safety.readOnly, true);
+  assert.equal(body.qaStatus.safety.publishingEnabled, false);
+  assert.equal(body.qaStatus.safety.schedulingEnabled, false);
+  assert.equal(body.qaStatus.safety.executionEnabled, false);
+  assert.equal(body.qaStatus.safety.writesExternalPlatform, false);
+  assert.equal(body.qaStatus.safety.writesToMind, false);
+});
+
+test('GET /post-orchestrator/qa-status coverage items have hasPost false', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/qa-status' });
+  const body = JSON.parse(response.body) as any;
+  for (const item of body.qaStatus.endpoints) {
+    assert.equal(item.safety.hasPost, false);
+    assert.equal(item.safety.writesExternalPlatform, false);
+    assert.equal(item.safety.writesToMind, false);
+  }
+});
+
+test('GET /post-orchestrator/qa-status includes key endpoints', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/qa-status' });
+  const body = JSON.parse(response.body) as any;
+  const endpoints = body.qaStatus.endpoints.map((e: any) => e.endpoint);
+  assert.ok(endpoints.includes('/post-orchestrator/overview'));
+  assert.ok(endpoints.includes('/post-orchestrator/roadmap-checkpoint'));
+});
