@@ -2899,6 +2899,63 @@ export interface BrainCoreVideoControlledExecutionPreflightValidatorSchemaRespon
   schema: BrainCoreVideoControlledExecutionPreflightValidatorSchema;
 }
 
+export interface BrainCoreVideoControlledExecutionPlanStubCandidateScope {
+  scopeType: 'single-story-only';
+  candidateStoryId?: string;
+  sourceEpisodeId?: string;
+  approvedCandidatePresent: false;
+}
+
+export interface BrainCoreVideoControlledExecutionPlanStubStep {
+  id: string;
+  label: string;
+  status: 'blocked' | 'planned' | 'not-applicable';
+  description: string;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoControlledExecutionPlanStub {
+  id: 'video-orchestrator-controlled-execution-plan-stub';
+  generatedAt: string;
+  version: string;
+  status: 'blocked' | 'disabled';
+  createsExecutionPlan: false;
+  executionPlanExecutable: false;
+  candidateScope: BrainCoreVideoControlledExecutionPlanStubCandidateScope;
+  planSteps: BrainCoreVideoControlledExecutionPlanStubStep[];
+  requiredInputs: string[];
+  missingInputs: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  summary: {
+    totalSteps: number;
+    plannedSteps: number;
+    blockedSteps: number;
+    missingInputs: number;
+    requiredInputs: number;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    registersAction: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionPlanStubResponse {
+  plan: BrainCoreVideoControlledExecutionPlanStub;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =

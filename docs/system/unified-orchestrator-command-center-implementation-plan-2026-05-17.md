@@ -2103,3 +2103,17 @@ Hard boundary remains unchanged:
 
 Next safe phase:
 - Phase 5D execution-plan stub, still disabled
+
+## 2026-05-18 — Phase 5D execution-plan stub
+
+Added the read-only disabled execution-plan stub endpoint as design-only documentation for the future single-story controlled execution plan shape.
+
+Hard boundary remains unchanged:
+- no plan can run
+- no approval created
+- no validator runs
+- no action registration
+- no execution
+
+Next safe phase:
+- Phase 5E approval-request-only endpoint design, still no execution

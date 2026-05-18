@@ -251,6 +251,14 @@ Added a read-only preflight validator schema endpoint for controlled execution d
 
 Next safe phase: Phase 5D execution-plan stub, still disabled.
 
+## 2026-05-18 — Phase 5D: Execution-plan stub
+
+Status: complete, disabled.
+
+Added a read-only execution-plan stub endpoint for controlled execution design. The stub describes the future execution plan shape for a single-story candidate while remaining blocked and non-executable.
+
+Next safe phase: Phase 5E approval-request-only endpoint design, still no execution.
+
 - Proofly and Xgrow are legacy/internal migration source names.
 - Brain Console should not present them as primary products/providers.
 - User-facing Post Orchestrator language should use flows such as Social Proof Asset Flow, Growth Optimization Flow, X Post Flow, GitHub Post Flow, LinkedIn Post Flow, and Platform Publishing Flow.

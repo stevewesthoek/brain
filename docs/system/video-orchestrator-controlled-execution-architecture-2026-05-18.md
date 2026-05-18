@@ -109,3 +109,14 @@ This document defines the future controlled execution model as a design-only bou
 - No action registration is enabled.
 - No execution is enabled.
 - Next safe phase: Phase 5D execution-plan stub, still disabled.
+
+## Phase 5D execution-plan stub
+
+- Added as a read-only disabled plan stub endpoint.
+- No plan can run.
+- No approval is created.
+- No validator runs.
+- No action registration.
+- No file writes.
+- No STB or Video execution.
+- Next safe phase: Phase 5E approval-request-only endpoint design, still no execution.

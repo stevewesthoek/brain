@@ -2971,3 +2971,65 @@ test('POST /video-orchestrator/controlled-execution-preflight-validator-schema i
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-plan-stub returns blocked plan stub', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-plan-stub' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      status: string;
+      createsExecutionPlan: boolean;
+      executionPlanExecutable: boolean;
+      candidateScope: { scopeType: string; approvedCandidatePresent: boolean };
+      planSteps: Array<{ status: string; blockers: string[]; nextSafeStep: string }>;
+      requiredInputs: string[];
+      missingInputs: string[];
+      evidenceReferences: string[];
+      blockers: string[];
+      summary: { totalSteps: number; plannedSteps: number; blockedSteps: number; missingInputs: number; requiredInputs: number };
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.id, 'video-orchestrator-controlled-execution-plan-stub');
+  assert.ok(['blocked', 'disabled'].includes(body.plan.status));
+  assert.equal(body.plan.createsExecutionPlan, false);
+  assert.equal(body.plan.executionPlanExecutable, false);
+  assert.equal(body.plan.candidateScope.scopeType, 'single-story-only');
+  assert.equal(body.plan.candidateScope.approvedCandidatePresent, false);
+  assert.ok(body.plan.planSteps.length > 0);
+  assert.ok(body.plan.summary.totalSteps > 0);
+  assert.ok(body.plan.summary.blockedSteps > 0);
+  assert.ok(body.plan.requiredInputs.length > 0);
+  assert.ok(body.plan.missingInputs.length > 0);
+  assert.ok(body.plan.evidenceReferences.length > 0);
+  assert.ok(body.plan.blockers.length > 0);
+  assert.ok(body.plan.nextSafeStep.length > 0);
+  assert.equal(body.plan.safety.readOnly, true);
+  assert.equal(body.plan.safety.createsApproval, false);
+  assert.equal(body.plan.safety.registersAction, false);
+  assert.equal(body.plan.safety.runsValidator, false);
+  assert.equal(body.plan.safety.createsExecutionPlan, false);
+  assert.equal(body.plan.safety.executionPlanExecutable, false);
+  assert.equal(body.plan.safety.executesStb, false);
+  assert.equal(body.plan.safety.executesVideo, false);
+  assert.equal(body.plan.safety.writesFiles, false);
+  assert.equal(body.plan.safety.publishesContent, false);
+  assert.equal(body.plan.safety.decommissionsStb, false);
+  assert.equal(body.plan.safety.writesToMind, false);
+  body.plan.planSteps.forEach(step => {
+    assert.equal(step.status, 'blocked');
+    assert.ok(step.blockers.length >= 0);
+    assert.ok(step.nextSafeStep.length > 0);
+  });
+});
+
+test('POST /video-orchestrator/controlled-execution-plan-stub is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-plan-stub' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

@@ -3044,6 +3044,41 @@ export interface BrainCoreVideoControlledExecutionPreflightValidatorSchemaRespon
   };
 }
 
+export interface BrainCoreVideoControlledExecutionPlanStubResponse {
+  plan: {
+    id: string;
+    generatedAt: string;
+    version: string;
+    status: string;
+    createsExecutionPlan: boolean;
+    executionPlanExecutable: boolean;
+    candidateScope: {
+      scopeType: string;
+      approvedCandidatePresent: boolean;
+      candidateStoryId?: string;
+      sourceEpisodeId?: string;
+    };
+    planSteps: Array<{
+      status: string;
+      blockers: string[];
+      nextSafeStep: string;
+    }>;
+    requiredInputs: string[];
+    missingInputs: string[];
+    evidenceReferences: string[];
+    blockers: string[];
+    summary: {
+      totalSteps: number;
+      plannedSteps: number;
+      blockedSteps: number;
+      missingInputs: number;
+      requiredInputs: number;
+    };
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -4030,6 +4065,12 @@ export async function readBrainCoreVideoControlledExecutionPreflightValidatorSch
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-preflight-validator-schema');
+}
+
+export async function readBrainCoreVideoControlledExecutionPlanStub(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionPlanStubResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionPlanStubResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-plan-stub');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(

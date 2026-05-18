@@ -3017,6 +3017,26 @@ Safety status:
 Next safe task: Phase 5D execution-plan stub, still disabled.
 
 
+## 2026-05-18 — Phase 5D: Execution-plan stub
+
+Added `GET /video-orchestrator/controlled-execution-plan-stub` as a read-only disabled plan stub endpoint.
+
+Safety status:
+- Disabled.
+- No plan can run.
+- No approval created.
+- No validator runs.
+- No action registration.
+- No execution.
+
+Next safe task: Phase 5E approval-request-only endpoint design, still no execution.
+
+
+## Brain Console — Controlled execution plan stub visibility
+
+Added a compact Pipelines card for the controlled execution plan stub. It is read-only and does not imply executable planning.
+
+
 ## Brain Console — Approval payload schema visibility
 
 Added a compact Pipelines card for the controlled execution approval payload schema. It is read-only and does not request approvals or enable execution.
