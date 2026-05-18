@@ -206,6 +206,19 @@ Next safe modules:
 - Artifact sandbox design.
 - Controlled dry-run execution design.
 
+## Brain Console — Release candidate readiness visibility
+
+Implemented:
+
+- Added Brain Console Pipelines visibility for `GET /video-orchestrator/release-candidate-readiness`.
+- Extended the compact policy/gate chain with release-candidate, production cutover, render/export, and controlled dry-run statuses.
+- Added a small Release Candidate Readiness card with status, readiness percent, counts, blockers, next safe step, and safety label.
+
+Safety status:
+
+- Read-only visibility only.
+- No release-candidate marking, execution controls, approval creation, publishing, Mind writes, or STB decommission controls were added.
+
 ## Continuation update — Approved dry-run report visibility (Phase 4D)
 
 Implemented:

@@ -2632,6 +2632,91 @@ export interface BrainCoreVideoRenderExportPolicyResponse {
   policy: BrainCoreVideoRenderExportPolicy;
 }
 
+export interface BrainCoreVideoControlledDryRunDesignResponse {
+  dryRun: {
+    status: string;
+    summary: {
+      totalSteps: number;
+      plannedCount: number;
+      blockedCount: number;
+      requiredBeforeExecutionCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      rendersVideo: boolean;
+      createsApproval: boolean;
+      publishesContent: boolean;
+      decommissionsStb: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
+export interface BrainCoreVideoProductionCutoverGateResponse {
+  gate: {
+    status: string;
+    canCutover: boolean;
+    canMarkProductionReady: boolean;
+    canDecommissionStb: boolean;
+    executableActionRegistered: boolean;
+    summary: {
+      totalItems: number;
+      passedCount: number;
+      blockedCount: number;
+      missingCount: number;
+      blockingSeverityCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      marksProductionReady: boolean;
+      switchesTraffic: boolean;
+      decommissionsStb: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      publishesContent: boolean;
+      createsApproval: boolean;
+      executableActionRegistered: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
+export interface BrainCoreVideoReleaseCandidateReadinessResponse {
+  snapshot: {
+    status: string;
+    readinessPercent: number;
+    canMarkReleaseCandidate: boolean;
+    executableActionRegistered: boolean;
+    summary: {
+      totalItems: number;
+      readyCount: number;
+      blockedCount: number;
+      missingCount: number;
+      blockingSeverityCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      marksReleaseCandidate: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      rendersVideo: boolean;
+      publishesContent: boolean;
+      createsApproval: boolean;
+      executableActionRegistered: boolean;
+      decommissionsStb: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -3540,6 +3625,24 @@ export async function readBrainCoreVideoRenderExportPolicy(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoRenderExportPolicyResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoRenderExportPolicyResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/render-export-policy');
+}
+
+export async function readBrainCoreVideoControlledDryRunDesign(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledDryRunDesignResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledDryRunDesignResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-dry-run-design');
+}
+
+export async function readBrainCoreVideoProductionCutoverGate(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoProductionCutoverGateResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoProductionCutoverGateResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/production-cutover-gate');
+}
+
+export async function readBrainCoreVideoReleaseCandidateReadiness(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoReleaseCandidateReadinessResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoReleaseCandidateReadinessResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/release-candidate-readiness');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(
