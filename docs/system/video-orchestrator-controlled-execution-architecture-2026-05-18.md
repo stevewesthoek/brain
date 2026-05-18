@@ -529,3 +529,24 @@ This document defines the future controlled execution model as a design-only bou
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Status: not-ready (blocked until execution-plan implementation plan is approved).
 - Next safe phase: Phase 6G execution-plan implementation plan, still read-only and no execution.
+
+## Phase 6G execution-plan implementation plan
+
+- Added as a read-only execution-plan implementation plan design endpoint.
+- Defines 9 required inputs (candidateStoryId, sourceEpisodeId, firstApprovalId, secondApprovalId, validationReportRef, preflightEvidenceHashRef, candidateStoryLockRef, runtimeSandboxBoundaryRef, approvalAuditTrailRef).
+- Defines 10 execution plan steps (load validated story fixtures, load planning fixtures, verify approval audit trail immutable, verify sandbox boundary restrictions, load approved execution policy, verify approval expiry window open, capture pre-execution state snapshot, prepare execution environment, mark candidate as execution-pending, stage execution without running).
+- Defines output record shape (executionPlanId, candidateStoryId, sourceEpisodeId, planStatus: execution_planned_not_running, firstApprovalId, secondApprovalId, validationReportRef, preflightEvidenceHashRef, sandboxBoundaryRef, auditTrailRef, preExecutionStateSnapshot, createdAt, expiresAt, readOnly).
+- Defines 8 implementation gates (validator implementation, approval store implementation, first approval creation, second approval creation, immutable audit trail, sandbox boundary, state snapshot framework, approval expiry enforcement).
+- Identifies 8 blocking requirements (no approved execution plan definition, no approved pre-execution snapshot framework, no approved sandbox boundary enforcement, no approved audit trail immutability, no approved expiry enforcement, no approved state capture, no approved execution policy, no approved lockdown mechanism).
+- No execution plan enabled.
+- No plan execution enabled.
+- No persistence enabled.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Status: not-ready (blocked until rollback acceptance plan is approved).
+- Next safe phase: Phase 6H rollback acceptance and cleanup plan, still read-only and no execution.

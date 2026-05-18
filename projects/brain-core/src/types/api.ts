@@ -5755,3 +5755,71 @@ export interface BrainCoreVideoControlledExecutionValidatorImplementationPlan {
 export interface BrainCoreVideoControlledExecutionValidatorImplementationPlanResponse {
   plan: BrainCoreVideoControlledExecutionValidatorImplementationPlan;
 }
+
+export interface BrainCoreVideoControlledExecutionExecutionPlanImplementationPlan {
+  id: 'video-orchestrator-controlled-execution-execution-plan-implementation-plan';
+  generatedAt: string;
+  version: 'phase-6g';
+  status: 'not-ready' | 'ready';
+  planExists: false;
+  executionPlanEnabled: false;
+  planExecutionEnabled: false;
+  persistenceEnabled: false;
+  approvalCreationEnabled: false;
+  implementationExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    requiredInputCount: number;
+    executionPlanStepCount: number;
+    outputRecordFieldCount: number;
+    blockerCount: number;
+    implementationGateCount: number;
+  };
+  requiredInputs: string[];
+  executionPlanSteps: string[];
+  outputRecordShape: string[];
+  implementationGates: string[];
+  blockingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    planDesignOnly: true;
+    executionPlanEnabled: false;
+    planExecutionEnabled: false;
+    persistenceEnabled: false;
+    approvalCreationEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    expiryEnforcementEnabled: false;
+    revocationEnabled: false;
+    auditLinkingEnabled: false;
+    featureFlagsEnabled: false;
+    flagEvaluationEnabled: false;
+    validatorExecutionEnabled: false;
+    lockPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    sandboxProvisioningEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionExecutionPlanImplementationPlanResponse {
+  plan: BrainCoreVideoControlledExecutionExecutionPlanImplementationPlan;
+}
