@@ -4,16 +4,21 @@ Brain Core is the small local API boundary for the Obsidian-first operating cock
 
 ## Status
 
-Phase 4G: Agent View Foundation. The service exposes read-only status endpoints, approval-request endpoints, and operational ledgers for agent runs, events, and recovery items. All work is read-only; execution remains disabled.
+Phase 3d: Video Orchestrator Asset Plan (Active). The service exposes deterministic read-only asset planning module for video intake → research → script → asset-plan pipeline. Phase 4G (Agent View Foundation) endpoints remain operational.
 
 **2026-05-18 Latest:**
-- ✅ Agent run summaries (derived from approvals + external executor placeholders)
-- ✅ Agent event audit trail (mapped from approval audit events)
-- ✅ Recovery/blocker items (execution readiness, report health, scheduler status, STB/video health)
-- ✅ Approval audit trail detail endpoint (returns auditEvents alongside approval record)
-- ✅ All 118 tests passing (includes agent, recovery, and approval audit trail tests)
-- ✅ All safety flags hardcoded: writesToMind=false, executesShell=false, mutatesRuntime=false, executionEnabled=false
-- Execution remains disabled by design; no Mind mutations, no shell execution
+- ✅ Phase 3d: Video Orchestrator Asset Plan module (Planning, not generation)
+  - ✅ Asset plan fixtures: 5 stories with 15-17 asset requirements each
+  - ✅ Asset requirement types: thumbnail, title-card, passage-card, scene-visual, b-roll, platform-derivative, metadata-visual
+  - ✅ Structural placeholders only (no image generation, no design synthesis)
+  - ✅ Design orchestrator blocker correctly documented
+  - ✅ Video assembly stage blocker correctly documented
+  - ✅ GET /video-orchestrator/asset-plan (list all plans with summary)
+  - ✅ GET /video-orchestrator/asset-plan/:id (single plan with upstream links)
+  - ✅ Brain Console integration: minimal card in Pipelines section showing plan count, requirements, blocked count
+  - ✅ All 172 tests passing (169 existing + 3 new asset-plan endpoint tests)
+- ✅ All safety flags hardcoded: readOnly=true, generatesImage=false, callsExternalAI=false, writesFiles=false, publishesContent=false, writesToMind=false
+- Read-only by design; no asset generation, no image generation, no Mind mutations
 
 ## Goals
 
@@ -81,7 +86,17 @@ GET /video/status
 GET /video/queue
 GET /stb/status
 GET /video-orchestrator/status
+GET /video-orchestrator/intake
+GET /video-orchestrator/intake/:id
+GET /video-orchestrator/research
+GET /video-orchestrator/research/:id
+GET /video-orchestrator/script
+GET /video-orchestrator/script/:id
+GET /video-orchestrator/asset-plan
+GET /video-orchestrator/asset-plan/:id
 GET /stb-video-migration/status
+GET /stb-video/parity-matrix
+GET /stb-video/dual-run-status
 GET /runtime/reports
 GET /runtime/reports/model-router
 ```
@@ -104,7 +119,11 @@ Current `/video/status` and `/video/queue` are read-only placeholder or report-b
 
 Those report-backed local app and video surfaces were live-verified over `http://127.0.0.1:4877` during the current roadmap pass.
 
-**Phase 4G: Agent View Foundation (NEW)**
+**Phase 3d: Video Orchestrator Asset Plan (NEW)**
+
+Current `/video-orchestrator/asset-plan` and `/video-orchestrator/asset-plan/:id` expose a deterministic, read-only asset planning module. This is **planning only, not asset generation**. The module converts intake + research + script fixtures into a structured asset plan that defines what assets **will be needed** (not what will be generated). All requirements use structural placeholders (no image generation, no design prompt synthesis). Requirements are marked `planned` when design-orchestrator dependency is documented, or `blocked` when multiple blockers exist (design-orchestrator not implemented, video-assembly not implemented, image-generation disabled). Each requirement specifies `designDependency` ('design-orchestrator', 'manual-design', or 'none') to allow future design systems to understand blocker types. All safety flags are hardcoded: `readOnly: true`, `generatesImage: false`, `callsExternalAI: false`, `writesFiles: false`, `publishesContent: false`, `writesToMind: false`.
+
+**Phase 4G: Agent View Foundation**
 
 Current `/agent-runs` returns derived agent run summaries from approval records, including status (queued/running/blocked/completed/failed/cancelled/planned), age, and safety flags. External executor placeholders (Claude Code, Codex) are always included as `planned` runs. All safety flags are hardcoded: `writesToMind: false`, `executesShell: false`, `mutatesRuntime: false`, `executionEnabled: false`.
 

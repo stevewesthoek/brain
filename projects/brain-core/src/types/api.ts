@@ -489,6 +489,102 @@ export interface BrainCoreVideoScriptListResponse {
   evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
 }
 
+export interface BrainCoreVideoAssetRequirement {
+  id: string;
+  kind: 'thumbnail' | 'title-card' | 'passage-card' | 'scene-visual' | 'b-roll' | 'platform-derivative' | 'metadata-visual';
+  label: string;
+  status: 'planned' | 'blocked';
+  requiredForStages: string[];
+  placeholder: string;
+  designDependency: 'design-orchestrator' | 'manual-design' | 'none';
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    generatesImage: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoAssetPlan {
+  id: string;
+  intakePlanId: string;
+  researchId?: string;
+  scriptId?: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  requirements: BrainCoreVideoAssetRequirement[];
+  summary: {
+    totalRequirements: number;
+    thumbnailCount: number;
+    sceneVisualCount: number;
+    platformDerivativeCount: number;
+    blockedCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesImage: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoAssetPlanListResponse {
+  id: 'video-orchestrator-asset-plan';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoAssetPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalRequirements: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesImage: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoAssetPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoAssetPlan;
+  upstream: {
+    intakePlanId: string;
+    researchId?: string;
+    scriptId?: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesImage: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
 export interface BrainCoreStbVideoParityMatrixEntry {
   id: string;
   stbStage: string;
