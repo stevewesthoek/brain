@@ -550,21 +550,14 @@ export function renderBrainConsoleView(
 ): void {
   container.empty();
   container.addClass('brain-console');
-  container.addClass('brain-console--cockpit');
 
   const snapshot = deriveDashboardSnapshot(state, settings.brainCoreUrl);
   const activeSection = state.activeSection ?? 'overview';
 
   const shell = container.createDiv({ cls: 'brain-console__shell' });
 
-  // Command bar
-  renderCommandBar(shell, snapshot, onRefresh);
-
-  // Status pills
-  renderStatusPills(shell, state);
-
-  // Hero attention panel
-  renderHeroPanel(shell, snapshot, state);
+  // Native card UI header
+  renderNativeHeader(shell, state, onRefresh);
 
   // Main content area
   if (snapshot.connectionStatus === 'offline') {
@@ -576,9 +569,33 @@ export function renderBrainConsoleView(
     // Active section content
     renderActiveSectionContent(shell, activeSection, state, snapshot, settings);
 
-    // Activity panel
-    renderActivityPanel(shell, state);
+    // Diagnostics panel
+    renderDiagnosticsPanel(shell, state);
   }
+}
+
+function renderNativeHeader(shell: HTMLElement, state: BrainConsoleViewState, onRefresh?: () => void): void {
+  const header = shell.createDiv({ cls: 'brain-console__native-header' });
+
+  const title = header.createEl('h1', { text: 'Brain Console' });
+  title.addClass('brain-console__title');
+
+  const controls = header.createDiv({ cls: 'brain-console__header-controls' });
+
+  const buildMarker = controls.createEl('span', { cls: 'brain-console__build-marker' });
+  buildMarker.textContent = `Build: ${(window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown'}`;
+
+  const refreshBtn = controls.createEl('button', { text: '↻ Refresh' });
+  refreshBtn.addClass('brain-console__refresh-btn');
+  refreshBtn.setAttribute('type', 'button');
+  if (onRefresh) {
+    refreshBtn.addEventListener('click', () => onRefresh());
+  }
+
+  const online = state.status?.ok === true;
+  const status = controls.createEl('span', { cls: 'brain-console__header-status' });
+  status.textContent = online ? '● Online' : '○ Offline';
+  status.addClass(online ? 'online' : 'offline');
 }
 
 function renderSectionTabs(shell: HTMLElement, activeSection: BrainConsoleSectionId): void {
@@ -3782,7 +3799,7 @@ function renderProBotDashboardParityCard(state: BrainConsoleViewState): HTMLElem
 
   const parity = state.probotDashboardParity;
   if (!parity) {
-    return renderEmptyState('ProBot parity unavailable', 'Brain Core /probot/dashboard-parity did not return a response.');
+    return renderProBotFallbackMap(container);
   }
 
   renderCompactStatGrid(container, [
@@ -3820,5 +3837,47 @@ async function readBrainCoreProBotDashboardParity(baseUrl: string): Promise<{ va
     return { value };
   } catch (error) {
     return { error: 'request_failed', detail: error instanceof Error ? error.message : String(error), url };
+  }
+}
+
+function renderProBotFallbackMap(container: HTMLElement): HTMLElement {
+  container.createEl('div', { cls: 'brain-console__warning', text: '⚠ Brain Core /probot/dashboard-parity unavailable. Showing static migration map.' });
+
+  const tabs = [
+    { name: 'Overview', status: 'available' },
+    { name: 'Local Apps', status: 'available' },
+    { name: 'Production Pipeline', status: 'partial' },
+    { name: 'Video Orchestrator Studio', status: 'partial' },
+    { name: 'Viral Flow', status: 'partial' },
+    { name: 'Session History', status: 'available' },
+    { name: 'System Updates', status: 'planned' },
+    { name: 'Stripe', status: 'legacy/admin-only' },
+  ];
+
+  const grid = container.createDiv({ cls: 'brain-console__probot-map' });
+  for (const tab of tabs) {
+    const row = grid.createDiv({ cls: 'brain-console__probot-tab' });
+    row.createEl('span', { cls: 'brain-console__probot-name', text: tab.name });
+    const badge = row.createEl('span', { cls: 'brain-console__badge', text: tab.status });
+    badge.addClass(`badge-${tab.status.replace('/', '-')}`);
+  }
+
+  container.createEl('div', { cls: 'brain-console__safety-note', text: 'Read-only · No secrets · No mutation controls' });
+
+  return container;
+}
+
+function renderDiagnosticsPanel(shell: HTMLElement, state: BrainConsoleViewState): void {
+  if (!state.endpointErrors || state.endpointErrors.length === 0) {
+    return;
+  }
+
+  const panel = shell.createDiv({ cls: 'brain-console__diagnostics' });
+  panel.createEl('div', { cls: 'brain-console__diagnostics-title', text: 'Diagnostics' });
+
+  for (const error of state.endpointErrors) {
+    const item = panel.createDiv({ cls: 'brain-console__diagnostics-item' });
+    item.createEl('div', { cls: 'brain-console__diagnostics-endpoint', text: error.pathname });
+    item.createEl('div', { cls: 'brain-console__diagnostics-error', text: error.error });
   }
 }

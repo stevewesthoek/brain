@@ -4,13 +4,20 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'native-ux-2026-05-18-01';
+export const BRAIN_CONSOLE_BUILD_ID = 'native-card-ui-2026-05-19-01';
+
+declare global {
+  interface Window {
+    BRAIN_CONSOLE_BUILD_ID: string;
+  }
+}
 
 export default class BrainConsolePlugin extends Plugin {
   settings: BrainConsoleSettings = DEFAULT_BRAIN_CONSOLE_SETTINGS;
 
   async onload(): Promise<void> {
     setRequestUrl(requestUrl);
+    (window as any).BRAIN_CONSOLE_BUILD_ID = BRAIN_CONSOLE_BUILD_ID;
     this.settings = sanitizeSettings(await this.loadData());
 
     this.addRibbonIcon('brain-circuit', 'Open Brain Console', () => {
