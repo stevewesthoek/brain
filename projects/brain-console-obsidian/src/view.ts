@@ -665,8 +665,11 @@ function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewStat
   // Production Status
   renderCard(grid, 'Production Status', renderProductionStatusCard(state));
 
-  // ProBot dashboard migration parity
-  renderCard(grid, 'ProBot → Brain Console Parity', renderProBotDashboardParityCard(state));
+  // ProBot dashboard migration parity (full width)
+  const probotCard = grid.createDiv({ cls: 'brain-console__card brain-console__card--prominent' });
+  const probotHeader = probotCard.createDiv({ cls: 'brain-console__card-header' });
+  probotHeader.createEl('h3', { text: 'ProBot → Brain Console Parity' });
+  probotCard.appendChild(renderProBotDashboardParityCard(state));
 
   // Metric counts
   renderCard(grid, 'Metrics', renderOverviewMetricsCard(snapshot));
