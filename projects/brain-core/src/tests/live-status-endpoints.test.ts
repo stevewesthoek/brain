@@ -429,3 +429,80 @@ test('GET /recovery returns recovery items with no auto-fix capability', async (
     assert.equal(item.safety.writesToMind, false, 'Recovery items must not write to Mind');
   });
 });
+
+test('GET /video-orchestrator/intake returns sources and plans with safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/intake' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    sources: Array<{ id: string; source: string; status: string }>;
+    plans: Array<{ id: string; status: string; safety: object }>;
+    summary: { sourceCount: number; planCount: number };
+    safety: {
+      readOnly: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'video-orchestrator-intake');
+  assert.ok(Array.isArray(body.sources), 'sources should be array');
+  assert.ok(Array.isArray(body.plans), 'plans should be array');
+  assert.ok(body.summary.sourceCount > 0, 'should have sources');
+  assert.ok(body.summary.planCount > 0, 'should have plans');
+  assert.equal(body.safety.readOnly, true, 'must be read-only');
+  assert.equal(body.safety.executesStb, false, 'must not execute STB');
+  assert.equal(body.safety.executesVideo, false, 'must not execute Video');
+  assert.equal(body.safety.writesFiles, false, 'must not write files');
+  assert.equal(body.safety.publishesContent, false, 'must not publish');
+  assert.equal(body.safety.writesToMind, false, 'must not write to Mind');
+});
+
+test('GET /video-orchestrator/intake/:id returns a single plan with safety flags', async () => {
+  const listResponse = await exercise({ method: 'GET', url: '/video-orchestrator/intake' });
+  const listBody = JSON.parse(listResponse.body) as { plans: Array<{ id: string }> };
+  assert.ok(listBody.plans.length > 0, 'should have at least one plan');
+
+  const firstPlanId = listBody.plans[0]?.id;
+  const response = await exercise({ method: 'GET', url: `/video-orchestrator/intake/${firstPlanId}` });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    sourceId: string;
+    title: string;
+    status: string;
+    safety: {
+      readOnly: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+    };
+    normalizedInputs: { title: string; durationTargetMinutes: number; platforms: string[] };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.id.startsWith('plan-'), 'plan id should have plan- prefix');
+  assert.ok(body.title, 'should have title');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.executesStb, false);
+  assert.equal(body.safety.executesVideo, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.ok(body.normalizedInputs.title);
+  assert.equal(body.normalizedInputs.durationTargetMinutes, 30);
+  assert.ok(Array.isArray(body.normalizedInputs.platforms));
+});
+
+test('GET /video-orchestrator/intake/:id with unknown id returns 404', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/intake/unknown-plan-id' });
+  assert.equal(response.statusCode, 404);
+
+  const body = JSON.parse(response.body) as { error?: { code: string; message: string } };
+  assert.equal(body.error?.code, 'not_found');
+  assert.ok(body.error?.message.includes('intake plan'));
+});

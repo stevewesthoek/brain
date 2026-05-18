@@ -43,6 +43,63 @@ Next safe task (Phase 4C done):
 
 - Continue with approval-request lifecycle clarity and report visibility.
 
+## Continuation update — Phase 3b: Video Orchestrator intake module (2026-05-18)
+
+**Context:** Production acceleration checkpoint. Implemented first Video Orchestrator production module (intake) to validate architecture and dual-run infrastructure.
+
+**Implemented:**
+
+- **Video Orchestrator intake adapter** (`projects/brain-core/src/adapters/video-orchestrator-intake.ts`)
+  - HTTP endpoints: GET /video-orchestrator/intake (all sources/plans), GET /video-orchestrator/intake/:id (individual plan)
+  - 5 test fixture sources (stories 052-056) based on dual-run validation evidence (2026-05-17)
+  - Each source generates intake plan with normalized inputs
+  - All safety flags hardcoded: readOnly=true, executesStb=false, executesVideo=false, writesFiles=false, publishesContent=false, writesToMind=false
+
+- **Brain Core integration**
+  - Added 3 new types: BrainCoreVideoIntakeSource, BrainCoreVideoIntakePlan, BrainCoreVideoOrchestratorIntakeResponse
+  - Updated route handlers in routes.ts
+  - 3 new tests added to live-status-endpoints.test.ts (163/163 tests passing)
+
+- **Brain Console integration**
+  - Added client methods: readBrainCoreVideoOrchestratorIntake(), readBrainCoreVideoOrchestratorIntakePlan()
+  - Added renderVideoIntakeCard() function in view.ts
+  - Intake card displays in Pipelines section: shows sources count, plans count, available/blocked, safety flags
+
+- **Parity matrix updated**
+  - entry-1-intake evidence updated with production readiness documentation
+  - Validation evidence: 10/10 passage selection tests, 100% parity confirmed
+
+**Validation:**
+
+- ✅ Brain Core tests: 163/163 passing
+- ✅ Brain Console typecheck: passed
+- ✅ Brain Console build: passed
+- ✅ All safety flags verified hardcoded (no config overrides)
+- ✅ Dual-run validation: 100% passage selection parity
+
+**Safety status:**
+
+- No STB pipeline execution
+- No Video orchestrator execution
+- No file mutations
+- No content publishing
+- No Mind vault writes
+- Read-only preview mode only
+
+**Design pattern established:**
+
+- Read-only HTTP endpoints with hardcoded safety flags
+- Test fixtures from dual-run validation evidence
+- Brain Console card displays module status + safety verification
+- Parity matrix documents production readiness with evidence
+- Pattern ready for next modules (script-generation, assets)
+
+**Next safe task (Phase 3b done):**
+
+- Validate and implement script-generation stage (entry-2-structure, entry-3-script)
+- Currently in-progress: 4/5 structure tests passing, 8/8 script tests passing
+- After structure timing variance resolved, follow same pattern as intake
+
 ## Continuation update — Approved dry-run report visibility (Phase 4D)
 
 Implemented:

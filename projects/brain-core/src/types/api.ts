@@ -182,6 +182,66 @@ export interface BrainCoreStbVideoMigrationStatus {
   blockers: string[];
 }
 
+export interface BrainCoreVideoIntakeSource {
+  id: string;
+  source: 'stb-fixture' | 'manual-fixture' | 'runtime-evidence';
+  stbSlug?: string;
+  title: string;
+  durationTargetMinutes: number;
+  platformTargets: string[];
+  status: 'available' | 'blocked';
+  evidence: string[];
+}
+
+export interface BrainCoreVideoIntakePlan {
+  id: string;
+  sourceId: string;
+  projectId: string;
+  title: string;
+  status: 'preview-ready' | 'blocked';
+  normalizedInputs: {
+    storySlug?: string;
+    title: string;
+    durationTargetMinutes: number;
+    platforms: string[];
+    requiredStages: string[];
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoOrchestratorIntakeResponse {
+  id: 'video-orchestrator-intake';
+  generatedAt: string;
+  version: string;
+  sources: BrainCoreVideoIntakeSource[];
+  plans: BrainCoreVideoIntakePlan[];
+  summary: {
+    sourceCount: number;
+    planCount: number;
+    availableCount: number;
+    blockedCount: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  nextSafeStep: string;
+}
+
 export interface BrainCoreStbVideoParityMatrixEntry {
   id: string;
   stbStage: string;
@@ -1791,6 +1851,8 @@ export interface BrainCoreRoutes {
   };
   '/stb/status': BrainCoreStbPipelineStatus;
   '/video-orchestrator/status': BrainCoreVideoOrchestratorStatus;
+  '/video-orchestrator/intake': BrainCoreVideoOrchestratorIntakeResponse;
+  '/video-orchestrator/intake/:id': BrainCoreVideoIntakePlan;
   '/stb-video-migration/status': BrainCoreStbVideoMigrationStatus;
   '/stb-video/parity-matrix': BrainCoreStbVideoParityMatrix;
   '/stb-video/dual-run-status': BrainCoreStbVideoDualRunStatus;

@@ -42,18 +42,18 @@ Obsidian remains the only primary human dashboard. Brain Core exposes machine an
 
 | STB Concept | Video Orchestrator Target | Status | Validation |
 |---|---|---|---|
-| Research/scripture intake | bible-research orchestrator | not-started | Compare passage selection |
-| Outline/structure | script-generation stage | not-started | Compare outline equivalence |
-| Script generation | script-generation stage | not-started | Compare script quality |
-| Asset generation | asset-generation stage | not-started | Compare asset metadata |
-| Thumbnail design | design orchestrator (planned) | blocked | Compare thumbnail output |
-| Video assembly | video-assembly stage | not-started | Compare bitrate/quality |
-| Metadata enrichment | metadata-enrichment stage | not-started | Compare SEO metadata |
-| YouTube publishing | platform-publish stage | not-started | Compare published video |
-| Pinterest publishing | platform-publish stage | not-started | Compare pin appearance |
-| Facebook publishing | platform-publish stage | not-started | Compare post formatting |
-| Approval/review | approval-gate stage | not-started | Compare approval flow |
-| Archive/logging | archive-logging stage | not-started | Compare audit trail |
+| Research/scripture intake | bible-research orchestrator + intake-stage | ✅ **PRODUCTION** (2026-05-18) | 10/10 passage selection tests passing, 100% parity |
+| Outline/structure | script-generation stage | in-progress | 4/5 tests passing, timing variance under investigation |
+| Script generation | script-generation stage | in-progress | 8/8 tests passing, ready for module implementation |
+| Asset generation | asset-generation stage | partial | Preview-only rendering, dynamic composition pending |
+| Thumbnail design | design orchestrator (planned) | blocked | Design orchestrator not yet built |
+| Video assembly | video-assembly stage | planned | Design phase only, rendering pending |
+| Metadata enrichment | metadata-enrichment stage | planned | Schema design pending |
+| YouTube publishing | platform-publish stage | planned | Publishing stage not yet implemented |
+| Pinterest publishing | platform-publish stage | planned | Publishing stage not yet implemented |
+| Facebook publishing | platform-publish stage | planned | Publishing stage not yet implemented |
+| Approval/review | approval-gate stage | ✅ mapped | Approval state transitions confirmed |
+| Archive/logging | archive-logging stage | planned | Audit trail completeness check pending |
 
 **Dual-run validation:**
 - Build video module alongside STB

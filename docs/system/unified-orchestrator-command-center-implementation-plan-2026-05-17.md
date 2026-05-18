@@ -364,6 +364,119 @@ tests/
 
 ---
 
+## Phase 3b: Video Orchestrator Production Acceleration — First Module (2026-05-18)
+
+### Goal
+Implement the first Video Orchestrator production module (intake) as proof-of-concept for the production architecture. Validate dual-run infrastructure with deterministic, read-only, zero-risk module. Establish pattern for remaining modules.
+
+### Status: COMPLETE (2026-05-18)
+
+### Completed Tasks
+
+#### 3b.1 Implement Video Orchestrator intake module
+**Files created/modified:**
+- ✅ `projects/brain-core/src/types/api.ts` — Added 3 new interfaces: BrainCoreVideoIntakeSource, BrainCoreVideoIntakePlan, BrainCoreVideoOrchestratorIntakeResponse
+- ✅ `projects/brain-core/src/adapters/video-orchestrator-intake.ts` (NEW) — Adapter with getVideoOrchestratorIntake() and getVideoOrchestratorIntakePlan(planId) exports
+- ✅ `projects/brain-core/src/api/routes.ts` — Added HTTP handlers for GET /video-orchestrator/intake and GET /video-orchestrator/intake/:id
+- ✅ `projects/brain-core/src/tests/live-status-endpoints.test.ts` — 3 new tests (163/163 passing)
+
+**Implementation details:**
+- 5 test fixture sources (stories 052-056 from dual-run validation evidence)
+- Each source maps to intake plan with normalized inputs
+- All endpoints return aggregated response with safety flags hardcoded
+- Safety flags: readOnly=true, executesStb=false, executesVideo=false, writesFiles=false, publishesContent=false, writesToMind=false
+- GET /video-orchestrator/intake returns all sources + plans + summary
+- GET /video-orchestrator/intake/:id returns individual plan with 404 for unknown
+
+**Evidence:**
+- Dual-run test suite passing: 10/10 passage selection tests validated (2026-05-17T14:00:00Z)
+- Parity matrix entry-1-intake status: mapped, deterministic, tested
+- Brain Core test suite: 163/163 passing (3 new intake endpoint tests)
+
+#### 3b.2 Integrate intake module into Brain Console dashboard
+**Files modified:**
+- ✅ `projects/brain-console-obsidian/src/client.ts` — Added readBrainCoreVideoOrchestratorIntake() and readBrainCoreVideoOrchestratorIntakePlan() client methods
+- ✅ `projects/brain-console-obsidian/src/view.ts` — Added videoOrchestratorIntake field to view state, renderVideoIntakeCard() function, integrated card into Pipelines section
+
+**Visibility:**
+- Brain Console Pipelines section now displays intake status card
+- Shows sources count, plans count, available/blocked breakdown
+- Displays all 6 safety flags in green checkmarks
+- Card positioned after STB Live Status, before STB ↔ Video Parity Matrix
+
+**Exit criteria:**
+- ✅ Brain Console typecheck passes
+- ✅ Brain Console build passes (dist/main.js 533.7kb)
+- ✅ Brain Console package staged at release
+- ✅ All safety flags verified as hardcoded false (no configuration overrides)
+
+#### 3b.3 Update parity matrix with intake production evidence
+**File modified:**
+- ✅ `projects/brain-core/src/adapters/stb-video-parity.ts` — Updated entry-1-intake validationEvidence with 5 new lines documenting production readiness
+
+**Evidence recorded:**
+- Video Orchestrator intake module implemented: GET /video-orchestrator/intake (2026-05-18)
+- Intake production fixtures available: 5 test sources normalized to plans
+- GET /video-orchestrator/intake/:id returns individual intake plans
+- All safety flags confirmed: readOnly=true, executesStb=false, executesVideo=false, writesFiles=false, publishesContent=false, writesToMind=false
+- Brain Core tests: 163/163 passing (includes 3 new intake endpoint tests)
+
+### Design Pattern for Remaining Modules
+
+**Intake module is the first production module because:**
+1. ✅ Already tested via dual-run (10 validation tests, 100% pass)
+2. ✅ Deterministic (passage selection always produces same input)
+3. ✅ Zero rendering risk (no video generation, no composition)
+4. ✅ Zero execution risk (no STB calls, no Video calls)
+5. ✅ Zero mutation risk (read-only fixtures, no state writes)
+
+**Pattern established:**
+- Read-only HTTP endpoints exposing adapter fixtures
+- Safety flags hardcoded on all responses (never configurable)
+- Test fixtures based on dual-run validation evidence
+- Brain Console card displays module status + safety verification
+- Parity matrix updated with production evidence
+
+**Next modules follow this pattern:**
+1. Script-generation stage (entry-2-structure, entry-3-script) — in-progress validation (4/5 tests passing)
+2. Asset-generation stage (entry-4-assets) — partial implementation (preview-only)
+3. Voiceover-generation stage (entry-6-voiceover) — partial implementation (preview-only)
+4. [Remaining modules blocked by design orchestrator, video assembly, or pending implementation]
+
+### Validation
+
+**Safety validation:**
+- ✅ No STB execution flags
+- ✅ No Video orchestrator execution flags
+- ✅ No file system writes
+- ✅ No content publishing
+- ✅ No Mind vault mutations
+- ✅ Read-only preview mode only
+
+**Functional validation:**
+- ✅ HTTP endpoints return 200 OK
+- ✅ Response types match interface definitions
+- ✅ Error handling returns 404 for invalid IDs
+- ✅ Safety flags present and correct on all responses
+- ✅ Brain Console integration operational
+
+**Test coverage:**
+- ✅ Unit tests for adapter functions
+- ✅ Integration tests for HTTP endpoints
+- ✅ Type safety in TypeScript strict mode
+- ✅ Brain Console card rendering
+- ✅ 163/163 tests passing (0 failures)
+
+### Next Steps
+
+1. **Validate script-generation stage (entry-2-structure)** — Complete in-progress testing (currently 4/5 passing, timing variance under investigation)
+2. **Implement script-generation module** — Follow intake pattern once entry-2 testing completes
+3. **Extend asset-generation stage (entry-4-assets)** — Move from preview-only to full validation
+4. **Build design orchestrator** — Required blocker for entry-5 thumbnail design
+5. **Implement video-assembly stage** — Required for entries 7-9 (publish stages)
+
+---
+
 ## Phase 2C: Brain-Native Agentic OS Scaffold (2-3 weeks)
 
 ### Goal

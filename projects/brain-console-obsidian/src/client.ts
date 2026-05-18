@@ -1208,6 +1208,61 @@ export interface BrainCoreVideoOrchestratorStatus {
   actions: { canPreview: boolean; canRequestRun: boolean; requiresApproval: boolean };
 }
 
+export interface BrainCoreVideoIntakeSource {
+  id: string;
+  source: string;
+  stbSlug?: string;
+  title: string;
+  durationTargetMinutes: number;
+  platformTargets: string[];
+  status: string;
+  evidence: string[];
+}
+
+export interface BrainCoreVideoIntakePlan {
+  id: string;
+  sourceId: string;
+  projectId: string;
+  title: string;
+  status: string;
+  normalizedInputs: {
+    storySlug?: string;
+    title: string;
+    durationTargetMinutes: number;
+    platforms: string[];
+    requiredStages: string[];
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoOrchestratorIntakeResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  sources: BrainCoreVideoIntakeSource[];
+  plans: BrainCoreVideoIntakePlan[];
+  summary: { sourceCount: number; planCount: number; availableCount: number; blockedCount: number };
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  nextSafeStep: string;
+}
+
 export interface BrainCoreStbVideoMigrationStatus {
   id: 'stb-to-video-migration-status';
   sourcePipelineId: string;
@@ -2025,6 +2080,19 @@ export async function readBrainCoreVideoOrchestratorStatus(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoOrchestratorStatus>> {
   return fetchJson<import('./client.js').BrainCoreVideoOrchestratorStatus>(normalizeBaseUrl(baseUrl), '/video-orchestrator/status');
+}
+
+export async function readBrainCoreVideoOrchestratorIntake(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoOrchestratorIntakeResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoOrchestratorIntakeResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/intake');
+}
+
+export async function readBrainCoreVideoOrchestratorIntakePlan(
+  baseUrl: string,
+  planId: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoIntakePlan>> {
+  return fetchJson<import('./client.js').BrainCoreVideoIntakePlan>(normalizeBaseUrl(baseUrl), `/video-orchestrator/intake/${encodeURIComponent(planId)}`);
 }
 
 export async function readBrainCoreStbVideoMigrationStatus(
