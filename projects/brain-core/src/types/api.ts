@@ -182,6 +182,84 @@ export interface BrainCoreStbVideoMigrationStatus {
   blockers: string[];
 }
 
+export interface BrainCoreStbVideoParityMatrixEntry {
+  id: string;
+  stbStage: string;
+  stbStageIndex: number;
+  videoModule: string;
+  videoModuleIndex: number;
+  status: 'mapped' | 'partial' | 'planned' | 'blocked';
+  deterministic: boolean;
+  skipCondition?: string;
+  riskLevel: 'none' | 'low' | 'medium' | 'high';
+  validationStatus: 'not-tested' | 'preview-only' | 'tested' | 'blocked';
+  validationEvidence?: string[];
+  blockerReason?: string;
+}
+
+export interface BrainCoreStbVideoParityMatrix {
+  id: 'stb-video-parity-matrix';
+  generatedAt: string;
+  version: string;
+  sourcePipelineId: 'stb-daily-pipeline';
+  targetPipelineId: 'video-upload-pipeline';
+  stbStageCount: number;
+  videoModuleCount: number;
+  entries: BrainCoreStbVideoParityMatrixEntry[];
+  summary: {
+    totalEntries: number;
+    mappedCount: number;
+    partialCount: number;
+    plannedCount: number;
+    blockedCount: number;
+    parityPercent: number;
+    readinessScore: number;
+  };
+  risksAndMitigations: Array<{ risk: string; mitigation: string; priority: 'critical' | 'high' | 'medium' | 'low' }>;
+  nextSteps: string[];
+}
+
+export interface BrainCoreStbVideoDualRunValidation {
+  entryId: string;
+  stbStage: string;
+  videoModule: string;
+  status: 'not-started' | 'in-progress' | 'passed' | 'failed' | 'blocked';
+  testCount: number;
+  passCount: number;
+  passPercent: number;
+  failureReason?: string;
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  lastTestedAt?: string;
+}
+
+export interface BrainCoreStbVideoDualRunStatus {
+  id: 'stb-video-dual-run-status';
+  generatedAt: string;
+  version: string;
+  sourcePipelineId: 'stb-daily-pipeline';
+  targetPipelineId: 'video-upload-pipeline';
+  executesStb: boolean;
+  executesVideo: boolean;
+  status: 'not-started' | 'in-progress' | 'partial-passed' | 'ready' | 'blocked' | 'decommissioned';
+  health: BrainCoreHealth;
+  dualRunEnabled: boolean;
+  validations: BrainCoreStbVideoDualRunValidation[];
+  summary: {
+    totalValidations: number;
+    notStartedCount: number;
+    inProgressCount: number;
+    passedCount: number;
+    failedCount: number;
+    blockedCount: number;
+    readinessPercent: number;
+  };
+  nextSafeTask: string;
+  blockers: string[];
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  limitations: string[];
+  actions: { canPreview: boolean; canRequestRun: boolean; canRetry: boolean; requiresApproval: boolean };
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -1714,6 +1792,8 @@ export interface BrainCoreRoutes {
   '/stb/status': BrainCoreStbPipelineStatus;
   '/video-orchestrator/status': BrainCoreVideoOrchestratorStatus;
   '/stb-video-migration/status': BrainCoreStbVideoMigrationStatus;
+  '/stb-video/parity-matrix': BrainCoreStbVideoParityMatrix;
+  '/stb-video/dual-run-status': BrainCoreStbVideoDualRunStatus;
   '/agents': {
     agents: BrainCoreAgentSummary[];
   };

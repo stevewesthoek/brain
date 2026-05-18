@@ -1222,6 +1222,84 @@ export interface BrainCoreStbVideoMigrationStatus {
   blockers: string[];
 }
 
+export interface BrainCoreStbVideoParityMatrixEntry {
+  id: string;
+  stbStage: string;
+  stbStageIndex: number;
+  videoModule: string;
+  videoModuleIndex: number;
+  status: string;
+  deterministic: boolean;
+  skipCondition?: string;
+  riskLevel: string;
+  validationStatus: string;
+  validationEvidence?: string[];
+  blockerReason?: string;
+}
+
+export interface BrainCoreStbVideoParityMatrix {
+  id: 'stb-video-parity-matrix';
+  generatedAt: string;
+  version: string;
+  sourcePipelineId: string;
+  targetPipelineId: string;
+  stbStageCount: number;
+  videoModuleCount: number;
+  entries: BrainCoreStbVideoParityMatrixEntry[];
+  summary: {
+    totalEntries: number;
+    mappedCount: number;
+    partialCount: number;
+    plannedCount: number;
+    blockedCount: number;
+    parityPercent: number;
+    readinessScore: number;
+  };
+  risksAndMitigations: Array<{ risk: string; mitigation: string; priority: string }>;
+  nextSteps: string[];
+}
+
+export interface BrainCoreStbVideoDualRunValidation {
+  entryId: string;
+  stbStage: string;
+  videoModule: string;
+  status: string;
+  testCount: number;
+  passCount: number;
+  passPercent: number;
+  failureReason?: string;
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  lastTestedAt?: string;
+}
+
+export interface BrainCoreStbVideoDualRunStatus {
+  id: 'stb-video-dual-run-status';
+  generatedAt: string;
+  version: string;
+  sourcePipelineId: string;
+  targetPipelineId: string;
+  executesStb: boolean;
+  executesVideo: boolean;
+  status: string;
+  health: string;
+  dualRunEnabled: boolean;
+  validations: BrainCoreStbVideoDualRunValidation[];
+  summary: {
+    totalValidations: number;
+    notStartedCount: number;
+    inProgressCount: number;
+    passedCount: number;
+    failedCount: number;
+    blockedCount: number;
+    readinessPercent: number;
+  };
+  nextSafeTask: string;
+  blockers: string[];
+  evidence: Array<{ label: string; path?: string; timestamp?: string; value: string }>;
+  limitations: string[];
+  actions: { canPreview: boolean; canRequestRun: boolean; canRetry: boolean; requiresApproval: boolean };
+}
+
 export interface BrainCoreAgentSummary {
   id: string;
   name: string;
@@ -1953,6 +2031,18 @@ export async function readBrainCoreStbVideoMigrationStatus(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreStbVideoMigrationStatus>> {
   return fetchJson<import('./client.js').BrainCoreStbVideoMigrationStatus>(normalizeBaseUrl(baseUrl), '/stb-video-migration/status');
+}
+
+export async function readBrainCoreStbVideoParityMatrix(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreStbVideoParityMatrix>> {
+  return fetchJson<import('./client.js').BrainCoreStbVideoParityMatrix>(normalizeBaseUrl(baseUrl), '/stb-video/parity-matrix');
+}
+
+export async function readBrainCoreStbVideoDualRunStatus(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreStbVideoDualRunStatus>> {
+  return fetchJson<import('./client.js').BrainCoreStbVideoDualRunStatus>(normalizeBaseUrl(baseUrl), '/stb-video/dual-run-status');
 }
 
 export async function readBrainCoreAgents(

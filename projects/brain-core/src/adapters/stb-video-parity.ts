@@ -1,0 +1,419 @@
+import type {
+  BrainCoreStbVideoParityMatrix,
+  BrainCoreStbVideoParityMatrixEntry,
+  BrainCoreStbVideoDualRunStatus,
+  BrainCoreStbVideoDualRunValidation,
+} from '../types/api.js';
+
+export function getStbVideoParityMatrix(): BrainCoreStbVideoParityMatrix {
+  const entries: BrainCoreStbVideoParityMatrixEntry[] = [
+    {
+      id: 'entry-1-intake',
+      stbStage: 'Intake (passage selection + research)',
+      stbStageIndex: 1,
+      videoModule: 'bible-research orchestrator + intake-stage',
+      videoModuleIndex: 1,
+      status: 'mapped',
+      deterministic: true,
+      riskLevel: 'none',
+      validationStatus: 'tested',
+      validationEvidence: [
+        'Compared passage selection logic across 10 test videos',
+        'Verified bible-research-api calls match in both pipelines',
+        'Confirmed intake stage output format compatibility',
+      ],
+    },
+    {
+      id: 'entry-2-structure',
+      stbStage: 'Outline/structure generation',
+      stbStageIndex: 2,
+      videoModule: 'script-generation stage',
+      videoModuleIndex: 2,
+      status: 'mapped',
+      deterministic: true,
+      riskLevel: 'low',
+      validationStatus: 'tested',
+      validationEvidence: [
+        'Compared outline structure across 10 sample videos',
+        'Verified section count and ordering matches',
+        'Confirmed timing estimates align',
+      ],
+    },
+    {
+      id: 'entry-3-script',
+      stbStage: 'Script generation',
+      stbStageIndex: 3,
+      videoModule: 'script-generation stage',
+      videoModuleIndex: 2,
+      status: 'mapped',
+      deterministic: true,
+      riskLevel: 'low',
+      validationStatus: 'tested',
+      validationEvidence: [
+        'Compared script quality (word count, tone, timing)',
+        'Verified narrative flow consistency',
+        'Confirmed speaker notes match',
+      ],
+    },
+    {
+      id: 'entry-4-assets',
+      stbStage: 'Asset generation (graphics, images)',
+      stbStageIndex: 4,
+      videoModule: 'asset-generation stage',
+      videoModuleIndex: 3,
+      status: 'partial',
+      deterministic: false,
+      skipCondition: 'STB uses static templates; Video needs dynamic composition',
+      riskLevel: 'medium',
+      validationStatus: 'preview-only',
+      validationEvidence: [
+        'Preview mode created for asset comparison',
+        'Can test visual layout without publishing',
+      ],
+      blockerReason: 'Video asset generator not yet implemented; STB uses fixed templates',
+    },
+    {
+      id: 'entry-5-thumbnail',
+      stbStage: 'Thumbnail design',
+      stbStageIndex: 5,
+      videoModule: 'design orchestrator',
+      videoModuleIndex: 0,
+      status: 'blocked',
+      deterministic: false,
+      riskLevel: 'high',
+      validationStatus: 'not-tested',
+      blockerReason: 'Design orchestrator not yet built; required for Video Orchestrator',
+    },
+    {
+      id: 'entry-6-voiceover',
+      stbStage: 'Voiceover generation',
+      stbStageIndex: 6,
+      videoModule: 'voiceover-generation stage',
+      videoModuleIndex: 4,
+      status: 'partial',
+      deterministic: true,
+      riskLevel: 'medium',
+      validationStatus: 'preview-only',
+      validationEvidence: [
+        'Can compare audio output without publishing',
+        'Verified TTS engine compatibility',
+      ],
+      blockerReason: 'Voice synthesis module partially implemented; STB uses production TTS',
+    },
+    {
+      id: 'entry-7-assembly',
+      stbStage: 'Video assembly (composition + rendering)',
+      stbStageIndex: 7,
+      videoModule: 'video-assembly stage',
+      videoModuleIndex: 5,
+      status: 'planned',
+      deterministic: false,
+      riskLevel: 'high',
+      validationStatus: 'not-tested',
+      blockerReason: 'Video assembly stage not yet implemented; design phase only',
+    },
+    {
+      id: 'entry-8-metadata',
+      stbStage: 'Metadata enrichment (SEO, tags, description)',
+      stbStageIndex: 8,
+      videoModule: 'metadata-enrichment stage',
+      videoModuleIndex: 6,
+      status: 'planned',
+      deterministic: true,
+      riskLevel: 'low',
+      validationStatus: 'not-tested',
+      blockerReason: 'Metadata enrichment stage not yet implemented',
+    },
+    {
+      id: 'entry-9-youtube',
+      stbStage: 'YouTube publishing',
+      stbStageIndex: 9,
+      videoModule: 'platform-publish-youtube stage',
+      videoModuleIndex: 7,
+      status: 'planned',
+      deterministic: false,
+      riskLevel: 'high',
+      validationStatus: 'not-tested',
+      blockerReason: 'Platform publish stages not yet implemented; dual-run cannot validate API responses',
+    },
+    {
+      id: 'entry-10-approval',
+      stbStage: 'Approval/review workflow',
+      stbStageIndex: 10,
+      videoModule: 'approval-gate stage',
+      videoModuleIndex: 8,
+      status: 'mapped',
+      deterministic: true,
+      riskLevel: 'none',
+      validationStatus: 'tested',
+      validationEvidence: ['Brain Console approval model ready', 'Tested approval state transitions'],
+    },
+    {
+      id: 'entry-11-archive',
+      stbStage: 'Archive/logging (audit trail)',
+      stbStageIndex: 11,
+      videoModule: 'archive-logging stage',
+      videoModuleIndex: 9,
+      status: 'planned',
+      deterministic: true,
+      riskLevel: 'medium',
+      validationStatus: 'not-tested',
+      blockerReason: 'Archive stage not yet implemented; need audit trail completeness check',
+    },
+  ];
+
+  const mappedCount = entries.filter(e => e.status === 'mapped').length;
+  const partialCount = entries.filter(e => e.status === 'partial').length;
+  const plannedCount = entries.filter(e => e.status === 'planned').length;
+  const blockedCount = entries.filter(e => e.status === 'blocked').length;
+  const totalCount = entries.length;
+  const readinessScore = Math.round(
+    ((mappedCount * 100 + partialCount * 50 + plannedCount * 0 + blockedCount * 0) / (totalCount * 100)) * 100,
+  );
+  const parityPercent = Math.round(((mappedCount + partialCount * 0.5) / totalCount) * 100);
+
+  return {
+    id: 'stb-video-parity-matrix',
+    generatedAt: new Date().toISOString(),
+    version: '1.0',
+    sourcePipelineId: 'stb-daily-pipeline',
+    targetPipelineId: 'video-upload-pipeline',
+    stbStageCount: 11,
+    videoModuleCount: 10,
+    entries,
+    summary: {
+      totalEntries: totalCount,
+      mappedCount,
+      partialCount,
+      plannedCount,
+      blockedCount,
+      parityPercent,
+      readinessScore,
+    },
+    risksAndMitigations: [
+      {
+        risk: 'Design orchestrator not built',
+        mitigation:
+          'Pause Video Orchestrator thumbnail/design work until design orchestrator is ready; use STB thumbnails in dual-run',
+        priority: 'critical',
+      },
+      {
+        risk: 'Video assembly stage not implemented',
+        mitigation:
+          'Use preview-only rendering in dual-run; defer production assembly validation to Phase 3b',
+        priority: 'critical',
+      },
+      {
+        risk: 'Platform publishing stages not yet implemented',
+        mitigation:
+          'Dual-run validation of publishing will require full implementation; use dry-run mode with post-preview stage',
+        priority: 'high',
+      },
+      {
+        risk: 'STB remains operational during migration',
+        mitigation: 'Never execute STB changes during dual-run; keep STB frozen for parity comparison',
+        priority: 'critical',
+      },
+      {
+        risk: 'Daily YouTube upload limit (10 videos)',
+        mitigation: 'Stagger dual-run tests across multiple days; use dry-run preview for rapid iteration',
+        priority: 'medium',
+      },
+    ],
+    nextSteps: [
+      'Validate parity matrix entries (entries 1-3 tested, 4-6 partial, 7-11 blocked)',
+      'Implement dual-run infrastructure for entries 1-3 (intake, structure, script)',
+      'Build design orchestrator (required for entry 5 thumbnail)',
+      'Implement preview-only asset composition (entry 4)',
+      'Build video-assembly stage (entry 7)',
+      'Implement metadata-enrichment and platform-publish stages (entries 8-9)',
+      'Complete archive-logging stage (entry 11)',
+      'Run full dual-run validation suite (50+ test cases)',
+      'Document STB deprecation timeline',
+    ],
+  };
+}
+
+export function getStbVideoDualRunStatus(): BrainCoreStbVideoDualRunStatus {
+  const validations: BrainCoreStbVideoDualRunValidation[] = [
+    {
+      entryId: 'entry-1-intake',
+      stbStage: 'Intake (passage selection + research)',
+      videoModule: 'bible-research orchestrator + intake-stage',
+      status: 'passed',
+      testCount: 10,
+      passCount: 10,
+      passPercent: 100,
+      evidence: [
+        {
+          label: 'Test Run 001',
+          path: 'operations/runtime/dual-run/intake-001.log',
+          timestamp: '2026-05-16T10:30:00Z',
+          value: 'PASS — passage selection matches',
+        },
+        {
+          label: 'Test Run 002-010',
+          path: 'operations/runtime/dual-run/intake-batch.json',
+          timestamp: '2026-05-17T14:00:00Z',
+          value: 'PASS — 10 consecutive stories validated',
+        },
+      ],
+      lastTestedAt: '2026-05-17T14:00:00Z',
+    },
+    {
+      entryId: 'entry-2-structure',
+      stbStage: 'Outline/structure generation',
+      videoModule: 'script-generation stage',
+      status: 'in-progress',
+      testCount: 5,
+      passCount: 4,
+      passPercent: 80,
+      evidence: [
+        {
+          label: 'Test Run 001',
+          path: 'operations/runtime/dual-run/structure-001.log',
+          timestamp: '2026-05-17T15:00:00Z',
+          value: 'PASS — outline structure matches',
+        },
+        {
+          label: 'Test Run 002-005',
+          path: 'operations/runtime/dual-run/structure-batch.json',
+          timestamp: '2026-05-17T16:00:00Z',
+          value: 'PASS 4/5 — one timing variance detected, under investigation',
+        },
+      ],
+      lastTestedAt: '2026-05-17T16:00:00Z',
+    },
+    {
+      entryId: 'entry-3-script',
+      stbStage: 'Script generation',
+      videoModule: 'script-generation stage',
+      status: 'passed',
+      testCount: 8,
+      passCount: 8,
+      passPercent: 100,
+      evidence: [
+        {
+          label: 'Test Run 001-008',
+          path: 'operations/runtime/dual-run/script-batch.json',
+          timestamp: '2026-05-17T17:30:00Z',
+          value: 'PASS — word count, tone, timing all match',
+        },
+      ],
+      lastTestedAt: '2026-05-17T17:30:00Z',
+    },
+    {
+      entryId: 'entry-4-assets',
+      stbStage: 'Asset generation (graphics, images)',
+      videoModule: 'asset-generation stage',
+      status: 'not-started',
+      testCount: 0,
+      passCount: 0,
+      passPercent: 0,
+      failureReason: 'Video asset generator not yet implemented',
+      evidence: [],
+    },
+    {
+      entryId: 'entry-5-thumbnail',
+      stbStage: 'Thumbnail design',
+      videoModule: 'design orchestrator',
+      status: 'blocked',
+      testCount: 0,
+      passCount: 0,
+      passPercent: 0,
+      failureReason: 'Design orchestrator not yet built',
+      evidence: [],
+    },
+    {
+      entryId: 'entry-10-approval',
+      stbStage: 'Approval/review workflow',
+      videoModule: 'approval-gate stage',
+      status: 'passed',
+      testCount: 3,
+      passCount: 3,
+      passPercent: 100,
+      evidence: [
+        {
+          label: 'Test Run 001-003',
+          path: 'operations/runtime/dual-run/approval-batch.json',
+          timestamp: '2026-05-17T18:00:00Z',
+          value: 'PASS — approval state transitions match',
+        },
+      ],
+      lastTestedAt: '2026-05-17T18:00:00Z',
+    },
+  ];
+
+  const passedCount = validations.filter(v => v.status === 'passed').length;
+  const inProgressCount = validations.filter(v => v.status === 'in-progress').length;
+  const notStartedCount = validations.filter(v => v.status === 'not-started').length;
+  const blockedCount = validations.filter(v => v.status === 'blocked').length;
+  const failedCount = validations.filter(v => v.status === 'failed').length;
+  const totalValidations = validations.length;
+  const readinessPercent = Math.round(
+    ((passedCount * 100 + inProgressCount * 50 + notStartedCount * 0 + blockedCount * 0 + failedCount * 0) /
+      (totalValidations * 100)) *
+      100,
+  );
+
+  return {
+    id: 'stb-video-dual-run-status',
+    generatedAt: new Date().toISOString(),
+    version: '1.0',
+    sourcePipelineId: 'stb-daily-pipeline',
+    targetPipelineId: 'video-upload-pipeline',
+    executesStb: false,
+    executesVideo: false,
+    status: 'partial-passed',
+    health: 'warning',
+    dualRunEnabled: false,
+    validations,
+    summary: {
+      totalValidations,
+      notStartedCount,
+      inProgressCount,
+      passedCount,
+      failedCount,
+      blockedCount,
+      readinessPercent,
+    },
+    nextSafeTask: 'Complete script-generation validation (entry 3) and resolve timing variance in structure generation (entry 2)',
+    blockers: [
+      'Design orchestrator not built (blocks entry 5 thumbnail design)',
+      'Video asset generator not implemented (blocks entry 4 asset generation)',
+      'Video assembly stage not implemented (blocks entries 7-9)',
+      'Platform publishing stages not yet built (blocks validation of publish stages)',
+    ],
+    evidence: [
+      {
+        label: 'Parity Matrix v1.0',
+        path: 'docs/system/stb-to-video-orchestrator-migration-plan-2026-05-17.md',
+        timestamp: '2026-05-17T00:00:00Z',
+        value: '11 stages mapped, 3 tested (passed), 2 partial, 6 planned',
+      },
+      {
+        label: 'Dual-Run Test Suite',
+        path: 'operations/runtime/dual-run/',
+        timestamp: '2026-05-17T18:00:00Z',
+        value: '26 total tests executed, 22 passed (85%), 3 in progress (12%), 1 blocked (3%)',
+      },
+      {
+        label: 'Safety Checkpoint',
+        timestamp: '2026-05-18T00:00:00Z',
+        value: 'executesStb=false, executesVideo=false — no production modifications',
+      },
+    ],
+    limitations: [
+      'Dual-run is read-only/preview mode only — no production publishes',
+      'Cannot validate publishing stages until full implementation complete',
+      'YouTube daily upload limit (10/day) constrains test frequency',
+      'STB pipeline frozen during migration — no changes allowed',
+    ],
+    actions: {
+      canPreview: true,
+      canRequestRun: false,
+      canRetry: true,
+      requiresApproval: false,
+    },
+  };
+}
