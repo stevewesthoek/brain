@@ -2671,3 +2671,23 @@ Safety status:
 - No directory creation, file writes, deletes, downloads, render/export, publishing, STB decommission, or Mind writes enabled.
 
 Next safe task: controlled dry-run execution design, still read-only/design-only.
+
+
+## 2026-05-18 — Production acceleration: Controlled dry-run execution design
+
+Completed a read-only controlled dry-run execution design slice.
+
+Added:
+- `GET /video-orchestrator/controlled-dry-run-design`
+- Seven ordered design gates: candidate selection, policy preflight, STB evidence read, Video planning evidence read, comparison preview, evidence preview, and operator review.
+- Safety proof that controlled dry-run execution is still unavailable.
+
+Validation evidence:
+- Brain Core tests passed: 226/226.
+
+Safety status:
+- No POST route added.
+- No executable action registered.
+- No dry-run execution, STB execution, Video execution, rendering, ffmpeg, file writes, approval creation, publishing, STB decommission, or Mind writes enabled.
+
+Next safe task: rollback/cleanup checklist or comparison schema design, still read-only/design-only.

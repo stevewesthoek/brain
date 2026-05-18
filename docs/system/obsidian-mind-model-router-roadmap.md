@@ -1018,3 +1018,18 @@ Safety boundary: no POST route, no executable action registration, no directory 
 Validation: Brain Core tests pass with 224/224 tests.
 
 Next safe phase: controlled dry-run execution design, still read-only and blocked from real execution until approval, sandbox, rollback, and validation policy are complete.
+
+
+## 2026-05-18 — Phase 3r: Controlled Dry-Run Execution Design
+
+Status: complete, read-only/design-only.
+
+Added `GET /video-orchestrator/controlled-dry-run-design` to define the future controlled dry-run flow without executing STB, executing Video, rendering media, comparing real outputs, writing evidence files, creating approvals, or registering actions.
+
+The design composes the current dual-run evidence report, render/export policy, approval policy design, and artifact sandbox design into seven ordered gates: candidate selection, policy preflight, STB evidence read, Video planning evidence read, comparison preview, evidence preview, and operator review.
+
+Safety boundary: no POST route, no executable action registration, no dry-run execution, no output reads from generated artifacts, no file writes, no approval creation, no rendering/exporting/publishing, no STB decommission, and no Mind writes.
+
+Validation: Brain Core tests pass with 226/226 tests.
+
+Next safe phase: rollback/cleanup checklist or comparison schema design before any controlled dry-run implementation.

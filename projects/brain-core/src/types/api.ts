@@ -1907,6 +1907,64 @@ export interface BrainCoreVideoArtifactSandboxDesignResponse {
   sandbox: BrainCoreVideoArtifactSandboxDesign;
 }
 
+export interface BrainCoreVideoControlledDryRunStep {
+  id: string;
+  sequence: number;
+  label: string;
+  stage: 'candidate' | 'preflight' | 'stb-read' | 'video-plan-read' | 'comparison-preview' | 'evidence-preview' | 'operator-review';
+  status: 'planned' | 'blocked';
+  requiredBeforeExecution: boolean;
+  evidence: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    writesFiles: false;
+    createsApproval: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledDryRunDesign {
+  id: 'video-orchestrator-controlled-dry-run-design';
+  generatedAt: string;
+  status: 'design-only' | 'blocked' | 'ready-for-review';
+  canExecuteDryRun: false;
+  canReadStbOutputs: false;
+  canReadVideoOutputs: false;
+  canWriteEvidence: false;
+  executableActionRegistered: false;
+  steps: BrainCoreVideoControlledDryRunStep[];
+  summary: {
+    totalSteps: number;
+    plannedCount: number;
+    blockedCount: number;
+    requiredBeforeExecutionCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    callsFfmpeg: false;
+    writesFiles: false;
+    createsApproval: false;
+    executableActionRegistered: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledDryRunDesignResponse {
+  dryRun: BrainCoreVideoControlledDryRunDesign;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3447,6 +3505,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/render-export-policy': BrainCoreVideoRenderExportPolicyResponse;
   '/video-orchestrator/approval-policy-design': BrainCoreVideoApprovalPolicyDesignResponse;
   '/video-orchestrator/artifact-sandbox-design': BrainCoreVideoArtifactSandboxDesignResponse;
+  '/video-orchestrator/controlled-dry-run-design': BrainCoreVideoControlledDryRunDesignResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

@@ -1954,3 +1954,65 @@ test('POST /video-orchestrator/artifact-sandbox-design is not available', async 
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/controlled-dry-run-design returns read-only design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-dry-run-design' });
+  const body = JSON.parse(response.body) as {
+    dryRun: {
+      id: string;
+      status: string;
+      canExecuteDryRun: boolean;
+      canReadStbOutputs: boolean;
+      canReadVideoOutputs: boolean;
+      canWriteEvidence: boolean;
+      executableActionRegistered: boolean;
+      steps: Array<{ status: string; requiredBeforeExecution: boolean; safety: Record<string, boolean> }>;
+      summary: { totalSteps: number; plannedCount: number; blockedCount: number; requiredBeforeExecutionCount: number };
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.dryRun.id, 'video-orchestrator-controlled-dry-run-design');
+  assert.ok(['design-only', 'blocked', 'ready-for-review'].includes(body.dryRun.status));
+  assert.equal(body.dryRun.canExecuteDryRun, false);
+  assert.equal(body.dryRun.canReadStbOutputs, false);
+  assert.equal(body.dryRun.canReadVideoOutputs, false);
+  assert.equal(body.dryRun.canWriteEvidence, false);
+  assert.equal(body.dryRun.executableActionRegistered, false);
+  assert.ok(body.dryRun.summary.totalSteps > 0);
+  assert.ok(body.dryRun.summary.blockedCount > 0);
+  assert.equal(body.dryRun.summary.requiredBeforeExecutionCount, body.dryRun.summary.totalSteps);
+  assert.equal(body.dryRun.safety.readOnly, true);
+  assert.equal(body.dryRun.safety.executesStb, false);
+  assert.equal(body.dryRun.safety.executesVideo, false);
+  assert.equal(body.dryRun.safety.rendersVideo, false);
+  assert.equal(body.dryRun.safety.callsFfmpeg, false);
+  assert.equal(body.dryRun.safety.writesFiles, false);
+  assert.equal(body.dryRun.safety.createsApproval, false);
+  assert.equal(body.dryRun.safety.executableActionRegistered, false);
+  assert.equal(body.dryRun.safety.publishesContent, false);
+  assert.equal(body.dryRun.safety.decommissionsStb, false);
+  assert.equal(body.dryRun.safety.writesToMind, false);
+
+  body.dryRun.steps.forEach(step => {
+    assert.equal(step.requiredBeforeExecution, true);
+    assert.equal(step.safety.readOnly, true);
+    assert.equal(step.safety.executesStb, false);
+    assert.equal(step.safety.executesVideo, false);
+    assert.equal(step.safety.rendersVideo, false);
+    assert.equal(step.safety.writesFiles, false);
+    assert.equal(step.safety.createsApproval, false);
+    assert.equal(step.safety.publishesContent, false);
+    assert.equal(step.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/controlled-dry-run-design is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-dry-run-design' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
