@@ -1812,6 +1812,101 @@ export interface BrainCoreVideoApprovalPolicyDesignResponse {
   policy: BrainCoreVideoApprovalPolicyDesign;
 }
 
+export interface BrainCoreVideoArtifactSandboxPolicyItem {
+  id: string;
+  label: string;
+  category:
+    | 'allowed-artifact'
+    | 'blocked-artifact'
+    | 'storage-boundary'
+    | 'output-path'
+    | 'retention-cleanup'
+    | 'validation'
+    | 'safety';
+  status: 'defined' | 'blocked' | 'missing' | 'not-applicable';
+  severity: 'info' | 'warning' | 'blocking';
+  evidence: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    createsDirectory: false;
+    writesFiles: false;
+    deletesFiles: false;
+    rendersVideo: false;
+    createsDownload: false;
+    callsExternalAI: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoArtifactSandboxBoundary {
+  id: string;
+  label: string;
+  scope: 'repo-local-placeholder' | 'runtime-placeholder' | 'operator-provided' | 'blocked';
+  status: 'planned' | 'blocked';
+  allowedArtifactKinds: string[];
+  blockedArtifactKinds: string[];
+  pathPolicy: {
+    allowedRootPlaceholder: string;
+    requiresRelativePaths: true;
+    forbidsTraversal: true;
+    forbidsAbsolutePaths: true;
+    validatesExtensions: true;
+  };
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    createsDirectory: false;
+    writesFiles: false;
+    deletesFiles: false;
+    rendersVideo: false;
+    createsDownload: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoArtifactSandboxDesign {
+  id: 'video-orchestrator-artifact-sandbox-design';
+  generatedAt: string;
+  status: 'design-only' | 'blocked' | 'ready-for-review';
+  canCreateSandbox: false;
+  canWriteFiles: false;
+  canCleanup: false;
+  executableActionRegistered: false;
+  policyItems: BrainCoreVideoArtifactSandboxPolicyItem[];
+  boundaries: BrainCoreVideoArtifactSandboxBoundary[];
+  summary: {
+    totalPolicyItems: number;
+    definedCount: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+    boundaryCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    createsDirectory: false;
+    writesFiles: false;
+    deletesFiles: false;
+    rendersVideo: false;
+    createsDownload: false;
+    createsApproval: false;
+    executableActionRegistered: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoArtifactSandboxDesignResponse {
+  sandbox: BrainCoreVideoArtifactSandboxDesign;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3351,6 +3446,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/production-gate': BrainCoreVideoProductionGateResponse;
   '/video-orchestrator/render-export-policy': BrainCoreVideoRenderExportPolicyResponse;
   '/video-orchestrator/approval-policy-design': BrainCoreVideoApprovalPolicyDesignResponse;
+  '/video-orchestrator/artifact-sandbox-design': BrainCoreVideoArtifactSandboxDesignResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

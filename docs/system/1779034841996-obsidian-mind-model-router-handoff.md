@@ -2651,3 +2651,23 @@ Safety status:
 - Video execution, rendering, exporting, file writes, publishing, and Mind writes remain disabled.
 
 Next safe task: artifact sandbox design or controlled dry-run execution design, still read-only until explicit policy approval.
+
+
+## 2026-05-18 — Production acceleration: Artifact sandbox design
+
+Completed a read-only Video Orchestrator artifact sandbox design slice.
+
+Added:
+- `GET /video-orchestrator/artifact-sandbox-design`
+- Policy items for allowed reference artifacts, blocked media artifacts, output path placeholders, storage boundaries, retention/cleanup blockers, validation requirements, and safety guarantees.
+- Sandbox boundary objects with relative-path-only, no-traversal, no-absolute-path design rules.
+
+Validation evidence:
+- Brain Core tests passed: 224/224.
+
+Safety status:
+- No POST route added.
+- No executable action registered.
+- No directory creation, file writes, deletes, downloads, render/export, publishing, STB decommission, or Mind writes enabled.
+
+Next safe task: controlled dry-run execution design, still read-only/design-only.

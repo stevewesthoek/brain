@@ -1878,3 +1878,79 @@ test('POST /video-orchestrator/approval-policy-design is not available', async (
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/artifact-sandbox-design returns read-only sandbox design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/artifact-sandbox-design' });
+  const body = JSON.parse(response.body) as {
+    sandbox: {
+      id: string;
+      status: string;
+      canCreateSandbox: boolean;
+      canWriteFiles: boolean;
+      canCleanup: boolean;
+      executableActionRegistered: boolean;
+      policyItems: Array<{ status: string; severity: string; safety: Record<string, boolean> }>;
+      boundaries: Array<{ status: string; pathPolicy: Record<string, boolean | string>; safety: Record<string, boolean> }>;
+      summary: { totalPolicyItems: number; blockedCount: number; missingCount: number; blockingSeverityCount: number; boundaryCount: number };
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.sandbox.id, 'video-orchestrator-artifact-sandbox-design');
+  assert.ok(['design-only', 'blocked', 'ready-for-review'].includes(body.sandbox.status));
+  assert.equal(body.sandbox.canCreateSandbox, false);
+  assert.equal(body.sandbox.canWriteFiles, false);
+  assert.equal(body.sandbox.canCleanup, false);
+  assert.equal(body.sandbox.executableActionRegistered, false);
+  assert.ok(body.sandbox.summary.totalPolicyItems > 0);
+  assert.ok(body.sandbox.summary.boundaryCount > 0);
+  assert.ok(body.sandbox.summary.blockedCount > 0 || body.sandbox.summary.missingCount > 0);
+  assert.ok(body.sandbox.summary.blockingSeverityCount > 0);
+  assert.equal(body.sandbox.safety.readOnly, true);
+  assert.equal(body.sandbox.safety.createsDirectory, false);
+  assert.equal(body.sandbox.safety.writesFiles, false);
+  assert.equal(body.sandbox.safety.deletesFiles, false);
+  assert.equal(body.sandbox.safety.rendersVideo, false);
+  assert.equal(body.sandbox.safety.createsDownload, false);
+  assert.equal(body.sandbox.safety.createsApproval, false);
+  assert.equal(body.sandbox.safety.executableActionRegistered, false);
+  assert.equal(body.sandbox.safety.publishesContent, false);
+  assert.equal(body.sandbox.safety.decommissionsStb, false);
+  assert.equal(body.sandbox.safety.writesToMind, false);
+
+  body.sandbox.policyItems.forEach(item => {
+    assert.equal(item.safety.readOnly, true);
+    assert.equal(item.safety.createsDirectory, false);
+    assert.equal(item.safety.writesFiles, false);
+    assert.equal(item.safety.deletesFiles, false);
+    assert.equal(item.safety.rendersVideo, false);
+    assert.equal(item.safety.createsDownload, false);
+    assert.equal(item.safety.callsExternalAI, false);
+    assert.equal(item.safety.publishesContent, false);
+    assert.equal(item.safety.writesToMind, false);
+  });
+
+  body.sandbox.boundaries.forEach(boundary => {
+    assert.equal(boundary.pathPolicy.requiresRelativePaths, true);
+    assert.equal(boundary.pathPolicy.forbidsTraversal, true);
+    assert.equal(boundary.pathPolicy.forbidsAbsolutePaths, true);
+    assert.equal(boundary.pathPolicy.validatesExtensions, true);
+    assert.equal(boundary.safety.createsDirectory, false);
+    assert.equal(boundary.safety.writesFiles, false);
+    assert.equal(boundary.safety.deletesFiles, false);
+    assert.equal(boundary.safety.rendersVideo, false);
+    assert.equal(boundary.safety.createsDownload, false);
+    assert.equal(boundary.safety.publishesContent, false);
+    assert.equal(boundary.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/artifact-sandbox-design is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/artifact-sandbox-design' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

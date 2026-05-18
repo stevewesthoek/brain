@@ -1005,3 +1005,16 @@ docs/system/1779040171684-karpathy-llm-wiki-alignment-review-2026-05-17.md
 - Brain Console Brain Core connection fixed (requestUrl API).
 - ProBot feature inventory complete, migration plan drafted.
 - Current safe continuation point: Phase 3o (render readiness/export policy design) or approval-gated actions framework.
+
+
+## 2026-05-18 — Phase 3q: Artifact Sandbox Design
+
+Status: complete, read-only/design-only.
+
+Added `GET /video-orchestrator/artifact-sandbox-design` to define the future artifact sandbox boundary before any render/export execution exists. The design documents allowed reference-only artifact kinds, blocked media/download/upload artifact kinds, output path placeholder policy, storage boundaries, retention/cleanup blockers, and validation requirements.
+
+Safety boundary: no POST route, no executable action registration, no directory creation, no file writes, no deletes, no downloads, no rendering, no publishing, no STB decommission, and no Mind writes.
+
+Validation: Brain Core tests pass with 224/224 tests.
+
+Next safe phase: controlled dry-run execution design, still read-only and blocked from real execution until approval, sandbox, rollback, and validation policy are complete.
