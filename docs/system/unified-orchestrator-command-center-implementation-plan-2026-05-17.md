@@ -2047,3 +2047,15 @@ See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.
 ---
 
 **Note:** This feature is foundational but low priority. Do not execute R2-R4 until Video Orchestrator production readiness, STB continuity, and Post Orchestrator publishing are stabilized. R1 scaffold is minimal and non-blocking.
+
+## 2026-05-18 — Preview-only Video Orchestrator checkpoint
+
+Preview-only readiness is complete through roadmap checkpoint, operator review packet, preview completion index, preflight checklist, and risk register surfaces.
+
+Current state:
+- planning, policy, dashboard, checkpoint, and review surfaces exist
+- controlled execution remains blocked
+- no execution, publishing, rendering, or decommissioning paths were enabled
+
+Next macro-phase:
+- Phase 5 only after explicit operator approval of controlled execution design boundaries

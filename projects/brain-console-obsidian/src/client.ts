@@ -2891,6 +2891,96 @@ export interface BrainCoreVideoOperatorReviewPacketResponse {
   };
 }
 
+export interface BrainCoreVideoPreviewCompletionIndexResponse {
+  index: {
+    status: string;
+    previewComplete: boolean;
+    executionBlocked: boolean;
+    readinessPercent: number;
+    summary: {
+      totalItems: number;
+      completeCount: number;
+      blockedCount: number;
+      approvalRequiredCount: number;
+    };
+    blockers: string[];
+    nextMacroPhase: string;
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      createsApproval: boolean;
+      registersAction: boolean;
+      publishesContent: boolean;
+      decommissionsStb: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionPreflightChecklistResponse {
+  checklist: {
+    status: string;
+    canPassPreflight: boolean;
+    canCreateApproval: boolean;
+    canRegisterAction: boolean;
+    canExecute: boolean;
+    canWriteFiles: boolean;
+    canPublish: boolean;
+    canDecommissionStb: boolean;
+    summary: {
+      totalItems: number;
+      blockedCount: number;
+      missingCount: number;
+      plannedCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      canPassPreflight: boolean;
+      canCreateApproval: boolean;
+      canRegisterAction: boolean;
+      canExecute: boolean;
+      canWriteFiles: boolean;
+      canPublish: boolean;
+      canDecommissionStb: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionRiskRegisterResponse {
+  register: {
+    status: string;
+    canAcceptRisk: boolean;
+    canExecuteMitigation: boolean;
+    risks: Array<{
+      title: string;
+      severity: string;
+    }>;
+    summary: {
+      totalRisks: number;
+      blockingCount: number;
+      highCount: number;
+      mediumCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      canAcceptRisk: boolean;
+      canExecuteMitigation: boolean;
+      canCreateApproval: boolean;
+      canRegisterAction: boolean;
+      canExecute: boolean;
+      canDecommissionStb: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -3847,6 +3937,24 @@ export async function readBrainCoreVideoOperatorReviewPacket(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoOperatorReviewPacketResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoOperatorReviewPacketResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/operator-review-packet');
+}
+
+export async function readBrainCoreVideoPreviewCompletionIndex(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoPreviewCompletionIndexResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoPreviewCompletionIndexResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/preview-completion-index');
+}
+
+export async function readBrainCoreVideoControlledExecutionPreflightChecklist(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionPreflightChecklistResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionPreflightChecklistResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-preflight-checklist');
+}
+
+export async function readBrainCoreVideoControlledExecutionRiskRegister(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionRiskRegisterResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionRiskRegisterResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-risk-register');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(

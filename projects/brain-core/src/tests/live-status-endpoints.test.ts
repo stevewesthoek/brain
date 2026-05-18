@@ -2638,3 +2638,174 @@ test('POST /video-orchestrator/operator-review-packet is not available', async (
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/preview-completion-index returns execution-blocked preview completion index', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/preview-completion-index' });
+  const body = JSON.parse(response.body) as {
+    index: {
+      id: string;
+      status: string;
+      previewComplete: boolean;
+      executionBlocked: boolean;
+      readinessPercent: number;
+      summary: { totalItems: number; completeCount: number; blockedCount: number; approvalRequiredCount: number };
+      items: Array<{ status: string; safety: Record<string, boolean> }>;
+      blockers: string[];
+      nextMacroPhase: string;
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.index.id, 'video-orchestrator-preview-completion-index');
+  assert.ok(['preview-complete', 'execution-blocked'].includes(body.index.status));
+  assert.equal(body.index.previewComplete, true);
+  assert.equal(body.index.executionBlocked, true);
+  assert.ok(body.index.readinessPercent >= 0);
+  assert.ok(body.index.readinessPercent < 100);
+  assert.ok(body.index.summary.totalItems > 0);
+  assert.ok(body.index.summary.completeCount > 0);
+  assert.ok(body.index.summary.blockedCount > 0);
+  assert.ok(body.index.summary.approvalRequiredCount > 0);
+  assert.ok(body.index.items.some(item => item.status === 'blocked' || item.status === 'requires-approval'));
+  assert.ok(body.index.blockers.length > 0);
+  assert.ok(body.index.nextMacroPhase.length > 0);
+  assert.ok(body.index.nextSafeStep.length > 0);
+  assert.equal(body.index.safety.readOnly, true);
+  assert.equal(body.index.safety.executesStb, false);
+  assert.equal(body.index.safety.executesVideo, false);
+  assert.equal(body.index.safety.createsApproval, false);
+  assert.equal(body.index.safety.registersAction, false);
+  assert.equal(body.index.safety.publishesContent, false);
+  assert.equal(body.index.safety.decommissionsStb, false);
+  assert.equal(body.index.safety.writesToMind, false);
+
+  body.index.items.forEach(item => {
+    assert.equal(item.safety.readOnly, true);
+    assert.equal(item.safety.executesStb, false);
+    assert.equal(item.safety.executesVideo, false);
+    assert.equal(item.safety.createsApproval, false);
+    assert.equal(item.safety.registersAction, false);
+    assert.equal(item.safety.publishesContent, false);
+    assert.equal(item.safety.decommissionsStb, false);
+    assert.equal(item.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/preview-completion-index is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/preview-completion-index' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-preflight-checklist returns blocked preflight checklist', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-preflight-checklist' });
+  const body = JSON.parse(response.body) as {
+    checklist: {
+      id: string;
+      status: string;
+      canPassPreflight: boolean;
+      items: Array<{ status: string; safety: Record<string, boolean> }>;
+      summary: { totalItems: number; blockedCount: number; missingCount: number; plannedCount: number };
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.checklist.id, 'video-orchestrator-controlled-execution-preflight-checklist');
+  assert.ok(['blocked', 'ready-for-review'].includes(body.checklist.status));
+  assert.equal(body.checklist.canPassPreflight, false);
+  assert.ok(body.checklist.summary.totalItems > 0);
+  assert.ok(body.checklist.summary.blockedCount > 0);
+  assert.ok(body.checklist.blockers.length > 0);
+  assert.ok(body.checklist.nextSafeStep.length > 0);
+  assert.equal(body.checklist.safety.readOnly, true);
+  assert.equal(body.checklist.safety.canPassPreflight, false);
+  assert.equal(body.checklist.safety.canCreateApproval, false);
+  assert.equal(body.checklist.safety.canRegisterAction, false);
+  assert.equal(body.checklist.safety.canExecute, false);
+  assert.equal(body.checklist.safety.canWriteFiles, false);
+  assert.equal(body.checklist.safety.canPublish, false);
+  assert.equal(body.checklist.safety.canDecommissionStb, false);
+  assert.equal(body.checklist.safety.writesToMind, false);
+
+  body.checklist.items.forEach(item => {
+    assert.equal(item.safety.readOnly, true);
+    assert.equal(item.safety.canPassPreflight, false);
+    assert.equal(item.safety.canCreateApproval, false);
+    assert.equal(item.safety.canRegisterAction, false);
+    assert.equal(item.safety.canExecute, false);
+    assert.equal(item.safety.canWriteFiles, false);
+    assert.equal(item.safety.canPublish, false);
+    assert.equal(item.safety.canDecommissionStb, false);
+    assert.equal(item.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/controlled-execution-preflight-checklist is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-preflight-checklist' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-risk-register returns blocked risk register', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-risk-register' });
+  const body = JSON.parse(response.body) as {
+    register: {
+      id: string;
+      status: string;
+      canAcceptRisk: boolean;
+      canExecuteMitigation: boolean;
+      risks: Array<{ severity: string; safety: Record<string, boolean> }>;
+      summary: { totalRisks: number; blockingCount: number; highCount: number; mediumCount: number };
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.register.id, 'video-orchestrator-controlled-execution-risk-register');
+  assert.ok(['blocked', 'ready-for-review'].includes(body.register.status));
+  assert.equal(body.register.canAcceptRisk, false);
+  assert.equal(body.register.canExecuteMitigation, false);
+  assert.ok(body.register.risks.length > 0);
+  assert.ok(body.register.summary.blockingCount > 0);
+  assert.ok(body.register.summary.highCount > 0 || body.register.summary.mediumCount > 0);
+  assert.ok(body.register.blockers.length > 0);
+  assert.ok(body.register.nextSafeStep.length > 0);
+  assert.equal(body.register.safety.readOnly, true);
+  assert.equal(body.register.safety.canAcceptRisk, false);
+  assert.equal(body.register.safety.canExecuteMitigation, false);
+  assert.equal(body.register.safety.canCreateApproval, false);
+  assert.equal(body.register.safety.canRegisterAction, false);
+  assert.equal(body.register.safety.canExecute, false);
+  assert.equal(body.register.safety.canDecommissionStb, false);
+  assert.equal(body.register.safety.writesToMind, false);
+
+  body.register.risks.forEach(risk => {
+    assert.equal(risk.safety.readOnly, true);
+    assert.equal(risk.safety.canAcceptRisk, false);
+    assert.equal(risk.safety.canExecuteMitigation, false);
+    assert.equal(risk.safety.canCreateApproval, false);
+    assert.equal(risk.safety.canRegisterAction, false);
+    assert.equal(risk.safety.canExecute, false);
+    assert.equal(risk.safety.canDecommissionStb, false);
+    assert.equal(risk.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/controlled-execution-risk-register is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-risk-register' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

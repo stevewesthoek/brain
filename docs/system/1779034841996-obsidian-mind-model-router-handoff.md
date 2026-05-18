@@ -2941,3 +2941,36 @@ Safety status:
 - No execution.
 
 Next safe task: Brain Console visibility for roadmap checkpoint and review packet, still read-only.
+
+
+## 2026-05-18 — Phase 4F: Preview completion index
+
+Completed a read-only preview completion index slice.
+
+Added:
+- `GET /video-orchestrator/preview-completion-index`
+- Confirms preview-only roadmap coverage is complete while execution remains blocked.
+
+Safety status:
+- Preview-complete.
+- Execution blocked.
+
+Next safe task: controlled execution preflight checklist.
+
+
+## 2026-05-18 — Phase 4G-4K: Preview-only completion checkpoint
+
+Completed the preview-only completion arc through preflight and risk surfaces.
+
+Added:
+- `GET /video-orchestrator/controlled-execution-preflight-checklist`
+- `GET /video-orchestrator/controlled-execution-risk-register`
+- Brain Console visibility for preview completion, preflight, and risk surfaces
+
+Safety status:
+- Read-only.
+- Execution blocked.
+- No approval creation.
+- No publishing or STB decommission.
+
+Next safe task: explicit operator decision before Phase 5 controlled execution design.

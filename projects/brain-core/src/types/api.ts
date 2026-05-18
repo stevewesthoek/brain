@@ -2554,6 +2554,178 @@ export interface BrainCoreVideoOperatorReviewPacketResponse {
   packet: BrainCoreVideoOperatorReviewPacket;
 }
 
+export interface BrainCoreVideoPreviewCompletionIndexItem {
+  id: string;
+  label: string;
+  category: 'planning' | 'policy' | 'dashboard' | 'review' | 'execution-blocker' | 'production-blocker' | 'safety';
+  status: 'complete' | 'blocked' | 'requires-approval';
+  evidence: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    createsApproval: false;
+    registersAction: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoPreviewCompletionIndex {
+  id: 'video-orchestrator-preview-completion-index';
+  generatedAt: string;
+  status: 'preview-complete' | 'execution-blocked';
+  previewComplete: true;
+  executionBlocked: true;
+  readinessPercent: number;
+  items: BrainCoreVideoPreviewCompletionIndexItem[];
+  summary: {
+    totalItems: number;
+    completeCount: number;
+    blockedCount: number;
+    approvalRequiredCount: number;
+  };
+  blockers: string[];
+  nextMacroPhase: string;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    createsApproval: false;
+    registersAction: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoPreviewCompletionIndexResponse {
+  index: BrainCoreVideoPreviewCompletionIndex;
+}
+
+export interface BrainCoreVideoControlledExecutionPreflightChecklistItem {
+  id: string;
+  label: string;
+  status: 'blocked' | 'missing' | 'planned' | 'not-applicable';
+  evidence: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    canPassPreflight: false;
+    canCreateApproval: false;
+    canRegisterAction: false;
+    canExecute: false;
+    canWriteFiles: false;
+    canPublish: false;
+    canDecommissionStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionPreflightChecklist {
+  id: 'video-orchestrator-controlled-execution-preflight-checklist';
+  generatedAt: string;
+  status: 'blocked' | 'ready-for-review';
+  canPassPreflight: false;
+  canCreateApproval: false;
+  canRegisterAction: false;
+  canExecute: false;
+  canWriteFiles: false;
+  canPublish: false;
+  canDecommissionStb: false;
+  items: BrainCoreVideoControlledExecutionPreflightChecklistItem[];
+  summary: {
+    totalItems: number;
+    blockedCount: number;
+    missingCount: number;
+    plannedCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    canPassPreflight: false;
+    canCreateApproval: false;
+    canRegisterAction: false;
+    canExecute: false;
+    canWriteFiles: false;
+    canPublish: false;
+    canDecommissionStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionPreflightChecklistResponse {
+  checklist: BrainCoreVideoControlledExecutionPreflightChecklist;
+}
+
+export interface BrainCoreVideoControlledExecutionRiskItem {
+  id: string;
+  title: string;
+  severity: 'low' | 'medium' | 'high' | 'blocking';
+  likelihood: 'low' | 'medium' | 'high';
+  category:
+    | 'stb-mutation'
+    | 'file-write'
+    | 'cleanup'
+    | 'approval'
+    | 'platform-posting'
+    | 'model-drift'
+    | 'process-failure'
+    | 'comparison'
+    | 'rollback'
+    | 'operator-confusion';
+  status: 'blocked' | 'watch' | 'planned';
+  mitigations: string[];
+  blockers: string[];
+  owner: 'operator' | 'system' | 'future-policy';
+  safety: {
+    readOnly: true;
+    canAcceptRisk: false;
+    canExecuteMitigation: false;
+    canCreateApproval: false;
+    canRegisterAction: false;
+    canExecute: false;
+    canDecommissionStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionRiskRegister {
+  id: 'video-orchestrator-controlled-execution-risk-register';
+  generatedAt: string;
+  status: 'blocked' | 'ready-for-review';
+  canAcceptRisk: false;
+  canExecuteMitigation: false;
+  risks: BrainCoreVideoControlledExecutionRiskItem[];
+  summary: {
+    totalRisks: number;
+    blockingCount: number;
+    highCount: number;
+    mediumCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    canAcceptRisk: false;
+    canExecuteMitigation: false;
+    canCreateApproval: false;
+    canRegisterAction: false;
+    canExecute: false;
+    canDecommissionStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionRiskRegisterResponse {
+  register: BrainCoreVideoControlledExecutionRiskRegister;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -4105,6 +4277,9 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/controlled-execution-readiness-index': BrainCoreVideoControlledExecutionReadinessIndexResponse;
   '/video-orchestrator/roadmap-checkpoint': BrainCoreVideoRoadmapCheckpointResponse;
   '/video-orchestrator/operator-review-packet': BrainCoreVideoOperatorReviewPacketResponse;
+  '/video-orchestrator/preview-completion-index': BrainCoreVideoPreviewCompletionIndexResponse;
+  '/video-orchestrator/controlled-execution-preflight-checklist': BrainCoreVideoControlledExecutionPreflightChecklistResponse;
+  '/video-orchestrator/controlled-execution-risk-register': BrainCoreVideoControlledExecutionRiskRegisterResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

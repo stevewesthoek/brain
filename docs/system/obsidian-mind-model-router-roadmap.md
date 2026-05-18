@@ -1120,10 +1120,33 @@ Added `GET /video-orchestrator/roadmap-checkpoint` to summarize completed roadma
 Safety boundary: no POST route, no executable action registration, no approval creation, no execution, no publishing, no STB decommission, and no Mind writes.
 
 
+## 2026-05-18 — Phase 4G-4K checkpoint
+
+Preview-only Video Orchestrator readiness is now extended through preflight and risk surfaces.
+
+Current state:
+- planning, policy, checkpoint, and review surfaces are complete
+- preview completion index is complete
+- controlled execution remains blocked
+- no POST routes or executable actions were added
+
+Next macro-phase:
+- Phase 5 only after explicit operator approval of controlled execution design boundaries
+
+
 ## 2026-05-18 — Phase 4D: Operator Review Packet
 
 Status: complete, read-only/review-packet-only.
 
 Added `GET /video-orchestrator/operator-review-packet` to package the roadmap checkpoint, controlled execution readiness index, operator decision queue, cutover gate, release-candidate readiness, rollback checklist, and fixture comparison preview into a single review packet. It is preview-only and does not create approvals or unlock execution.
+
+Safety boundary: no POST route, no executable action registration, no approval creation, no execution, no publishing, no STB decommission, and no Mind writes.
+
+
+## 2026-05-18 — Phase 4F: Preview Completion Index
+
+Status: complete, read-only/preview-complete.
+
+Added `GET /video-orchestrator/preview-completion-index` to prove the preview-only roadmap arc is complete while execution remains blocked. It summarizes the completed planning/policy/dashboard/review surfaces, the blocked execution layers, and the next macro-phase recommendation.
 
 Safety boundary: no POST route, no executable action registration, no approval creation, no execution, no publishing, no STB decommission, and no Mind writes.
