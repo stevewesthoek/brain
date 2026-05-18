@@ -550,3 +550,54 @@ This document defines the future controlled execution model as a design-only bou
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Status: not-ready (blocked until rollback acceptance plan is approved).
 - Next safe phase: Phase 6H rollback acceptance and cleanup plan, still read-only and no execution.
+
+## Phase 6H rollback cleanup implementation plan
+
+- Added as a read-only rollback cleanup implementation plan design endpoint.
+- Defines 8 rollback requirements (operator accepts before execution, single-story scope only, cannot mutate STB, cannot delete source, cannot write Mind, cannot publish, must preserve audit, must leave execution disabled).
+- Defines 8 cleanup plan steps (identify runtime-local temp, identify preview artifacts, verify sandbox boundary, verify no repo paths, verify no Mind paths, verify no STB paths, prepare report only, block actual cleanup).
+- Identifies 6 blocking requirements (no approved artifact sandbox policy, no approved safe cleanup path policy, no approved rollback acceptance UX, no approved audit persistence, no approved sandbox lifecycle, no explicit approval).
+- No rollback acceptance is enabled.
+- No cleanup execution is enabled.
+- No rollback execution is enabled.
+- No artifact deletion is enabled.
+- No filesystem access is enabled.
+- No file writes are enabled.
+- No approval is created.
+- No execution enabled.
+- Status: not-ready (blocked until sandbox provisioning plan is approved).
+- Next safe phase: Phase 6I sandbox provisioning implementation plan, still read-only and no execution.
+
+## Phase 6I sandbox provisioning implementation plan
+
+- Added as a read-only sandbox provisioning implementation plan design endpoint.
+- Defines 9 sandbox requirements (runtime-local only, no source repo writes, no Mind writes, no STB writes, no platform API writes, no credential access, no network access by default, no generated artifact writes, audit metadata only).
+- Defines 8 boundary rules (cannot provision until second approval, cannot authorize execution, cannot create approvals, cannot persist audit, cannot write files, cannot access credentials, cannot call platform APIs, cannot decommission STB).
+- Identifies 7 blocking requirements (no approved sandbox policy, no approved safe runtime path policy, no approved filesystem isolation, no approved network isolation, no approved credential isolation, no approved cleanup lifecycle, no explicit approval).
+- No sandbox provisioning is enabled.
+- No sandbox creation is enabled.
+- No filesystem access is enabled.
+- No network access is enabled.
+- No credential access is enabled.
+- No approval is created.
+- No execution enabled.
+- Status: not-ready (blocked until sandbox execution plan is approved).
+- Next safe phase: Phase 6J sandbox execution implementation plan, still read-only and no execution.
+
+## Phase 6J sandbox execution implementation plan
+
+- Added as a read-only sandbox execution implementation plan design endpoint.
+- Defines 10 execution preconditions (feature flag framework approved, approval store approved, first approval valid, second approval valid, candidate/story lock valid, validator approved, execution plan approved, rollback acceptance approved, sandbox provisioning approved, audit compliance packet approved).
+- Defines 9 runner boundary rules (cannot execute shell text, cannot accept arbitrary paths, cannot write source repo, cannot write Mind, cannot mutate STB, cannot publish, cannot access credentials, cannot use network by default, must produce report-only result).
+- Identifies 7 blocking requirements (no approved sandbox provisioning, no approved runner allowlist, no approved validator, no approved execution plan activation, no approved rollback policy, no approved audit persistence, no explicit approval).
+- No sandbox execution is enabled.
+- No runner execution is enabled.
+- No dry-run execution is enabled.
+- No filesystem access is enabled.
+- No network access is enabled.
+- No credential access is enabled.
+- No file writes are enabled.
+- No approval is created.
+- No execution enabled.
+- Status: not-ready (blocked until sandbox teardown and recovery plan is approved).
+- Next safe phase: Phase 6K sandbox teardown and recovery implementation plan, still read-only and no execution.

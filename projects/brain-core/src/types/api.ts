@@ -5823,3 +5823,200 @@ export interface BrainCoreVideoControlledExecutionExecutionPlanImplementationPla
 export interface BrainCoreVideoControlledExecutionExecutionPlanImplementationPlanResponse {
   plan: BrainCoreVideoControlledExecutionExecutionPlanImplementationPlan;
 }
+
+export interface BrainCoreVideoControlledExecutionRollbackCleanupImplementationPlan {
+  id: 'video-orchestrator-controlled-execution-rollback-cleanup-implementation-plan';
+  generatedAt: string;
+  version: 'phase-6h';
+  status: 'not-ready' | 'ready';
+  planExists: false;
+  rollbackAcceptanceEnabled: false;
+  cleanupExecutionEnabled: false;
+  rollbackExecutionEnabled: false;
+  artifactDeletionEnabled: false;
+  implementationExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    rollbackRequirementCount: number;
+    cleanupStepCount: number;
+    blockerCount: number;
+    implementationGateCount: number;
+  };
+  rollbackRequirements: string[];
+  cleanupPlanSteps: string[];
+  blockingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    planDesignOnly: true;
+    rollbackAcceptanceEnabled: false;
+    cleanupExecutionEnabled: false;
+    rollbackExecutionEnabled: false;
+    artifactDeletionEnabled: false;
+    implementationExecutionEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    persistenceEnabled: false;
+    validatorExecutionEnabled: false;
+    lockPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    sandboxProvisioningEnabled: false;
+    sandboxExecutionEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    credentialAccessEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    deletesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionRollbackCleanupImplementationPlanResponse {
+  plan: BrainCoreVideoControlledExecutionRollbackCleanupImplementationPlan;
+}
+
+export interface BrainCoreVideoControlledExecutionSandboxProvisioningImplementationPlan {
+  id: 'video-orchestrator-controlled-execution-sandbox-provisioning-implementation-plan';
+  generatedAt: string;
+  version: 'phase-6i';
+  status: 'not-ready' | 'ready';
+  planExists: false;
+  sandboxProvisioningEnabled: false;
+  sandboxCreationEnabled: false;
+  filesystemAccessEnabled: false;
+  networkAccessEnabled: false;
+  implementationExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    sandboxRequirementCount: number;
+    boundaryRuleCount: number;
+    blockerCount: number;
+    implementationGateCount: number;
+  };
+  sandboxRequirements: string[];
+  boundaryRules: string[];
+  blockingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    planDesignOnly: true;
+    sandboxProvisioningEnabled: false;
+    sandboxCreationEnabled: false;
+    sandboxExecutionEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    credentialAccessEnabled: false;
+    implementationExecutionEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    persistenceEnabled: false;
+    validatorExecutionEnabled: false;
+    lockPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    deletesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionSandboxProvisioningImplementationPlanResponse {
+  plan: BrainCoreVideoControlledExecutionSandboxProvisioningImplementationPlan;
+}
+
+export interface BrainCoreVideoControlledExecutionSandboxExecutionImplementationPlan {
+  id: 'video-orchestrator-controlled-execution-sandbox-execution-implementation-plan';
+  generatedAt: string;
+  version: 'phase-6j';
+  status: 'not-ready' | 'ready';
+  planExists: false;
+  sandboxExecutionEnabled: false;
+  runnerExecutionEnabled: false;
+  dryRunExecutionEnabled: false;
+  filesystemAccessEnabled: false;
+  networkAccessEnabled: false;
+  implementationExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    executionPreconditionCount: number;
+    runnerBoundaryRuleCount: number;
+    blockerCount: number;
+    implementationGateCount: number;
+  };
+  executionPreconditions: string[];
+  runnerBoundaryRules: string[];
+  blockingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    planDesignOnly: true;
+    sandboxExecutionEnabled: false;
+    runnerExecutionEnabled: false;
+    dryRunExecutionEnabled: false;
+    sandboxProvisioningEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    credentialAccessEnabled: false;
+    implementationExecutionEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    persistenceEnabled: false;
+    validatorExecutionEnabled: false;
+    lockPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    deletesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionSandboxExecutionImplementationPlanResponse {
+  plan: BrainCoreVideoControlledExecutionSandboxExecutionImplementationPlan;
+}

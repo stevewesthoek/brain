@@ -4555,3 +4555,120 @@ test('POST /video-orchestrator/controlled-execution-execution-plan-implementatio
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-rollback-cleanup-implementation-plan returns plan design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-rollback-cleanup-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      version: string;
+      status: string;
+      rollbackAcceptanceEnabled: boolean;
+      cleanupExecutionEnabled: boolean;
+      rollbackExecutionEnabled: boolean;
+      artifactDeletionEnabled: boolean;
+      executionEnabled: boolean;
+      rollbackRequirements: string[];
+      cleanupPlanSteps: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.version, 'phase-6h');
+  assert.equal(body.plan.rollbackAcceptanceEnabled, false);
+  assert.equal(body.plan.cleanupExecutionEnabled, false);
+  assert.equal(body.plan.rollbackExecutionEnabled, false);
+  assert.equal(body.plan.artifactDeletionEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.ok(body.plan.cleanupPlanSteps.includes('block actual cleanup execution'));
+  assert.equal(body.plan.safety.deletesFiles, false);
+  assert.equal(body.plan.safety.filesystemAccessEnabled, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-rollback-cleanup-implementation-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-rollback-cleanup-implementation-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-sandbox-provisioning-implementation-plan returns plan design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-sandbox-provisioning-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      version: string;
+      status: string;
+      sandboxProvisioningEnabled: boolean;
+      sandboxCreationEnabled: boolean;
+      filesystemAccessEnabled: boolean;
+      networkAccessEnabled: boolean;
+      executionEnabled: boolean;
+      sandboxRequirements: string[];
+      boundaryRules: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.version, 'phase-6i');
+  assert.equal(body.plan.sandboxProvisioningEnabled, false);
+  assert.equal(body.plan.sandboxCreationEnabled, false);
+  assert.equal(body.plan.filesystemAccessEnabled, false);
+  assert.equal(body.plan.networkAccessEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.ok(body.plan.boundaryRules.includes('sandbox cannot authorize execution'));
+  assert.equal(body.plan.safety.filesystemAccessEnabled, false);
+  assert.equal(body.plan.safety.networkAccessEnabled, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-sandbox-provisioning-implementation-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-sandbox-provisioning-implementation-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-sandbox-execution-implementation-plan returns plan design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-sandbox-execution-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      version: string;
+      status: string;
+      sandboxExecutionEnabled: boolean;
+      runnerExecutionEnabled: boolean;
+      dryRunExecutionEnabled: boolean;
+      filesystemAccessEnabled: boolean;
+      networkAccessEnabled: boolean;
+      executionEnabled: boolean;
+      executionPreconditions: string[];
+      runnerBoundaryRules: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.version, 'phase-6j');
+  assert.equal(body.plan.sandboxExecutionEnabled, false);
+  assert.equal(body.plan.runnerExecutionEnabled, false);
+  assert.equal(body.plan.dryRunExecutionEnabled, false);
+  assert.equal(body.plan.filesystemAccessEnabled, false);
+  assert.equal(body.plan.networkAccessEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.ok(body.plan.runnerBoundaryRules.includes('runner cannot execute shell text'));
+  assert.ok(body.plan.runnerBoundaryRules.includes('runner must produce report-only result until explicit execution approval'));
+  assert.equal(body.plan.safety.executionEnabled, false);
+  assert.equal(body.plan.safety.writesFiles, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-sandbox-execution-implementation-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-sandbox-execution-implementation-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
