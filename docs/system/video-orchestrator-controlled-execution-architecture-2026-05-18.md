@@ -481,3 +481,30 @@ This document defines the future controlled execution model as a design-only bou
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Status: not-ready (blocked until second-approval creation plan is approved).
 - Next safe phase: Phase 6E second-approval creation implementation plan, still read-only and no execution.
+
+## Phase 6E second-approval creation implementation plan
+
+- Added as a read-only second-approval creation implementation plan design endpoint.
+- Defines 12 required inputs (firstApprovalId, candidateStoryId, sourceEpisodeId, secondOperatorIdentity, secondOperatorRole, candidateStoryLockRef, preflightEvidenceHashRef, operatorDecisionSnapshotRef, approvalStorePolicyRef, auditTrailSchemaRef, runtimeSandboxBoundaryRef, rationale).
+- Defines 14 validation steps (verify feature flag framework, verify approval store plan, verify first approval exists and valid, verify first approval not expired/revoked/invalidated, verify second operator differs from first, verify second operator identity protocol, verify second operator role policy, verify candidate/story lock matches, verify preflight evidence hash matches, verify single-story scope, verify no execution authorization, verify execution disabled until runner plan approved, verify immutable audit trail policy, verify no concurrent second approvals).
+- Defines output record shape (approvalId, approvalType: second_approval, status: second_approval_pending, firstApprovalId, and 12 other fields).
+- Defines 8 implementation gates (feature flag rollout, approval store implementation, first approval creation implementation, operator identity implementation, role policy enforcement, candidate/story lock persistence, immutable audit trail persistence, runtime sandbox boundary).
+- Identifies 10 blocking requirements (no approved feature flag framework, no approved approval store, no approved first approval creation, no approved operator verification, no approved role enforcement, no approved candidate/story lock, no approved audit persistence, no approved two-person approval policy, no approved concurrency check, no explicit approval).
+- firstApprovalRequired: true.
+- No second approval creation is enabled.
+- No first approval verification is enabled.
+- No approval is created.
+- No approval store is enabled.
+- No persistence is enabled.
+- No operator verification is enabled.
+- No role enforcement is enabled.
+- No scope validation is enabled.
+- No evidence capture is enabled.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Status: not-ready (blocked until validator implementation plan is approved).
+- Next safe phase: Phase 6F validator implementation plan, still read-only and no execution.
