@@ -1059,3 +1059,16 @@ Safety boundary: no POST route, no executable action registration, no generated 
 Validation: Brain Core tests pass with 230/230 tests.
 
 Next safe phase: fixture-level comparison preview or production cutover gate design; still no real execution.
+
+
+## 2026-05-18 — Phase 3u: Fixture-Level Comparison Preview
+
+Status: complete, read-only/preview-only.
+
+Added `GET /video-orchestrator/fixture-comparison-preview` to preview schema-level parity checks using planning fixtures and summaries only. This separates fixture preview from future real output comparison and identifies which fields can be previewed, which require manual review, and which remain blocked by missing generated artifacts.
+
+Safety boundary: no POST route, no executable action registration, no real output comparison, no generated artifact reads, no STB execution, no Video execution, no evidence writes, no approval creation, no publishing, no STB decommission, and no Mind writes.
+
+Validation: Brain Core tests pass with 232/232 tests.
+
+Next safe phase: production cutover gate design, still no real execution.

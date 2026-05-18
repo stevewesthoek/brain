@@ -2082,6 +2082,65 @@ export interface BrainCoreVideoComparisonSchemaDesignResponse {
   schema: BrainCoreVideoComparisonSchemaDesign;
 }
 
+export interface BrainCoreVideoFixtureComparisonPreviewItem {
+  id: string;
+  schemaFieldId: string;
+  label: string;
+  status: 'preview-available' | 'blocked' | 'not-applicable';
+  fixtureSource: 'planning-fixture' | 'stb-evidence-summary' | 'video-plan-summary' | 'none';
+  comparisonMode: 'exact' | 'semantic' | 'range' | 'manual-review' | 'not-available';
+  previewResult: 'matches-fixture' | 'requires-manual-review' | 'blocked' | 'not-run';
+  evidence: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    comparesRealOutputs: false;
+    readsGeneratedArtifacts: false;
+    executesStb: false;
+    executesVideo: false;
+    writesEvidence: false;
+    createsApproval: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoFixtureComparisonPreview {
+  id: 'video-orchestrator-fixture-comparison-preview';
+  generatedAt: string;
+  status: 'preview-only' | 'blocked' | 'ready-for-review';
+  canCompareRealOutputs: false;
+  canReadGeneratedArtifacts: false;
+  canWriteEvidence: false;
+  executableActionRegistered: false;
+  items: BrainCoreVideoFixtureComparisonPreviewItem[];
+  summary: {
+    totalItems: number;
+    previewAvailableCount: number;
+    blockedCount: number;
+    manualReviewCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    comparesRealOutputs: false;
+    readsGeneratedArtifacts: false;
+    executesStb: false;
+    executesVideo: false;
+    writesEvidence: false;
+    createsApproval: false;
+    executableActionRegistered: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoFixtureComparisonPreviewResponse {
+  preview: BrainCoreVideoFixtureComparisonPreview;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3625,6 +3684,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/controlled-dry-run-design': BrainCoreVideoControlledDryRunDesignResponse;
   '/video-orchestrator/rollback-cleanup-checklist': BrainCoreVideoRollbackCleanupChecklistResponse;
   '/video-orchestrator/comparison-schema-design': BrainCoreVideoComparisonSchemaDesignResponse;
+  '/video-orchestrator/fixture-comparison-preview': BrainCoreVideoFixtureComparisonPreviewResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

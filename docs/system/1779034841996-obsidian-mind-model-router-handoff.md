@@ -2729,3 +2729,23 @@ Safety status:
 - No generated artifact reads, comparison execution, STB execution, Video execution, evidence writes, approval creation, publishing, STB decommission, or Mind writes enabled.
 
 Next safe task: fixture-level comparison preview or production cutover gate design, still read-only/design-only.
+
+
+## 2026-05-18 — Production acceleration: Fixture-level comparison preview
+
+Completed a read-only fixture-level comparison preview slice.
+
+Added:
+- `GET /video-orchestrator/fixture-comparison-preview`
+- Preview items derived from the comparison schema fields, using planning fixtures and summaries only.
+- Clear distinction between previewable fixture checks, manual-review-only checks, and blocked checks that require generated artifacts.
+
+Validation evidence:
+- Brain Core tests passed: 232/232.
+
+Safety status:
+- No POST route added.
+- No executable action registered.
+- No real output comparison, generated artifact reads, STB execution, Video execution, evidence writes, approval creation, publishing, STB decommission, or Mind writes enabled.
+
+Next safe task: production cutover gate design, still read-only/design-only.

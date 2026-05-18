@@ -2136,3 +2136,63 @@ test('POST /video-orchestrator/comparison-schema-design is not available', async
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/fixture-comparison-preview returns read-only preview', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/fixture-comparison-preview' });
+  const body = JSON.parse(response.body) as {
+    preview: {
+      id: string;
+      status: string;
+      canCompareRealOutputs: boolean;
+      canReadGeneratedArtifacts: boolean;
+      canWriteEvidence: boolean;
+      executableActionRegistered: boolean;
+      items: Array<{ status: string; previewResult: string; safety: Record<string, boolean> }>;
+      summary: { totalItems: number; previewAvailableCount: number; blockedCount: number; manualReviewCount: number };
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.preview.id, 'video-orchestrator-fixture-comparison-preview');
+  assert.ok(['preview-only', 'blocked', 'ready-for-review'].includes(body.preview.status));
+  assert.equal(body.preview.canCompareRealOutputs, false);
+  assert.equal(body.preview.canReadGeneratedArtifacts, false);
+  assert.equal(body.preview.canWriteEvidence, false);
+  assert.equal(body.preview.executableActionRegistered, false);
+  assert.ok(body.preview.summary.totalItems > 0);
+  assert.ok(body.preview.summary.previewAvailableCount > 0);
+  assert.ok(body.preview.summary.blockedCount > 0);
+  assert.equal(body.preview.safety.readOnly, true);
+  assert.equal(body.preview.safety.comparesRealOutputs, false);
+  assert.equal(body.preview.safety.readsGeneratedArtifacts, false);
+  assert.equal(body.preview.safety.executesStb, false);
+  assert.equal(body.preview.safety.executesVideo, false);
+  assert.equal(body.preview.safety.writesEvidence, false);
+  assert.equal(body.preview.safety.createsApproval, false);
+  assert.equal(body.preview.safety.executableActionRegistered, false);
+  assert.equal(body.preview.safety.publishesContent, false);
+  assert.equal(body.preview.safety.decommissionsStb, false);
+  assert.equal(body.preview.safety.writesToMind, false);
+
+  body.preview.items.forEach(item => {
+    assert.equal(item.safety.readOnly, true);
+    assert.equal(item.safety.comparesRealOutputs, false);
+    assert.equal(item.safety.readsGeneratedArtifacts, false);
+    assert.equal(item.safety.executesStb, false);
+    assert.equal(item.safety.executesVideo, false);
+    assert.equal(item.safety.writesEvidence, false);
+    assert.equal(item.safety.createsApproval, false);
+    assert.equal(item.safety.publishesContent, false);
+    assert.equal(item.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/fixture-comparison-preview is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/fixture-comparison-preview' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
