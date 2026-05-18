@@ -2016,3 +2016,62 @@ test('POST /video-orchestrator/controlled-dry-run-design is not available', asyn
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/rollback-cleanup-checklist returns read-only checklist', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/rollback-cleanup-checklist' });
+  const body = JSON.parse(response.body) as {
+    checklist: {
+      id: string;
+      status: string;
+      canRollback: boolean;
+      canCleanup: boolean;
+      canDeleteFiles: boolean;
+      executableActionRegistered: boolean;
+      items: Array<{ status: string; severity: string; safety: Record<string, boolean> }>;
+      summary: { totalItems: number; blockedCount: number; missingCount: number; blockingSeverityCount: number };
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.checklist.id, 'video-orchestrator-rollback-cleanup-checklist');
+  assert.ok(['checklist-only', 'blocked', 'ready-for-review'].includes(body.checklist.status));
+  assert.equal(body.checklist.canRollback, false);
+  assert.equal(body.checklist.canCleanup, false);
+  assert.equal(body.checklist.canDeleteFiles, false);
+  assert.equal(body.checklist.executableActionRegistered, false);
+  assert.ok(body.checklist.summary.totalItems > 0);
+  assert.ok(body.checklist.summary.blockedCount > 0 || body.checklist.summary.missingCount > 0);
+  assert.ok(body.checklist.summary.blockingSeverityCount > 0);
+  assert.equal(body.checklist.safety.readOnly, true);
+  assert.equal(body.checklist.safety.deletesFiles, false);
+  assert.equal(body.checklist.safety.writesFiles, false);
+  assert.equal(body.checklist.safety.executesCleanup, false);
+  assert.equal(body.checklist.safety.executesRollback, false);
+  assert.equal(body.checklist.safety.createsApproval, false);
+  assert.equal(body.checklist.safety.executableActionRegistered, false);
+  assert.equal(body.checklist.safety.publishesContent, false);
+  assert.equal(body.checklist.safety.decommissionsStb, false);
+  assert.equal(body.checklist.safety.writesToMind, false);
+
+  body.checklist.items.forEach(item => {
+    assert.equal(item.safety.readOnly, true);
+    assert.equal(item.safety.deletesFiles, false);
+    assert.equal(item.safety.writesFiles, false);
+    assert.equal(item.safety.executesCleanup, false);
+    assert.equal(item.safety.executesRollback, false);
+    assert.equal(item.safety.createsApproval, false);
+    assert.equal(item.safety.publishesContent, false);
+    assert.equal(item.safety.decommissionsStb, false);
+    assert.equal(item.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/rollback-cleanup-checklist is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/rollback-cleanup-checklist' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

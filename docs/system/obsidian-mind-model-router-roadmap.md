@@ -1033,3 +1033,16 @@ Safety boundary: no POST route, no executable action registration, no dry-run ex
 Validation: Brain Core tests pass with 226/226 tests.
 
 Next safe phase: rollback/cleanup checklist or comparison schema design before any controlled dry-run implementation.
+
+
+## 2026-05-18 — Phase 3s: Rollback/Cleanup Checklist Design
+
+Status: complete, read-only/checklist-only.
+
+Added `GET /video-orchestrator/rollback-cleanup-checklist` to define rollback, cleanup, retention, audit, operator-review, and STB-protection requirements before any controlled dry-run execution can exist.
+
+Safety boundary: no POST route, no executable action registration, no rollback execution, no cleanup execution, no file deletes, no file writes, no approval creation, no publishing, no STB decommission, and no Mind writes.
+
+Validation: Brain Core tests pass with 228/228 tests.
+
+Next safe phase: comparison schema design before any controlled dry-run implementation.

@@ -1965,6 +1965,64 @@ export interface BrainCoreVideoControlledDryRunDesignResponse {
   dryRun: BrainCoreVideoControlledDryRunDesign;
 }
 
+export interface BrainCoreVideoRollbackCleanupChecklistItem {
+  id: string;
+  label: string;
+  category: 'rollback' | 'cleanup' | 'retention' | 'audit' | 'operator-review' | 'safety';
+  status: 'planned' | 'blocked' | 'missing' | 'not-applicable';
+  severity: 'info' | 'warning' | 'blocking';
+  evidence: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    deletesFiles: false;
+    writesFiles: false;
+    executesCleanup: false;
+    executesRollback: false;
+    createsApproval: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoRollbackCleanupChecklist {
+  id: 'video-orchestrator-rollback-cleanup-checklist';
+  generatedAt: string;
+  status: 'checklist-only' | 'blocked' | 'ready-for-review';
+  canRollback: false;
+  canCleanup: false;
+  canDeleteFiles: false;
+  executableActionRegistered: false;
+  items: BrainCoreVideoRollbackCleanupChecklistItem[];
+  summary: {
+    totalItems: number;
+    plannedCount: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    deletesFiles: false;
+    writesFiles: false;
+    executesCleanup: false;
+    executesRollback: false;
+    createsApproval: false;
+    executableActionRegistered: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoRollbackCleanupChecklistResponse {
+  checklist: BrainCoreVideoRollbackCleanupChecklist;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3506,6 +3564,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/approval-policy-design': BrainCoreVideoApprovalPolicyDesignResponse;
   '/video-orchestrator/artifact-sandbox-design': BrainCoreVideoArtifactSandboxDesignResponse;
   '/video-orchestrator/controlled-dry-run-design': BrainCoreVideoControlledDryRunDesignResponse;
+  '/video-orchestrator/rollback-cleanup-checklist': BrainCoreVideoRollbackCleanupChecklistResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

@@ -2691,3 +2691,22 @@ Safety status:
 - No dry-run execution, STB execution, Video execution, rendering, ffmpeg, file writes, approval creation, publishing, STB decommission, or Mind writes enabled.
 
 Next safe task: rollback/cleanup checklist or comparison schema design, still read-only/design-only.
+
+
+## 2026-05-18 — Production acceleration: Rollback/cleanup checklist design
+
+Completed a read-only rollback/cleanup checklist design slice.
+
+Added:
+- `GET /video-orchestrator/rollback-cleanup-checklist`
+- Checklist items covering rollback scope, runtime-state protection, cleanup/delete blocking, retention policy, audit requirements, operator review, and STB protection.
+
+Validation evidence:
+- Brain Core tests passed: 228/228.
+
+Safety status:
+- No POST route added.
+- No executable action registered.
+- No rollback execution, cleanup execution, file deletes, file writes, approval creation, publishing, STB decommission, or Mind writes enabled.
+
+Next safe task: comparison schema design, still read-only/design-only.
