@@ -1586,6 +1586,81 @@ export interface BrainCoreVideoProductionGateResponse {
   gate: BrainCoreVideoProductionGateChecklist;
 }
 
+export interface BrainCoreControlledDualRunRequestRequirement {
+  id: string;
+  label: string;
+  category: 'candidate' | 'preflight' | 'approval' | 'rollback' | 'evidence' | 'execution-policy' | 'safety';
+  status: 'satisfied' | 'blocked' | 'missing' | 'not-applicable';
+  severity: 'info' | 'warning' | 'blocking';
+  evidence: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreControlledDualRunRequestLifecycleStep {
+  id: string;
+  sequence: number;
+  label: string;
+  status: 'planned' | 'blocked';
+  description: string;
+  requiredBeforeExecution: boolean;
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreControlledDualRunRequestDesign {
+  id: 'controlled-dual-run-request-design';
+  generatedAt: string;
+  status: 'design-only' | 'blocked' | 'ready-for-policy-review';
+  canRequestApproval: false;
+  canExecute: false;
+  requirements: BrainCoreControlledDualRunRequestRequirement[];
+  lifecycle: BrainCoreControlledDualRunRequestLifecycleStep[];
+  summary: {
+    totalRequirements: number;
+    satisfiedCount: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    executableActionRegistered: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreControlledDualRunRequestDesignResponse {
+  design: BrainCoreControlledDualRunRequestDesign;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3123,6 +3198,7 @@ export interface BrainCoreRoutes {
   '/stb-video/parity-matrix': BrainCoreStbVideoParityMatrix;
   '/stb-video/dual-run-status': BrainCoreStbVideoDualRunStatus;
   '/video-orchestrator/production-gate': BrainCoreVideoProductionGateResponse;
+  '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];
   };

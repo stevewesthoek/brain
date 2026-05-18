@@ -1519,3 +1519,151 @@ test('GET /video-orchestrator/production-gate has no executable operations impli
     assert.equal(item.safety?.publishesContent, false, 'Item should not imply publishing');
   }
 });
+
+test('GET /stb-video/controlled-dual-run-request returns request design', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/stb-video/controlled-dual-run-request',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    design?: {
+      id: string;
+      status: string;
+      canRequestApproval: boolean;
+      canExecute: boolean;
+      requirements: Array<{ id: string; label: string }>;
+      lifecycle: Array<{ id: string; label: string }>;
+      summary: { totalRequirements: number };
+    };
+  };
+
+  assert.equal(body.design?.id, 'controlled-dual-run-request-design');
+  assert(body.design?.requirements && body.design.requirements.length > 0);
+  assert(body.design?.lifecycle && body.design.lifecycle.length > 0);
+});
+
+test('GET /stb-video/controlled-dual-run-request canRequestApproval is false', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/stb-video/controlled-dual-run-request',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as { design?: { canRequestApproval: boolean } };
+  assert.equal(body.design?.canRequestApproval, false);
+});
+
+test('GET /stb-video/controlled-dual-run-request canExecute is false', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/stb-video/controlled-dual-run-request',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as { design?: { canExecute: boolean } };
+  assert.equal(body.design?.canExecute, false);
+});
+
+test('GET /stb-video/controlled-dual-run-request executableActionRegistered is false', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/stb-video/controlled-dual-run-request',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as { design?: { safety: { executableActionRegistered: boolean } } };
+  assert.equal(body.design?.safety?.executableActionRegistered, false);
+});
+
+test('GET /stb-video/controlled-dual-run-request status is design-only or blocked (not executable)', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/stb-video/controlled-dual-run-request',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as { design?: { status: string } };
+  assert(body.design?.status === 'design-only' || body.design?.status === 'blocked');
+  assert.notEqual(body.design?.status, 'executable');
+});
+
+test('GET /stb-video/controlled-dual-run-request has blocked requirements', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/stb-video/controlled-dual-run-request',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    design?: {
+      requirements: Array<{ status: string; severity: string }>;
+      summary: { blockedCount: number; blockingSeverityCount: number };
+    };
+  };
+
+  assert(body.design?.summary?.blockedCount && body.design.summary.blockedCount > 0);
+  assert(body.design?.summary?.blockingSeverityCount && body.design.summary.blockingSeverityCount > 0);
+
+  const hasBlocked = body.design?.requirements?.some(r => r.status === 'blocked') ?? false;
+  assert(hasBlocked, 'Should have at least one blocked requirement');
+});
+
+test('GET /stb-video/controlled-dual-run-request lifecycle steps have blocked status', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/stb-video/controlled-dual-run-request',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    design?: {
+      lifecycle: Array<{ status: string; blockers: string[] }>;
+    };
+  };
+
+  const hasBlockedStep = body.design?.lifecycle?.some(s => s.status === 'blocked') ?? false;
+  assert(hasBlockedStep, 'Should have at least one blocked lifecycle step');
+});
+
+test('GET /stb-video/controlled-dual-run-request all requirements and steps have safety flags false', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/stb-video/controlled-dual-run-request',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    design?: {
+      requirements: Array<{ safety: Record<string, boolean> }>;
+      lifecycle: Array<{ safety: Record<string, boolean> }>;
+    };
+  };
+
+  const allReqs = body.design?.requirements ?? [];
+  for (const req of allReqs) {
+    assert.equal(req.safety?.readOnly, true, 'Requirement readOnly should be true');
+    assert.equal(req.safety?.createsApproval, false, 'Requirement createsApproval should be false');
+    assert.equal(req.safety?.executesStb, false, 'Requirement executesStb should be false');
+    assert.equal(req.safety?.executesVideo, false, 'Requirement executesVideo should be false');
+  }
+
+  const allSteps = body.design?.lifecycle ?? [];
+  for (const step of allSteps) {
+    assert.equal(step.safety?.readOnly, true, 'Step readOnly should be true');
+    assert.equal(step.safety?.createsApproval, false, 'Step createsApproval should be false');
+    assert.equal(step.safety?.executesStb, false, 'Step executesStb should be false');
+    assert.equal(step.safety?.executesVideo, false, 'Step executesVideo should be false');
+  }
+});
+
+test('No POST route exists for controlled dual-run request', async () => {
+  const response = await exercise({
+    method: 'POST',
+    url: '/stb-video/controlled-dual-run-request',
+  });
+
+  assert.notEqual(response.statusCode, 200, 'POST should not succeed for design-only module');
+  assert(response.statusCode === 405 || response.statusCode === 404, 'Should reject POST method');
+});

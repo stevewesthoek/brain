@@ -2481,6 +2481,81 @@ export interface BrainCoreVideoProductionGateResponse {
   gate: BrainCoreVideoProductionGateChecklist;
 }
 
+export interface BrainCoreControlledDualRunRequestRequirement {
+  id: string;
+  label: string;
+  category: 'candidate' | 'preflight' | 'approval' | 'rollback' | 'evidence' | 'execution-policy' | 'safety';
+  status: 'satisfied' | 'blocked' | 'missing' | 'not-applicable';
+  severity: 'info' | 'warning' | 'blocking';
+  evidence: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    createsApproval: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    decommissionsStb: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreControlledDualRunRequestLifecycleStep {
+  id: string;
+  sequence: number;
+  label: string;
+  status: 'planned' | 'blocked';
+  description: string;
+  requiredBeforeExecution: boolean;
+  blockers: string[];
+  safety: {
+    readOnly: boolean;
+    createsApproval: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    decommissionsStb: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreControlledDualRunRequestDesign {
+  id: 'controlled-dual-run-request-design';
+  generatedAt: string;
+  status: 'design-only' | 'blocked' | 'ready-for-policy-review';
+  canRequestApproval: boolean;
+  canExecute: boolean;
+  requirements: BrainCoreControlledDualRunRequestRequirement[];
+  lifecycle: BrainCoreControlledDualRunRequestLifecycleStep[];
+  summary: {
+    totalRequirements: number;
+    satisfiedCount: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    createsApproval: boolean;
+    executableActionRegistered: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    decommissionsStb: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreControlledDualRunRequestDesignResponse {
+  design: BrainCoreControlledDualRunRequestDesign;
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -3383,6 +3458,12 @@ export async function readBrainCoreVideoProductionGate(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoProductionGateResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoProductionGateResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/production-gate');
+}
+
+export async function readBrainCoreControlledDualRunRequestDesign(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreControlledDualRunRequestDesignResponse>> {
+  return fetchJson<import('./client.js').BrainCoreControlledDualRunRequestDesignResponse>(normalizeBaseUrl(baseUrl), '/stb-video/controlled-dual-run-request');
 }
 
 export async function readBrainCoreAgents(

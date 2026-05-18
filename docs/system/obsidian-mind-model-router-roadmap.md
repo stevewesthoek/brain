@@ -953,12 +953,45 @@ docs/system/1779040171684-karpathy-llm-wiki-alignment-review-2026-05-17.md
 - Phase P15 adds a read-only roadmap checkpoint that gates any future publishing/scheduling design behind explicit user approval.
 - None of the above phases introduces execution, publishing, scheduling, or decommission actions.
 
+## Production Acceleration — Phase 3n: Controlled Dual-Run Request Design
+
+**Status:** COMPLETE (2026-05-18)
+
+- **Module:** `readControlledDualRunRequestDesign()` implemented
+- **Endpoint:** GET `/stb-video/controlled-dual-run-request` — design-only, no approval created
+- **Design-only properties:**
+  - `canRequestApproval: false` — no approval flow wired yet
+  - `canExecute: false` — no execution layer implemented
+  - `executableActionRegistered: false` — not added to action registry
+- **Requirements:** 10 requirements defined (satisfied, blocked, missing statuses)
+- **Lifecycle:** 8 planned steps (select candidate → compare outputs → decide continuation)
+- **Blockers:** Candidate selection policy, approval policy, rollback plan, execution policy, render engine
+- **Brain Console:** Minimal "Controlled Dual-Run Request Design" card in Pipelines section showing status + blockers
+- **Tests:** 9 new tests (213/213 passing, all prior tests still pass)
+
+**Key safety constraints preserved:**
+- No approval record created
+- No action registered in action-registry
+- No allowlist entry added
+- No POST route for dual-run execution
+- No external AI/model-router calls
+- No platform API calls
+- No scheduling/publishing
+- All safety flags: readOnly=true, createsApproval/executesStb/executesVideo=false
+
+**Next modules after Phase 3n:**
+1. Render readiness/export policy (blocking approval/execution policy design)
+2. Approval policy design (defines what approvals are required before controlled-dual-run request)
+3. Controlled dry-run execution design (if all blockers resolve and policies approved)
+
 ## Current Status
 
 - Report-only execution, preview policy surfaces, and preview artifact inspection are complete in Brain.
+- Production gate checklist shows all 5 categories blocked/incomplete (Phase 3m).
+- Controlled dual-run request design is now available for policy review (Phase 3n).
 - Mind mutation remains blocked until a separately approved write/apply route exists.
 - Legacy numbered-folder archival remains blocked until a separate explicit cleanup plan is approved.
 - Obsidian Brain Console MVP (MVP status pills + cards) is deployed locally.
 - Brain Console Brain Core connection fixed (requestUrl API).
 - ProBot feature inventory complete, migration plan drafted.
-- Current safe continuation point: Phase 2A (local apps UI section) or approval-gated actions framework.
+- Current safe continuation point: Phase 3o (render readiness/export policy design) or approval-gated actions framework.
