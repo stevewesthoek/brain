@@ -2256,3 +2256,61 @@ test('POST /video-orchestrator/production-cutover-gate is not available', async 
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/release-candidate-readiness returns read-only blocked snapshot', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/release-candidate-readiness' });
+  const body = JSON.parse(response.body) as {
+    snapshot: {
+      id: string;
+      status: string;
+      readinessPercent: number;
+      canMarkReleaseCandidate: boolean;
+      executableActionRegistered: boolean;
+      items: Array<{ status: string; severity: string; safety: Record<string, boolean> }>;
+      summary: { totalItems: number; readyCount: number; blockedCount: number; missingCount: number; blockingSeverityCount: number };
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.snapshot.id, 'video-orchestrator-release-candidate-readiness');
+  assert.ok(['snapshot-only', 'blocked', 'ready-for-review'].includes(body.snapshot.status));
+  assert.equal(body.snapshot.canMarkReleaseCandidate, false);
+  assert.equal(body.snapshot.executableActionRegistered, false);
+  assert.ok(body.snapshot.readinessPercent >= 0);
+  assert.ok(body.snapshot.readinessPercent < 100);
+  assert.ok(body.snapshot.summary.totalItems > 0);
+  assert.ok(body.snapshot.summary.readyCount > 0);
+  assert.ok(body.snapshot.summary.blockedCount > 0 || body.snapshot.summary.missingCount > 0);
+  assert.ok(body.snapshot.summary.blockingSeverityCount > 0);
+  assert.equal(body.snapshot.safety.readOnly, true);
+  assert.equal(body.snapshot.safety.marksReleaseCandidate, false);
+  assert.equal(body.snapshot.safety.executesStb, false);
+  assert.equal(body.snapshot.safety.executesVideo, false);
+  assert.equal(body.snapshot.safety.rendersVideo, false);
+  assert.equal(body.snapshot.safety.publishesContent, false);
+  assert.equal(body.snapshot.safety.createsApproval, false);
+  assert.equal(body.snapshot.safety.executableActionRegistered, false);
+  assert.equal(body.snapshot.safety.decommissionsStb, false);
+  assert.equal(body.snapshot.safety.writesToMind, false);
+
+  body.snapshot.items.forEach(item => {
+    assert.equal(item.safety.readOnly, true);
+    assert.equal(item.safety.marksReleaseCandidate, false);
+    assert.equal(item.safety.executesStb, false);
+    assert.equal(item.safety.executesVideo, false);
+    assert.equal(item.safety.rendersVideo, false);
+    assert.equal(item.safety.publishesContent, false);
+    assert.equal(item.safety.createsApproval, false);
+    assert.equal(item.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/release-candidate-readiness is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/release-candidate-readiness' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

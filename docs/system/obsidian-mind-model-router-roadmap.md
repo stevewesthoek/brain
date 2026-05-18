@@ -1085,3 +1085,16 @@ Safety boundary: no POST route, no executable action registration, no cutover, n
 Validation: Brain Core tests pass with 234/234 tests.
 
 Next safe phase: Brain Console visibility for the policy/gate chain or explicit user decision on controlled execution policy.
+
+
+## 2026-05-18 — Phase 3x: Release Candidate Readiness Snapshot
+
+Status: complete, read-only/snapshot-only.
+
+Added `GET /video-orchestrator/release-candidate-readiness` to aggregate whether the Video Orchestrator can be marked as a release candidate. The snapshot intentionally remains blocked because the production gate, cutover gate, real output comparison, and release-candidate approval/action policy are not ready.
+
+Safety boundary: no POST route, no executable action registration, no release-candidate marking, no STB execution, no Video execution, no rendering, no publishing, no approval creation, no STB decommission, and no Mind writes.
+
+Validation: Brain Core tests pass with 236/236 tests.
+
+Next safe phase: dashboard/client visibility for release-candidate status or explicit operator decision on controlled execution policy.

@@ -2787,3 +2787,22 @@ Validation evidence:
 Safety status:
 - UI visibility only.
 - No execution controls, no POST routes, no approval creation, no file writes, no publishing, no cutover, and no STB decommission added.
+
+
+## 2026-05-18 — Production acceleration: Release candidate readiness snapshot
+
+Completed a read-only release candidate readiness snapshot slice.
+
+Added:
+- `GET /video-orchestrator/release-candidate-readiness`
+- Snapshot items aggregating planning-chain readiness, production gate blockers, cutover gate blockers, comparison preview limitations, release-candidate action absence, and STB protection.
+
+Validation evidence:
+- Brain Core tests passed: 236/236.
+
+Safety status:
+- No POST route added.
+- No executable action registered.
+- No release-candidate marking, STB execution, Video execution, rendering, publishing, approval creation, STB decommission, or Mind writes enabled.
+
+Next safe task: dashboard/client visibility for release-candidate status or explicit operator decision on controlled execution policy.

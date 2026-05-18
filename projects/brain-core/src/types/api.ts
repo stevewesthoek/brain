@@ -2198,6 +2198,60 @@ export interface BrainCoreVideoProductionCutoverGateResponse {
   gate: BrainCoreVideoProductionCutoverGate;
 }
 
+export interface BrainCoreVideoReleaseCandidateReadinessItem {
+  id: string;
+  label: string;
+  status: 'ready' | 'blocked' | 'missing';
+  severity: 'info' | 'warning' | 'blocking';
+  evidence: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    marksReleaseCandidate: false;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    publishesContent: false;
+    createsApproval: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoReleaseCandidateReadinessSnapshot {
+  id: 'video-orchestrator-release-candidate-readiness';
+  generatedAt: string;
+  status: 'snapshot-only' | 'blocked' | 'ready-for-review';
+  readinessPercent: number;
+  canMarkReleaseCandidate: false;
+  executableActionRegistered: false;
+  items: BrainCoreVideoReleaseCandidateReadinessItem[];
+  summary: {
+    totalItems: number;
+    readyCount: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    marksReleaseCandidate: false;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    publishesContent: false;
+    createsApproval: false;
+    executableActionRegistered: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoReleaseCandidateReadinessResponse {
+  snapshot: BrainCoreVideoReleaseCandidateReadinessSnapshot;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3743,6 +3797,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/comparison-schema-design': BrainCoreVideoComparisonSchemaDesignResponse;
   '/video-orchestrator/fixture-comparison-preview': BrainCoreVideoFixtureComparisonPreviewResponse;
   '/video-orchestrator/production-cutover-gate': BrainCoreVideoProductionCutoverGateResponse;
+  '/video-orchestrator/release-candidate-readiness': BrainCoreVideoReleaseCandidateReadinessResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];
