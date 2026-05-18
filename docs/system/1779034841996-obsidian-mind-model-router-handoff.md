@@ -2242,3 +2242,41 @@ Safety status:
 Next safe task:
 
 - Phase P11: operator runbook guidance and blocker recovery guidance for Post Orchestrator.
+
+## Phase P11 — Operator Guidance
+
+Implemented:
+
+- Operator guidance endpoint added for read-only runbook and blocker recovery steps.
+- Brain Console now shows an Operator Guidance card.
+
+Safety status:
+
+- Read-only.
+- No auto-fix.
+- No publishing.
+- No scheduling.
+- No external writes.
+
+Next safe task:
+
+- Phase P12: read-only manual export/package preview for post drafts.
+
+## Phase P12 — Manual Export Preview
+
+Implemented:
+
+- Manual export preview endpoint added for event-backed draft packages.
+- Brain Console now shows a Manual Export Preview card.
+
+Safety status:
+
+- Preview only.
+- No file writes.
+- No downloads.
+- No clipboard writes.
+- No publishing or scheduling.
+
+Next safe task:
+
+- Phase P13: operator acceptance checklist and migration parity report.

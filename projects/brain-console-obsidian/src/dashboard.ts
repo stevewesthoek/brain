@@ -76,6 +76,26 @@ export interface DashboardSnapshot {
   postDecommissionReadyCount: number;
   postDecommissionOverallStatus?: string;
   postDecommissionStarted: boolean;
+  postOperatorGuidanceItemCount: number;
+  postOperatorGuidanceBlockedCount: number;
+  postOperatorGuidanceWarningCount: number;
+  postOperatorGuidanceNextSafeStep: string;
+  postManualExportItemCount: number;
+  postManualExportStatus?: string;
+  postManualExportWritesFiles: boolean;
+  postManualExportWritesExternalPlatform: boolean;
+  postManualExportWritesToMind: boolean;
+  postManualExportDownloadsFile: boolean;
+  postManualExportCopiesToClipboard: boolean;
+  postManualExportPublishingEnabled: boolean;
+  postManualExportSchedulingEnabled: boolean;
+  postManualExportExecutionEnabled: boolean;
+  postManualExportNextSafeStep: string;
+  postManualExportTitle?: string;
+  postManualExportPreviewOnly: boolean;
+  postManualExportItemPreviewCount: number;
+  postManualExportPackageStatus?: string;
+  postManualExportPackageId?: string;
   postPlatformCount: number;
   postPublishingDisabledCount: number;
   socialProofFlowStatus?: string;
@@ -206,7 +226,26 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postDecommissionReadyCount = state.postOrchestratorDecommissionReadiness?.items?.filter((item) => item.status === 'ready-for-review' || item.status === 'approved')?.length ?? 0;
   const postDecommissionOverallStatus = state.postOrchestratorDecommissionReadiness?.overall?.status;
   const postDecommissionStarted = state.postOrchestratorDecommissionReadiness?.overall?.decommissionStarted ?? false;
-  const postPlatformCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.platform !== 'internal').length;
+  const postOperatorGuidanceItemCount = state.postOrchestratorOperatorGuidance?.items?.length ?? 0;
+  const postOperatorGuidanceBlockedCount = state.postOrchestratorOperatorGuidance?.items?.filter((item) => item.severity === 'blocked').length ?? 0;
+  const postOperatorGuidanceWarningCount = state.postOrchestratorOperatorGuidance?.items?.filter((item) => item.severity === 'warning').length ?? 0;
+  const postOperatorGuidanceNextSafeStep = state.postOrchestratorOperatorGuidance?.summary?.nextSafeStep ?? 'Review operator guidance.';
+  const postManualExportItemCount = state.postOrchestratorManualExportPackage?.package?.itemCount ?? 0;
+  const postManualExportStatus = state.postOrchestratorManualExportPackage?.package?.status;
+  const postManualExportWritesFiles = Boolean(state.postOrchestratorManualExportPackage?.package?.safety.writesFiles);
+  const postManualExportWritesExternalPlatform = Boolean(state.postOrchestratorManualExportPackage?.package?.safety.writesExternalPlatform);
+  const postManualExportWritesToMind = Boolean(state.postOrchestratorManualExportPackage?.package?.safety.writesToMind);
+  const postManualExportDownloadsFile = Boolean(state.postOrchestratorManualExportPackage?.package?.safety.downloadsFile);
+  const postManualExportCopiesToClipboard = Boolean(state.postOrchestratorManualExportPackage?.package?.safety.copiesToClipboard);
+  const postManualExportPublishingEnabled = Boolean(state.postOrchestratorManualExportPackage?.package?.safety.publishingEnabled);
+  const postManualExportSchedulingEnabled = Boolean(state.postOrchestratorManualExportPackage?.package?.safety.schedulingEnabled);
+  const postManualExportExecutionEnabled = Boolean(state.postOrchestratorManualExportPackage?.package?.safety.executionEnabled);
+  const postManualExportNextSafeStep = state.postOrchestratorManualExportPackage?.package?.nextSafeStep ?? 'Review manual export preview.';
+  const postManualExportTitle = state.postOrchestratorManualExportPackage?.package?.title;
+  const postManualExportPreviewOnly = Boolean(state.postOrchestratorManualExportPackage?.package?.safety.previewOnly);
+  const postManualExportItemPreviewCount = state.postOrchestratorManualExportPackage?.package?.items?.length ?? 0;
+  const postManualExportPackageStatus = state.postOrchestratorManualExportPackage?.package?.status;
+  const postManualExportPackageId = state.postOrchestratorManualExportPackage?.package?.id;  const postPlatformCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.platform !== 'internal').length;
   const postPublishingDisabledCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.publishingEnabled === false).length;
   const postPublishingEnabled = Boolean(state.postOrchestratorStatus?.publishingEnabled);
   const postSchedulingEnabled = Boolean(state.postOrchestratorStatus?.schedulingEnabled);
@@ -398,6 +437,26 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postDecommissionReadyCount,
     postDecommissionOverallStatus,
     postDecommissionStarted,
+    postOperatorGuidanceItemCount,
+    postOperatorGuidanceBlockedCount,
+    postOperatorGuidanceWarningCount,
+    postOperatorGuidanceNextSafeStep,
+    postManualExportItemCount,
+    postManualExportStatus,
+    postManualExportWritesFiles,
+    postManualExportWritesExternalPlatform,
+    postManualExportWritesToMind,
+    postManualExportDownloadsFile,
+    postManualExportCopiesToClipboard,
+    postManualExportPublishingEnabled,
+    postManualExportSchedulingEnabled,
+    postManualExportExecutionEnabled,
+    postManualExportNextSafeStep,
+    postManualExportTitle,
+    postManualExportPreviewOnly,
+    postManualExportItemPreviewCount,
+    postManualExportPackageStatus,
+    postManualExportPackageId,
     postPlatformCount,
     postPublishingDisabledCount,
     socialProofFlowStatus,

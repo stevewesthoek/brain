@@ -814,6 +814,115 @@ export interface BrainCorePostDecommissionReadinessResponse {
   };
 }
 
+export type BrainCorePostManualExportFormat = 'plain-text' | 'markdown' | 'json-preview' | 'checklist';
+
+export interface BrainCorePostManualExportItem {
+  id: string;
+  eventId: string;
+  draftPlanId: string;
+  platform: BrainCorePostPlatform;
+  title: string;
+  format: BrainCorePostManualExportFormat;
+  contentPreview: string;
+  checklist: string[];
+  reviewNotes: string[];
+  status: 'preview-ready' | 'blocked';
+  safety: {
+    previewOnly: true;
+    writesFiles: false;
+    downloadsFile: false;
+    copiesToClipboard: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+  };
+}
+
+export interface BrainCorePostManualExportPackage {
+  id: string;
+  eventId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview' | 'blocked';
+  itemCount: number;
+  items: BrainCorePostManualExportItem[];
+  nextSafeStep: string;
+  safety: {
+    previewOnly: true;
+    writesFiles: false;
+    downloadsFile: false;
+    copiesToClipboard: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+  };
+}
+
+export interface BrainCorePostManualExportPackageResponse {
+  package: BrainCorePostManualExportPackage;
+}
+
+export type BrainCorePostOperatorGuidanceSeverity = 'info' | 'warning' | 'blocked';
+export type BrainCorePostOperatorGuidanceCategory =
+  | 'review'
+  | 'policy'
+  | 'security'
+  | 'decommission'
+  | 'manual-export'
+  | 'readiness'
+  | 'analytics'
+  | 'scheduling'
+  | 'publishing';
+
+export interface BrainCorePostOperatorGuidanceStep {
+  id: string;
+  label: string;
+  summary: string;
+  completed: boolean;
+  required: boolean;
+  actionType: 'read' | 'review' | 'manual-check' | 'request-approval' | 'wait' | 'blocked';
+  safety: {
+    executesCode: false;
+    writesFiles: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    requiresHumanReview: boolean;
+  };
+}
+
+export interface BrainCorePostOperatorGuidanceItem {
+  id: string;
+  title: string;
+  category: BrainCorePostOperatorGuidanceCategory;
+  severity: BrainCorePostOperatorGuidanceSeverity;
+  summary: string;
+  source: 'pipeline' | 'readiness' | 'platform-policy' | 'decommission' | 'review-queue' | 'schedule-preview' | 'analytics';
+  relatedEventId?: string;
+  relatedFlowId?: string;
+  relatedPlatform?: BrainCorePostPlatform;
+  steps: BrainCorePostOperatorGuidanceStep[];
+  nextSafeStep: string;
+  blocksPublishing: boolean;
+  safety: {
+    readOnly: true;
+    autoFixEnabled: false;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostOperatorGuidanceResponse {
+  items: BrainCorePostOperatorGuidanceItem[];
+  summary: { itemCount: number; blockedCount: number; warningCount: number; nextSafeStep: string };
+}
+
 export interface BrainCoreStbPipelineStatus {
   id: 'stb-pipeline-status';
   pipelineId: 'stb-daily-pipeline';
@@ -1520,6 +1629,22 @@ export async function readBrainCorePostDecommissionReadiness(
   return fetchJson<BrainCorePostDecommissionReadinessResponse>(
     normalizeBaseUrl(baseUrl),
     '/post-orchestrator/decommission-readiness',
+  );
+}
+
+export async function readBrainCorePostOperatorGuidance(
+  baseUrl: string,
+): Promise<HttpResult<BrainCorePostOperatorGuidanceResponse>> {
+  return fetchJson<BrainCorePostOperatorGuidanceResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/operator-guidance');
+}
+
+export async function readBrainCorePostManualExportPackage(
+  baseUrl: string,
+  eventId: string,
+): Promise<HttpResult<BrainCorePostManualExportPackageResponse>> {
+  return fetchJson<BrainCorePostManualExportPackageResponse>(
+    normalizeBaseUrl(baseUrl),
+    `/post-orchestrator/manual-export/${encodeURIComponent(eventId)}`,
   );
 }
 

@@ -20,6 +20,8 @@ import {
   readPostAnalyticsFixtures,
   readPostDecommissionReadiness,
   readPostPlatformPolicies,
+  readPostManualExportPackage,
+  readPostOperatorGuidance,
   readPostPipelineSummary,
   readPostSchedulePreviewQueue,
   readPostReadinessScore,
@@ -146,6 +148,9 @@ export async function routeRequest(
     case '/post-orchestrator/decommission-readiness':
       sendJson(response, 200, readPostDecommissionReadiness());
       return;
+    case '/post-orchestrator/operator-guidance':
+      sendJson(response, 200, readPostOperatorGuidance());
+      return;
     case '/post-orchestrator/pipeline':
       sendJson(response, 400, {
         error: {
@@ -159,6 +164,14 @@ export async function routeRequest(
         error: {
           code: 'missing_event_id',
           message: 'Readiness requires /post-orchestrator/readiness/:eventId.',
+        },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    case '/post-orchestrator/manual-export':
+      sendJson(response, 400, {
+        error: {
+          code: 'missing_event_id',
+          message: 'Manual export requires /post-orchestrator/manual-export/:eventId.',
         },
       } satisfies BrainCoreErrorResponse);
       return;
@@ -481,12 +494,17 @@ export async function routeRequest(
           sendJson(response, 200, readPostReadinessScore(decodeURIComponent(readinessMatch[1] ?? '')));
           return;
         }
+        const manualExportMatch = /^\/post-orchestrator\/manual-export\/([^/]+)$/.exec(url.pathname);
+        if (manualExportMatch) {
+          sendJson(response, 200, readPostManualExportPackage(decodeURIComponent(manualExportMatch[1] ?? '')));
+          return;
+        }
       }
 
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /post-orchestrator/status, /post-orchestrator/contracts, /post-orchestrator/flows, /post-orchestrator/drafts, /post-orchestrator/events, /post-orchestrator/dry-run/:eventId, /post-orchestrator/integrations, /post-orchestrator/recovery, /post-orchestrator/platform-policies, /post-orchestrator/decommission-readiness, /post-orchestrator/pipeline/:eventId, /post-orchestrator/readiness/:eventId, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /post-orchestrator/status, /post-orchestrator/contracts, /post-orchestrator/flows, /post-orchestrator/drafts, /post-orchestrator/events, /post-orchestrator/dry-run/:eventId, /post-orchestrator/integrations, /post-orchestrator/recovery, /post-orchestrator/platform-policies, /post-orchestrator/decommission-readiness, /post-orchestrator/operator-guidance, /post-orchestrator/manual-export/:eventId, /post-orchestrator/pipeline/:eventId, /post-orchestrator/readiness/:eventId, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
       return;

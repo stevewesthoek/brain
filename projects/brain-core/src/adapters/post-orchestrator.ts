@@ -35,6 +35,15 @@ import type {
   BrainCorePostDecommissionGate,
   BrainCorePostDecommissionReadinessItem,
   BrainCorePostDecommissionReadinessResponse,
+  BrainCorePostManualExportFormat,
+  BrainCorePostManualExportItem,
+  BrainCorePostManualExportPackage,
+  BrainCorePostManualExportPackageResponse,
+  BrainCorePostOperatorGuidanceCategory,
+  BrainCorePostOperatorGuidanceItem,
+  BrainCorePostOperatorGuidanceResponse,
+  BrainCorePostOperatorGuidanceSeverity,
+  BrainCorePostOperatorGuidanceStep,
   BrainCorePostReadinessBlocker,
   BrainCorePostReadinessScore,
   BrainCorePostReadinessScoreResponse,
@@ -1909,6 +1918,156 @@ export function readPostDecommissionReadiness(): BrainCorePostDecommissionReadin
   return DECOMMISSION_READINESS;
 }
 
+export function readPostOperatorGuidance(): BrainCorePostOperatorGuidanceResponse {
+  const items: BrainCorePostOperatorGuidanceItem[] = [
+    {
+      id: 'review-draft-queue',
+      title: 'Review Draft Queue',
+      category: 'review',
+      severity: 'info',
+      summary: 'Use the draft review queue to inspect preview-only drafts before any future approval request.',
+      source: 'review-queue',
+      steps: [
+        guidanceStep('open-dashboard', 'Open Post Orchestrator dashboard', 'Open the Brain Console Post Orchestrator section.', true, true, 'read'),
+        guidanceStep('review-drafts', 'Review draft plan previews', 'Inspect draft previews and confirm they remain read-only.', true, true, 'review'),
+        guidanceStep('request-review', 'Request review approval if needed', 'Request review approval only when a preview item is ready.', false, true, 'request-approval'),
+      ],
+      nextSafeStep: 'Request review approval only after verifying preview-only drafts.',
+      blocksPublishing: false,
+      safety: operatorGuidanceSafety(),
+    },
+    {
+      id: 'review-schedule-preview',
+      title: 'Review Schedule Preview',
+      category: 'scheduling',
+      severity: 'warning',
+      summary: 'Schedule preview remains preview-only and must not create scheduler jobs.',
+      source: 'schedule-preview',
+      steps: [
+        guidanceStep('inspect-schedule', 'Inspect schedule preview', 'Inspect candidate schedule windows and rationales.', true, true, 'review'),
+        guidanceStep('confirm-no-job', 'Confirm no scheduler job is created', 'Verify that no real scheduler job is produced.', true, true, 'manual-check'),
+        guidanceStep('request-schedule-review', 'Request schedule review approval if needed', 'Request schedule review approval only for preview items.', false, true, 'request-approval'),
+      ],
+      nextSafeStep: 'Keep schedule preview read-only and request approval only for previews.',
+      blocksPublishing: false,
+      safety: operatorGuidanceSafety(),
+    },
+    {
+      id: 'platform-security-review',
+      title: 'Platform Security Review',
+      category: 'security',
+      severity: 'blocked',
+      summary: 'Platform policy registry keeps X and other platforms blocked for live posting paths.',
+      source: 'platform-policy',
+      relatedPlatform: 'x',
+      steps: [
+        guidanceStep('review-policies', 'Review platform policy registry', 'Inspect platform policy and security review metadata.', true, true, 'read'),
+        guidanceStep('verify-safety', 'Verify cookies and Playwright remain disabled', 'Confirm no cookies or Playwright posting are enabled.', true, true, 'manual-check'),
+        guidanceStep('decide-policy', 'Decide future API or manual-export policy', 'Make a future decision only after explicit review.', false, true, 'wait'),
+      ],
+      nextSafeStep: 'Keep platform policy review blocked until security review completes.',
+      blocksPublishing: true,
+      safety: operatorGuidanceSafety(),
+    },
+    {
+      id: 'publishing-disabled',
+      title: 'Publishing Disabled',
+      category: 'publishing',
+      severity: 'blocked',
+      summary: 'Publishing remains disabled in Brain for this phase.',
+      source: 'readiness',
+      steps: [
+        guidanceStep('keep-disabled', 'Keep publishing disabled', 'Do not enable publishing in this phase.', true, true, 'blocked'),
+        guidanceStep('complete-security', 'Complete security review', 'Resolve security review blockers before later phases.', false, true, 'wait'),
+        guidanceStep('explicit-approval', 'Require explicit user approval before publishing', 'Do not proceed without explicit user approval.', false, true, 'wait'),
+      ],
+      nextSafeStep: 'Keep publishing disabled until a future approved phase.',
+      blocksPublishing: true,
+      safety: operatorGuidanceSafety(),
+    },
+    {
+      id: 'decommission-not-ready',
+      title: 'Decommission Not Ready',
+      category: 'decommission',
+      severity: 'blocked',
+      summary: 'Legacy standalone orchestration is not ready for decommission.',
+      source: 'decommission',
+      steps: [
+        guidanceStep('inspect-matrix', 'Inspect decommission readiness matrix', 'Review each legacy decommission target and its gates.', true, true, 'read'),
+        guidanceStep('dual-run', 'Complete dual-run validation', 'Validate future execution in a separate phase.', false, true, 'wait'),
+        guidanceStep('explicit-approval', 'Obtain explicit user approval', 'Request explicit user approval before any decommission action.', false, true, 'request-approval'),
+      ],
+      nextSafeStep: 'Keep decommission blocked and request explicit user approval.',
+      blocksPublishing: false,
+      safety: operatorGuidanceSafety(),
+    },
+    {
+      id: 'analytics-feedback-review',
+      title: 'Analytics Feedback Review',
+      category: 'analytics',
+      severity: 'info',
+      summary: 'Review fixture analytics only; no external analytics APIs should be called.',
+      source: 'analytics',
+      steps: [
+        guidanceStep('review-analytics', 'Review fixture analytics', 'Inspect analytics fixtures and their interpretation notes.', true, true, 'read'),
+        guidanceStep('identify-assumptions', 'Identify feedback assumptions', 'Call out any assumptions in the passive feedback loop.', false, true, 'manual-check'),
+        guidanceStep('no-external-api', 'Do not call external analytics APIs', 'Keep all analytics feedback fixture-only.', true, true, 'blocked'),
+      ],
+      nextSafeStep: 'Keep analytics feedback fixture-only.',
+      blocksPublishing: false,
+      safety: operatorGuidanceSafety(),
+    },
+  ];
+
+  return {
+    items,
+    summary: {
+      itemCount: items.length,
+      blockedCount: items.filter((item) => item.severity === 'blocked').length,
+      warningCount: items.filter((item) => item.severity === 'warning').length,
+      nextSafeStep: 'Review operator guidance and keep publishing, scheduling, and external writes disabled.',
+    },
+  };
+}
+
+export function readPostManualExportPackage(eventId: string): BrainCorePostManualExportPackageResponse {
+  const dryRun = readPostOrchestratorDryRunPlan(eventId).plan;
+  const event = dryRun.event;
+  if (dryRun.status === 'blocked' && dryRun.drafts.length === 0 && event.id === eventId && event.title === 'Unknown event fixture') {
+    return {
+      package: {
+        id: `manual-export-${eventId}`,
+        eventId,
+        title: 'Unknown event fixture',
+        generatedAt: dryRun.generatedAt,
+        status: 'blocked',
+        itemCount: 0,
+        items: [],
+        nextSafeStep: 'Use a known event fixture before previewing manual export output.',
+        safety: manualExportSafety(),
+      },
+    };
+  }
+
+  const items = dryRun.drafts.map((draft) => buildManualExportItem(draft));
+  const blocked = items.some((item) => item.status === 'blocked') || dryRun.status === 'blocked';
+  return {
+    package: {
+      id: `manual-export-${eventId}`,
+      eventId,
+      title: `${event.title} · Manual Export Preview`,
+      generatedAt: dryRun.generatedAt,
+      status: blocked ? 'blocked' : 'preview',
+      itemCount: items.length,
+      items,
+      nextSafeStep: blocked
+        ? 'Resolve preview blockers before considering manual export packaging.'
+        : 'Review the manual export preview and keep export behavior outside Brain.',
+      safety: manualExportSafety(),
+    },
+  };
+}
+
 function buildPipelineStep(
   id: BrainCorePostPipelineStepId,
   label: string,
@@ -2470,4 +2629,105 @@ function findSchedulePreviewItemById(schedulePreviewItemId: string): BrainCorePo
     if (item) return item;
   }
   return undefined;
+}
+
+function guidanceStep(
+  id: string,
+  label: string,
+  summary: string,
+  completed: boolean,
+  required: boolean,
+  actionType: BrainCorePostOperatorGuidanceStep['actionType'],
+): BrainCorePostOperatorGuidanceStep {
+  return {
+    id,
+    label,
+    summary,
+    completed,
+    required,
+    actionType,
+    safety: {
+      executesCode: false,
+      writesFiles: false,
+      writesExternalPlatform: false,
+      writesToMind: false,
+      requiresHumanReview: true,
+    },
+  };
+}
+
+function operatorGuidanceSafety(): BrainCorePostOperatorGuidanceItem['safety'] {
+  return {
+    readOnly: true,
+    autoFixEnabled: false,
+    publishingEnabled: false,
+    schedulingEnabled: false,
+    executionEnabled: false,
+    writesExternalPlatform: false,
+    writesToMind: false,
+  };
+}
+
+function manualExportSafety(): BrainCorePostManualExportPackage['safety'] {
+  return {
+    previewOnly: true,
+    writesFiles: false,
+    downloadsFile: false,
+    copiesToClipboard: false,
+    writesExternalPlatform: false,
+    writesToMind: false,
+    publishingEnabled: false,
+    schedulingEnabled: false,
+    executionEnabled: false,
+  };
+}
+
+function buildManualExportItem(draft: BrainCorePostDryRunPlan['drafts'][number]): BrainCorePostManualExportItem {
+  const platform = draft.platform;
+  const format: BrainCorePostManualExportFormat =
+    platform === 'github'
+      ? 'markdown'
+      : platform === 'x' || platform === 'linkedin'
+        ? 'plain-text'
+        : platform === 'internal'
+          ? 'checklist'
+          : platform === 'youtube' || platform === 'facebook'
+            ? 'plain-text'
+            : 'json-preview';
+  return {
+    id: `manual-export-${draft.id}`,
+    eventId: draft.eventId,
+    draftPlanId: draft.id,
+    platform,
+    title: draft.title,
+    format,
+    contentPreview: draft.copyPreview,
+    checklist: [
+      'Review copy',
+      'Verify platform policy',
+      'Confirm no publishing from Brain',
+      'Manually copy only if user chooses outside Brain',
+      'Keep scheduling disabled',
+    ],
+    reviewNotes: [
+      'Preview-only manual export package.',
+      'Brain does not write files or copy to clipboard.',
+    ],
+    status: 'preview-ready',
+    safety: manualExportItemSafety(),
+  };
+}
+
+function manualExportItemSafety(): BrainCorePostManualExportItem['safety'] {
+  return {
+    previewOnly: true,
+    writesFiles: false,
+    downloadsFile: false,
+    copiesToClipboard: false,
+    writesExternalPlatform: false,
+    writesToMind: false,
+    publishingEnabled: false,
+    schedulingEnabled: false,
+    executionEnabled: false,
+  };
 }

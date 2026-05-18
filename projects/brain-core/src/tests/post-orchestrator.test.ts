@@ -642,3 +642,111 @@ test('GET /post-orchestrator/decommission-readiness returns items', async () => 
   assert.equal(['blocked', 'not-ready'].includes(body.overall.status), true);
   assert.equal(body.overall.decommissionStarted, false);
 });
+
+test('GET /post-orchestrator/operator-guidance returns items', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/operator-guidance' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{
+      id: string;
+      severity: string;
+      safety: {
+        readOnly: boolean;
+        autoFixEnabled: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        executionEnabled: boolean;
+        writesExternalPlatform: boolean;
+        writesToMind: boolean;
+      };
+      steps: Array<{
+        safety: {
+          executesCode: boolean;
+          writesFiles: boolean;
+          writesExternalPlatform: boolean;
+          writesToMind: boolean;
+        };
+      }>;
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.items.some((item) => item.id === 'platform-security-review'));
+  assert.ok(body.items.some((item) => item.id === 'publishing-disabled'));
+  assert.ok(body.items.some((item) => item.id === 'decommission-not-ready'));
+  assert.equal(body.items.every((item) => item.safety.readOnly === true), true);
+  assert.equal(body.items.every((item) => item.safety.autoFixEnabled === false), true);
+  assert.equal(body.items.every((item) => item.safety.publishingEnabled === false), true);
+  assert.equal(body.items.every((item) => item.safety.schedulingEnabled === false), true);
+  assert.equal(body.items.every((item) => item.safety.executionEnabled === false), true);
+  assert.equal(body.items.every((item) => item.safety.writesExternalPlatform === false), true);
+  assert.equal(body.items.every((item) => item.safety.writesToMind === false), true);
+  assert.equal(body.items.every((item) => item.steps.every((step) => step.safety.executesCode === false)), true);
+  assert.equal(body.items.every((item) => item.steps.every((step) => step.safety.writesFiles === false)), true);
+  assert.equal(body.items.every((item) => item.steps.every((step) => step.safety.writesExternalPlatform === false)), true);
+  assert.equal(body.items.every((item) => item.steps.every((step) => step.safety.writesToMind === false)), true);
+});
+
+test('GET /post-orchestrator/manual-export/github-release-event-fixture returns package', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/manual-export/github-release-event-fixture' });
+  const body = JSON.parse(response.body) as {
+    package: {
+      status: string;
+      itemCount: number;
+      safety: {
+        previewOnly: boolean;
+        writesFiles: boolean;
+        downloadsFile: boolean;
+        copiesToClipboard: boolean;
+        writesExternalPlatform: boolean;
+        writesToMind: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        executionEnabled: boolean;
+      };
+      items: Array<{
+        safety: {
+          previewOnly: boolean;
+          writesFiles: boolean;
+          downloadsFile: boolean;
+          copiesToClipboard: boolean;
+          writesExternalPlatform: boolean;
+          writesToMind: boolean;
+          publishingEnabled: boolean;
+          schedulingEnabled: boolean;
+          executionEnabled: boolean;
+        };
+      }>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.package.status, 'preview');
+  assert.ok(body.package.itemCount > 0);
+  assert.equal(body.package.safety.previewOnly, true);
+  assert.equal(body.package.safety.writesFiles, false);
+  assert.equal(body.package.safety.downloadsFile, false);
+  assert.equal(body.package.safety.copiesToClipboard, false);
+  assert.equal(body.package.safety.writesExternalPlatform, false);
+  assert.equal(body.package.safety.writesToMind, false);
+  assert.equal(body.package.safety.publishingEnabled, false);
+  assert.equal(body.package.safety.schedulingEnabled, false);
+  assert.equal(body.package.safety.executionEnabled, false);
+  assert.equal(body.package.items.every((item) => item.safety.previewOnly === true), true);
+  assert.equal(body.package.items.every((item) => item.safety.writesFiles === false), true);
+  assert.equal(body.package.items.every((item) => item.safety.downloadsFile === false), true);
+  assert.equal(body.package.items.every((item) => item.safety.copiesToClipboard === false), true);
+  assert.equal(body.package.items.every((item) => item.safety.writesExternalPlatform === false), true);
+  assert.equal(body.package.items.every((item) => item.safety.writesToMind === false), true);
+  assert.equal(body.package.items.every((item) => item.safety.publishingEnabled === false), true);
+  assert.equal(body.package.items.every((item) => item.safety.schedulingEnabled === false), true);
+  assert.equal(body.package.items.every((item) => item.safety.executionEnabled === false), true);
+});
+
+test('GET /post-orchestrator/manual-export/unknown-event returns blocked package', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/manual-export/unknown-event' });
+  const body = JSON.parse(response.body) as { package: { status: string; items: unknown[] } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.package.status, 'blocked');
+  assert.equal(body.package.items.length, 0);
+});

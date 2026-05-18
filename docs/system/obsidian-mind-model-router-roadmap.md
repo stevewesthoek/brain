@@ -920,6 +920,9 @@ docs/system/1779040171684-karpathy-llm-wiki-alignment-review-2026-05-17.md
 - Phase P10 adds a read-only decommission readiness matrix for legacy standalone Proofly/Xgrow orchestration targets.
 - Both phases keep publishing, scheduling, and execution disabled.
 - Both phases remain fixture/policy metadata only and do not introduce decommission actions.
+- Phase P11 adds read-only operator guidance and blocker recovery notes.
+- Phase P12 adds read-only manual export/package previews for post drafts.
+- Neither phase writes files, downloads assets, copies to clipboard, or publishes.
 
 ## Current Status
 

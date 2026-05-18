@@ -38,6 +38,8 @@ import {
   readBrainCorePostPipelineSummary,
   readBrainCorePostReadinessScore,
   readBrainCorePostDecommissionReadiness,
+  readBrainCorePostOperatorGuidance,
+  readBrainCorePostManualExportPackage,
   readBrainCoreStbStatus,
   readBrainCoreVideoOrchestratorStatus,
   readBrainCoreStbVideoMigrationStatus,
@@ -84,6 +86,11 @@ import {
   type BrainCorePostPlatformPoliciesResponse,
   type BrainCorePostDecommissionReadinessItem,
   type BrainCorePostDecommissionReadinessResponse,
+  type BrainCorePostOperatorGuidanceItem,
+  type BrainCorePostOperatorGuidanceResponse,
+  type BrainCorePostManualExportPackage,
+  type BrainCorePostManualExportItem,
+  type BrainCorePostManualExportPackageResponse,
   type BrainCorePostFlowFixture,
   type BrainCorePostFlowFixturesResponse,
   type BrainCorePostDraftFixturesResponse,
@@ -147,6 +154,8 @@ export interface BrainConsoleViewState {
   postOrchestratorRecovery?: { items?: BrainCorePostOrchestratorRecoveryItem[] };
   postOrchestratorPlatformPolicies?: BrainCorePostPlatformPoliciesResponse;
   postOrchestratorDecommissionReadiness?: BrainCorePostDecommissionReadinessResponse;
+  postOrchestratorOperatorGuidance?: BrainCorePostOperatorGuidanceResponse;
+  postOrchestratorManualExportPackage?: BrainCorePostManualExportPackageResponse;
   stbStatus?: BrainCoreStbPipelineStatus;
   videoOrchestratorStatus?: BrainCoreVideoOrchestratorStatus;
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
@@ -169,7 +178,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -202,6 +211,8 @@ export async function loadBrainConsoleViewState(
     readBrainCorePostReadinessScore(baseUrl, 'github-release-event-fixture'),
     readBrainCorePostPlatformPolicies(baseUrl),
     readBrainCorePostDecommissionReadiness(baseUrl),
+    readBrainCorePostOperatorGuidance(baseUrl),
+    readBrainCorePostManualExportPackage(baseUrl, 'github-release-event-fixture'),
     readBrainCorePostOrchestratorContracts(baseUrl),
     readBrainCorePostOrchestratorIntegrations(baseUrl),
     readBrainCorePostOrchestratorRecovery(baseUrl),
@@ -230,7 +241,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -288,6 +299,8 @@ export async function loadBrainConsoleViewState(
     postOrchestratorReadiness: postOrchestratorReadiness.value,
     postOrchestratorPlatformPolicies: postOrchestratorPlatformPolicies.value,
     postOrchestratorDecommissionReadiness: postOrchestratorDecommissionReadiness.value,
+    postOrchestratorOperatorGuidance: postOrchestratorOperatorGuidance.value,
+    postOrchestratorManualExportPackage: postOrchestratorManualExportPackage.value,
     postOrchestratorContracts: postOrchestratorContracts.value,
     postOrchestratorIntegrations: postOrchestratorIntegrations.value,
     postOrchestratorRecovery: postOrchestratorRecovery.value,
@@ -506,6 +519,8 @@ function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsole
   renderCard(grid, 'Readiness / Quality Score', renderPostReadinessScoreCard(state));
   renderCard(grid, 'Platform Policy / Security Review', renderPostPlatformPolicyCard(state));
   renderCard(grid, 'Decommission Readiness Matrix', renderPostDecommissionReadinessCard(state));
+  renderCard(grid, 'Operator Guidance', renderPostOperatorGuidanceCard(state));
+  renderCard(grid, 'Manual Export Preview', renderPostManualExportCard(state));
   renderCard(grid, 'Contracts', renderPostContractsCard(state));
   renderCard(grid, 'Recovery / Blockers', renderPostRecoveryCard(state));
   renderCard(grid, 'Publishing Disabled', renderPublishingDisabledCard());
@@ -1916,6 +1931,75 @@ function renderPostDecommissionReadinessCard(state: BrainConsoleViewState): HTML
     list.createEl('li', {
       text: `${item.label} · ${item.status} · gates:${passed}/${item.gates.length} · blockers:${item.blockerCount} · next:${item.nextSafeStep}`,
     });
+  });
+
+  return el;
+}
+
+function renderPostOperatorGuidanceCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const guidance = state.postOrchestratorOperatorGuidance;
+  if (!guidance) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No operator guidance available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Items', value: String(guidance.summary.itemCount) },
+    { label: 'Blocked', value: String(guidance.summary.blockedCount) },
+    { label: 'Warnings', value: String(guidance.summary.warningCount) },
+    { label: 'Next safe step', value: guidance.summary.nextSafeStep },
+  ];
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  const safety = el.createEl('div', { cls: 'brain-console__list-note', text: 'Read-only · no auto-fix · no publishing · no scheduling · no external writes.' });
+  safety.addClass('brain-console__post-safe-note');
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  guidance.items.slice(0, 6).forEach((item) => {
+    const li = list.createEl('li');
+    li.createEl('div', { text: `${item.title} · ${item.category} · ${item.severity}` });
+    li.createEl('div', { cls: 'brain-console__list-sub', text: item.summary });
+    li.createEl('div', { cls: 'brain-console__list-note', text: item.nextSafeStep });
+    li.createEl('div', { cls: 'brain-console__list-note', text: item.steps.slice(0, 2).map((step) => step.label).join(' · ') });
+  });
+
+  return el;
+}
+
+function renderPostManualExportCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const packagePreview = state.postOrchestratorManualExportPackage?.package;
+  if (!packagePreview) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No manual export preview available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Package', value: packagePreview.title },
+    { label: 'Items', value: String(packagePreview.itemCount) },
+    { label: 'Status', value: packagePreview.status },
+    { label: 'Next safe step', value: packagePreview.nextSafeStep },
+  ];
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  const safety = el.createEl('div', { cls: 'brain-console__list-note', text: 'Manual export is preview-only. Brain does not write files, copy to clipboard, or publish.' });
+  safety.addClass('brain-console__post-safe-note');
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  packagePreview.items.slice(0, 5).forEach((item) => {
+    const li = list.createEl('li');
+    li.createEl('div', { text: `${item.platform} · ${item.title} · ${item.format}` });
+    li.createEl('div', { cls: 'brain-console__list-sub', text: `${item.contentPreview.slice(0, 96)}${item.contentPreview.length > 96 ? '…' : ''}` });
+    li.createEl('div', { cls: 'brain-console__list-note', text: item.checklist.slice(0, 3).join(' · ') });
   });
 
   return el;

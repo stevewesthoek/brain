@@ -1778,3 +1778,31 @@ See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.
 - No decommission action is introduced
 - No files are deleted and no legacy repos are modified
 - Publishing and scheduling remain disabled
+
+### Phase P11: Operator Guidance (2026-06-02+)
+
+**Objective:** Add a read-only operator guidance and blocker recovery surface for Post Orchestrator.
+
+**Tasks:**
+- Operator guidance endpoint derived from pipeline, readiness, policy, decommission, review, schedule, and analytics state
+- Brain Console operator guidance card
+- Safety verification for guidance-only semantics
+
+**Exit criteria:**
+- Operator guidance renders from Brain Core
+- No auto-fix or execution paths are introduced
+- Publishing and scheduling remain disabled
+
+### Phase P12: Manual Export Preview (2026-06-02+)
+
+**Objective:** Add a read-only manual export/package preview for post drafts without writing files, copying to clipboard, or publishing.
+
+**Tasks:**
+- Manual export preview endpoint derived from dry-run drafts
+- Brain Console manual export preview card
+- Safety verification for preview-only export semantics
+
+**Exit criteria:**
+- Manual export preview renders from Brain Core
+- No file writes, downloads, clipboard writes, publishing, or scheduling are introduced
+- Preview-only state remains explicit in UI and API
