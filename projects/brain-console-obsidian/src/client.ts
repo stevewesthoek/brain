@@ -2717,6 +2717,42 @@ export interface BrainCoreVideoReleaseCandidateReadinessResponse {
   };
 }
 
+export interface BrainCoreVideoOperatorDecisionQueueResponse {
+  queue: {
+    status: string;
+    canCreateApproval: boolean;
+    executableActionRegistered: boolean;
+    decisions: Array<{
+      id: string;
+      label: string;
+      category: string;
+      status: string;
+      priority: string;
+      blockers: string[];
+      nextSafeStep: string;
+    }>;
+    summary: {
+      totalDecisions: number;
+      decisionRequiredCount: number;
+      blockedCount: number;
+      highPriorityCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      createsApproval: boolean;
+      registersAction: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+      rendersVideo: boolean;
+      publishesContent: boolean;
+      decommissionsStb: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -3643,6 +3679,12 @@ export async function readBrainCoreVideoReleaseCandidateReadiness(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoReleaseCandidateReadinessResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoReleaseCandidateReadinessResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/release-candidate-readiness');
+}
+
+export async function readBrainCoreVideoOperatorDecisionQueue(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoOperatorDecisionQueueResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoOperatorDecisionQueueResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/operator-decision-queue');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(

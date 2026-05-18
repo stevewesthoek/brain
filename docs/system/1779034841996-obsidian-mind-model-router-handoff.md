@@ -219,6 +219,18 @@ Safety status:
 - Read-only visibility only.
 - No release-candidate marking, execution controls, approval creation, publishing, Mind writes, or STB decommission controls were added.
 
+## Brain Console — Operator Decision Queue visibility
+
+Implemented:
+
+- Added Brain Console Pipelines visibility for `GET /video-orchestrator/operator-decision-queue`.
+- Added a compact Operator Decision Queue card with status, decision counts, top decisions/blockers, next safe step, and safety label.
+
+Safety status:
+
+- Read-only visibility only.
+- No approval creation, execution controls, publishing, Mind writes, or STB decommission controls were added.
+
 ## Continuation update — Approved dry-run report visibility (Phase 4D)
 
 Implemented:
