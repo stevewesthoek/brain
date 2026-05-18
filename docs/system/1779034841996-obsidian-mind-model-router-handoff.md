@@ -2851,3 +2851,22 @@ Safety status:
 - No approval created, execution enabled, rendering/exporting enabled, platform publishing enabled, STB decommission enabled, or Mind writes enabled.
 
 Next safe task: Brain Console visibility for the controlled execution policy boundary, still read-only.
+
+
+## 2026-05-18 — Brain Console: Controlled execution boundary visibility
+
+Completed a minimal Brain Console visibility pass for the controlled execution policy boundary.
+
+Added:
+- Pipelines tab card: `Controlled Execution Boundary`.
+- Shows boundary status, execution/action/approval flags, boundary count, blocker count, and the available policy boundary endpoint.
+- Keeps the dashboard scaffold lean while making the execution boundary discoverable.
+
+Validation evidence:
+- Pending Brain Console typecheck/build/package and Brain Core CI.
+
+Safety status:
+- UI visibility only.
+- No execution controls, no POST routes, no approval creation, no file writes, no publishing, no release-candidate marking, and no STB decommission added.
+
+Next safe task: Controlled Execution Readiness Index, or operator review if the boundary card is sufficient.

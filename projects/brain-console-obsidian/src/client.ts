@@ -2753,6 +2753,52 @@ export interface BrainCoreVideoOperatorDecisionQueueResponse {
   };
 }
 
+export interface BrainCoreVideoControlledExecutionPolicyBoundaryResponse {
+  boundary: {
+    status: string;
+    canExecute: boolean;
+    canRegisterAction: boolean;
+    canCreateApproval: boolean;
+    summary: {
+      totalSections: number;
+      blockedCount: number;
+      missingCount: number;
+      blockingSeverityCount: number;
+    };
+    sections: Array<{
+      id: string;
+      label: string;
+      category: string;
+      status: string;
+      severity: string;
+      blockers: string[];
+      nextSafeStep: string;
+      safety: {
+        readOnly: boolean;
+        canRegisterAction: boolean;
+        canCreateApproval: boolean;
+        canExecute: boolean;
+        canWriteFiles: boolean;
+        canPublish: boolean;
+        canDecommissionStb: boolean;
+        writesToMind: boolean;
+      };
+    }>;
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      canRegisterAction: boolean;
+      canCreateApproval: boolean;
+      canExecute: boolean;
+      canWriteFiles: boolean;
+      canPublish: boolean;
+      canDecommissionStb: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -3685,6 +3731,12 @@ export async function readBrainCoreVideoOperatorDecisionQueue(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoOperatorDecisionQueueResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoOperatorDecisionQueueResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/operator-decision-queue');
+}
+
+export async function readBrainCoreVideoControlledExecutionPolicyBoundary(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionPolicyBoundaryResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionPolicyBoundaryResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-policy-boundary');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(
