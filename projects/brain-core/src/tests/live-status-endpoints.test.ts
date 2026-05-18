@@ -3891,3 +3891,156 @@ test('POST /video-orchestrator/controlled-execution-runtime-sandbox-boundary-des
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-approval-review-audit-design returns blocked review design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-approval-review-audit-design' });
+  const body = JSON.parse(response.body) as {
+    review: {
+      id: string;
+      version: string;
+      status: string;
+      reviewDesignExists: boolean;
+      auditCaptureEnabled: boolean;
+      approvalReviewEnabled: boolean;
+      approvalCreationEnabled: boolean;
+      approvalExecutionEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      reviewFields: string[];
+      reviewRules: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.review.id, 'video-orchestrator-controlled-execution-approval-review-audit-design');
+  assert.equal(body.review.version, 'phase-5p');
+  assert.ok(['blocked', 'disabled'].includes(body.review.status));
+  assert.equal(body.review.reviewDesignExists, false);
+  assert.equal(body.review.auditCaptureEnabled, false);
+  assert.equal(body.review.approvalReviewEnabled, false);
+  assert.equal(body.review.approvalCreationEnabled, false);
+  assert.equal(body.review.approvalExecutionEnabled, false);
+  assert.equal(body.review.executionEnabled, false);
+  assert.equal(body.review.executable, false);
+  assert.ok(body.review.reviewFields.length > 0);
+  assert.ok(body.review.reviewRules.length > 0);
+  assert.ok(body.review.evidenceReferences.includes('/video-orchestrator/controlled-execution-operator-decision-snapshot-design'));
+  assert.equal(body.review.safety.readOnly, true);
+  assert.equal(body.review.safety.reviewDesignOnly, true);
+  assert.equal(body.review.safety.persistsAuditEvent, false);
+  assert.equal(body.review.safety.createsApproval, false);
+  assert.equal(body.review.safety.executionEnabled, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-approval-review-audit-design is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-approval-review-audit-design' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-immutable-audit-trail-schema returns blocked schema design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-immutable-audit-trail-schema' });
+  const body = JSON.parse(response.body) as {
+    schema: {
+      id: string;
+      version: string;
+      status: string;
+      schemaExists: boolean;
+      auditTrailPersistenceEnabled: boolean;
+      immutableStoreEnabled: boolean;
+      appendOnlyWriteEnabled: boolean;
+      approvalCreationEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      auditEventTypes: string[];
+      auditRecordFields: string[];
+      immutabilityRules: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.schema.id, 'video-orchestrator-controlled-execution-immutable-audit-trail-schema');
+  assert.equal(body.schema.version, 'phase-5q');
+  assert.ok(['blocked', 'disabled'].includes(body.schema.status));
+  assert.equal(body.schema.schemaExists, false);
+  assert.equal(body.schema.auditTrailPersistenceEnabled, false);
+  assert.equal(body.schema.immutableStoreEnabled, false);
+  assert.equal(body.schema.appendOnlyWriteEnabled, false);
+  assert.equal(body.schema.approvalCreationEnabled, false);
+  assert.equal(body.schema.executionEnabled, false);
+  assert.equal(body.schema.executable, false);
+  assert.ok(body.schema.auditEventTypes.length > 0);
+  assert.ok(body.schema.auditRecordFields.length > 0);
+  assert.ok(body.schema.immutabilityRules.length > 0);
+  assert.ok(body.schema.evidenceReferences.includes('/video-orchestrator/controlled-execution-approval-review-audit-design'));
+  assert.equal(body.schema.safety.readOnly, true);
+  assert.equal(body.schema.safety.schemaDesignOnly, true);
+  assert.equal(body.schema.safety.appendOnlyWriteEnabled, false);
+  assert.equal(body.schema.safety.createsApproval, false);
+  assert.equal(body.schema.safety.executionEnabled, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-immutable-audit-trail-schema is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-immutable-audit-trail-schema' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-audit-compliance-evidence-packet-design returns blocked packet design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-audit-compliance-evidence-packet-design' });
+  const body = JSON.parse(response.body) as {
+    packet: {
+      id: string;
+      version: string;
+      status: string;
+      packetDesignExists: boolean;
+      packetGenerationEnabled: boolean;
+      evidenceCollectionEnabled: boolean;
+      auditTrailPersistenceEnabled: boolean;
+      approvalCreationEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      packetSections: string[];
+      complianceRules: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.packet.id, 'video-orchestrator-controlled-execution-audit-compliance-evidence-packet-design');
+  assert.equal(body.packet.version, 'phase-5r');
+  assert.ok(['blocked', 'disabled'].includes(body.packet.status));
+  assert.equal(body.packet.packetDesignExists, false);
+  assert.equal(body.packet.packetGenerationEnabled, false);
+  assert.equal(body.packet.evidenceCollectionEnabled, false);
+  assert.equal(body.packet.auditTrailPersistenceEnabled, false);
+  assert.equal(body.packet.approvalCreationEnabled, false);
+  assert.equal(body.packet.executionEnabled, false);
+  assert.equal(body.packet.executable, false);
+  assert.ok(body.packet.packetSections.length > 0);
+  assert.ok(body.packet.complianceRules.length > 0);
+  assert.ok(body.packet.evidenceReferences.includes('/video-orchestrator/controlled-execution-immutable-audit-trail-schema'));
+  assert.equal(body.packet.safety.readOnly, true);
+  assert.equal(body.packet.safety.packetDesignOnly, true);
+  assert.equal(body.packet.safety.packetGenerationEnabled, false);
+  assert.equal(body.packet.safety.evidenceCollectionEnabled, false);
+  assert.equal(body.packet.safety.createsApproval, false);
+  assert.equal(body.packet.safety.executionEnabled, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-audit-compliance-evidence-packet-design is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-audit-compliance-evidence-packet-design' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

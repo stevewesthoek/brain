@@ -91,6 +91,9 @@ This document defines the future controlled execution model as a design-only bou
 - 5M preflight evidence hash design.
 - 5N operator decision snapshot design.
 - 5O runtime sandbox boundary design.
+- 5P approval review/audit design.
+- 5Q immutable audit trail schema design.
+- 5R audit compliance evidence packet design.
 
 ## Non-negotiable safety
 
@@ -312,6 +315,65 @@ This document defines the future controlled execution model as a design-only bou
 - No sandbox execution is enabled.
 - No filesystem access is enabled.
 - No network access is enabled.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: approval review/audit design, still read-only and no execution.
+
+## Phase 5P approval review/audit design
+
+- Added as a read-only review design endpoint.
+- Defines how future approval reviews would capture operator decisions (reviewId, candidateStoryId, reviewerOperatorId, decision, rationale, timestamps).
+- Defines review rules (read-only capture only, no approval creation, no execution authorization).
+- Specifies review invalidation triggers (candidate/story/hash/risk/policy changes).
+- No approval review is captured or persisted.
+- No audit event is persisted.
+- No approval creation is enabled from review.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: immutable audit trail schema design, still read-only and no execution.
+
+## Phase 5Q immutable audit trail schema design
+
+- Added as a read-only audit trail schema endpoint.
+- Defines how future approval audit events would be captured as immutable, append-only records (eventId, eventType, candidateStoryId, operatorId, policyVersion, evidenceHash, previousRecordHash, recordHash).
+- Defines event types (candidate_lock_reviewed, preflight_evidence_reviewed, first_approval_reviewed, second_approval_policy_reviewed, sandbox_boundary_reviewed, execution_denied, approval_expired, approval_invalidated).
+- Specifies immutability rules (append-only design, no writes enabled, no persistence enabled, no hash computation over real files).
+- No immutable audit trail is created or persisted.
+- No append-only write is enabled.
+- No immutable store is created.
+- No audit trail persistence is enabled.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: audit compliance evidence packet design, still read-only and no execution.
+
+## Phase 5R audit compliance evidence packet design
+
+- Added as a read-only compliance packet design endpoint.
+- Defines how future audit compliance evidence packets would be assembled: references to candidate lock, evidence hash, operator decisions, approval reviews, immutable audit trail, sandbox boundary, rollback checklist, risk register, policy boundary.
+- Defines compliance rules (design-only packet, no packet generation, no evidence collection from files, no audit trail persistence).
+- Specifies packet sections and compliance requirements (all schema-based, no real artifact reads).
+- No compliance evidence packet is generated.
+- No packet generation is enabled.
+- No evidence collection is enabled.
+- No audit trail persistence is enabled.
 - No approval is created.
 - No first approval is created.
 - No second approval is created.

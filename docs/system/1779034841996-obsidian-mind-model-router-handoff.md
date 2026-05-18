@@ -3214,3 +3214,76 @@ Safety status (all three phases):
 Next safe task:
 
 - Finalize controlled execution design phase roadmap or continue with additional policy/protocol design phases.
+
+## Continuation update — Phases 5P, 5Q, 5R audit design completion (2026-05-18)
+
+Implemented:
+
+**Phase 5P (Approval Review/Audit Design):**
+- Added `GET /video-orchestrator/controlled-execution-approval-review-audit-design` in Brain Core.
+- Defines how approval reviews would capture operator decisions (reviewId, decision, rationale, timestamps).
+- Review rules: read-only capture only, no approval creation, no execution authorization.
+- Safety: readOnly, reviewDesignOnly, no audit capture, no approval creation.
+
+**Phase 5Q (Immutable Audit Trail Schema Design):**
+- Added `GET /video-orchestrator/controlled-execution-immutable-audit-trail-schema` in Brain Core.
+- Defines audit event types (candidate_lock_reviewed, preflight_evidence_reviewed, first_approval_reviewed, etc.).
+- Defines audit record fields (eventId, eventType, candidateStoryId, policyVersion, evidenceHash, recordHash, timestamps).
+- Immutability rules: append-only design, no writes enabled, no persistence enabled.
+- Safety: readOnly, schemaDesignOnly, no append-only writes, no immutable store.
+
+**Phase 5R (Audit Compliance Evidence Packet Design):**
+- Added `GET /video-orchestrator/controlled-execution-audit-compliance-evidence-packet-design` in Brain Core.
+- Defines compliance evidence packet sections (candidate lock, evidence hash, decisions, reviews, audit trail, sandbox, rollback, risk, policy).
+- Compliance rules: design-only packet, no generation, no evidence collection from files, no audit persistence.
+- Safety: readOnly, packetDesignOnly, no packet generation, no evidence collection.
+
+All phases:
+- Added type definitions to projects/brain-core/src/types/api.ts (BrainCoreVideoControlledExecutionApprovalReviewAudit, ImmutableAuditTrailSchema, AuditComplianceEvidencePacket)
+- Added route handlers with GET support and POST rejection (3 new endpoints)
+- Added comprehensive tests (all 6 tests: GET returns 200 with correct version/status/flags, POST returns 404)
+- Updated controlled execution architecture documentation with phases 5P, 5Q, 5R sections
+
+Validation:
+
+- Brain Core CI: passed, 286 tests passing (up from 280).
+- All three phases follow identical read-only/design-only/no-execution pattern.
+- Phases chain evidence references: 5P→5O, 5Q→5P, 5R→5Q for dependency tracking.
+
+Safety status (all three phases):
+
+- No POST routes for Video Orchestrator controlled execution audit/review/compliance.
+- No approval, first approval, or second approval creation.
+- No approval execution.
+- No action registry or allowlist entry.
+- No validator or execution-plan execution.
+- No audit capture, persistence, or write path.
+- No packet generation or evidence collection from real files.
+- No immutable store creation or append-only write mechanism.
+- No STB or Video execution.
+- No file writing, rendering, export, publishing, Mind writes, or STB decommissioning.
+- All safety flags: readOnly=true, design-only flags=true, everything else false.
+
+Complete controlled execution design roadmap (phases 5A-5R):
+- 5A: Architecture spec ✓
+- 5B: Approval payload schema ✓
+- 5C: Preflight validator schema ✓
+- 5D: Execution plan stub ✓
+- 5E: Approval request design ✓
+- 5F: Execution disabled gate ✓
+- 5G: Second approval policy ✓
+- 5H: Operator identity protocol ✓
+- 5I: Role policy definition ✓
+- 5J: First approval authority policy ✓
+- 5K: First approval audit/expiry model ✓
+- 5L: Candidate/story lock design ✓
+- 5M: Preflight evidence hash design ✓
+- 5N: Operator decision snapshot design ✓
+- 5O: Runtime sandbox boundary design ✓
+- 5P: Approval review/audit design ✓
+- 5Q: Immutable audit trail schema design ✓
+- 5R: Audit compliance evidence packet design ✓
+
+Next safe task:
+
+- Finalize design phases or implement runtime integration tests that verify all endpoints are read-only and no execution/persistence is possible.

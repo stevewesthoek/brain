@@ -5171,3 +5171,174 @@ export interface BrainCoreVideoControlledExecutionRuntimeSandboxBoundary {
 export interface BrainCoreVideoControlledExecutionRuntimeSandboxBoundaryResponse {
   boundary: BrainCoreVideoControlledExecutionRuntimeSandboxBoundary;
 }
+
+export interface BrainCoreVideoControlledExecutionApprovalReviewAudit {
+  id: 'video-orchestrator-controlled-execution-approval-review-audit-design';
+  generatedAt: string;
+  version: 'phase-5p';
+  status: 'blocked' | 'disabled';
+  reviewDesignExists: false;
+  auditCaptureEnabled: false;
+  approvalReviewEnabled: false;
+  approvalCreationEnabled: false;
+  approvalExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    reviewFieldCount: number;
+    reviewRuleCount: number;
+    missingRequirementCount: number;
+    blockerCount: number;
+  };
+  reviewFields: string[];
+  reviewRules: string[];
+  missingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    reviewDesignOnly: true;
+    auditCaptureEnabled: false;
+    approvalReviewEnabled: false;
+    approvalCreationEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    persistsAuditEvent: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionApprovalReviewAuditResponse {
+  review: BrainCoreVideoControlledExecutionApprovalReviewAudit;
+}
+
+export interface BrainCoreVideoControlledExecutionImmutableAuditTrailSchema {
+  id: 'video-orchestrator-controlled-execution-immutable-audit-trail-schema';
+  generatedAt: string;
+  version: 'phase-5q';
+  status: 'blocked' | 'disabled';
+  schemaExists: false;
+  auditTrailPersistenceEnabled: false;
+  immutableStoreEnabled: false;
+  appendOnlyWriteEnabled: false;
+  approvalCreationEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    eventTypeCount: number;
+    recordFieldCount: number;
+    immutabilityRuleCount: number;
+    missingRequirementCount: number;
+    blockerCount: number;
+  };
+  auditEventTypes: string[];
+  auditRecordFields: string[];
+  immutabilityRules: string[];
+  missingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    schemaDesignOnly: true;
+    auditTrailPersistenceEnabled: false;
+    immutableStoreEnabled: false;
+    appendOnlyWriteEnabled: false;
+    hashComputationEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionImmutableAuditTrailSchemaResponse {
+  schema: BrainCoreVideoControlledExecutionImmutableAuditTrailSchema;
+}
+
+export interface BrainCoreVideoControlledExecutionAuditComplianceEvidencePacket {
+  id: 'video-orchestrator-controlled-execution-audit-compliance-evidence-packet-design';
+  generatedAt: string;
+  version: 'phase-5r';
+  status: 'blocked' | 'disabled';
+  packetDesignExists: false;
+  packetGenerationEnabled: false;
+  evidenceCollectionEnabled: false;
+  auditTrailPersistenceEnabled: false;
+  approvalCreationEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    packetSectionCount: number;
+    complianceRuleCount: number;
+    missingRequirementCount: number;
+    blockerCount: number;
+  };
+  packetSections: string[];
+  complianceRules: string[];
+  missingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    packetDesignOnly: true;
+    packetGenerationEnabled: false;
+    evidenceCollectionEnabled: false;
+    auditTrailPersistenceEnabled: false;
+    readsGeneratedArtifacts: false;
+    hashComputationEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionAuditComplianceEvidencePacketResponse {
+  packet: BrainCoreVideoControlledExecutionAuditComplianceEvidencePacket;
+}
