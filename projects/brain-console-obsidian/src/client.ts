@@ -2799,6 +2799,34 @@ export interface BrainCoreVideoControlledExecutionPolicyBoundaryResponse {
   };
 }
 
+export interface BrainCoreVideoControlledExecutionReadinessIndexResponse {
+  index: {
+    status: string;
+    readinessPercent: number;
+    summary: {
+      totalItems: number;
+      readyCount: number;
+      blockedCount: number;
+      missingCount: number;
+      blockingSeverityCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      canExecute: boolean;
+      canRegisterAction: boolean;
+      canCreateApproval: boolean;
+      canRender: boolean;
+      canExport: boolean;
+      canPublish: boolean;
+      canMarkReleaseCandidate: boolean;
+      canDecommissionStb: boolean;
+      writesToMind: boolean;
+    };
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -3737,6 +3765,12 @@ export async function readBrainCoreVideoControlledExecutionPolicyBoundary(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionPolicyBoundaryResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionPolicyBoundaryResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-policy-boundary');
+}
+
+export async function readBrainCoreVideoControlledExecutionReadinessIndex(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionReadinessIndexResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionReadinessIndexResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-readiness-index');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(

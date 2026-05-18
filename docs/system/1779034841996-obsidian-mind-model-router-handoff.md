@@ -2882,7 +2882,7 @@ Added:
 - Reports the top blockers and next safe step in one operator-facing index.
 
 Validation evidence:
-- Pending Brain Core CI.
+- Brain Core tests passed: 242/242.
 
 Safety status:
 - No POST route added.
@@ -2902,7 +2902,8 @@ Added:
 - Keeps the dashboard scaffold lean while making the readiness index discoverable.
 
 Validation evidence:
-- Pending Brain Console typecheck/build/package and Brain Core CI.
+- Brain Console typecheck/build/package passed.
+- Brain Core CI passed: 242/242.
 
 Safety status:
 - UI visibility only.
