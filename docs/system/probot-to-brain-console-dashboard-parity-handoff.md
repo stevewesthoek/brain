@@ -97,7 +97,87 @@ All safety boundaries maintained:
 - No Video execution.
 - No ProBot decommission.
 
-## Next safe tasks
+## Third implementation slice: BrainOS Obsidian Native UX Stabilization
+
+### Problem Statement
+
+Critical usability issues identified:
+- Buttons required 4–5 clicks before reacting
+- Some buttons did not work
+- Right side cut off
+- Layout non-native
+- Not responsive in narrow sidebars
+- Stale state after service restart
+- Refresh unreliable
+
+### Root Causes
+
+1. Tab switching reloaded all 80+ Brain Core endpoints
+2. No state caching between tab switches
+3. Full DOM re-render on every click
+4. No loading indicators or disabled states
+5. Hard-coded `max-width: 1400px` shell
+6. Fixed `120px` columns, missing `min-width: 0` on grid cells
+7. 1.4rem logo, dense layout
+
+### Changes Implemented
+
+**projects/brain-console-obsidian/src/main.ts**
+- Added `cachedState` to preserve data between tabs
+- Added `isRefreshing` flag to prevent duplicate calls
+- Split into `fullRefresh()` (all endpoints) and `rerenderWithCachedState()` (instant)
+- Tab click now calls `rerenderWithCachedState()` instead of `fullRefresh()`
+- Manual refresh button shows loading state, is disabled, displays timestamp
+
+**projects/brain-console-obsidian/styles.css**
+- Container: `max-width: 100%`, full responsive width
+- Cards/grids: Added `min-width: 0` to prevent overflow
+- Text wrapping: `word-break: break-word`, `overflow-wrap: break-word`
+- Command bar: Compact sizing for narrow panes
+- Logo: 1rem (down from 1.4rem)
+- Tabs: Added scroll on narrow screens
+- Dashboard grid: `minmax(200px, 1fr)`, single-column <400px
+- Rows: `minmax(80px, auto)`, single-column <400px
+
+### Validation
+
+- Brain Console typecheck: passed
+- Brain Console build: passed
+
+### How It Works Now
+
+**Tab Switching:**
+- User clicks tab → instant switch using cached data (no network call)
+- Perceived lag eliminated
+
+**Refresh:**
+- User clicks "Manual refresh" → button disables, shows "Refreshing..."
+- Fetches all Brain Core endpoints
+- Re-renders with new data
+- Button re-enables, shows timestamp
+
+**Offline Recovery:**
+- If offline: clean offline state shown
+- Manual refresh retries without closing pane
+- Partial data shown if some endpoints fail
+- Old data visible with warning if refresh fails
+
+**Layout:**
+- Responsive on <280px wide sidebars
+- Text wraps, no clipping
+- Cards adapt with `auto-fit`
+- Tabs scroll if needed
+- ProBot parity card remains visible and responsive
+
+### Remaining Polish (Future)
+
+1. Skeleton state while refreshing
+2. Endpoint failure details in diagnostics
+3. Persist last-used tab in settings
+4. Keyboard navigation
+5. Theme switching
+
+## Next Safe Tasks (Resume After Stabilization)
 
 1. Add read-only ProBot workflow queue summary if safe source data exists (low-risk).
 2. Add read-only Video Orchestrator account health parity without tokens/OAuth/secrets.

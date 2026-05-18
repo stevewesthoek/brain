@@ -1,6 +1,6 @@
 import { ItemView, Notice, Plugin, PluginSettingTab, Setting, requestUrl, type WorkspaceLeaf } from 'obsidian';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
-import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSectionId } from './view.js';
+import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSectionId, type BrainConsoleViewState } from './view.js';
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
@@ -80,6 +80,8 @@ class BrainConsoleSettingTab extends PluginSettingTab {
 class BrainConsoleView extends ItemView {
   private readonly plugin: BrainConsolePlugin;
   private activeSection: BrainConsoleSectionId = 'overview';
+  private cachedState: BrainConsoleViewState | null = null;
+  private isRefreshing = false;
 
   constructor(leaf: WorkspaceLeaf, plugin: BrainConsolePlugin) {
     super(leaf);
@@ -103,33 +105,66 @@ class BrainConsoleView extends ItemView {
     state.createDiv({ cls: 'brain-console__status-line', text: 'Manual refresh only · read-only · no POST calls' });
 
     const actions = state.createDiv({ cls: 'brain-console__actions' });
-    const refreshButton = actions.createEl('button', { text: 'Manual refresh' });
-    refreshButton.addEventListener('click', () => {
-      void this.refresh();
+    const refreshButton = actions.createEl('button', { text: 'Manual refresh', cls: 'brain-console__refresh-btn' });
+    const refreshTimestamp = actions.createEl('span', { cls: 'brain-console__refresh-time', text: 'Never' });
+
+    refreshButton.addEventListener('click', async () => {
+      if (this.isRefreshing) return;
+      this.isRefreshing = true;
+      refreshButton.disabled = true;
+      refreshButton.setAttribute('aria-busy', 'true');
+      refreshButton.textContent = 'Refreshing...';
+      try {
+        await this.fullRefresh();
+        const now = new Date();
+        refreshTimestamp.textContent = `Last: ${now.toLocaleTimeString()}`;
+      } finally {
+        this.isRefreshing = false;
+        refreshButton.disabled = false;
+        refreshButton.removeAttribute('aria-busy');
+        refreshButton.textContent = 'Manual refresh';
+      }
     });
 
-    // Attach tab click handler to container
+    // Attach tab click handler to container - instant switch without reload
     this.registerDomEvent(this.contentEl, 'click', (e: Event) => {
       const target = e.target as HTMLElement;
-      if (target.classList.contains('brain-console__section-tab')) {
-        const sectionId = target.getAttribute('data-section-id') as BrainConsoleSectionId | null;
-        if (sectionId) {
-          this.activeSection = sectionId;
-          void this.refresh();
+      if (target.classList.contains('brain-console__section-tab') || target.closest('.brain-console__section-tab')) {
+        const tab = target.closest('.brain-console__section-tab') as HTMLElement;
+        if (tab) {
+          const sectionId = tab.getAttribute('data-section-id') as BrainConsoleSectionId | null;
+          if (sectionId && sectionId !== this.activeSection) {
+            this.activeSection = sectionId;
+            this.rerenderWithCachedState();
+            e.preventDefault();
+            e.stopPropagation();
+          }
         }
       }
     });
 
-    await this.refresh();
+    await this.fullRefresh();
+  }
+
+  /** Full refresh: reload all Brain Core data and re-render */
+  private async fullRefresh(): Promise<void> {
+    const settings = await this.plugin.getSettings();
+    this.cachedState = await loadBrainConsoleViewState(settings);
+    this.rerenderWithCachedState();
+  }
+
+  /** Re-render using cached state (instant tab switch) */
+  private rerenderWithCachedState(): void {
+    if (!this.cachedState) return;
+    const settings = this.plugin.settings;
+    this.cachedState.activeSection = this.activeSection;
+    renderBrainConsoleView(this.contentEl, this.cachedState, settings, () => {
+      void this.fullRefresh();
+    });
   }
 
   async refresh(): Promise<void> {
-    const settings = await this.plugin.getSettings();
-    const current = await loadBrainConsoleViewState(settings);
-    current.activeSection = this.activeSection;
-    renderBrainConsoleView(this.contentEl, current, settings, () => {
-      void this.refresh();
-    });
+    await this.fullRefresh();
   }
 }
 

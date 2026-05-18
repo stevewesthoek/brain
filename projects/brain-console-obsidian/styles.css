@@ -19,7 +19,10 @@
   background: var(--cockpit-bg);
   color: var(--cockpit-text-primary);
   font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-  padding: 20px;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
 }
 
 .brain-console--dashboard {
@@ -28,8 +31,10 @@
 
 .brain-console__shell {
   display: grid;
-  gap: 20px;
-  max-width: 1400px;
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Status Strip */
@@ -88,40 +93,46 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--cockpit-border);
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
-  min-height: 48px;
+  min-height: auto;
+  font-size: 0.9rem;
 }
 
 .brain-console__bar-left {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .brain-console__bar-center {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  gap: 8px;
+  flex: 0 1 auto;
   justify-content: center;
-  min-width: 200px;
+  min-width: 0;
 }
 
 .brain-console__bar-right {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .brain-console__logo {
-  font-size: 1.4rem;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.5px;
   color: var(--cockpit-accent);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Header */
@@ -380,10 +391,14 @@
   background: var(--cockpit-surface);
   border: 1px solid var(--cockpit-border);
   border-radius: 8px;
-  padding: 14px;
+  padding: 12px;
   display: grid;
   gap: 8px;
   transition: all 0.2s ease;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .brain-console__card:hover {
@@ -395,20 +410,26 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-width: 0;
+  gap: 8px;
 }
 
 .brain-console__card-header h3 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.3px;
   color: var(--cockpit-text-secondary);
   text-transform: uppercase;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .brain-console__card-content {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .brain-console__post-group {
@@ -615,27 +636,31 @@
 .brain-console__section-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   padding: 8px 0;
   border-bottom: 1px solid var(--cockpit-border);
   align-items: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
 }
 
 .brain-console__section-tab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 4px;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 3px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--cockpit-text-secondary);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
   letter-spacing: 0.2px;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .brain-console__section-tab:hover:not(.active) {
@@ -644,7 +669,7 @@
 }
 
 .brain-console__section-tab.active {
-  border-bottom: 3px solid var(--cockpit-accent);
+  border-bottom: 2px solid var(--cockpit-accent);
   color: var(--cockpit-accent);
   background: transparent;
 }
@@ -656,10 +681,17 @@
 
 .brain-console__row {
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: minmax(80px, auto) 1fr;
   gap: 8px;
   align-items: start;
   font-size: 0.8rem;
+  min-width: 0;
+}
+
+@media (max-width: 400px) {
+  .brain-console__row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .brain-console__row dt {
@@ -884,8 +916,16 @@
 
 .brain-console__dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 400px) {
+  .brain-console__dashboard-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Status chips */
@@ -963,6 +1003,37 @@
 .brain-console__roadmaps-section {
   display: grid;
   gap: 8px;
+}
+
+/* Refresh button */
+.brain-console__refresh-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  background: var(--cockpit-accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.brain-console__refresh-btn:hover:not(:disabled) {
+  background: #ff7c4d;
+  box-shadow: 0 0 12px rgba(255, 107, 61, 0.3);
+}
+
+.brain-console__refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.brain-console__refresh-time {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: var(--cockpit-text-tertiary);
+  white-space: nowrap;
 }
 
 .brain-console__roadmaps-section-title {
