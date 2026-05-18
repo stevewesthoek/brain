@@ -1249,3 +1249,83 @@ test('GET /video-orchestrator/manual-export-package/:id with unknown id returns 
   assert.equal(body.error?.code, 'not_found');
   assert.ok(body.error?.message.includes('manual export package'));
 });
+
+test('GET /stb-video/dual-run-evidence returns evidence report with safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/stb-video/dual-run-evidence' });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    evidence?: {
+      id: string;
+      status: string;
+      summary?: { totalStages: number };
+      safety?: Record<string, unknown>;
+      stages?: Array<{ safety?: Record<string, unknown> }>;
+    };
+  };
+  assert.equal(body.evidence?.id, 'stb-video-dual-run-evidence');
+  assert.ok(['not-ready', 'evidence-partial', 'candidate-ready', 'blocked'].includes(body.evidence?.status ?? ''));
+  assert.ok(body.evidence?.summary?.totalStages !== undefined);
+  assert.equal(body.evidence?.safety?.readOnly, true);
+  assert.equal(body.evidence?.safety?.executesStb, false);
+  assert.equal(body.evidence?.safety?.executesVideo, false);
+  assert.equal(body.evidence?.safety?.writesFiles, false);
+  assert.equal(body.evidence?.safety?.publishesContent, false);
+  assert.equal(body.evidence?.safety?.decommissionsStb, false);
+  assert.equal(body.evidence?.safety?.writesToMind, false);
+  assert.ok(Array.isArray(body.evidence?.stages));
+});
+
+test('GET /stb-video/dual-run-evidence stages have all expected safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/stb-video/dual-run-evidence' });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    evidence?: {
+      stages?: Array<{
+        stage: string;
+        safety?: Record<string, unknown>;
+        stbEvidence?: Array<{ safety?: Record<string, unknown> }>;
+        videoEvidence?: Array<{ safety?: Record<string, unknown> }>;
+      }>;
+    };
+  };
+
+  for (const stage of body.evidence?.stages ?? []) {
+    assert.ok(stage.stage);
+    assert.equal(stage.safety?.readOnly, true);
+    assert.equal(stage.safety?.executesStb, false);
+    assert.equal(stage.safety?.executesVideo, false);
+    assert.equal(stage.safety?.writesFiles, false);
+    assert.equal(stage.safety?.publishesContent, false);
+    assert.equal(stage.safety?.writesToMind, false);
+
+    for (const item of [...(stage.stbEvidence ?? []), ...(stage.videoEvidence ?? [])]) {
+      assert.equal(item.safety?.readOnly, true);
+      assert.equal(item.safety?.executesStb, false);
+      assert.equal(item.safety?.executesVideo, false);
+      assert.equal(item.safety?.writesFiles, false);
+      assert.equal(item.safety?.publishesContent, false);
+      assert.equal(item.safety?.writesToMind, false);
+    }
+  }
+});
+
+test('GET /stb-video/dual-run-evidence shows parityReady false (no real execution)', async () => {
+  const response = await exercise({ method: 'GET', url: '/stb-video/dual-run-evidence' });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    evidence?: {
+      stages?: Array<{
+        comparison?: {
+          parityReady: boolean;
+        };
+      }>;
+    };
+  };
+
+  for (const stage of body.evidence?.stages ?? []) {
+    assert.equal(stage.comparison?.parityReady, false);
+  }
+});

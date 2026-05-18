@@ -1448,6 +1448,77 @@ export interface BrainCoreStbVideoDualRunStatus {
   actions: { canPreview: boolean; canRequestRun: boolean; canRetry: boolean; requiresApproval: boolean };
 }
 
+export interface BrainCoreStbVideoDualRunEvidenceItem {
+  id: string;
+  label: string;
+  source: 'stb-status' | 'stb-parity' | 'video-planning' | 'manual-export-package' | 'runtime-status' | 'fixture';
+  status: 'available' | 'missing' | 'blocked';
+  value: string;
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreStbVideoDualRunEvidenceStage {
+  id: string;
+  stage: 'intake' | 'research' | 'script' | 'asset-plan' | 'design-plan' | 'voiceover-plan' | 'visuals-plan' | 'assembly-plan' | 'metadata-plan' | 'publishing-prep' | 'manual-export-package';
+  status: 'evidence-available' | 'evidence-partial' | 'blocked' | 'missing';
+  stbEvidence: BrainCoreStbVideoDualRunEvidenceItem[];
+  videoEvidence: BrainCoreStbVideoDualRunEvidenceItem[];
+  comparison: {
+    hasStbEvidence: boolean;
+    hasVideoEvidence: boolean;
+    parityReady: boolean;
+    notes: string[];
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreStbVideoDualRunEvidenceReport {
+  id: 'stb-video-dual-run-evidence';
+  generatedAt: string;
+  status: 'not-ready' | 'evidence-partial' | 'candidate-ready' | 'blocked';
+  stages: BrainCoreStbVideoDualRunEvidenceStage[];
+  summary: {
+    totalStages: number;
+    evidenceAvailableCount: number;
+    partialCount: number;
+    blockedCount: number;
+    missingCount: number;
+    parityReadyCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreStbVideoDualRunEvidenceResponse {
+  evidence: BrainCoreStbVideoDualRunEvidenceReport;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =

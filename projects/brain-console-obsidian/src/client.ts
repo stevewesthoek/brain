@@ -2347,6 +2347,77 @@ export interface BrainCoreStbVideoDualRunStatus {
   actions: { canPreview: boolean; canRequestRun: boolean; canRetry: boolean; requiresApproval: boolean };
 }
 
+export interface BrainCoreStbVideoDualRunEvidenceItem {
+  id: string;
+  label: string;
+  source: 'stb-status' | 'stb-parity' | 'video-planning' | 'manual-export-package' | 'runtime-status' | 'fixture';
+  status: 'available' | 'missing' | 'blocked';
+  value: string;
+  blockers: string[];
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreStbVideoDualRunEvidenceStage {
+  id: string;
+  stage: 'intake' | 'research' | 'script' | 'asset-plan' | 'design-plan' | 'voiceover-plan' | 'visuals-plan' | 'assembly-plan' | 'metadata-plan' | 'publishing-prep' | 'manual-export-package';
+  status: 'evidence-available' | 'evidence-partial' | 'blocked' | 'missing';
+  stbEvidence: BrainCoreStbVideoDualRunEvidenceItem[];
+  videoEvidence: BrainCoreStbVideoDualRunEvidenceItem[];
+  comparison: {
+    hasStbEvidence: boolean;
+    hasVideoEvidence: boolean;
+    parityReady: boolean;
+    notes: string[];
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreStbVideoDualRunEvidenceReport {
+  id: 'stb-video-dual-run-evidence';
+  generatedAt: string;
+  status: 'not-ready' | 'evidence-partial' | 'candidate-ready' | 'blocked';
+  stages: BrainCoreStbVideoDualRunEvidenceStage[];
+  summary: {
+    totalStages: number;
+    evidenceAvailableCount: number;
+    partialCount: number;
+    blockedCount: number;
+    missingCount: number;
+    parityReadyCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    decommissionsStb: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreStbVideoDualRunEvidenceResponse {
+  evidence: BrainCoreStbVideoDualRunEvidenceReport;
+}
+
 export interface BrainCoreAgentSummary {
   id: string;
   name: string;
@@ -3233,6 +3304,12 @@ export async function readBrainCoreStbVideoDualRunStatus(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreStbVideoDualRunStatus>> {
   return fetchJson<import('./client.js').BrainCoreStbVideoDualRunStatus>(normalizeBaseUrl(baseUrl), '/stb-video/dual-run-status');
+}
+
+export async function readBrainCoreStbVideoDualRunEvidence(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreStbVideoDualRunEvidenceResponse>> {
+  return fetchJson<import('./client.js').BrainCoreStbVideoDualRunEvidenceResponse>(normalizeBaseUrl(baseUrl), '/stb-video/dual-run-evidence');
 }
 
 export async function readBrainCoreAgents(
