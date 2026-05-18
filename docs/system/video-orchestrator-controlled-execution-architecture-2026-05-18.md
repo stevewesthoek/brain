@@ -88,6 +88,7 @@ This document defines the future controlled execution model as a design-only bou
 - 5J first-approval authority policy design.
 - 5K first-approval audit/expiry model design.
 - 5L candidate/story lock design.
+- 5M preflight evidence hash design.
 
 ## Non-negotiable safety
 
@@ -252,6 +253,27 @@ This document defines the future controlled execution model as a design-only bou
 - No second approval is created.
 - No action registration.
 - No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: preflight evidence hash design, still read-only and no execution.
+
+## Phase 5M preflight evidence hash design
+
+- Added as a read-only hash design endpoint.
+- Defines how future preflight evidence would be hashed: deterministic canonical JSON of schema versions only (approvalPayloadSchemaVersion, preflightValidatorSchemaVersion, planStubVersion, candidateStoryLockVersion, operatorDecisionSnapshotVersion, riskRegisterVersion).
+- Defines hash rules (canonical JSON only, no real artifact reads, no file paths, no secrets, no execution output).
+- Specifies hash invalidation triggers (any schema version change, any policy change).
+- No hash is computed.
+- No hash computation is enabled.
+- No evidence persistence is enabled.
+- No generated artifacts are read.
+- No validator execution.
+- No lock enforcement.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
 - No execution-plan execution.
 - No STB or Video execution.
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.

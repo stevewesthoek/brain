@@ -3680,3 +3680,76 @@ test('POST /video-orchestrator/controlled-execution-candidate-story-lock is not 
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-preflight-evidence-hash-design returns blocked hash design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-preflight-evidence-hash-design' });
+  const body = JSON.parse(response.body) as {
+    design: {
+      id: string;
+      version: string;
+      status: string;
+      hashDesignExists: boolean;
+      hashComputationEnabled: boolean;
+      evidencePersistenceEnabled: boolean;
+      readsGeneratedArtifacts: boolean;
+      validatorExecutionEnabled: boolean;
+      lockEnforcementEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      hashInputs: string[];
+      hashRules: string[];
+      missingRequirements: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.design.id, 'video-orchestrator-controlled-execution-preflight-evidence-hash-design');
+  assert.equal(body.design.version, 'phase-5m');
+  assert.ok(['blocked', 'disabled'].includes(body.design.status));
+  assert.equal(body.design.hashDesignExists, false);
+  assert.equal(body.design.hashComputationEnabled, false);
+  assert.equal(body.design.evidencePersistenceEnabled, false);
+  assert.equal(body.design.readsGeneratedArtifacts, false);
+  assert.equal(body.design.validatorExecutionEnabled, false);
+  assert.equal(body.design.lockEnforcementEnabled, false);
+  assert.equal(body.design.executionEnabled, false);
+  assert.equal(body.design.executable, false);
+  assert.ok(body.design.hashInputs.length > 0);
+  assert.ok(body.design.hashRules.length > 0);
+  assert.ok(body.design.missingRequirements.length > 0);
+  assert.ok(body.design.evidenceReferences.includes('/video-orchestrator/controlled-execution-candidate-story-lock'));
+
+  assert.equal(body.design.safety.readOnly, true);
+  assert.equal(body.design.safety.hashDesignOnly, true);
+  assert.equal(body.design.safety.hashComputationEnabled, false);
+  assert.equal(body.design.safety.evidencePersistenceEnabled, false);
+  assert.equal(body.design.safety.readsGeneratedArtifacts, false);
+  assert.equal(body.design.safety.createsApproval, false);
+  assert.equal(body.design.safety.createsFirstApproval, false);
+  assert.equal(body.design.safety.createsSecondApproval, false);
+  assert.equal(body.design.safety.approvalExecutionEnabled, false);
+  assert.equal(body.design.safety.registersAction, false);
+  assert.equal(body.design.safety.registersAllowlist, false);
+  assert.equal(body.design.safety.runsValidator, false);
+  assert.equal(body.design.safety.createsExecutionPlan, false);
+  assert.equal(body.design.safety.executionPlanExecutable, false);
+  assert.equal(body.design.safety.executionEnabled, false);
+  assert.equal(body.design.safety.executesStb, false);
+  assert.equal(body.design.safety.executesVideo, false);
+  assert.equal(body.design.safety.writesFiles, false);
+  assert.equal(body.design.safety.rendersVideo, false);
+  assert.equal(body.design.safety.exportsArtifacts, false);
+  assert.equal(body.design.safety.publishesContent, false);
+  assert.equal(body.design.safety.decommissionsStb, false);
+  assert.equal(body.design.safety.writesToMind, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-preflight-evidence-hash-design is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-preflight-evidence-hash-design' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

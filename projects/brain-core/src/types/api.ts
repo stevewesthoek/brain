@@ -5006,3 +5006,59 @@ export interface BrainCoreVideoControlledExecutionCandidateStoryLock {
 export interface BrainCoreVideoControlledExecutionCandidateStoryLockResponse {
   lock: BrainCoreVideoControlledExecutionCandidateStoryLock;
 }
+
+export interface BrainCoreVideoControlledExecutionPreflightEvidenceHashDesign {
+  id: 'video-orchestrator-controlled-execution-preflight-evidence-hash-design';
+  generatedAt: string;
+  version: 'phase-5m';
+  status: 'blocked' | 'disabled';
+  hashDesignExists: false;
+  hashComputationEnabled: false;
+  evidencePersistenceEnabled: false;
+  readsGeneratedArtifacts: false;
+  validatorExecutionEnabled: false;
+  lockEnforcementEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    hashInputCount: number;
+    hashRuleCount: number;
+    missingRequirementCount: number;
+    blockerCount: number;
+  };
+  hashInputs: string[];
+  hashRules: string[];
+  missingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    hashDesignOnly: true;
+    hashComputationEnabled: false;
+    evidencePersistenceEnabled: false;
+    readsGeneratedArtifacts: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionPreflightEvidenceHashDesignResponse {
+  design: BrainCoreVideoControlledExecutionPreflightEvidenceHashDesign;
+}
