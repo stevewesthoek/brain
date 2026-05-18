@@ -2831,3 +2831,23 @@ Safety status:
 - No release-candidate marking, STB execution, Video execution, rendering, publishing, approval creation, STB decommission, or Mind writes enabled.
 
 Next safe task: dashboard/client visibility for release-candidate status or explicit operator decision on controlled execution policy.
+
+
+## 2026-05-18 — Production acceleration: Controlled execution policy boundary
+
+Completed a read-only controlled execution policy boundary slice.
+
+Added:
+- `GET /video-orchestrator/controlled-execution-policy-boundary`
+- Boundary sections for action registration, approval execution, runtime isolation, artifact writes, platform publishing, STB decommission, and human operator decisions.
+- Explicit false capability flags for action registration, approval creation, execution, file writes, publishing, STB decommission, and Mind writes.
+
+Validation evidence:
+- Brain Core tests passed: 240/240.
+
+Safety status:
+- No POST route added.
+- No executable action registered.
+- No approval created, execution enabled, rendering/exporting enabled, platform publishing enabled, STB decommission enabled, or Mind writes enabled.
+
+Next safe task: Brain Console visibility for the controlled execution policy boundary, still read-only.

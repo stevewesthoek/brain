@@ -2381,3 +2381,72 @@ test('POST /video-orchestrator/operator-decision-queue is not available', async 
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-policy-boundary returns read-only blocked boundary', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-policy-boundary' });
+  const body = JSON.parse(response.body) as {
+    boundary: {
+      id: string;
+      status: string;
+      canRegisterAction: boolean;
+      canCreateApproval: boolean;
+      canExecute: boolean;
+      canWriteFiles: boolean;
+      canPublish: boolean;
+      canDecommissionStb: boolean;
+      sections: Array<{ category: string; safety: Record<string, boolean> }>;
+      summary: { totalSections: number; blockedCount: number; missingCount: number; blockingSeverityCount: number };
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.boundary.id, 'video-orchestrator-controlled-execution-policy-boundary');
+  assert.ok(['boundary-only', 'blocked'].includes(body.boundary.status));
+  assert.equal(body.boundary.canRegisterAction, false);
+  assert.equal(body.boundary.canCreateApproval, false);
+  assert.equal(body.boundary.canExecute, false);
+  assert.equal(body.boundary.canWriteFiles, false);
+  assert.equal(body.boundary.canPublish, false);
+  assert.equal(body.boundary.canDecommissionStb, false);
+  assert.ok(body.boundary.summary.totalSections >= 7);
+  assert.ok(body.boundary.summary.blockedCount > 0);
+  assert.ok(body.boundary.summary.blockingSeverityCount > 0);
+
+  const categories = body.boundary.sections.map(section => section.category);
+  assert.ok(categories.includes('action-registration'));
+  assert.ok(categories.includes('approval-execution'));
+  assert.ok(categories.includes('runtime-isolation'));
+  assert.ok(categories.includes('artifact-write'));
+  assert.ok(categories.includes('platform-publishing'));
+  assert.ok(categories.includes('stb-decommission'));
+  assert.ok(categories.includes('human-decision'));
+
+  assert.equal(body.boundary.safety.readOnly, true);
+  assert.equal(body.boundary.safety.canRegisterAction, false);
+  assert.equal(body.boundary.safety.canCreateApproval, false);
+  assert.equal(body.boundary.safety.canExecute, false);
+  assert.equal(body.boundary.safety.canWriteFiles, false);
+  assert.equal(body.boundary.safety.canPublish, false);
+  assert.equal(body.boundary.safety.canDecommissionStb, false);
+  assert.equal(body.boundary.safety.writesToMind, false);
+
+  body.boundary.sections.forEach(section => {
+    assert.equal(section.safety.readOnly, true);
+    assert.equal(section.safety.canRegisterAction, false);
+    assert.equal(section.safety.canCreateApproval, false);
+    assert.equal(section.safety.canExecute, false);
+    assert.equal(section.safety.canWriteFiles, false);
+    assert.equal(section.safety.canPublish, false);
+    assert.equal(section.safety.canDecommissionStb, false);
+    assert.equal(section.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/controlled-execution-policy-boundary is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-policy-boundary' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

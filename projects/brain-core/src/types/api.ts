@@ -2313,6 +2313,69 @@ export interface BrainCoreVideoOperatorDecisionQueueResponse {
   queue: BrainCoreVideoOperatorDecisionQueue;
 }
 
+export interface BrainCoreVideoControlledExecutionPolicyBoundaryItem {
+  id: string;
+  label: string;
+  category:
+    | 'action-registration'
+    | 'approval-execution'
+    | 'runtime-isolation'
+    | 'artifact-write'
+    | 'platform-publishing'
+    | 'stb-decommission'
+    | 'human-decision';
+  status: 'blocked' | 'missing' | 'not-applicable';
+  severity: 'blocking' | 'warning' | 'info';
+  mustBeTrueBeforeAllowed: string[];
+  currentBlockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    canRegisterAction: false;
+    canCreateApproval: false;
+    canExecute: false;
+    canWriteFiles: false;
+    canPublish: false;
+    canDecommissionStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionPolicyBoundary {
+  id: 'video-orchestrator-controlled-execution-policy-boundary';
+  generatedAt: string;
+  status: 'boundary-only' | 'blocked';
+  canRegisterAction: false;
+  canCreateApproval: false;
+  canExecute: false;
+  canWriteFiles: false;
+  canPublish: false;
+  canDecommissionStb: false;
+  sections: BrainCoreVideoControlledExecutionPolicyBoundaryItem[];
+  summary: {
+    totalSections: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    canRegisterAction: false;
+    canCreateApproval: false;
+    canExecute: false;
+    canWriteFiles: false;
+    canPublish: false;
+    canDecommissionStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionPolicyBoundaryResponse {
+  boundary: BrainCoreVideoControlledExecutionPolicyBoundary;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3860,6 +3923,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/production-cutover-gate': BrainCoreVideoProductionCutoverGateResponse;
   '/video-orchestrator/release-candidate-readiness': BrainCoreVideoReleaseCandidateReadinessResponse;
   '/video-orchestrator/operator-decision-queue': BrainCoreVideoOperatorDecisionQueueResponse;
+  '/video-orchestrator/controlled-execution-policy-boundary': BrainCoreVideoControlledExecutionPolicyBoundaryResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];
