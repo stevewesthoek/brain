@@ -675,6 +675,29 @@ function renderCompactStatGrid(container: HTMLElement, rows: Array<{ label: stri
   });
 }
 
+function renderStatusChip(label: string, tone: 'success' | 'warning' | 'error' | 'default'): HTMLElement {
+  const chip = document.createElement('span');
+  chip.className = `brain-console__chip brain-console__chip-${tone}`;
+  chip.textContent = label;
+  return chip;
+}
+
+function renderSafetyLabel(text: string): HTMLElement {
+  const label = document.createElement('div');
+  label.className = 'brain-console__post-safe-note';
+  label.textContent = text;
+  return label;
+}
+
+function renderEmptyState(message: string, detail?: string): HTMLElement {
+  const el = document.createElement('div');
+  el.createEl('div', { cls: 'brain-console__list-note', text: message });
+  if (detail) {
+    el.createEl('div', { cls: 'brain-console__list-sub', text: detail });
+  }
+  return el;
+}
+
 function renderWikiHealthCard(state: BrainConsoleViewState): HTMLElement {
   const container = document.createElement('div');
   container.className = 'brain-console__card-content';
@@ -1607,7 +1630,7 @@ function renderPostOrchestratorStatusCard(state: BrainConsoleViewState): HTMLEle
       ];
 
   renderCompactStatGrid(el, rows);
-  el.createEl('div', { cls: 'brain-console__post-safe-note', text: 'Publishing and scheduling remain disabled.' });
+  el.appendChild(renderSafetyLabel('Publishing disabled · Scheduling disabled · Execution disabled'));
 
   return el;
 }
@@ -1630,13 +1653,15 @@ function renderPostOrchestratorOverviewCard(state: BrainConsoleViewState): HTMLE
   ];
   renderCompactStatGrid(el, rows);
 
-  el.createEl('div', { cls: 'brain-console__post-safe-note', text: 'Preview-only overview · publishing and scheduling remain disabled.' });
+  el.appendChild(renderSafetyLabel('Preview only · Publishing disabled · Scheduling disabled'));
 
-  const blockerList = el.createEl('ul', { cls: 'brain-console__list brain-console__blocker-list' });
-  overview.blockers.slice(0, 5).forEach((blocker) => {
-    blockerList.createEl('li', { text: `${blocker.label} · ${blocker.source} · ${blocker.severity}` });
-    blockerList.createEl('li', { cls: 'brain-console__list-sub', text: blocker.nextSafeStep });
-  });
+  if (overview.blockers.length > 0) {
+    const blockerList = el.createEl('ul', { cls: 'brain-console__list brain-console__blocker-list' });
+    overview.blockers.slice(0, 5).forEach((blocker) => {
+      blockerList.createEl('li', { text: `${blocker.label} · ${blocker.source} · ${blocker.severity}` });
+      blockerList.createEl('li', { cls: 'brain-console__list-sub', text: blocker.nextSafeStep });
+    });
+  }
 
   return el;
 }
@@ -1724,8 +1749,7 @@ function renderPostDryRunPlanCard(state: BrainConsoleViewState): HTMLElement {
     row.createEl('dd', { text: value });
   });
 
-  const note = el.createEl('div', { cls: 'brain-console__list-note', text: 'Preview only · publishing, scheduling, and execution remain disabled.' });
-  note.addClass('brain-console__post-safe-note');
+  el.appendChild(renderSafetyLabel('Preview only · Publishing disabled · Scheduling disabled · Execution disabled'));
   return el;
 }
 
@@ -1768,8 +1792,7 @@ function renderPostDraftReviewQueueCard(state: BrainConsoleViewState): HTMLEleme
     row.createEl('dd', { text: value });
   });
 
-  const safety = el.createDiv({ cls: 'brain-console__list-note', text: 'Review only · no publishing · no scheduling · no execution.' });
-  safety.addClass('brain-console__post-safe-note');
+  el.appendChild(renderSafetyLabel('Review only · Publishing disabled · Scheduling disabled · Execution disabled'));
 
   const list = el.createEl('ul', { cls: 'brain-console__list' });
   queue.items.slice(0, 5).forEach((item) => {
@@ -1818,8 +1841,7 @@ function renderPostSchedulePreviewQueueCard(state: BrainConsoleViewState): HTMLE
     row.createEl('dd', { text: value });
   });
 
-  const safety = el.createDiv({ cls: 'brain-console__list-note', text: 'Preview only · no real scheduler job · no publishing · no execution.' });
-  safety.addClass('brain-console__post-safe-note');
+  el.appendChild(renderSafetyLabel('Preview only · No scheduler job · Publishing disabled · Execution disabled'));
 
   const list = el.createEl('ul', { cls: 'brain-console__list' });
   queue.items.slice(0, 5).forEach((item) => {
@@ -1868,8 +1890,7 @@ function renderPostAnalyticsFixturesCard(state: BrainConsoleViewState): HTMLElem
     row.createEl('dd', { text: value });
   });
 
-  const safety = el.createDiv({ cls: 'brain-console__list-note', text: 'Fixture only · no external analytics API · no cookies · no secrets · no external writes · no Mind writes.' });
-  safety.addClass('brain-console__post-safe-note');
+  el.appendChild(renderSafetyLabel('Fixture only · No external analytics · No external writes · No Mind writes'));
 
   const list = el.createEl('ul', { cls: 'brain-console__list' });
   analytics.slice(0, 5).forEach((item) => {
@@ -1909,8 +1930,7 @@ function renderPostPipelineSummaryCard(state: BrainConsoleViewState): HTMLElemen
     row.createEl('dd', { text: value });
   });
 
-  const safety = el.createDiv({ cls: 'brain-console__list-note', text: 'Preview only · no publishing · no scheduling · no execution · no external API calls.' });
-  safety.addClass('brain-console__post-safe-note');
+  el.appendChild(renderSafetyLabel('Preview only · Publishing disabled · Scheduling disabled · Execution disabled'));
 
   const list = el.createEl('ul', { cls: 'brain-console__list' });
   pipeline.steps.forEach((step) => {
@@ -1944,17 +1964,21 @@ function renderPostReadinessScoreCard(state: BrainConsoleViewState): HTMLElement
     row.createEl('dd', { text: value });
   });
 
-  const note = el.createEl('div', { cls: 'brain-console__list-note', text: 'Readiness is for review only. Publishing and scheduling remain disabled.' });
-  note.addClass('brain-console__post-safe-note');
+  el.appendChild(renderSafetyLabel('Review only · Publishing disabled · Scheduling disabled'));
 
-  const blockList = el.createEl('ul', { cls: 'brain-console__list' });
-  readiness.blockers.slice(0, 5).forEach((blocker) => {
-    blockList.createEl('li', { text: `${blocker.title} · ${blocker.summary}` });
-  });
-  const checkList = el.createEl('ul', { cls: 'brain-console__list' });
-  readiness.checks.slice(0, 8).forEach((check) => {
-    checkList.createEl('li', { text: `${check.label}: ${check.passed ? 'pass' : 'fail'} · ${check.summary}` });
-  });
+  if (readiness.blockers.length > 0) {
+    const blockList = el.createEl('ul', { cls: 'brain-console__list' });
+    readiness.blockers.slice(0, 5).forEach((blocker) => {
+      blockList.createEl('li', { text: `${blocker.title} · ${blocker.summary}` });
+    });
+  }
+
+  if (readiness.checks.length > 0) {
+    const checkList = el.createEl('ul', { cls: 'brain-console__list' });
+    readiness.checks.slice(0, 8).forEach((check) => {
+      checkList.createEl('li', { text: `${check.label}: ${check.passed ? 'pass' : 'fail'} · ${check.summary}` });
+    });
+  }
 
   return el;
 }
@@ -1978,8 +2002,7 @@ function renderPostPlatformPolicyCard(state: BrainConsoleViewState): HTMLElement
     row.createEl('dd', { text: value });
   });
 
-  const safety = el.createEl('div', { cls: 'brain-console__list-note', text: 'No cookies · no Playwright · no external writes · publishing disabled.' });
-  safety.addClass('brain-console__post-safe-note');
+  el.appendChild(renderSafetyLabel('No cookies · No Playwright · No external writes · Publishing disabled'));
 
   const list = el.createEl('ul', { cls: 'brain-console__list' });
   policies.slice(0, 7).forEach((policy) => {
@@ -2012,16 +2035,17 @@ function renderPostDecommissionReadinessCard(state: BrainConsoleViewState): HTML
     row.createEl('dd', { text: value });
   });
 
-  const safety = el.createEl('div', { cls: 'brain-console__list-note', text: 'Decommission not started · explicit approval required · no file deletes · no legacy repo modifications.' });
-  safety.addClass('brain-console__post-safe-note');
+  el.appendChild(renderSafetyLabel('Decommission not started · Approval required · No file deletes'));
 
-  const list = el.createEl('ul', { cls: 'brain-console__list' });
-  readiness.items.forEach((item) => {
-    const passed = item.gates.filter((gate) => gate.passed).length;
-    list.createEl('li', {
-      text: `${item.label} · ${item.status} · gates:${passed}/${item.gates.length} · blockers:${item.blockerCount} · next:${item.nextSafeStep}`,
+  if (readiness.items.length > 0) {
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+    readiness.items.forEach((item) => {
+      const passed = item.gates.filter((gate) => gate.passed).length;
+      list.createEl('li', {
+        text: `${item.label} · ${item.status} · gates:${passed}/${item.gates.length} · blockers:${item.blockerCount} · next:${item.nextSafeStep}`,
+      });
     });
-  });
+  }
 
   return el;
 }
@@ -2046,17 +2070,18 @@ function renderPostOperatorGuidanceCard(state: BrainConsoleViewState): HTMLEleme
     row.createEl('dd', { text: value });
   });
 
-  const safety = el.createEl('div', { cls: 'brain-console__list-note', text: 'Read-only · no auto-fix · no publishing · no scheduling · no external writes.' });
-  safety.addClass('brain-console__post-safe-note');
+  el.appendChild(renderSafetyLabel('Read only · No auto-fix · Publishing disabled · No external writes'));
 
-  const list = el.createEl('ul', { cls: 'brain-console__list' });
-  guidance.items.slice(0, 6).forEach((item) => {
-    const li = list.createEl('li');
-    li.createEl('div', { text: `${item.title} · ${item.category} · ${item.severity}` });
-    li.createEl('div', { cls: 'brain-console__list-sub', text: item.summary });
-    li.createEl('div', { cls: 'brain-console__list-note', text: item.nextSafeStep });
-    li.createEl('div', { cls: 'brain-console__list-note', text: item.steps.slice(0, 2).map((step) => step.label).join(' · ') });
-  });
+  if (guidance.items.length > 0) {
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+    guidance.items.slice(0, 6).forEach((item) => {
+      const li = list.createEl('li');
+      li.createEl('div', { text: `${item.title} · ${item.category} · ${item.severity}` });
+      li.createEl('div', { cls: 'brain-console__list-sub', text: item.summary });
+      li.createEl('div', { cls: 'brain-console__list-note', text: item.nextSafeStep });
+      li.createEl('div', { cls: 'brain-console__list-note', text: item.steps.slice(0, 2).map((step) => step.label).join(' · ') });
+    });
+  }
 
   return el;
 }
@@ -2081,16 +2106,17 @@ function renderPostManualExportCard(state: BrainConsoleViewState): HTMLElement {
     row.createEl('dd', { text: value });
   });
 
-  const safety = el.createEl('div', { cls: 'brain-console__list-note', text: 'Manual export is preview-only. Brain does not write files, copy to clipboard, or publish.' });
-  safety.addClass('brain-console__post-safe-note');
+  el.appendChild(renderSafetyLabel('Preview only · No file writes · No clipboard · No publishing'));
 
-  const list = el.createEl('ul', { cls: 'brain-console__list' });
-  packagePreview.items.slice(0, 5).forEach((item) => {
-    const li = list.createEl('li');
-    li.createEl('div', { text: `${item.platform} · ${item.title} · ${item.format}` });
-    li.createEl('div', { cls: 'brain-console__list-sub', text: `${item.contentPreview.slice(0, 96)}${item.contentPreview.length > 96 ? '…' : ''}` });
-    li.createEl('div', { cls: 'brain-console__list-note', text: item.checklist.slice(0, 3).join(' · ') });
-  });
+  if (packagePreview.items.length > 0) {
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+    packagePreview.items.slice(0, 5).forEach((item) => {
+      const li = list.createEl('li');
+      li.createEl('div', { text: `${item.platform} · ${item.title} · ${item.format}` });
+      li.createEl('div', { cls: 'brain-console__list-sub', text: `${item.contentPreview.slice(0, 96)}${item.contentPreview.length > 96 ? '…' : ''}` });
+      li.createEl('div', { cls: 'brain-console__list-note', text: item.checklist.slice(0, 3).join(' · ') });
+    });
+  }
 
   return el;
 }
@@ -2116,16 +2142,18 @@ function renderPostAcceptanceChecklistCard(state: BrainConsoleViewState): HTMLEl
     row.createEl('dd', { text: value });
   });
 
-  el.createEl('div', { cls: 'brain-console__list-note', text: 'Read-only · no publishing · no scheduling · no external writes · no decommission.' });
+  el.appendChild(renderSafetyLabel('Read only · Publishing disabled · Scheduling disabled · No decommission'));
 
-  const list = el.createEl('ul', { cls: 'brain-console__list' });
-  checklist.checks.slice(0, 8).forEach((check) => {
-    list.createEl('li', {
-      text: `${check.label} · ${check.status} · required:${check.required ? 'yes' : 'no'} · ${check.summary}`,
+  if (checklist.checks.length > 0) {
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+    checklist.checks.slice(0, 8).forEach((check) => {
+      list.createEl('li', {
+        text: `${check.label} · ${check.status} · required:${check.required ? 'yes' : 'no'} · ${check.summary}`,
+      });
+      const details = list.createEl('li', { cls: 'brain-console__list-sub', text: `evidence: ${check.evidence.slice(0, 2).join(' · ')}` });
+      details.createEl('div', { cls: 'brain-console__list-note', text: check.nextSafeStep });
     });
-    const details = list.createEl('li', { cls: 'brain-console__list-sub', text: `evidence: ${check.evidence.slice(0, 2).join(' · ')}` });
-    details.createEl('div', { cls: 'brain-console__list-note', text: check.nextSafeStep });
-  });
+  }
 
   return el;
 }
@@ -2150,15 +2178,17 @@ function renderPostMigrationParityReportCard(state: BrainConsoleViewState): HTML
     row.createEl('dd', { text: value });
   });
 
-  el.createEl('div', { cls: 'brain-console__list-note', text: 'No legacy repo changes · no decommission · explicit user approval required.' });
+  el.appendChild(renderSafetyLabel('No legacy repo changes · No decommission · Approval required'));
 
-  const list = el.createEl('ul', { cls: 'brain-console__list' });
-  report.capabilities.slice(0, 9).forEach((capability) => {
-    list.createEl('li', {
-      text: `${capability.label} · ${capability.status} · score:${capability.parityScore} · ${capability.summary}`,
+  if (report.capabilities.length > 0) {
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+    report.capabilities.slice(0, 9).forEach((capability) => {
+      list.createEl('li', {
+        text: `${capability.label} · ${capability.status} · score:${capability.parityScore} · ${capability.summary}`,
+      });
+      list.createEl('li', { cls: 'brain-console__list-sub', text: `gaps: ${capability.remainingGaps.slice(0, 2).join(' · ') || 'none'} · next: ${capability.nextSafeStep}` });
     });
-    list.createEl('li', { cls: 'brain-console__list-sub', text: `gaps: ${capability.remainingGaps.slice(0, 2).join(' · ') || 'none'} · next: ${capability.nextSafeStep}` });
-  });
+  }
 
   return el;
 }
@@ -2183,15 +2213,17 @@ function renderPostRoadmapCheckpointCard(state: BrainConsoleViewState): HTMLElem
     row.createEl('dd', { text: value });
   });
 
-  el.createEl('div', { cls: 'brain-console__list-note', text: 'Read-only · future publishing/scheduling design requires explicit user approval.' });
+  el.appendChild(renderSafetyLabel('Read only · Future publishing/scheduling design requires approval'));
 
-  const list = el.createEl('ul', { cls: 'brain-console__list' });
-  checkpoint.phases.slice(0, 15).forEach((phase) => {
-    list.createEl('li', {
-      text: `${phase.id} · ${phase.label} · ${phase.status} · ${phase.summary}`,
+  if (checkpoint.phases.length > 0) {
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+    checkpoint.phases.slice(0, 15).forEach((phase) => {
+      list.createEl('li', {
+        text: `${phase.id} · ${phase.label} · ${phase.status} · ${phase.summary}`,
+      });
+      list.createEl('li', { cls: 'brain-console__list-sub', text: phase.evidence.slice(0, 2).join(' · ') });
     });
-    list.createEl('li', { cls: 'brain-console__list-sub', text: phase.evidence.slice(0, 2).join(' · ') });
-  });
+  }
 
   return el;
 }
