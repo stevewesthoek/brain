@@ -461,3 +461,36 @@ test('POST /post-orchestrator/schedule-preview request approval does not expose 
   assert.equal(JSON.stringify(body).includes('Proofly'), false);
   assert.equal(JSON.stringify(body).includes('Xgrow'), false);
 });
+
+test('GET /post-orchestrator/analytics returns fixture analytics', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/analytics' });
+  const body = JSON.parse(response.body) as {
+    analytics: Array<{
+      id: string;
+      platform: string;
+      source: string;
+      safety: {
+        fixtureOnly: boolean;
+        callsExternalAnalyticsApi: boolean;
+        readsCookies: boolean;
+        readsSecrets: boolean;
+        writesExternalPlatform: boolean;
+        writesToMind: boolean;
+      };
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.analytics.some((item) => item.id === 'x-release-thread-analytics-fixture'));
+  assert.ok(body.analytics.some((item) => item.id === 'linkedin-milestone-analytics-fixture'));
+  assert.ok(body.analytics.some((item) => item.id === 'youtube-video-caption-analytics-fixture'));
+  assert.ok(body.analytics.some((item) => item.id === 'github-release-note-analytics-fixture'));
+  assert.ok(body.analytics.some((item) => item.id === 'social-proof-card-analytics-fixture'));
+  assert.equal(body.analytics.every((item) => item.source === 'fixture'), true);
+  assert.equal(body.analytics.every((item) => item.safety.fixtureOnly === true), true);
+  assert.equal(body.analytics.every((item) => item.safety.callsExternalAnalyticsApi === false), true);
+  assert.equal(body.analytics.every((item) => item.safety.readsCookies === false), true);
+  assert.equal(body.analytics.every((item) => item.safety.readsSecrets === false), true);
+  assert.equal(body.analytics.every((item) => item.safety.writesExternalPlatform === false), true);
+  assert.equal(body.analytics.every((item) => item.safety.writesToMind === false), true);
+});

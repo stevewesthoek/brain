@@ -583,6 +583,42 @@ export interface BrainCorePostSchedulePreviewApprovalRequest {
   safety: BrainCorePostSchedulePreviewItem['safety'];
 }
 
+export type BrainCorePostAnalyticsMetric =
+  | 'impressions'
+  | 'clicks'
+  | 'likes'
+  | 'comments'
+  | 'shares'
+  | 'saves'
+  | 'watchSeconds'
+  | 'ctr'
+  | 'engagementRate';
+
+export interface BrainCorePostAnalyticsFixture {
+  id: string;
+  platform: BrainCorePostPlatform;
+  flowId: string;
+  draftPlanId?: string;
+  title: string;
+  capturedAt: string;
+  source: 'fixture';
+  metrics: Record<BrainCorePostAnalyticsMetric, number>;
+  interpretation: string;
+  feedbackForFlow: string;
+  safety: {
+    fixtureOnly: true;
+    callsExternalAnalyticsApi: false;
+    readsCookies: false;
+    readsSecrets: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostAnalyticsFixturesResponse {
+  analytics: BrainCorePostAnalyticsFixture[];
+}
+
 export interface BrainCoreAgentSummary {
   id: string;
   name: string;

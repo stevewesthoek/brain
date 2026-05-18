@@ -23,6 +23,8 @@ import type {
   BrainCorePostOrchestratorRecoveryResponse,
   BrainCorePostOrchestratorStatusResponse,
   BrainCorePostPlatform,
+  BrainCorePostAnalyticsFixture,
+  BrainCorePostAnalyticsFixturesResponse,
 } from '../types/api.js';
 
 const STATUS: BrainCorePostOrchestratorStatusResponse = {
@@ -816,6 +818,161 @@ const EVENT_FIXTURES: BrainCorePostEventFixturesResponse = {
   ],
 };
 
+const ANALYTICS_FIXTURES: BrainCorePostAnalyticsFixturesResponse = {
+  analytics: [
+    {
+      id: 'x-release-thread-analytics-fixture',
+      platform: 'x',
+      flowId: 'x-post-flow',
+      draftPlanId: 'dry-run-github-release-event-fixture-x-post-flow',
+      title: 'X release thread analytics fixture',
+      capturedAt: '2026-05-18T10:00:00.000Z',
+      source: 'fixture',
+      metrics: {
+        impressions: 12400,
+        clicks: 420,
+        likes: 310,
+        comments: 18,
+        shares: 42,
+        saves: 12,
+        watchSeconds: 0,
+        ctr: 0.0339,
+        engagementRate: 0.028,
+      },
+      interpretation: 'Strong short-form reach with moderate click-through for a release thread preview.',
+      feedbackForFlow: 'Keep the opening hook concise and highlight the release outcome sooner.',
+      safety: {
+        fixtureOnly: true,
+        callsExternalAnalyticsApi: false,
+        readsCookies: false,
+        readsSecrets: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+      },
+    },
+    {
+      id: 'linkedin-milestone-analytics-fixture',
+      platform: 'linkedin',
+      flowId: 'linkedin-post-flow',
+      draftPlanId: 'dry-run-product-milestone-event-fixture-linkedin-post-flow',
+      title: 'LinkedIn milestone analytics fixture',
+      capturedAt: '2026-05-18T10:05:00.000Z',
+      source: 'fixture',
+      metrics: {
+        impressions: 8300,
+        clicks: 260,
+        likes: 190,
+        comments: 27,
+        shares: 19,
+        saves: 21,
+        watchSeconds: 0,
+        ctr: 0.0313,
+        engagementRate: 0.031,
+      },
+      interpretation: 'Professional audience response is steady; the milestone framing performs well.',
+      feedbackForFlow: 'Keep the milestone narrative and add a sharper business outcome line.',
+      safety: {
+        fixtureOnly: true,
+        callsExternalAnalyticsApi: false,
+        readsCookies: false,
+        readsSecrets: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+      },
+    },
+    {
+      id: 'youtube-video-caption-analytics-fixture',
+      platform: 'youtube',
+      flowId: 'youtube-post-flow',
+      draftPlanId: 'dry-run-video-rendered-event-fixture-youtube-post-flow',
+      title: 'YouTube video caption analytics fixture',
+      capturedAt: '2026-05-18T10:10:00.000Z',
+      source: 'fixture',
+      metrics: {
+        impressions: 15200,
+        clicks: 580,
+        likes: 280,
+        comments: 12,
+        shares: 34,
+        saves: 5,
+        watchSeconds: 7420,
+        ctr: 0.0382,
+        engagementRate: 0.023,
+      },
+      interpretation: 'Video surfaces drive the most watch-time when the caption is direct and specific.',
+      feedbackForFlow: 'Preserve the short caption and link the description to the strongest visual proof.',
+      safety: {
+        fixtureOnly: true,
+        callsExternalAnalyticsApi: false,
+        readsCookies: false,
+        readsSecrets: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+      },
+    },
+    {
+      id: 'github-release-note-analytics-fixture',
+      platform: 'github',
+      flowId: 'github-post-flow',
+      draftPlanId: 'dry-run-github-release-event-fixture-github-post-flow',
+      title: 'GitHub release note analytics fixture',
+      capturedAt: '2026-05-18T10:15:00.000Z',
+      source: 'fixture',
+      metrics: {
+        impressions: 5400,
+        clicks: 210,
+        likes: 76,
+        comments: 9,
+        shares: 14,
+        saves: 31,
+        watchSeconds: 0,
+        ctr: 0.0389,
+        engagementRate: 0.021,
+      },
+      interpretation: 'Developer-facing release notes earn saves and clicks when the summary is precise.',
+      feedbackForFlow: 'Keep the release note terse and highlight what changed first.',
+      safety: {
+        fixtureOnly: true,
+        callsExternalAnalyticsApi: false,
+        readsCookies: false,
+        readsSecrets: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+      },
+    },
+    {
+      id: 'social-proof-card-analytics-fixture',
+      platform: 'internal',
+      flowId: 'social-proof-asset-flow',
+      draftPlanId: 'dry-run-manual-social-proof-event-fixture-social-proof-asset-flow',
+      title: 'Social proof card analytics fixture',
+      capturedAt: '2026-05-18T10:20:00.000Z',
+      source: 'fixture',
+      metrics: {
+        impressions: 2400,
+        clicks: 92,
+        likes: 55,
+        comments: 4,
+        shares: 8,
+        saves: 17,
+        watchSeconds: 0,
+        ctr: 0.0383,
+        engagementRate: 0.036,
+      },
+      interpretation: 'Internal proof assets validate best when paired with a concrete milestone claim.',
+      feedbackForFlow: 'Use stronger proof language and preserve the asset-first structure.',
+      safety: {
+        fixtureOnly: true,
+        callsExternalAnalyticsApi: false,
+        readsCookies: false,
+        readsSecrets: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+      },
+    },
+  ],
+};
+
 export function readPostOrchestratorStatus(): BrainCorePostOrchestratorStatusResponse {
   return STATUS;
 }
@@ -842,6 +999,10 @@ export function readPostOrchestratorDraftFixtures(): BrainCorePostDraftFixturesR
 
 export function readPostOrchestratorEventFixtures(): BrainCorePostEventFixturesResponse {
   return EVENT_FIXTURES;
+}
+
+export function readPostAnalyticsFixtures(): BrainCorePostAnalyticsFixturesResponse {
+  return ANALYTICS_FIXTURES;
 }
 
 export function readPostOrchestratorDryRunPlan(eventId: string): BrainCorePostDryRunPlanResponse {

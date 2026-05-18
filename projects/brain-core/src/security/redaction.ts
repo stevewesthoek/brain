@@ -7,7 +7,7 @@ const SECRET_PATTERNS = [
 ];
 
 export function redactKeyValue(key: string, value: unknown): unknown {
-  if (SECRET_PATTERNS.some((pattern) => pattern.test(key))) {
+  if (SECRET_PATTERNS.some((pattern) => pattern.test(key)) && (typeof value === 'string' || (typeof value === 'object' && value !== null))) {
     return '[REDACTED]';
   }
 

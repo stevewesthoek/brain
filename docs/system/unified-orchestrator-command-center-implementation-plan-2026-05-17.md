@@ -1701,3 +1701,19 @@ See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.
 - Approval request records can be created safely
 - No scheduler jobs, publishing, or execution are introduced
 - Preview-only state remains explicit in UI and API
+
+### Phase P6: Analytics Feedback Fixtures (2026-06-02+)
+
+**Objective:** Add read-only analytics feedback fixtures for post flows with no external analytics API calls.
+
+**Tasks:**
+- Analytics fixtures endpoint for post flows
+- Static metrics and interpretation payloads
+- Brain Console analytics feedback card
+- Safety verification for fixture-only semantics
+
+**Exit criteria:**
+- Analytics fixtures render from Brain Core
+- No external analytics API calls are introduced
+- No cookies, secrets, publishing, or scheduling are introduced
+- Fixture-only state remains explicit in UI and API

@@ -33,6 +33,7 @@ import {
   readBrainCorePostOrchestratorStatus,
   readBrainCorePostDraftReviewQueue,
   readBrainCorePostSchedulePreviewQueue,
+  readBrainCorePostAnalyticsFixtures,
   readBrainCoreStbStatus,
   readBrainCoreVideoOrchestratorStatus,
   readBrainCoreStbVideoMigrationStatus,
@@ -69,6 +70,7 @@ import {
   type BrainCorePostDraftFixture,
   type BrainCorePostDraftReviewQueueResponse,
   type BrainCorePostSchedulePreviewQueueResponse,
+  type BrainCorePostAnalyticsFixturesResponse,
   type BrainCorePostEventFixturesResponse,
   type BrainCorePostOrchestratorIntegration,
   type BrainCorePostOrchestratorRecoveryItem,
@@ -127,6 +129,7 @@ export interface BrainConsoleViewState {
   postOrchestratorDryRun?: BrainCorePostDryRunPlanResponse;
   postOrchestratorReviewQueue?: BrainCorePostDraftReviewQueueResponse;
   postOrchestratorSchedulePreview?: BrainCorePostSchedulePreviewQueueResponse;
+  postOrchestratorAnalytics?: BrainCorePostAnalyticsFixturesResponse;
   postOrchestratorContracts?: { contracts?: BrainCorePostOrchestratorContract[] };
   postOrchestratorIntegrations?: { integrations?: BrainCorePostOrchestratorIntegration[] };
   postOrchestratorRecovery?: { items?: BrainCorePostOrchestratorRecoveryItem[] };
@@ -152,7 +155,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -180,6 +183,7 @@ export async function loadBrainConsoleViewState(
     readBrainCorePostOrchestratorDryRun(baseUrl, 'github-release-event-fixture'),
     readBrainCorePostDraftReviewQueue(baseUrl, 'github-release-event-fixture'),
     readBrainCorePostSchedulePreviewQueue(baseUrl, 'github-release-event-fixture'),
+    readBrainCorePostAnalyticsFixtures(baseUrl),
     readBrainCorePostOrchestratorContracts(baseUrl),
     readBrainCorePostOrchestratorIntegrations(baseUrl),
     readBrainCorePostOrchestratorRecovery(baseUrl),
@@ -208,7 +212,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -261,6 +265,7 @@ export async function loadBrainConsoleViewState(
     postOrchestratorDryRun: postOrchestratorDryRun.value,
     postOrchestratorReviewQueue: postOrchestratorReviewQueue.value,
     postOrchestratorSchedulePreview: postOrchestratorSchedulePreview.value,
+    postOrchestratorAnalytics: postOrchestratorAnalytics.value,
     postOrchestratorContracts: postOrchestratorContracts.value,
     postOrchestratorIntegrations: postOrchestratorIntegrations.value,
     postOrchestratorRecovery: postOrchestratorRecovery.value,
@@ -474,6 +479,7 @@ function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsole
   renderCard(grid, 'Schedule Preview Queue', renderPostSchedulePreviewQueueCard(state));
   renderCard(grid, 'Draft Fixtures / Preview Examples', renderDraftFixturesCard(state));
   renderCard(grid, 'Safety State', renderSafetyStateCard(state));
+  renderCard(grid, 'Analytics Feedback Fixtures', renderPostAnalyticsFixturesCard(state));
   renderCard(grid, 'Contracts', renderPostContractsCard(state));
   renderCard(grid, 'Recovery / Blockers', renderPostRecoveryCard(state));
   renderCard(grid, 'Publishing Disabled', renderPublishingDisabledCard());
@@ -1705,6 +1711,43 @@ function renderPostSchedulePreviewQueueCard(state: BrainConsoleViewState): HTMLE
         }
       });
     }
+  });
+
+  return el;
+}
+
+function renderPostAnalyticsFixturesCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const analytics = state.postOrchestratorAnalytics?.analytics ?? [];
+
+  if (analytics.length === 0) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No analytics fixtures available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Fixtures', value: String(analytics.length) },
+    { label: 'Platforms', value: String(new Set(analytics.map((item) => item.platform)).size) },
+    { label: 'External API', value: analytics.some((item) => item.safety.callsExternalAnalyticsApi) ? 'enabled' : 'disabled' },
+    { label: 'Next safe step', value: 'Review fixture analytics and keep external analytics calls disabled.' },
+  ];
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  const safety = el.createDiv({ cls: 'brain-console__list-note', text: 'Fixture only · no external analytics API · no cookies · no secrets · no external writes · no Mind writes.' });
+  safety.addClass('brain-console__post-safe-note');
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  analytics.slice(0, 5).forEach((item) => {
+    const li = list.createEl('li');
+    li.createEl('div', {
+      text: `${item.title} · ${item.platform} · ${item.flowId} · impressions:${item.metrics.impressions} · clicks:${item.metrics.clicks} · ctr:${item.metrics.ctr}`,
+    });
+    li.createEl('div', { cls: 'brain-console__list-sub', text: item.interpretation });
+    li.createEl('div', { cls: 'brain-console__list-note', text: item.feedbackForFlow });
   });
 
   return el;

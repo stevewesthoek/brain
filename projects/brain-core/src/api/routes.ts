@@ -17,6 +17,7 @@ import {
   readPostOrchestratorIntegrations,
   readPostOrchestratorRecovery,
   readPostOrchestratorStatus,
+  readPostAnalyticsFixtures,
   readPostSchedulePreviewQueue,
   requestPostDraftReviewApproval,
   requestPostSchedulePreviewApproval,
@@ -131,6 +132,9 @@ export async function routeRequest(
       return;
     case '/post-orchestrator/recovery':
       sendJson(response, 200, readPostOrchestratorRecovery());
+      return;
+    case '/post-orchestrator/analytics':
+      sendJson(response, 200, readPostAnalyticsFixtures());
       return;
     case '/post-orchestrator/review-queue':
       sendJson(response, 400, {

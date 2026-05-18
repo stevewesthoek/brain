@@ -55,6 +55,10 @@ export interface DashboardSnapshot {
   postSchedulePreviewPublishingEnabled: boolean;
   postSchedulePreviewSchedulingEnabled: boolean;
   postSchedulePreviewExecutionEnabled: boolean;
+  postAnalyticsFixtureCount: number;
+  postAnalyticsPlatformCount: number;
+  postAnalyticsExternalApiCallsEnabled: boolean;
+  postAnalyticsNextSafeStep: string;
   postPlatformCount: number;
   postPublishingDisabledCount: number;
   socialProofFlowStatus?: string;
@@ -162,6 +166,12 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postSchedulePreviewPublishingEnabled = Boolean(state.postOrchestratorSchedulePreview?.queue?.safety.publishingEnabled);
   const postSchedulePreviewSchedulingEnabled = Boolean(state.postOrchestratorSchedulePreview?.queue?.safety.schedulingEnabled);
   const postSchedulePreviewExecutionEnabled = Boolean(state.postOrchestratorSchedulePreview?.queue?.safety.executionEnabled);
+  const postAnalyticsFixtureCount = state.postOrchestratorAnalytics?.analytics?.length ?? 0;
+  const postAnalyticsPlatformCount = new Set(state.postOrchestratorAnalytics?.analytics?.map((item) => item.platform) ?? []).size;
+  const postAnalyticsExternalApiCallsEnabled = Boolean(state.postOrchestratorAnalytics?.analytics?.some((item) => item.safety.callsExternalAnalyticsApi));
+  const postAnalyticsNextSafeStep = postAnalyticsFixtureCount > 0
+    ? 'Review fixture analytics and keep all external analytics calls disabled.'
+    : 'Add fixture analytics summaries before extending feedback loops.';
   const postPlatformCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.platform !== 'internal').length;
   const postPublishingDisabledCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.publishingEnabled === false).length;
   const postPublishingEnabled = Boolean(state.postOrchestratorStatus?.publishingEnabled);
@@ -333,6 +343,10 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postSchedulePreviewPublishingEnabled,
     postSchedulePreviewSchedulingEnabled,
     postSchedulePreviewExecutionEnabled,
+    postAnalyticsFixtureCount,
+    postAnalyticsPlatformCount,
+    postAnalyticsExternalApiCallsEnabled,
+    postAnalyticsNextSafeStep,
     postPlatformCount,
     postPublishingDisabledCount,
     socialProofFlowStatus,

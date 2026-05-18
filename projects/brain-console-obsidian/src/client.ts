@@ -567,6 +567,42 @@ export interface BrainCorePostSchedulePreviewApprovalRequest {
   safety: BrainCorePostSchedulePreviewItem['safety'];
 }
 
+export type BrainCorePostAnalyticsMetric =
+  | 'impressions'
+  | 'clicks'
+  | 'likes'
+  | 'comments'
+  | 'shares'
+  | 'saves'
+  | 'watchSeconds'
+  | 'ctr'
+  | 'engagementRate';
+
+export interface BrainCorePostAnalyticsFixture {
+  id: string;
+  platform: BrainCorePostPlatform;
+  flowId: string;
+  draftPlanId?: string;
+  title: string;
+  capturedAt: string;
+  source: 'fixture';
+  metrics: Record<BrainCorePostAnalyticsMetric, number>;
+  interpretation: string;
+  feedbackForFlow: string;
+  safety: {
+    fixtureOnly: true;
+    callsExternalAnalyticsApi: false;
+    readsCookies: false;
+    readsSecrets: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostAnalyticsFixturesResponse {
+  analytics: BrainCorePostAnalyticsFixture[];
+}
+
 export interface BrainCoreStbPipelineStatus {
   id: 'stb-pipeline-status';
   pipelineId: 'stb-daily-pipeline';
@@ -775,6 +811,8 @@ export interface BrainCoreRecoveryItemSummary {
 export interface BrainCorePostSchedulePreviewItemSummary extends BrainCorePostSchedulePreviewItem {}
 export interface BrainCorePostSchedulePreviewQueueSummary extends BrainCorePostSchedulePreviewQueue {}
 export interface BrainCorePostSchedulePreviewApprovalRequestSummary extends BrainCorePostSchedulePreviewApprovalRequest {}
+export interface BrainCorePostAnalyticsFixtureSummary extends BrainCorePostAnalyticsFixture {}
+export interface BrainCorePostAnalyticsFixturesResponseSummary extends BrainCorePostAnalyticsFixturesResponse {}
 
 export interface BrainCoreExecutionPlanStep {
   id: string;
@@ -1226,6 +1264,12 @@ export async function requestBrainCorePostSchedulePreviewApproval(
     `/post-orchestrator/schedule-preview/${encodeURIComponent(schedulePreviewItemId)}/request-approval`,
     { method: 'POST' },
   );
+}
+
+export async function readBrainCorePostAnalyticsFixtures(
+  baseUrl: string,
+): Promise<HttpResult<BrainCorePostAnalyticsFixturesResponse>> {
+  return fetchJson<BrainCorePostAnalyticsFixturesResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/analytics');
 }
 
 export async function readBrainCoreStbStatus(
