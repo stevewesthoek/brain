@@ -4892,3 +4892,59 @@ export interface BrainCoreVideoControlledExecutionFirstApprovalAuthorityPolicyRe
   policy: BrainCoreVideoControlledExecutionFirstApprovalAuthorityPolicy;
 }
 
+
+
+export interface BrainCoreVideoControlledExecutionFirstApprovalAuditExpiryModel {
+  id: 'video-orchestrator-controlled-execution-first-approval-audit-expiry-model';
+  generatedAt: string;
+  version: 'phase-5k';
+  status: 'blocked' | 'disabled';
+  modelExists: false;
+  auditPersistenceEnabled: false;
+  expiryEnforcementEnabled: false;
+  firstApprovalCreationEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    auditFieldCount: number;
+    expiryRuleCount: number;
+    invalidationRuleCount: number;
+    missingRequirementCount: number;
+    blockerCount: number;
+  };
+  auditFields: string[];
+  expiryRules: string[];
+  invalidationRules: string[];
+  missingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    modelDesignOnly: true;
+    auditPersistenceEnabled: false;
+    expiryEnforcementEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionFirstApprovalAuditExpiryModelResponse {
+  model: BrainCoreVideoControlledExecutionFirstApprovalAuditExpiryModel;
+}

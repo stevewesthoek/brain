@@ -86,6 +86,7 @@ This document defines the future controlled execution model as a design-only bou
 - 5H operator identity verification protocol design.
 - 5I role policy definition design.
 - 5J first-approval authority policy design.
+- 5K first-approval audit/expiry model design.
 
 ## Non-negotiable safety
 
@@ -219,3 +220,19 @@ This document defines the future controlled execution model as a design-only bou
 - No STB or Video execution.
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Next safe phase: first-approval audit/expiry model design, still read-only and no execution.
+
+## Phase 5K first-approval audit/expiry model design
+
+- Added as a read-only audit/expiry model endpoint.
+- Defines future first-approval audit fields, expiry rules, and invalidation rules.
+- No audit persistence is enabled.
+- No expiry enforcement is enabled.
+- No first approval is created.
+- No approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: candidate/story lock design, still read-only and no execution.
