@@ -89,6 +89,8 @@ This document defines the future controlled execution model as a design-only bou
 - 5K first-approval audit/expiry model design.
 - 5L candidate/story lock design.
 - 5M preflight evidence hash design.
+- 5N operator decision snapshot design.
+- 5O runtime sandbox boundary design.
 
 ## Non-negotiable safety
 
@@ -274,6 +276,47 @@ This document defines the future controlled execution model as a design-only bou
 - No first approval is created.
 - No second approval is created.
 - No action registration.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: operator decision snapshot design, still read-only and no execution.
+
+## Phase 5N operator decision snapshot design
+
+- Added as a read-only snapshot design endpoint.
+- Defines how future operator decisions would be captured as immutable snapshots (decisionId, decisionType, candidateStoryId, operatorId, selectedValue, rationale, createdAt, expiresAt, invalidatedAt).
+- Defines snapshot rules (read-only decision capture only, no queue mutation, no persistence, no approval creation, no execution).
+- Specifies snapshot invalidation triggers (candidate/story/hash/risk/policy changes).
+- No decision snapshot is persisted.
+- No queue mutation is enabled.
+- No snapshot persistence is enabled.
+- No approval is created from snapshot.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: runtime sandbox boundary design, still read-only and no execution.
+
+## Phase 5O runtime sandbox boundary design
+
+- Added as a read-only sandbox boundary design endpoint.
+- Defines how future execution runtime sandbox would be isolated: no real provisioning, no filesystem writes, no network calls, no STB/Video execution.
+- Specifies required policies before sandbox execution (second approval policy, role policy, identity verification, candidate lock, evidence hash, rollback cleanup).
+- Defines sandbox boundary rules (no filesystem access, no network access, no execution, no publishing, no Mind writes).
+- No real sandbox provisioned or executed.
+- No sandbox provisioning is enabled.
+- No sandbox execution is enabled.
+- No filesystem access is enabled.
+- No network access is enabled.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
 - No execution-plan execution.
 - No STB or Video execution.
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.

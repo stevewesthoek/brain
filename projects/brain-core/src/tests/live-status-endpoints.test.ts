@@ -3753,3 +3753,141 @@ test('POST /video-orchestrator/controlled-execution-preflight-evidence-hash-desi
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-operator-decision-snapshot-design returns blocked snapshot design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-operator-decision-snapshot-design' });
+  const body = JSON.parse(response.body) as {
+    snapshot: {
+      id: string;
+      version: string;
+      status: string;
+      snapshotDesignExists: boolean;
+      snapshotPersistenceEnabled: boolean;
+      decisionQueueMutationEnabled: boolean;
+      approvalCreationEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      decisionFields: string[];
+      snapshotRules: string[];
+      missingRequirements: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.snapshot.id, 'video-orchestrator-controlled-execution-operator-decision-snapshot-design');
+  assert.equal(body.snapshot.version, 'phase-5n');
+  assert.ok(['blocked', 'disabled'].includes(body.snapshot.status));
+  assert.equal(body.snapshot.snapshotDesignExists, false);
+  assert.equal(body.snapshot.snapshotPersistenceEnabled, false);
+  assert.equal(body.snapshot.decisionQueueMutationEnabled, false);
+  assert.equal(body.snapshot.approvalCreationEnabled, false);
+  assert.equal(body.snapshot.executionEnabled, false);
+  assert.equal(body.snapshot.executable, false);
+  assert.ok(body.snapshot.decisionFields.length > 0);
+  assert.ok(body.snapshot.snapshotRules.length > 0);
+  assert.ok(body.snapshot.evidenceReferences.includes('/video-orchestrator/operator-decision-queue'));
+
+  assert.equal(body.snapshot.safety.readOnly, true);
+  assert.equal(body.snapshot.safety.snapshotDesignOnly, true);
+  assert.equal(body.snapshot.safety.snapshotPersistenceEnabled, false);
+  assert.equal(body.snapshot.safety.decisionQueueMutationEnabled, false);
+  assert.equal(body.snapshot.safety.createsApproval, false);
+  assert.equal(body.snapshot.safety.createsFirstApproval, false);
+  assert.equal(body.snapshot.safety.createsSecondApproval, false);
+  assert.equal(body.snapshot.safety.approvalExecutionEnabled, false);
+  assert.equal(body.snapshot.safety.registersAction, false);
+  assert.equal(body.snapshot.safety.registersAllowlist, false);
+  assert.equal(body.snapshot.safety.runsValidator, false);
+  assert.equal(body.snapshot.safety.createsExecutionPlan, false);
+  assert.equal(body.snapshot.safety.executionPlanExecutable, false);
+  assert.equal(body.snapshot.safety.executionEnabled, false);
+  assert.equal(body.snapshot.safety.executesStb, false);
+  assert.equal(body.snapshot.safety.executesVideo, false);
+  assert.equal(body.snapshot.safety.writesFiles, false);
+  assert.equal(body.snapshot.safety.rendersVideo, false);
+  assert.equal(body.snapshot.safety.exportsArtifacts, false);
+  assert.equal(body.snapshot.safety.publishesContent, false);
+  assert.equal(body.snapshot.safety.decommissionsStb, false);
+  assert.equal(body.snapshot.safety.writesToMind, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-operator-decision-snapshot-design is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-operator-decision-snapshot-design' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-runtime-sandbox-boundary-design returns blocked boundary design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-runtime-sandbox-boundary-design' });
+  const body = JSON.parse(response.body) as {
+    boundary: {
+      id: string;
+      version: string;
+      status: string;
+      sandboxDesignExists: boolean;
+      sandboxProvisioningEnabled: boolean;
+      sandboxExecutionEnabled: boolean;
+      filesystemAccessEnabled: boolean;
+      networkAccessEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      sandboxBoundaryRules: string[];
+      requiredBeforeSandbox: string[];
+      missingRequirements: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.boundary.id, 'video-orchestrator-controlled-execution-runtime-sandbox-boundary-design');
+  assert.equal(body.boundary.version, 'phase-5o');
+  assert.ok(['blocked', 'disabled'].includes(body.boundary.status));
+  assert.equal(body.boundary.sandboxDesignExists, false);
+  assert.equal(body.boundary.sandboxProvisioningEnabled, false);
+  assert.equal(body.boundary.sandboxExecutionEnabled, false);
+  assert.equal(body.boundary.filesystemAccessEnabled, false);
+  assert.equal(body.boundary.networkAccessEnabled, false);
+  assert.equal(body.boundary.executionEnabled, false);
+  assert.equal(body.boundary.executable, false);
+  assert.ok(body.boundary.sandboxBoundaryRules.length > 0);
+  assert.ok(body.boundary.requiredBeforeSandbox.length > 0);
+  assert.ok(body.boundary.evidenceReferences.includes('/video-orchestrator/controlled-execution-disabled-gate'));
+
+  assert.equal(body.boundary.safety.readOnly, true);
+  assert.equal(body.boundary.safety.sandboxDesignOnly, true);
+  assert.equal(body.boundary.safety.sandboxProvisioningEnabled, false);
+  assert.equal(body.boundary.safety.sandboxExecutionEnabled, false);
+  assert.equal(body.boundary.safety.filesystemAccessEnabled, false);
+  assert.equal(body.boundary.safety.networkAccessEnabled, false);
+  assert.equal(body.boundary.safety.createsApproval, false);
+  assert.equal(body.boundary.safety.createsFirstApproval, false);
+  assert.equal(body.boundary.safety.createsSecondApproval, false);
+  assert.equal(body.boundary.safety.approvalExecutionEnabled, false);
+  assert.equal(body.boundary.safety.registersAction, false);
+  assert.equal(body.boundary.safety.registersAllowlist, false);
+  assert.equal(body.boundary.safety.runsValidator, false);
+  assert.equal(body.boundary.safety.createsExecutionPlan, false);
+  assert.equal(body.boundary.safety.executionPlanExecutable, false);
+  assert.equal(body.boundary.safety.executionEnabled, false);
+  assert.equal(body.boundary.safety.executesStb, false);
+  assert.equal(body.boundary.safety.executesVideo, false);
+  assert.equal(body.boundary.safety.writesFiles, false);
+  assert.equal(body.boundary.safety.rendersVideo, false);
+  assert.equal(body.boundary.safety.exportsArtifacts, false);
+  assert.equal(body.boundary.safety.publishesContent, false);
+  assert.equal(body.boundary.safety.decommissionsStb, false);
+  assert.equal(body.boundary.safety.writesToMind, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-runtime-sandbox-boundary-design is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-runtime-sandbox-boundary-design' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

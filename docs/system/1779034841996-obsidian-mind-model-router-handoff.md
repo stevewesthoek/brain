@@ -3163,3 +3163,54 @@ Safety status:
 Next safe task:
 
 - Preflight evidence hash design, still read-only and no execution.
+
+## Continuation update — Phases 5M, 5N, 5O design completion (2026-05-18)
+
+Implemented:
+
+**Phase 5M (Preflight Evidence Hash Design):**
+- Added `GET /video-orchestrator/controlled-execution-preflight-evidence-hash-design` in Brain Core.
+- Defines deterministic canonical JSON hashing from schema versions only (no real files, no artifacts).
+- Hash inputs: candidateStoryId, sourceEpisodeId, approvalPayloadSchemaVersion, preflightValidatorSchemaVersion, planStubVersion, candidateStoryLockVersion, operatorDecisionSnapshotVersion, riskRegisterVersion.
+- Safety: readOnly, hashDesignOnly, no hash computation, no evidence persistence.
+
+**Phase 5N (Operator Decision Snapshot Design):**
+- Added `GET /video-orchestrator/controlled-execution-operator-decision-snapshot-design` in Brain Core.
+- Defines immutable operator decision snapshots (decisionId, decisionType, candidateStoryId, operatorId, selectedValue, rationale, timestamps).
+- Decision rules: read-only capture only, no queue mutation, no persistence, no approval creation.
+- Safety: readOnly, snapshotDesignOnly, no snapshot persistence, no queue mutation.
+
+**Phase 5O (Runtime Sandbox Boundary Design):**
+- Added `GET /video-orchestrator/controlled-execution-runtime-sandbox-boundary-design` in Brain Core.
+- Defines sandbox isolation: no real provisioning, no filesystem writes, no network calls.
+- Required before sandbox: second approval policy, role policy, identity verification, candidate lock, evidence hash, rollback cleanup.
+- Safety: readOnly, sandboxDesignOnly, no provisioning, no execution, no filesystem/network access.
+
+All phases:
+- Added type definitions to projects/brain-core/src/types/api.ts
+- Added route handlers with GET support and POST rejection
+- Added comprehensive tests (GET returns 200, POST returns 404, all safety flags disabled)
+- Updated controlled execution architecture documentation
+
+Validation:
+
+- Brain Core CI: passed, 280 tests passing.
+- All three phases follow identical read-only/design-only/no-execution pattern.
+
+Safety status (all three phases):
+
+- No POST routes for Video Orchestrator controlled execution.
+- No approval, first approval, or second approval creation.
+- No approval execution.
+- No action registry or allowlist entry.
+- No validator or execution-plan execution.
+- No STB or Video execution.
+- No hash computation over real files.
+- No snapshot persistence or queue mutation.
+- No sandbox provisioning or execution.
+- No filesystem/network access.
+- No file writing, rendering, export, publishing, Mind writes, or STB decommissioning.
+
+Next safe task:
+
+- Finalize controlled execution design phase roadmap or continue with additional policy/protocol design phases.

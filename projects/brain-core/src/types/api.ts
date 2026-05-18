@@ -5062,3 +5062,112 @@ export interface BrainCoreVideoControlledExecutionPreflightEvidenceHashDesign {
 export interface BrainCoreVideoControlledExecutionPreflightEvidenceHashDesignResponse {
   design: BrainCoreVideoControlledExecutionPreflightEvidenceHashDesign;
 }
+
+export interface BrainCoreVideoControlledExecutionOperatorDecisionSnapshot {
+  id: 'video-orchestrator-controlled-execution-operator-decision-snapshot-design';
+  generatedAt: string;
+  version: 'phase-5n';
+  status: 'blocked' | 'disabled';
+  snapshotDesignExists: false;
+  snapshotPersistenceEnabled: false;
+  decisionQueueMutationEnabled: false;
+  approvalCreationEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    decisionFieldCount: number;
+    snapshotRuleCount: number;
+    missingRequirementCount: number;
+    blockerCount: number;
+  };
+  decisionFields: string[];
+  snapshotRules: string[];
+  missingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    snapshotDesignOnly: true;
+    snapshotPersistenceEnabled: false;
+    decisionQueueMutationEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionOperatorDecisionSnapshotResponse {
+  snapshot: BrainCoreVideoControlledExecutionOperatorDecisionSnapshot;
+}
+
+export interface BrainCoreVideoControlledExecutionRuntimeSandboxBoundary {
+  id: 'video-orchestrator-controlled-execution-runtime-sandbox-boundary-design';
+  generatedAt: string;
+  version: 'phase-5o';
+  status: 'blocked' | 'disabled';
+  sandboxDesignExists: false;
+  sandboxProvisioningEnabled: false;
+  sandboxExecutionEnabled: false;
+  filesystemAccessEnabled: false;
+  networkAccessEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    boundaryRuleCount: number;
+    requiredPolicyCount: number;
+    missingRequirementCount: number;
+    blockerCount: number;
+  };
+  sandboxBoundaryRules: string[];
+  requiredBeforeSandbox: string[];
+  missingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    sandboxDesignOnly: true;
+    sandboxProvisioningEnabled: false;
+    sandboxExecutionEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionRuntimeSandboxBoundaryResponse {
+  boundary: BrainCoreVideoControlledExecutionRuntimeSandboxBoundary;
+}
