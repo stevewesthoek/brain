@@ -2418,3 +2418,56 @@ Remaining items (not in scope, future phases):
 Next safe task:
 
 - Manual visual QA in Obsidian using runbook steps, then either one focused visual polish pass or explicit roadmap decision before any real scheduling/publishing design work.
+
+## Continuation update — Dashboard visual update deployment verification and visible scaffold improvements
+
+Implemented:
+
+- **Plugin deployment verified**: Release artifacts (main.js 487 KB, styles.css 15 KB) correctly installed to mind vault. File sizes match between release/ and installed plugin.
+- **CSS classes audit**: All 8 CSS classes from polish pass are actively rendered by view.ts (no dead CSS).
+- **Build marker added**: "scaffold 2026-05-18" text now visible in command bar header (orange, right side) to confirm new plugin loaded.
+- **Build marker CSS**: `.brain-console__build-marker` styled with orange accent, monospace font, 0.75rem size.
+- **Command bar enhanced**: Status badge now has padding/border/background for visual prominence (0.9rem bold, bordered pill).
+- **Post group headers improved**: 2px orange top borders, monospace font, 0.75rem uppercase labels, increased letter-spacing.
+- **Post group spacing**: Improved gap/padding for visual hierarchy (16px top padding, 12px gaps between cards).
+- **Publishing disabled card styled**: Red left border (4px), larger padding (16px), full-width grid span, higher contrast.
+- **Runbook troubleshooting**: Added 7-step troubleshooting guide for "if dashboard looks unchanged" scenario.
+
+Validation:
+
+- Brain Console typecheck: passed
+- Brain Console build: 487.3 KB
+- Brain Console package: success
+- Brain Core CI: 160 tests passed
+- Safety scan: zero dangerous UI controls
+- Secret scan: clean
+
+Safety status:
+
+- No execution paths added
+- No publishing/scheduling design started
+- No external analytics calls
+- No Mind write paths enabled
+- Plugin correctly deployed to mind vault (verified)
+
+Deployment verification for user:
+
+1. Fully quit Obsidian (Cmd+Q)
+2. Reopen Obsidian
+3. Look for "scaffold 2026-05-18" text in header (orange, right side)
+4. If visible: new plugin is loaded and visual changes are active
+
+Expected visible improvements:
+
+- Build marker text in orange (right side of header)
+- Status badge more prominent (has border/background)
+- Post section group headings with orange top borders
+- Publishing disabled banner with red left border
+- Tighter spacing in post groups
+
+Next safe task:
+
+- Manual user verification of build marker visibility in header
+- Then either:
+  1. One focused visual redesign pass (if structural changes needed)
+  2. Explicit roadmap decision before real scheduling/publishing design work

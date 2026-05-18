@@ -181,6 +181,78 @@ It is intentionally preview-only. It does not publish, schedule, export files, c
 - [ ] Dark cockpit theme is applied consistently.
 - [ ] No crashes or browser console errors.
 
+## Troubleshooting: If the dashboard still looks unchanged
+
+If you've reinstalled the plugin but the dashboard appears identical to before:
+
+### 1. **Verify plugin files exist**
+
+Check that the installed plugin contains the latest code:
+
+```bash
+ls -lah /Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console/
+```
+
+Expected:
+- `main.js` (486-487 KB)
+- `styles.css` (15+ KB)
+- `manifest.json` (229 B)
+
+### 2. **Verify the build marker is present**
+
+```bash
+grep "scaffold 2026-05-18" /Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console/main.js
+grep "brain-console__build-marker" /Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console/styles.css
+```
+
+Both should return matches. If not, the new plugin was not installed.
+
+### 3. **Fully quit Obsidian**
+
+Do NOT just close the window or minimize. Use:
+- Mac: Cmd+Q to fully quit Obsidian
+- Windows/Linux: Alt+F4 or File > Exit
+
+Wait 5 seconds, then reopen Obsidian.
+
+### 4. **Check Obsidian cache**
+
+If still unchanged, try:
+1. Open Obsidian DevTools: Cmd+Option+I (Mac) or Ctrl+Shift+I (Windows)
+2. Go to Console tab
+3. Type: `location.reload(true)` (hard refresh)
+4. Wait for page to reload
+
+### 5. **Disable and re-enable the plugin**
+
+1. Open Obsidian Settings
+2. Go to Community Plugins
+3. Find "Brain Console" in the Installed Plugins list
+4. Click the toggle to Disable
+5. Wait 3 seconds
+6. Click the toggle to Enable
+7. Open Brain Console again
+
+### 6. **Confirm the build marker is visible**
+
+After reopen/reload, the Brain Console header should show:
+
+```
+◈ BRAIN OS  ● ONLINE  [scaffold 2026-05-18]  ↻ refresh  last: 0s ago
+```
+
+The `scaffold 2026-05-18` text should be visible in orange/accent color on the right side of the header.
+
+If you see this marker, the new plugin is loaded and the visual updates are active.
+
+### 7. **Expected visible changes**
+
+With the new plugin, you should see:
+- **Build marker** in the header (right side, orange text)
+- **Status badge** more prominent in the header center
+- **Post group headings** (STATUS, FLOW PREVIEW, etc.) with orange top borders
+- **Publishing Disabled** banner with red left border (if on Posts tab)
+
 ## Next phase decision
 
 - Visual polish and navigation cleanup, or

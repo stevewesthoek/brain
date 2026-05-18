@@ -254,9 +254,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  letter-spacing: 0.2px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .brain-console__status-badge.online {
@@ -284,6 +288,15 @@
 .brain-console__timestamp {
   font-size: 0.8rem;
   color: var(--cockpit-text-tertiary);
+  white-space: nowrap;
+}
+
+/* Build Marker */
+.brain-console__build-marker {
+  font-size: 0.75rem;
+  color: var(--cockpit-accent);
+  font-weight: 600;
+  letter-spacing: 0.2px;
   white-space: nowrap;
 }
 
@@ -400,18 +413,28 @@
 
 .brain-console__post-group {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   grid-column: 1 / -1;
-  padding-top: 6px;
-  border-top: 1px solid rgba(45, 53, 85, 0.8);
+  padding-top: 16px;
+  padding-bottom: 4px;
+  margin-top: 8px;
+  border-top: 2px solid var(--cockpit-accent);
+}
+
+.brain-console__post-group:first-child {
+  margin-top: 0;
+  padding-top: 8px;
+  border-top: none;
 }
 
 .brain-console__post-group-title {
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
   color: var(--cockpit-accent);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.2em;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
 }
 
 .brain-console__post-group-grid {
@@ -550,7 +573,20 @@
   color: var(--cockpit-text-primary);
 }
 
-.brain-console__post-disabled,
+.brain-console__post-disabled {
+  border-radius: 6px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border-left: 4px solid var(--cockpit-error);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  border-left: 4px solid var(--cockpit-error);
+  color: #fca5a5;
+  font-size: 0.9rem;
+  font-weight: 600;
+  grid-column: 1 / -1;
+  margin: 0 0 12px 0;
+}
+
 .brain-console__post-safe-note,
 .brain-console__list-warning {
   border-radius: 6px;

@@ -607,8 +607,13 @@ function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRef
   badge.style.color = getConnectionStatusColor(snapshot.connectionStatus);
   badge.textContent = `● ${snapshot.connectionStatus.toUpperCase()}`;
 
-  // Right side: refresh button + timestamp
+  // Right side: build marker + refresh button + timestamp
   const right = bar.createDiv({ cls: 'brain-console__bar-right' });
+
+  const buildMarker = right.createEl('span', {
+    cls: 'brain-console__build-marker',
+    text: 'scaffold 2026-05-18'
+  });
 
   const refreshBtn = right.createEl('button', { text: '↻ refresh' });
   refreshBtn.addClass('brain-console__btn-mini');
